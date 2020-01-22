@@ -2,10 +2,10 @@ package index
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/users"
-	"github.com/grupokindynos/ogen/utils/chainhash"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/users"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"sync"
 )

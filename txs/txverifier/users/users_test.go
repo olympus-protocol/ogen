@@ -2,12 +2,12 @@ package users_txverifier
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	users_txpayload "github.com/grupokindynos/ogen/txs/txpayloads/users"
-	"github.com/grupokindynos/ogen/users"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
+	"github.com/olympus-protocol/ogen/users"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
 )
 

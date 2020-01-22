@@ -1,11 +1,11 @@
 package explorer
 
 import (
-	"github.com/grupokindynos/ogen/chain"
-	"github.com/grupokindynos/ogen/config"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/peers"
-	"github.com/grupokindynos/ogen/primitives"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/config"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/primitives"
 	"html/template"
 	"net/http"
 )

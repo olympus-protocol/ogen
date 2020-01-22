@@ -2,15 +2,15 @@ package txverifier
 
 import (
 	"errors"
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/txs/txpayloads"
-	coins_txverifier "github.com/grupokindynos/ogen/txs/txverifier/coins"
-	gov_txverifier "github.com/grupokindynos/ogen/txs/txverifier/gov"
-	users_txverifier "github.com/grupokindynos/ogen/txs/txverifier/users"
-	votes_txverifier "github.com/grupokindynos/ogen/txs/txverifier/votes"
-	workers_txverifier "github.com/grupokindynos/ogen/txs/txverifier/workers"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/txs/txpayloads"
+	coins_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/coins"
+	gov_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/gov"
+	users_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/users"
+	votes_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/votes"
+	workers_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/workers"
 )
 
 var (

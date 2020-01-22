@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"github.com/grupokindynos/ogen/config"
-	"github.com/grupokindynos/ogen/db/blockdb"
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/server"
+	"github.com/olympus-protocol/ogen/config"
+	"github.com/olympus-protocol/ogen/db/blockdb"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/server"
 	"os"
 )
 

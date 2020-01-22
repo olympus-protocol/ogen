@@ -2,12 +2,12 @@ package votes_txpayload
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/bls"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/txs/txpayloads"
-	"github.com/grupokindynos/ogen/utils/amount"
-	"github.com/grupokindynos/ogen/utils/chainhash"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/txs/txpayloads"
+	"github.com/olympus-protocol/ogen/utils/amount"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 )
 

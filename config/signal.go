@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/grupokindynos/ogen/logger"
+	"github.com/olympus-protocol/ogen/logger"
 	"os"
 	"os/signal"
 )

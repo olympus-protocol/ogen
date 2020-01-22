@@ -2,10 +2,10 @@ package blockdb
 
 import (
 	"errors"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/primitives"
-	"github.com/grupokindynos/ogen/utils/chainhash"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"os"
 	"path/filepath"

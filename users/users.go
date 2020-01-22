@@ -1,8 +1,8 @@
 package users
 
 import (
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/params"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
 )
 
 type Config struct {

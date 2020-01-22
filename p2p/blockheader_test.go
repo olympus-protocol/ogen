@@ -2,7 +2,7 @@ package p2p
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
 	"time"
 )

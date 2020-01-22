@@ -1,11 +1,11 @@
 package workers_txverifier
 
 import (
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	workers_txpayload "github.com/grupokindynos/ogen/txs/txpayloads/workers"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	workers_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/workers"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var utxosIndexMock = &index.UtxosIndex{

@@ -2,7 +2,7 @@ package serializer
 
 import (
 	"encoding/binary"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"io"
 	"time"
 )

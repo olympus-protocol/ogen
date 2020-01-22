@@ -5,9 +5,9 @@ package bls
 import (
 	"bytes"
 	"errors"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/utils/bech32"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bech32"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	bls "github.com/phoreproject/bls/g1pubs"
 	"io"
 )

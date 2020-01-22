@@ -1,8 +1,8 @@
 package chain
 
 import (
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/utils/amount"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/amount"
 )
 
 func (ch *Chain) GetBlockReward(height uint32) amount.AmountType {

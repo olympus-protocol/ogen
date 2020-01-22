@@ -5,9 +5,9 @@ package bls_test
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/grupokindynos/ogen/bls"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
 )

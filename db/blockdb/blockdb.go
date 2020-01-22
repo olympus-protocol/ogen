@@ -3,11 +3,11 @@ package blockdb
 import (
 	"bytes"
 	"github.com/dgraph-io/badger"
-	"github.com/grupokindynos/ogen/db/blockdb/dbindex"
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/primitives"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/db/blockdb/dbindex"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 type BlockDB struct {

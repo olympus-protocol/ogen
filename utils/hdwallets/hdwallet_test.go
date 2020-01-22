@@ -8,8 +8,8 @@ import (
 
 	"github.com/phoreproject/bls/g1pubs"
 
-	"github.com/grupokindynos/ogen/utils/chainhash"
-	"github.com/grupokindynos/ogen/utils/hdwallets"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/hdwallets"
 )
 
 type XORShift struct {

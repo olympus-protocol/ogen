@@ -1,4 +1,4 @@
-module github.com/grupokindynos/ogen
+module github.com/olympus-protocol/ogen
 
 go 1.13
 

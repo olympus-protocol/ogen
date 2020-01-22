@@ -3,8 +3,8 @@ package dbindex
 import (
 	"bytes"
 	"github.com/dgraph-io/badger"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var (

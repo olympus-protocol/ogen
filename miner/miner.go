@@ -2,16 +2,16 @@ package miner
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/bls"
-	"github.com/grupokindynos/ogen/chain"
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/peers"
-	"github.com/grupokindynos/ogen/primitives"
-	coins_txpayload "github.com/grupokindynos/ogen/txs/txpayloads/coins"
-	"github.com/grupokindynos/ogen/utils/amount"
-	"github.com/grupokindynos/ogen/wallet"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/primitives"
+	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
+	"github.com/olympus-protocol/ogen/utils/amount"
+	"github.com/olympus-protocol/ogen/wallet"
 	"time"
 )
 

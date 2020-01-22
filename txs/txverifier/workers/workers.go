@@ -3,12 +3,12 @@ package workers_txverifier
 import (
 	"bytes"
 	"errors"
-	"github.com/grupokindynos/ogen/bls"
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/txs/txpayloads"
-	workers_txpayload "github.com/grupokindynos/ogen/txs/txpayloads/workers"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/txs/txpayloads"
+	workers_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/workers"
 	"reflect"
 	"sync"
 )

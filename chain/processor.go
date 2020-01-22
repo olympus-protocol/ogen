@@ -2,10 +2,10 @@ package chain
 
 import (
 	"errors"
-	"github.com/grupokindynos/ogen/bls"
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/primitives"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"reflect"
 	"sync"
 )

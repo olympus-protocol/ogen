@@ -1,10 +1,10 @@
 package params
 
 import (
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/utils/amount"
-	"github.com/grupokindynos/ogen/utils/chainhash"
-	"github.com/grupokindynos/ogen/utils/hdwallets"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/amount"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/hdwallets"
 	"time"
 )
 

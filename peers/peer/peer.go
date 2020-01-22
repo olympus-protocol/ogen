@@ -2,10 +2,10 @@ package peer
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/utils/chainhash"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"net"
 	"strconv"
 	"strings"

@@ -2,7 +2,7 @@ package filedb
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"os"
 	"strconv"

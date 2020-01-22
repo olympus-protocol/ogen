@@ -1,7 +1,7 @@
 package blockdb
 
 import (
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 func (bdb *BlockDB) GetGovIndex() ([]byte, error) {

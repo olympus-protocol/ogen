@@ -2,12 +2,12 @@ package chain
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/db/blockdb"
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/primitives"
-	"github.com/grupokindynos/ogen/txs/txverifier"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/db/blockdb"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/txs/txverifier"
 )
 
 type BlockInfo struct {

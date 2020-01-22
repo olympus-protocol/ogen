@@ -1,7 +1,7 @@
 package blockdb
 
 import (
-	"github.com/grupokindynos/ogen/params"
+	"github.com/olympus-protocol/ogen/params"
 )
 
 var blockDB *BlockDB

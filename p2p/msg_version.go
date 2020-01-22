@@ -3,8 +3,8 @@ package p2p
 import (
 	"errors"
 	"fmt"
-	"github.com/grupokindynos/ogen/config"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/config"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"time"
 )

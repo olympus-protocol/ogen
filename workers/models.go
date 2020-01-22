@@ -1,8 +1,8 @@
 package workers
 
 import (
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 )
 

@@ -2,9 +2,9 @@ package txpayloads
 
 import (
 	"errors"
-	"github.com/grupokindynos/ogen/bls"
-	"github.com/grupokindynos/ogen/utils/amount"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/amount"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"io"
 )
 

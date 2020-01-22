@@ -3,7 +3,7 @@ package bip39
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/grupokindynos/ogen/utils/bip39/words"
+	"github.com/olympus-protocol/ogen/utils/bip39/words"
 	"testing"
 )
 

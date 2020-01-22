@@ -1,7 +1,7 @@
 package filedb
 
 import (
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 )
 

@@ -1,11 +1,11 @@
 package gov_txverifier
 
 import (
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	gov_txpayload "github.com/grupokindynos/ogen/txs/txpayloads/gov"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	gov_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/gov"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var govIndexMock = &index.GovIndex{

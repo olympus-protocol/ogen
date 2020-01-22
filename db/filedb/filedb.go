@@ -3,7 +3,7 @@ package filedb
 import (
 	"bytes"
 	"errors"
-	"github.com/grupokindynos/ogen/utils/serializer"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"os"
 	"time"
 )

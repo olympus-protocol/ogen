@@ -8,7 +8,7 @@ Go BLS HD Wallet tools
  
 ### Get this library
 
-        go get github.com/grupokindynos/ogen/utils/hdwallets
+        go get github.com/olympus-protocol/ogen/utils/hdwallets
 
 ### Example
 

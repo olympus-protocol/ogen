@@ -17,8 +17,8 @@ import (
 	"hash"
 	"math/big"
 
-	"github.com/grupokindynos/ogen/utils/base58"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/base58"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/phoreproject/bls"
 	"github.com/phoreproject/bls/g1pubs"
 )

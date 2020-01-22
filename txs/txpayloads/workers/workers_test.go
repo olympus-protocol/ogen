@@ -2,8 +2,8 @@ package workers_txpayload
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
 )

@@ -3,7 +3,7 @@ package walletdb
 import (
 	"bytes"
 	"errors"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
 )
 

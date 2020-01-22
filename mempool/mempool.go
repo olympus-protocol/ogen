@@ -1,10 +1,10 @@
 package mempool
 
 import (
-	"github.com/grupokindynos/ogen/logger"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	"github.com/grupokindynos/ogen/txs/txverifier"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/txs/txverifier"
 )
 
 type Config struct {

@@ -2,11 +2,11 @@ package coins_txverifier
 
 import (
 	"bytes"
-	"github.com/grupokindynos/ogen/chain/index"
-	"github.com/grupokindynos/ogen/p2p"
-	"github.com/grupokindynos/ogen/params"
-	coins_txpayload "github.com/grupokindynos/ogen/txs/txpayloads/coins"
-	"github.com/grupokindynos/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
 )
