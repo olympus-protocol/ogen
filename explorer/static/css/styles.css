@@ -1,0 +1,103 @@
+@font-face {
+    font-family: 'All Round Gothic';
+    src: url('../fonts/AllRoundGothic.ttf');
+  }
+  
+  @font-face {
+    font-family: 'Century Gothic';
+    src: url('../fonts/GOTHIC.TTF');
+  }
+  
+  @font-face {
+    font-family: 'Font Awesome Regular';
+    src: url('../fonts/FAR.otf');
+  }
+
+  @font-face {
+    font-family: 'Font Awesome Solid';
+    src: url('../fonts/FAS.otf');
+  }
+  
+  @font-face {
+    font-family: 'Font Awesome Brand';
+    src: url('../fonts/FAB.otf');
+  }
+
+  body{
+    font-family: 'Century Gothic';
+  }
+  footer {
+    position: relative;
+  }
+  h1{
+    font-family: 'All Round Gothic' !important;
+  }
+
+  .abs-center{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .FA-icon-regular{
+      font-family: 'Font Awesome Solid';
+  }
+  .FA-icon-regular-md{
+    font-family: 'Font Awesome Solid';
+    font-size: 1.5rem;
+  }
+  .FA-icon-regular-lg{
+    font-family: 'Font Awesome Solid';
+    font-size: 1.5rem;
+  }
+
+  .container-lg{
+    width: 100%;
+    padding-left: 100px;
+    padding-right: 100px;
+}
+.page-section{
+  margin: 50px 100px;
+}
+
+th, td{
+  text-align: center;
+}
+
+.main-footer-separator{
+  padding: 50px;
+}
+.contain-text{
+  white-space: nowrap; 
+  width: auto; 
+  overflow: hidden;
+  text-overflow: ellipsis; 
+}
+.info-row{
+  padding: 5px;
+  border-bottom: 1.5px solid #F0F0F0;
+}
+.align-left{
+  float: left;
+  margin-right: auto;
+  margin-left: 0;
+}
+.align-right{
+  float: right;
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+}
+.summary{
+  margin-bottom: 20px;
+}
+
+/* Mobile Device Sizes */
+/* Extra Large xl*/
+  @media only screen and (max-width: 991px){}
+/* Large lg */
+  @media only screen and (max-width: 768px){}
+/* Medium md */
+  @media only screen and (max-width: 650px){}
+/* Small sm */
+  @media only screen and (max-width: 500px){}

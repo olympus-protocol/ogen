@@ -1,0 +1,107 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Olympus Explorer | Blocks</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="../static/img/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="../static/img/favicon.ico" type="image/x-icon">
+    <!-- DataTables // Jquery // Bootstrap -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4-4.1.1/jq-3.3.1/dt-1.10.20/r-2.2.3/datatables.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4-4.1.1/jq-3.3.1/dt-1.10.20/r-2.2.3/datatables.min.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="../static/css/styles.css">
+    <link rel="stylesheet" href="../static/css/navbar.css">
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+    <link rel="stylesheet" href="../static/css/home.css">
+    <link rel="stylesheet" href="../static/css/footer.css">
+    <!-- Page Styles -->
+    <link rel="stylesheet" href="../static/css/blocks.css">
+
+</head>
+
+<body>
+    <header>
+        <!-- Navbar -->
+        <nav class="navbar sticky-top navbar-expand-lg navbar-dark">
+            <a class="navbar-brand" href="/">
+                <img src="../static/img/logo.png" alt="Olympus" />
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggler"
+                aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarToggler">
+                <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active nav-active" href="/blocks">Blocks</a>
+                    </li>
+                </ul>
+                <form class="form-inline my-2 my-lg-0">
+                    <input class="form-control mr-sm-2" type="search"
+                        placeholder="Search for block, transaction or address" aria-label="Search" />
+                    <button class="btn btn-outline-search my-2 my-sm-0">
+                        <span class="FA-icon-regular">search</span>
+                    </button>
+                </form>
+            </div>
+        </nav>
+    </header>
+    <main>
+
+        <!-- Block Table -->
+        <section class="block-table">
+            <div class="container-lg">
+                <h1 class="blocks-title">Blocks Explorer</h1>
+                    <table class="table table-sm table-striped" id="blocksTable">
+                        <thead class="thead-block">
+                            <tr>
+                                <th scope="col">Height</th>
+                                <th scope="col">Hash</th>
+                                <th scope="col">Timestamp</th>
+                                <th scope="col">Transactions</th>
+                                <th scope="col">Size (bytes)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="tbody-block">
+                        {{ range $block := .Blocks}}
+                            <tr>
+                                <td>{{$block.Height}}</td>
+                                <td><a href="/block/{{$block.Hash}}">{{$block.Hash}}</a></td>
+                                <td>{{$block.Timestamp}}</td>
+                                <td>{{$block.Transactions}}</td>
+                                <td>{{$block.Size}}</td>
+                            </tr>
+                        {{end}}
+                        </tbody>
+                    </table>
+            </div>
+        </section>
+    </main>
+
+    <div class="main-footer-separator"></div>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="abs-center">
+                <img class="footer-img" src="../static/img/kindynos.png" alt="Kindynos" />
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="text/javascript">
+        $(document).ready( function () {
+            $('#blocksTable').DataTable({
+                responsive: true,
+                "order": [[ 0, 'desc' ]]
+            } );
+        } );
+    </script>
+</body>
+
+</html>

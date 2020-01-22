@@ -1,0 +1,52 @@
+.dashboard{
+    padding: 20px;
+    color: white;
+}
+
+/* Warning Banner */
+.warning-banner{
+    text-align: center !important;
+    background-color: #bf0000;
+    padding: 5px;
+}
+.tn-msg{
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Dashboard Information */
+.dashboard-info{
+    background-color: #5A297F;
+    padding: 15px;
+}
+.dash-left{
+    border-right: 1px solid white;
+}
+.dash-mid{
+    text-align: center;
+}
+.dash-right{
+    border-left: 1px solid white;
+}
+.dash-data{
+    font-family: 'All Round Gothic', serif;
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+.dash-block{
+    font-family: 'All Round Gothic', serif;
+    font-weight: bold;
+    font-size: 3rem;
+}
+
+/* Sync Bar */
+.sync-status-true{
+    text-align: center;
+    background-color: #00bf00;
+    padding: 5px;
+}
+.sync-status-txt{
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin: 0;
+}

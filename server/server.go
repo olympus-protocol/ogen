@@ -1,0 +1,192 @@
+package server
+
+import (
+	"github.com/grupokindynos/ogen/chain"
+	"github.com/grupokindynos/ogen/chain/index"
+	"github.com/grupokindynos/ogen/config"
+	"github.com/grupokindynos/ogen/db/blockdb"
+	"github.com/grupokindynos/ogen/explorer"
+	"github.com/grupokindynos/ogen/gov"
+	"github.com/grupokindynos/ogen/logger"
+	"github.com/grupokindynos/ogen/mempool"
+	"github.com/grupokindynos/ogen/miner"
+	"github.com/grupokindynos/ogen/params"
+	"github.com/grupokindynos/ogen/peers"
+	"github.com/grupokindynos/ogen/txs/txverifier"
+	"github.com/grupokindynos/ogen/users"
+	"github.com/grupokindynos/ogen/wallet"
+	"github.com/grupokindynos/ogen/workers"
+	"log"
+)
+
+type Server struct {
+	log    *logger.Logger
+	config *config.Config
+	params params.ChainParams
+
+	Chain     *chain.Chain
+	PeerMan   *peers.PeerMan
+	WalletMan *wallet.WalletMan
+	Miner     *miner.Miner
+	Mempool   *mempool.Mempool
+	GovMan    *gov.GovMan
+	WorkerMan *workers.WorkerMan
+	UsersMan  *users.UserMan
+	Gui       bool
+}
+
+func (s *Server) Start() {
+	if s.config.Wallet {
+		err := s.WalletMan.Start()
+		if err != nil {
+			log.Fatalln("unable to start wallet manager")
+		}
+	}
+	err := s.Chain.Start()
+	if err != nil {
+		log.Fatalln("unable to start chain instance")
+	}
+	err = s.PeerMan.Start()
+	if err != nil {
+		log.Fatalln("unable to start peer manager")
+	}
+	err = s.Miner.Start()
+	if err != nil {
+		log.Fatalln("unable to start miner thread")
+	}
+	switch s.config.Mode {
+	case "api":
+		err := explorer.LoadApi(s.config, s.Chain, s.PeerMan)
+		if err != nil {
+			log.Fatal("unable to start api")
+		}
+	}
+}
+
+func (s *Server) Stop() error {
+	s.Chain.Stop()
+	s.PeerMan.Stop()
+	if s.config.Wallet {
+		err := s.WalletMan.Stop()
+		if err != nil {
+			return err
+		}
+	}
+	s.Miner.Stop()
+	return nil
+}
+
+func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool) (*Server, error) {
+	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
+	walletsMan, err := wallet.NewWalletMan(loadWalletsManConfig(configParams, logger, gui), currParams)
+	if err != nil {
+		return nil, err
+	}
+	indexers := &index.Indexers{
+		BlockIndex:  index.InitBlocksIndex(),
+		UtxoIndex:   index.InitUtxosIndex(),
+		GovIndex:    index.InitGovIndex(),
+		UserIndex:   index.InitUsersIndex(),
+		WorkerIndex: index.InitWorkersIndex(),
+	}
+	txver := txverifier.NewTxVerifier(indexers, &currParams)
+	ch, err := chain.NewChain(loadChainConfig(configParams, logger), currParams, indexers, txver, db)
+	if err != nil {
+		return nil, err
+	}
+	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch)
+	if err != nil {
+		return nil, err
+	}
+	min, err := miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan)
+	if err != nil {
+		return nil, err
+	}
+	txPool := mempool.InitMempool(loadMempoolConfig(configParams, logger), txver, currParams)
+	workersMan := workers.NewWorkersMan(loadWorkersConfig(configParams, logger), currParams)
+	govMan := gov.NewGovMan(loadGovConfig(configParams, logger), currParams)
+	usersMan := users.NewUsersMan(loadUsersConfig(configParams, logger), currParams)
+	s := &Server{
+		config: configParams,
+		log:    logger,
+
+		Chain:     ch,
+		PeerMan:   peersMan,
+		WalletMan: walletsMan,
+		Miner:     min,
+		Mempool:   txPool,
+		WorkerMan: workersMan,
+		GovMan:    govMan,
+		UsersMan:  usersMan,
+		Gui:       gui,
+	}
+	return s, nil
+}
+
+func loadGovConfig(config *config.Config, logger *logger.Logger) gov.Config {
+	cfg := gov.Config{
+		Log: logger,
+	}
+	return cfg
+}
+
+func loadUsersConfig(config *config.Config, logger *logger.Logger) users.Config {
+	cfg := users.Config{
+		Log: logger,
+	}
+	return cfg
+}
+
+func loadWorkersConfig(config *config.Config, logger *logger.Logger) workers.Config {
+	cfg := workers.Config{
+		Log: logger,
+	}
+	return cfg
+}
+
+func loadMempoolConfig(config *config.Config, logger *logger.Logger) mempool.Config {
+	cfg := mempool.Config{
+		Log: logger,
+	}
+	return cfg
+}
+
+func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config {
+	cfg := chain.Config{
+		Log: logger,
+	}
+	return cfg
+}
+
+func loadMinerConfig(config *config.Config, logger *logger.Logger) miner.Config {
+	cfg := miner.Config{
+		Log:      logger,
+		MinerKey: config.MinerPrivKey,
+	}
+	return cfg
+}
+
+func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
+	cfg := peers.Config{
+		Log:          logger,
+		Listen:       config.Listen,
+		AddNodes:     config.AddNodes,
+		ConnectNodes: config.ConnectNodes,
+		Port:         config.Port,
+		MaxPeers:     config.MaxPeers,
+		Path:         config.DataFolder,
+	}
+	return cfg
+}
+
+func loadWalletsManConfig(config *config.Config, logger *logger.Logger, gui bool) wallet.Config {
+	cfg := wallet.Config{
+		Log:      logger,
+		Path:     config.DataFolder,
+		Enabled:  config.Wallet,
+		AddrGap:  config.AddrGap,
+		Accounts: config.AccountsGenerate,
+		Gui:      gui,
+	}
+	return cfg
+}

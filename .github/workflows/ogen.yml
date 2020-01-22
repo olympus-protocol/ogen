@@ -1,0 +1,92 @@
+name: Ogen
+on: [push]
+jobs:
+  build-mac-headless:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v1  
+      with:
+        go-version: 1.13
+    - uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-    
+
+    - name: Set PATH
+      run: |
+        echo "::set-env name=GOPATH::$(go env GOPATH)"
+        echo "::add-path::$(go env GOPATH)/bin"
+      shell: bash
+    
+    - name: Build Ogen Headless
+      run: make pack
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: ogen-darwin
+        path: ./ogen-darwin.tar.gz        
+        expires: 3600          
+
+  build-linux-headless:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v1  
+      with:
+        go-version: 1.13
+    - uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-    
+
+    - name: Set PATH
+      run: |
+        echo "::set-env name=GOPATH::$(go env GOPATH)"
+        echo "::add-path::$(go env GOPATH)/bin"
+      shell: bash
+    
+    - name: Build Ogen Headless
+      run: make pack
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: ogen-linux
+        path: ./ogen-linux.tar.gz        
+        expires: 3600          
+        
+          
+  build-windows-headless:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v1  
+      with:
+        go-version: 1.13
+    - uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-    
+
+    - name: Set PATH
+      run: |
+        echo "::set-env name=GOPATH::$(go env GOPATH)"
+        echo "::add-path::$(go env GOPATH)/bin"
+      shell: bash
+    
+    - name: Build Ogen Headless
+      run: make pack
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: ogen-windows
+        path: ./ogen-windows.tar.gz        
+        expires: 3600      
+        
+                                        

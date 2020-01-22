@@ -1,0 +1,91 @@
+.block-basic-info p{
+    margin: 0px;
+}
+.block-number{
+    color: #364999;
+    font-size: 1.5rem;
+    margin: 0;
+}
+.block-hash{
+    color: #364999;
+    font-size: 1.5rem;
+}
+
+/* Summary */
+.block-information{
+    margin: 10px;
+}
+.block-information h3{
+    margin-top: 10px;
+    font-weight: bold;
+}
+.prev-btn{
+    background-color: #A0A0A0;
+    color: white;
+    width: 38px;
+}
+.next-btn{
+    background-color: #707070;
+    color: white;
+    width: 38px;
+}
+.summary-table{
+    margin-bottom: 20px;
+}
+.summary-table div{
+    text-align: left;
+}
+.summary-data{
+    font-weight: bold;
+}
+
+/* Transactions */
+.transactions-info{
+    background-color: #F0F0F0;
+    padding: 20px 25px;
+}
+.tx-title{
+    font-family: 'All Round Gothic';
+}
+.transaction-addresses{
+    margin-top: 20px;
+    border-top: 1px solid black;
+    padding-top: 20px;
+}
+.info-address{
+    background-color: white;
+    border: 1px solid #707070;
+    border-radius: 5px;
+    margin: 10px 0;
+    padding: 5px;
+}
+.address-separator{
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #A0A0A0;
+}
+/* Tx Buttons */
+.transaction-status{}
+.btn-tx{
+    color: white;
+    margin: 10px;
+}
+.tx-fee{
+    background-color: #707070;
+}
+.tx-confirmations{
+    background-color: #5A297F;
+}
+.tx-total-amount{
+    background-color: #364999;
+}
+
+
+@media only screen and (max-width: 991px){
+    .page-section{
+        margin: 25px 25px;
+    }
+    .block-information{
+        margin: 0;
+    }
+}

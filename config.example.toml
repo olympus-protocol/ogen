@@ -1,0 +1,13 @@
+DataFolder="./datadir"
+Debug=true
+Listen=true
+NetworkName="mainnet"
+ConnectNodes=["1.1.1.1:24126"]
+AddNodes=["1.1.1.1:24126"]
+Port=24126
+MaxPeers=100
+Mode="node"
+MinerPrivKey=""
+Wallet=true
+AddrGap=20
+AccountsGenerate=10

@@ -1,0 +1,179 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>Olympus Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="../static/img/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="../static/img/favicon.ico" type="image/x-icon">
+  <!-- Bootstrap -->
+  <!-- Styles -->
+  <link rel="stylesheet" href="../static/css/styles.css">
+  <link rel="stylesheet" href="../static/css/navbar.css">
+  <link rel="stylesheet" href="../static/css/dashboard.css">
+  <link rel="stylesheet" href="../static/css/home.css">
+  <link rel="stylesheet" href="../static/css/footer.css">
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4-4.1.1/jq-3.3.1/dt-1.10.20/r-2.2.3/datatables.min.css"/>
+  <script type="text/javascript" src="https://cdn.datatables.net/v/bs4-4.1.1/jq-3.3.1/dt-1.10.20/r-2.2.3/datatables.min.js"></script>
+
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <!-- Navbar -->
+    <nav class="navbar sticky-top navbar-expand-lg navbar-dark">
+      <a class="navbar-brand" href="/">
+        <img src="../static/img/logo.png" alt="Olympus" />
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggler"
+        aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarToggler">
+        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/blocks">Blocks</a>
+          </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+          <input class="form-control mr-sm-2" type="search" placeholder="Search for block, transaction or address"
+            aria-label="Search" />
+          <button class="btn btn-outline-search my-2 my-sm-0">
+            <span class="FA-icon-regular">search</span>
+          </button>
+        </form>
+      </div>
+    </nav>
+  </header>
+  
+  <!-- Main -->
+  <main>
+    <!-- Dashboard -->
+    <section class="dashboard">
+      <div class="container">
+        {{if eq .Network "Test Network"}}
+        <div class="row warning-banner">
+          <h1 class="tn-msg">This is Test Network coins here are not real coins</h1>
+        </div>
+        {{end}}
+
+        <div class="row dashboard-info">
+          <div class="col-lg-4 dash-left abs-center">
+            <ul class="list-unstyled">
+              <li>Protocol Version <span class="dash-data">{{.Protocol}}</span></li>
+              <li>Size on Disk <span class="dash-data">{{.Size}}</span></li>
+              <li>Masternodes <span class="dash-data">{{.Masternodes}}</span></li>
+              <li>Proposals <span class="dash-data">{{.Proposals}}</span></li>
+            </ul>
+          </div>
+          <div class="col-lg-4 dash-mid abs-center">
+            <ul class="list-unstyled">
+              <li>Last Block</li>
+              <li><span class="dash-block">{{.LastBlock}}</span></li>
+              <li>Hash</li>
+              <li style="max-width: 300px; text-overflow: ellipsis;overflow: hidden"><a style="color: #fff;font-weight: bolder; text-decoration: underline;" href="/block/{{.LastBlockHash}}">{{.LastBlockHash}}</a></li>
+              <li>{{.LastBlockTime}}</li>
+            </ul>
+          </div>
+          <div class="col-lg-4 dash-right abs-center">
+            <ul class="list-unstyled">
+              <li>Chain <span class="dash-data">{{.Network}}</span></li>
+              <li>Version <span class="dash-data">{{.Version}}</span></li>
+              <li>Subversion <span class="dash-data">{{.UserAgent}}</span></li>
+              <li>Peers <span class="dash-data">{{.Peers}}</span></li>
+            </ul>
+          </div>
+        </div>
+
+        {{if .Sync}}
+          <div class="row sync-status-true" style="justify-content: center">
+            <h1 class="sync-status-txt">Synced</h1>
+          </div>
+        {{ else }}
+          <div class="row warning-banner" style="justify-content: center">
+            <h1 class="sync-status-txt">Not synced</h1>
+          </div>
+        {{end}}
+      </div>
+    </section>
+
+    <!-- Tables -->
+    <section class="information-tables">
+      <div class="container-lg">
+        <div class="row">
+          <div class="col-lg-6 home-block-list">
+            <h1 style="text-align: center">Recent Blocks</h1>
+            <table class="table table-sm table-striped" id="table_id">
+                <thead class="thead-block">
+                <tr>
+                  <th scope="col">Height</th>
+                  <th scope="col">Hash</th>
+                  <th scope="col">Timestamp</th>
+                </tr>
+                </thead>
+                <tbody class="tbody-block">
+                 {{range $time, $block := .LastBlocks}}
+                   <tr>
+                     <th scope="row"><a href="/block-height/{{$block.Height}}">{{$block.Height}}</a></th>
+                     <td style="max-width: 300px; text-overflow: ellipsis; overflow: hidden"><a href="/block/{{$block.Hash}}">{{$block.Hash}}</a></td>
+                     <td>{{$time}}</td>
+                   </tr>
+                 {{ end }}
+                </tbody>
+                <tfoot></tfoot>
+              </table>
+            <a class="btn btn-all-blocks" href="/blocks">All Blocks</a>
+          </div>
+          <div class="col-lg-6 home-tx-list">
+            <h1 style="text-align: center">Recent Transactions</h1>
+            <div class="table-responsive home-table">
+              <table class="table table-sm table-striped">
+                <thead class="thead-tx">
+                  <tr>
+
+                  </tr>
+                </thead>
+                <tbody class="tbody-tx">
+                  <tr>
+
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+  </main>
+  <div class="main-footer-separator"></div>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="abs-center">
+        <img class="footer-img" src="../static/img/kindynos.png" alt="Kindynos"/>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="text/javascript">
+    $(document).ready( function () {
+      $('#table_id').DataTable({
+        "paging": false,
+        "responsive": true,
+        "info":     false,
+        "bFilter": false,
+        "order": [[ 0, 'desc' ]]
+      } );
+    } );
+  </script>
+</body>
+
+</html>

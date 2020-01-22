@@ -1,0 +1,27 @@
+.page-section{
+    margin: 50px 100px;
+}
+.page-section h3{
+    font-weight: bold;
+}
+.tx-hash{
+    color: #5A297F;
+    font-size: 1.5rem;
+}
+.raw-transaction{
+    background-color: #F0F0F0;
+    padding: 20px 25px;
+}
+.tx-indicator-green{
+    margin-left: 10px;
+    margin-right: 10px;
+    color: green;
+}
+@media only screen and (max-width: 991px){
+    .page-section{
+        margin: 25px 25px;
+    }
+    .block-information{
+        margin: 0;
+    }
+}

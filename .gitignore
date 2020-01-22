@@ -1,0 +1,32 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+#macOS
+.DS_Store
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Goland
+.idea/
+
+# Production
+ogen
+ogen-cli
+ogen-darwin*
+ogen-windows*
+ogen-linux*
+datadir*
+coverage*
+*_test.dat
+db/blockdb/blocks
+db/blockdb/db
+build/
+vendor/
