@@ -10,4 +10,4 @@ The library is separated on tree main packages:
 2. `txpayloads:` Used to encode, decode payloads.
 3. `txbuilder:` Used to create and sign transactions.
 
-For more information about the Olympus transactions system please refer to [OLYP-0002](https://github.com/grupokindynos/olyps/blob/master/olyps/olyp-0002.md) and [OLYP-0004](https://github.com/grupokindynos/olyps/blob/master/olyps/olyp-0004.md)
+For more information about the Olympus transactions system please refer to [OLYP-0002](https://github.com/olympus-protocol/olyps/blob/master/olyps/olyp-0002.md) and [OLYP-0004](https://github.com/grupokindynos/olyps/blob/master/olyps/olyp-0004.md)

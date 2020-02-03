@@ -1,10 +1,5 @@
 # Ogen libraries
 
-![Actions](https://github.com/olympus-protocol/ogen-utils/workflows/Utils/badge.svg)
-[![codecov](https://codecov.io/gh/olympus-protocol/ogen-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/olympus-protocol/ogen-utils)
-[![Go Report](https://goreportcard.com/badge/github.com/olympus-protocol/ogen-utils)](https://goreportcard.com/report/github.com/olympus-protocol/ogen-utils) 
-[![GoDocs](https://godoc.org/github.com/olympus-protocol/ogen-utils?status.svg)](http://godoc.org/github.com/olympus-protocol/ogen-utils)
-
 This repository contains a group of libraries used by the golang implementation (Ogen) of the Olympus protocol.
 
 Some of this libraries are a direct copy of an external repository. 
