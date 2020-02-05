@@ -96,6 +96,7 @@ var mainNetGenesisBlock = p2p.MsgBlock{
 	Header: p2p.BlockHeader{
 		Version:       1,
 		PrevBlockHash: chainhash.Hash{},
+		Nonce:         1,
 		MerkleRoot:    mainNetGenesisMerkleRoot,
 		Timestamp:     time.Unix(0x0, 0),
 	},

@@ -12,14 +12,15 @@ var MaxBlockHeaderBytes = 76
 
 type BlockHeader struct {
 	Version       int32
-	PrevBlockHash chainhash.Hash
+	Nonce         int32
 	MerkleRoot    chainhash.Hash
+	PrevBlockHash chainhash.Hash
 	Timestamp     time.Time
 }
 
 func (bh *BlockHeader) Serialize(w io.Writer) error {
 	sec := uint32(bh.Timestamp.Unix())
-	err := serializer.WriteElements(w, bh.Version, bh.PrevBlockHash, bh.MerkleRoot, sec)
+	err := serializer.WriteElements(w, bh.Version, bh.Nonce, bh.MerkleRoot, bh.PrevBlockHash, sec)
 	if err != nil {
 		return err
 	}
@@ -27,7 +28,7 @@ func (bh *BlockHeader) Serialize(w io.Writer) error {
 }
 
 func (bh *BlockHeader) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &bh.Version, &bh.PrevBlockHash, &bh.MerkleRoot, (*serializer.Uint32Time)(&bh.Timestamp))
+	err := serializer.ReadElements(r, &bh.Version, &bh.Nonce, &bh.MerkleRoot, &bh.PrevBlockHash, (*serializer.Uint32Time)(&bh.Timestamp))
 	if err != nil {
 		return err
 	}
@@ -43,11 +44,12 @@ func (bh *BlockHeader) Hash() (chainhash.Hash, error) {
 	return chainhash.DoubleHashH(buf.Bytes()), nil
 }
 
-func NewBlockHeader(version int32, prevBlock chainhash.Hash, merkle chainhash.Hash, time time.Time) *BlockHeader {
+func NewBlockHeader(version int32, prevBlock chainhash.Hash, nonce int32, merkle chainhash.Hash, time time.Time) *BlockHeader {
 	return &BlockHeader{
 		Version:       version,
-		PrevBlockHash: prevBlock,
+		Nonce:         nonce,
 		MerkleRoot:    merkle,
+		PrevBlockHash: prevBlock,
 		Timestamp:     time,
 	}
 }
