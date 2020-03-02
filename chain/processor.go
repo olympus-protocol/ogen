@@ -34,7 +34,7 @@ var (
 	ErrorPubKeyNoMatch     = errors.New("chainProcessor-invalid-signer: the block signer is not valid")
 )
 
-func (ch *Chain) newTxPayloadInv(txs []*p2p.MsgTx, blocks int) (*TxPayloadInv, error) {
+func (ch *Blockchain) newTxPayloadInv(txs []*p2p.MsgTx, blocks int) (*TxPayloadInv, error) {
 	txPayloads := &TxPayloadInv{
 		txs: make(map[txSchemes][]*p2p.MsgTx),
 	}
@@ -59,7 +59,7 @@ func (ch *Chain) newTxPayloadInv(txs []*p2p.MsgTx, blocks int) (*TxPayloadInv, e
 	return txPayloads, nil
 }
 
-func (ch *Chain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
+func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 	txs := blockInv.GetTxs()
 	txPayloadInv, err := ch.newTxPayloadInv(txs, len(blockInv.GetBlocks()))
 	if err != nil {
@@ -72,7 +72,7 @@ func (ch *Chain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 	return nil
 }
 
-func (ch *Chain) ProcessBlock(block *primitives.Block) error {
+func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	err := ch.verifyBlockSig(block)
 	if err != nil {
 		ch.log.Warn(err)
@@ -110,7 +110,7 @@ func (ch *Chain) ProcessBlock(block *primitives.Block) error {
 	return nil
 }
 
-func (ch *Chain) verifyBlockSig(block *primitives.Block) error {
+func (ch *Blockchain) verifyBlockSig(block *primitives.Block) error {
 	if block.Height < ch.params.LastPreWorkersBlock {
 		sig, err := block.MinerSig()
 		if err != nil {
@@ -147,7 +147,7 @@ type routineResp struct {
 	Err error
 }
 
-func (ch *Chain) verifyTx(inv *TxPayloadInv) error {
+func (ch *Blockchain) verifyTx(inv *TxPayloadInv) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineResp, len(inv.txs))
 	for scheme, txs := range inv.txs {

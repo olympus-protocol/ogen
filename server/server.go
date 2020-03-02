@@ -24,7 +24,7 @@ type Server struct {
 	config *config.Config
 	params params.ChainParams
 
-	Chain     *chain.Chain
+	Chain     *chain.Blockchain
 	PeerMan   *peers.PeerMan
 	WalletMan *wallet.WalletMan
 	Miner     *miner.Miner
@@ -90,7 +90,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 		WorkerIndex: index.InitWorkersIndex(),
 	}
 	txver := txverifier.NewTxVerifier(indexers, &currParams)
-	ch, err := chain.NewChain(loadChainConfig(configParams, logger), currParams, indexers, txver, db)
+	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, indexers, txver, db)
 	if err != nil {
 		return nil, err
 	}

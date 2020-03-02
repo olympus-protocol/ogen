@@ -3,6 +3,9 @@ package chain
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"sync"
+
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
@@ -11,8 +14,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
-	"sync"
 )
 
 type StateSnap struct {
@@ -47,11 +48,12 @@ func (snap *StateSnap) String() string {
 }
 
 type State struct {
-	log        *logger.Logger
-	snapshot   StateSnap
-	lock       sync.RWMutex
-	params     params.ChainParams
-	blockIndex *index.BlockIndex
+	log      *logger.Logger
+	snapshot StateSnap
+	lock     sync.RWMutex
+	params   params.ChainParams
+
+	View *ChainView
 
 	utxosIndex  *index.UtxosIndex
 	govIndex    *index.GovIndex
@@ -92,7 +94,7 @@ func (s *State) updateStateSnap(block *primitives.Block, workers int64, users in
 	return nil
 }
 
-func (s *State) InitChainState(db *blockdb.BlockDB, params params.ChainParams) error {
+func (s *State) initChainState(db *blockdb.BlockDB, params params.ChainParams) error {
 start:
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("loading chain state...")
@@ -122,11 +124,11 @@ start:
 				return err
 			}
 			loc, err := db.AddRawBlock(genBlock)
-			newRow := index.NewBlockRow(loc, params.GenesisBlock.Header)
-			err = s.blockIndex.Add(newRow)
+			view, err := NewChainView(params.GenesisBlock.Header, loc)
 			if err != nil {
 				return err
 			}
+			s.View = view
 			goto start
 		}
 		return err
@@ -156,7 +158,7 @@ start:
 		if err != nil {
 			return err
 		}
-		err = s.blockIndex.Add(&blockRow)
+		_, err := s.View.Add(&blockRow)
 		if err != nil {
 			return err
 		}
@@ -213,17 +215,17 @@ start:
 	return nil
 }
 
-func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.ChainParams) *State {
+func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) *State {
 	state := &State{
 		params:      params,
 		log:         log,
 		snapshot:    StateSnap{},
-		blockIndex:  indexers.BlockIndex,
 		utxosIndex:  indexers.UtxoIndex,
 		govIndex:    indexers.GovIndex,
 		usersIndex:  indexers.UserIndex,
 		workerIndex: indexers.WorkerIndex,
 		sync:        false,
 	}
+	state.initChainState(db, params)
 	return state
 }

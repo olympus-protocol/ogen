@@ -5,7 +5,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/amount"
 )
 
-func (ch *Chain) GetBlockReward(height uint32) amount.AmountType {
+func (ch *Blockchain) GetBlockReward(height uint32) amount.AmountType {
 	baseReward := ch.params.BaseBlockReward
 	cycles := height / ch.params.BlocksReductionCycle
 	for i := uint32(0); i < cycles; i++ {
@@ -15,6 +15,6 @@ func (ch *Chain) GetBlockReward(height uint32) amount.AmountType {
 	return amount.AmountType(baseReward * 1e8)
 }
 
-func (ch *Chain) GetRewardBasedOnCollateral(height uint32, collateral p2p.OutPoint) amount.AmountType {
+func (ch *Blockchain) GetRewardBasedOnCollateral(height uint32, collateral p2p.OutPoint) amount.AmountType {
 	return amount.AmountType(0)
 }

@@ -2,6 +2,7 @@ package index
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"sync"
 
@@ -16,6 +17,7 @@ type BlockRow struct {
 	Header  p2p.BlockHeader
 	Locator blockdb.BlockLocation
 	Height  int32
+	Parent  *BlockRow
 }
 
 // Serialize serializes a block index row to the writer.
@@ -42,14 +44,6 @@ func (br *BlockRow) Deserialize(r io.Reader) error {
 		return err
 	}
 	return nil
-}
-
-// NewBlockRow creates a block row given a specific disk location and header.
-func NewBlockRow(locator blockdb.BlockLocation, header p2p.BlockHeader) *BlockRow {
-	return &BlockRow{
-		Header:  header,
-		Locator: locator,
-	}
 }
 
 // BlockIndex is an index from hash to BlockRow.
@@ -102,6 +96,14 @@ func (i *BlockIndex) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
+	i.lock.RLock()
+	i.lock.RUnlock()
+
+	row, found := i.index[hash]
+	return row, found
+}
+
 // Have checks if the block index contains a certain hash.
 func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 	i.lock.RLock()
@@ -120,16 +122,43 @@ func (i *BlockIndex) add(row *BlockRow) error {
 }
 
 // Add adds a row to the block index.
-func (i *BlockIndex) Add(row *BlockRow) error {
+func (i *BlockIndex) Add(header p2p.BlockHeader, locator blockdb.BlockLocation) (*BlockRow, error) {
 	i.lock.Lock()
-	i.add(row)
-	i.lock.Unlock()
-	return nil
+	defer i.lock.Unlock()
+	prev, found := i.index[header.PrevBlockHash]
+	if !found {
+		return nil, fmt.Errorf("could not add block to index: could not find parent with hash %s", header.PrevBlockHash)
+	}
+
+	row := &BlockRow{
+		Header:  header,
+		Locator: locator,
+		Height:  prev.Height + 1,
+		Parent:  prev,
+	}
+
+	err := i.add(row)
+	if err != nil {
+		return nil, err
+	}
+
+	return row, nil
 }
 
 // InitBlocksIndex creates a new block index.
-func InitBlocksIndex() *BlockIndex {
-	return &BlockIndex{
-		index: make(map[chainhash.Hash]*BlockRow),
+func InitBlocksIndex(genesisHeader p2p.BlockHeader, genesisLoc blockdb.BlockLocation) (*BlockIndex, error) {
+	headerHash, err := genesisHeader.Hash()
+	if err != nil {
+		return nil, err
 	}
+	return &BlockIndex{
+		index: map[chainhash.Hash]*BlockRow{
+			headerHash: {
+				Header:  genesisHeader,
+				Locator: genesisLoc,
+				Height:  0,
+				Parent:  nil,
+			},
+		},
+	}, nil
 }
