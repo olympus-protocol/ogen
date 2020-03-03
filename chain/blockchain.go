@@ -75,12 +75,16 @@ func (ch *Blockchain) UpdateState(block *primitives.Block, workers int64, users 
 }
 
 func NewBlockchain(config Config, params params.ChainParams, indexers *index.Indexers, txverifier *txverifier.TxVerifier, db *blockdb.BlockDB) (*Blockchain, error) {
+	state, err := NewChainState(indexers, config.Log, params, db)
+	if err != nil {
+		return nil, err
+	}
 	ch := &Blockchain{
 		log:        config.Log,
 		config:     config,
 		params:     params,
 		db:         db,
-		state:      NewChainState(indexers, config.Log, params, db),
+		state:      state,
 		txverifier: txverifier,
 	}
 	return ch, nil

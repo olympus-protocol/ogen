@@ -8,13 +8,9 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var govIndexMock = &index.GovIndex{
-	Index: map[chainhash.Hash]*index.GovRow{},
-}
+var govIndexMock = index.InitGovIndex()
 
-var utxosIndexMock = &index.UtxosIndex{
-	Index: map[chainhash.Hash]*index.UtxoRow{},
-}
+var utxosIndexMock = index.InitUtxosIndex()
 
 var gov GovTxVerifier
 

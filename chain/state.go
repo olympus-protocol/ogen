@@ -158,7 +158,7 @@ start:
 		if err != nil {
 			return err
 		}
-		_, err := s.View.Add(&blockRow)
+		_, err = s.View.Add(blockRow.Header, blockRow.Locator)
 		if err != nil {
 			return err
 		}
@@ -215,7 +215,7 @@ start:
 	return nil
 }
 
-func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) *State {
+func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*State, error) {
 	state := &State{
 		params:      params,
 		log:         log,
@@ -226,6 +226,9 @@ func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.C
 		workerIndex: indexers.WorkerIndex,
 		sync:        false,
 	}
-	state.initChainState(db, params)
-	return state
+	err := state.initChainState(db, params)
+	if err != nil {
+		return nil, err
+	}
+	return state, nil
 }

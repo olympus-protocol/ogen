@@ -12,6 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/wallet"
@@ -82,8 +83,20 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
+	genBlock, err := primitives.NewBlockFromMsg(&currParams.GenesisBlock, 0)
+	if err != nil {
+		return nil, err
+	}
+	loc, err := db.AddRawBlock(genBlock)
+	if err != nil {
+		return nil, err
+	}
+	blockIndex, err := index.InitBlocksIndex(currParams.GenesisBlock.Header, loc)
+	if err != nil {
+		return nil, err
+	}
 	indexers := &index.Indexers{
-		BlockIndex:  index.InitBlocksIndex(),
+		BlockIndex:  blockIndex,
 		UtxoIndex:   index.InitUtxosIndex(),
 		GovIndex:    index.InitGovIndex(),
 		UserIndex:   index.InitUsersIndex(),

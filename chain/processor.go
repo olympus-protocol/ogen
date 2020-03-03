@@ -3,7 +3,6 @@ package chain
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"reflect"
@@ -96,12 +95,18 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Warn(err)
 		return err
 	}
-	blockRow := index.NewBlockRow(blocator, *block.Header())
-	err = ch.state.blockIndex.Add(blockRow)
+	row, err := ch.state.View.Add(*block.Header(), blocator)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
+	rowHash, err := row.Header.Hash()
+	if err != nil {
+		ch.log.Warn(err)
+		return err
+	}
+	// TODO: better fork choice
+	ch.state.View.SetTip(rowHash)
 	err = ch.UpdateState(block, 0, 0, 0, true)
 	if err != nil {
 		ch.log.Warn(err)

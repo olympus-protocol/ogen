@@ -11,9 +11,7 @@ import (
 	"testing"
 )
 
-var userIndexMock = &index.UserIndex{
-	Index: map[chainhash.Hash]*index.UserRow{},
-}
+var userIndexMock = index.InitUsersIndex()
 
 var user UsersTxVerifier
 
