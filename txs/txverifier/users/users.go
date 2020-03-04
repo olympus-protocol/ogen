@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
 	"reflect"
@@ -21,8 +21,8 @@ var (
 )
 
 type UsersTxVerifier struct {
-	UserIndex *index.UserIndex
-	params    *params.ChainParams
+	params *params.ChainParams
+	state  *state.State
 }
 
 func (v UsersTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
@@ -96,7 +96,7 @@ func (v UsersTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
 		if err != nil {
 			return err
 		}
-		userData := v.UserIndex.Get(hash)
+		userData := v.state.UserState.Get(hash)
 		pubKeyBytes := userData.UserData.PubKey
 		pubKey, err := bls.DeserializePublicKey(pubKeyBytes)
 		if err != nil {
@@ -162,11 +162,11 @@ func (v UsersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 		if err != nil {
 			return err
 		}
-		ok := v.UserIndex.Have(searchHash)
+		ok := v.state.UserState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.UserIndex.Get(searchHash)
+		data := v.state.UserState.Get(searchHash)
 		matchPubKey, err := VerPayload.GetPublicKey()
 		pubKey, err := bls.DeserializePublicKey(data.UserData.PubKey)
 		if err != nil {
@@ -185,7 +185,7 @@ func (v UsersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 		if err != nil {
 			return err
 		}
-		ok := v.UserIndex.Have(searchHash)
+		ok := v.state.UserState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
@@ -217,10 +217,10 @@ func (v UsersTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction)
 	return nil
 }
 
-func NewUsersTxVerifier(index *index.UserIndex, params *params.ChainParams) UsersTxVerifier {
+func NewUsersTxVerifier(state *state.State, params *params.ChainParams) UsersTxVerifier {
 	v := UsersTxVerifier{
-		UserIndex: index,
-		params:    params,
+		state:  state,
+		params: params,
 	}
 	return v
 }

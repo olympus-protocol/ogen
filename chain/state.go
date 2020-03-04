@@ -3,6 +3,7 @@ package chain
 import (
 	"bytes"
 	"fmt"
+	"github.com/olympus-protocol/ogen/state"
 	"io"
 	"sync"
 
@@ -166,7 +167,18 @@ start:
 	return nil
 }
 
-func NewChainState(log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*StateService, error) {
+func (s *StateService) TipState() *state.State {
+	return &state.State{
+		UtxoState: state.UtxoState{
+			UTXOs: map[chainhash.Hash]state.Utxo{},
+		},
+		GovernanceState: state.GovernanceState{
+			Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+		},
+	}
+}
+
+func NewStateService(log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*StateService, error) {
 	state := &StateService{
 		params:   params,
 		log:      log,

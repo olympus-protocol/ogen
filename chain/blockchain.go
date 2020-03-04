@@ -2,12 +2,10 @@ package chain
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/txs/txverifier"
 )
 
 type BlockInfo struct {
@@ -30,8 +28,7 @@ type Blockchain struct {
 	// DB
 	db *blockdb.BlockDB
 	// StateService
-	state      *StateService
-	txverifier *txverifier.TxVerifier
+	state *StateService
 }
 
 func (ch *Blockchain) Start() (err error) {
@@ -74,18 +71,17 @@ func (ch *Blockchain) UpdateState(block *primitives.Block, workers int64, users 
 	return nil
 }
 
-func NewBlockchain(config Config, params params.ChainParams, indexers *index.Indexers, txverifier *txverifier.TxVerifier, db *blockdb.BlockDB) (*Blockchain, error) {
-	state, err := NewChainState(indexers, config.Log, params, db)
+func NewBlockchain(config Config, params params.ChainParams, db *blockdb.BlockDB) (*Blockchain, error) {
+	state, err := NewStateService(config.Log, params, db)
 	if err != nil {
 		return nil, err
 	}
 	ch := &Blockchain{
-		log:        config.Log,
-		config:     config,
-		params:     params,
-		db:         db,
-		state:      state,
-		txverifier: txverifier,
+		log:    config.Log,
+		config: config,
+		params: params,
+		db:     db,
+		state:  state,
 	}
 	return ch, nil
 }

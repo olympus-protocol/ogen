@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	votes_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/votes"
 	"reflect"
@@ -21,8 +21,8 @@ var (
 )
 
 type VotesTxVerifier struct {
-	WorkerIndex *index.WorkerIndex
-	params      *params.ChainParams
+	state  *state.State
+	params *params.ChainParams
 }
 
 func (v VotesTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
@@ -109,11 +109,11 @@ func (v VotesTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 	if err != nil {
 		return err
 	}
-	ok := v.WorkerIndex.Have(searchHash)
+	ok := v.state.WorkerState.Have(searchHash)
 	if !ok {
 		return ErrorMatchDataNoExist
 	}
-	data := v.WorkerIndex.Get(searchHash)
+	data := v.state.WorkerState.Get(searchHash)
 	pubKey, err := bls.DeserializePublicKey(data.WorkerData.PubKey)
 	if err != nil {
 		return err
@@ -153,10 +153,10 @@ func (v VotesTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction)
 	return nil
 }
 
-func NewVotesTxVerifier(workerIndex *index.WorkerIndex, params *params.ChainParams) VotesTxVerifier {
+func NewVotesTxVerifier(state *state.State, params *params.ChainParams) VotesTxVerifier {
 	v := VotesTxVerifier{
-		WorkerIndex: workerIndex,
-		params:      params,
+		state:  state,
+		params: params,
 	}
 	return v
 }

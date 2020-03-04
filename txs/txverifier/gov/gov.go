@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	gov_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/gov"
 	"github.com/olympus-protocol/ogen/utils/amount"
@@ -24,9 +24,8 @@ var (
 )
 
 type GovTxVerifier struct {
-	GovIndex  *index.GovIndex
-	UtxoIndex *index.UtxosIndex
-	params    *params.ChainParams
+	params *params.ChainParams
+	state  *state.State
 }
 
 func (v GovTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
@@ -113,11 +112,11 @@ func (v GovTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
 	}
 	switch Action {
 	case p2p.Upload:
-		ok := v.UtxoIndex.Have(searchHash)
+		ok := v.state.UtxoState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.UtxoIndex.Get(searchHash)
+		data := v.state.UtxoState.Get(searchHash)
 		if data.Owner != "" {
 			return ErrorOwnerShouldBeEmpty
 		}
@@ -141,20 +140,20 @@ func (v GovTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
 			return ErrorDataNoMatch
 		}
 	case p2p.Revoke:
-		ok := v.GovIndex.Have(searchHash)
+		ok := v.state.GovernanceState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.GovIndex.Get(searchHash)
+		data := v.state.GovernanceState.Get(searchHash)
 		utxoHash, err := data.GovData.BurnedUtxo.Hash()
 		if err != nil {
 			return err
 		}
-		ok = v.UtxoIndex.Have(utxoHash)
+		ok = v.state.UtxoState.Have(utxoHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		utxoData := v.UtxoIndex.Get(utxoHash)
+		utxoData := v.state.UtxoState.Get(utxoHash)
 		if utxoData.Owner != "" {
 			return ErrorOwnerShouldBeEmpty
 		}
@@ -201,11 +200,10 @@ func (v GovTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction) e
 	return nil
 }
 
-func NewGovTxVerifier(govIndex *index.GovIndex, utxoIndex *index.UtxosIndex, params *params.ChainParams) GovTxVerifier {
+func NewGovTxVerifier(state *state.State, params *params.ChainParams) GovTxVerifier {
 	v := GovTxVerifier{
-		GovIndex:  govIndex,
-		UtxoIndex: utxoIndex,
-		params:    params,
+		state:  state,
+		params: params,
 	}
 	return v
 }

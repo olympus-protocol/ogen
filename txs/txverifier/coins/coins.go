@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/amount"
@@ -27,8 +27,8 @@ var (
 )
 
 type CoinsTxVerifier struct {
-	UtxoIndex *index.UtxosIndex
-	params    *params.ChainParams
+	state  *state.State
+	params *params.ChainParams
 }
 
 func (v CoinsTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
@@ -126,11 +126,11 @@ func (v CoinsTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 		var owners []string
 		var spendable amount.AmountType
 		for _, hash := range hashInv {
-			ok := v.UtxoIndex.Have(hash)
+			ok := v.state.UtxoState.Have(hash)
 			if !ok {
 				return ErrorMatchDataNoExist
 			}
-			utxo := v.UtxoIndex.Get(hash)
+			utxo := v.state.UtxoState.Get(hash)
 			spendable += amount.AmountType(utxo.Amount)
 			owners = append(owners, utxo.Owner)
 		}
@@ -188,10 +188,10 @@ func (v CoinsTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction)
 	return nil
 }
 
-func NewCoinsTxVerifier(index *index.UtxosIndex, params *params.ChainParams) CoinsTxVerifier {
+func NewCoinsTxVerifier(state *state.State, params *params.ChainParams) CoinsTxVerifier {
 	v := CoinsTxVerifier{
-		UtxoIndex: index,
-		params:    params,
+		state:  state,
+		params: params,
 	}
 	return v
 }

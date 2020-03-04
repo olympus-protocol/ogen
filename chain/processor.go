@@ -5,6 +5,7 @@ import (
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/txs/txverifier"
 	"reflect"
 	"sync"
 )
@@ -155,12 +156,16 @@ type routineResp struct {
 func (ch *Blockchain) verifyTx(inv *TxPayloadInv) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineResp, len(inv.txs))
+	state := ch.state.TipState()
+
 	for scheme, txs := range inv.txs {
 		wg.Add(1)
+		txState := *state
 		go func(wg *sync.WaitGroup, scheme txSchemes, txs []*p2p.MsgTx) {
 			defer wg.Done()
 			var resp routineResp
-			err := ch.txverifier.VerifyTxsBatch(txs, scheme.Type, scheme.Action)
+			txVerifier := txverifier.NewTxVerifier(&txState, &ch.params)
+			err := txVerifier.VerifyTxsBatch(txs, scheme.Type, scheme.Action)
 			if err != nil {
 				resp.Err = err
 			}

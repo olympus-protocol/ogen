@@ -2,9 +2,9 @@ package txverifier
 
 import (
 	"errors"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	coins_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/coins"
 	gov_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/gov"
@@ -85,12 +85,12 @@ func (txv *TxVerifier) VerifyTxsBatch(txs []*p2p.MsgTx, txTypes p2p.TxType, txAc
 	return verifier.SigVerifyBatch(payloads, txAction)
 }
 
-func NewTxVerifier(indexers *index.Indexers, params *params.ChainParams) *TxVerifier {
+func NewTxVerifier(currentState *state.State, params *params.ChainParams) *TxVerifier {
 	return &TxVerifier{
-		coins:   coins_txverifier.NewCoinsTxVerifier(indexers.UtxoIndex, params),
-		gov:     gov_txverifier.NewGovTxVerifier(indexers.GovIndex, indexers.UtxoIndex, params),
-		users:   users_txverifier.NewUsersTxVerifier(indexers.UserIndex, params),
-		votes:   votes_txverifier.NewVotesTxVerifier(indexers.WorkerIndex, params),
-		workers: workers_txverifier.NewWorkersTxVerifier(indexers.WorkerIndex, indexers.UtxoIndex, params),
+		coins:   coins_txverifier.NewCoinsTxVerifier(currentState, params),
+		gov:     gov_txverifier.NewGovTxVerifier(currentState, params),
+		users:   users_txverifier.NewUsersTxVerifier(currentState, params),
+		votes:   votes_txverifier.NewVotesTxVerifier(currentState, params),
+		workers: workers_txverifier.NewWorkersTxVerifier(currentState, params),
 	}
 }
