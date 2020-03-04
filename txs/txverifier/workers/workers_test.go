@@ -8,13 +8,9 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var utxosIndexMock = &index.UtxosIndex{
-	Index: map[chainhash.Hash]*index.UtxoRow{},
-}
+var utxosIndexMock = index.InitUtxosIndex()
 
-var workerIndexMock = &index.WorkerIndex{
-	Index: map[chainhash.Hash]*index.WorkerRow{},
-}
+var workerIndexMock = index.InitWorkersIndex()
 
 var worker WorkersTxVerifier
 

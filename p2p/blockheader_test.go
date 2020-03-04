@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"bytes"
+	"github.com/go-test/deep"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
 	"time"
@@ -33,16 +34,7 @@ func TestBlock_Serialize(t *testing.T) {
 	if err != nil {
 
 	}
-	hash, err := blockHeader.Hash()
-	if err != nil {
-
-	}
-	oldhash, err := blockHeaderTest.Hash()
-	if err != nil {
-
-	}
-	if hash != oldhash {
-		t.Error("error headers hash doesn't match")
-		return
+	if diff := deep.Equal(blockHeader, blockHeaderTest); diff != nil {
+		t.Fatal(diff)
 	}
 }

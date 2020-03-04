@@ -25,7 +25,7 @@ type Miner struct {
 	log        *logger.Logger
 	config     Config
 	params     params.ChainParams
-	chain      *chain.Chain
+	chain      *chain.Blockchain
 	walletsMan *wallet.WalletMan
 	peersMan   *peers.PeerMan
 	minerKey   *bls.SecretKey
@@ -111,7 +111,7 @@ func (m *Miner) createNewBlock() (*p2p.MsgBlock, error) {
 	return blockMsg, nil
 }
 
-func NewMiner(config Config, params params.ChainParams, chain *chain.Chain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan) (miner *Miner, err error) {
 	var blsPrivKey bls.SecretKey
 	var mineActive bool
 	if config.MinerKey != "" {

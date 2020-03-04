@@ -8,9 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var workerIndexMock = &index.WorkerIndex{
-	Index: map[chainhash.Hash]*index.WorkerRow{},
-}
+var workerIndexMock = index.InitWorkersIndex()
 
 var votes VotesTxVerifier
 

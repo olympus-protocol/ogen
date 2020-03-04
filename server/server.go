@@ -12,6 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/wallet"
@@ -24,7 +25,7 @@ type Server struct {
 	config *config.Config
 	params params.ChainParams
 
-	Chain     *chain.Chain
+	Chain     *chain.Blockchain
 	PeerMan   *peers.PeerMan
 	WalletMan *wallet.WalletMan
 	Miner     *miner.Miner
@@ -82,15 +83,27 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
+	genBlock, err := primitives.NewBlockFromMsg(&currParams.GenesisBlock, 0)
+	if err != nil {
+		return nil, err
+	}
+	loc, err := db.AddRawBlock(genBlock)
+	if err != nil {
+		return nil, err
+	}
+	blockIndex, err := index.InitBlocksIndex(currParams.GenesisBlock.Header, loc)
+	if err != nil {
+		return nil, err
+	}
 	indexers := &index.Indexers{
-		BlockIndex:  index.InitBlocksIndex(),
+		BlockIndex:  blockIndex,
 		UtxoIndex:   index.InitUtxosIndex(),
 		GovIndex:    index.InitGovIndex(),
 		UserIndex:   index.InitUsersIndex(),
 		WorkerIndex: index.InitWorkersIndex(),
 	}
 	txver := txverifier.NewTxVerifier(indexers, &currParams)
-	ch, err := chain.NewChain(loadChainConfig(configParams, logger), currParams, indexers, txver, db)
+	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, indexers, txver, db)
 	if err != nil {
 		return nil, err
 	}

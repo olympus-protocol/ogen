@@ -33,7 +33,7 @@ type BlocksInfo struct {
 	Blocks []chain.BlockInfo
 }
 
-func LoadApi(conf *config.Config, chainInstance *chain.Chain, peersMan *peers.PeerMan) error {
+func LoadApi(conf *config.Config, chainInstance *chain.Blockchain, peersMan *peers.PeerMan) error {
 	templates, err := loadTemplates()
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func loadTemplates() (*template.Template, error) {
 	return tpl, nil
 }
 
-func loadChainStats(conf *config.Config, chain *chain.Chain, peerMan *peers.PeerMan) MainInfo {
+func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers.PeerMan) MainInfo {
 	// TODO ref.
 	return MainInfo{
 		Version:     config.OgenVersion(),
