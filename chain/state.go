@@ -43,11 +43,11 @@ func (snap *StateSnap) Deserialize(r io.Reader) error {
 }
 
 func (snap *StateSnap) String() string {
-	return fmt.Sprintf("State Snapshot: Hash: %s, Height: %v, Txs: %v, Workers: %v, Users: %v, GovObjects: %v, LastBlockTime: %v",
+	return fmt.Sprintf("StateService Snapshot: Hash: %s, Height: %v, Txs: %v, Workers: %v, Users: %v, GovObjects: %v, LastBlockTime: %v",
 		snap.Hash.String(), snap.Height, snap.Txs, snap.Workers, snap.Users, snap.GovObjects, snap.LastBlockTime)
 }
 
-type State struct {
+type StateService struct {
 	log      *logger.Logger
 	snapshot StateSnap
 	lock     sync.RWMutex
@@ -58,23 +58,23 @@ type State struct {
 	sync bool
 }
 
-func (s *State) IsSync() bool {
+func (s *StateService) IsSync() bool {
 	return s.sync
 }
 
-func (s *State) SetSyncStatus(sync bool) {
+func (s *StateService) SetSyncStatus(sync bool) {
 	s.sync = sync
 	return
 }
 
-func (s *State) Snapshot() *StateSnap {
+func (s *StateService) Snapshot() *StateSnap {
 	s.lock.Lock()
 	snap := s.snapshot
 	s.lock.Unlock()
 	return &snap
 }
 
-func (s *State) updateStateSnap(block *primitives.Block, workers int64, users int64, govObjects int64) error {
+func (s *StateService) updateStateSnap(block *primitives.Block, workers int64, users int64, govObjects int64) error {
 	s.lock.Lock()
 	s.snapshot = StateSnap{
 		Hash:          block.Hash,
@@ -89,7 +89,7 @@ func (s *State) updateStateSnap(block *primitives.Block, workers int64, users in
 	return nil
 }
 
-func (s *State) initChainState(db *blockdb.BlockDB, params params.ChainParams) error {
+func (s *StateService) initChainState(db *blockdb.BlockDB, params params.ChainParams) error {
 start:
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("loading chain state...")
@@ -166,8 +166,8 @@ start:
 	return nil
 }
 
-func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*State, error) {
-	state := &State{
+func NewChainState(log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*StateService, error) {
+	state := &StateService{
 		params:   params,
 		log:      log,
 		snapshot: StateSnap{},

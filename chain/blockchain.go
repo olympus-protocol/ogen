@@ -29,8 +29,8 @@ type Blockchain struct {
 	params params.ChainParams
 	// DB
 	db *blockdb.BlockDB
-	// State
-	state      *State
+	// StateService
+	state      *StateService
 	txverifier *txverifier.TxVerifier
 }
 
@@ -48,7 +48,7 @@ func (ch *Blockchain) StateSnapshot() *StateSnap {
 	return ch.state.Snapshot()
 }
 
-func (ch *Blockchain) State() *State {
+func (ch *Blockchain) State() *StateService {
 	return ch.state
 }
 
