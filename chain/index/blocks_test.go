@@ -12,17 +12,19 @@ import (
 )
 
 func TestSerializeDeserializeRow(t *testing.T) {
+	header := p2p.BlockHeader{
+		Version:       1,
+		Nonce:         2,
+		MerkleRoot:    chainhash.Hash{3},
+		PrevBlockHash: chainhash.Hash{4},
+		Timestamp:     time.Unix(5, 0),
+	}
 	blockRow := index.BlockRow{
-		Header: p2p.BlockHeader{
-			Version:       1,
-			Nonce:         2,
-			MerkleRoot:    chainhash.Hash{3},
-			PrevBlockHash: chainhash.Hash{4},
-			Timestamp:     time.Unix(5, 0),
-		},
+		Header: header,
 		Locator: blockdb.BlockLocation{},
 		Height:  7,
 		Parent:  nil,
+		Hash: header.Hash(),
 	}
 
 	b := bytes.NewBuffer([]byte{})
@@ -55,10 +57,7 @@ func TestSerializeDeserializeIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	genesisHash, err := genesisHeader.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	genesisHash := genesisHeader.Hash()
 
 	blockHeader := p2p.BlockHeader{
 		Version:       1,
@@ -89,10 +88,7 @@ func TestSerializeDeserializeIndex(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	blockHash, err := blockHeader.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	blockHash := blockHeader.Hash()
 
 	blockIndexHeader, _ := blockIndex.Get(blockHash)
 	blockIndexDeserHeader, _ := blockIndexDeser.Get(blockHash)

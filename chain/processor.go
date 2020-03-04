@@ -101,13 +101,13 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Warn(err)
 		return err
 	}
-	rowHash, err := row.Header.Hash()
+	rowHash := row.Header.Hash()
+	// TODO: better fork choice
+	err = ch.state.View.SetTip(rowHash)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
-	// TODO: better fork choice
-	ch.state.View.SetTip(rowHash)
 	err = ch.UpdateState(block, 0, 0, 0, true)
 	if err != nil {
 		ch.log.Warn(err)
@@ -160,7 +160,7 @@ func (ch *Blockchain) verifyTx(inv *TxPayloadInv) error {
 
 	for scheme, txs := range inv.txs {
 		wg.Add(1)
-		txState := *state
+		txState := *(&state)
 		go func(wg *sync.WaitGroup, scheme txSchemes, txs []*p2p.MsgTx) {
 			defer wg.Done()
 			var resp routineResp

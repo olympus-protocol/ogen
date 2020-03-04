@@ -306,10 +306,7 @@ func (pm *PeerMan) handleBlockInvMsg(msg *peer.BlocksInvMsg) error {
 }
 
 func (pm *PeerMan) handleBlockMsg(msg *peer.BlockMsg) error {
-	blockHash, err := msg.Block.Header.Hash()
-	if err != nil {
-		return err
-	}
+	blockHash := msg.Block.Header.Hash()
 	pm.log.Infof("new block received hash: %v", blockHash)
 	if pm.chain.State().IsSync() {
 		newBlock, err := primitives.NewBlockFromMsg(msg.Block, uint32(pm.chain.State().Snapshot().Height+1))

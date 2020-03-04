@@ -54,10 +54,7 @@ check:
 		if err != nil {
 			break
 		}
-		blockHash, err := block.Header.Hash()
-		if err != nil {
-			break
-		}
+		blockHash := block.Header.Hash()
 		m.log.Infof("created new block hash: %v txs: %v", blockHash, len(block.Txs))
 		newBlock, err := primitives.NewBlockFromMsg(block, uint32(m.chain.State().Snapshot().Height+1))
 		err = m.chain.ProcessBlock(newBlock)
@@ -94,10 +91,7 @@ func (m *Miner) createNewBlock() (*p2p.MsgBlock, error) {
 		MerkleRoot:    txHash,
 		Timestamp:     time.Now(),
 	}
-	blockHash, err := blockHeader.Hash()
-	if err != nil {
-		return nil, err
-	}
+	blockHash := blockHeader.Hash()
 	blockMsg := &p2p.MsgBlock{
 		Header: blockHeader,
 		Txs:    []*p2p.MsgTx{genTx},

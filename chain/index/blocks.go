@@ -18,6 +18,7 @@ type BlockRow struct {
 	Locator    blockdb.BlockLocation
 	Height     int32
 	parentHash chainhash.Hash
+	Hash       chainhash.Hash
 	Parent     *BlockRow
 }
 
@@ -34,10 +35,7 @@ func (br *BlockRow) Serialize(w io.Writer) error {
 
 	parentHash := chainhash.Hash{}
 	if br.Parent != nil {
-		parentHash, err = br.Parent.Header.Hash()
-		if err != nil {
-			return err
-		}
+		parentHash = br.Parent.Header.Hash()
 	}
 	err = serializer.WriteElements(w, br.Height, parentHash)
 	if err != nil {
@@ -60,6 +58,7 @@ func (br *BlockRow) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	br.Hash = br.Header.Hash()
 	return nil
 }
 
@@ -154,10 +153,7 @@ func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 }
 
 func (i *BlockIndex) add(row *BlockRow) error {
-	blockHash, err := row.Header.Hash()
-	if err != nil {
-		return err
-	}
+	blockHash := row.Header.Hash()
 	i.index[blockHash] = row
 	return nil
 }
@@ -176,6 +172,7 @@ func (i *BlockIndex) Add(header p2p.BlockHeader, locator blockdb.BlockLocation) 
 		Locator: locator,
 		Height:  prev.Height + 1,
 		Parent:  prev,
+		Hash: header.Hash(),
 	}
 
 	err := i.add(row)
@@ -188,10 +185,7 @@ func (i *BlockIndex) Add(header p2p.BlockHeader, locator blockdb.BlockLocation) 
 
 // InitBlocksIndex creates a new block index.
 func InitBlocksIndex(genesisHeader p2p.BlockHeader, genesisLoc blockdb.BlockLocation) (*BlockIndex, error) {
-	headerHash, err := genesisHeader.Hash()
-	if err != nil {
-		return nil, err
-	}
+	headerHash := genesisHeader.Hash()
 	return &BlockIndex{
 		index: map[chainhash.Hash]*BlockRow{
 			headerHash: {
@@ -199,6 +193,7 @@ func InitBlocksIndex(genesisHeader p2p.BlockHeader, genesisLoc blockdb.BlockLoca
 				Locator: genesisLoc,
 				Height:  0,
 				Parent:  nil,
+				Hash: genesisHeader.Hash(),
 			},
 		},
 	}, nil

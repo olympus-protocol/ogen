@@ -23,14 +23,8 @@ func TestMsgBlock_EncodeDecode(t *testing.T) {
 		t.Errorf("unable to decode block msg")
 	}
 
-	oldBlockHash, err := TestBlock.Header.Hash()
-	if err != nil {
-		t.Errorf("unable to get test block hash")
-	}
-	newBlockHash, err := newBlock.Header.Hash()
-	if err != nil {
-		t.Errorf("unable to get new block hash")
-	}
+	oldBlockHash := TestBlock.Header.Hash()
+	newBlockHash := newBlock.Header.Hash()
 	if oldBlockHash != newBlockHash {
 		t.Errorf("block header hashes doesn't match")
 	}

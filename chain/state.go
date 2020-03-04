@@ -48,6 +48,8 @@ func (snap *StateSnap) String() string {
 		snap.Hash.String(), snap.Height, snap.Txs, snap.Workers, snap.Users, snap.GovObjects, snap.LastBlockTime)
 }
 
+// StateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
+// get rid of old states.
 type StateService struct {
 	log      *logger.Logger
 	snapshot StateSnap
@@ -55,6 +57,7 @@ type StateService struct {
 	params   params.ChainParams
 
 	View *ChainView
+	stateMap map[chainhash.Hash]state.State
 
 	sync bool
 }
@@ -158,24 +161,15 @@ start:
 		if err != nil {
 			return err
 		}
-		searchHash, err = blockRow.Header.Hash()
-		if err != nil {
-			return err
-		}
+		searchHash = blockRow.Header.Hash()
 		lastBlockHeight = lastBlockHeight + 1
 	}
 	return nil
 }
 
-func (s *StateService) TipState() *state.State {
-	return &state.State{
-		UtxoState: state.UtxoState{
-			UTXOs: map[chainhash.Hash]state.Utxo{},
-		},
-		GovernanceState: state.GovernanceState{
-			Proposals: map[chainhash.Hash]state.GovernanceProposal{},
-		},
-	}
+func (s *StateService) TipState() state.State {
+	tip := s.View.Tip()
+	return s.stateMap[tip.Hash]
 }
 
 func NewStateService(log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*StateService, error) {

@@ -79,11 +79,7 @@ func TestRawBlockDB_Write(t *testing.T) {
 			t.Errorf("block write error: %v", err.Error())
 			return
 		}
-		hash, err := TestBlock.Header.Hash()
-		if err != nil {
-			t.Errorf("block write error: %v", err.Error())
-			return
-		}
+		hash := TestBlock.Header.Hash()
 		blockBytes, err := blockDB.rawBlockDb.read(hash, loc)
 		if err != nil {
 			t.Errorf("block write read: %v", err.Error())
@@ -96,16 +92,8 @@ func TestRawBlockDB_Write(t *testing.T) {
 			t.Errorf("block write read: %v", err.Error())
 			return
 		}
-		testHash, err := TestBlock.Header.Hash()
-		if err != nil {
-			t.Errorf("block write read: %v", err.Error())
-			return
-		}
-		newBlockHash, err := block.Header.Hash()
-		if err != nil {
-			t.Errorf("block write read: %v", err.Error())
-			return
-		}
+		testHash := TestBlock.Header.Hash()
+		newBlockHash := block.Header.Hash()
 		if testHash != newBlockHash {
 			t.Errorf("block write read: hashes doesn't match")
 			return

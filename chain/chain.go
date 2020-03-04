@@ -89,11 +89,7 @@ func NewChainView(genesisHeader p2p.BlockHeader, genesisLocator blockdb.BlockLoc
 		return nil, err
 	}
 
-	genesisHash, err := genesisHeader.Hash()
-	if err != nil {
-		return nil, err
-	}
-
+	genesisHash := genesisHeader.Hash()
 	row, _ := blockIndex.Get(genesisHash)
 
 	return &ChainView{

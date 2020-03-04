@@ -50,10 +50,7 @@ func NewBlockFromMsg(blockMsg *p2p.MsgBlock, blockHeight uint32) (*Block, error)
 	if err != nil {
 		return nil, err
 	}
-	blockHash, err := blockMsg.Header.Hash()
-	if err != nil {
-		return nil, err
-	}
+	blockHash := blockMsg.Header.Hash()
 	var txs []*Tx
 	for i, txMsg := range blockMsg.Txs {
 		tx, err := NewTxFromMsg(txMsg, int64(i))
@@ -79,10 +76,7 @@ func NewBlockFromBytes(blockBytes []byte, blockHeight uint32) (*Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	blockHash, err := blockMsg.Header.Hash()
-	if err != nil {
-		return nil, err
-	}
+	blockHash := blockMsg.Header.Hash()
 	var txs []*Tx
 	for i, txMsg := range blockMsg.Txs {
 		tx, err := NewTxFromMsg(txMsg, int64(i))
