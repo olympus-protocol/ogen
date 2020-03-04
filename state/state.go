@@ -2,7 +2,6 @@ package state
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/olympus-protocol/ogen/gov"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -140,7 +139,6 @@ type UtxoState struct {
 
 // Have checks if a UTXO exists.
 func (u *UtxoState) Have(c chainhash.Hash) bool {
-	fmt.Println(c, u.UTXOs)
 	_, found := u.UTXOs[c]
 	return found
 }
