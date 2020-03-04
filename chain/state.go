@@ -137,6 +137,7 @@ start:
 	if err != nil {
 		return err
 	}
+
 	// Get block dbindex raw data and deserialize
 	s.log.Info("loading block index...")
 	searchHash := s.params.GenesisHash
@@ -170,6 +171,31 @@ start:
 func (s *StateService) TipState() state.State {
 	tip := s.View.Tip()
 	return s.stateMap[tip.Hash]
+}
+
+func (s *StateService) GetStateForHash(hash chainhash.Hash) (*state.State, bool) {
+	s.lock.RLock()
+	oldState, found := s.stateMap[hash]
+	s.lock.RUnlock()
+	return &oldState, found
+}
+
+func (s *StateService) Add(block *primitives.Block, location blockdb.BlockLocation, newTip bool, newState *state.State) error {
+	row, err := s.View.Add(*block.Header(), location)
+	if err != nil {
+		return err
+	}
+	rowHash := row.Header.Hash()
+	s.lock.Lock()
+	s.stateMap[rowHash] = *newState
+	s.lock.Unlock()
+	if newTip {
+		err = s.View.SetTip(rowHash)
+		if err != nil {
+			return err
+		}
+	}
+	return err
 }
 
 func NewStateService(log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*StateService, error) {

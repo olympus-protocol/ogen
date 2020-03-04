@@ -2,9 +2,11 @@ package chain
 
 import (
 	"errors"
+	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
 	"reflect"
 	"sync"
@@ -60,55 +62,77 @@ func (ch *Blockchain) newTxPayloadInv(txs []*p2p.MsgTx, blocks int) (*TxPayloadI
 }
 
 func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
-	txs := blockInv.GetTxs()
-	txPayloadInv, err := ch.newTxPayloadInv(txs, len(blockInv.GetBlocks()))
-	if err != nil {
-		return err
-	}
-	err = ch.verifyTx(txPayloadInv)
-	if err != nil {
-		return err
-	}
+	// TODO: this is disabled for now because we don't have transaction execution done.
+	// if we have a block that spends an input, we need to update our state representation
+	// for that block before we try to verify other blocks.
+
+	//txs := blockInv.GetTxs()
+	//txPayloadInv, err := ch.newTxPayloadInv(txs, len(blockInv.GetBlocks()))
+	//if err != nil {
+	//	return err
+	//}
+	//err = ch.verifyTx(txPayloadInv)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
 func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
+	// 1. first verify basic block properties
+
+	// a. ensure block signature is valid
 	err := ch.verifyBlockSig(block)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
+
+	// b. ensure we have the parent block
+	if !ch.state.View.Has(block.Header().PrevBlockHash) {
+		return fmt.Errorf("missing parent block: %s", block.Header().PrevBlockHash)
+	}
+
+	// 2. verify block against previous block's state
+	oldState, found := ch.state.GetStateForHash(block.Header().PrevBlockHash)
+	if !found {
+		return fmt.Errorf("missing parent block state: %s", block.Header().PrevBlockHash)
+	}
+
 	txPayloadInv, err := ch.newTxPayloadInv(block.MsgBlock.Txs, 1)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
+
+	// a. verify transactions
 	ch.log.Debugf("tx inventory created types to verify: %v", len(txPayloadInv.txs))
-	err = ch.verifyTx(txPayloadInv)
+	err = ch.verifyTx(oldState, txPayloadInv)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
 	ch.log.Debugf("tx verification finished successfully")
+
+	// b. apply block transition to state
+	ch.log.Debugf("attempting to apply block to state")
+	newState, err := oldState.TransitionBlock(block)
+	if err != nil {
+		ch.log.Warn(err)
+		return err
+	}
 	ch.log.Infof("New block accepted Hash: %v", block.Hash)
+
+	// 3. write block to database
 	blocator, err := ch.db.AddRawBlock(block)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
-	row, err := ch.state.View.Add(*block.Header(), blocator)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	rowHash := row.Header.Hash()
+
+	// 4. add block to chain and set new state
 	// TODO: better fork choice
-	err = ch.state.View.SetTip(rowHash)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	err = ch.UpdateState(block, 0, 0, 0, true)
+	err = ch.state.Add(block, blocator, true, &newState)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
@@ -153,14 +177,13 @@ type routineResp struct {
 	Err error
 }
 
-func (ch *Blockchain) verifyTx(inv *TxPayloadInv) error {
+func (ch *Blockchain) verifyTx(prevState *state.State, inv *TxPayloadInv) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineResp, len(inv.txs))
-	state := ch.state.TipState()
 
 	for scheme, txs := range inv.txs {
 		wg.Add(1)
-		txState := *(&state)
+		txState := *prevState
 		go func(wg *sync.WaitGroup, scheme txSchemes, txs []*p2p.MsgTx) {
 			defer wg.Done()
 			var resp routineResp

@@ -168,7 +168,7 @@ func (pm *PeerMan) loadDatabase() ([]string, error) {
 		}
 	}
 	var cleanPeersArray []string
-	for k, _ := range cleanPeersList {
+	for k := range cleanPeersList {
 		cleanPeersArray = append(cleanPeersArray, k+":"+pm.params.DefaultP2PPort)
 	}
 	return cleanPeersArray, nil
@@ -204,7 +204,7 @@ func (pm *PeerMan) initialPeersConnection(initialPeers []string) {
 
 func (pm *PeerMan) syncNewPeer(p *peer.Peer) {
 	go pm.peerChan(p)
-	p.Start(pm.chain.StateSnapshot().Height)
+	p.Start(pm.chain.State().View.Height())
 }
 
 func (pm *PeerMan) peerChan(p *peer.Peer) {
@@ -259,7 +259,7 @@ func (pm *PeerMan) handlePeerMsg(msg *peer.PeerMsg) error {
 		}
 		break
 	case peer.Syncing:
-		reqMsg := p2p.NewMsgGetBlock(pm.chain.StateSnapshot().Hash)
+		reqMsg := p2p.NewMsgGetBlock(pm.chain.State().View.Tip().Hash)
 		p := msg.Peer
 		p.SetPeerSync(true)
 		err := p.SendGetBlocks(reqMsg)
@@ -355,17 +355,18 @@ func (pm *PeerMan) addPeer(p *peer.Peer) {
 }
 
 func (pm *PeerMan) organizePeer(p *peer.Peer) {
-	if p.GetLastBlock() > pm.chain.StateSnapshot().Height {
+	tip := pm.chain.State().View.Tip()
+	if p.GetLastBlock() > tip.Height {
 		pm.peersSyncLock.Lock()
 		pm.peersAhead[p.GetID()] = p
 		pm.peersSyncLock.Unlock()
 	}
-	if p.GetLastBlock() < pm.chain.StateSnapshot().Height {
+	if p.GetLastBlock() < tip.Height {
 		pm.peersSyncLock.Lock()
 		pm.peersBehind[p.GetID()] = p
 		pm.peersSyncLock.Unlock()
 	}
-	if p.GetLastBlock() == pm.chain.StateSnapshot().Height {
+	if p.GetLastBlock() == tip.Height {
 		pm.peersSyncLock.Lock()
 		pm.peersEqual[p.GetID()] = p
 		pm.peersSyncLock.Unlock()
@@ -404,7 +405,7 @@ func (pm *PeerMan) peersSync() {
 	go func() {
 	start:
 		for len(pm.peersAhead) > 0 {
-			for id, _ := range pm.peersAhead {
+			for id := range pm.peersAhead {
 				pm.peersSyncLock.Lock()
 				delete(pm.peersAhead, id)
 				pm.peersSyncLock.Unlock()
@@ -417,7 +418,7 @@ func (pm *PeerMan) peersSync() {
 	go func() {
 	start:
 		for len(pm.peersBehind) > 0 {
-			for id, _ := range pm.peersBehind {
+			for id := range pm.peersBehind {
 				pm.peersSyncLock.Lock()
 				delete(pm.peersBehind, id)
 				pm.peersSyncLock.Unlock()
@@ -430,7 +431,7 @@ func (pm *PeerMan) peersSync() {
 	go func() {
 	start:
 		for len(pm.peersEqual) > 0 {
-			for id, _ := range pm.peersEqual {
+			for id := range pm.peersEqual {
 				pm.peersSyncLock.Lock()
 				delete(pm.peersEqual, id)
 				pm.peersSyncLock.Unlock()

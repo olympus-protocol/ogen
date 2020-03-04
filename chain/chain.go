@@ -125,6 +125,10 @@ func (c *ChainView) GetRowByHash(h chainhash.Hash) (*index.BlockRow, bool) {
 	return c.blockIndex.Get(h)
 }
 
+func (c *ChainView) Has(h chainhash.Hash) bool {
+	return c.blockIndex.Have(h)
+}
+
 var _ ChainInterface = &ChainView{}
 
 // ChainInterface is an interface that allows basic access to the block index and chain.
@@ -135,4 +139,5 @@ type ChainInterface interface {
 	GetRowByHeight(int32) (*index.BlockRow, bool)
 	GetRowByHash(chainhash.Hash) (*index.BlockRow, bool)
 	Height() int32
+	Has(hash chainhash.Hash) bool
 }

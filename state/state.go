@@ -148,8 +148,8 @@ func (u *UtxoState) Get(c chainhash.Hash) Utxo {
 	return u.UTXOs[c]
 }
 
-func (s *State) TransitionBlock(block primitives.Block) State {
-	return *s
+func (s *State) TransitionBlock(block *primitives.Block) (State, error) {
+	return *s, nil
 }
 
 type User struct {

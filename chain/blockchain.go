@@ -1,11 +1,9 @@
 package chain
 
 import (
-	"bytes"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/primitives"
 )
 
 type BlockInfo struct {
@@ -41,34 +39,8 @@ func (ch *Blockchain) Stop() {
 	ch.log.Info("Stoping Blockchain instance")
 }
 
-func (ch *Blockchain) StateSnapshot() *StateSnap {
-	return ch.state.Snapshot()
-}
-
 func (ch *Blockchain) State() *StateService {
 	return ch.state
-}
-
-func (ch *Blockchain) UpdateState(block *primitives.Block, workers int64, users int64, govObjects int64, store bool) error {
-	err := ch.state.updateStateSnap(block, workers, users, govObjects)
-	if err != nil {
-		return err
-	}
-	// TODO here we can update indexes.
-	snap := ch.state.Snapshot()
-	if store {
-		buf := bytes.NewBuffer([]byte{})
-		err = snap.Serialize(buf)
-		if err != nil {
-			return err
-		}
-		err = ch.db.SetStateSnap(buf.Bytes())
-		if err != nil {
-			return err
-		}
-	}
-	ch.log.Infof(snap.String())
-	return nil
 }
 
 func NewBlockchain(config Config, params params.ChainParams, db *blockdb.BlockDB) (*Blockchain, error) {
