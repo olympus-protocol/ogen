@@ -14,10 +14,11 @@ import (
 
 // BlockRow represents a single row in the block index.
 type BlockRow struct {
-	Header  p2p.BlockHeader
-	Locator blockdb.BlockLocation
-	Height  int32
-	Parent  *BlockRow
+	Header     p2p.BlockHeader
+	Locator    blockdb.BlockLocation
+	Height     int32
+	parentHash chainhash.Hash
+	Parent     *BlockRow
 }
 
 // Serialize serializes a block index row to the writer.
@@ -27,6 +28,18 @@ func (br *BlockRow) Serialize(w io.Writer) error {
 		return err
 	}
 	err = br.Header.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	parentHash := chainhash.Hash{}
+	if br.Parent != nil {
+		parentHash, err = br.Parent.Header.Hash()
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteElements(w, br.Height, parentHash)
 	if err != nil {
 		return err
 	}
@@ -42,6 +55,24 @@ func (br *BlockRow) Deserialize(r io.Reader) error {
 	err = br.Header.Deserialize(r)
 	if err != nil {
 		return err
+	}
+	err = serializer.ReadElements(r, &br.Height, &br.parentHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+var zeroHash = chainhash.Hash{}
+
+func (br *BlockRow) attach(index *BlockIndex) error {
+	if !br.parentHash.IsEqual(&zeroHash) {
+		parentRow, found := index.get(br.parentHash)
+		if !found {
+			return fmt.Errorf("could not find parent in block index")
+		}
+
+		br.Parent = parentRow
 	}
 	return nil
 }
@@ -81,26 +112,36 @@ func (i *BlockIndex) Deserialize(r io.Reader) error {
 		}
 		i.index = make(map[chainhash.Hash]*BlockRow, count)
 		for k := uint64(0); k < count; k++ {
-			var row *BlockRow
+			var row BlockRow
 			err = row.Deserialize(r)
 			if err != nil {
 				return err
 			}
-			err = i.add(row)
+			err = i.add(&row)
 			if err != nil {
 				return err
 			}
 		}
-		return nil
+	}
+	for _, r := range i.index {
+		err := r.attach(i)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
+func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
+	row, found := i.index[hash]
+	return row, found
+}
+
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 	i.lock.RLock()
-	i.lock.RUnlock()
+	defer i.lock.RUnlock()
 
-	row, found := i.index[hash]
+	row, found := i.get(hash)
 	return row, found
 }
 
