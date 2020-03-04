@@ -1,28 +1,22 @@
 package params
 
 import (
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/hdwallets"
 	"time"
 )
 
-type Prefixes struct {
-	PubKey          string
-	PrivKey         string
-	ContractPubKey  string
-	ContractPrivKey string
-}
-
 type ChainParams struct {
 	Name                       string
 	DefaultP2PPort             string
-	GenesisBlock               p2p.MsgBlock
+	GenesisBlock               primitives.Block
 	GenesisHash                chainhash.Hash
 	HDPrefixes                 hdwallets.NetPrefix
 	HDCoinIndex                uint32
-	AddressPrefixes            Prefixes
+	AddressPrefixes            bls.Prefixes
 	LastPreWorkersBlock        uint32
 	PreWorkersPubKeyHash       string
 	BlockTimeSpan              int64
@@ -52,7 +46,7 @@ var Mainnet = ChainParams{
 		ExtPriv: []byte{0x11, 0x24, 0xd9, 0x70},
 	},
 	HDCoinIndex: 1997,
-	AddressPrefixes: Prefixes{
+	AddressPrefixes: bls.Prefixes{
 		PubKey:          "olpub",
 		PrivKey:         "olprv",
 		ContractPubKey:  "ctpub",
@@ -72,10 +66,10 @@ var Mainnet = ChainParams{
 	GovernanceProposalFee:      amount.AmountType(50), // 50 POLIS
 }
 
-var mainNetGenesisCoinBaseTx = p2p.MsgTx{
+var mainNetGenesisCoinBaseTx = primitives.Tx{
 	TxVersion: 1,
-	TxType:    p2p.Coins,
-	TxAction:  p2p.Transfer,
+	TxType:    primitives.Coins,
+	TxAction:  primitives.Transfer,
 }
 
 var mainNetGenesisMerkleRoot = chainhash.Hash([chainhash.HashSize]byte{
@@ -92,15 +86,15 @@ var mainNetGenesisHash = chainhash.Hash([chainhash.HashSize]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 })
 
-var mainNetGenesisBlock = p2p.MsgBlock{
-	Header: p2p.BlockHeader{
+var mainNetGenesisBlock = primitives.Block{
+	Header: primitives.BlockHeader{
 		Version:       1,
 		PrevBlockHash: chainhash.Hash{},
 		Nonce:         1,
 		MerkleRoot:    mainNetGenesisMerkleRoot,
 		Timestamp:     time.Unix(0x0, 0),
 	},
-	Txs: []*p2p.MsgTx{&mainNetGenesisCoinBaseTx},
+	Txs: []primitives.Tx{mainNetGenesisCoinBaseTx},
 }
 
 var TestNet = ChainParams{
@@ -112,7 +106,7 @@ var TestNet = ChainParams{
 		ExtPub:  nil,
 		ExtPriv: nil,
 	},
-	AddressPrefixes: Prefixes{
+	AddressPrefixes: bls.Prefixes{
 		PubKey:          "tolpub",
 		PrivKey:         "tolprv",
 		ContractPrivKey: "tctpub",
@@ -128,10 +122,10 @@ var TestNet = ChainParams{
 	BaseBlockReward:            20,                                   // 20
 }
 
-var testNetGenesisCoinBaseTx = p2p.MsgTx{
+var testNetGenesisCoinBaseTx = primitives.Tx{
 	TxVersion: 1,
-	TxType:    p2p.Coins,
-	TxAction:  p2p.Transfer,
+	TxType:    primitives.Coins,
+	TxAction:  primitives.Transfer,
 }
 
 var testNetGenesisMerkleRoot = chainhash.Hash([chainhash.HashSize]byte{
@@ -148,12 +142,12 @@ var testNetGenesisHash = chainhash.Hash([chainhash.HashSize]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 })
 
-var testNetGenesisBlock = p2p.MsgBlock{
-	Header: p2p.BlockHeader{
+var testNetGenesisBlock = primitives.Block{
+	Header: primitives.BlockHeader{
 		Version:       1,
 		PrevBlockHash: chainhash.Hash{},
 		MerkleRoot:    testNetGenesisMerkleRoot,
 		Timestamp:     time.Unix(0x0, 0),
 	},
-	Txs: []*p2p.MsgTx{&testNetGenesisCoinBaseTx},
+	Txs: []primitives.Tx{testNetGenesisCoinBaseTx},
 }

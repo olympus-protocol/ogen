@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"sync"
 )
@@ -83,7 +83,7 @@ type ChainView struct {
 }
 
 // NewChainView creates a new chain view.
-func NewChainView(genesisHeader p2p.BlockHeader, genesisLocator blockdb.BlockLocation) (*ChainView, error) {
+func NewChainView(genesisHeader primitives.BlockHeader, genesisLocator blockdb.BlockLocation) (*ChainView, error) {
 	blockIndex, err := index.InitBlocksIndex(genesisHeader, genesisLocator)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (c *ChainView) Height() int32 {
 	return c.blockChain.Height()
 }
 
-func (c *ChainView) Add(header p2p.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error) {
+func (c *ChainView) Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error) {
 	return c.blockIndex.Add(header, locator)
 }
 
@@ -133,7 +133,7 @@ var _ ChainInterface = &ChainView{}
 
 // ChainInterface is an interface that allows basic access to the block index and chain.
 type ChainInterface interface {
-	Add(header p2p.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error)
+	Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error)
 	Tip() *index.BlockRow
 	SetTip(chainhash.Hash) error
 	GetRowByHeight(int32) (*index.BlockRow, bool)

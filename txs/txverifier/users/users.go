@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
@@ -25,14 +25,14 @@ type UsersTxVerifier struct {
 	state  *state.State
 }
 
-func (v UsersTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
+func (v UsersTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
 	var Payload txpayloads.Payload
 	switch Action {
-	case p2p.Upload:
+	case primitives.Upload:
 		Payload = new(users_txpayload.PayloadUpload)
-	case p2p.Update:
+	case primitives.Update:
 		Payload = new(users_txpayload.PayloadUpdate)
-	case p2p.Revoke:
+	case primitives.Revoke:
 		Payload = new(users_txpayload.PayloadRevoke)
 	default:
 		return nil, ErrorNoTypeSpecified
@@ -45,13 +45,13 @@ func (v UsersTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction)
 	return Payload, nil
 }
 
-func (v UsersTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
+func (v UsersTxVerifier) SigVerify(payload []byte, Action primitives.TxAction) error {
 	VerPayload, err := v.DeserializePayload(payload, Action)
 	if err != nil {
 		return err
 	}
 	switch Action {
-	case p2p.Upload:
+	case primitives.Upload:
 		pubKey, err := VerPayload.GetPublicKey()
 		if err != nil {
 			return err
@@ -71,7 +71,7 @@ func (v UsersTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
 		if !valid {
 			return ErrorInvalidSignature
 		}
-	case p2p.Update:
+	case primitives.Update:
 		aggPubKey, err := VerPayload.GetAggPubKey()
 		if err != nil {
 			return err
@@ -91,7 +91,7 @@ func (v UsersTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
 		if !valid {
 			return ErrorInvalidSignature
 		}
-	case p2p.Revoke:
+	case primitives.Revoke:
 		hash, err := VerPayload.GetHashForDataMatch()
 		if err != nil {
 			return err
@@ -125,7 +125,7 @@ type routineRes struct {
 	Err error
 }
 
-func (v UsersTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v UsersTxVerifier) SigVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {
@@ -149,11 +149,11 @@ func (v UsersTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) e
 	return nil
 }
 
-func (v UsersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
+func (v UsersTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction) error {
 	switch Action {
-	case p2p.Upload:
+	case primitives.Upload:
 		return nil
-	case p2p.Update:
+	case primitives.Update:
 		VerPayload, err := v.DeserializePayload(payload, Action)
 		if err != nil {
 			return err
@@ -176,7 +176,7 @@ func (v UsersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 		if !equal {
 			return ErrorDataNoMatch
 		}
-	case p2p.Revoke:
+	case primitives.Revoke:
 		VerPayload, err := v.DeserializePayload(payload, Action)
 		if err != nil {
 			return err
@@ -193,7 +193,7 @@ func (v UsersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 	return nil
 }
 
-func (v UsersTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v UsersTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {

@@ -1,8 +1,8 @@
 package blockdb
 
 import (
+	"bytes"
 	"errors"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
@@ -20,17 +20,17 @@ const (
 )
 
 type BlockLocation struct {
-	fileNum     uint32
-	blockOffset uint32
-	blockSize   uint32
+	FileNum     uint32
+	BlockOffset uint32
+	BlockSize   uint32
 }
 
 func (bl *BlockLocation) GetSize() uint32 {
-	return bl.blockSize
+	return bl.BlockSize
 }
 
 func (bl *BlockLocation) Serialize(w io.Writer) error {
-	err := serializer.WriteElements(w, bl.fileNum, bl.blockOffset, bl.blockSize)
+	err := serializer.WriteElements(w, bl.FileNum, bl.BlockOffset, bl.BlockSize)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (bl *BlockLocation) Serialize(w io.Writer) error {
 }
 
 func (bl *BlockLocation) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &bl.fileNum, &bl.blockOffset, &bl.blockSize)
+	err := serializer.ReadElements(r, &bl.FileNum, &bl.BlockOffset, &bl.BlockSize)
 	if err != nil {
 		return err
 	}
@@ -53,13 +53,15 @@ type RawBlockDB struct {
 	currFileLock   sync.RWMutex
 }
 
-func (rawbdb *RawBlockDB) ConnectBlock(block *primitives.Block) (BlockLocation, error) {
+func (rawbdb *RawBlockDB) AddBlock(block *primitives.Block) (*BlockLocation, error) {
 	// Add to RawBlockDB
-	locator, err := rawbdb.write(block.Bytes)
+	buf := bytes.NewBuffer([]byte{})
+	_ = block.Encode(buf)
+	locator, err := rawbdb.write(buf.Bytes())
 	if err != nil {
-		return BlockLocation{}, err
+		return nil, err
 	}
-	return locator, nil
+	return &locator, nil
 }
 
 func (rawbdb *RawBlockDB) write(block []byte) (BlockLocation, error) {
@@ -96,9 +98,9 @@ info:
 	}
 	rawbdb.currFileLock.Unlock()
 	blockLocator := BlockLocation{
-		fileNum:     uint32(rawbdb.lastFileNumber),
-		blockOffset: uint32(fileInfo.Size()),
-		blockSize:   uint32(len(block)),
+		FileNum:     uint32(rawbdb.lastFileNumber),
+		BlockOffset: uint32(fileInfo.Size()),
+		BlockSize:   uint32(len(block)),
 	}
 	return blockLocator, nil
 }
@@ -106,21 +108,21 @@ info:
 func (rawbdb *RawBlockDB) read(hash chainhash.Hash, locator BlockLocation) ([]byte, error) {
 	var selectedFile *os.File
 	curFileNum, err := strconv.Atoi(strings.Split(rawbdb.currFile.Name(), "-")[1])
-	if locator.fileNum == uint32(curFileNum) {
+	if locator.FileNum == uint32(curFileNum) {
 		selectedFile = rawbdb.currFile
 	} else {
-		file, err := os.OpenFile(rawbdb.path+"/"+FilePrefix+strconv.Itoa(int(locator.fileNum))+".dat", os.O_RDWR, os.ModePerm)
+		file, err := os.OpenFile(rawbdb.path+"/"+FilePrefix+strconv.Itoa(int(locator.FileNum))+".dat", os.O_RDWR, os.ModePerm)
 		if err != nil {
 			return nil, err
 		}
 		selectedFile = file
 	}
-	blockData := make([]byte, locator.blockSize)
-	_, err = selectedFile.ReadAt(blockData, int64(locator.blockOffset))
+	blockData := make([]byte, locator.BlockSize)
+	_, err = selectedFile.ReadAt(blockData, int64(locator.BlockOffset))
 	if err != nil {
 		return nil, err
 	}
-	if chainhash.DoubleHashH(blockData[0:p2p.MaxBlockHeaderBytes]) != hash {
+	if chainhash.DoubleHashH(blockData[0:primitives.MaxBlockHeaderBytes]) != hash {
 		return nil, errors.New("read block error: hashes doesn't match")
 	}
 	return blockData, nil

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/state"
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -106,11 +107,11 @@ func TestSigVerifyMockTransferValid1(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize payload")
 	}
-	err = coinTxVerifier.MatchVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.MatchVerify(buf.Bytes(), primitives.Transfer)
 	if err != nil {
 		t.Fatalf("verification failed: %v", err.Error())
 	}
-	err = coinTxVerifier.SigVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.SigVerify(buf.Bytes(), primitives.Transfer)
 	if err != nil {
 		t.Fatalf("verification failed: %v", err.Error())
 	}
@@ -144,7 +145,7 @@ func TestSigVerifyMockTransferInvalid1(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize payload")
 	}
-	err = coinTxVerifier.MatchVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.MatchVerify(buf.Bytes(), primitives.Transfer)
 	equal := reflect.DeepEqual(err, ErrorSpentTooMuch)
 	if !equal {
 		t.Error("errors should match")
@@ -179,7 +180,7 @@ func TestSigVerifyMockTransferInvalid2(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize payload")
 	}
-	err = coinTxVerifier.SigVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.SigVerify(buf.Bytes(), primitives.Transfer)
 	equal := reflect.DeepEqual(err, ErrorGetSig)
 	if !equal {
 		t.Error("errors should match")
@@ -214,7 +215,7 @@ func TestSigVerifyMockTransferInvalid3(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize payload")
 	}
-	err = coinTxVerifier.SigVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.SigVerify(buf.Bytes(), primitives.Transfer)
 	equal := reflect.DeepEqual(err, ErrorGetAggPubKey)
 	if !equal {
 		t.Error("errors should match")
@@ -249,7 +250,7 @@ func TestSigVerifyMockTransferInvalid4(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize payload")
 	}
-	err = coinTxVerifier.MatchVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.MatchVerify(buf.Bytes(), primitives.Transfer)
 	equal := reflect.DeepEqual(err, ErrorDataNoMatch)
 	if !equal {
 		t.Error("errors should match")
@@ -284,11 +285,11 @@ func TestSigVerifyMockTransferInvalid5(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize payload")
 	}
-	err = coinTxVerifier.MatchVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.MatchVerify(buf.Bytes(), primitives.Transfer)
 	if err != nil {
 		t.Fatalf("verification failed: %v", err.Error())
 	}
-	err = coinTxVerifier.SigVerify(buf.Bytes(), p2p.Transfer)
+	err = coinTxVerifier.SigVerify(buf.Bytes(), primitives.Transfer)
 	equal := reflect.DeepEqual(err, ErrorInvalidSignature)
 	if !equal {
 		t.Error("errors should match")
@@ -307,11 +308,11 @@ func TestSigVerifyMockBatchTransfer(t *testing.T) {
 		}
 		payload = append(payload, buf.Bytes())
 	}
-	err := coinTxVerifier.MatchVerifyBatch(payload, p2p.Transfer)
+	err := coinTxVerifier.MatchVerifyBatch(payload, primitives.Transfer)
 	if err != nil {
 		t.Fatalf("batch verification failed: %v", err.Error())
 	}
-	err = coinTxVerifier.SigVerifyBatch(payload, p2p.Transfer)
+	err = coinTxVerifier.SigVerifyBatch(payload, primitives.Transfer)
 	if err != nil {
 		t.Fatalf("batch verification failed: %v", err.Error())
 	}

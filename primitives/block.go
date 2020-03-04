@@ -2,9 +2,11 @@ package primitives
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
+	"io"
 	"time"
 )
 
@@ -13,84 +15,82 @@ const (
 )
 
 type Block struct {
-	MsgBlock *p2p.MsgBlock
-	Height   uint32
-	Bytes    []byte
-	Hash     chainhash.Hash
-	Txs      []*Tx
-}
-
-func (b *Block) SetHeight(height uint32) {
-	b.Height = height
-}
-
-func (b *Block) Header() *p2p.BlockHeader {
-	return &b.MsgBlock.Header
+	Header    BlockHeader
+	Txs       []Tx
+	PubKey    [48]byte
+	Signature [96]byte
 }
 
 func (b *Block) MinerPubKey() (*bls.PublicKey, error) {
-	return bls.DeserializePublicKey(b.MsgBlock.PubKey)
+	return bls.DeserializePublicKey(b.PubKey)
 }
 
 func (b *Block) MinerSig() (*bls.Signature, error) {
-	return bls.DeserializeSignature(b.MsgBlock.Signature)
+	return bls.DeserializeSignature(b.Signature)
 }
 
 func (b *Block) GetTime() time.Time {
-	return b.MsgBlock.Header.Timestamp
+	return b.Header.Timestamp
 }
 
 func (b *Block) GetTx(index int32) *Tx {
-	return b.Txs[index]
+	return &b.Txs[index]
 }
 
-func NewBlockFromMsg(blockMsg *p2p.MsgBlock, blockHeight uint32) (*Block, error) {
-	serializedBlock := bytes.NewBuffer([]byte{})
-	err := blockMsg.Encode(serializedBlock)
-	if err != nil {
-		return nil, err
-	}
-	blockHash := blockMsg.Header.Hash()
-	var txs []*Tx
-	for i, txMsg := range blockMsg.Txs {
-		tx, err := NewTxFromMsg(txMsg, int64(i))
-		if err != nil {
-			return nil, err
-		}
-		txs = append(txs, tx)
-	}
-	block := &Block{
-		MsgBlock: blockMsg,
-		Height:   blockHeight,
-		Bytes:    serializedBlock.Bytes(),
-		Hash:     blockHash,
-		Txs:      txs,
-	}
-	return block, nil
+func (b *Block) Hash() chainhash.Hash {
+	return b.Header.Hash()
 }
 
-func NewBlockFromBytes(blockBytes []byte, blockHeight uint32) (*Block, error) {
-	buf := bytes.NewBuffer(blockBytes)
-	var blockMsg p2p.MsgBlock
-	err := blockMsg.Decode(buf)
+func (m *Block) Encode(w io.Writer) error {
+	err := m.Header.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	blockHash := blockMsg.Header.Hash()
-	var txs []*Tx
-	for i, txMsg := range blockMsg.Txs {
-		tx, err := NewTxFromMsg(txMsg, int64(i))
+	err = serializer.WriteVarInt(w, uint64(len(m.Txs)))
+	if err != nil {
+		return err
+	}
+	for _, tx := range m.Txs {
+		err := tx.Encode(w)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		txs = append(txs, tx)
 	}
-	block := &Block{
-		MsgBlock: &blockMsg,
-		Height:   blockHeight,
-		Bytes:    blockBytes,
-		Hash:     blockHash,
-		Txs:      txs,
+	err = serializer.WriteElements(w, m.PubKey, m.Signature)
+	if err != nil {
+		return err
 	}
-	return block, nil
+	return nil
+}
+
+
+
+func (m *Block) Decode(r io.Reader) error {
+	buf, ok := r.(*bytes.Buffer)
+	if !ok {
+		return fmt.Errorf("MsgBlock.Decode reader is not a " +
+			"*bytes.Buffer")
+	}
+	err := m.Header.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	txCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	m.Txs = make([]Tx, txCount)
+	for i := uint64(0); i < txCount; i++ {
+		var tx Tx
+		err := tx.Decode(r)
+		if err != nil {
+			return err
+		}
+		m.Txs[i] = tx
+	}
+	err = serializer.ReadElements(buf, &m.PubKey, &m.Signature)
+	if err != nil {
+		return err
+	}
+	return nil
 }

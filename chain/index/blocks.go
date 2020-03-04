@@ -3,18 +3,18 @@ package index
 import (
 	"bytes"
 	"fmt"
+	"github.com/olympus-protocol/ogen/primitives"
 	"io"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // BlockRow represents a single row in the block index.
 type BlockRow struct {
-	Header     p2p.BlockHeader
+	Header     primitives.BlockHeader
 	Locator    blockdb.BlockLocation
 	Height     int32
 	parentHash chainhash.Hash
@@ -159,7 +159,7 @@ func (i *BlockIndex) add(row *BlockRow) error {
 }
 
 // Add adds a row to the block index.
-func (i *BlockIndex) Add(header p2p.BlockHeader, locator blockdb.BlockLocation) (*BlockRow, error) {
+func (i *BlockIndex) Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[header.PrevBlockHash]
@@ -184,7 +184,7 @@ func (i *BlockIndex) Add(header p2p.BlockHeader, locator blockdb.BlockLocation) 
 }
 
 // InitBlocksIndex creates a new block index.
-func InitBlocksIndex(genesisHeader p2p.BlockHeader, genesisLoc blockdb.BlockLocation) (*BlockIndex, error) {
+func InitBlocksIndex(genesisHeader primitives.BlockHeader, genesisLoc blockdb.BlockLocation) (*BlockIndex, error) {
 	headerHash := genesisHeader.Hash()
 	return &BlockIndex{
 		index: map[chainhash.Hash]*BlockRow{

@@ -24,14 +24,13 @@ type Blockchain struct {
 	config Config
 	params params.ChainParams
 	// DB
-	db *blockdb.BlockDB
+	db blockdb.DB
 	// StateService
 	state *StateService
 }
 
 func (ch *Blockchain) Start() (err error) {
 	ch.log.Info("Starting Blockchain instance")
-	ch.log.Infof(ch.state.snapshot.String())
 	return nil
 }
 
@@ -43,7 +42,7 @@ func (ch *Blockchain) State() *StateService {
 	return ch.state
 }
 
-func NewBlockchain(config Config, params params.ChainParams, db *blockdb.BlockDB) (*Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB) (*Blockchain, error) {
 	state, err := NewStateService(config.Log, params, db)
 	if err != nil {
 		return nil, err

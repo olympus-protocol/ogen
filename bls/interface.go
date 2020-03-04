@@ -5,12 +5,18 @@ package bls
 import (
 	"bytes"
 	"errors"
-	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	bls "github.com/phoreproject/bls/g1pubs"
 	"io"
 )
+
+type Prefixes struct {
+	PubKey          string
+	PrivKey         string
+	ContractPubKey  string
+	ContractPrivKey string
+}
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
@@ -67,7 +73,7 @@ func (s SecretKey) Serialize() [32]byte {
 	return s.s.Serialize()
 }
 
-func (s SecretKey) ToBech32(prefixes params.Prefixes, contract bool) string {
+func (s SecretKey) ToBech32(prefixes Prefixes, contract bool) string {
 	ser := s.Serialize()
 	buf := bytes.NewBuffer([]byte{})
 	buf.Write(ser[:])
@@ -86,7 +92,7 @@ func DeserializeSecretKey(b [32]byte) SecretKey {
 	return SecretKey{*k}
 }
 
-func NewSecretFromBech32(secret string, prefixes params.Prefixes, contract bool) (SecretKey, error) {
+func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (SecretKey, error) {
 	var prefix string
 	if contract {
 		prefix = prefixes.ContractPrivKey
@@ -115,7 +121,7 @@ func NewPublicKey(p *bls.PublicKey) *PublicKey {
 	return &PublicKey{p: *p}
 }
 
-func (p PublicKey) ToBech32(prefixes params.Prefixes, contract bool) (string, error) {
+func (p PublicKey) ToBech32(prefixes Prefixes, contract bool) (string, error) {
 	var prefix string
 	if contract {
 		prefix = prefixes.ContractPubKey

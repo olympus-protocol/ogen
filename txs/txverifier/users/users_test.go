@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/state"
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
 	"github.com/olympus-protocol/ogen/users"
@@ -131,11 +132,11 @@ func TestMockUpload(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize")
 	}
-	err = user.MatchVerify(buf.Bytes(), p2p.Upload)
+	err = user.MatchVerify(buf.Bytes(), primitives.Upload)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
-	err = user.SigVerify(buf.Bytes(), p2p.Upload)
+	err = user.SigVerify(buf.Bytes(), primitives.Upload)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
@@ -153,11 +154,11 @@ func TestMockUploadBatch(t *testing.T) {
 		}
 		payload = append(payload, buf.Bytes())
 	}
-	err := user.MatchVerifyBatch(payload, p2p.Upload)
+	err := user.MatchVerifyBatch(payload, primitives.Upload)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
-	err = user.SigVerifyBatch(payload, p2p.Upload)
+	err = user.SigVerifyBatch(payload, primitives.Upload)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
@@ -200,11 +201,11 @@ func TestMockUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize")
 	}
-	err = user.MatchVerify(buf.Bytes(), p2p.Update)
+	err = user.MatchVerify(buf.Bytes(), primitives.Update)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
-	err = user.SigVerify(buf.Bytes(), p2p.Update)
+	err = user.SigVerify(buf.Bytes(), primitives.Update)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
@@ -222,11 +223,11 @@ func TestMockUpdateBatch(t *testing.T) {
 		}
 		payload = append(payload, buf.Bytes())
 	}
-	err := user.MatchVerifyBatch(payload, p2p.Update)
+	err := user.MatchVerifyBatch(payload, primitives.Update)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
-	err = user.SigVerifyBatch(payload, p2p.Update)
+	err = user.SigVerifyBatch(payload, primitives.Update)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
@@ -261,11 +262,11 @@ func TestMockRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to serialize")
 	}
-	err = user.MatchVerify(buf.Bytes(), p2p.Revoke)
+	err = user.MatchVerify(buf.Bytes(), primitives.Revoke)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
-	err = user.SigVerify(buf.Bytes(), p2p.Revoke)
+	err = user.SigVerify(buf.Bytes(), primitives.Revoke)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
@@ -281,11 +282,11 @@ func TestMockRevokeBatch(t *testing.T) {
 		}
 		payload = append(payload, buf.Bytes())
 	}
-	err := user.MatchVerifyBatch(payload, p2p.Revoke)
+	err := user.MatchVerifyBatch(payload, primitives.Revoke)
 	if err != nil {
 		t.Fatal("verification failed")
 	}
-	err = user.SigVerifyBatch(payload, p2p.Revoke)
+	err = user.SigVerifyBatch(payload, primitives.Revoke)
 	if err != nil {
 		t.Fatal("verification failed")
 	}

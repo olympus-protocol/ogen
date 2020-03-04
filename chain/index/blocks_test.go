@@ -5,14 +5,14 @@ import (
 	"github.com/go-test/deep"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
 	"time"
 )
 
 func TestSerializeDeserializeRow(t *testing.T) {
-	header := p2p.BlockHeader{
+	header := primitives.BlockHeader{
 		Version:       1,
 		Nonce:         2,
 		MerkleRoot:    chainhash.Hash{3},
@@ -45,7 +45,7 @@ func TestSerializeDeserializeRow(t *testing.T) {
 }
 
 func TestSerializeDeserializeIndex(t *testing.T) {
-	genesisHeader := p2p.BlockHeader{
+	genesisHeader := primitives.BlockHeader{
 		Version:       1,
 		Nonce:         2,
 		MerkleRoot:    chainhash.Hash{3},
@@ -59,7 +59,7 @@ func TestSerializeDeserializeIndex(t *testing.T) {
 
 	genesisHash := genesisHeader.Hash()
 
-	blockHeader := p2p.BlockHeader{
+	blockHeader := primitives.BlockHeader{
 		Version:       1,
 		Nonce:         2,
 		MerkleRoot:    chainhash.Hash{3},

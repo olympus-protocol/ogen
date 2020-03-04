@@ -1,4 +1,4 @@
-package p2p
+package primitives
 
 import (
 	"bytes"
@@ -50,3 +50,4 @@ func NewBlockHeader(version int32, prevBlock chainhash.Hash, nonce int32, merkle
 		Timestamp:     time,
 	}
 }
+

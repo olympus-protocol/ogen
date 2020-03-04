@@ -1,6 +1,10 @@
 package blockdb
 
-import "github.com/dgraph-io/badger"
+import (
+	"github.com/dgraph-io/badger"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+)
 
 var chainStateKey = []byte("chain-state-")
 
@@ -35,4 +39,11 @@ func (bdb *BlockDB) SetStateSnap(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+type DB interface {
+	Close()
+	GetRawBlock(locator BlockLocation, hash chainhash.Hash) ([]byte, error)
+	AddRawBlock(block *primitives.Block) (*BlockLocation, error)
+	Clear()
 }

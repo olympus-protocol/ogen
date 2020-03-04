@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	gov_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/gov"
@@ -28,12 +28,12 @@ type GovTxVerifier struct {
 	state  *state.State
 }
 
-func (v GovTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
+func (v GovTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
 	var Payload txpayloads.Payload
 	switch Action {
-	case p2p.Upload:
+	case primitives.Upload:
 		Payload = new(gov_txpayload.PayloadUpload)
-	case p2p.Revoke:
+	case primitives.Revoke:
 		Payload = new(gov_txpayload.PayloadRevoke)
 	default:
 		return nil, ErrorNoTypeSpecified
@@ -46,7 +46,7 @@ func (v GovTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (
 	return Payload, nil
 }
 
-func (v GovTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
+func (v GovTxVerifier) SigVerify(payload []byte, Action primitives.TxAction) error {
 	VerPayload, err := v.DeserializePayload(payload, Action)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ type routineRes struct {
 	Err error
 }
 
-func (v GovTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v GovTxVerifier) SigVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {
@@ -101,7 +101,7 @@ func (v GovTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) err
 	return nil
 }
 
-func (v GovTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
+func (v GovTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction) error {
 	VerPayload, err := v.DeserializePayload(payload, Action)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (v GovTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
 		return err
 	}
 	switch Action {
-	case p2p.Upload:
+	case primitives.Upload:
 		ok := v.state.UtxoState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
@@ -139,7 +139,7 @@ func (v GovTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
 		if !equal {
 			return ErrorDataNoMatch
 		}
-	case p2p.Revoke:
+	case primitives.Revoke:
 		ok := v.state.GovernanceState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
@@ -177,7 +177,7 @@ func (v GovTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
 	return nil
 }
 
-func (v GovTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v GovTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {

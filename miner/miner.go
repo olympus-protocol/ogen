@@ -56,22 +56,16 @@ check:
 		}
 		blockHash := block.Header.Hash()
 		m.log.Infof("created new block hash: %v txs: %v", blockHash, len(block.Txs))
-		newBlock, err := primitives.NewBlockFromMsg(block, uint32(m.chain.State().Snapshot().Height+1))
-		err = m.chain.ProcessBlock(newBlock)
-		if err != nil {
-			m.log.Warnf("unable to process block. Error: %s", err.Error())
-			break
-		}
-		m.peersMan.RelayBlockMsg(block)
+		m.peersMan.RelayBlockMsg(&p2p.MsgBlock{Block: *block})
 		break
 	}
 	time.Sleep(time.Second * 10)
 	goto check
 }
 
-func (m *Miner) createNewBlock() (*p2p.MsgBlock, error) {
-	state := m.chain.State().Snapshot()
-	genTx := p2p.NewMsgTx(1, p2p.Coins, p2p.Generate)
+func (m *Miner) createNewBlock() (*primitives.Block, error) {
+	state := m.chain.State().View.Tip()
+
 	txPayload := coins_txpayload.PayloadGenerate{
 		TxOut: []coins_txpayload.Output{{
 			Value:   int64(m.chain.GetBlockReward(uint32(state.Height + 1)).ToUnit(amount.AmountSats)),
@@ -83,18 +77,24 @@ func (m *Miner) createNewBlock() (*p2p.MsgBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	genTx.AddPayload(buf.Bytes())
-	txHash, err := genTx.TxHash()
-	blockHeader := p2p.BlockHeader{
+	genTx := primitives.Tx{
+		Time:      time.Now().Unix(),
+		TxVersion: 1,
+		TxType:    primitives.Coins,
+		TxAction:  primitives.Generate,
+		Payload:   buf.Bytes(),
+	}
+	txHash := genTx.Hash()
+	blockHeader := primitives.BlockHeader{
 		Version:       1,
 		PrevBlockHash: state.Hash,
 		MerkleRoot:    txHash,
 		Timestamp:     time.Now(),
 	}
 	blockHash := blockHeader.Hash()
-	blockMsg := &p2p.MsgBlock{
+	blockMsg := &primitives.Block{
 		Header: blockHeader,
-		Txs:    []*p2p.MsgTx{genTx},
+		Txs:    []primitives.Tx{genTx},
 	}
 	sig, err := bls.Sign(m.minerKey, blockHash.CloneBytes())
 	if err != nil {

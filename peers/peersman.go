@@ -9,7 +9,6 @@ import (
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers/peer"
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 	"net"
 	"reflect"
@@ -292,11 +291,7 @@ func (pm *PeerMan) handleBlockInvMsg(msg *peer.BlocksInvMsg) error {
 	}
 	pm.log.Infof("new block inv with %v blocks", len(msg.Blocks.GetBlocks()))
 	for _, block := range msg.Blocks.GetBlocks() {
-		newBlock, err := primitives.NewBlockFromMsg(block, uint32(pm.chain.State().Snapshot().Height+1))
-		if err != nil {
-			return err
-		}
-		err = pm.chain.ProcessBlock(newBlock)
+		err := pm.chain.ProcessBlock(&block.Block)
 		if err != nil {
 			return err
 		}
@@ -309,8 +304,7 @@ func (pm *PeerMan) handleBlockMsg(msg *peer.BlockMsg) error {
 	blockHash := msg.Block.Header.Hash()
 	pm.log.Infof("new block received hash: %v", blockHash)
 	if pm.chain.State().IsSync() {
-		newBlock, err := primitives.NewBlockFromMsg(msg.Block, uint32(pm.chain.State().Snapshot().Height+1))
-		err = pm.chain.ProcessBlock(newBlock)
+		err := pm.chain.ProcessBlock(&msg.Block.Block)
 		if err != nil {
 			return err
 		}

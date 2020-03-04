@@ -13,16 +13,16 @@ import (
 )
 
 type txSchemes struct {
-	Type   p2p.TxType
-	Action p2p.TxAction
+	Type   primitives.TxType
+	Action primitives.TxAction
 }
 
 type TxPayloadInv struct {
-	txs  map[txSchemes][]*p2p.MsgTx
+	txs  map[txSchemes][]primitives.Tx
 	lock sync.RWMutex
 }
 
-func (txp *TxPayloadInv) Add(scheme txSchemes, tx *p2p.MsgTx, wg *sync.WaitGroup) {
+func (txp *TxPayloadInv) Add(scheme txSchemes, tx primitives.Tx, wg *sync.WaitGroup) {
 	defer wg.Done()
 	txp.lock.Lock()
 	txp.txs[scheme] = append(txp.txs[scheme], tx)
@@ -36,9 +36,9 @@ var (
 	ErrorPubKeyNoMatch     = errors.New("chainProcessor-invalid-signer: the block signer is not valid")
 )
 
-func (ch *Blockchain) newTxPayloadInv(txs []*p2p.MsgTx, blocks int) (*TxPayloadInv, error) {
+func (ch *Blockchain) newTxPayloadInv(txs []primitives.Tx, blocks int) (*TxPayloadInv, error) {
 	txPayloads := &TxPayloadInv{
-		txs: make(map[txSchemes][]*p2p.MsgTx),
+		txs: make(map[txSchemes][]primitives.Tx),
 	}
 	var wg sync.WaitGroup
 	for _, tx := range txs {
@@ -47,14 +47,14 @@ func (ch *Blockchain) newTxPayloadInv(txs []*p2p.MsgTx, blocks int) (*TxPayloadI
 			Type:   tx.TxType,
 			Action: tx.TxAction,
 		}
-		go func(scheme txSchemes, tx *p2p.MsgTx) {
+		go func(scheme txSchemes, tx primitives.Tx) {
 			txPayloads.Add(scheme, tx, &wg)
 		}(scheme, tx)
 	}
 	wg.Wait()
 	if len(txPayloads.txs[txSchemes{
-		Type:   p2p.Coins,
-		Action: p2p.Generate,
+		Type:   primitives.Coins,
+		Action: primitives.Generate,
 	}]) > blocks {
 		return nil, ErrorTooManyGenerateTx
 	}
@@ -81,25 +81,30 @@ func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 
-	// a. ensure block signature is valid
-	err := ch.verifyBlockSig(block)
+	// a. ensure we have the parent block
+	parentBlock, ok := ch.state.View.GetRowByHash(block.Header.PrevBlockHash)
+	if !ok {
+		return fmt.Errorf("missing parent block: %s", block.Header.PrevBlockHash)
+	}
+
+	height := parentBlock.Height + 1
+
+	// b. verify block signature
+	err := ch.verifyBlockSig(block, uint32(height))
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
 
-	// b. ensure we have the parent block
-	if !ch.state.View.Has(block.Header().PrevBlockHash) {
-		return fmt.Errorf("missing parent block: %s", block.Header().PrevBlockHash)
-	}
+	// b. get parent block
 
 	// 2. verify block against previous block's state
-	oldState, found := ch.state.GetStateForHash(block.Header().PrevBlockHash)
+	oldState, found := ch.state.GetStateForHash(block.Header.PrevBlockHash)
 	if !found {
-		return fmt.Errorf("missing parent block state: %s", block.Header().PrevBlockHash)
+		return fmt.Errorf("missing parent block state: %s", block.Header.PrevBlockHash)
 	}
 
-	txPayloadInv, err := ch.newTxPayloadInv(block.MsgBlock.Txs, 1)
+	txPayloadInv, err := ch.newTxPayloadInv(block.Txs, 1)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
@@ -121,7 +126,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Warn(err)
 		return err
 	}
-	ch.log.Infof("New block accepted Hash: %v", block.Hash)
+	ch.log.Infof("New block accepted Hash: %v", block.Hash())
 
 	// 3. write block to database
 	blocator, err := ch.db.AddRawBlock(block)
@@ -132,7 +137,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// 4. add block to chain and set new state
 	// TODO: better fork choice
-	err = ch.state.Add(block, blocator, true, &newState)
+	err = ch.state.Add(block, *blocator, true, &newState)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
@@ -140,8 +145,8 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	return nil
 }
 
-func (ch *Blockchain) verifyBlockSig(block *primitives.Block) error {
-	if block.Height < ch.params.LastPreWorkersBlock {
+func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) error {
+	if height < ch.params.LastPreWorkersBlock {
 		sig, err := block.MinerSig()
 		if err != nil {
 			return err
@@ -150,7 +155,8 @@ func (ch *Blockchain) verifyBlockSig(block *primitives.Block) error {
 		if err != nil {
 			return err
 		}
-		valid, err := bls.VerifySig(pubKey, block.Hash.CloneBytes(), sig)
+		blockHash := block.Hash()
+		valid, err := bls.VerifySig(pubKey, blockHash[:], sig)
 		if err != nil {
 			return err
 		}
@@ -184,7 +190,7 @@ func (ch *Blockchain) verifyTx(prevState *state.State, inv *TxPayloadInv) error 
 	for scheme, txs := range inv.txs {
 		wg.Add(1)
 		txState := *prevState
-		go func(wg *sync.WaitGroup, scheme txSchemes, txs []*p2p.MsgTx) {
+		go func(wg *sync.WaitGroup, scheme txSchemes, txs []primitives.Tx) {
 			defer wg.Done()
 			var resp routineResp
 			txVerifier := txverifier.NewTxVerifier(&txState, &ch.params)
