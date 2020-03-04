@@ -2,11 +2,12 @@ package coins_txverifier
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"reflect"
 	"testing"
 )
@@ -23,13 +24,25 @@ var PubKey2 = [48]byte{173, 123, 139, 167, 43, 11, 143, 169, 86, 146, 49, 189, 1
 var PubKey3 = [48]byte{134, 213, 17, 19, 3, 54, 137, 215, 44, 227, 142, 140, 201, 200, 156, 183, 116, 149, 80, 234, 1, 144, 145, 34, 138, 197, 76, 164, 33, 241, 184, 252, 46, 47, 107, 41, 180, 170, 88, 7, 93, 213, 180, 154, 141, 220, 222, 65}
 var PubKey4 = [48]byte{176, 50, 126, 164, 6, 9, 215, 12, 25, 223, 42, 121, 157, 12, 168, 36, 37, 248, 79, 201, 208, 202, 119, 136, 192, 163, 121, 242, 182, 179, 84, 100, 251, 176, 221, 122, 186, 222, 228, 168, 169, 33, 33, 207, 104, 34, 121, 140}
 
-var utxosIndexMock = index.InitUtxosIndex()
+var chainState = &state.State{
+	UtxoState: state.UtxoState{
+		UTXOs: map[chainhash.Hash]state.Utxo{},
+	},
+	GovernanceState: state.GovernanceState{
+		Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+	},
+	UserState: state.UserState{
+		Users: map[chainhash.Hash]state.User{},
+	},
+	WorkerState: state.WorkerState{
+		Workers: map[chainhash.Hash]state.Worker{},
+	},
+}
 
 var coinTxVerifier CoinsTxVerifier
 
 func init() {
-	coinTxVerifier = NewCoinsTxVerifier(utxosIndexMock, &params.Mainnet)
-	rows := []*index.UtxoRow{
+	rows := []state.Utxo{
 		{
 			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-1")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
@@ -62,11 +75,9 @@ func init() {
 		},
 	}
 	for _, row := range rows {
-		err := utxosIndexMock.Add(row)
-		if err != nil {
-			panic(err)
-		}
+		chainState.UtxoState.UTXOs[serializer.Hash(&row)] = row
 	}
+	coinTxVerifier = NewCoinsTxVerifier(chainState, &params.Mainnet)
 }
 
 var mockPayloadValid1 = coins_txpayload.PayloadTransfer{

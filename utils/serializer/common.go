@@ -1,8 +1,10 @@
 package serializer
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"io"
 	"time"
 )
@@ -126,4 +128,17 @@ func (l binaryFreeList) PutUint64(w io.Writer, byteOrder binary.ByteOrder, val u
 	_, err := w.Write(buf)
 	l.Return(buf)
 	return err
+}
+
+type Serializable interface {
+	Serialize(w io.Writer) error
+}
+
+func Hash(d Serializable) chainhash.Hash {
+	h := []byte{}
+	b := bytes.NewBuffer(h)
+	_ = d.Serialize(b)
+	var hash chainhash.Hash
+	copy(hash[:], h)
+	return hash
 }

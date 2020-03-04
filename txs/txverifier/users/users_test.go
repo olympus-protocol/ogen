@@ -2,16 +2,30 @@ package users_txverifier
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"testing"
 )
 
-var userIndexMock = index.InitUsersIndex()
+var chainState = &state.State{
+	UtxoState: state.UtxoState{
+		UTXOs: map[chainhash.Hash]state.Utxo{},
+	},
+	GovernanceState: state.GovernanceState{
+		Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+	},
+	UserState: state.UserState{
+		Users: map[chainhash.Hash]state.User{},
+	},
+	WorkerState: state.WorkerState{
+		Workers: map[chainhash.Hash]state.Worker{},
+	},
+}
 
 var user UsersTxVerifier
 
@@ -28,8 +42,7 @@ var PubKeyUser4 = [48]byte{170, 58, 157, 252, 139, 253, 192, 127, 63, 240, 248, 
 var PubKeyUser5 = [48]byte{146, 160, 124, 119, 147, 133, 135, 145, 108, 241, 134, 252, 118, 145, 118, 116, 86, 114, 252, 185, 22, 34, 85, 151, 122, 8, 208, 238, 56, 95, 208, 86, 37, 100, 82, 195, 48, 54, 55, 189, 72, 21, 244, 3, 90, 18, 35, 219}
 
 func init() {
-	user = NewUsersTxVerifier(userIndexMock, &params.Mainnet)
-	us := []*index.UserRow{
+	us := []state.User{
 		{
 			OutPoint: p2p.OutPoint{
 				TxHash: chainhash.DoubleHashH([]byte("user-1")),
@@ -82,8 +95,9 @@ func init() {
 		},
 	}
 	for _, user := range us {
-		userIndexMock.Add(user)
+		chainState.UserState.Users[serializer.Hash(&user)] = user
 	}
+	user = NewUsersTxVerifier(chainState, &params.Mainnet)
 }
 
 var mockPayloadUpload1 = users_txpayload.PayloadUpload{

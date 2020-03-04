@@ -6,7 +6,9 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 	"github.com/olympus-protocol/ogen/workers"
+	"io"
 )
 
 type State struct {
@@ -19,6 +21,32 @@ type State struct {
 type GovernanceProposal struct {
 	OutPoint p2p.OutPoint
 	GovData  gov.GovObject
+}
+
+// Serialize serializes a GovRow to the passed writer.
+func (gr *GovernanceProposal) Serialize(w io.Writer) error {
+	err := gr.OutPoint.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = gr.GovData.Serialize(w)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Deserialize deserialized a GovRow from the passed reader.
+func (gr *GovernanceProposal) Deserialize(r io.Reader) error {
+	err := gr.OutPoint.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = gr.GovData.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type GovernanceState struct {
@@ -41,6 +69,61 @@ type Utxo struct {
 	PrevInputsPubKeys [][48]byte
 	Owner             string
 	Amount            int64
+}
+
+// Serialize serializes the UtxoRow to a writer.
+func (l *Utxo) Serialize(w io.Writer) error {
+	err := l.OutPoint.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = serializer.WriteVarInt(w, uint64(len(l.PrevInputsPubKeys)))
+	if err != nil {
+		return err
+	}
+	err = serializer.WriteElements(w, l.PrevInputsPubKeys)
+	if err != nil {
+		return err
+	}
+	err = serializer.WriteVarString(w, l.Owner)
+	if err != nil {
+		return err
+	}
+	err = serializer.WriteElement(w, l.Amount)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Deserialize deserializes a UtxoRow from a reader.
+func (l *Utxo) Deserialize(r io.Reader) error {
+	err := l.OutPoint.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	l.Owner, err = serializer.ReadVarString(r)
+	if err != nil {
+		return err
+	}
+	count, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	l.PrevInputsPubKeys = make([][48]byte, count)
+	for i := uint64(0); i < count; i++ {
+		var pubKey [48]byte
+		err = serializer.ReadElement(r, &pubKey)
+		if err != nil {
+			return err
+		}
+		l.PrevInputsPubKeys = append(l.PrevInputsPubKeys, pubKey)
+	}
+	err = serializer.ReadElement(r, &l.Amount)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type UtxoState struct {
@@ -67,6 +150,32 @@ type User struct {
 	UserData users.User
 }
 
+// Serialize serializes the UserRow to a writer.
+func (ur *User) Serialize(w io.Writer) error {
+	err := ur.OutPoint.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = ur.UserData.Serialize(w)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Deserialize deserializes a user from the writer.
+func (ur *User) Deserialize(r io.Reader) error {
+	err := ur.OutPoint.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = ur.UserData.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type UserState struct {
 	Users map[chainhash.Hash]User
 }
@@ -85,6 +194,32 @@ func (u *UserState) Get(c chainhash.Hash) User {
 type Worker struct {
 	OutPoint   p2p.OutPoint
 	WorkerData workers.Worker
+}
+
+// Serialize serializes a WorkerRow to the provided writer.
+func (wr *Worker) Serialize(w io.Writer) error {
+	err := wr.OutPoint.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = wr.WorkerData.Serialize(w)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Deserialize deserializes a worker row from the provided reader.
+func (wr *Worker) Deserialize(r io.Reader) error {
+	err := wr.OutPoint.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = wr.WorkerData.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type WorkerState struct {
