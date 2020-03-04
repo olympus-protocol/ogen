@@ -6,7 +6,6 @@ import (
 	"github.com/olympus-protocol/ogen/state"
 	gov_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/gov"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 var chainState = &state.State{
@@ -60,7 +59,7 @@ func init() {
 		},
 	}
 	for _, row := range rows {
-		chainState.UtxoState.UTXOs[serializer.Hash(&row)] = row
+		chainState.UtxoState.UTXOs[row.Hash()] = row
 	}
 	gov = NewGovTxVerifier(chainState, &params.Mainnet)
 }

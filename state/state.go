@@ -1,6 +1,8 @@
 package state
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/olympus-protocol/ogen/gov"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -126,12 +128,19 @@ func (l *Utxo) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (l *Utxo) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = l.OutPoint.Serialize(buf)
+	return chainhash.DoubleHashH(buf.Bytes())
+}
+
 type UtxoState struct {
 	UTXOs map[chainhash.Hash]Utxo
 }
 
 // Have checks if a UTXO exists.
 func (u *UtxoState) Have(c chainhash.Hash) bool {
+	fmt.Println(c, u.UTXOs)
 	_, found := u.UTXOs[c]
 	return found
 }
@@ -174,6 +183,10 @@ func (ur *User) Deserialize(r io.Reader) error {
 		return err
 	}
 	return nil
+}
+
+func (ur *User) Hash() chainhash.Hash {
+	return chainhash.DoubleHashH([]byte(ur.UserData.Name))
 }
 
 type UserState struct {

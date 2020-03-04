@@ -7,7 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/state"
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"reflect"
 	"testing"
 )
@@ -75,7 +74,7 @@ func init() {
 		},
 	}
 	for _, row := range rows {
-		chainState.UtxoState.UTXOs[serializer.Hash(&row)] = row
+		chainState.UtxoState.UTXOs[row.Hash()] = row
 	}
 	coinTxVerifier = NewCoinsTxVerifier(chainState, &params.Mainnet)
 }

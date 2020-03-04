@@ -8,7 +8,6 @@ import (
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"testing"
 )
 
@@ -95,7 +94,7 @@ func init() {
 		},
 	}
 	for _, user := range us {
-		chainState.UserState.Users[serializer.Hash(&user)] = user
+		chainState.UserState.Users[user.Hash()] = user
 	}
 	user = NewUsersTxVerifier(chainState, &params.Mainnet)
 }

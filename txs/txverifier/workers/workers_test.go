@@ -6,7 +6,6 @@ import (
 	"github.com/olympus-protocol/ogen/state"
 	workers_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/workers"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 var chainState = &state.State{
@@ -60,7 +59,7 @@ func init() {
 		},
 	}
 	for _, row := range rows {
-		chainState.UtxoState.UTXOs[serializer.Hash(&row)] = row
+		chainState.UtxoState.UTXOs[row.Hash()] = row
 	}
 	worker = NewWorkersTxVerifier(chainState, &params.Mainnet)
 }
