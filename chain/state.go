@@ -56,7 +56,7 @@ type StateService struct {
 	lock     sync.RWMutex
 	params   params.ChainParams
 
-	View *ChainView
+	View     *ChainView
 	stateMap map[chainhash.Hash]state.State
 
 	sync bool
@@ -173,15 +173,15 @@ func (s *StateService) TipState() state.State {
 }
 
 func NewStateService(log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*StateService, error) {
-	state := &StateService{
+	ss := &StateService{
 		params:   params,
 		log:      log,
 		snapshot: StateSnap{},
 		sync:     false,
 	}
-	err := state.initChainState(db, params)
+	err := ss.initChainState(db, params)
 	if err != nil {
 		return nil, err
 	}
-	return state, nil
+	return ss, nil
 }
