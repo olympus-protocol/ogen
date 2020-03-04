@@ -55,11 +55,6 @@ type State struct {
 
 	View *ChainView
 
-	utxosIndex  *index.UtxosIndex
-	govIndex    *index.GovIndex
-	usersIndex  *index.UserIndex
-	workerIndex *index.WorkerIndex
-
 	sync bool
 }
 
@@ -168,63 +163,15 @@ start:
 		}
 		lastBlockHeight = lastBlockHeight + 1
 	}
-	// Get utxo dbindex raw data and deserialize
-	s.log.Info("loading utxo index...")
-	rawUtxoIndex, err := db.GetUtxoIndex()
-	if err != nil {
-		return err
-	}
-	bufUtxos := bytes.NewBuffer(rawUtxoIndex)
-	err = s.utxosIndex.Deserialize(bufUtxos)
-	if err != nil {
-		return err
-	}
-	// Get gov dbindex raw data and deserialize
-	s.log.Info("loading gov index...")
-	rawGovIndex, err := db.GetGovIndex()
-	if err != nil {
-		return err
-	}
-	bufGov := bytes.NewBuffer(rawGovIndex)
-	err = s.govIndex.Deserialize(bufGov)
-	if err != nil {
-		return err
-	}
-	// Get users dbindex raw data and deserialize
-	s.log.Info("loading users index...")
-	rawUserIndex, err := db.GetUserIndex()
-	bufUsers := bytes.NewBuffer(rawUserIndex)
-	if err != nil {
-		return err
-	}
-	err = s.usersIndex.Deserialize(bufUsers)
-	if err != nil {
-		return err
-	}
-	// Get workers dbindex raw data and deserialize
-	s.log.Info("loading workers index...")
-	rawWorkersIndex, err := db.GetWorkersIndex()
-	if err != nil {
-		return err
-	}
-	bufWorkers := bytes.NewBuffer(rawWorkersIndex)
-	err = s.workerIndex.Deserialize(bufWorkers)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
 func NewChainState(indexers *index.Indexers, log *logger.Logger, params params.ChainParams, db *blockdb.BlockDB) (*State, error) {
 	state := &State{
-		params:      params,
-		log:         log,
-		snapshot:    StateSnap{},
-		utxosIndex:  indexers.UtxoIndex,
-		govIndex:    indexers.GovIndex,
-		usersIndex:  indexers.UserIndex,
-		workerIndex: indexers.WorkerIndex,
-		sync:        false,
+		params:   params,
+		log:      log,
+		snapshot: StateSnap{},
+		sync:     false,
 	}
 	err := state.initChainState(db, params)
 	if err != nil {
