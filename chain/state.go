@@ -83,10 +83,27 @@ func (s *StateService) Add(block *primitives.Block, location blockdb.BlockLocati
 }
 
 func NewStateService(log *logger.Logger, params params.ChainParams, db blockdb.DB) (*StateService, error) {
+	genesisHash := params.GenesisBlock.Hash()
 	ss := &StateService{
 		params:   params,
 		log:      log,
 		sync:     false,
+		stateMap: map[chainhash.Hash]state.State{
+			genesisHash: {
+				UtxoState: state.UtxoState{
+					UTXOs: make(map[chainhash.Hash]state.Utxo),
+				},
+				GovernanceState: state.GovernanceState{
+					Proposals: make(map[chainhash.Hash]state.GovernanceProposal),
+				},
+				UserState: state.UserState{
+					Users: make(map[chainhash.Hash]state.User),
+				},
+				WorkerState: state.WorkerState{
+					Workers: make(map[chainhash.Hash]state.Worker),
+				},
+			},
+		},
 	}
 	err := ss.initChainState(db, params)
 	if err != nil {

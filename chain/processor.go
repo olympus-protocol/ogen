@@ -8,7 +8,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
-	"reflect"
 	"sync"
 )
 
@@ -163,14 +162,15 @@ func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) err
 		if !valid {
 			return ErrorInvalidBlockSig
 		}
-		pubKeyHash, err := pubKey.ToBech32(ch.params.AddressPrefixes, false)
-		if err != nil {
-			return err
-		}
-		equal := reflect.DeepEqual(pubKeyHash, ch.params.PreWorkersPubKeyHash)
-		if !equal {
-			return ErrorPubKeyNoMatch
-		}
+		//pubKeyHash, err := pubKey.ToBech32(ch.params.AddressPrefixes, false)
+		//if err != nil {
+		//	return err
+		//}
+		// TODO: ensure block pubkey matches expected worker
+		//equal := reflect.DeepEqual(pubKeyHash, ch.params.PreWorkersPubKeyHash)
+		//if !equal {
+		//	return ErrorPubKeyNoMatch
+		//}
 		ch.log.Infof("Block signature verified: pre-workers phase.")
 	} else {
 		// TODO use worker lists
@@ -179,32 +179,14 @@ func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) err
 	return nil
 }
 
-type routineResp struct {
-	Err error
-}
-
 func (ch *Blockchain) verifyTx(prevState *state.State, inv *TxPayloadInv) error {
-	var wg sync.WaitGroup
-	doneChan := make(chan routineResp, len(inv.txs))
 
 	for scheme, txs := range inv.txs {
-		wg.Add(1)
-		txState := *prevState
-		go func(wg *sync.WaitGroup, scheme txSchemes, txs []primitives.Tx) {
-			defer wg.Done()
-			var resp routineResp
-			txVerifier := txverifier.NewTxVerifier(&txState, &ch.params)
-			err := txVerifier.VerifyTxsBatch(txs, scheme.Type, scheme.Action)
-			if err != nil {
-				resp.Err = err
-			}
-			doneChan <- resp
-		}(&wg, scheme, txs)
-	}
-	wg.Wait()
-	doneRes := <-doneChan
-	if doneRes.Err != nil {
-		return doneRes.Err
+		txVerifier := txverifier.NewTxVerifier(&*prevState, &ch.params)
+		err := txVerifier.VerifyTxsBatch(txs, scheme.Type, scheme.Action)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

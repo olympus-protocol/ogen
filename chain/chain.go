@@ -113,6 +113,7 @@ func (c *ChainView) Tip() *index.BlockRow {
 func (c *ChainView) SetTip(h chainhash.Hash) error {
 	if row, found := c.blockIndex.Get(h); found {
 		c.blockChain.SetTip(row)
+		return nil
 	}
 	return fmt.Errorf("error setting block tip: could not find block with hash: %s", h)
 }
