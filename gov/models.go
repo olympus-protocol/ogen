@@ -41,7 +41,11 @@ func (g *GovObject) Serialize(w io.Writer) error {
 		return err
 	}
 	err = serializer.WriteVarInt(w, uint64(len(g.Votes)))
-	for _, vote := range g.Votes {
+	for outpoint, vote := range g.Votes {
+		err = outpoint.Serialize(w)
+		if err != nil {
+			return err
+		}
 		err = vote.Serialize(w)
 		if err != nil {
 			return err
@@ -77,12 +81,16 @@ func (g *GovObject) Deserialize(r io.Reader) error {
 	}
 	g.Votes = make(map[p2p.OutPoint]Vote, voteCount)
 	for i := uint64(0); i < voteCount; i++ {
+		var outpoint p2p.OutPoint
+		if err := outpoint.Deserialize(r); err != nil {
+			return err
+		}
 		var vote Vote
 		err = vote.Deserialize(r)
 		if err != nil {
 			return err
 		}
-		g.Votes[vote.WorkerID] = vote
+		g.Votes[outpoint] = vote
 	}
 	return nil
 }
