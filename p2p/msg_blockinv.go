@@ -3,6 +3,7 @@ package p2p
 import (
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 )
@@ -76,8 +77,8 @@ func (m *MsgBlockInv) GetBlocks() []*MsgBlock {
 	return m.blocks
 }
 
-func (m *MsgBlockInv) GetTxs() []*MsgTx {
-	var txs []*MsgTx
+func (m *MsgBlockInv) GetTxs() []primitives.Tx {
+	var txs []primitives.Tx
 	for _, block := range m.blocks {
 		txs = append(txs, block.Txs...)
 	}

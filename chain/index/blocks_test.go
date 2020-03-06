@@ -5,24 +5,26 @@ import (
 	"github.com/go-test/deep"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
 	"time"
 )
 
 func TestSerializeDeserializeRow(t *testing.T) {
+	header := primitives.BlockHeader{
+		Version:       1,
+		Nonce:         2,
+		MerkleRoot:    chainhash.Hash{3},
+		PrevBlockHash: chainhash.Hash{4},
+		Timestamp:     time.Unix(5, 0),
+	}
 	blockRow := index.BlockRow{
-		Header: p2p.BlockHeader{
-			Version:       1,
-			Nonce:         2,
-			MerkleRoot:    chainhash.Hash{3},
-			PrevBlockHash: chainhash.Hash{4},
-			Timestamp:     time.Unix(5, 0),
-		},
+		Header: header,
 		Locator: blockdb.BlockLocation{},
 		Height:  7,
 		Parent:  nil,
+		Hash: header.Hash(),
 	}
 
 	b := bytes.NewBuffer([]byte{})
@@ -43,7 +45,7 @@ func TestSerializeDeserializeRow(t *testing.T) {
 }
 
 func TestSerializeDeserializeIndex(t *testing.T) {
-	genesisHeader := p2p.BlockHeader{
+	genesisHeader := primitives.BlockHeader{
 		Version:       1,
 		Nonce:         2,
 		MerkleRoot:    chainhash.Hash{3},
@@ -55,12 +57,9 @@ func TestSerializeDeserializeIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	genesisHash, err := genesisHeader.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	genesisHash := genesisHeader.Hash()
 
-	blockHeader := p2p.BlockHeader{
+	blockHeader := primitives.BlockHeader{
 		Version:       1,
 		Nonce:         2,
 		MerkleRoot:    chainhash.Hash{3},
@@ -89,10 +88,7 @@ func TestSerializeDeserializeIndex(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	blockHash, err := blockHeader.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	blockHash := blockHeader.Hash()
 
 	blockIndexHeader, _ := blockIndex.Get(blockHash)
 	blockIndexDeserHeader, _ := blockIndexDeser.Get(blockHash)

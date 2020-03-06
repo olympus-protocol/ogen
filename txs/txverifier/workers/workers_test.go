@@ -1,22 +1,32 @@
 package workers_txverifier
 
 import (
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	workers_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/workers"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var utxosIndexMock = index.InitUtxosIndex()
-
-var workerIndexMock = index.InitWorkersIndex()
+var chainState = &state.State{
+	UtxoState: state.UtxoState{
+		UTXOs: map[chainhash.Hash]state.Utxo{},
+	},
+	GovernanceState: state.GovernanceState{
+		Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+	},
+	UserState: state.UserState{
+		Users: map[chainhash.Hash]state.User{},
+	},
+	WorkerState: state.WorkerState{
+		Workers: map[chainhash.Hash]state.Worker{},
+	},
+}
 
 var worker WorkersTxVerifier
 
 func init() {
-	worker = NewWorkersTxVerifier(workerIndexMock, utxosIndexMock, &params.Mainnet)
-	rows := []*index.UtxoRow{
+	rows := []state.Utxo{
 		{
 			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-1")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
@@ -49,11 +59,9 @@ func init() {
 		},
 	}
 	for _, row := range rows {
-		err := utxosIndexMock.Add(row)
-		if err != nil {
-			panic(err)
-		}
+		chainState.UtxoState.UTXOs[row.Hash()] = row
 	}
+	worker = NewWorkersTxVerifier(chainState, &params.Mainnet)
 }
 
 var mockPayloadUpload1 = workers_txpayload.PayloadUploadAndUpdate{

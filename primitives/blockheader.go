@@ -1,4 +1,4 @@
-package p2p
+package primitives
 
 import (
 	"bytes"
@@ -35,13 +35,10 @@ func (bh *BlockHeader) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (bh *BlockHeader) Hash() (chainhash.Hash, error) {
+func (bh *BlockHeader) Hash() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
-	err := bh.Serialize(buf)
-	if err != nil {
-		return chainhash.Hash{}, err
-	}
-	return chainhash.DoubleHashH(buf.Bytes()), nil
+	_ = bh.Serialize(buf)
+	return chainhash.DoubleHashH(buf.Bytes())
 }
 
 func NewBlockHeader(version int32, prevBlock chainhash.Hash, nonce int32, merkle chainhash.Hash, time time.Time) *BlockHeader {
@@ -53,3 +50,4 @@ func NewBlockHeader(version int32, prevBlock chainhash.Hash, nonce int32, merkle
 		Timestamp:     time,
 	}
 }
+

@@ -1,19 +1,32 @@
 package votes_txverifier
 
 import (
-	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/state"
 	votes_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/votes"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var workerIndexMock = index.InitWorkersIndex()
+var chainState = &state.State{
+	UtxoState: state.UtxoState{
+		UTXOs: map[chainhash.Hash]state.Utxo{},
+	},
+	GovernanceState: state.GovernanceState{
+		Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+	},
+	UserState: state.UserState{
+		Users: map[chainhash.Hash]state.User{},
+	},
+	WorkerState: state.WorkerState{
+		Workers: map[chainhash.Hash]state.Worker{},
+	},
+}
 
 var votes VotesTxVerifier
 
 func init() {
-	votes = NewVotesTxVerifier(workerIndexMock, &params.Mainnet)
+	votes = NewVotesTxVerifier(chainState, &params.Mainnet)
 }
 
 var mockPayloadUpload1 = votes_txpayload.PayloadUploadAndUpdate{

@@ -3,6 +3,7 @@ package blockdb
 import (
 	"bytes"
 	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"os"
 	"testing"
@@ -11,9 +12,9 @@ import (
 
 var (
 	testBlockLocator = BlockLocation{
-		fileNum:     100,
-		blockOffset: 100000,
-		blockSize:   10000000,
+		FileNum:     100,
+		BlockOffset: 100000,
+		BlockSize:   10000000,
 	}
 	merkleRootTest = chainhash.Hash([chainhash.HashSize]byte{
 		0xfc, 0x4b, 0x8c, 0xb9, 0x03, 0xae, 0xd5, 0x4e,
@@ -21,20 +22,20 @@ var (
 		0xad, 0xe3, 0x49, 0x88, 0xa8, 0x45, 0x00, 0xad,
 		0x2d, 0x80, 0xe4, 0xd1, 0xf5, 0xbc, 0xc9, 0x5d,
 	})
-	TxTest = p2p.MsgTx{
+	TxTest = primitives.Tx{
 		TxVersion: 1,
-		TxType:    p2p.Coins,
-		TxAction:  p2p.Transfer,
+		TxType:    primitives.Coins,
+		TxAction:  primitives.Transfer,
 		Time:      time.Unix(1572830409, 0).Unix(),
 	}
-	TestBlock = p2p.MsgBlock{
-		Header: p2p.BlockHeader{
+	TestBlock = primitives.Block{
+		Header: primitives.BlockHeader{
 			Version:       1,
 			PrevBlockHash: chainhash.Hash{},
 			MerkleRoot:    merkleRootTest,
 			Timestamp:     time.Unix(0x5A3BB72B, 0),
 		},
-		Txs:       []*p2p.MsgTx{&TxTest, &TxTest, &TxTest, &TxTest, &TxTest, &TxTest, &TxTest, &TxTest, &TxTest, &TxTest},
+		Txs:       []primitives.Tx{TxTest, TxTest, TxTest, TxTest, TxTest, TxTest, TxTest, TxTest, TxTest, TxTest},
 		Signature: [96]byte{},
 	}
 )
@@ -52,15 +53,15 @@ func Test_BlockLocatorSerialize(t *testing.T) {
 		t.Errorf("block locator serialize, unable to deserialize")
 		return
 	}
-	if newBlockLoc.fileNum != testBlockLocator.fileNum {
+	if newBlockLoc.FileNum != testBlockLocator.FileNum {
 		t.Errorf("block locator serialize file num doesn't match")
 		return
 	}
-	if newBlockLoc.blockOffset != testBlockLocator.blockOffset {
+	if newBlockLoc.BlockOffset != testBlockLocator.BlockOffset {
 		t.Errorf("block locator serialize block offset doesn't match")
 		return
 	}
-	if newBlockLoc.blockSize != testBlockLocator.blockSize {
+	if newBlockLoc.BlockSize != testBlockLocator.BlockSize {
 		t.Errorf("block locator serialize block size doesn't match")
 		return
 	}
@@ -79,11 +80,7 @@ func TestRawBlockDB_Write(t *testing.T) {
 			t.Errorf("block write error: %v", err.Error())
 			return
 		}
-		hash, err := TestBlock.Header.Hash()
-		if err != nil {
-			t.Errorf("block write error: %v", err.Error())
-			return
-		}
+		hash := TestBlock.Header.Hash()
 		blockBytes, err := blockDB.rawBlockDb.read(hash, loc)
 		if err != nil {
 			t.Errorf("block write read: %v", err.Error())
@@ -96,16 +93,8 @@ func TestRawBlockDB_Write(t *testing.T) {
 			t.Errorf("block write read: %v", err.Error())
 			return
 		}
-		testHash, err := TestBlock.Header.Hash()
-		if err != nil {
-			t.Errorf("block write read: %v", err.Error())
-			return
-		}
-		newBlockHash, err := block.Header.Hash()
-		if err != nil {
-			t.Errorf("block write read: %v", err.Error())
-			return
-		}
+		testHash := TestBlock.Header.Hash()
+		newBlockHash := block.Header.Hash()
 		if testHash != newBlockHash {
 			t.Errorf("block write read: hashes doesn't match")
 			return

@@ -33,12 +33,11 @@ func (m *Mempool) AddTx(tx *p2p.MsgTx) error {
 	return nil
 }
 
-func InitMempool(config Config, txverifier *txverifier.TxVerifier, params params.ChainParams) *Mempool {
+func InitMempool(config Config, params params.ChainParams) *Mempool {
 	return &Mempool{
-		config:     config,
-		log:        config.Log,
-		params:     params,
-		Tx:         []*p2p.MsgTx{},
-		txverifier: txverifier,
+		config: config,
+		log:    config.Log,
+		params: params,
+		Tx:     []*p2p.MsgTx{},
 	}
 }

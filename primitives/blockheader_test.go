@@ -1,4 +1,4 @@
-package p2p
+package primitives
 
 import (
 	"bytes"
@@ -23,16 +23,16 @@ var (
 	}
 )
 
-func TestBlock_Serialize(t *testing.T) {
+func TestBlockHeader_Serialize(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	err := blockHeaderTest.Serialize(buf)
 	if err != nil {
-
+		t.Fatal(err)
 	}
 	var blockHeader BlockHeader
 	err = blockHeader.Deserialize(buf)
 	if err != nil {
-
+		t.Fatal(err)
 	}
 	if diff := deep.Equal(blockHeader, blockHeaderTest); diff != nil {
 		t.Fatal(diff)

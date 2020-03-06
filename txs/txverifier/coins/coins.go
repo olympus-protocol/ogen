@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/amount"
@@ -27,18 +27,18 @@ var (
 )
 
 type CoinsTxVerifier struct {
-	UtxoIndex *index.UtxosIndex
-	params    *params.ChainParams
+	state  *state.State
+	params *params.ChainParams
 }
 
-func (v CoinsTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
+func (v CoinsTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
 	var Payload txpayloads.Payload
 	switch Action {
-	case p2p.Transfer:
+	case primitives.Transfer:
 		Payload = new(coins_txpayload.PayloadTransfer)
-	case p2p.Generate:
+	case primitives.Generate:
 		Payload = new(coins_txpayload.PayloadGenerate)
-	case p2p.Pay:
+	case primitives.Pay:
 		Payload = new(coins_txpayload.PayloadPay)
 	default:
 		return nil, ErrorNoTypeSpecified
@@ -51,9 +51,9 @@ func (v CoinsTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction)
 	return Payload, nil
 }
 
-func (v CoinsTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
+func (v CoinsTxVerifier) SigVerify(payload []byte, Action primitives.TxAction) error {
 	switch Action {
-	case p2p.Transfer:
+	case primitives.Transfer:
 		VerPayload, err := v.DeserializePayload(payload, Action)
 		if err != nil {
 			return err
@@ -77,8 +77,8 @@ func (v CoinsTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
 		if !valid {
 			return ErrorInvalidSignature
 		}
-	case p2p.Generate:
-	case p2p.Pay:
+	case primitives.Generate:
+	case primitives.Pay:
 	}
 
 	return nil
@@ -88,7 +88,7 @@ type routineRes struct {
 	Err error
 }
 
-func (v CoinsTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v CoinsTxVerifier) SigVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {
@@ -112,13 +112,13 @@ func (v CoinsTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) e
 	return nil
 }
 
-func (v CoinsTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
+func (v CoinsTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction) error {
 	VerPayload, err := v.DeserializePayload(payload, Action)
 	if err != nil {
 		return err
 	}
 	switch Action {
-	case p2p.Transfer:
+	case primitives.Transfer:
 		hashInv, err := VerPayload.GetHashInvForDataMatch()
 		if err != nil {
 			return err
@@ -126,11 +126,11 @@ func (v CoinsTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 		var owners []string
 		var spendable amount.AmountType
 		for _, hash := range hashInv {
-			ok := v.UtxoIndex.Have(hash)
+			ok := v.state.UtxoState.Have(hash)
 			if !ok {
 				return ErrorMatchDataNoExist
 			}
-			utxo := v.UtxoIndex.Get(hash)
+			utxo := v.state.UtxoState.Get(hash)
 			spendable += amount.AmountType(utxo.Amount)
 			owners = append(owners, utxo.Owner)
 		}
@@ -158,13 +158,13 @@ func (v CoinsTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error 
 			return ErrorDataNoMatch
 		}
 
-	case p2p.Generate:
-	case p2p.Pay:
+	case primitives.Generate:
+	case primitives.Pay:
 	}
 	return nil
 }
 
-func (v CoinsTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v CoinsTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {
@@ -188,10 +188,10 @@ func (v CoinsTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction)
 	return nil
 }
 
-func NewCoinsTxVerifier(index *index.UtxosIndex, params *params.ChainParams) CoinsTxVerifier {
+func NewCoinsTxVerifier(state *state.State, params *params.ChainParams) CoinsTxVerifier {
 	v := CoinsTxVerifier{
-		UtxoIndex: index,
-		params:    params,
+		state:  state,
+		params: params,
 	}
 	return v
 }

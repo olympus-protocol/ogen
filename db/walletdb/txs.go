@@ -1,7 +1,7 @@
 package walletdb
 
 import (
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
@@ -11,8 +11,8 @@ import (
 var walletTxsBucketKey = []byte("wallet-txs")
 
 type WalletTx struct {
-	Type      p2p.TxType
-	Action    p2p.TxAction
+	Type      primitives.TxType
+	Action    primitives.TxAction
 	TxID      chainhash.Hash
 	Value     int64
 	Spent     bool

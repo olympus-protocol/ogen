@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	workers_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/workers"
 	"reflect"
@@ -21,19 +21,18 @@ var (
 )
 
 type WorkersTxVerifier struct {
-	WorkersIndex *index.WorkerIndex
-	UtxoIndex    *index.UtxosIndex
-	params       *params.ChainParams
+	params *params.ChainParams
+	state  *state.State
 }
 
-func (v WorkersTxVerifier) DeserializePayload(payload []byte, Action p2p.TxAction) (txpayloads.Payload, error) {
+func (v WorkersTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
 	var Payload txpayloads.Payload
 	switch Action {
-	case p2p.Upload:
+	case primitives.Upload:
 		Payload = new(workers_txpayload.PayloadUploadAndUpdate)
-	case p2p.Update:
+	case primitives.Update:
 		Payload = new(workers_txpayload.PayloadUploadAndUpdate)
-	case p2p.Revoke:
+	case primitives.Revoke:
 		Payload = new(workers_txpayload.PayloadRevoke)
 	default:
 		return nil, ErrorNoTypeSpecified
@@ -46,7 +45,7 @@ func (v WorkersTxVerifier) DeserializePayload(payload []byte, Action p2p.TxActio
 	return Payload, nil
 }
 
-func (v WorkersTxVerifier) SigVerify(payload []byte, Action p2p.TxAction) error {
+func (v WorkersTxVerifier) SigVerify(payload []byte, Action primitives.TxAction) error {
 	VerPayload, err := v.DeserializePayload(payload, Action)
 	if err != nil {
 		return err
@@ -77,7 +76,7 @@ type routineRes struct {
 	Err error
 }
 
-func (v WorkersTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v WorkersTxVerifier) SigVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {
@@ -101,7 +100,7 @@ func (v WorkersTxVerifier) SigVerifyBatch(payload [][]byte, Action p2p.TxAction)
 	return nil
 }
 
-func (v WorkersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) error {
+func (v WorkersTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction) error {
 	VerPayload, err := v.DeserializePayload(payload, Action)
 	if err != nil {
 		return err
@@ -115,12 +114,12 @@ func (v WorkersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) erro
 		return err
 	}
 	switch Action {
-	case p2p.Upload:
-		ok := v.UtxoIndex.Have(searchHash)
+	case primitives.Upload:
+		ok := v.state.UtxoState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.UtxoIndex.Get(searchHash)
+		data := v.state.UtxoState.Get(searchHash)
 		pubKeyHash, err := matchPubKey.ToBech32(v.params.AddressPrefixes, false)
 		if err != nil {
 			return err
@@ -129,12 +128,12 @@ func (v WorkersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) erro
 		if !equal {
 			return ErrorDataNoMatch
 		}
-	case p2p.Update:
-		ok := v.UtxoIndex.Have(searchHash)
+	case primitives.Update:
+		ok := v.state.UtxoState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.UtxoIndex.Get(searchHash)
+		data := v.state.UtxoState.Get(searchHash)
 		pubKeyHash, err := matchPubKey.ToBech32(v.params.AddressPrefixes, false)
 		if err != nil {
 			return err
@@ -143,12 +142,12 @@ func (v WorkersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) erro
 		if !equal {
 			return ErrorDataNoMatch
 		}
-	case p2p.Revoke:
-		ok := v.WorkersIndex.Have(searchHash)
+	case primitives.Revoke:
+		ok := v.state.WorkerState.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.WorkersIndex.Get(searchHash)
+		data := v.state.WorkerState.Get(searchHash)
 		pubKeyBytes := matchPubKey.Serialize()
 		equal := reflect.DeepEqual(pubKeyBytes, data.WorkerData.PubKey)
 		if !equal {
@@ -158,7 +157,7 @@ func (v WorkersTxVerifier) MatchVerify(payload []byte, Action p2p.TxAction) erro
 	return nil
 }
 
-func (v WorkersTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxAction) error {
+func (v WorkersTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.TxAction) error {
 	var wg sync.WaitGroup
 	doneChan := make(chan routineRes, len(payload))
 	for _, singlePayload := range payload {
@@ -182,11 +181,10 @@ func (v WorkersTxVerifier) MatchVerifyBatch(payload [][]byte, Action p2p.TxActio
 	return nil
 }
 
-func NewWorkersTxVerifier(workerIndex *index.WorkerIndex, utxosIndex *index.UtxosIndex, params *params.ChainParams) WorkersTxVerifier {
+func NewWorkersTxVerifier(state *state.State, params *params.ChainParams) WorkersTxVerifier {
 	v := WorkersTxVerifier{
-		WorkersIndex: workerIndex,
-		UtxoIndex:    utxosIndex,
-		params:       params,
+		state:  state,
+		params: params,
 	}
 	return v
 }
