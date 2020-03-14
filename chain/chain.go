@@ -1,10 +1,11 @@
 package chain
 
 import (
-	"fmt"
+	"errors"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"sync"
 )
@@ -12,6 +13,7 @@ import (
 type Chain struct {
 	lock  sync.RWMutex
 	chain []*index.BlockRow
+	tipState state.State
 }
 
 func (c *Chain) Height() int32 {
@@ -21,9 +23,10 @@ func (c *Chain) Height() int32 {
 }
 
 // SetTip sets the tip of the chain.
-func (c *Chain) SetTip(row *index.BlockRow) {
+func (c *Chain) setTip(row *index.BlockRow, tipState *state.State) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	c.tipState = *tipState
 	if row == nil {
 		c.chain = make([]*index.BlockRow, 0)
 		return
@@ -50,10 +53,10 @@ func (c *Chain) SetTip(row *index.BlockRow) {
 	}
 }
 
-func (c *Chain) Tip() *index.BlockRow {
+func (c *Chain) Tip() (*index.BlockRow, state.State) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	return c.chain[len(c.chain)-1]
+	return c.chain[len(c.chain)-1], c.tipState
 }
 
 func (c *Chain) GetNodeByHeight(height int32) (*index.BlockRow, bool) {
@@ -102,20 +105,33 @@ func (c *ChainView) Height() int32 {
 	return c.blockChain.Height()
 }
 
-func (c *ChainView) Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error) {
-	return c.blockIndex.Add(header, locator)
-}
+var (
+	ErrNoParent = errors.New("unable to accept block - missing parent block")
+)
 
-func (c *ChainView) Tip() *index.BlockRow {
-	return c.blockChain.Tip()
-}
-
-func (c *ChainView) SetTip(h chainhash.Hash) error {
-	if row, found := c.blockIndex.Get(h); found {
-		c.blockChain.SetTip(row)
-		return nil
+func (c *ChainView) AcceptBlock(block primitives.Block, locator blockdb.BlockLocation) (*index.BlockRow, error) {
+	prevRow, prevState := c.blockChain.Tip()
+	if !block.Header.PrevBlockHash.IsEqual(&prevRow.Hash) {
+		return nil, ErrNoParent
 	}
-	return fmt.Errorf("error setting block tip: could not find block with hash: %s", h)
+
+	newState, err := prevState.TransitionBlock(&block)
+	if err != nil {
+		return nil, err
+	}
+
+	row, err := c.blockIndex.Add(block.Header, locator)
+	if err != nil {
+		return nil, err
+	}
+
+	c.blockChain.setTip(row, &newState)
+
+	return row, nil
+}
+
+func (c *ChainView) Tip() (*index.BlockRow, state.State) {
+	return c.blockChain.Tip()
 }
 
 func (c *ChainView) GetRowByHeight(height int32) (*index.BlockRow, bool) {
@@ -134,9 +150,8 @@ var _ ChainInterface = &ChainView{}
 
 // ChainInterface is an interface that allows basic access to the block index and chain.
 type ChainInterface interface {
-	Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error)
-	Tip() *index.BlockRow
-	SetTip(chainhash.Hash) error
+	AcceptBlock(block primitives.Block, locator blockdb.BlockLocation) (*index.BlockRow, error)
+	Tip() (*index.BlockRow, state.State)
 	GetRowByHeight(int32) (*index.BlockRow, bool)
 	GetRowByHash(chainhash.Hash) (*index.BlockRow, bool)
 	Height() int32

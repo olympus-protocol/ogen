@@ -534,7 +534,7 @@ func NewKeyFromString(key string) (*ExtendedKey, error) {
 		return nil, ErrBadChecksum
 	}
 
-	// Deserialize each of the payload fields.
+	// Decode each of the payload fields.
 	version := payload[:4]
 	depth := payload[4:5][0]
 	parentFP := payload[5:9]

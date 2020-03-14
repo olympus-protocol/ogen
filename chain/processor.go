@@ -2,7 +2,6 @@ package chain
 
 import (
 	"errors"
-	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -77,13 +76,13 @@ func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 	return nil
 }
 
-func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
+func (ch *Blockchain) valid(block *primitives.Block) (*state.State, error) {
 	// 1. first verify basic block properties
 
 	// a. ensure we have the parent block
 	parentBlock, ok := ch.state.View.GetRowByHash(block.Header.PrevBlockHash)
 	if !ok {
-		return fmt.Errorf("missing parent block: %s", block.Header.PrevBlockHash)
+		return nil, ErrNoParent
 	}
 
 	height := parentBlock.Height + 1
@@ -92,56 +91,29 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	err := ch.verifyBlockSig(block, uint32(height))
 	if err != nil {
 		ch.log.Warn(err)
-		return err
+		return nil, err
 	}
 
-	// b. get parent block
-
 	// 2. verify block against previous block's state
-	oldState, found := ch.state.GetStateForHash(block.Header.PrevBlockHash)
-	if !found {
-		return fmt.Errorf("missing parent block state: %s", block.Header.PrevBlockHash)
+	currentTip, oldState := ch.state.View.Tip()
+
+	if !currentTip.Hash.IsEqual(&block.Header.PrevBlockHash) {
+		return nil, ErrNoParent
 	}
 
 	txPayloadInv, err := ch.newTxPayloadInv(block.Txs, 1)
 	if err != nil {
-		ch.log.Warn(err)
-		return err
+		return nil, err
 	}
 
 	// a. verify transactions
 	ch.log.Debugf("tx inventory created types to verify: %v", len(txPayloadInv.txs))
-	err = ch.verifyTx(oldState, txPayloadInv)
+	err = ch.verifyTx(&oldState, txPayloadInv)
 	if err != nil {
-		ch.log.Warn(err)
-		return err
+		return nil, err
 	}
 	ch.log.Debugf("tx verification finished successfully")
-
-	// b. apply block transition to state
-	ch.log.Debugf("attempting to apply block to state")
-	newState, err := oldState.TransitionBlock(block)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	ch.log.Infof("New block accepted Hash: %v", block.Hash())
-
-	// 3. write block to database
-	blocator, err := ch.db.AddRawBlock(block)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-
-	// 4. add block to chain and set new state
-	// TODO: better fork choice
-	err = ch.state.Add(block, *blocator, true, &newState)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	return nil
+	return &oldState, nil
 }
 
 func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) error {

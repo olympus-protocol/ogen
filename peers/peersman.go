@@ -258,7 +258,8 @@ func (pm *PeerMan) handlePeerMsg(msg *peer.PeerMsg) error {
 		}
 		break
 	case peer.Syncing:
-		reqMsg := p2p.NewMsgGetBlock(pm.chain.State().View.Tip().Hash)
+		tip, _ := pm.chain.State().View.Tip()
+		reqMsg := p2p.NewMsgGetBlock(tip.Hash)
 		p := msg.Peer
 		p.SetPeerSync(true)
 		err := p.SendGetBlocks(reqMsg)
@@ -290,12 +291,12 @@ func (pm *PeerMan) handleBlockInvMsg(msg *peer.BlocksInvMsg) error {
 		return errors.New("non requested block inv msg")
 	}
 	pm.log.Infof("new block inv with %v blocks", len(msg.Blocks.GetBlocks()))
-	for _, block := range msg.Blocks.GetBlocks() {
-		err := pm.chain.ProcessBlock(&block.Block)
-		if err != nil {
-			return err
-		}
-	}
+	//for _, block := range msg.Blocks.GetBlocks() {
+	//	err := pm.chain.ProcessBlock(&block.Block)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 	pm.organizePeer(msg.Peer)
 	return nil
 }
@@ -304,10 +305,10 @@ func (pm *PeerMan) handleBlockMsg(msg *peer.BlockMsg) error {
 	blockHash := msg.Block.Header.Hash()
 	pm.log.Infof("new block received hash: %v", blockHash)
 	if pm.chain.State().IsSync() {
-		err := pm.chain.ProcessBlock(&msg.Block.Block)
-		if err != nil {
-			return err
-		}
+		//err := pm.chain.ProcessBlock(&msg.Block.Block)
+		//if err != nil {
+		//	return err
+		//}
 		return nil
 	}
 	pm.log.Infof("ignored block, we are not synced yet")
@@ -349,7 +350,7 @@ func (pm *PeerMan) addPeer(p *peer.Peer) {
 }
 
 func (pm *PeerMan) organizePeer(p *peer.Peer) {
-	tip := pm.chain.State().View.Tip()
+	tip, _ := pm.chain.State().View.Tip()
 	if p.GetLastBlock() > tip.Height {
 		pm.peersSyncLock.Lock()
 		pm.peersAhead[p.GetID()] = p

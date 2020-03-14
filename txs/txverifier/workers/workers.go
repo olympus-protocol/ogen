@@ -143,13 +143,16 @@ func (v WorkersTxVerifier) MatchVerify(payload []byte, Action primitives.TxActio
 			return ErrorDataNoMatch
 		}
 	case primitives.Revoke:
-		ok := v.state.WorkerState.Have(searchHash)
+		ok := v.state.WorkerRegistry.Have(searchHash)
 		if !ok {
 			return ErrorMatchDataNoExist
 		}
-		data := v.state.WorkerState.Get(searchHash)
+		data, found := v.state.WorkerRegistry.Get(searchHash)
+		if !found {
+			return ErrorMatchDataNoExist
+		}
 		pubKeyBytes := matchPubKey.Serialize()
-		equal := reflect.DeepEqual(pubKeyBytes, data.WorkerData.PubKey)
+		equal := reflect.DeepEqual(pubKeyBytes, data.PubKey)
 		if !equal {
 			return ErrorDataNoMatch
 		}

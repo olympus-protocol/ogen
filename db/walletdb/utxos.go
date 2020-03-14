@@ -16,7 +16,7 @@ type WalletUtxo struct {
 }
 
 func (utxo *WalletUtxo) Serialize(w io.Writer) error {
-	err := utxo.OutPoint.Serialize(w)
+	err := utxo.OutPoint.Encode(w)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (utxo *WalletUtxo) Serialize(w io.Writer) error {
 }
 
 func (utxo *WalletUtxo) Deserialize(r io.Reader) error {
-	err := utxo.OutPoint.Deserialize(r)
+	err := utxo.OutPoint.Decode(r)
 	if err != nil {
 		return err
 	}

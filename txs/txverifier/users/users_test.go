@@ -22,7 +22,7 @@ var chainState = &state.State{
 	UserState: state.UserState{
 		Users: map[chainhash.Hash]state.User{},
 	},
-	WorkerState: state.WorkerState{
+	WorkerRegistry: state.WorkerRegistry{
 		Workers: map[chainhash.Hash]state.Worker{},
 	},
 }

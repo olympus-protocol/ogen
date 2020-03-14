@@ -109,12 +109,15 @@ func (v VotesTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction)
 	if err != nil {
 		return err
 	}
-	ok := v.state.WorkerState.Have(searchHash)
+	ok := v.state.WorkerRegistry.Have(searchHash)
 	if !ok {
 		return ErrorMatchDataNoExist
 	}
-	data := v.state.WorkerState.Get(searchHash)
-	pubKey, err := bls.DeserializePublicKey(data.WorkerData.PubKey)
+	data, found := v.state.WorkerRegistry.Get(searchHash)
+	if !found {
+		return ErrorMatchDataNoExist
+	}
+	pubKey, err := bls.DeserializePublicKey(data.PubKey)
 	if err != nil {
 		return err
 	}

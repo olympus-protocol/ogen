@@ -8,7 +8,6 @@ import (
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"github.com/olympus-protocol/ogen/workers"
 	"io"
 )
 
@@ -16,7 +15,8 @@ type State struct {
 	UtxoState       UtxoState
 	GovernanceState GovernanceState
 	UserState       UserState
-	WorkerState     WorkerState
+	WorkerRegistry  WorkerRegistry
+	WorkerQueue     []chainhash.Hash
 }
 
 func (s *State) Serialize(w io.Writer) error {
@@ -29,7 +29,7 @@ func (s *State) Serialize(w io.Writer) error {
 	if err := s.UserState.Serialize(w); err != nil {
 		return err
 	}
-	if err := s.WorkerState.Serialize(w); err != nil {
+	if err := s.WorkerRegistry.Serialize(w); err != nil {
 		return err
 	}
 	return nil
@@ -45,7 +45,7 @@ func (s *State) Deserialize(r io.Reader) error {
 	if err := s.UserState.Deserialize(r); err != nil {
 		return err
 	}
-	if err := s.WorkerState.Deserialize(r); err != nil {
+	if err := s.WorkerRegistry.Deserialize(r); err != nil {
 		return err
 	}
 	return nil
@@ -56,9 +56,9 @@ type GovernanceProposal struct {
 	GovData  gov.GovObject
 }
 
-// Serialize serializes a GovRow to the passed writer.
+// Encode serializes a GovRow to the passed writer.
 func (gr *GovernanceProposal) Serialize(w io.Writer) error {
-	err := gr.OutPoint.Serialize(w)
+	err := gr.OutPoint.Encode(w)
 	if err != nil {
 		return err
 	}
@@ -69,9 +69,9 @@ func (gr *GovernanceProposal) Serialize(w io.Writer) error {
 	return nil
 }
 
-// Deserialize deserialized a GovRow from the passed reader.
+// Decode deserialized a GovRow from the passed reader.
 func (gr *GovernanceProposal) Deserialize(r io.Reader) error {
-	err := gr.OutPoint.Deserialize(r)
+	err := gr.OutPoint.Decode(r)
 	if err != nil {
 		return err
 	}
@@ -97,13 +97,12 @@ func (g *GovernanceState) Get(c chainhash.Hash) GovernanceProposal {
 	return g.Proposals[c]
 }
 
-
 func (g *GovernanceState) Serialize(w io.Writer) error {
 	if err := serializer.WriteVarInt(w, uint64(len(g.Proposals))); err != nil {
 		return err
 	}
 
-	for h, proposal := range g.Proposals{
+	for h, proposal := range g.Proposals {
 		if _, err := w.Write(h[:]); err != nil {
 			return err
 		}
@@ -151,9 +150,9 @@ type Utxo struct {
 	Amount            int64
 }
 
-// Serialize serializes the UtxoRow to a writer.
+// Encode serializes the UtxoRow to a writer.
 func (l *Utxo) Serialize(w io.Writer) error {
-	err := l.OutPoint.Serialize(w)
+	err := l.OutPoint.Encode(w)
 	if err != nil {
 		return err
 	}
@@ -178,9 +177,9 @@ func (l *Utxo) Serialize(w io.Writer) error {
 	return nil
 }
 
-// Deserialize deserializes a UtxoRow from a reader.
+// Decode deserializes a UtxoRow from a reader.
 func (l *Utxo) Deserialize(r io.Reader) error {
-	err := l.OutPoint.Deserialize(r)
+	err := l.OutPoint.Decode(r)
 	if err != nil {
 		return err
 	}
@@ -211,7 +210,7 @@ func (l *Utxo) Deserialize(r io.Reader) error {
 
 func (l *Utxo) Hash() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
-	_ = l.OutPoint.Serialize(buf)
+	_ = l.OutPoint.Encode(buf)
 	return chainhash.DoubleHashH(buf.Bytes())
 }
 
@@ -285,9 +284,9 @@ type User struct {
 	UserData users.User
 }
 
-// Serialize serializes the UserRow to a writer.
+// Encode serializes the UserRow to a writer.
 func (ur *User) Serialize(w io.Writer) error {
-	err := ur.OutPoint.Serialize(w)
+	err := ur.OutPoint.Encode(w)
 	if err != nil {
 		return err
 	}
@@ -298,9 +297,9 @@ func (ur *User) Serialize(w io.Writer) error {
 	return nil
 }
 
-// Deserialize deserializes a user from the writer.
+// Decode deserializes a user from the writer.
 func (ur *User) Deserialize(r io.Reader) error {
-	err := ur.OutPoint.Deserialize(r)
+	err := ur.OutPoint.Decode(r)
 	if err != nil {
 		return err
 	}
@@ -318,7 +317,6 @@ func (ur *User) Hash() chainhash.Hash {
 type UserState struct {
 	Users map[chainhash.Hash]User
 }
-
 
 func (u *UserState) Serialize(w io.Writer) error {
 	if err := serializer.WriteVarInt(w, uint64(len(u.Users))); err != nil {
@@ -378,53 +376,76 @@ func (u *UserState) Get(c chainhash.Hash) User {
 }
 
 type Worker struct {
-	OutPoint   p2p.OutPoint
-	WorkerData workers.Worker
+	Outpoint     p2p.OutPoint
+	PubKey       [48]byte
+	PayeeAddress string
 }
 
-// Serialize serializes a WorkerRow to the provided writer.
-func (wr *Worker) Serialize(w io.Writer) error {
-	err := wr.OutPoint.Serialize(w)
+func (wk *Worker) ID() *chainhash.Hash {
+	return serializer.Hash(&wk.Outpoint)
+}
+
+func (wk *Worker) Serialize(w io.Writer) error {
+	err := wk.Outpoint.Encode(w)
 	if err != nil {
 		return err
 	}
-	err = wr.WorkerData.Serialize(w)
+	err = serializer.WriteElements(w, wk.PubKey)
+	if err != nil {
+		return err
+	}
+	err = serializer.WriteVarString(w, wk.PayeeAddress)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// Deserialize deserializes a worker row from the provided reader.
-func (wr *Worker) Deserialize(r io.Reader) error {
-	err := wr.OutPoint.Deserialize(r)
+func (wk *Worker) Deserialize(r io.Reader) error {
+	err := wk.Outpoint.Decode(r)
 	if err != nil {
 		return err
 	}
-	err = wr.WorkerData.Deserialize(r)
+	err = serializer.ReadElements(r, &wk.PubKey)
+	if err != nil {
+		return err
+	}
+	wk.PayeeAddress, err = serializer.ReadVarString(r)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-type WorkerState struct {
+type WorkerRegistry struct {
 	Workers map[chainhash.Hash]Worker
 }
 
+func NewWorkerRegistry() *WorkerRegistry {
+	return &WorkerRegistry{
+		Workers: map[chainhash.Hash]Worker{},
+	}
+}
+
 // Have checks if a Worker exists.
-func (w *WorkerState) Have(c chainhash.Hash) bool {
+func (w *WorkerRegistry) Have(c chainhash.Hash) bool {
 	_, found := w.Workers[c]
 	return found
 }
 
 // Get gets a Worker from state.
-func (w *WorkerState) Get(c chainhash.Hash) Worker {
-	return w.Workers[c]
+func (w *WorkerRegistry) Get(c chainhash.Hash) (Worker, bool) {
+	wor, found := w.Workers[c]
+	return wor, found
 }
 
+// Add adds a worker to the registry.
+func (w *WorkerRegistry) Add(worker Worker) {
+	h := worker.ID()
+	w.Workers[*h] = worker
+}
 
-func (w *WorkerState) Serialize(wr io.Writer) error {
+func (w *WorkerRegistry) Serialize(wr io.Writer) error {
 	if err := serializer.WriteVarInt(wr, uint64(len(w.Workers))); err != nil {
 		return err
 	}
@@ -442,7 +463,7 @@ func (w *WorkerState) Serialize(wr io.Writer) error {
 	return nil
 }
 
-func (w *WorkerState) Deserialize(r io.Reader) error {
+func (w *WorkerRegistry) Deserialize(r io.Reader) error {
 	if w.Workers == nil {
 		w.Workers = make(map[chainhash.Hash]Worker)
 	}

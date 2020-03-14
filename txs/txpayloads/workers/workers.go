@@ -60,7 +60,7 @@ func (p *PayloadUploadAndUpdate) GetSignature() (*bls.Signature, error) {
 
 func (p *PayloadUploadAndUpdate) GetMessage() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
-	err := p.Utxo.Serialize(buf)
+	err := p.Utxo.Encode(buf)
 	if err != nil {
 		return nil, err
 	}

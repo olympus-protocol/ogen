@@ -53,7 +53,7 @@ func (p *PayloadUploadAndUpdate) GetSignature() (*bls.Signature, error) {
 
 func (p *PayloadUploadAndUpdate) GetMessage() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
-	err := p.WorkerID.Serialize(buf)
+	err := p.WorkerID.Encode(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (p *PayloadRevoke) GetSignature() (*bls.Signature, error) {
 
 func (p *PayloadRevoke) GetMessage() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
-	err := p.WorkerID.Serialize(buf)
+	err := p.WorkerID.Encode(buf)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/workers"
 	"testing"
 )
 
@@ -165,24 +164,12 @@ func TestUtxoStateSerializeDeserialize(t *testing.T) {
 
 func TestWorkerDeserializeSerialize(t *testing.T) {
 	worker := Worker{
-		OutPoint: p2p.OutPoint{
+		Outpoint: p2p.OutPoint{
 			TxHash: chainhash.Hash{1},
 			Index:  2,
 		},
-		WorkerData: workers.Worker{
-			WorkerID:          p2p.OutPoint{
-				TxHash: chainhash.Hash{3},
-				Index:  4,
-			},
-			PubKey:            [48]byte{5},
-			LastBlockAssigned: 6,
-			NextBlockAssigned: 7,
-			Score:             8,
-			Version:           9,
-			Protocol:          10,
-			IP:                "test",
-			PayeeAddress:      "test2",
-		},
+		PubKey:       [48]byte{3},
+		PayeeAddress: "4",
 	}
 
 	buf := bytes.NewBuffer([]byte{})
@@ -203,27 +190,15 @@ func TestWorkerDeserializeSerialize(t *testing.T) {
 
 
 func TestWorkerStateDeserializeSerialize(t *testing.T) {
-	workerState := WorkerState{
+	workerState := WorkerRegistry{
 		Workers: map[chainhash.Hash]Worker{
 			chainhash.Hash{14}: {
-				OutPoint: p2p.OutPoint{
+				Outpoint: p2p.OutPoint{
 					TxHash: chainhash.Hash{1},
 					Index:  2,
 				},
-				WorkerData: workers.Worker{
-					WorkerID:          p2p.OutPoint{
-						TxHash: chainhash.Hash{3},
-						Index:  4,
-					},
-					PubKey:            [48]byte{5},
-					LastBlockAssigned: 6,
-					NextBlockAssigned: 7,
-					Score:             8,
-					Version:           9,
-					Protocol:          10,
-					IP:                "test",
-					PayeeAddress:      "test2",
-				},
+				PubKey:       [48]byte{3},
+				PayeeAddress: "4",
 			},
 		},
 	}
@@ -234,7 +209,7 @@ func TestWorkerStateDeserializeSerialize(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var workerState2 WorkerState
+	var workerState2 WorkerRegistry
 	if err := workerState2.Deserialize(buf); err != nil {
 		t.Fatal(err)
 	}
@@ -364,27 +339,15 @@ func TestStateDeserializeSerialize(t *testing.T) {
 				},
 			},
 		},
-		WorkerState: WorkerState{
+		WorkerRegistry: WorkerRegistry{
 			Workers: map[chainhash.Hash]Worker{
 				chainhash.Hash{14}: {
-					OutPoint: p2p.OutPoint{
+					Outpoint: p2p.OutPoint{
 						TxHash: chainhash.Hash{1},
 						Index:  2,
 					},
-					WorkerData: workers.Worker{
-						WorkerID: p2p.OutPoint{
-							TxHash: chainhash.Hash{3},
-							Index:  4,
-						},
-						PubKey:            [48]byte{5},
-						LastBlockAssigned: 6,
-						NextBlockAssigned: 7,
-						Score:             8,
-						Version:           9,
-						Protocol:          10,
-						IP:                "test",
-						PayeeAddress:      "test2",
-					},
+					PubKey:       [48]byte{3},
+					PayeeAddress: "4",
 				},
 			},
 		},

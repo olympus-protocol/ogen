@@ -23,7 +23,7 @@ type Signature struct {
 	s bls.Signature
 }
 
-// Serialize gets the binary representation of the signature.
+// Encode gets the binary representation of the signature.
 func (s Signature) Serialize() [96]byte {
 	return s.s.Serialize()
 }
@@ -68,7 +68,7 @@ func (s SecretKey) DerivePublicKey() *PublicKey {
 	return &PublicKey{p: *pub}
 }
 
-// Serialize serializes a secret key to bytes.
+// Encode serializes a secret key to bytes.
 func (s SecretKey) Serialize() [32]byte {
 	return s.s.Serialize()
 }
@@ -140,7 +140,7 @@ func (p PublicKey) String() string {
 	return p.p.String()
 }
 
-// Serialize serializes a public key to bytes.
+// Encode serializes a public key to bytes.
 func (p PublicKey) Serialize() [48]byte {
 	return p.p.Serialize()
 }

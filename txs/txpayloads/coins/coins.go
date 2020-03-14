@@ -18,7 +18,7 @@ type Input struct {
 }
 
 func (in *Input) Serialize(w io.Writer) error {
-	err := in.PrevOutpoint.Serialize(w)
+	err := in.PrevOutpoint.Encode(w)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func (in *Input) Serialize(w io.Writer) error {
 }
 
 func (in *Input) Deserialize(r io.Reader) error {
-	err := in.PrevOutpoint.Deserialize(r)
+	err := in.PrevOutpoint.Decode(r)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (p *PayloadTransfer) GetHashInvForDataMatch() ([]chainhash.Hash, error) {
 	var utxosHashes []chainhash.Hash
 	for _, input := range p.TxIn {
 		buf := bytes.NewBuffer([]byte{})
-		err := input.PrevOutpoint.Serialize(buf)
+		err := input.PrevOutpoint.Encode(buf)
 		if err != nil {
 			return nil, err
 		}

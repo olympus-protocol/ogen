@@ -22,7 +22,7 @@ type BlockRow struct {
 	Parent     *BlockRow
 }
 
-// Serialize serializes a block index row to the writer.
+// Encode serializes a block index row to the writer.
 func (br *BlockRow) Serialize(w io.Writer) error {
 	err := br.Locator.Serialize(w)
 	if err != nil {
@@ -44,7 +44,7 @@ func (br *BlockRow) Serialize(w io.Writer) error {
 	return nil
 }
 
-// Deserialize deserializes a block row from the provided reader.
+// Decode deserializes a block row from the provided reader.
 func (br *BlockRow) Deserialize(r io.Reader) error {
 	err := br.Locator.Deserialize(r)
 	if err != nil {
@@ -82,7 +82,7 @@ type BlockIndex struct {
 	index map[chainhash.Hash]*BlockRow
 }
 
-// Serialize serializes the block row to the specified writer.
+// Encode serializes the block row to the specified writer.
 func (i *BlockIndex) Serialize(w io.Writer) error {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
@@ -99,7 +99,7 @@ func (i *BlockIndex) Serialize(w io.Writer) error {
 	return nil
 }
 
-// Deserialize deserializes the block index from the specified reader.
+// Decode deserializes the block index from the specified reader.
 func (i *BlockIndex) Deserialize(r io.Reader) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()

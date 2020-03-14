@@ -23,10 +23,13 @@ type Blockchain struct {
 	log    *logger.Logger
 	config Config
 	params params.ChainParams
+
 	// DB
 	db blockdb.DB
+
 	// StateService
 	state *StateService
+	tendermint Consensus
 }
 
 func (ch *Blockchain) Start() (err error) {

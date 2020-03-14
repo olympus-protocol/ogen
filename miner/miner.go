@@ -64,11 +64,11 @@ check:
 }
 
 func (m *Miner) createNewBlock() (*primitives.Block, error) {
-	state := m.chain.State().View.Tip()
+	tip, _ := m.chain.State().View.Tip()
 
 	txPayload := coins_txpayload.PayloadGenerate{
 		TxOut: []coins_txpayload.Output{{
-			Value:   int64(m.chain.GetBlockReward(uint32(state.Height + 1)).ToUnit(amount.AmountSats)),
+			Value:   int64(m.chain.GetBlockReward(uint32(tip.Height + 1)).ToUnit(amount.AmountSats)),
 			Address: "",
 		}},
 	}
@@ -87,7 +87,7 @@ func (m *Miner) createNewBlock() (*primitives.Block, error) {
 	txHash := genTx.Hash()
 	blockHeader := primitives.BlockHeader{
 		Version:       1,
-		PrevBlockHash: state.Hash,
+		PrevBlockHash: tip.Hash,
 		MerkleRoot:    txHash,
 		Timestamp:     time.Now(),
 	}

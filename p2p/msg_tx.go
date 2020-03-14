@@ -30,7 +30,7 @@ func (o *OutPoint) IsNull() bool {
 	return false
 }
 
-func (o *OutPoint) Serialize(w io.Writer) error {
+func (o *OutPoint) Encode(w io.Writer) error {
 	err := serializer.WriteElements(w, o.TxHash, o.Index)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (o *OutPoint) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (o *OutPoint) Deserialize(r io.Reader) error {
+func (o *OutPoint) Decode(r io.Reader) error {
 	err := serializer.ReadElements(r, &o.TxHash, &o.Index)
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (o *OutPoint) Deserialize(r io.Reader) error {
 
 func (o *OutPoint) Hash() (chainhash.Hash, error) {
 	buf := bytes.NewBuffer([]byte{})
-	err := o.Serialize(buf)
+	err := o.Encode(buf)
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
