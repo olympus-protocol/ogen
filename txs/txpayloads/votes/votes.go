@@ -2,17 +2,18 @@ package votes_txpayload
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 type PayloadUploadAndUpdate struct {
-	WorkerID p2p.OutPoint
+	WorkerID primitives.OutPoint
 	PubKey   [48]byte
 	Sig      [96]byte
 	GovID    chainhash.Hash
@@ -77,7 +78,7 @@ func (p *PayloadUploadAndUpdate) GetSpentAmount() (amount.AmountType, error) {
 }
 
 type PayloadRevoke struct {
-	WorkerID p2p.OutPoint
+	WorkerID primitives.OutPoint
 	PubKey   [48]byte
 	Sig      [96]byte
 	GovID    chainhash.Hash

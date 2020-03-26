@@ -2,28 +2,26 @@ package users_txverifier
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
+	"testing"
+
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
-	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"testing"
 )
 
-var chainState = &state.State{
-	UtxoState: state.UtxoState{
-		UTXOs: map[chainhash.Hash]state.Utxo{},
+var chainState = &primitives.State{
+	UtxoState: primitives.UtxoState{
+		UTXOs: map[chainhash.Hash]primitives.Utxo{},
 	},
-	GovernanceState: state.GovernanceState{
-		Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+	GovernanceState: primitives.GovernanceState{
+		Proposals: map[chainhash.Hash]primitives.GovernanceProposal{},
 	},
-	UserState: state.UserState{
-		Users: map[chainhash.Hash]state.User{},
+	UserState: primitives.UserState{
+		Users: map[chainhash.Hash]primitives.User{},
 	},
-	WorkerState: state.WorkerState{
-		Workers: map[chainhash.Hash]state.Worker{},
+	WorkerState: primitives.WorkerState{
+		Workers: map[chainhash.Hash]primitives.Worker{},
 	},
 }
 
@@ -42,56 +40,46 @@ var PubKeyUser4 = [48]byte{170, 58, 157, 252, 139, 253, 192, 127, 63, 240, 248, 
 var PubKeyUser5 = [48]byte{146, 160, 124, 119, 147, 133, 135, 145, 108, 241, 134, 252, 118, 145, 118, 116, 86, 114, 252, 185, 22, 34, 85, 151, 122, 8, 208, 238, 56, 95, 208, 86, 37, 100, 82, 195, 48, 54, 55, 189, 72, 21, 244, 3, 90, 18, 35, 219}
 
 func init() {
-	us := []state.User{
+	us := []primitives.User{
 		{
-			OutPoint: p2p.OutPoint{
+			OutPoint: primitives.OutPoint{
 				TxHash: chainhash.DoubleHashH([]byte("user-1")),
 				Index:  0,
 			},
-			UserData: users.User{
-				PubKey: PubKeyUser1,
-				Name:   "test-user-1",
-			},
+			PubKey: PubKeyUser1,
+			Name:   "test-user-1",
 		},
 		{
-			OutPoint: p2p.OutPoint{
+			OutPoint: primitives.OutPoint{
 				TxHash: chainhash.DoubleHashH([]byte("user-2")),
 				Index:  0,
 			},
-			UserData: users.User{
-				PubKey: PubKeyUser2,
-				Name:   "test-user-2",
-			},
+			PubKey: PubKeyUser2,
+			Name:   "test-user-2",
 		},
 		{
-			OutPoint: p2p.OutPoint{
+			OutPoint: primitives.OutPoint{
 				TxHash: chainhash.DoubleHashH([]byte("user-3")),
 				Index:  0,
 			},
-			UserData: users.User{
-				PubKey: PubKeyUser3,
-				Name:   "test-user-3",
-			},
+			PubKey: PubKeyUser3,
+			Name:   "test-user-3",
 		},
 		{
-			OutPoint: p2p.OutPoint{
+			OutPoint: primitives.OutPoint{
 				TxHash: chainhash.DoubleHashH([]byte("user-4")),
 				Index:  0,
 			},
-			UserData: users.User{
-				PubKey: PubKeyUser4,
-				Name:   "test-user-4",
-			},
+			PubKey: PubKeyUser4,
+			Name:   "test-user-4",
 		},
 		{
-			OutPoint: p2p.OutPoint{
+			OutPoint: primitives.OutPoint{
 				TxHash: chainhash.DoubleHashH([]byte("user-5")),
 				Index:  0,
 			},
-			UserData: users.User{
-				PubKey: PubKeyUser5,
-				Name:   "test-user-5",
-			},
+			PubKey: PubKeyUser5,
+			Name:   "test-user-5",
 		},
 	}
 	for _, user := range us {

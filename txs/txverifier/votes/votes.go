@@ -3,14 +3,14 @@ package votes_txverifier
 import (
 	"bytes"
 	"errors"
+	"reflect"
+	"sync"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	votes_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/votes"
-	"reflect"
-	"sync"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 )
 
 type VotesTxVerifier struct {
-	state  *state.State
+	state  *primitives.State
 	params *params.ChainParams
 }
 
@@ -114,7 +114,7 @@ func (v VotesTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction)
 		return ErrorMatchDataNoExist
 	}
 	data := v.state.WorkerState.Get(searchHash)
-	pubKey, err := bls.DeserializePublicKey(data.WorkerData.PubKey)
+	pubKey, err := bls.DeserializePublicKey(data.PubKey)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (v VotesTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.Tx
 	return nil
 }
 
-func NewVotesTxVerifier(state *state.State, params *params.ChainParams) VotesTxVerifier {
+func NewVotesTxVerifier(state *primitives.State, params *params.ChainParams) VotesTxVerifier {
 	v := VotesTxVerifier{
 		state:  state,
 		params: params,

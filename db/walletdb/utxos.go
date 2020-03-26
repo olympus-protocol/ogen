@@ -1,15 +1,16 @@
 package walletdb
 
 import (
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
+
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 var walletUtxosBucketKey = []byte("wallet-utxos")
 
 type WalletUtxo struct {
-	OutPoint p2p.OutPoint
+	OutPoint primitives.OutPoint
 	Path     string
 	Owner    string
 	Value    int64

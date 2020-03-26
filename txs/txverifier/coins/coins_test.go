@@ -2,14 +2,13 @@ package coins_txverifier
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
-	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
+	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 /*
@@ -24,51 +23,51 @@ var PubKey2 = [48]byte{173, 123, 139, 167, 43, 11, 143, 169, 86, 146, 49, 189, 1
 var PubKey3 = [48]byte{134, 213, 17, 19, 3, 54, 137, 215, 44, 227, 142, 140, 201, 200, 156, 183, 116, 149, 80, 234, 1, 144, 145, 34, 138, 197, 76, 164, 33, 241, 184, 252, 46, 47, 107, 41, 180, 170, 88, 7, 93, 213, 180, 154, 141, 220, 222, 65}
 var PubKey4 = [48]byte{176, 50, 126, 164, 6, 9, 215, 12, 25, 223, 42, 121, 157, 12, 168, 36, 37, 248, 79, 201, 208, 202, 119, 136, 192, 163, 121, 242, 182, 179, 84, 100, 251, 176, 221, 122, 186, 222, 228, 168, 169, 33, 33, 207, 104, 34, 121, 140}
 
-var chainState = &state.State{
-	UtxoState: state.UtxoState{
-		UTXOs: map[chainhash.Hash]state.Utxo{},
+var chainState = &primitives.State{
+	UtxoState: primitives.UtxoState{
+		UTXOs: map[chainhash.Hash]primitives.Utxo{},
 	},
-	GovernanceState: state.GovernanceState{
-		Proposals: map[chainhash.Hash]state.GovernanceProposal{},
+	GovernanceState: primitives.GovernanceState{
+		Proposals: map[chainhash.Hash]primitives.GovernanceProposal{},
 	},
-	UserState: state.UserState{
-		Users: map[chainhash.Hash]state.User{},
+	UserState: primitives.UserState{
+		Users: map[chainhash.Hash]primitives.User{},
 	},
-	WorkerState: state.WorkerState{
-		Workers: map[chainhash.Hash]state.Worker{},
+	WorkerState: primitives.WorkerState{
+		Workers: map[chainhash.Hash]primitives.Worker{},
 	},
 }
 
 var coinTxVerifier CoinsTxVerifier
 
 func init() {
-	rows := []state.Utxo{
+	rows := []primitives.Utxo{
 		{
-			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-1")), Index: 1},
+			OutPoint:          primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-1")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
 			Owner:             "olpub1tesqm4sstyq96lm92h5hqe4wsdp4cvz8d9pcrfzjkl7st2nz4gdsrecflm",
 			Amount:            10 * 1e8,
 		},
 		{
-			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-2")), Index: 1},
+			OutPoint:          primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-2")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
 			Owner:             "olpub1aerqc5azajv3vk2lmueckw2hy2f45jt5mxwk33k768ztf7vp80nshaghcx",
 			Amount:            50 * 1e8,
 		},
 		{
-			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			OutPoint:          primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
 			Owner:             "olpub17upfvla9r4nfedxtk73w37f87a3mppq7k0f86z5jhnethhq0zx0q9spntk",
 			Amount:            1000 * 1e8,
 		},
 		{
-			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-4")), Index: 1},
+			OutPoint:          primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-4")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
 			Owner:             "olpub1ejvtu2mwn5az2aja53w527a7wl6hyrk9mk5pqxxh9czu6c846n0qxvpx4k",
 			Amount:            578 * 1e8,
 		},
 		{
-			OutPoint:          p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("budget-funds")), Index: 1},
+			OutPoint:          primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("budget-funds")), Index: 1},
 			PrevInputsPubKeys: [][48]byte{},
 			Owner:             "",
 			Amount:            20000 * 1e8,
@@ -84,7 +83,7 @@ var mockPayloadValid1 = coins_txpayload.PayloadTransfer{
 	AggSig: [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 	TxIn: []coins_txpayload.Input{
 		{
-			PrevOutpoint: p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			PrevOutpoint: primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			Sig:          [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 			PubKey:       PubKey3,
 		},
@@ -122,7 +121,7 @@ var mockPayloadInvalid1 = coins_txpayload.PayloadTransfer{
 	AggSig: [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 	TxIn: []coins_txpayload.Input{
 		{
-			PrevOutpoint: p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			PrevOutpoint: primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			Sig:          [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 			PubKey:       [48]byte{134, 213, 17, 19, 3, 54, 137, 215, 44, 227, 142, 140, 201, 200, 156, 183, 116, 149, 80, 234, 1, 144, 145, 34, 138, 197, 76, 164, 33, 241, 184, 252, 46, 47, 107, 41, 180, 170, 88, 7, 93, 213, 180, 154, 141, 220, 222, 65},
 		},
@@ -157,7 +156,7 @@ var mockPayloadInvalid2 = coins_txpayload.PayloadTransfer{
 	AggSig: [96]byte{},
 	TxIn: []coins_txpayload.Input{
 		{
-			PrevOutpoint: p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			PrevOutpoint: primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			Sig:          [96]byte{},
 			PubKey:       [48]byte{134, 213, 17, 19, 3, 54, 137, 215, 44, 227, 142, 140, 201, 200, 156, 183, 116, 149, 80, 234, 1, 144, 145, 34, 138, 197, 76, 164, 33, 241, 184, 252, 46, 47, 107, 41, 180, 170, 88, 7, 93, 213, 180, 154, 141, 220, 222, 65},
 		},
@@ -192,7 +191,7 @@ var mockPayloadInvalid3 = coins_txpayload.PayloadTransfer{
 	AggSig: [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 	TxIn: []coins_txpayload.Input{
 		{
-			PrevOutpoint: p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			PrevOutpoint: primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			Sig:          [96]byte{},
 			PubKey:       [48]byte{},
 		},
@@ -227,7 +226,7 @@ var mockPayloadInvalid4 = coins_txpayload.PayloadTransfer{
 	AggSig: [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 	TxIn: []coins_txpayload.Input{
 		{
-			PrevOutpoint: p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			PrevOutpoint: primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			Sig:          [96]byte{152, 166, 106, 194, 194, 45, 240, 30, 78, 214, 31, 119, 135, 67, 140, 238, 240, 211, 2, 218, 11, 89, 79, 12, 206, 17, 218, 65, 145, 78, 12, 33, 85, 217, 179, 173, 202, 38, 142, 23, 126, 154, 2, 100, 24, 243, 76, 75, 21, 25, 29, 95, 12, 210, 31, 158, 178, 211, 4, 42, 173, 125, 113, 60, 1, 251, 81, 65, 191, 81, 112, 232, 126, 137, 207, 92, 250, 252, 144, 53, 61, 125, 248, 143, 20, 170, 156, 107, 67, 255, 202, 206, 6, 235, 37, 131},
 			PubKey:       PubKey2,
 		},
@@ -262,7 +261,7 @@ var mockPayloadInvalid5 = coins_txpayload.PayloadTransfer{
 	AggSig: [96]byte{153, 164, 8, 77, 127, 200, 185, 184, 28, 161, 146, 85, 64, 132, 109, 10, 240, 68, 184, 229, 9, 16, 218, 238, 53, 12, 210, 144, 8, 43, 65, 50, 134, 145, 229, 228, 140, 190, 27, 12, 204, 96, 171, 110, 3, 141, 136, 132, 8, 25, 156, 28, 137, 92, 28, 205, 244, 137, 142, 179, 180, 68, 76, 122, 145, 110, 65, 83, 100, 103, 161, 94, 176, 75, 146, 218, 231, 129, 224, 1, 177, 48, 138, 206, 114, 189, 174, 214, 150, 70, 144, 130, 27, 192, 209, 250},
 	TxIn: []coins_txpayload.Input{
 		{
-			PrevOutpoint: p2p.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
+			PrevOutpoint: primitives.OutPoint{TxHash: chainhash.DoubleHashH([]byte("row-3")), Index: 1},
 			Sig:          [96]byte{153, 164, 8, 77, 127, 200, 185, 184, 28, 161, 146, 85, 64, 132, 109, 10, 240, 68, 184, 229, 9, 16, 218, 238, 53, 12, 210, 144, 8, 43, 65, 50, 134, 145, 229, 228, 140, 190, 27, 12, 204, 96, 171, 110, 3, 141, 136, 132, 8, 25, 156, 28, 137, 92, 28, 205, 244, 137, 142, 179, 180, 68, 76, 122, 145, 110, 65, 83, 100, 103, 161, 94, 176, 75, 146, 218, 231, 129, 224, 1, 177, 48, 138, 206, 114, 189, 174, 214, 150, 70, 144, 130, 27, 192, 209, 250},
 			PubKey:       PubKey3,
 		},

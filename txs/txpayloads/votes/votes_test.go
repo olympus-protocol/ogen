@@ -2,14 +2,15 @@ package votes_txpayload
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var mockPayloadUploadAndUpdate = PayloadUploadAndUpdate{
-	WorkerID: p2p.OutPoint{},
+	WorkerID: primitives.OutPoint{},
 	PubKey:   [48]byte{},
 	Sig:      [96]byte{},
 	GovID:    chainhash.Hash{},
@@ -34,7 +35,7 @@ func TestPayloadUploadAndUpdate_SerializeAndDeserialize(t *testing.T) {
 }
 
 var mockPayloadRevoke = PayloadRevoke{
-	WorkerID: p2p.OutPoint{},
+	WorkerID: primitives.OutPoint{},
 	PubKey:   [48]byte{},
 	Sig:      [96]byte{},
 	GovID:    chainhash.Hash{},

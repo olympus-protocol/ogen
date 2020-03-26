@@ -2,14 +2,15 @@ package workers_txpayload
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var mockPayloadUploadAndUpdate = PayloadUploadAndUpdate{
-	Utxo:   p2p.OutPoint{},
+	Utxo:   primitives.OutPoint{},
 	PubKey: [48]byte{},
 	Sig:    [96]byte{},
 	IP:     "1.1.1.1:8080",

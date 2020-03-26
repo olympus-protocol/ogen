@@ -2,6 +2,10 @@ package chain_test
 
 import (
 	"crypto/rand"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/db/blockdb/mock"
@@ -9,13 +13,9 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"os"
-	"testing"
-	"time"
 )
 
 var log = logger.New(os.Stdout).Quiet()
-
 
 func TestBlockchainTipGenesis(t *testing.T) {
 	db := mock.NewMemoryDB()
@@ -73,13 +73,11 @@ func TestBlockchainTipAddBlock(t *testing.T) {
 	}
 
 	err = b.ProcessBlock(&primitives.Block{
-		Header: newBlockHeader,
+		Header:    newBlockHeader,
 		Txs:       nil,
-		PubKey:    secretKey.DerivePublicKey().Serialize(),
 		Signature: sig.Serialize(),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 }
-

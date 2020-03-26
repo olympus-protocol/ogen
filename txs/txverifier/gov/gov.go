@@ -3,15 +3,15 @@ package gov_txverifier
 import (
 	"bytes"
 	"errors"
+	"reflect"
+	"sync"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	gov_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/gov"
 	"github.com/olympus-protocol/ogen/utils/amount"
-	"reflect"
-	"sync"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 
 type GovTxVerifier struct {
 	params *params.ChainParams
-	state  *state.State
+	state  *primitives.State
 }
 
 func (v GovTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
@@ -200,7 +200,7 @@ func (v GovTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.TxAc
 	return nil
 }
 
-func NewGovTxVerifier(state *state.State, params *params.ChainParams) GovTxVerifier {
+func NewGovTxVerifier(state *primitives.State, params *params.ChainParams) GovTxVerifier {
 	v := GovTxVerifier{
 		state:  state,
 		params: params,

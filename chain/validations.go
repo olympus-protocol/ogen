@@ -1,7 +1,7 @@
 package chain
 
 import (
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/amount"
 )
 
@@ -15,6 +15,6 @@ func (ch *Blockchain) GetBlockReward(height uint32) amount.AmountType {
 	return amount.AmountType(baseReward * 1e8)
 }
 
-func (ch *Blockchain) GetRewardBasedOnCollateral(height uint32, collateral p2p.OutPoint) amount.AmountType {
+func (ch *Blockchain) GetRewardBasedOnCollateral(height uint32, collateral primitives.OutPoint) amount.AmountType {
 	return amount.AmountType(0)
 }

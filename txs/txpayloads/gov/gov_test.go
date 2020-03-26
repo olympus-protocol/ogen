@@ -2,14 +2,15 @@ package gov_txpayload
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var mockPayloadUpload = PayloadUpload{
-	BurnedUtxo:    p2p.OutPoint{},
+	BurnedUtxo:    primitives.OutPoint{},
 	PubKey:        [48]byte{},
 	Sig:           [96]byte{},
 	Name:          "mock-name",

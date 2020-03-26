@@ -2,10 +2,11 @@ package primitives
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"time"
+
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 var MaxBlockHeaderBytes = 76
@@ -16,6 +17,7 @@ type BlockHeader struct {
 	MerkleRoot    chainhash.Hash
 	PrevBlockHash chainhash.Hash
 	Timestamp     time.Time
+	Slot          uint64
 }
 
 func (bh *BlockHeader) Serialize(w io.Writer) error {
@@ -50,4 +52,3 @@ func NewBlockHeader(version int32, prevBlock chainhash.Hash, nonce int32, merkle
 		Timestamp:     time,
 	}
 }
-

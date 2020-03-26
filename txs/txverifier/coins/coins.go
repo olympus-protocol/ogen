@@ -3,15 +3,15 @@ package coins_txverifier
 import (
 	"bytes"
 	"errors"
+	"reflect"
+	"sync"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/amount"
-	"reflect"
-	"sync"
 )
 
 var (
@@ -27,7 +27,7 @@ var (
 )
 
 type CoinsTxVerifier struct {
-	state  *state.State
+	state  *primitives.State
 	params *params.ChainParams
 }
 
@@ -188,7 +188,7 @@ func (v CoinsTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.Tx
 	return nil
 }
 
-func NewCoinsTxVerifier(state *state.State, params *params.ChainParams) CoinsTxVerifier {
+func NewCoinsTxVerifier(state *primitives.State, params *params.ChainParams) CoinsTxVerifier {
 	v := CoinsTxVerifier{
 		state:  state,
 		params: params,

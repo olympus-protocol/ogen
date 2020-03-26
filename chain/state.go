@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"github.com/olympus-protocol/ogen/state"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/db/blockdb"
@@ -14,12 +13,12 @@ import (
 // StateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
 // get rid of old states.
 type StateService struct {
-	log      *logger.Logger
-	lock     sync.RWMutex
-	params   params.ChainParams
+	log    *logger.Logger
+	lock   sync.RWMutex
+	params params.ChainParams
 
 	View     *ChainView
-	stateMap map[chainhash.Hash]state.State
+	stateMap map[chainhash.Hash]primitives.State
 
 	sync bool
 }
@@ -37,12 +36,14 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams) 
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("loading chain state...")
 
+	genesisBlock := primitives.GetGenesisBlock(params)
+
 	// load chain state
-	loc, err := db.AddRawBlock(&params.GenesisBlock)
+	loc, err := db.AddRawBlock(&genesisBlock)
 	if err != nil {
 		return err
 	}
-	view, err := NewChainView(params.GenesisBlock.Header, *loc)
+	view, err := NewChainView(genesisBlock.Header, *loc)
 	if err != nil {
 		return err
 	}
@@ -52,19 +53,19 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams) 
 	return nil
 }
 
-func (s *StateService) TipState() state.State {
+func (s *StateService) TipState() primitives.State {
 	tip := s.View.Tip()
 	return s.stateMap[tip.Hash]
 }
 
-func (s *StateService) GetStateForHash(hash chainhash.Hash) (*state.State, bool) {
+func (s *StateService) GetStateForHash(hash chainhash.Hash) (*primitives.State, bool) {
 	s.lock.RLock()
 	oldState, found := s.stateMap[hash]
 	s.lock.RUnlock()
 	return &oldState, found
 }
 
-func (s *StateService) Add(block *primitives.Block, location blockdb.BlockLocation, newTip bool, newState *state.State) error {
+func (s *StateService) Add(block *primitives.Block, location blockdb.BlockLocation, newTip bool, newState *primitives.State) error {
 	row, err := s.View.Add(block.Header, location)
 	if err != nil {
 		return err
@@ -83,24 +84,25 @@ func (s *StateService) Add(block *primitives.Block, location blockdb.BlockLocati
 }
 
 func NewStateService(log *logger.Logger, params params.ChainParams, db blockdb.DB) (*StateService, error) {
-	genesisHash := params.GenesisBlock.Hash()
+	genesisBlock := primitives.GetGenesisBlock(params)
+	genesisHash := genesisBlock.Hash()
 	ss := &StateService{
-		params:   params,
-		log:      log,
-		sync:     false,
-		stateMap: map[chainhash.Hash]state.State{
+		params: params,
+		log:    log,
+		sync:   false,
+		stateMap: map[chainhash.Hash]primitives.State{
 			genesisHash: {
-				UtxoState: state.UtxoState{
-					UTXOs: make(map[chainhash.Hash]state.Utxo),
+				UtxoState: primitives.UtxoState{
+					UTXOs: make(map[chainhash.Hash]primitives.Utxo),
 				},
-				GovernanceState: state.GovernanceState{
-					Proposals: make(map[chainhash.Hash]state.GovernanceProposal),
+				GovernanceState: primitives.GovernanceState{
+					Proposals: make(map[chainhash.Hash]primitives.GovernanceProposal),
 				},
-				UserState: state.UserState{
-					Users: make(map[chainhash.Hash]state.User),
+				UserState: primitives.UserState{
+					Users: make(map[chainhash.Hash]primitives.User),
 				},
-				WorkerState: state.WorkerState{
-					Workers: make(map[chainhash.Hash]state.Worker),
+				WorkerState: primitives.WorkerState{
+					Workers: make(map[chainhash.Hash]primitives.Worker),
 				},
 			},
 		},

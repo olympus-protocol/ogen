@@ -2,19 +2,20 @@ package primitives
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 type TxType = int32
 
 const (
-	Coins TxType = iota + 1
-	Worker
-	Governance
-	Votes
-	Users
+	TxCoins TxType = iota + 1
+	TxWorker
+	TxGovernance
+	TxVotes
+	TxUsers
 )
 
 type TxAction = int32
@@ -35,7 +36,6 @@ type Tx struct {
 	TxAction  TxAction
 	Payload   []byte
 }
-
 
 func (t *Tx) Encode(w io.Writer) error {
 	err := serializer.WriteElements(w, t.TxVersion, t.TxType, t.TxAction, t.Time)

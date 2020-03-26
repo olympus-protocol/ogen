@@ -3,14 +3,14 @@ package workers_txverifier
 import (
 	"bytes"
 	"errors"
+	"reflect"
+	"sync"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	workers_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/workers"
-	"reflect"
-	"sync"
 )
 
 var (
@@ -22,7 +22,7 @@ var (
 
 type WorkersTxVerifier struct {
 	params *params.ChainParams
-	state  *state.State
+	state  *primitives.State
 }
 
 func (v WorkersTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
@@ -149,7 +149,7 @@ func (v WorkersTxVerifier) MatchVerify(payload []byte, Action primitives.TxActio
 		}
 		data := v.state.WorkerState.Get(searchHash)
 		pubKeyBytes := matchPubKey.Serialize()
-		equal := reflect.DeepEqual(pubKeyBytes, data.WorkerData.PubKey)
+		equal := reflect.DeepEqual(pubKeyBytes, data.PubKey)
 		if !equal {
 			return ErrorDataNoMatch
 		}
@@ -181,7 +181,7 @@ func (v WorkersTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.
 	return nil
 }
 
-func NewWorkersTxVerifier(state *state.State, params *params.ChainParams) WorkersTxVerifier {
+func NewWorkersTxVerifier(state *primitives.State, params *params.ChainParams) WorkersTxVerifier {
 	v := WorkersTxVerifier{
 		state:  state,
 		params: params,

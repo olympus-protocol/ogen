@@ -2,10 +2,10 @@ package txverifier
 
 import (
 	"errors"
+
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	coins_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/coins"
 	gov_txverifier "github.com/olympus-protocol/ogen/txs/txverifier/gov"
@@ -37,15 +37,15 @@ type Verifier interface {
 func (txv *TxVerifier) VerifyTx(tx *p2p.MsgTx) error {
 	var verifier Verifier
 	switch tx.TxType {
-	case primitives.Coins:
+	case primitives.TxCoins:
 		verifier = txv.coins
-	case primitives.Governance:
+	case primitives.TxGovernance:
 		verifier = txv.gov
-	case primitives.Users:
+	case primitives.TxUsers:
 		verifier = txv.users
-	case primitives.Votes:
+	case primitives.TxVotes:
 		verifier = txv.votes
-	case primitives.Worker:
+	case primitives.TxWorker:
 		verifier = txv.workers
 	default:
 		// TODO make sure we create a secure way to omit not known tx types
@@ -61,15 +61,15 @@ func (txv *TxVerifier) VerifyTx(tx *p2p.MsgTx) error {
 func (txv *TxVerifier) VerifyTxsBatch(txs []primitives.Tx, txTypes primitives.TxType, txAction primitives.TxAction) error {
 	var verifier Verifier
 	switch txTypes {
-	case primitives.Coins:
+	case primitives.TxCoins:
 		verifier = txv.coins
-	case primitives.Governance:
+	case primitives.TxGovernance:
 		verifier = txv.gov
-	case primitives.Users:
+	case primitives.TxUsers:
 		verifier = txv.users
-	case primitives.Votes:
+	case primitives.TxVotes:
 		verifier = txv.votes
-	case primitives.Worker:
+	case primitives.TxWorker:
 		verifier = txv.workers
 	default:
 		// TODO make sure we create a secure way to omit not known tx types
@@ -86,7 +86,7 @@ func (txv *TxVerifier) VerifyTxsBatch(txs []primitives.Tx, txTypes primitives.Tx
 	return verifier.SigVerifyBatch(payloads, txAction)
 }
 
-func NewTxVerifier(currentState *state.State, params *params.ChainParams) *TxVerifier {
+func NewTxVerifier(currentState *primitives.State, params *params.ChainParams) *TxVerifier {
 	return &TxVerifier{
 		coins:   coins_txverifier.NewCoinsTxVerifier(currentState, params),
 		gov:     gov_txverifier.NewGovTxVerifier(currentState, params),

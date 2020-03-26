@@ -3,26 +3,25 @@ package primitives
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
-	"time"
 )
 
 const (
 	maxBlockSize = 1024 * 512 // 512 kilobytes
 )
 
+// Block is a block in the blockchain.
 type Block struct {
-	Header    BlockHeader
-	Txs       []Tx
-	PubKey    [48]byte
-	Signature [96]byte
-}
-
-func (b *Block) MinerPubKey() (*bls.PublicKey, error) {
-	return bls.DeserializePublicKey(b.PubKey)
+	Header          BlockHeader
+	Votes           []MultiValidatorVote
+	Txs             []Tx
+	Signature       [96]byte
+	RandaoSignature [96]byte
 }
 
 func (b *Block) MinerSig() (*bls.Signature, error) {
@@ -56,14 +55,12 @@ func (m *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
-	err = serializer.WriteElements(w, m.PubKey, m.Signature)
+	err = serializer.WriteElements(w, m.Signature)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-
 
 func (m *Block) Decode(r io.Reader) error {
 	buf, ok := r.(*bytes.Buffer)
@@ -88,7 +85,7 @@ func (m *Block) Decode(r io.Reader) error {
 		}
 		m.Txs[i] = tx
 	}
-	err = serializer.ReadElements(buf, &m.PubKey, &m.Signature)
+	err = serializer.ReadElements(buf, &m.Signature)
 	if err != nil {
 		return err
 	}

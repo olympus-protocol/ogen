@@ -2,12 +2,13 @@ package blockdb
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var (
@@ -24,7 +25,7 @@ var (
 	})
 	TxTest = primitives.Tx{
 		TxVersion: 1,
-		TxType:    primitives.Coins,
+		TxType:    primitives.TxCoins,
 		TxAction:  primitives.Transfer,
 		Time:      time.Unix(1572830409, 0).Unix(),
 	}

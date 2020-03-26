@@ -3,14 +3,14 @@ package users_txverifier
 import (
 	"bytes"
 	"errors"
+	"reflect"
+	"sync"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	users_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/users"
-	"reflect"
-	"sync"
 )
 
 var (
@@ -22,7 +22,7 @@ var (
 
 type UsersTxVerifier struct {
 	params *params.ChainParams
-	state  *state.State
+	state  *primitives.State
 }
 
 func (v UsersTxVerifier) DeserializePayload(payload []byte, Action primitives.TxAction) (txpayloads.Payload, error) {
@@ -97,7 +97,7 @@ func (v UsersTxVerifier) SigVerify(payload []byte, Action primitives.TxAction) e
 			return err
 		}
 		userData := v.state.UserState.Get(hash)
-		pubKeyBytes := userData.UserData.PubKey
+		pubKeyBytes := userData.PubKey
 		pubKey, err := bls.DeserializePublicKey(pubKeyBytes)
 		if err != nil {
 			return err
@@ -168,7 +168,7 @@ func (v UsersTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction)
 		}
 		data := v.state.UserState.Get(searchHash)
 		matchPubKey, err := VerPayload.GetPublicKey()
-		pubKey, err := bls.DeserializePublicKey(data.UserData.PubKey)
+		pubKey, err := bls.DeserializePublicKey(data.PubKey)
 		if err != nil {
 			return err
 		}
@@ -217,7 +217,7 @@ func (v UsersTxVerifier) MatchVerifyBatch(payload [][]byte, Action primitives.Tx
 	return nil
 }
 
-func NewUsersTxVerifier(state *state.State, params *params.ChainParams) UsersTxVerifier {
+func NewUsersTxVerifier(state *primitives.State, params *params.ChainParams) UsersTxVerifier {
 	v := UsersTxVerifier{
 		state:  state,
 		params: params,

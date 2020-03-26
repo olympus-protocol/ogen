@@ -2,6 +2,8 @@ package miner
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
@@ -12,7 +14,6 @@ import (
 	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
 	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/wallet"
-	"time"
 )
 
 type Config struct {
@@ -80,7 +81,7 @@ func (m *Miner) createNewBlock() (*primitives.Block, error) {
 	genTx := primitives.Tx{
 		Time:      time.Now().Unix(),
 		TxVersion: 1,
-		TxType:    primitives.Coins,
+		TxType:    primitives.TxCoins,
 		TxAction:  primitives.Generate,
 		Payload:   buf.Bytes(),
 	}
@@ -101,7 +102,6 @@ func (m *Miner) createNewBlock() (*primitives.Block, error) {
 		return nil, err
 	}
 	blockMsg.Signature = sig.Serialize()
-	blockMsg.PubKey = m.minerKey.DerivePublicKey().Serialize()
 	return blockMsg, nil
 }
 

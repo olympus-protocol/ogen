@@ -3,12 +3,11 @@ package chain
 import (
 	"errors"
 	"fmt"
-	"github.com/olympus-protocol/ogen/bls"
+	"sync"
+
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
-	"sync"
 )
 
 type txSchemes struct {
@@ -52,7 +51,7 @@ func (ch *Blockchain) newTxPayloadInv(txs []primitives.Tx, blocks int) (*TxPaylo
 	}
 	wg.Wait()
 	if len(txPayloads.txs[txSchemes{
-		Type:   primitives.Coins,
+		Type:   primitives.TxCoins,
 		Action: primitives.Generate,
 	}]) > blocks {
 		return nil, ErrorTooManyGenerateTx
@@ -120,11 +119,12 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// b. apply block transition to state
 	ch.log.Debugf("attempting to apply block to state")
-	newState, err := oldState.TransitionBlock(block)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
+	// TODO: update block transition
+	// newState, err := oldState.TransitionBlock(block)
+	// if err != nil {
+	// 	ch.log.Warn(err)
+	// 	return err
+	// }
 	ch.log.Infof("New block accepted Hash: %v", block.Hash())
 
 	// 3. write block to database
@@ -136,7 +136,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// 4. add block to chain and set new state
 	// TODO: better fork choice
-	err = ch.state.Add(block, *blocator, true, &newState)
+	err = ch.state.Add(block, *blocator, true, oldState)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
@@ -146,22 +146,18 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) error {
 	if height < ch.params.LastPreWorkersBlock {
-		sig, err := block.MinerSig()
-		if err != nil {
-			return err
-		}
-		pubKey, err := block.MinerPubKey()
-		if err != nil {
-			return err
-		}
-		blockHash := block.Hash()
-		valid, err := bls.VerifySig(pubKey, blockHash[:], sig)
-		if err != nil {
-			return err
-		}
-		if !valid {
-			return ErrorInvalidBlockSig
-		}
+		// sig, err := block.MinerSig()
+		// if err != nil {
+		// 	return err
+		// }
+		// blockHash := block.Hash()
+		// valid, err := bls.VerifySig(pubKey, blockHash[:], sig)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !valid {
+		// 	return ErrorInvalidBlockSig
+		// }
 		//pubKeyHash, err := pubKey.ToBech32(ch.params.AddressPrefixes, false)
 		//if err != nil {
 		//	return err
@@ -179,7 +175,7 @@ func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) err
 	return nil
 }
 
-func (ch *Blockchain) verifyTx(prevState *state.State, inv *TxPayloadInv) error {
+func (ch *Blockchain) verifyTx(prevState *primitives.State, inv *TxPayloadInv) error {
 
 	for scheme, txs := range inv.txs {
 		txVerifier := txverifier.NewTxVerifier(&*prevState, &ch.params)

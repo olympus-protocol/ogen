@@ -2,17 +2,18 @@ package workers_txpayload
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 type PayloadUploadAndUpdate struct {
-	Utxo   p2p.OutPoint
+	Utxo   primitives.OutPoint
 	PubKey [48]byte
 	Sig    [96]byte
 	IP     string

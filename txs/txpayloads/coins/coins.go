@@ -2,17 +2,18 @@ package coins_txpayload
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txpayloads"
 	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 type Input struct {
-	PrevOutpoint p2p.OutPoint
+	PrevOutpoint primitives.OutPoint
 	Sig          [96]byte
 	PubKey       [48]byte
 }
@@ -41,7 +42,7 @@ func (in *Input) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func NewInput(prevOut p2p.OutPoint, sig [96]byte, pubKey [48]byte) Input {
+func NewInput(prevOut primitives.OutPoint, sig [96]byte, pubKey [48]byte) Input {
 	return Input{
 		PrevOutpoint: prevOut,
 		Sig:          sig,

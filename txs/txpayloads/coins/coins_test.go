@@ -2,20 +2,21 @@ package coins_txpayload
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"reflect"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var mockInputCoinBase = Input{
-	PrevOutpoint: p2p.OutPoint{},
+	PrevOutpoint: primitives.OutPoint{},
 	Sig:          [96]byte{},
 	PubKey:       [48]byte{},
 }
 
 var mockInput = Input{
-	PrevOutpoint: p2p.OutPoint{TxHash: chainhash.Hash{}, Index: 10},
+	PrevOutpoint: primitives.OutPoint{TxHash: chainhash.Hash{}, Index: 10},
 	Sig:          [96]byte{1, 1, 1},
 	PubKey:       [48]byte{1, 1, 1},
 }

@@ -2,8 +2,9 @@ package serializer
 
 import (
 	"encoding/binary"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"io"
+
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 func WriteElement(w io.Writer, element interface{}) error {
@@ -96,7 +97,16 @@ func WriteElement(w io.Writer, element interface{}) error {
 			return err
 		}
 		return nil
-
+	case string:
+		bs := []byte(e)
+		if err := WriteVarInt(w, uint64(len(bs))); err != nil {
+			return err
+		}
+		_, err := w.Write(bs)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return binary.Write(w, littleEndian, element)
