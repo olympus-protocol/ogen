@@ -30,10 +30,6 @@ type State struct {
 	// ProposerQueue is the queue of validators scheduled to create a block.
 	ProposerQueue []chainhash.Hash
 
-	// PreviousJustifiedEpoch is the second-to-last epoch that >2/3 of validators
-	// voted for.
-	PreviousJustifiedEpoch uint64
-
 	// JustifiedEpoch is the last epoch that >2/3 of validators voted for.
 	JustifiedEpoch uint64
 
@@ -50,15 +46,11 @@ type State struct {
 	// CurrentEpochVotes are votes that are being submitted where
 	// the source epoch matches justified epoch.
 	CurrentEpochVotes []AcceptedVoteInfo
-
-	// PreviousEpochVotes are votes that are being submitted where the
-	// source epoch matches the previous justified epoch.
-	PreviousEpochVotes []AcceptedVoteInfo
 }
 
 // Serialize serializes the state to the writer.
 func (s *State) Serialize(w io.Writer) error {
-	if err := serializer.WriteElements(w, s.Slot, s.EpochIndex, s.PreviousJustifiedEpoch, s.JustifiedEpoch, s.FinalizedEpoch, s.JustificationBitfield); err != nil {
+	if err := serializer.WriteElements(w, s.Slot, s.EpochIndex, s.JustifiedEpoch, s.FinalizedEpoch, s.JustificationBitfield); err != nil {
 		return err
 	}
 	if err := s.UtxoState.Serialize(w); err != nil {
@@ -97,20 +89,11 @@ func (s *State) Serialize(w io.Writer) error {
 			return err
 		}
 	}
-	if err := serializer.WriteVarInt(w, uint64(len(s.PreviousEpochVotes))); err != nil {
-		return err
-	}
-	for _, p := range s.PreviousEpochVotes {
-		if err := p.Serialize(w); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
 func (s *State) Deserialize(r io.Reader) error {
-	if err := serializer.ReadElements(r, &s.Slot, &s.EpochIndex, &s.PreviousJustifiedEpoch, &s.JustifiedEpoch, &s.FinalizedEpoch, &s.JustificationBitfield); err != nil {
+	if err := serializer.ReadElements(r, &s.Slot, &s.EpochIndex, &s.JustifiedEpoch, &s.FinalizedEpoch, &s.JustificationBitfield); err != nil {
 		return err
 	}
 	if err := s.UtxoState.Deserialize(r); err != nil {
@@ -158,12 +141,6 @@ func (s *State) Deserialize(r io.Reader) error {
 	num, err = serializer.ReadVarInt(r)
 	if err != nil {
 		return err
-	}
-	s.PreviousEpochVotes = make([]AcceptedVoteInfo, num)
-	for i := range s.PreviousEpochVotes {
-		if err := s.PreviousEpochVotes[i].Deserialize(r); err != nil {
-			return err
-		}
 	}
 	return nil
 }
