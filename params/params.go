@@ -16,7 +16,6 @@ type ChainParams struct {
 	AddressPrefixes            bls.Prefixes
 	LastPreWorkersBlock        uint32
 	PreWorkersPubKeyHash       string
-	BlockTimeSpan              int64
 	BlocksReductionCycle       uint32
 	SuperBlockCycle            uint32
 	SuperBlockStartHeight      uint32
@@ -26,7 +25,15 @@ type ChainParams struct {
 	GovernanceProposalFee      amount.AmountType
 	BaseBlockReward            float64
 	BlockReductionPercentage   float64
-	EpochLength                uint64
+
+	EpochLength                  uint64
+	BlockTimeSpan                int64
+	EjectionBalance              uint64
+	MaxBalanceChurnQuotient      uint64
+	MaxVotesPerBlock             uint64
+	LatestBlockRootsLength       uint64
+	MinAttestationInclusionDelay uint64
+	DepositAmount                uint64
 }
 
 var NetworkNames = map[string]string{
@@ -48,19 +55,25 @@ var Mainnet = ChainParams{
 		ContractPubKey:  "ctpub",
 		ContractPrivKey: "ctprv",
 	},
-	LastPreWorkersBlock:        500,
-	PreWorkersPubKeyHash:       "olpub12vjdayxm6eygqkxrtyvt0jnjxn8965wflynmf4d899pnkzp9glmslqcvce",
-	BlockTimeSpan:              120,                   // 120 seconds
-	BlocksReductionCycle:       262800,                // 1 year
-	SuperBlockCycle:            21600,                 // 1 month
-	SuperBlockStartHeight:      0,                     // TODO define
-	ProfitSharingCycle:         21600,                 // 1 month
-	ProfitSharingStartCycle:    0,                     // TODO define
-	GovernanceBudgetPercentage: 0.2,                   // 20%
-	BlockReductionPercentage:   0.2,                   // 20%
-	BaseBlockReward:            20,                    // 20 POLIS
-	GovernanceProposalFee:      amount.AmountType(50), // 50 POLIS
-	EpochLength:                5,
+	LastPreWorkersBlock:          500,
+	PreWorkersPubKeyHash:         "olpub12vjdayxm6eygqkxrtyvt0jnjxn8965wflynmf4d899pnkzp9glmslqcvce",
+	BlockTimeSpan:                120,                   // 120 seconds
+	BlocksReductionCycle:         262800,                // 1 year
+	SuperBlockCycle:              21600,                 // 1 month
+	SuperBlockStartHeight:        0,                     // TODO define
+	ProfitSharingCycle:           21600,                 // 1 month
+	ProfitSharingStartCycle:      0,                     // TODO define
+	GovernanceBudgetPercentage:   0.2,                   // 20%
+	BlockReductionPercentage:     0.2,                   // 20%
+	BaseBlockReward:              20,                    // 20 POLIS
+	GovernanceProposalFee:        amount.AmountType(50), // 50 POLIS
+	EpochLength:                  5,
+	EjectionBalance:              1000,
+	MaxBalanceChurnQuotient:      32,
+	MaxVotesPerBlock:             32,
+	LatestBlockRootsLength:       64,
+	MinAttestationInclusionDelay: 1,
+	DepositAmount:                10000,
 }
 
 var TestNet = ChainParams{
@@ -76,13 +89,19 @@ var TestNet = ChainParams{
 		ContractPrivKey: "tctpub",
 		ContractPubKey:  "tctprv",
 	},
-	LastPreWorkersBlock:        10,
-	PreWorkersPubKeyHash:       "1HWfiw9Lbg2vh8A1sZDsp5BVLHeW41V13R", // 5JbK2h1P7BQTmwJgCPRonJzCqRMNpFPvsAPTwrHBdT7DmEzzsUK
-	BlockTimeSpan:              60,                                   // 60 seconds
-	BlocksReductionCycle:       259200,                               // 6 months
-	SuperBlockCycle:            1440,                                 // 1 day
-	GovernanceBudgetPercentage: 0.2,                                  // 20%
-	BlockReductionPercentage:   0.2,                                  // 20%
-	BaseBlockReward:            20,                                   // 20
-	EpochLength:                2,
+	LastPreWorkersBlock:          10,
+	PreWorkersPubKeyHash:         "1HWfiw9Lbg2vh8A1sZDsp5BVLHeW41V13R", // 5JbK2h1P7BQTmwJgCPRonJzCqRMNpFPvsAPTwrHBdT7DmEzzsUK
+	BlockTimeSpan:                60,                                   // 60 seconds
+	BlocksReductionCycle:         259200,                               // 6 months
+	SuperBlockCycle:              1440,                                 // 1 day
+	GovernanceBudgetPercentage:   0.2,                                  // 20%
+	BlockReductionPercentage:     0.2,                                  // 20%
+	BaseBlockReward:              20,                                   // 20
+	EpochLength:                  5,
+	EjectionBalance:              1000,
+	MaxBalanceChurnQuotient:      32,
+	MaxVotesPerBlock:             32,
+	LatestBlockRootsLength:       64,
+	MinAttestationInclusionDelay: 1,
+	DepositAmount:                10000,
 }
