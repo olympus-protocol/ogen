@@ -118,14 +118,29 @@ func TestStateDeserializeSerialize(t *testing.T) {
 				},
 			},
 		},
-		Slot:                  1,
-		EpochIndex:            2,
-		ProposerQueue:         []chainhash.Hash{{3}},
-		JustifiedEpoch:        5,
-		JustificationBitfield: 6,
-		FinalizedEpoch:        7,
-		LatestBlockHashes:     []chainhash.Hash{{8}},
+		Slot:                   1,
+		EpochIndex:             2,
+		ProposerQueue:          []chainhash.Hash{{3}},
+		JustifiedEpoch:         5,
+		PreviousJustifiedEpoch: 100,
+		JustificationBitfield:  6,
+		FinalizedEpoch:         7,
+		LatestBlockHashes:      []chainhash.Hash{{8}},
 		CurrentEpochVotes: []AcceptedVoteInfo{
+			{
+				Data: VoteData{
+					Slot:      3,
+					FromEpoch: 1,
+					FromHash:  [32]byte{14},
+					ToEpoch:   13,
+					ToHash:    [32]byte{12},
+				},
+				ParticipationBitfield: []uint8{1},
+				Proposer:              2,
+				InclusionDelay:        3,
+			},
+		},
+		PreviousEpochVotes: []AcceptedVoteInfo{
 			{
 				Data: VoteData{
 					Slot:      3,
