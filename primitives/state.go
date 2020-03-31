@@ -39,6 +39,9 @@ type State struct {
 	// JustifiedEpoch is the last epoch that >2/3 of validators voted for.
 	JustifiedEpoch uint64
 
+	// JustifiedEpochHash is the block hash of the last epoch that >2/3 of validators voted for.
+	JustifiedEpochHash chainhash.Hash
+
 	// CurrentEpochVotes are votes that are being submitted where
 	// the source epoch matches justified epoch.
 	CurrentEpochVotes []AcceptedVoteInfo
@@ -47,13 +50,16 @@ type State struct {
 	// voted for.
 	PreviousJustifiedEpoch uint64
 
+	// PreviousJustifiedEpochHash is the block hash of the last epoch that >2/3 of validators voted for.
+	PreviousJustifiedEpochHash chainhash.Hash
+
 	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
 	PreviousEpochVotes []AcceptedVoteInfo
 }
 
 // Serialize serializes the state to the writer.
 func (s *State) Serialize(w io.Writer) error {
-	if err := serializer.WriteElements(w, s.Slot, s.EpochIndex, s.JustifiedEpoch, s.FinalizedEpoch, s.JustificationBitfield, s.PreviousJustifiedEpoch); err != nil {
+	if err := serializer.WriteElements(w, s.Slot, s.EpochIndex, s.JustifiedEpoch, s.FinalizedEpoch, s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpochHash, s.PreviousJustifiedEpochHash); err != nil {
 		return err
 	}
 	if err := s.UtxoState.Serialize(w); err != nil {
@@ -103,8 +109,9 @@ func (s *State) Serialize(w io.Writer) error {
 	return nil
 }
 
+// Deserialize deserializes state from the reader.
 func (s *State) Deserialize(r io.Reader) error {
-	if err := serializer.ReadElements(r, &s.Slot, &s.EpochIndex, &s.JustifiedEpoch, &s.FinalizedEpoch, &s.JustificationBitfield, &s.PreviousJustifiedEpoch); err != nil {
+	if err := serializer.ReadElements(r, &s.Slot, &s.EpochIndex, &s.JustifiedEpoch, &s.FinalizedEpoch, &s.JustificationBitfield, &s.PreviousJustifiedEpoch, &s.JustifiedEpochHash, &s.PreviousJustifiedEpochHash); err != nil {
 		return err
 	}
 	if err := s.UtxoState.Deserialize(r); err != nil {
