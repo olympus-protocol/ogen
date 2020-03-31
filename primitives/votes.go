@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -19,7 +20,7 @@ type AcceptedVoteInfo struct {
 	ParticipationBitfield []uint8
 
 	// Proposer is the proposer that included the attestation in a block.
-	Proposer uint64
+	Proposer chainhash.Hash
 
 	// InclusionDelay is the delay from the attestation slot to the slot
 	// included.
@@ -64,6 +65,13 @@ type VoteData struct {
 
 	// ToHash is the block hash of the ToEpoch.
 	ToHash chainhash.Hash
+}
+
+// Hash calculates the hash of the vote data.
+func (v *VoteData) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = v.Serialize(buf)
+	return chainhash.HashH(buf.Bytes())
 }
 
 // Serialize serializes the vote data to a writer.

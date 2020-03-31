@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -167,4 +168,11 @@ func (s *State) Deserialize(r io.Reader) error {
 		}
 	}
 	return nil
+}
+
+// Hash calculates the hash of the state.
+func (s *State) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = s.Serialize(buf)
+	return chainhash.HashH(buf.Bytes())
 }

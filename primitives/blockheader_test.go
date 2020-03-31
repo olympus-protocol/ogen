@@ -2,10 +2,11 @@ package primitives
 
 import (
 	"bytes"
-	"github.com/go-test/deep"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
 	"time"
+
+	"github.com/go-test/deep"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var (
@@ -17,9 +18,10 @@ var (
 	})
 	blockHeaderTest = BlockHeader{
 		Version:       1,
-		PrevBlockHash: chainhash.Hash{},
+		PrevBlockHash: chainhash.Hash{2},
 		MerkleRoot:    merkleRootTest,
 		Timestamp:     time.Unix(0x5A3BB72B, 0),
+		StateRoot:     chainhash.Hash{1},
 	}
 )
 

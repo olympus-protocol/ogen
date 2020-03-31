@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
@@ -17,7 +18,7 @@ func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
 			ToHash:    [32]byte{5},
 		},
 		ParticipationBitfield: []uint8{6, 7},
-		Proposer:              8,
+		Proposer:              chainhash.Hash{8},
 		InclusionDelay:        9,
 	}
 
