@@ -33,8 +33,26 @@ func (wr *Worker) Deserialize(r io.Reader) error {
 	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress)
 }
 
+// Copy returns a copy of the worker.
+func (wr *Worker) Copy() Worker {
+	return *wr
+}
+
+// WorkerState is the registry of workers IDs to workers.
 type WorkerState struct {
 	Workers map[chainhash.Hash]Worker
+}
+
+// Copy returns a copy of the WorkerState.
+func (w *WorkerState) Copy() WorkerState {
+	w2 := *w
+
+	w2.Workers = make(map[chainhash.Hash]Worker)
+	for i, w := range w.Workers {
+		w2.Workers[i] = w.Copy()
+	}
+
+	return w2
 }
 
 // Have checks if a Worker exists.

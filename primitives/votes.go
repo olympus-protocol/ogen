@@ -27,6 +27,20 @@ type AcceptedVoteInfo struct {
 	InclusionDelay uint64
 }
 
+// Copy returns a copy of the AcceptedVoteInfo.
+func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
+	a2 := *a
+
+	a2.ParticipationBitfield = make([]uint8, len(a.ParticipationBitfield))
+	for i, b := range a.ParticipationBitfield {
+		a2.ParticipationBitfield[i] = b
+	}
+
+	a2.Data = a.Data.Copy()
+
+	return a2
+}
+
 // Serialize serializes the accepted vote info to a writer.
 func (a *AcceptedVoteInfo) Serialize(w io.Writer) error {
 	if err := a.Data.Serialize(w); err != nil {
@@ -65,6 +79,11 @@ type VoteData struct {
 
 	// ToHash is the block hash of the ToEpoch.
 	ToHash chainhash.Hash
+}
+
+// Copy returns a copy of the vote data.
+func (v *VoteData) Copy() VoteData {
+	return *v
 }
 
 // Hash calculates the hash of the vote data.

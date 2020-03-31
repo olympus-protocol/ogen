@@ -61,26 +61,26 @@ type Utxo struct {
 }
 
 // Serialize serializes the UtxoRow to a writer.
-func (l *Utxo) Serialize(w io.Writer) error {
-	err := l.OutPoint.Serialize(w)
+func (u *Utxo) Serialize(w io.Writer) error {
+	err := u.OutPoint.Serialize(w)
 	if err != nil {
 		return err
 	}
-	err = serializer.WriteVarString(w, l.Owner)
+	err = serializer.WriteVarString(w, u.Owner)
 	if err != nil {
 		return err
 	}
-	err = serializer.WriteVarInt(w, uint64(len(l.PrevInputsPubKeys)))
+	err = serializer.WriteVarInt(w, uint64(len(u.PrevInputsPubKeys)))
 	if err != nil {
 		return err
 	}
-	for _, pub := range l.PrevInputsPubKeys {
+	for _, pub := range u.PrevInputsPubKeys {
 		err = serializer.WriteElements(w, pub)
 		if err != nil {
 			return err
 		}
 	}
-	err = serializer.WriteVarInt(w, uint64(l.Amount))
+	err = serializer.WriteVarInt(w, uint64(u.Amount))
 	if err != nil {
 		return err
 	}
@@ -88,12 +88,12 @@ func (l *Utxo) Serialize(w io.Writer) error {
 }
 
 // Deserialize deserializes a UtxoRow from a reader.
-func (l *Utxo) Deserialize(r io.Reader) error {
-	err := l.OutPoint.Deserialize(r)
+func (u *Utxo) Deserialize(r io.Reader) error {
+	err := u.OutPoint.Deserialize(r)
 	if err != nil {
 		return err
 	}
-	l.Owner, err = serializer.ReadVarString(r)
+	u.Owner, err = serializer.ReadVarString(r)
 	if err != nil {
 		return err
 	}
@@ -101,31 +101,55 @@ func (l *Utxo) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	l.PrevInputsPubKeys = make([][48]byte, 0, count)
+	u.PrevInputsPubKeys = make([][48]byte, 0, count)
 	for i := uint64(0); i < count; i++ {
 		var pubKey [48]byte
 		err = serializer.ReadElement(r, &pubKey)
 		if err != nil {
 			return err
 		}
-		l.PrevInputsPubKeys = append(l.PrevInputsPubKeys, pubKey)
+		u.PrevInputsPubKeys = append(u.PrevInputsPubKeys, pubKey)
 	}
 	amount, err := serializer.ReadVarInt(r)
 	if err != nil {
 		return err
 	}
-	l.Amount = int64(amount)
+	u.Amount = int64(amount)
 	return nil
 }
 
-func (l *Utxo) Hash() chainhash.Hash {
+// Hash calculates the hash of a UTXO.
+func (u *Utxo) Hash() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
-	_ = l.OutPoint.Serialize(buf)
+	_ = u.OutPoint.Serialize(buf)
 	return chainhash.DoubleHashH(buf.Bytes())
 }
 
+// Copy returns a copy of the UTXO.
+func (u *Utxo) Copy() Utxo {
+	u2 := *u
+
+	u2.PrevInputsPubKeys = make([][48]byte, len(u.PrevInputsPubKeys))
+	for i, p := range u.PrevInputsPubKeys {
+		copy(u2.PrevInputsPubKeys[i][:], p[:])
+	}
+
+	return u2
+}
+
+// UtxoState is the state that we
 type UtxoState struct {
 	UTXOs map[chainhash.Hash]Utxo
+}
+
+// Copy copies UtxoState and returns a new one.
+func (u *UtxoState) Copy() UtxoState {
+	u2 := *u
+	u2.UTXOs = make(map[chainhash.Hash]Utxo)
+	for i, c := range u.UTXOs {
+		u2.UTXOs[i] = c.Copy()
+	}
+	return u2
 }
 
 // Have checks if a UTXO exists.

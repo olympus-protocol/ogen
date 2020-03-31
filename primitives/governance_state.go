@@ -19,6 +19,17 @@ type GovObject struct {
 	Votes         map[OutPoint]Vote
 }
 
+func (g *GovObject) Copy() GovObject {
+	g2 := *g
+
+	g2.Votes = make(map[OutPoint]Vote)
+	for i, v := range g.Votes {
+		g2.Votes[i] = v.Copy()
+	}
+
+	return g2
+}
+
 func (g *GovObject) Serialize(w io.Writer) error {
 	err := serializer.WriteElements(w, g.GovID, g.Amount, g.Cycles, g.PayedCycles)
 	if err != nil {
@@ -101,6 +112,10 @@ type Vote struct {
 	WorkerID OutPoint
 }
 
+func (v *Vote) Copy() Vote {
+	return *v
+}
+
 func (v *Vote) Serialize(w io.Writer) error {
 	err := serializer.WriteElements(w, v.GovID, v.Approval)
 	if err != nil {
@@ -156,8 +171,24 @@ func (gr *GovernanceProposal) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (gr *GovernanceProposal) Copy() GovernanceProposal {
+	return GovernanceProposal{
+		OutPoint: gr.OutPoint,
+		GovData:  gr.GovData.Copy(),
+	}
+}
+
 type GovernanceState struct {
 	Proposals map[chainhash.Hash]GovernanceProposal
+}
+
+func (g *GovernanceState) Copy() GovernanceState {
+	g2 := *g
+	g2.Proposals = make(map[chainhash.Hash]GovernanceProposal)
+	for i, c := range g.Proposals {
+		g2.Proposals[i] = c.Copy()
+	}
+	return g2
 }
 
 // Have checks if the governance state contains a specific proposal hash.

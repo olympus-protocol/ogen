@@ -37,6 +37,11 @@ func (ur *User) Deserialize(r io.Reader) error {
 	return nil
 }
 
+// Copy returns a copy of the user.
+func (ur *User) Copy() User {
+	return *ur
+}
+
 // Hash gets the hash of the user.
 func (ur *User) Hash() chainhash.Hash {
 	return chainhash.DoubleHashH([]byte(ur.Name))
@@ -45,6 +50,18 @@ func (ur *User) Hash() chainhash.Hash {
 // UserState is the state of the user registry.
 type UserState struct {
 	Users map[chainhash.Hash]User
+}
+
+// Copy returns a copy of the user state.
+func (u *UserState) Copy() UserState {
+	newU := *u
+	newU.Users = make(map[chainhash.Hash]User)
+
+	for i, u := range newU.Users {
+		newU.Users[i] = u.Copy()
+	}
+
+	return newU
 }
 
 func (u *UserState) Serialize(w io.Writer) error {

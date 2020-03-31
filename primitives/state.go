@@ -176,3 +176,35 @@ func (s *State) Hash() chainhash.Hash {
 	_ = s.Serialize(buf)
 	return chainhash.HashH(buf.Bytes())
 }
+
+// Copy returns a copy of the state.
+func (s *State) Copy() State {
+	s2 := *s
+
+	s2.UtxoState = s.UtxoState.Copy()
+	s2.GovernanceState = s.GovernanceState.Copy()
+	s2.UserState = s.UserState.Copy()
+	s2.WorkerState = s.WorkerState.Copy()
+
+	s2.ProposerQueue = make([]chainhash.Hash, len(s.ProposerQueue))
+	for i, c := range s.ProposerQueue {
+		s2.ProposerQueue[i] = c
+	}
+
+	s2.LatestBlockHashes = make([]chainhash.Hash, len(s.LatestBlockHashes))
+	for i, c := range s.LatestBlockHashes {
+		s2.LatestBlockHashes[i] = c
+	}
+
+	s2.CurrentEpochVotes = make([]AcceptedVoteInfo, len(s.CurrentEpochVotes))
+	for i, c := range s.CurrentEpochVotes {
+		s2.CurrentEpochVotes[i] = c.Copy()
+	}
+
+	s2.PreviousEpochVotes = make([]AcceptedVoteInfo, len(s.PreviousEpochVotes))
+	for i, c := range s.PreviousEpochVotes {
+		s2.PreviousEpochVotes[i] = c.Copy()
+	}
+
+	return s2
+}
