@@ -188,6 +188,7 @@ func generateRandNumber(from chainhash.Hash, max uint32) uint64 {
 	return randaoBig.Mod(randaoBig, numValidator).Uint64()
 }
 
+// DetermineNextProposers gets the next shuffling.
 func DetermineNextProposers(randao chainhash.Hash, registry []Worker, p *params.ChainParams) []uint32 {
 	validatorsChosen := make(map[uint64]struct{})
 	nextProposers := make([]uint32, p.EpochLength)
