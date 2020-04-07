@@ -21,7 +21,6 @@ var (
 		PrevBlockHash: chainhash.Hash{2},
 		MerkleRoot:    merkleRootTest,
 		Timestamp:     time.Unix(0x5A3BB72B, 0),
-		StateRoot:     chainhash.Hash{1},
 	}
 )
 

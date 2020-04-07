@@ -19,8 +19,8 @@ var log = logger.New(os.Stdout).Quiet()
 
 const NumTestValidators = 128
 
-func getTestInitializationParameters() (*chain.InitializationParameters, []bls.SecretKey) {
-	vals := make([]chain.ValidatorInitialization, NumTestValidators)
+func getTestInitializationParameters() (*primitives.InitializationParameters, []bls.SecretKey) {
+	vals := make([]primitives.ValidatorInitialization, NumTestValidators)
 	keys := make([]bls.SecretKey, NumTestValidators)
 	for i := range vals {
 		k, err := bls.RandSecretKey(rand.Reader)
@@ -30,13 +30,13 @@ func getTestInitializationParameters() (*chain.InitializationParameters, []bls.S
 
 		keys[i] = *k
 
-		vals[i] = chain.ValidatorInitialization{
+		vals[i] = primitives.ValidatorInitialization{
 			PubKey:       keys[i].DerivePublicKey().Serialize(),
 			PayeeAddress: "",
 		}
 	}
 
-	return &chain.InitializationParameters{
+	return &primitives.InitializationParameters{
 		InitialValidators: vals,
 	}, keys
 }

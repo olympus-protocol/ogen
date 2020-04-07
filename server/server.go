@@ -13,6 +13,7 @@ import (
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/olympus-protocol/ogen/workers"
@@ -75,7 +76,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip chain.InitializationParameters) (*Server, error) {
+func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
 	walletsMan, err := wallet.NewWalletMan(loadWalletsManConfig(configParams, logger, gui), currParams)
 	if err != nil {

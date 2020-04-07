@@ -2,6 +2,7 @@ package blockdb
 
 import (
 	"bytes"
+
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"

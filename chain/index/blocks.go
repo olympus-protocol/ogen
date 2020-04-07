@@ -17,6 +17,7 @@ import (
 type BlockRow struct {
 	Header     primitives.BlockHeader
 	Locator    blockdb.BlockLocation
+	StateRoot  chainhash.Hash
 	Height     int32
 	parentHash chainhash.Hash
 	Hash       chainhash.Hash

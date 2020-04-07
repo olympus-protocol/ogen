@@ -4,6 +4,7 @@ import (
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 )
 
 type BlockInfo struct {
@@ -44,7 +45,7 @@ func (ch *Blockchain) State() *StateService {
 	return ch.state
 }
 
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip InitializationParameters) (*Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (*Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err

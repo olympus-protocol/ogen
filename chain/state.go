@@ -174,67 +174,12 @@ func (s *StateService) Height() int32 {
 	return s.blockChain.Height()
 }
 
-type ValidatorInitialization struct {
-	PubKey       [48]byte
-	PayeeAddress string
-}
-
-type InitializationParameters struct {
-	InitialValidators []ValidatorInitialization
-}
-
-func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) *primitives.State {
-	initialValidators := make([]primitives.Worker, len(ip.InitialValidators))
-
-	for i, v := range ip.InitialValidators {
-		initialValidators[i] = primitives.Worker{
-			OutPoint: primitives.OutPoint{
-				TxHash: [32]byte{},
-				Index:  0,
-			},
-			Balance:      0,
-			PubKey:       v.PubKey,
-			PayeeAddress: v.PayeeAddress,
-			Status:       primitives.StatusActive,
-		}
-	}
-
-	return &primitives.State{
-		UtxoState: primitives.UtxoState{
-			UTXOs: make(map[chainhash.Hash]primitives.Utxo),
-		},
-		GovernanceState: primitives.GovernanceState{
-			Proposals: make(map[chainhash.Hash]primitives.GovernanceProposal),
-		},
-		UserState: primitives.UserState{
-			Users: make(map[chainhash.Hash]primitives.User),
-		},
-		ValidatorRegistry:             initialValidators,
-		LatestValidatorRegistryChange: 0,
-		RANDAO:                        chainhash.Hash{},
-		NextRANDAO:                    chainhash.Hash{},
-		Slot:                          0,
-		EpochIndex:                    0,
-		ProposerQueue:                 primitives.DetermineNextProposers(chainhash.Hash{}, initialValidators, p),
-		NextProposerQueue:             primitives.DetermineNextProposers(chainhash.Hash{}, initialValidators, p),
-		JustificationBitfield:         0,
-		JustifiedEpoch:                0,
-		FinalizedEpoch:                0,
-		LatestBlockHashes:             make([]chainhash.Hash, p.LatestBlockRootsLength),
-		JustifiedEpochHash:            genesisHash,
-		CurrentEpochVotes:             make([]primitives.AcceptedVoteInfo, 0),
-		PreviousJustifiedEpoch:        0,
-		PreviousJustifiedEpochHash:    genesisHash,
-		PreviousEpochVotes:            make([]primitives.AcceptedVoteInfo, 0),
-	}
-}
-
 // NewStateService constructs a new state service.
-func NewStateService(log *logger.Logger, ip InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
+func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 
-	genesisState := GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	genesisState := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
 
 	ss := &StateService{
 		params: params,

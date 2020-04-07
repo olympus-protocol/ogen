@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
 )
 
@@ -38,8 +38,8 @@ func main() {
 
 const numTestValidators = 128
 
-func getTestInitializationParameters() (*chain.InitializationParameters, []bls.SecretKey) {
-	vals := make([]chain.ValidatorInitialization, numTestValidators)
+func getTestInitializationParameters() (*primitives.InitializationParameters, []bls.SecretKey) {
+	vals := make([]primitives.ValidatorInitialization, numTestValidators)
 	keys := make([]bls.SecretKey, numTestValidators)
 	for i := range vals {
 		k, err := bls.RandSecretKey(rand.Reader)
@@ -49,13 +49,13 @@ func getTestInitializationParameters() (*chain.InitializationParameters, []bls.S
 
 		keys[i] = *k
 
-		vals[i] = chain.ValidatorInitialization{
+		vals[i] = primitives.ValidatorInitialization{
 			PubKey:       keys[i].DerivePublicKey().Serialize(),
 			PayeeAddress: "",
 		}
 	}
 
-	return &chain.InitializationParameters{
+	return &primitives.InitializationParameters{
 		InitialValidators: vals,
 	}, keys
 }

@@ -19,6 +19,7 @@ const (
 type Block struct {
 	Header          BlockHeader
 	Votes           []MultiValidatorVote
+	StateRoot       chainhash.Hash
 	Txs             []Tx
 	Signature       [96]byte
 	RandaoSignature [96]byte
