@@ -1,13 +1,17 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
+	"os"
+
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/server"
-	"os"
 )
 
 func main() {
@@ -26,6 +30,30 @@ func main() {
 	}
 }
 
+const numTestValidators = 128
+
+func getTestInitializationParameters() (*chain.InitializationParameters, []bls.SecretKey) {
+	vals := make([]chain.ValidatorInitialization, numTestValidators)
+	keys := make([]bls.SecretKey, numTestValidators)
+	for i := range vals {
+		k, err := bls.RandSecretKey(rand.Reader)
+		if err != nil {
+			panic(err)
+		}
+
+		keys[i] = *k
+
+		vals[i] = chain.ValidatorInitialization{
+			PubKey:       keys[i].DerivePublicKey().Serialize(),
+			PayeeAddress: "",
+		}
+	}
+
+	return &chain.InitializationParameters{
+		InitialValidators: vals,
+	}, keys
+}
+
 // loadOgen is the main function to run ogen.
 func loadOgen(configParams *config.Config, log *logger.Logger) error {
 	var currParams params.ChainParams
@@ -39,8 +67,9 @@ func loadOgen(configParams *config.Config, log *logger.Logger) error {
 	if err != nil {
 		return err
 	}
+	ip, _ := getTestInitializationParameters()
 	listenChan := config.InterruptListener(log)
-	s, err := server.NewServer(configParams, log, currParams, db, false)
+	s, err := server.NewServer(configParams, log, currParams, db, false, *ip)
 	if err != nil {
 		return err
 	}

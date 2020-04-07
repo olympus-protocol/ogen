@@ -1,16 +1,11 @@
 package miner
 
 import (
-	"time"
-
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/wallet"
 )
 
@@ -42,46 +37,46 @@ func (m *Miner) Stop() {
 }
 
 func (m *Miner) MinerRoutine() {
-check:
-	time.Sleep(time.Second * 5)
-	if !m.mineActive || !m.chain.State().IsSync() || m.peersMan.GetPeersCount() <= 0 {
-		goto check
-	}
-	m.log.Tracef("starting miner routine")
-	for {
-		block, err := m.createNewBlock()
-		if err != nil {
-			break
-		}
-		blockHash := block.Header.Hash()
-		m.log.Infof("created new block hash: %v txs: %v", blockHash, len(block.Txs))
-		m.peersMan.RelayBlockMsg(&p2p.MsgBlock{Block: *block})
-		break
-	}
-	time.Sleep(time.Second * 10)
-	goto check
+	// check:
+	// 	time.Sleep(time.Second * 5)
+	// 	if !m.mineActive || !m.chain.State().IsSync() || m.peersMan.GetPeersCount() <= 0 {
+	// 		goto check
+	// 	}
+	// 	m.log.Tracef("starting miner routine")
+	// 	for {
+	// 		block, err := m.createNewBlock()
+	// 		if err != nil {
+	// 			break
+	// 		}
+	// 		blockHash := block.Header.Hash()
+	// 		m.log.Infof("created new block hash: %v txs: %v", blockHash, len(block.Txs))
+	// 		m.peersMan.RelayBlockMsg(&p2p.MsgBlock{Block: *block})
+	// 		break
+	// 	}
+	// 	time.Sleep(time.Second * 10)
+	// 	goto check
 }
 
-func (m *Miner) createNewBlock() (*primitives.Block, error) {
-	state := m.chain.State().View.Tip()
-	blockHeader := primitives.BlockHeader{
-		Version:       1,
-		PrevBlockHash: state.Hash,
-		MerkleRoot:    chainhash.Hash{},
-		Timestamp:     time.Now(),
-	}
-	blockHash := blockHeader.Hash()
-	blockMsg := &primitives.Block{
-		Header: blockHeader,
-		Txs:    []primitives.Tx{},
-	}
-	sig, err := bls.Sign(m.minerKey, blockHash.CloneBytes())
-	if err != nil {
-		return nil, err
-	}
-	blockMsg.Signature = sig.Serialize()
-	return blockMsg, nil
-}
+// func (m *Miner) createNewBlock() (*primitives.Block, error) {
+// state := m.chain.State().View.Tip()
+// blockHeader := primitives.BlockHeader{
+// 	Version:       1,
+// 	PrevBlockHash: state.Hash,
+// 	MerkleRoot:    chainhash.Hash{},
+// 	Timestamp:     time.Now(),
+// }
+// blockHash := blockHeader.Hash()
+// blockMsg := &primitives.Block{
+// 	Header: blockHeader,
+// 	Txs:    []primitives.Tx{},
+// }
+// sig, err := bls.Sign(m.minerKey, blockHash.CloneBytes())
+// if err != nil {
+// 	return nil, err
+// }
+// blockMsg.Signature = sig.Serialize()
+// return blockMsg, nil
+// }
 
 func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan) (miner *Miner, err error) {
 	var blsPrivKey bls.SecretKey

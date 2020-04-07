@@ -3,6 +3,11 @@ package peers
 import (
 	"bytes"
 	"errors"
+	"net"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/db/filedb"
 	"github.com/olympus-protocol/ogen/logger"
@@ -10,11 +15,6 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers/peer"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"net"
-	"reflect"
-	"strconv"
-	"sync"
-	"time"
 )
 
 type Config struct {
@@ -203,7 +203,7 @@ func (pm *PeerMan) initialPeersConnection(initialPeers []string) {
 
 func (pm *PeerMan) syncNewPeer(p *peer.Peer) {
 	go pm.peerChan(p)
-	p.Start(pm.chain.State().View.Height())
+	p.Start(pm.chain.State().Height())
 }
 
 func (pm *PeerMan) peerChan(p *peer.Peer) {
@@ -258,7 +258,7 @@ func (pm *PeerMan) handlePeerMsg(msg *peer.PeerMsg) error {
 		}
 		break
 	case peer.Syncing:
-		reqMsg := p2p.NewMsgGetBlock(pm.chain.State().View.Tip().Hash)
+		reqMsg := p2p.NewMsgGetBlock(pm.chain.State().Tip().Hash)
 		p := msg.Peer
 		p.SetPeerSync(true)
 		err := p.SendGetBlocks(reqMsg)
@@ -303,13 +303,14 @@ func (pm *PeerMan) handleBlockInvMsg(msg *peer.BlocksInvMsg) error {
 func (pm *PeerMan) handleBlockMsg(msg *peer.BlockMsg) error {
 	blockHash := msg.Block.Header.Hash()
 	pm.log.Infof("new block received hash: %v", blockHash)
-	if pm.chain.State().IsSync() {
-		err := pm.chain.ProcessBlock(&msg.Block.Block)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
+	// TODO: fixme
+	// if pm.chain.State().IsSync() {
+	// 	err := pm.chain.ProcessBlock(&msg.Block.Block)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+	// }
 	pm.log.Infof("ignored block, we are not synced yet")
 	return nil
 }
@@ -349,7 +350,7 @@ func (pm *PeerMan) addPeer(p *peer.Peer) {
 }
 
 func (pm *PeerMan) organizePeer(p *peer.Peer) {
-	tip := pm.chain.State().View.Tip()
+	tip := pm.chain.State().Tip()
 	if p.GetLastBlock() > tip.Height {
 		pm.peersSyncLock.Lock()
 		pm.peersAhead[p.GetID()] = p
@@ -365,17 +366,18 @@ func (pm *PeerMan) organizePeer(p *peer.Peer) {
 		pm.peersEqual[p.GetID()] = p
 		pm.peersSyncLock.Unlock()
 	}
-	if len(pm.peersAhead) > 0 {
-		pm.chain.State().SetSyncStatus(false)
-		keys := reflect.ValueOf(pm.peersAhead).MapKeys()
-		// User the first peer on the map as a sync peer.
-		err := pm.handlePeerMsg(&peer.PeerMsg{Peer: pm.peersAhead[int(keys[0].Int())], Status: peer.Syncing})
-		if err != nil {
-			return
-		}
-	} else {
-		pm.chain.State().SetSyncStatus(true)
-	}
+	// TODO: fix me
+	// if len(pm.peersAhead) > 0 {
+	// 	pm.chain.State().SetSyncStatus(false)
+	// 	keys := reflect.ValueOf(pm.peersAhead).MapKeys()
+	// 	// User the first peer on the map as a sync peer.
+	// 	err := pm.handlePeerMsg(&peer.PeerMsg{Peer: pm.peersAhead[int(keys[0].Int())], Status: peer.Syncing})
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// } else {
+	// 	pm.chain.State().SetSyncStatus(true)
+	// }
 }
 
 func (pm *PeerMan) removePeer(p *peer.Peer) {

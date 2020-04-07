@@ -17,17 +17,43 @@ import (
 
 var log = logger.New(os.Stdout).Quiet()
 
+const NumTestValidators = 128
+
+func getTestInitializationParameters() (*chain.InitializationParameters, []bls.SecretKey) {
+	vals := make([]chain.ValidatorInitialization, NumTestValidators)
+	keys := make([]bls.SecretKey, NumTestValidators)
+	for i := range vals {
+		k, err := bls.RandSecretKey(rand.Reader)
+		if err != nil {
+			panic(err)
+		}
+
+		keys[i] = *k
+
+		vals[i] = chain.ValidatorInitialization{
+			PubKey:       keys[i].DerivePublicKey().Serialize(),
+			PayeeAddress: "",
+		}
+	}
+
+	return &chain.InitializationParameters{
+		InitialValidators: vals,
+	}, keys
+}
+
 func TestBlockchainTipGenesis(t *testing.T) {
 	db := mock.NewMemoryDB()
 
+	ip, _ := getTestInitializationParameters()
+
 	b, err := chain.NewBlockchain(chain.Config{
 		Log: log,
-	}, params.Mainnet, db)
+	}, params.Mainnet, db, *ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	genesis := b.State().View.Tip()
+	genesis := b.State().Tip()
 	if genesis.Height != 0 {
 		t.Fatal("expected genesis height to be 0")
 	}
@@ -40,14 +66,16 @@ func TestBlockchainTipGenesis(t *testing.T) {
 func TestBlockchainTipAddBlock(t *testing.T) {
 	db := mock.NewMemoryDB()
 
+	ip, _ := getTestInitializationParameters()
+
 	b, err := chain.NewBlockchain(chain.Config{
 		Log: log,
-	}, params.Mainnet, db)
+	}, params.Mainnet, db, *ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	genesis := b.State().View.Tip()
+	genesis := b.State().Tip()
 	if genesis.Height != 0 {
 		t.Fatal("expected genesis height to be 0")
 	}

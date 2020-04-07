@@ -23,8 +23,10 @@ type Blockchain struct {
 	log    *logger.Logger
 	config Config
 	params params.ChainParams
+
 	// DB
 	db blockdb.DB
+
 	// StateService
 	state *StateService
 }
@@ -42,8 +44,8 @@ func (ch *Blockchain) State() *StateService {
 	return ch.state
 }
 
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB) (*Blockchain, error) {
-	state, err := NewStateService(config.Log, params, db)
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip InitializationParameters) (*Blockchain, error) {
+	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
 	}

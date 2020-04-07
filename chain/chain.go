@@ -1,12 +1,9 @@
 package chain
 
 import (
-	"fmt"
-	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"sync"
+
+	"github.com/olympus-protocol/ogen/chain/index"
 )
 
 type Chain struct {
@@ -74,71 +71,4 @@ func NewChain(genesisBlock *index.BlockRow) *Chain {
 	return &Chain{
 		chain: chain,
 	}
-}
-
-// ChainView keeps track of the current state of the blockchain.
-type ChainView struct {
-	blockIndex *index.BlockIndex
-	blockChain *Chain
-}
-
-// NewChainView creates a new chain view.
-func NewChainView(genesisHeader primitives.BlockHeader, genesisLocator blockdb.BlockLocation) (*ChainView, error) {
-	blockIndex, err := index.InitBlocksIndex(genesisHeader, genesisLocator)
-	if err != nil {
-		return nil, err
-	}
-
-	genesisHash := genesisHeader.Hash()
-	row, _ := blockIndex.Get(genesisHash)
-
-	return &ChainView{
-		blockIndex: blockIndex,
-		blockChain: NewChain(row),
-	}, nil
-}
-
-func (c *ChainView) Height() int32 {
-	return c.blockChain.Height()
-}
-
-func (c *ChainView) Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error) {
-	return c.blockIndex.Add(header, locator)
-}
-
-func (c *ChainView) Tip() *index.BlockRow {
-	return c.blockChain.Tip()
-}
-
-func (c *ChainView) SetTip(h chainhash.Hash) error {
-	if row, found := c.blockIndex.Get(h); found {
-		c.blockChain.SetTip(row)
-		return nil
-	}
-	return fmt.Errorf("error setting block tip: could not find block with hash: %s", h)
-}
-
-func (c *ChainView) GetRowByHeight(height int32) (*index.BlockRow, bool) {
-	return c.blockChain.GetNodeByHeight(height)
-}
-
-func (c *ChainView) GetRowByHash(h chainhash.Hash) (*index.BlockRow, bool) {
-	return c.blockIndex.Get(h)
-}
-
-func (c *ChainView) Has(h chainhash.Hash) bool {
-	return c.blockIndex.Have(h)
-}
-
-var _ ChainInterface = &ChainView{}
-
-// ChainInterface is an interface that allows basic access to the block index and chain.
-type ChainInterface interface {
-	Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*index.BlockRow, error)
-	Tip() *index.BlockRow
-	SetTip(chainhash.Hash) error
-	GetRowByHeight(int32) (*index.BlockRow, bool)
-	GetRowByHash(chainhash.Hash) (*index.BlockRow, bool)
-	Height() int32
-	Has(hash chainhash.Hash) bool
 }

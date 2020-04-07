@@ -80,7 +80,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 
 	// a. ensure we have the parent block
-	parentBlock, ok := ch.state.View.GetRowByHash(block.Header.PrevBlockHash)
+	parentBlock, ok := ch.state.GetRowByHash(block.Header.PrevBlockHash)
 	if !ok {
 		return fmt.Errorf("missing parent block: %s", block.Header.PrevBlockHash)
 	}
@@ -119,28 +119,14 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// b. apply block transition to state
 	ch.log.Debugf("attempting to apply block to state")
-	// TODO: update block transition
-	// newState, err := oldState.TransitionBlock(block)
-	// if err != nil {
-	// 	ch.log.Warn(err)
-	// 	return err
-	// }
+	// TODO: better fork choice here
+	_, err = ch.State().Add(block, true)
+	if err != nil {
+		ch.log.Warn(err)
+		return err
+	}
 	ch.log.Infof("New block accepted Hash: %v", block.Hash())
 
-	// 3. write block to database
-	blocator, err := ch.db.AddRawBlock(block)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-
-	// 4. add block to chain and set new state
-	// TODO: better fork choice
-	err = ch.state.Add(block, *blocator, true, oldState)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
 	return nil
 }
 

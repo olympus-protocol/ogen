@@ -13,15 +13,35 @@ func (s *State) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.H
 	s.LatestBlockHashes[(s.Slot-1)%p.LatestBlockRootsLength] = previousBlockRoot
 }
 
-// ProcessSlots runs epoch and slot transitions until a desired slot.
-func (s *State) ProcessSlots(p *params.ChainParams, desiredSlot uint64, lastBlockHash chainhash.Hash) {
-	for s.Slot < desiredSlot {
-		// if we haven't processed enough epochs and this is the first slot of the epoch,
-		// do an epoch transition
+// BlockView is the view of the blockchain at a certain tip.
+type BlockView interface {
+	GetHashBySlot(slot uint64) (chainhash.Hash, error)
+	Tip() (chainhash.Hash, error)
+	SetTipSlot(slot uint64)
+	GetLastStateRoot() (chainhash.Hash, error)
+}
+
+// ProcessSlots runs slot and epoch transitions until the state matches the requested
+// slot.
+func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams) error {
+	for s.Slot < requestedSlot {
+		// this only happens when there wasn't a block at the first slot of the epoch
 		if s.Slot/p.EpochLength > s.EpochIndex && s.Slot%p.EpochLength == 0 {
-			// TODO: epoch transition
+			err := s.ProcessEpochTransition(p)
+			if err != nil {
+				return err
+			}
 		}
 
-		s.ProcessSlot(p, lastBlockHash)
+		tip, err := view.Tip()
+		if err != nil {
+			return err
+		}
+
+		s.ProcessSlot(p, tip)
+
+		view.SetTipSlot(s.Slot)
 	}
+
+	return nil
 }

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
+	"os"
+
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/server"
-	"os"
 )
 
 const preferenceCurrentTab = "currentTab"
@@ -32,6 +36,30 @@ func main() {
 	}
 }
 
+const numTestValidators = 128
+
+func getTestInitializationParameters() (*chain.InitializationParameters, []bls.SecretKey) {
+	vals := make([]chain.ValidatorInitialization, numTestValidators)
+	keys := make([]bls.SecretKey, numTestValidators)
+	for i := range vals {
+		k, err := bls.RandSecretKey(rand.Reader)
+		if err != nil {
+			panic(err)
+		}
+
+		keys[i] = *k
+
+		vals[i] = chain.ValidatorInitialization{
+			PubKey:       keys[i].DerivePublicKey().Serialize(),
+			PayeeAddress: "",
+		}
+	}
+
+	return &chain.InitializationParameters{
+		InitialValidators: vals,
+	}, keys
+}
+
 func loadOgen(configParams *config.Config, log *logger.Logger) error {
 	var currParams params.ChainParams
 	switch configParams.NetworkName {
@@ -45,7 +73,9 @@ func loadOgen(configParams *config.Config, log *logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	s, err := server.NewServer(configParams, log, currParams, db, true)
+	// TODO: replace this with something better
+	testParams, _ := getTestInitializationParameters()
+	s, err := server.NewServer(configParams, log, currParams, db, true, *testParams)
 	if err != nil {
 		return err
 	}

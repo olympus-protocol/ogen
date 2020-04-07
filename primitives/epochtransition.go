@@ -188,9 +188,7 @@ func generateRandNumber(from chainhash.Hash, max uint32) uint64 {
 	return randaoBig.Mod(randaoBig, numValidator).Uint64()
 }
 
-func (s *State) determineNextProposers(p *params.ChainParams) []uint32 {
-	randao := s.RANDAO
-
+func DetermineNextProposers(randao chainhash.Hash, registry []Worker, p *params.ChainParams) []uint32 {
 	validatorsChosen := make(map[uint64]struct{})
 	nextProposers := make([]uint32, p.EpochLength)
 
@@ -199,7 +197,7 @@ func (s *State) determineNextProposers(p *params.ChainParams) []uint32 {
 		var val uint64
 
 		for found {
-			val = generateRandNumber(randao, uint32(len(s.ValidatorRegistry)))
+			val = generateRandNumber(randao, uint32(len(registry)))
 			randao = chainhash.HashH(randao[:])
 			_, found = validatorsChosen[val]
 		}
@@ -384,7 +382,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 	}
 
 	s.ProposerQueue = s.NextProposerQueue
-	s.NextProposerQueue = s.determineNextProposers(p)
+	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, s.ValidatorRegistry, p)
 
 	copy(s.RANDAO[:], s.NextRANDAO[:])
 

@@ -60,7 +60,7 @@ func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	}
 
 	if !valid {
-		fmt.Errorf("aggregate signature did not validate")
+		return fmt.Errorf("aggregate signature did not validate")
 	}
 
 	return nil

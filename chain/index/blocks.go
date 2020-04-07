@@ -3,9 +3,10 @@ package index
 import (
 	"bytes"
 	"fmt"
-	"github.com/olympus-protocol/ogen/primitives"
 	"io"
 	"sync"
+
+	"github.com/olympus-protocol/ogen/primitives"
 
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -60,6 +61,21 @@ func (br *BlockRow) Deserialize(r io.Reader) error {
 	}
 	br.Hash = br.Header.Hash()
 	return nil
+}
+
+// GetAncestorAtSlot gets the block row ancestor at a certain slot.
+func (br *BlockRow) GetAncestorAtSlot(slot uint64) *BlockRow {
+	if br.Header.Slot < slot {
+		return nil
+	}
+
+	current := br
+
+	// go up to the slot after the slot we're searching for
+	for slot < current.Header.Slot {
+		current = current.Parent
+	}
+	return current
 }
 
 var zeroHash = chainhash.Hash{}
@@ -158,8 +174,23 @@ func (i *BlockIndex) add(row *BlockRow) error {
 	return nil
 }
 
+// SetDiskLocation sets the disk location of a block.
+func (i *BlockIndex) SetDiskLocation(of chainhash.Hash, loc blockdb.BlockLocation) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	d, found := i.index[of]
+	if !found {
+		return fmt.Errorf("could not find block with hash %s", of)
+	}
+
+	d.Locator = loc
+
+	i.index[of] = d
+	return nil
+}
+
 // Add adds a row to the block index.
-func (i *BlockIndex) Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*BlockRow, error) {
+func (i *BlockIndex) Add(header primitives.BlockHeader) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[header.PrevBlockHash]
@@ -168,11 +199,10 @@ func (i *BlockIndex) Add(header primitives.BlockHeader, locator blockdb.BlockLoc
 	}
 
 	row := &BlockRow{
-		Header:  header,
-		Locator: locator,
-		Height:  prev.Height + 1,
-		Parent:  prev,
-		Hash: header.Hash(),
+		Header: header,
+		Height: prev.Height + 1,
+		Parent: prev,
+		Hash:   header.Hash(),
 	}
 
 	err := i.add(row)
@@ -193,7 +223,7 @@ func InitBlocksIndex(genesisHeader primitives.BlockHeader, genesisLoc blockdb.Bl
 				Locator: genesisLoc,
 				Height:  0,
 				Parent:  nil,
-				Hash: genesisHeader.Hash(),
+				Hash:    genesisHeader.Hash(),
 			},
 		},
 	}, nil
