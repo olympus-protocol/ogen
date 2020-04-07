@@ -158,6 +158,10 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		}
 	}
 
+	for i := range s.NextRANDAO {
+		s.NextRANDAO[i] ^= b.RandaoSignature[i]
+	}
+
 	h := s.Hash()
 	if !h.IsEqual(&b.Header.StateRoot) {
 		return fmt.Errorf("block has incorrect state root (got: %s, expected: %s)", b.Header.StateRoot, h)
