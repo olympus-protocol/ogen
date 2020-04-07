@@ -3,15 +3,44 @@ package primitives
 import (
 	"io"
 
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
+// WorkerStatus represents the status of a worker.
+type WorkerStatus uint8
+
+const (
+	// StatusStarting is when the validator is waiting to join.
+	StatusStarting WorkerStatus = iota
+
+	// StatusActive is when the validator is currently in the queue.
+	StatusActive
+
+	// StatusActivePendingExit is when a validator is queued to be removed from the
+	// active set.
+	StatusActivePendingExit
+
+	// StatusExitedWithPenalty is when the validator is exited due to a slashing condition
+	// being violated.
+	StatusExitedWithPenalty
+
+	// StatusExitedWithoutPenalty is when a validator is exited due to a drop below
+	// the ejection balance.
+	StatusExitedWithoutPenalty
+)
+
+// Worker is a worker in the queue.
 type Worker struct {
 	OutPoint     OutPoint
 	Balance      uint64
 	PubKey       [48]byte
 	PayeeAddress string
+	Status       WorkerStatus
+}
+
+// IsActive checks if a validator is currently active.
+func (wr *Worker) IsActive() bool {
+	return wr.Status == StatusActive || wr.Status == StatusActivePendingExit
 }
 
 // Serialize serializes a WorkerRow to the provided writer.
@@ -21,7 +50,7 @@ func (wr *Worker) Serialize(w io.Writer) error {
 		return err
 	}
 
-	return serializer.WriteElements(w, wr.Balance, wr.PubKey, wr.PayeeAddress)
+	return serializer.WriteElements(w, wr.Balance, wr.PubKey, wr.PayeeAddress, wr.Status)
 }
 
 // Deserialize deserializes a worker row from the provided reader.
@@ -30,84 +59,10 @@ func (wr *Worker) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress)
+	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress, &wr.Status)
 }
 
 // Copy returns a copy of the worker.
 func (wr *Worker) Copy() Worker {
 	return *wr
-}
-
-// WorkerState is the registry of workers IDs to workers.
-type WorkerState struct {
-	Workers map[chainhash.Hash]Worker
-}
-
-// Copy returns a copy of the WorkerState.
-func (w *WorkerState) Copy() WorkerState {
-	w2 := *w
-
-	w2.Workers = make(map[chainhash.Hash]Worker)
-	for i, w := range w.Workers {
-		w2.Workers[i] = w.Copy()
-	}
-
-	return w2
-}
-
-// Have checks if a Worker exists.
-func (w *WorkerState) Have(c chainhash.Hash) bool {
-	_, found := w.Workers[c]
-	return found
-}
-
-// Get gets a Worker from state.
-func (w *WorkerState) Get(c chainhash.Hash) Worker {
-	return w.Workers[c]
-}
-
-func (w *WorkerState) Serialize(wr io.Writer) error {
-	if err := serializer.WriteVarInt(wr, uint64(len(w.Workers))); err != nil {
-		return err
-	}
-
-	for h, utxo := range w.Workers {
-		if _, err := wr.Write(h[:]); err != nil {
-			return err
-		}
-
-		if err := utxo.Serialize(wr); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (w *WorkerState) Deserialize(r io.Reader) error {
-	if w.Workers == nil {
-		w.Workers = make(map[chainhash.Hash]Worker)
-	}
-
-	numWorkers, err := serializer.ReadVarInt(r)
-
-	if err != nil {
-		return err
-	}
-
-	for i := uint64(0); i < numWorkers; i++ {
-		var hash chainhash.Hash
-		if _, err := r.Read(hash[:]); err != nil {
-			return err
-		}
-
-		var worker Worker
-		if err := worker.Deserialize(r); err != nil {
-			return err
-		}
-
-		w.Workers[hash] = worker
-	}
-
-	return nil
 }

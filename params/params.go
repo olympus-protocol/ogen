@@ -23,7 +23,6 @@ type ChainParams struct {
 	ProfitSharingCycle         uint32
 	ProfitSharingStartCycle    uint32
 	GovernanceProposalFee      amount.AmountType
-	BaseBlockReward            float64
 	BlockReductionPercentage   float64
 
 	EpochLength                  uint64
@@ -34,6 +33,10 @@ type ChainParams struct {
 	LatestBlockRootsLength       uint64
 	MinAttestationInclusionDelay uint64
 	DepositAmount                uint64
+	BaseRewardQuotient           uint64
+	UnitsPerCoin                 uint64
+	InactivityPenaltyQuotient    uint64
+	IncluderRewardQuotient       uint64
 }
 
 var NetworkNames = map[string]string{
@@ -57,15 +60,16 @@ var Mainnet = ChainParams{
 	},
 	LastPreWorkersBlock:          500,
 	PreWorkersPubKeyHash:         "olpub12vjdayxm6eygqkxrtyvt0jnjxn8965wflynmf4d899pnkzp9glmslqcvce",
-	BlockTimeSpan:                120,                   // 120 seconds
-	BlocksReductionCycle:         262800,                // 1 year
-	SuperBlockCycle:              21600,                 // 1 month
-	SuperBlockStartHeight:        0,                     // TODO define
-	ProfitSharingCycle:           21600,                 // 1 month
-	ProfitSharingStartCycle:      0,                     // TODO define
-	GovernanceBudgetPercentage:   0.2,                   // 20%
-	BlockReductionPercentage:     0.2,                   // 20%
-	BaseBlockReward:              20,                    // 20 POLIS
+	BlockTimeSpan:                120,    // 120 seconds
+	BlocksReductionCycle:         262800, // 1 year
+	SuperBlockCycle:              21600,  // 1 month
+	SuperBlockStartHeight:        0,      // TODO define
+	ProfitSharingCycle:           21600,  // 1 month
+	ProfitSharingStartCycle:      0,      // TODO define
+	GovernanceBudgetPercentage:   0.2,    // 20%
+	BlockReductionPercentage:     0.2,    // 20%
+	BaseRewardQuotient:           1024,
+	IncluderRewardQuotient:       8,
 	GovernanceProposalFee:        amount.AmountType(50), // 50 POLIS
 	EpochLength:                  5,
 	EjectionBalance:              1000,
@@ -74,6 +78,8 @@ var Mainnet = ChainParams{
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                10000,
+	UnitsPerCoin:                 100000000,
+	InactivityPenaltyQuotient:    17179869184,
 }
 
 var TestNet = ChainParams{
@@ -96,7 +102,8 @@ var TestNet = ChainParams{
 	SuperBlockCycle:              1440,                                 // 1 day
 	GovernanceBudgetPercentage:   0.2,                                  // 20%
 	BlockReductionPercentage:     0.2,                                  // 20%
-	BaseBlockReward:              20,                                   // 20
+	BaseRewardQuotient:           1024,
+	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
 	EjectionBalance:              1000,
 	MaxBalanceChurnQuotient:      32,
@@ -104,4 +111,6 @@ var TestNet = ChainParams{
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                10000,
+	UnitsPerCoin:                 100000000,
+	InactivityPenaltyQuotient:    17179869184,
 }

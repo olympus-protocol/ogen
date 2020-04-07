@@ -15,7 +15,7 @@ func (s *State) getValidatorAtVoteSlot(validator uint64, slot uint64, p *params.
 
 	valIdx := s.ProposerQueue[slotIndex*numValidatorsAtSlot+validator]
 
-	return s.WorkerState.Get(valIdx)
+	return s.ValidatorRegistry[valIdx]
 }
 
 func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
@@ -66,7 +66,7 @@ func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex chainhash.Hash) error {
+func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint32) error {
 	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
@@ -127,7 +127,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	slotIndex := b.Header.Slot % p.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
-	proposer := s.WorkerState.Get(proposerIndex)
+	proposer := s.ValidatorRegistry[proposerIndex]
 
 	workerPub, err := bls.DeserializePublicKey(proposer.PubKey)
 	if err != nil {

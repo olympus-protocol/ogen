@@ -17,9 +17,6 @@ var chainState = &primitives.State{
 	UserState: primitives.UserState{
 		Users: map[chainhash.Hash]primitives.User{},
 	},
-	WorkerState: primitives.WorkerState{
-		Workers: map[chainhash.Hash]primitives.Worker{},
-	},
 }
 
 var votes VotesTxVerifier

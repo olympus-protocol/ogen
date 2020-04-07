@@ -101,9 +101,6 @@ func NewStateService(log *logger.Logger, params params.ChainParams, db blockdb.D
 				UserState: primitives.UserState{
 					Users: make(map[chainhash.Hash]primitives.User),
 				},
-				WorkerState: primitives.WorkerState{
-					Workers: make(map[chainhash.Hash]primitives.Worker),
-				},
 			},
 		},
 	}

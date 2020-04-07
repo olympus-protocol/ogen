@@ -16,7 +16,24 @@ type State struct {
 	UtxoState       UtxoState
 	GovernanceState GovernanceState
 	UserState       UserState
-	WorkerState     WorkerState
+
+	// ValidatorRegistry keeps track of validators in the state.
+	ValidatorRegistry []Worker
+
+	// LatestValidatorRegistryChange keeps track of the last time the validator
+	// registry was changed. We only want to update the registry if a block was
+	// finalized since the last time it was changed, so we keep track of that
+	// here.
+	LatestValidatorRegistryChange uint64
+
+	// RANDAO for figuring out the proposer queue. We don't want any one validator
+	// to have influence over the RANDAO, so we have each proposer contribute.
+	RANDAO chainhash.Hash
+
+	// NextRANDAO is the RANDAO currently being created. Every time a block is
+	// created, we XOR the 32 least-significant bytes of the RandaoReveal with this
+	// value to update it.
+	NextRANDAO chainhash.Hash
 
 	// Slot is the last slot ProcessSlot was called for.
 	Slot uint64
@@ -25,7 +42,11 @@ type State struct {
 	EpochIndex uint64
 
 	// ProposerQueue is the queue of validators scheduled to create a block.
-	ProposerQueue []chainhash.Hash
+	ProposerQueue []uint32
+
+	// NextProposerQueue is the queue of validators scheduled to create a block
+	// in the next epoch.
+	NextProposerQueue []uint32
 
 	// JustifiedBitfield is a bitfield where the nth least significant bit
 	// represents whether the nth last epoch was justified.
@@ -60,7 +81,18 @@ type State struct {
 
 // Serialize serializes the state to the writer.
 func (s *State) Serialize(w io.Writer) error {
-	if err := serializer.WriteElements(w, s.Slot, s.EpochIndex, s.JustifiedEpoch, s.FinalizedEpoch, s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpochHash, s.PreviousJustifiedEpochHash); err != nil {
+	if err := serializer.WriteElements(w,
+		s.Slot,
+		s.EpochIndex,
+		s.JustifiedEpoch,
+		s.FinalizedEpoch,
+		s.JustificationBitfield,
+		s.PreviousJustifiedEpoch,
+		s.JustifiedEpochHash,
+		s.PreviousJustifiedEpochHash,
+		s.LatestValidatorRegistryChange,
+		s.RANDAO,
+		s.NextRANDAO); err != nil {
 		return err
 	}
 	if err := s.UtxoState.Serialize(w); err != nil {
@@ -72,13 +104,26 @@ func (s *State) Serialize(w io.Writer) error {
 	if err := s.UserState.Serialize(w); err != nil {
 		return err
 	}
-	if err := s.WorkerState.Serialize(w); err != nil {
+	if err := serializer.WriteVarInt(w, uint64(len(s.ValidatorRegistry))); err != nil {
 		return err
+	}
+	for _, v := range s.ValidatorRegistry {
+		if err := v.Serialize(w); err != nil {
+			return err
+		}
 	}
 	if err := serializer.WriteVarInt(w, uint64(len(s.ProposerQueue))); err != nil {
 		return err
 	}
 	for _, p := range s.ProposerQueue {
+		if err := serializer.WriteElement(w, p); err != nil {
+			return err
+		}
+	}
+	if err := serializer.WriteVarInt(w, uint64(len(s.NextProposerQueue))); err != nil {
+		return err
+	}
+	for _, p := range s.NextProposerQueue {
 		if err := serializer.WriteElement(w, p); err != nil {
 			return err
 		}
@@ -112,7 +157,18 @@ func (s *State) Serialize(w io.Writer) error {
 
 // Deserialize deserializes state from the reader.
 func (s *State) Deserialize(r io.Reader) error {
-	if err := serializer.ReadElements(r, &s.Slot, &s.EpochIndex, &s.JustifiedEpoch, &s.FinalizedEpoch, &s.JustificationBitfield, &s.PreviousJustifiedEpoch, &s.JustifiedEpochHash, &s.PreviousJustifiedEpochHash); err != nil {
+	if err := serializer.ReadElements(r,
+		&s.Slot,
+		&s.EpochIndex,
+		&s.JustifiedEpoch,
+		&s.FinalizedEpoch,
+		&s.JustificationBitfield,
+		&s.PreviousJustifiedEpoch,
+		&s.JustifiedEpochHash,
+		&s.PreviousJustifiedEpochHash,
+		&s.LatestValidatorRegistryChange,
+		&s.RANDAO,
+		&s.NextRANDAO); err != nil {
 		return err
 	}
 	if err := s.UtxoState.Deserialize(r); err != nil {
@@ -124,16 +180,33 @@ func (s *State) Deserialize(r io.Reader) error {
 	if err := s.UserState.Deserialize(r); err != nil {
 		return err
 	}
-	if err := s.WorkerState.Deserialize(r); err != nil {
-		return err
-	}
 	num, err := serializer.ReadVarInt(r)
 	if err != nil {
 		return err
 	}
-	s.ProposerQueue = make([]chainhash.Hash, num)
+	s.ValidatorRegistry = make([]Worker, num)
+	for i := range s.ValidatorRegistry {
+		if err := s.ValidatorRegistry[i].Deserialize(r); err != nil {
+			return err
+		}
+	}
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	s.ProposerQueue = make([]uint32, num)
 	for i := range s.ProposerQueue {
 		if err := serializer.ReadElement(r, &s.ProposerQueue[i]); err != nil {
+			return err
+		}
+	}
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	s.NextProposerQueue = make([]uint32, num)
+	for i := range s.NextProposerQueue {
+		if err := serializer.ReadElement(r, &s.NextProposerQueue[i]); err != nil {
 			return err
 		}
 	}
@@ -184,11 +257,20 @@ func (s *State) Copy() State {
 	s2.UtxoState = s.UtxoState.Copy()
 	s2.GovernanceState = s.GovernanceState.Copy()
 	s2.UserState = s.UserState.Copy()
-	s2.WorkerState = s.WorkerState.Copy()
+	s2.ValidatorRegistry = make([]Worker, len(s.ValidatorRegistry))
 
-	s2.ProposerQueue = make([]chainhash.Hash, len(s.ProposerQueue))
+	for i, c := range s.ValidatorRegistry {
+		s2.ValidatorRegistry[i] = c.Copy()
+	}
+
+	s2.ProposerQueue = make([]uint32, len(s.ProposerQueue))
 	for i, c := range s.ProposerQueue {
 		s2.ProposerQueue[i] = c
+	}
+
+	s2.NextProposerQueue = make([]uint32, len(s.NextProposerQueue))
+	for i, c := range s.NextProposerQueue {
+		s2.NextProposerQueue[i] = c
 	}
 
 	s2.LatestBlockHashes = make([]chainhash.Hash, len(s.LatestBlockHashes))

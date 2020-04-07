@@ -99,31 +99,31 @@ func TestStateDeserializeSerialize(t *testing.T) {
 				},
 			},
 		},
-		WorkerState: WorkerState{
-			Workers: map[chainhash.Hash]Worker{
-				chainhash.Hash{
-					14,
-				}: {
-					OutPoint: OutPoint{
-						TxHash: chainhash.Hash{
-							1,
-						},
-						Index: 2,
+		ValidatorRegistry: []Worker{
+			{
+				OutPoint: OutPoint{
+					TxHash: chainhash.Hash{
+						1,
 					},
-					Balance: 10,
-					PubKey: [48]byte{
-						5,
-					},
-					PayeeAddress: "test2",
+					Index: 2,
 				},
+				Balance: 10,
+				PubKey: [48]byte{
+					5,
+				},
+				PayeeAddress: "test2",
 			},
 		},
-		Slot:                       1,
-		EpochIndex:                 2,
-		ProposerQueue:              []chainhash.Hash{{3}},
-		JustifiedEpoch:             5,
-		JustifiedEpochHash:         chainhash.Hash{2},
-		PreviousJustifiedEpochHash: chainhash.Hash{8, 9},
+		RANDAO:                        chainhash.Hash{99},
+		NextRANDAO:                    chainhash.Hash{100},
+		NextProposerQueue:             []uint32{1, 2, 3},
+		LatestValidatorRegistryChange: 200,
+		Slot:                          1,
+		EpochIndex:                    2,
+		ProposerQueue:                 []uint32{3},
+		JustifiedEpoch:                5,
+		JustifiedEpochHash:            chainhash.Hash{2},
+		PreviousJustifiedEpochHash:    chainhash.Hash{8, 9},
 
 		PreviousJustifiedEpoch: 100,
 		JustificationBitfield:  6,
@@ -139,7 +139,7 @@ func TestStateDeserializeSerialize(t *testing.T) {
 					ToHash:    [32]byte{12},
 				},
 				ParticipationBitfield: []uint8{1},
-				Proposer:              chainhash.Hash{2, 4},
+				Proposer:              5,
 				InclusionDelay:        3,
 			},
 		},
@@ -153,7 +153,7 @@ func TestStateDeserializeSerialize(t *testing.T) {
 					ToHash:    [32]byte{12},
 				},
 				ParticipationBitfield: []uint8{1},
-				Proposer:              chainhash.Hash{5, 7},
+				Proposer:              5,
 				InclusionDelay:        3,
 			},
 		},

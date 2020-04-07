@@ -20,7 +20,7 @@ type AcceptedVoteInfo struct {
 	ParticipationBitfield []uint8
 
 	// Proposer is the proposer that included the attestation in a block.
-	Proposer chainhash.Hash
+	Proposer uint32
 
 	// InclusionDelay is the delay from the attestation slot to the slot
 	// included.
@@ -79,6 +79,9 @@ type VoteData struct {
 
 	// ToHash is the block hash of the ToEpoch.
 	ToHash chainhash.Hash
+
+	// BeaconBlockHash is for the fork choice.
+	BeaconBlockHash chainhash.Hash
 }
 
 // Copy returns a copy of the vote data.
@@ -95,12 +98,12 @@ func (v *VoteData) Hash() chainhash.Hash {
 
 // Serialize serializes the vote data to a writer.
 func (v *VoteData) Serialize(w io.Writer) error {
-	return serializer.WriteElements(w, v.Slot, v.FromEpoch, v.FromHash, v.ToEpoch, v.ToHash)
+	return serializer.WriteElements(w, v.Slot, v.FromEpoch, v.FromHash, v.ToEpoch, v.ToHash, v.BeaconBlockHash)
 }
 
 // Deserialize deserializes the vote data from a reader.
 func (v *VoteData) Deserialize(r io.Reader) error {
-	return serializer.ReadElements(r, &v.Slot, &v.FromEpoch, &v.FromHash, &v.ToEpoch, &v.ToHash)
+	return serializer.ReadElements(r, &v.Slot, &v.FromEpoch, &v.FromHash, &v.ToEpoch, &v.ToHash, &v.BeaconBlockHash)
 }
 
 // SingleValidatorVote is a signed vote from a validator.

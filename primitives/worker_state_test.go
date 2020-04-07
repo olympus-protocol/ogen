@@ -17,6 +17,7 @@ func TestWorkerCopy(t *testing.T) {
 		PubKey:       [48]byte{5},
 		Balance:      10,
 		PayeeAddress: "test2",
+		Status:       StatusActive,
 	}
 	worker2 := worker.Copy()
 
@@ -50,6 +51,7 @@ func TestWorkerDeserializeSerialize(t *testing.T) {
 		PubKey:       [48]byte{5},
 		Balance:      10,
 		PayeeAddress: "test2",
+		Status:       StatusActive,
 	}
 
 	buf := bytes.NewBuffer([]byte{})
@@ -64,63 +66,6 @@ func TestWorkerDeserializeSerialize(t *testing.T) {
 	}
 
 	if diff := deep.Equal(worker2, worker); diff != nil {
-		t.Fatal(diff)
-	}
-}
-
-func TestWorkerStateCopy(t *testing.T) {
-	workerState := WorkerState{
-		Workers: map[chainhash.Hash]Worker{
-			chainhash.Hash{14}: {
-				OutPoint: OutPoint{
-					TxHash: chainhash.Hash{1},
-					Index:  2,
-				},
-				PubKey:       [48]byte{5},
-				Balance:      10,
-				PayeeAddress: "test2",
-			},
-		},
-	}
-
-	workerState2 := workerState.Copy()
-
-	workerState.Workers[chainhash.Hash{14}] = Worker{
-		Balance: 11,
-	}
-
-	if workerState2.Workers[chainhash.Hash{14}].Balance == 11 {
-		t.Fatal("mutating workers mutates copy")
-	}
-}
-
-func TestWorkerStateDeserializeSerialize(t *testing.T) {
-	workerState := WorkerState{
-		Workers: map[chainhash.Hash]Worker{
-			chainhash.Hash{14}: {
-				OutPoint: OutPoint{
-					TxHash: chainhash.Hash{1},
-					Index:  2,
-				},
-				PubKey:       [48]byte{5},
-				Balance:      10,
-				PayeeAddress: "test2",
-			},
-		},
-	}
-
-	buf := bytes.NewBuffer([]byte{})
-	err := workerState.Serialize(buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var workerState2 WorkerState
-	if err := workerState2.Deserialize(buf); err != nil {
-		t.Fatal(err)
-	}
-
-	if diff := deep.Equal(workerState2, workerState); diff != nil {
 		t.Fatal(diff)
 	}
 }

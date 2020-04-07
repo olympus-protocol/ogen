@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -11,8 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
-	coins_txpayload "github.com/olympus-protocol/ogen/txs/txpayloads/coins"
-	"github.com/olympus-protocol/ogen/utils/amount"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/wallet"
 )
 
@@ -66,36 +64,16 @@ check:
 
 func (m *Miner) createNewBlock() (*primitives.Block, error) {
 	state := m.chain.State().View.Tip()
-
-	txPayload := coins_txpayload.PayloadGenerate{
-		TxOut: []coins_txpayload.Output{{
-			Value:   int64(m.chain.GetBlockReward(uint32(state.Height + 1)).ToUnit(amount.AmountSats)),
-			Address: "",
-		}},
-	}
-	buf := bytes.NewBuffer([]byte{})
-	err := txPayload.Serialize(buf)
-	if err != nil {
-		return nil, err
-	}
-	genTx := primitives.Tx{
-		Time:      time.Now().Unix(),
-		TxVersion: 1,
-		TxType:    primitives.TxCoins,
-		TxAction:  primitives.Generate,
-		Payload:   buf.Bytes(),
-	}
-	txHash := genTx.Hash()
 	blockHeader := primitives.BlockHeader{
 		Version:       1,
 		PrevBlockHash: state.Hash,
-		MerkleRoot:    txHash,
+		MerkleRoot:    chainhash.Hash{},
 		Timestamp:     time.Now(),
 	}
 	blockHash := blockHeader.Hash()
 	blockMsg := &primitives.Block{
 		Header: blockHeader,
-		Txs:    []primitives.Tx{genTx},
+		Txs:    []primitives.Tx{},
 	}
 	sig, err := bls.Sign(m.minerKey, blockHash.CloneBytes())
 	if err != nil {

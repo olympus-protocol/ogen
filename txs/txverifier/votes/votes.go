@@ -3,7 +3,6 @@ package votes_txverifier
 import (
 	"bytes"
 	"errors"
-	"reflect"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -101,31 +100,31 @@ func (v VotesTxVerifier) SigVerifyBatch(payload [][]byte, Action primitives.TxAc
 }
 
 func (v VotesTxVerifier) MatchVerify(payload []byte, Action primitives.TxAction) error {
-	VerPayload, err := v.DeserializePayload(payload, Action)
-	if err != nil {
-		return err
-	}
-	searchHash, err := VerPayload.GetHashForDataMatch()
-	if err != nil {
-		return err
-	}
-	ok := v.state.WorkerState.Have(searchHash)
-	if !ok {
-		return ErrorMatchDataNoExist
-	}
-	data := v.state.WorkerState.Get(searchHash)
-	pubKey, err := bls.DeserializePublicKey(data.PubKey)
-	if err != nil {
-		return err
-	}
-	matchPubKey, err := VerPayload.GetPublicKey()
-	if err != nil {
-		return err
-	}
-	equal := reflect.DeepEqual(pubKey, matchPubKey)
-	if !equal {
-		return ErrorDataNoMatch
-	}
+	// VerPayload, err := v.DeserializePayload(payload, Action)
+	// if err != nil {
+	// 	return err
+	// }
+	// searchHash, err := VerPayload.GetHashForDataMatch()
+	// if err != nil {
+	// 	return err
+	// }
+	// ok := v.state.WorkerState.Have(searchHash)
+	// if !ok {
+	// 	return ErrorMatchDataNoExist
+	// }
+	// data := v.state.WorkerState.Get(searchHash)
+	// pubKey, err := bls.DeserializePublicKey(data.PubKey)
+	// if err != nil {
+	// 	return err
+	// }
+	// matchPubKey, err := VerPayload.GetPublicKey()
+	// if err != nil {
+	// 	return err
+	// }
+	// equal := reflect.DeepEqual(pubKey, matchPubKey)
+	// if !equal {
+	// 	return ErrorDataNoMatch
+	// }
 	return nil
 }
 

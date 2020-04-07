@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 func TestAcceptedVoteInfoCopy(t *testing.T) {
@@ -19,7 +18,7 @@ func TestAcceptedVoteInfoCopy(t *testing.T) {
 			ToHash:    [32]byte{5},
 		},
 		ParticipationBitfield: []uint8{6, 7},
-		Proposer:              chainhash.Hash{8},
+		Proposer:              8,
 		InclusionDelay:        9,
 	}
 
@@ -35,8 +34,8 @@ func TestAcceptedVoteInfoCopy(t *testing.T) {
 		t.Fatal("mutating participation bitfield mutates copy")
 	}
 
-	av.Proposer[0] = 7
-	if av2.Proposer[0] == 7 {
+	av.Proposer = 7
+	if av2.Proposer == 7 {
 		t.Fatal("mutating proposer mutates copy")
 	}
 
@@ -56,7 +55,7 @@ func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
 			ToHash:    [32]byte{5},
 		},
 		ParticipationBitfield: []uint8{6, 7},
-		Proposer:              chainhash.Hash{8},
+		Proposer:              8,
 		InclusionDelay:        9,
 	}
 
