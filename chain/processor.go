@@ -78,22 +78,6 @@ func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 
 func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
-
-	// a. ensure we have the parent block
-	parentBlock, ok := ch.state.GetRowByHash(block.Header.PrevBlockHash)
-	if !ok {
-		return fmt.Errorf("missing parent block: %s", block.Header.PrevBlockHash)
-	}
-
-	height := parentBlock.Height + 1
-
-	// b. verify block signature
-	err := ch.verifyBlockSig(block, uint32(height))
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-
 	// b. get parent block
 
 	// 2. verify block against previous block's state
@@ -127,37 +111,6 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	}
 	ch.log.Infof("New block accepted Hash: %v", block.Hash())
 
-	return nil
-}
-
-func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) error {
-	if height < ch.params.LastPreWorkersBlock {
-		// sig, err := block.MinerSig()
-		// if err != nil {
-		// 	return err
-		// }
-		// blockHash := block.Hash()
-		// valid, err := bls.VerifySig(pubKey, blockHash[:], sig)
-		// if err != nil {
-		// 	return err
-		// }
-		// if !valid {
-		// 	return ErrorInvalidBlockSig
-		// }
-		//pubKeyHash, err := pubKey.ToBech32(ch.params.AddressPrefixes, false)
-		//if err != nil {
-		//	return err
-		//}
-		// TODO: ensure block pubkey matches expected worker
-		//equal := reflect.DeepEqual(pubKeyHash, ch.params.PreWorkersPubKeyHash)
-		//if !equal {
-		//	return ErrorPubKeyNoMatch
-		//}
-		ch.log.Infof("Block signature verified: pre-workers phase.")
-	} else {
-		// TODO use worker lists
-		ch.log.Infof("Block signature verified: Worker rewarded: ")
-	}
 	return nil
 }
 

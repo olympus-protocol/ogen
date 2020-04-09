@@ -110,7 +110,7 @@ func (v *VoteData) Deserialize(r io.Reader) error {
 type SingleValidatorVote struct {
 	Data      VoteData
 	Signature bls.Signature
-	Validator uint32
+	Offset    uint32
 }
 
 // Serialize serializes a SingleValidatorVote to a writer.
@@ -122,7 +122,7 @@ func (v *SingleValidatorVote) Serialize(w io.Writer) error {
 	if _, err := w.Write(sig[:]); err != nil {
 		return err
 	}
-	return serializer.WriteElement(w, v.Validator)
+	return serializer.WriteElements(w, v.Offset)
 }
 
 // Deserialize deserializes a SingleValidatorVote from a reader.
@@ -134,7 +134,7 @@ func (v *SingleValidatorVote) Deserialize(r io.Reader) error {
 	if _, err := r.Read(sigBytes[:]); err != nil {
 		return err
 	}
-	return serializer.ReadElement(r, &v.Validator)
+	return serializer.ReadElements(r, &v.Offset)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.

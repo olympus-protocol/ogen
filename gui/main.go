@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
@@ -74,8 +75,8 @@ func loadOgen(configParams *config.Config, log *logger.Logger) error {
 		return err
 	}
 	// TODO: replace this with something better
-	testParams, _ := getTestInitializationParameters()
-	s, err := server.NewServer(configParams, log, currParams, db, true, *testParams)
+	testParams, keys := getTestInitializationParameters()
+	s, err := server.NewServer(configParams, log, currParams, db, true, *testParams, miner.NewBasicKeystore(keys))
 	if err != nil {
 		return err
 	}

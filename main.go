@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
@@ -67,9 +68,9 @@ func loadOgen(configParams *config.Config, log *logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	ip, _ := getTestInitializationParameters()
+	ip, keys := getTestInitializationParameters()
 	listenChan := config.InterruptListener(log)
-	s, err := server.NewServer(configParams, log, currParams, db, false, *ip)
+	s, err := server.NewServer(configParams, log, currParams, db, false, *ip, miner.NewBasicKeystore(keys))
 	if err != nil {
 		return err
 	}

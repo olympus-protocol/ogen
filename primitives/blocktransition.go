@@ -9,13 +9,18 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-func (s *State) getValidatorAtVoteSlot(validator uint64, slot uint64, p *params.ChainParams) Worker {
-	numValidatorsAtSlot := (uint64(len(s.ProposerQueue)) / p.EpochLength) + 1
-	slotIndex := slot % p.EpochLength
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32, max uint32) {
+	numValidatorsAtSlot := uint32(uint64(len(s.ValidatorRegistry))/p.EpochLength) + 1
+	slotIndex := uint32(slot % p.EpochLength)
 
-	valIdx := s.ProposerQueue[slotIndex*numValidatorsAtSlot+validator]
+	min = slotIndex * numValidatorsAtSlot
+	max = min + numValidatorsAtSlot
 
-	return s.ValidatorRegistry[valIdx]
+	if max >= uint32(len(s.ValidatorRegistry)) {
+		max = uint32(len(s.ValidatorRegistry) - 1)
+	}
+
+	return
 }
 
 func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
@@ -40,12 +45,16 @@ func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	}
 
 	aggPubs := bls.NewAggregatePublicKey()
+	min, max := s.GetVoteCommittee(v.Data.Slot, p)
 	for i := range v.ParticipationBitfield {
 		for j := 0; j < 8; j++ {
-			validator := (i * 8) + j
+			validator := min + uint32((i*8)+j)
 
-			worker := s.getValidatorAtVoteSlot(uint64(validator), v.Data.Slot, p)
-			pub, err := bls.DeserializePublicKey(worker.PubKey)
+			if validator > max {
+				break
+			}
+
+			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validator].PubKey)
 			if err != nil {
 				return err
 			}

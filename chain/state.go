@@ -174,6 +174,10 @@ func (s *StateService) Height() int32 {
 	return s.blockChain.Height()
 }
 
+func (s *StateService) TipState() *primitives.State {
+	return s.stateMap[s.blockChain.Tip().Hash].firstSlotState
+}
+
 // NewStateService constructs a new state service.
 func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)

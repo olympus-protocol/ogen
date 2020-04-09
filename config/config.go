@@ -2,9 +2,10 @@ package config
 
 import (
 	"errors"
-	"github.com/BurntSushi/toml"
 	"log"
 	"os"
+
+	"github.com/BurntSushi/toml"
 )
 
 var (
@@ -27,7 +28,6 @@ type Config struct {
 	Port             int32
 	MaxPeers         int32
 	Mode             string
-	MinerPrivKey     string
 	Wallet           bool
 	AddrGap          int32
 	AccountsGenerate int32

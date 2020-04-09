@@ -76,7 +76,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters, keys miner.Keystore) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
 	walletsMan, err := wallet.NewWalletMan(loadWalletsManConfig(configParams, logger, gui), currParams)
 	if err != nil {
@@ -90,7 +90,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
-	min, err := miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan)
+	min, err := miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +152,7 @@ func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config 
 
 func loadMinerConfig(config *config.Config, logger *logger.Logger) miner.Config {
 	cfg := miner.Config{
-		Log:      logger,
-		MinerKey: config.MinerPrivKey,
+		Log: logger,
 	}
 	return cfg
 }
