@@ -133,7 +133,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return err
 	}
 
-	slotIndex := b.Header.Slot % p.EpochLength
+	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 	proposer := s.ValidatorRegistry[proposerIndex]

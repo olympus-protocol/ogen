@@ -100,9 +100,16 @@ func (m *Miner) Start() error {
 					}
 				}
 
-				slotIndex := newSlot % m.params.EpochLength
-				proposerIndex := state.ProposerQueue[slotIndex]
+				slotIndex := tip.Slot % m.params.EpochLength
+
+				var proposerIndex uint32
+				if slotIndex != 0 {
+					proposerIndex = state.ProposerQueue[slotIndex]
+				} else {
+					proposerIndex = state.NextProposerQueue[slotIndex]
+				}
 				proposer := state.ValidatorRegistry[proposerIndex]
+				fmt.Println(proposerIndex)
 				if k, found := m.keystore.GetKeyForWorker(&proposer); found {
 					votes := m.mempool.get(newSlot, &m.params)
 

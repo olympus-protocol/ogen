@@ -104,12 +104,12 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// b. apply block transition to state
 	ch.log.Debugf("attempting to apply block to state")
 	// TODO: better fork choice here
-	_, err = ch.State().Add(block, true)
+	newState, err := ch.State().Add(block, true)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
-	ch.log.Infof("New block accepted Hash: %v", block.Hash())
+	ch.log.Infof("New block accepted Hash: %v, Slot: %d Current Queue: %v Next queue: %v", block.Hash(), block.Header.Slot, newState.ProposerQueue, newState.NextProposerQueue)
 
 	return nil
 }
