@@ -91,12 +91,22 @@ func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
 	m.mempool.remove(block)
 }
 
+// getNextSlotTime gets the next slot time.
+func (m *Miner) getNextSlotTime() time.Time {
+	currentSlot := uint64(time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
+	nextSlot := currentSlot + 1
+
+	return m.chain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second)
+}
+
 // Start runs the miner.
 func (m *Miner) Start() error {
 	m.log.Info("starting miner")
 
 	go func() {
-		t := time.NewTimer(0)
+		nextTime := time.Until(m.getNextSlotTime())
+
+		t := time.NewTimer(nextTime)
 
 	outer:
 		for {
@@ -188,7 +198,8 @@ func (m *Miner) Start() error {
 					}
 				}
 
-				t = time.NewTimer(time.Second * 1)
+				nextTime = time.Until(m.getNextSlotTime())
+				t = time.NewTimer(nextTime)
 			case <-m.context.Done():
 				m.log.Info("stopping miner")
 				break outer

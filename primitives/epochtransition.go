@@ -2,7 +2,6 @@ package primitives
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/olympus-protocol/ogen/params"
@@ -268,8 +267,6 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
 		}
 	}
-
-	fmt.Println(currentEpochVotersMatchingTarget.totalBalance)
 
 	s.PreviousJustifiedEpoch = s.JustifiedEpoch
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash

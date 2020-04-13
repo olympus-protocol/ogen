@@ -37,7 +37,7 @@ var defaultConfig = Config{
 	DataFolder:       AppDataDir("Ogen", false),
 	Debug:            false,
 	Listen:           true,
-	NetworkName:      "mainnet",
+	NetworkName:      "testnet",
 	Port:             24126,
 	MaxPeers:         9,
 	Mode:             "node",

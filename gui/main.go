@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"flag"
 	"os"
+	"time"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/config"
@@ -58,6 +59,7 @@ func getTestInitializationParameters() (*primitives.InitializationParameters, []
 
 	return &primitives.InitializationParameters{
 		InitialValidators: vals,
+		GenesisTime:       time.Now().Add(1 * time.Second),
 	}, keys
 }
 

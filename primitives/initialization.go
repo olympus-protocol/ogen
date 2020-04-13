@@ -1,6 +1,8 @@
 package primitives
 
 import (
+	"time"
+
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -15,6 +17,7 @@ type ValidatorInitialization struct {
 // the new genesis state.
 type InitializationParameters struct {
 	InitialValidators []ValidatorInitialization
+	GenesisTime       time.Time
 }
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.

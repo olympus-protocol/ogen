@@ -37,6 +37,7 @@ type ChainParams struct {
 	UnitsPerCoin                 uint64
 	InactivityPenaltyQuotient    uint64
 	IncluderRewardQuotient       uint64
+	SlotDuration                 uint64
 }
 
 var NetworkNames = map[string]string{
@@ -80,6 +81,7 @@ var Mainnet = ChainParams{
 	DepositAmount:                10000,
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
+	SlotDuration:                 60,
 }
 
 var TestNet = ChainParams{
@@ -113,4 +115,5 @@ var TestNet = ChainParams{
 	DepositAmount:                10000,
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
+	SlotDuration:                 1,
 }

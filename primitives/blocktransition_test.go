@@ -34,6 +34,7 @@ func getTestInitializationParameters() (*primitives.InitializationParameters, []
 
 	return &primitives.InitializationParameters{
 		InitialValidators: vals,
+		GenesisTime:       time.Now().Add(1 * time.Second),
 	}, keys
 }
 

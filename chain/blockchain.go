@@ -2,6 +2,7 @@ package chain
 
 import (
 	"sync"
+	"time"
 
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
@@ -23,9 +24,10 @@ type Config struct {
 
 type Blockchain struct {
 	// Initial Ogen Params
-	log    *logger.Logger
-	config Config
-	params params.ChainParams
+	log         *logger.Logger
+	config      Config
+	genesisTime time.Time
+	params      params.ChainParams
 
 	// DB
 	db blockdb.DB
@@ -50,18 +52,23 @@ func (ch *Blockchain) State() *StateService {
 	return ch.state
 }
 
+func (ch *Blockchain) GenesisTime() time.Time {
+	return ch.genesisTime
+}
+
 func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (*Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
 	}
 	ch := &Blockchain{
-		log:      config.Log,
-		config:   config,
-		params:   params,
-		db:       db,
-		state:    state,
-		notifees: make(map[BlockchainNotifee]struct{}),
+		log:         config.Log,
+		config:      config,
+		params:      params,
+		db:          db,
+		state:       state,
+		notifees:    make(map[BlockchainNotifee]struct{}),
+		genesisTime: ip.GenesisTime,
 	}
 	return ch, nil
 }

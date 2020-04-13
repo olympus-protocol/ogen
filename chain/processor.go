@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -80,6 +81,11 @@ func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 	// b. get parent block
+	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
+
+	if time.Now().Before(blockTime) {
+		return fmt.Errorf("block %d processed at %s, but should wait until %s", block.Header.Slot, time.Now(), blockTime)
+	}
 
 	// 2. verify block against previous block's state
 	oldState, found := ch.state.GetStateForHash(block.Header.PrevBlockHash)
