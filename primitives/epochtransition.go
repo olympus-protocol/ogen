@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/olympus-protocol/ogen/params"
@@ -55,10 +56,10 @@ func (vg *voterGroup) add(id uint32, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(validators []Worker, bitfield []uint8) {
+func (vg *voterGroup) addFromBitfield(validators []Worker, bitfield []uint8, offset uint32) {
 	for i, b := range bitfield {
 		for j := 0; j < 8; j++ {
-			val := i*8 + j
+			val := i*8 + j + int(offset)
 			if b&(1<<j) > 0 && val < len(validators) {
 				vg.add(uint32(val), validators[val].Balance)
 			}
@@ -223,8 +224,6 @@ func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chai
 func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 	totalBalance := s.getActiveBalance(p)
 
-	log.Infof("processing epoch transition with current votes: %d, prev votes: %d", len(s.CurrentEpochVotes), len(s.PreviousEpochVotes))
-
 	// These are voters who voted for a target of the previous epoch.
 	previousEpochVoters := newVoterGroup()
 	previousEpochVotersMatchingTargetHash := newVoterGroup()
@@ -239,37 +238,39 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 
 	epochBoundaryHash := chainhash.Hash{}
 	if s.Slot >= p.EpochLength {
-		epochBoundaryHash = s.GetRecentBlockHash(s.Slot-p.EpochLength, p)
+		epochBoundaryHash = s.GetRecentBlockHash(s.Slot-p.EpochLength-1, p)
 	}
 
 	previousEpochVotersMap := make(map[uint32]*AcceptedVoteInfo)
 
 	for _, v := range s.PreviousEpochVotes {
-		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
-		log.Infof("hash: %s, balance: %d, %v", v.Data.Hash(), previousEpochVoters.totalBalance, v.ParticipationBitfield)
+		min, _ := s.GetVoteCommittee(v.Data.Slot, p)
+		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot, p)
 		if v.Data.BeaconBlockHash.IsEqual(&actualBlockHash) {
-			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
+			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
 		}
-		log.Infof("tohash: %s, actual: %s", v.Data.ToHash, previousEpochBoundaryHash)
 		if v.Data.ToHash.IsEqual(&previousEpochBoundaryHash) {
-			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
+			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
 		}
 		for i := range v.ParticipationBitfield {
 			for j := 0; j < 8; j++ {
-				val := uint32(i*8 + j)
+				val := uint32(i*8+j) + min
 				previousEpochVotersMap[val] = &v
 			}
 		}
 	}
 
 	for _, v := range s.CurrentEpochVotes {
+		min, _ := s.GetVoteCommittee(v.Data.Slot, p)
+
 		if v.Data.ToHash.IsEqual(&epochBoundaryHash) {
-			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
+			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
 		}
 	}
 
-	oldPreviousJustifiedEpoch := s.PreviousJustifiedEpoch
+	fmt.Println(currentEpochVotersMatchingTarget.totalBalance)
+
 	s.PreviousJustifiedEpoch = s.JustifiedEpoch
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash
 	s.JustificationBitfield <<= 1
@@ -277,20 +278,26 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 	// >2/3 voted with target of the previous epoch
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 1 // mark
+		s.JustifiedEpoch = s.EpochIndex - 1
 	}
 
 	if 3*currentEpochVotersMatchingTarget.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 0
+		s.JustifiedEpoch = s.EpochIndex
 	}
 
-	if ((s.JustificationBitfield>>1)%8 == 7 && s.PreviousJustifiedEpoch == s.EpochIndex-2) || // 1110
-		((s.JustificationBitfield>>1)%4 == 3 && s.PreviousJustifiedEpoch == s.EpochIndex-1) { // 110 <- old previous justified would be
-		s.FinalizedEpoch = oldPreviousJustifiedEpoch
+	log.Infof("justification: %b, previousEpoch: %d, justifiedEpoch: %d, currentEpoch: %d", s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpoch, s.EpochIndex)
+
+	if (s.JustificationBitfield>>1)%4 == 3 && s.PreviousJustifiedEpoch == s.EpochIndex-2 { // 110 <- old previous justified would be
+		log.Infof("finalized epoch %d", s.PreviousJustifiedEpoch)
+		s.FinalizedEpoch = s.PreviousJustifiedEpoch
 	}
 
 	if ((s.JustificationBitfield>>0)%8 == 7 && s.JustifiedEpoch == s.EpochIndex-1) || // 111
 		((s.JustificationBitfield>>0)%4 == 3 && s.JustifiedEpoch == s.EpochIndex) {
+		log.Infof("finalized epoch %d", s.PreviousJustifiedEpoch)
 		s.FinalizedEpoch = s.PreviousJustifiedEpoch
+		s.JustifiedEpoch = s.EpochIndex
 	}
 
 	baseRewardQuotient := p.BaseRewardQuotient * intSqrt(totalBalance/p.UnitsPerCoin)

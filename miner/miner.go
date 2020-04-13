@@ -108,7 +108,14 @@ func (m *Miner) Start() error {
 
 				newSlot := tip.Slot + 1
 
-				state := m.chain.State().TipState()
+				s := m.chain.State()
+
+				view, err := s.GetSubView(tipHash)
+				if err != nil {
+					panic(err)
+				}
+
+				state, err := s.GetStateForHashAtSlot(tipHash, newSlot, &view, &m.params)
 
 				min, max := state.GetVoteCommittee(newSlot, &m.params)
 				toEpoch := (newSlot - 1) / m.params.EpochLength
@@ -144,12 +151,7 @@ func (m *Miner) Start() error {
 
 				slotIndex := tip.Slot % m.params.EpochLength
 
-				var proposerIndex uint32
-				if slotIndex != 0 {
-					proposerIndex = state.ProposerQueue[slotIndex]
-				} else {
-					proposerIndex = state.NextProposerQueue[slotIndex]
-				}
+				proposerIndex := state.ProposerQueue[slotIndex]
 				proposer := state.ValidatorRegistry[proposerIndex]
 
 				if k, found := m.keystore.GetKeyForWorker(&proposer); found {
