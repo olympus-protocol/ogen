@@ -223,6 +223,8 @@ func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chai
 func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 	totalBalance := s.getActiveBalance(p)
 
+	log.Infof("processing epoch transition with current votes: %d, prev votes: %d", len(s.CurrentEpochVotes), len(s.PreviousEpochVotes))
+
 	// These are voters who voted for a target of the previous epoch.
 	previousEpochVoters := newVoterGroup()
 	previousEpochVotersMatchingTargetHash := newVoterGroup()
@@ -232,7 +234,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 
 	previousEpochBoundaryHash := chainhash.Hash{}
 	if s.Slot >= 2*p.EpochLength {
-		previousEpochBoundaryHash = s.GetRecentBlockHash(s.Slot-2*p.EpochLength, p)
+		previousEpochBoundaryHash = s.GetRecentBlockHash(s.Slot-2*p.EpochLength-1, p)
 	}
 
 	epochBoundaryHash := chainhash.Hash{}
@@ -244,10 +246,12 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 
 	for _, v := range s.PreviousEpochVotes {
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
+		log.Infof("hash: %s, balance: %d, %v", v.Data.Hash(), previousEpochVoters.totalBalance, v.ParticipationBitfield)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot, p)
 		if v.Data.BeaconBlockHash.IsEqual(&actualBlockHash) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
 		}
+		log.Infof("tohash: %s, actual: %s", v.Data.ToHash, previousEpochBoundaryHash)
 		if v.Data.ToHash.IsEqual(&previousEpochBoundaryHash) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield)
 		}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
@@ -49,6 +50,48 @@ func NewBasicKeystore(keys []bls.SecretKey) *BasicKeystore {
 	}
 }
 
+// Miner manages mining for the blockchain.
+type Miner struct {
+	log        *logger.Logger
+	config     Config
+	params     params.ChainParams
+	chain      *chain.Blockchain
+	walletsMan *wallet.WalletMan
+	peersMan   *peers.PeerMan
+	mineActive bool
+	keystore   Keystore
+	context    context.Context
+	Stop       context.CancelFunc
+
+	mempool *Mempool
+}
+
+// NewMiner creates a new miner from the parameters.
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore) (miner *Miner, err error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	miner = &Miner{
+		log:        config.Log,
+		config:     config,
+		params:     params,
+		chain:      chain,
+		walletsMan: walletsMan,
+		peersMan:   peersMan,
+		mineActive: true,
+		keystore:   keys,
+		context:    ctx,
+		Stop:       cancel,
+		mempool:    NewMempool(),
+	}
+	chain.Notify(miner)
+	return miner, nil
+}
+
+// NewTip implements the BlockchainNotifee interface.
+func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
+	m.mempool.remove(block)
+}
+
+// Start runs the miner.
 func (m *Miner) Start() error {
 	m.log.Info("starting miner")
 
@@ -68,13 +111,14 @@ func (m *Miner) Start() error {
 				state := m.chain.State().TipState()
 
 				min, max := state.GetVoteCommittee(newSlot, &m.params)
+				toEpoch := (newSlot - 1) / m.params.EpochLength
 
 				data := primitives.VoteData{
 					Slot:      newSlot,
 					FromEpoch: state.JustifiedEpoch,
 					FromHash:  state.JustifiedEpochHash,
-					ToEpoch:   state.EpochIndex,
-					ToHash:    state.GetRecentBlockHash(state.EpochIndex*m.params.EpochLength, &m.params),
+					ToEpoch:   toEpoch,
+					ToHash:    state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
 				}
 
 				dataHash := data.Hash()
@@ -83,8 +127,6 @@ func (m *Miner) Start() error {
 					validator := state.ValidatorRegistry[i]
 
 					if k, found := m.keystore.GetKeyForWorker(&validator); found {
-						m.log.Infof("signing vote from %d to %d with validator %d", data.FromEpoch, data.ToEpoch, i)
-
 						sig, err := bls.Sign(k, dataHash[:])
 						if err != nil {
 							panic(err)
@@ -109,7 +151,7 @@ func (m *Miner) Start() error {
 					proposerIndex = state.NextProposerQueue[slotIndex]
 				}
 				proposer := state.ValidatorRegistry[proposerIndex]
-				fmt.Println(proposerIndex)
+
 				if k, found := m.keystore.GetKeyForWorker(&proposer); found {
 					votes := m.mempool.get(newSlot, &m.params)
 
@@ -152,39 +194,4 @@ func (m *Miner) Start() error {
 		}
 	}()
 	return nil
-}
-
-// Miner manages mining for the blockchain.
-type Miner struct {
-	log        *logger.Logger
-	config     Config
-	params     params.ChainParams
-	chain      *chain.Blockchain
-	walletsMan *wallet.WalletMan
-	peersMan   *peers.PeerMan
-	mineActive bool
-	keystore   Keystore
-	context    context.Context
-	Stop       context.CancelFunc
-
-	mempool *Mempool
-}
-
-// NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore) (miner *Miner, err error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	miner = &Miner{
-		log:        config.Log,
-		config:     config,
-		params:     params,
-		chain:      chain,
-		walletsMan: walletsMan,
-		peersMan:   peersMan,
-		mineActive: true,
-		keystore:   keys,
-		context:    ctx,
-		Stop:       cancel,
-		mempool:    NewMempool(),
-	}
-	return miner, nil
 }

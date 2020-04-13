@@ -15,6 +15,8 @@ import (
 	"github.com/olympus-protocol/ogen/server"
 )
 
+var log = logger.New(os.Stdin)
+
 func main() {
 	var dataDirPath = flag.String("datadir", "", "Directory to store Ogen data")
 	flag.Parse()

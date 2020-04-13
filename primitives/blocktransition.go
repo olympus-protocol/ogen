@@ -3,12 +3,17 @@ package primitives
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+var log = logger.New(os.Stdin)
+
+// GetVoteCommittee gets the committee for a certain block.
 func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32, max uint32) {
 	numValidatorsAtSlot := uint32(uint64(len(s.ValidatorRegistry))/p.EpochLength) + 1
 	slotIndex := uint32(slot % p.EpochLength)
@@ -164,6 +169,17 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	for _, v := range b.Votes {
 		if err := s.processVote(&v, p, proposerIndex); err != nil {
 			return err
+		}
+	}
+
+	for _, v := range s.CurrentEpochVotes {
+		validators := 0
+		for _, b := range v.ParticipationBitfield {
+			for i := 0; i < 8; i++ {
+				if b&(1<<i) != 0 {
+					validators++
+				}
+			}
 		}
 	}
 

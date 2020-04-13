@@ -39,7 +39,7 @@ func (m *Mempool) add(vote *primitives.SingleValidatorVote, outOf uint32) {
 func (m *Mempool) get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
 	votes := make([]primitives.MultiValidatorVote, 0)
 	for i := range m.pool {
-		if m.pool[i].Data.Slot >= slot+p.MinAttestationInclusionDelay {
+		if m.pool[i].Data.Slot < slot-p.MinAttestationInclusionDelay {
 			votes = append(votes, *m.pool[i])
 		}
 	}

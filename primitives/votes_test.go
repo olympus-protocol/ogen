@@ -2,7 +2,6 @@ package primitives
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -29,7 +28,6 @@ func TestAcceptedVoteInfoCopy(t *testing.T) {
 	}
 
 	av.ParticipationBitfield[0] = 7
-	fmt.Println(av.ParticipationBitfield, av2.ParticipationBitfield)
 	if av2.ParticipationBitfield[0] == 7 {
 		t.Fatal("mutating participation bitfield mutates copy")
 	}

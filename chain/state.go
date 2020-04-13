@@ -130,29 +130,29 @@ func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 }
 
 // Add adds a block to the blockchain.
-func (s *StateService) Add(block *primitives.Block, newTip bool) (*primitives.State, error) {
+func (s *StateService) Add(block *primitives.Block, newTip bool) (*primitives.State, *index.BlockRow, error) {
 	lastBlockHash := block.Header.PrevBlockHash
 
 	view, err := s.GetSubView(lastBlockHash)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	lastBlockState, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &s.params)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	newState := lastBlockState.Copy()
 
 	err = newState.ProcessBlock(block, &s.params)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	row, err := s.blockIndex.Add(block.Header)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	rowHash := row.Header.Hash()
 	s.lock.Lock()
@@ -162,7 +162,7 @@ func (s *StateService) Add(block *primitives.Block, newTip bool) (*primitives.St
 	if newTip {
 		s.blockChain.SetTip(row)
 	}
-	return &newState, nil
+	return &newState, row, nil
 }
 
 // GetRowByHash gets a specific row by hash.
@@ -170,10 +170,12 @@ func (s *StateService) GetRowByHash(h chainhash.Hash) (*index.BlockRow, bool) {
 	return s.blockIndex.Get(h)
 }
 
+// Height gets the height of the blockchain.
 func (s *StateService) Height() int32 {
 	return s.blockChain.Height()
 }
 
+// TipState gets the state of the tip of the blockchain.
 func (s *StateService) TipState() *primitives.State {
 	return s.stateMap[s.blockChain.Tip().Hash].firstSlotState
 }

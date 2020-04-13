@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"sync"
+
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
@@ -30,6 +32,9 @@ type Blockchain struct {
 
 	// StateService
 	state *StateService
+
+	notifees    map[BlockchainNotifee]struct{}
+	notifeeLock sync.RWMutex
 }
 
 func (ch *Blockchain) Start() (err error) {
@@ -51,11 +56,12 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 		return nil, err
 	}
 	ch := &Blockchain{
-		log:    config.Log,
-		config: config,
-		params: params,
-		db:     db,
-		state:  state,
+		log:      config.Log,
+		config:   config,
+		params:   params,
+		db:       db,
+		state:    state,
+		notifees: make(map[BlockchainNotifee]struct{}),
 	}
 	return ch, nil
 }

@@ -76,6 +76,7 @@ func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 	return nil
 }
 
+// ProcessBlock processes an incoming block from a peer or the miner.
 func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 	// b. get parent block
@@ -104,12 +105,18 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// b. apply block transition to state
 	ch.log.Debugf("attempting to apply block to state")
 	// TODO: better fork choice here
-	newState, err := ch.State().Add(block, true)
+	_, row, err := ch.State().Add(block, true)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
-	ch.log.Infof("New block accepted Hash: %v, Slot: %d Current Queue: %v Next queue: %v", block.Hash(), block.Header.Slot, newState.ProposerQueue, newState.NextProposerQueue)
+	ch.log.Infof("New block accepted Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
+
+	ch.notifeeLock.RLock()
+	for i := range ch.notifees {
+		i.NewTip(row, block)
+	}
+	ch.notifeeLock.RUnlock()
 
 	return nil
 }

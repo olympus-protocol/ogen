@@ -27,7 +27,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 				TxHash: [32]byte{},
 				Index:  0,
 			},
-			Balance:      0,
+			Balance:      p.DepositAmount * p.UnitsPerCoin,
 			PubKey:       v.PubKey,
 			PayeeAddress: v.PayeeAddress,
 			Status:       StatusActive,
