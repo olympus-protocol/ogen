@@ -56,10 +56,22 @@ func (ch *Blockchain) GenesisTime() time.Time {
 	return ch.genesisTime
 }
 
+// NewBlockchain constructs a new blockchain.
 func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (*Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
+	}
+	var genesisTime time.Time
+	genesisTime, err = db.GetGenesisTime()
+	if err != nil {
+		config.Log.Debugf("using genesis time %s from params", ip.GenesisTime)
+		genesisTime = ip.GenesisTime
+		if err := db.SetGenesisTime(ip.GenesisTime); err != nil {
+			return nil, err
+		}
+	} else {
+		config.Log.Debugf("using genesis time %s from db", genesisTime)
 	}
 	ch := &Blockchain{
 		log:         config.Log,
@@ -68,7 +80,7 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 		db:          db,
 		state:       state,
 		notifees:    make(map[BlockchainNotifee]struct{}),
-		genesisTime: ip.GenesisTime,
+		genesisTime: genesisTime,
 	}
 	return ch, nil
 }
