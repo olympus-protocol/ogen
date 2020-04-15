@@ -91,19 +91,17 @@ func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
 	m.mempool.remove(block)
 }
 
-// getNextSlotTime gets the next slot time.
-func (m *Miner) getNextBlockTime() time.Time {
-	currentSlot := uint64(time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
-	nextSlot := currentSlot + 1
+func (m *Miner) getCurrentSlot() uint64 {
+	return uint64(time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
+}
 
+// getNextSlotTime gets the next slot time.
+func (m *Miner) getNextBlockTime(nextSlot uint64) time.Time {
 	return m.chain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second)
 }
 
 // getNextSlotTime gets the next slot time.
-func (m *Miner) getNextVoteTime() time.Time {
-	currentSlot := uint64(time.Now().Add(time.Second*time.Duration(m.params.SlotDuration)/2).Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
-	nextSlot := currentSlot + 1
-
+func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
 	return m.chain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(m.params.SlotDuration) / 2)
 }
 
@@ -112,8 +110,10 @@ func (m *Miner) Start() error {
 	m.log.Info("starting miner")
 
 	go func() {
-		blockTimer := time.NewTimer(time.Until(m.getNextBlockTime()))
-		voteTimer := time.NewTimer(time.Until(m.getNextVoteTime()))
+		slotToPropose := m.getCurrentSlot() + 1
+		slotToVote := slotToPropose
+		blockTimer := time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
+		voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
 
 	outer:
 		for {
@@ -123,9 +123,7 @@ func (m *Miner) Start() error {
 				tip := m.chain.State().Tip().Header
 				tipHash := tip.Hash()
 
-				newSlot := tip.Slot + 1
-
-				m.log.Infof("sending votes for slot %d", newSlot)
+				m.log.Infof("sending votes for slot %d", slotToVote)
 
 				s := m.chain.State()
 
@@ -134,13 +132,13 @@ func (m *Miner) Start() error {
 					panic(err)
 				}
 
-				state, err := s.GetStateForHashAtSlot(tipHash, newSlot, &view, &m.params)
+				state, err := s.GetStateForHashAtSlot(tipHash, slotToVote, &view, &m.params)
 
-				min, max := state.GetVoteCommittee(newSlot, &m.params)
-				toEpoch := (newSlot - 1) / m.params.EpochLength
+				min, max := state.GetVoteCommittee(slotToVote, &m.params)
+				toEpoch := (slotToVote - 1) / m.params.EpochLength
 
 				data := primitives.VoteData{
-					Slot:      newSlot,
+					Slot:      slotToVote,
 					FromEpoch: state.JustifiedEpoch,
 					FromHash:  state.JustifiedEpochHash,
 					ToEpoch:   toEpoch,
@@ -167,15 +165,13 @@ func (m *Miner) Start() error {
 						m.mempool.add(&vote, max-min)
 					}
 				}
-
-				voteTimer = time.NewTimer(time.Until(m.getNextVoteTime()))
+				slotToVote++
+				voteTimer = time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
 
 			case <-blockTimer.C:
 				// check if we're an attester for this slot
 				tip := m.chain.State().Tip().Header
 				tipHash := tip.Hash()
-
-				newSlot := tip.Slot + 1
 
 				s := m.chain.State()
 
@@ -184,7 +180,10 @@ func (m *Miner) Start() error {
 					panic(err)
 				}
 
-				state, err := s.GetStateForHashAtSlot(tipHash, newSlot, &view, &m.params)
+				state, err := s.GetStateForHashAtSlot(tipHash, slotToPropose, &view, &m.params)
+				if err != nil {
+					panic(err)
+				}
 
 				slotIndex := tip.Slot % m.params.EpochLength
 
@@ -192,7 +191,7 @@ func (m *Miner) Start() error {
 				proposer := state.ValidatorRegistry[proposerIndex]
 
 				if k, found := m.keystore.GetKeyForWorker(&proposer); found {
-					votes := m.mempool.get(newSlot, &m.params)
+					votes := m.mempool.get(slotToPropose, &m.params)
 
 					block := primitives.Block{
 						Header: primitives.BlockHeader{
@@ -201,13 +200,13 @@ func (m *Miner) Start() error {
 							MerkleRoot:    chainhash.Hash{},
 							PrevBlockHash: tipHash,
 							Timestamp:     time.Now(),
-							Slot:          newSlot,
+							Slot:          slotToPropose,
 						},
 						Votes: votes,
 					}
 
 					blockHash := block.Hash()
-					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", newSlot)))
+					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
 
 					blockSig, err := bls.Sign(k, blockHash[:])
 					if err != nil {
@@ -225,7 +224,8 @@ func (m *Miner) Start() error {
 					}
 				}
 
-				blockTimer = time.NewTimer(time.Until(m.getNextBlockTime()))
+				slotToPropose++
+				blockTimer = time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
 			case <-m.context.Done():
 				m.log.Info("stopping miner")
 				break outer
