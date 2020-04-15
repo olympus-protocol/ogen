@@ -3,48 +3,14 @@ package blockdb
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"time"
+
+	"github.com/olympus-protocol/ogen/utils/serializer"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
-
-var chainStateKey = []byte("chain-state-")
-
-func (bdb *BlockDB) GetStateSnap() ([]byte, error) {
-	var chainState []byte
-	err := bdb.badgerdb.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(chainStateKey)
-		if err != nil {
-			return err
-		}
-		chainState, err = item.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return chainState, nil
-}
-
-func (bdb *BlockDB) SetStateSnap(data []byte) error {
-	err := bdb.badgerdb.Update(func(txn *badger.Txn) error {
-		err := txn.Set(chainStateKey, data)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {
@@ -56,6 +22,7 @@ type BlockNodeDisk struct {
 	Parent    chainhash.Hash
 }
 
+// Serialize serializes a block node disk to bytes.
 func (bnd *BlockNodeDisk) Serialize() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 
@@ -77,6 +44,7 @@ func (bnd *BlockNodeDisk) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Deserialize deserializes a block node disk from bytes.
 func (bnd *BlockNodeDisk) Deserialize(b []byte) error {
 	buf := bytes.NewBuffer(b)
 
@@ -144,6 +112,7 @@ func setKey(db *badger.DB, key []byte, to []byte) error {
 
 var latestVotePrefix = []byte("latest-vote")
 
+// GetLatestVote gets the latest vote by a validator.
 func (bdb *BlockDB) GetLatestVote(validator uint32) (*primitives.MultiValidatorVote, error) {
 	var validatorBytes [4]byte
 	binary.BigEndian.PutUint32(validatorBytes[:], validator)
@@ -159,6 +128,7 @@ func (bdb *BlockDB) GetLatestVote(validator uint32) (*primitives.MultiValidatorV
 	return vote, err
 }
 
+// SetLatestVoteIfNeeded sets the latest for a validator.
 func (bdb *BlockDB) SetLatestVoteIfNeeded(validators []uint32, vote *primitives.MultiValidatorVote) error {
 	buf := bytes.NewBuffer([]byte{})
 
@@ -211,16 +181,19 @@ func (bdb *BlockDB) SetLatestVoteIfNeeded(validators []uint32, vote *primitives.
 
 var tipKey = []byte("chain-tip")
 
+// SetTip sets the current best tip of the blockchain.
 func (bdb *BlockDB) SetTip(c chainhash.Hash) error {
 	return setKeyHash(bdb.badgerdb, tipKey, c)
 }
 
+// GetTip gets the current best tip of the blockchain.
 func (bdb *BlockDB) GetTip() (chainhash.Hash, error) {
 	return getKeyHash(bdb.badgerdb, tipKey)
 }
 
 var finalizedStateKey = []byte("finalized-state")
 
+// SetFinalizedState sets the finalized state of the blockchain.
 func (bdb *BlockDB) SetFinalizedState(s *primitives.State) error {
 	buf := bytes.NewBuffer([]byte{})
 	if err := s.Serialize(buf); err != nil {
@@ -230,6 +203,7 @@ func (bdb *BlockDB) SetFinalizedState(s *primitives.State) error {
 	return setKey(bdb.badgerdb, finalizedStateKey, buf.Bytes())
 }
 
+// GetFinalizedState gets the finalized state of the blockchain.
 func (bdb *BlockDB) GetFinalizedState() (*primitives.State, error) {
 	stateBytes, err := getKey(bdb.badgerdb, finalizedStateKey)
 	if err != nil {
@@ -243,6 +217,7 @@ func (bdb *BlockDB) GetFinalizedState() (*primitives.State, error) {
 
 var justifiedStateKey = []byte("justified-state")
 
+// SetJustifiedState sets the justified state of the blockchain.
 func (bdb *BlockDB) SetJustifiedState(s *primitives.State) error {
 	buf := bytes.NewBuffer([]byte{})
 	if err := s.Serialize(buf); err != nil {
@@ -252,6 +227,7 @@ func (bdb *BlockDB) SetJustifiedState(s *primitives.State) error {
 	return setKey(bdb.badgerdb, justifiedStateKey, buf.Bytes())
 }
 
+// GetJustifiedState gets the justified state of the blockchain.
 func (bdb *BlockDB) GetJustifiedState() (*primitives.State, error) {
 	stateBytes, err := getKey(bdb.badgerdb, justifiedStateKey)
 	if err != nil {
@@ -265,6 +241,7 @@ func (bdb *BlockDB) GetJustifiedState() (*primitives.State, error) {
 
 var blockRowPrefix = []byte("block-row")
 
+// SetBlockRow sets a block row on disk to store the block index.
 func (bdb *BlockDB) SetBlockRow(disk *BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
 	diskSer, err := disk.Serialize()
@@ -274,6 +251,7 @@ func (bdb *BlockDB) SetBlockRow(disk *BlockNodeDisk) error {
 	return setKey(bdb.badgerdb, key, diskSer)
 }
 
+// GetBlockRow gets the block row on disk.
 func (bdb *BlockDB) GetBlockRow(c chainhash.Hash) (*BlockNodeDisk, error) {
 	key := append(blockRowPrefix, c[:]...)
 	diskSer, err := getKey(bdb.badgerdb, key)
@@ -288,26 +266,31 @@ func (bdb *BlockDB) GetBlockRow(c chainhash.Hash) (*BlockNodeDisk, error) {
 
 var justifiedHeadKey = []byte("justified-head")
 
+// SetJustifiedHead sets the latest justified head.
 func (bdb *BlockDB) SetJustifiedHead(c chainhash.Hash) error {
 	return setKeyHash(bdb.badgerdb, justifiedHeadKey, c)
 }
 
+// GetJustifiedHead gets the latest justified head.
 func (bdb *BlockDB) GetJustifiedHead() (chainhash.Hash, error) {
 	return getKeyHash(bdb.badgerdb, justifiedHeadKey)
 }
 
 var finalizedHeadKey = []byte("finalized-head")
 
+// SetFinalizedHead sets the finalized head of the blockchain.
 func (bdb *BlockDB) SetFinalizedHead(c chainhash.Hash) error {
 	return setKeyHash(bdb.badgerdb, finalizedHeadKey, c)
 }
 
+// GetFinalizedHead gets the finalized head of the blockchain.
 func (bdb *BlockDB) GetFinalizedHead() (chainhash.Hash, error) {
 	return getKeyHash(bdb.badgerdb, finalizedHeadKey)
 }
 
 var genesisTimeKey = []byte("genesisTime")
 
+// SetGenesisTime sets the genesis time of the blockchain.
 func (bdb *BlockDB) SetGenesisTime(t time.Time) error {
 	bs, err := t.MarshalBinary()
 	if err != nil {
@@ -316,6 +299,7 @@ func (bdb *BlockDB) SetGenesisTime(t time.Time) error {
 	return setKey(bdb.badgerdb, genesisTimeKey, bs)
 }
 
+// GetGenesisTime gets the genesis time of the blockchain.
 func (bdb *BlockDB) GetGenesisTime() (time.Time, error) {
 	bs, err := getKey(bdb.badgerdb, genesisTimeKey)
 	if err != nil {
