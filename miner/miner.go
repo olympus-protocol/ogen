@@ -120,8 +120,8 @@ func (m *Miner) Start() error {
 			select {
 			case <-voteTimer.C:
 				// check if we're an attester for this slot
-				tip := m.chain.State().Tip().Header
-				tipHash := tip.Hash()
+				tip := m.chain.State().Tip()
+				tipHash := tip.Hash
 
 				m.log.Infof("sending votes for slot %d", slotToVote)
 
@@ -170,8 +170,8 @@ func (m *Miner) Start() error {
 
 			case <-blockTimer.C:
 				// check if we're an attester for this slot
-				tip := m.chain.State().Tip().Header
-				tipHash := tip.Hash()
+				tip := m.chain.State().Tip()
+				tipHash := tip.Hash
 
 				s := m.chain.State()
 

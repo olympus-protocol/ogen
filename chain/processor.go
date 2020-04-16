@@ -111,11 +111,96 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// b. apply block transition to state
 	ch.log.Debugf("attempting to apply block to state")
 	// TODO: better fork choice here
-	_, row, err := ch.State().Add(block, true)
+	newState, err := ch.State().Add(block)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
+
+	loc, err := ch.db.AddRawBlock(block)
+	if err != nil {
+		return err
+	}
+
+	row, err := ch.state.blockIndex.Add(*block, *loc)
+	if err != nil {
+		return err
+	}
+
+	// set current block row in database
+	if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
+		return err
+	}
+
+	// update parent to point at current
+	if err := ch.db.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
+		return err
+	}
+
+	for _, a := range block.Votes {
+		min, max := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
+
+		validators := make([]uint32, 0, max-min)
+
+		for i := range a.ParticipationBitfield {
+			for j := 0; j < 8; j++ {
+				if a.ParticipationBitfield[i]&(1<<uint(j)) != 0 {
+					validator := uint32(i*8+j) + min
+					validators = append(validators, validator)
+				}
+			}
+		}
+
+		if err := ch.db.SetLatestVoteIfNeeded(validators, &a); err != nil {
+			return err
+		}
+	}
+
+	rowHash := row.Hash
+	ch.state.setBlockState(rowHash, newState)
+
+	// TODO: remove when we have fork choice
+	ch.state.blockChain.SetTip(row)
+
+	blockHash := block.Hash()
+	if err := ch.db.SetTip(blockHash); err != nil {
+		return err
+	}
+
+	view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
+	if err != nil {
+		return err
+	}
+
+	finalizedSlot := newState.FinalizedEpoch * ch.params.EpochLength
+	finalizedHash, err := view.GetHashBySlot(finalizedSlot)
+	if err != nil {
+		return err
+	}
+	finalizedState, found := ch.state.GetStateForHash(finalizedHash)
+	if !found {
+		return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
+	}
+	if err := ch.db.SetFinalizedHead(finalizedHash); err != nil {
+		return err
+	}
+	if err := ch.db.SetFinalizedState(finalizedState); err != nil {
+		return err
+	}
+
+	justifiedState, found := ch.state.GetStateForHash(newState.JustifiedEpochHash)
+	if !found {
+		return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
+	}
+	if err := ch.db.SetFinalizedHead(newState.JustifiedEpochHash); err != nil {
+		return err
+	}
+	if err := ch.db.SetFinalizedState(justifiedState); err != nil {
+		return err
+	}
+
+	// TODO: delete state before finalized
+
 	ch.log.Infof("New block accepted Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
 
 	ch.notifeeLock.RLock()

@@ -2,6 +2,7 @@ package blockdb
 
 import (
 	"bytes"
+
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
@@ -20,8 +21,19 @@ func (bdb *BlockDB) Close() {
 	_ = bdb.badgerdb.Close()
 }
 
-func (bdb *BlockDB) GetRawBlock(locator BlockLocation, hash chainhash.Hash) ([]byte, error) {
-	return bdb.rawBlockDb.read(hash, locator)
+// GetRawBlock gets a block from the database.
+func (bdb *BlockDB) GetRawBlock(locator BlockLocation, hash chainhash.Hash) (*primitives.Block, error) {
+	blockBytes, err := bdb.rawBlockDb.read(hash, locator)
+	if err != nil {
+		return nil, err
+	}
+
+	block := new(primitives.Block)
+	if err := block.Decode(bytes.NewBuffer(blockBytes)); err != nil {
+		return nil, err
+	}
+
+	return block, nil
 }
 
 func (bdb *BlockDB) AddRawBlock(block *primitives.Block) (*BlockLocation, error) {

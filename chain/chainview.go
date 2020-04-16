@@ -18,7 +18,7 @@ type ChainView struct {
 
 // NewChainView creates a new chain view with a certain tip
 func NewChainView(tip *index.BlockRow) ChainView {
-	return ChainView{tip, tip.Header.Slot}
+	return ChainView{tip, tip.Slot}
 }
 
 // SetTipSlot sets the effective tip slot (which may be updated due to slot transitions)

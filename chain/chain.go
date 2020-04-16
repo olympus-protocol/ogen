@@ -11,10 +11,10 @@ type Chain struct {
 	chain []*index.BlockRow
 }
 
-func (c *Chain) Height() int32 {
+func (c *Chain) Height() uint64 {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	return int32(len(c.chain) - 1)
+	return uint64(len(c.chain) - 1)
 }
 
 // SetTip sets the tip of the chain.
@@ -29,12 +29,12 @@ func (c *Chain) SetTip(row *index.BlockRow) {
 	needed := row.Height + 1
 
 	// algorithm copied from btcd chainview
-	if int32(cap(c.chain)) < needed {
+	if uint64(cap(c.chain)) < needed {
 		newChain := make([]*index.BlockRow, needed, 1000+needed)
 		copy(newChain, c.chain)
 		c.chain = newChain
 	} else {
-		prevLen := int32(len(c.chain))
+		prevLen := uint64(len(c.chain))
 		c.chain = c.chain[0:needed]
 		for i := prevLen; i < needed; i++ {
 			c.chain[i] = nil

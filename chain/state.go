@@ -65,23 +65,61 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockVi
 	return s.lastSlotState, nil
 }
 
+type blockNodeAndState struct {
+	node  index.BlockRow
+	state primitives.State
+}
+
 // StateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
 // get rid of old states.
 type StateService struct {
 	log    *logger.Logger
 	lock   sync.RWMutex
 	params params.ChainParams
+	db     blockdb.DB
 
 	blockIndex *index.BlockIndex
 	blockChain *Chain
 	stateMap   map[chainhash.Hash]*stateDerivedFromBlock
+
+	headLock      sync.Mutex
+	finalizedHead blockNodeAndState
+	justifiedHead blockNodeAndState
 }
 
-func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams) error {
+func (s *StateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedState primitives.State) error {
+	s.headLock.Lock()
+	defer s.headLock.Unlock()
+
+	finalizedNode, found := s.blockIndex.Get(finalizedHash)
+	if !found {
+		return fmt.Errorf("could not find block with hash %s", finalizedHash)
+	}
+
+	s.finalizedHead = blockNodeAndState{*finalizedNode, finalizedState}
+	return nil
+}
+
+func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedState primitives.State) error {
+	s.headLock.Lock()
+	defer s.headLock.Unlock()
+
+	justifiedNode, found := s.blockIndex.Get(justifiedHash)
+	if !found {
+		return fmt.Errorf("could not find block with hash %s", justifiedHash)
+	}
+
+	s.finalizedHead = blockNodeAndState{*justifiedNode, justifiedState}
+
+	return nil
+}
+
+func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, genesisState primitives.State) error {
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("loading chain state...")
 
 	genesisBlock := primitives.GetGenesisBlock(params)
+	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
 	loc, err := db.AddRawBlock(&genesisBlock)
@@ -89,18 +127,25 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams) 
 		return err
 	}
 
-	blockIndex, err := index.InitBlocksIndex(genesisBlock.Header, *loc)
+	blockIndex, err := index.InitBlocksIndex(genesisBlock, *loc)
 	if err != nil {
 		return err
 	}
 
-	genesisHash := genesisBlock.Header.Hash()
 	row, _ := blockIndex.Get(genesisHash)
 
 	s.blockIndex = blockIndex
 	s.blockChain = NewChain(row)
 
-	// TODO: load block index
+	if _, err := db.GetBlockRow(genesisHash); err != nil {
+		if err := s.initializeDatabase(row, genesisState); err != nil {
+			return err
+		}
+	} else {
+		if err := s.loadBlockchainFromDisk(genesisHash); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -130,39 +175,27 @@ func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 }
 
 // Add adds a block to the blockchain.
-func (s *StateService) Add(block *primitives.Block, newTip bool) (*primitives.State, *index.BlockRow, error) {
+func (s *StateService) Add(block *primitives.Block) (*primitives.State, error) {
 	lastBlockHash := block.Header.PrevBlockHash
 
 	view, err := s.GetSubView(lastBlockHash)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	lastBlockState, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &s.params)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	newState := lastBlockState.Copy()
 
 	err = newState.ProcessBlock(block, &s.params)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	row, err := s.blockIndex.Add(block.Header)
-	if err != nil {
-		return nil, nil, err
-	}
-	rowHash := row.Header.Hash()
-	s.lock.Lock()
-	s.stateMap[rowHash] = newStateDerivedFromBlock(&newState)
-	s.lock.Unlock()
-
-	if newTip {
-		s.blockChain.SetTip(row)
-	}
-	return &newState, row, nil
+	return &newState, nil
 }
 
 // GetRowByHash gets a specific row by hash.
@@ -171,7 +204,7 @@ func (s *StateService) GetRowByHash(h chainhash.Hash) (*index.BlockRow, bool) {
 }
 
 // Height gets the height of the blockchain.
-func (s *StateService) Height() int32 {
+func (s *StateService) Height() uint64 {
 	return s.blockChain.Height()
 }
 
@@ -193,8 +226,9 @@ func NewStateService(log *logger.Logger, ip primitives.InitializationParameters,
 		stateMap: map[chainhash.Hash]*stateDerivedFromBlock{
 			genesisHash: newStateDerivedFromBlock(genesisState),
 		},
+		db: db,
 	}
-	err := ss.initChainState(db, params)
+	err := ss.initChainState(db, params, *genesisState)
 	if err != nil {
 		return nil, err
 	}

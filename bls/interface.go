@@ -5,10 +5,11 @@ package bls
 import (
 	"bytes"
 	"errors"
+	"io"
+
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	bls "github.com/phoreproject/bls/g1pubs"
-	"io"
 )
 
 type Prefixes struct {

@@ -56,7 +56,17 @@ func (m *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
-	err = serializer.WriteElements(w, m.Signature)
+	err = serializer.WriteVarInt(w, uint64(len(m.Votes)))
+	if err != nil {
+		return err
+	}
+	for _, vote := range m.Votes {
+		err := vote.Serialize(w)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteElements(w, m.Signature, m.RandaoSignature, m.StateRoot)
 	if err != nil {
 		return err
 	}
@@ -86,7 +96,20 @@ func (m *Block) Decode(r io.Reader) error {
 		}
 		m.Txs[i] = tx
 	}
-	err = serializer.ReadElements(buf, &m.Signature)
+	voteCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	m.Votes = make([]MultiValidatorVote, voteCount)
+	for i := uint64(0); i < txCount; i++ {
+		var vote MultiValidatorVote
+		err := vote.Deserialize(r)
+		if err != nil {
+			return err
+		}
+		m.Votes[i] = vote
+	}
+	err = serializer.ReadElements(buf, &m.Signature, &m.RandaoSignature, &m.StateRoot)
 	if err != nil {
 		return err
 	}

@@ -2,16 +2,17 @@ package peer
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 type Status int
@@ -100,7 +101,7 @@ type Peer struct {
 	// Version Msg Data
 	protocol  int32
 	services  p2p.ServiceFlag
-	lastBlock int32
+	lastBlock uint64
 	userAgent string
 
 	// Peer properties
@@ -132,7 +133,7 @@ type Peer struct {
 	selectedForSync bool
 }
 
-func (p *Peer) Start(lastBlockHeight int32) {
+func (p *Peer) Start(lastBlockHeight uint64) {
 	// First version handshake
 	err := p.versionHandshake(lastBlockHeight)
 	if err != nil {
@@ -158,7 +159,7 @@ func (p *Peer) Start(lastBlockHeight int32) {
 	}()
 }
 
-func (p *Peer) versionHandshake(lastBlockHeight int32) error {
+func (p *Peer) versionHandshake(lastBlockHeight uint64) error {
 	if p.inbound {
 		err := p.handleInboundPeerHandshake(lastBlockHeight)
 		if err != nil {
@@ -176,7 +177,7 @@ func (p *Peer) versionHandshake(lastBlockHeight int32) error {
 	return nil
 }
 
-func (p *Peer) handleInboundPeerHandshake(lastBlockHeight int32) error {
+func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	remoteMsgVersion, _, err := p.readMessage()
 	if err != nil {
 		return ErrorReadRemote
@@ -207,7 +208,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight int32) error {
 	return nil
 }
 
-func (p *Peer) handleOutboundPeerHandshake(lastBlockHeight int32) error {
+func (p *Peer) handleOutboundPeerHandshake(lastBlockHeight uint64) error {
 	err := p.writeMessage(p.versionMsg(lastBlockHeight))
 	if err != nil {
 		return ErrorWriteRemote
@@ -279,7 +280,7 @@ func (p *Peer) pong(nonce uint64) error {
 	return nil
 }
 
-func (p *Peer) versionMsg(lastBlockHeight int32) *p2p.MsgVersion {
+func (p *Peer) versionMsg(lastBlockHeight uint64) *p2p.MsgVersion {
 	meInformation := strings.Split(p.conn.LocalAddr().String(), ":")
 	meIP, mePortString := meInformation[0], meInformation[1]
 	mePort, _ := strconv.Atoi(mePortString)
@@ -394,14 +395,14 @@ func (p *Peer) GetSerializedData() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (p *Peer) GetLastBlock() int32 {
+func (p *Peer) GetLastBlock() uint64 {
 	p.peerLock.RLock()
 	lastBlock := p.lastBlock
 	p.peerLock.RUnlock()
 	return lastBlock
 }
 
-func (p *Peer) SetLastBlock(lastBlock int32) {
+func (p *Peer) SetLastBlock(lastBlock uint64) {
 	p.peerLock.RLock()
 	p.lastBlock = lastBlock
 	p.peerLock.RUnlock()

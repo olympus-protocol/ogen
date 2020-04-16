@@ -14,10 +14,11 @@ import (
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {
-	Header    primitives.BlockHeader
 	Locator   BlockLocation
 	StateRoot chainhash.Hash
-	Height    int32
+	Height    uint64
+	Slot      uint64
+	Children  []chainhash.Hash
 	Hash      chainhash.Hash
 	Parent    chainhash.Hash
 }
@@ -26,17 +27,23 @@ type BlockNodeDisk struct {
 func (bnd *BlockNodeDisk) Serialize() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 
-	err := bnd.Header.Serialize(buf)
+	err := bnd.Locator.Serialize(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	err = bnd.Locator.Serialize(buf)
+	err = serializer.WriteVarInt(buf, uint64(len(bnd.Children)))
 	if err != nil {
 		return nil, err
 	}
 
-	err = serializer.WriteElements(buf, bnd.StateRoot, bnd.Height, bnd.Hash, bnd.Parent)
+	for _, c := range bnd.Children {
+		if err := serializer.WriteElement(buf, c); err != nil {
+			return nil, err
+		}
+	}
+
+	err = serializer.WriteElements(buf, bnd.StateRoot, bnd.Height, bnd.Hash, bnd.Parent, bnd.Slot)
 	if err != nil {
 		return nil, err
 	}
@@ -48,17 +55,24 @@ func (bnd *BlockNodeDisk) Serialize() ([]byte, error) {
 func (bnd *BlockNodeDisk) Deserialize(b []byte) error {
 	buf := bytes.NewBuffer(b)
 
-	err := bnd.Header.Deserialize(buf)
+	err := bnd.Locator.Deserialize(buf)
 	if err != nil {
 		return err
 	}
 
-	err = bnd.Locator.Deserialize(buf)
+	numChildren, err := serializer.ReadVarInt(buf)
 	if err != nil {
 		return err
 	}
 
-	err = serializer.ReadElements(buf, &bnd.StateRoot, &bnd.Height, &bnd.Hash, &bnd.Parent)
+	bnd.Children = make([]chainhash.Hash, numChildren)
+	for i := range bnd.Children {
+		if err := serializer.ReadElement(buf, &bnd.Children[i]); err != nil {
+			return err
+		}
+	}
+
+	err = serializer.ReadElements(buf, &bnd.StateRoot, &bnd.Height, &bnd.Hash, &bnd.Parent, &bnd.Slot)
 	if err != nil {
 		return err
 	}
@@ -316,7 +330,7 @@ var _ DB = &BlockDB{}
 // DB is the interface to store various elements of the state of the chain.
 type DB interface {
 	Close()
-	GetRawBlock(locator BlockLocation, hash chainhash.Hash) ([]byte, error)
+	GetRawBlock(locator BlockLocation, hash chainhash.Hash) (*primitives.Block, error)
 	AddRawBlock(block *primitives.Block) (*BlockLocation, error)
 	GetLatestVote(validator uint32) (*primitives.MultiValidatorVote, error)
 	SetLatestVoteIfNeeded(validators []uint32, vote *primitives.MultiValidatorVote) error
