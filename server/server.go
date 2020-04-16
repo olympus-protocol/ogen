@@ -50,10 +50,10 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start peer manager")
 	}
-	// err = s.Miner.Start()
-	// if err != nil {
-	// 	log.Fatalln("unable to start miner thread")
-	// }
+	err = s.Miner.Start()
+	if err != nil {
+		log.Fatalln("unable to start miner thread")
+	}
 	switch s.config.Mode {
 	case "api":
 		err := explorer.LoadApi(s.config, s.Chain, s.PeerMan)
