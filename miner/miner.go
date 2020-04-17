@@ -112,7 +112,6 @@ func (m *Miner) Start() error {
 	go func() {
 		slotToPropose := m.getCurrentSlot() + 1
 		slotToVote := slotToPropose
-		fmt.Println(m.getNextBlockTime(slotToPropose))
 		blockTimer := time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
 		voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
 

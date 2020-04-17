@@ -1,8 +1,6 @@
 package chain
 
 import (
-	"fmt"
-
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -45,8 +43,6 @@ func (s *StateService) loadBlockIndex(genesisHash chainhash.Hash) error {
 
 	queue := []chainhash.Hash{genesisHash}
 
-	fmt.Println(justifiedHead)
-
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
@@ -55,8 +51,6 @@ func (s *StateService) loadBlockIndex(genesisHash chainhash.Hash) error {
 		if err != nil {
 			return err
 		}
-
-		fmt.Println(current, rowDisk.Children)
 
 		_, err = s.blockIndex.LoadBlockNode(rowDisk)
 		if err != nil {
@@ -129,7 +123,6 @@ func (s *StateService) loadStateMap() error {
 
 	for len(loadQueue) > 0 {
 		toLoad := loadQueue[0]
-		s.log.Infof("loading %s", toLoad)
 		loadQueue = loadQueue[1:]
 
 		node, err := s.db.GetBlockRow(toLoad)
@@ -183,7 +176,6 @@ func (s *StateService) loadBlockchainFromDisk(genesisHash chainhash.Hash) error 
 	if err != nil {
 		return err
 	}
-	fmt.Println(s.finalizedHead.node.Slot, s.justifiedHead.node.Slot)
 	s.log.Info("populating state map")
 	err = s.loadStateMap()
 	if err != nil {
