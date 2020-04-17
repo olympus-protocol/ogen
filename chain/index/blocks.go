@@ -12,7 +12,6 @@ import (
 
 // BlockRow represents a single row in the block index.
 type BlockRow struct {
-	Locator   blockdb.BlockLocation
 	StateRoot chainhash.Hash
 	Height    uint64
 	Slot      uint64
@@ -57,7 +56,6 @@ func (i *BlockIndex) LoadBlockNode(row *blockdb.BlockNodeDisk) (*BlockRow, error
 	newNode := &BlockRow{
 		Hash:      row.Hash,
 		Height:    row.Height,
-		Locator:   row.Locator,
 		Slot:      row.Slot,
 		StateRoot: row.StateRoot,
 		Parent:    parent,
@@ -100,23 +98,8 @@ func (i *BlockIndex) add(row *BlockRow) error {
 	return nil
 }
 
-// SetDiskLocation sets the disk location of a block.
-func (i *BlockIndex) SetDiskLocation(of chainhash.Hash, loc blockdb.BlockLocation) error {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	d, found := i.index[of]
-	if !found {
-		return fmt.Errorf("could not find block with hash %s", of)
-	}
-
-	d.Locator = loc
-
-	i.index[of] = d
-	return nil
-}
-
 // Add adds a row to the block index.
-func (i *BlockIndex) Add(block primitives.Block, loc blockdb.BlockLocation) (*BlockRow, error) {
+func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[block.Header.PrevBlockHash]
@@ -131,7 +114,6 @@ func (i *BlockIndex) Add(block primitives.Block, loc blockdb.BlockLocation) (*Bl
 		Hash:      block.Header.Hash(),
 		Slot:      block.Header.Slot,
 		Children:  make([]*BlockRow, 0),
-		Locator:   loc,
 	}
 
 	prev.Children = append(prev.Children, row)
@@ -147,15 +129,14 @@ func (i *BlockIndex) Add(block primitives.Block, loc blockdb.BlockLocation) (*Bl
 }
 
 // InitBlocksIndex creates a new block index.
-func InitBlocksIndex(genesisBlock primitives.Block, genesisLoc blockdb.BlockLocation) (*BlockIndex, error) {
+func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 	headerHash := genesisBlock.Header.Hash()
 	return &BlockIndex{
 		index: map[chainhash.Hash]*BlockRow{
 			headerHash: {
-				Locator: genesisLoc,
-				Height:  0,
-				Parent:  nil,
-				Hash:    genesisBlock.Header.Hash(),
+				Height: 0,
+				Parent: nil,
+				Hash:   genesisBlock.Header.Hash(),
 			},
 		},
 	}, nil
@@ -175,7 +156,6 @@ func (br *BlockRow) ToBlockNodeDisk() *blockdb.BlockNodeDisk {
 	}
 
 	return &blockdb.BlockNodeDisk{
-		Locator:   br.Locator,
 		StateRoot: br.StateRoot,
 		Height:    br.Height,
 		Slot:      br.Slot,

@@ -276,11 +276,13 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 1 // mark
 		s.JustifiedEpoch = s.EpochIndex - 1
+		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
 	}
 
 	if 3*currentEpochVotersMatchingTarget.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 0
 		s.JustifiedEpoch = s.EpochIndex
+		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
 	}
 
 	log.Infof("justification: %b, previousEpoch: %d, justifiedEpoch: %d, currentEpoch: %d", s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpoch, s.EpochIndex)

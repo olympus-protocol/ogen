@@ -150,7 +150,7 @@ func (v *MultiValidatorVote) Serialize(w io.Writer) error {
 		return err
 	}
 	sig := v.Signature.Serialize()
-	if _, err := w.Write(sig[:]); err != nil {
+	if err := serializer.WriteElement(w, sig); err != nil {
 		return err
 	}
 	return serializer.WriteVarBytes(w, v.ParticipationBitfield)
@@ -162,9 +162,15 @@ func (v *MultiValidatorVote) Deserialize(r io.Reader) (err error) {
 		return err
 	}
 	var sigBytes [96]byte
-	if _, err := r.Read(sigBytes[:]); err != nil {
+	if err := serializer.ReadElement(r, sigBytes[:]); err != nil {
 		return err
 	}
+	sig, err := bls.DeserializeSignature(sigBytes)
+	if err != nil {
+		return err
+	}
+
+	v.Signature = *sig
 	v.ParticipationBitfield, err = serializer.ReadVarBytes(r)
 	return
 }

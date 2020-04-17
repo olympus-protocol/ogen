@@ -109,7 +109,7 @@ func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 		return fmt.Errorf("could not find block with hash %s", justifiedHash)
 	}
 
-	s.finalizedHead = blockNodeAndState{*justifiedNode, justifiedState}
+	s.justifiedHead = blockNodeAndState{*justifiedNode, justifiedState}
 
 	return nil
 }
@@ -122,12 +122,12 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, 
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
-	loc, err := db.AddRawBlock(&genesisBlock)
+	err := db.AddRawBlock(&genesisBlock)
 	if err != nil {
 		return err
 	}
 
-	blockIndex, err := index.InitBlocksIndex(genesisBlock, *loc)
+	blockIndex, err := index.InitBlocksIndex(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -194,6 +194,8 @@ func (s *StateService) Add(block *primitives.Block) (*primitives.State, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	s.setBlockState(block.Hash(), &newState)
 
 	return &newState, nil
 }

@@ -45,6 +45,8 @@ func (s *StateService) loadBlockIndex(genesisHash chainhash.Hash) error {
 
 	queue := []chainhash.Hash{genesisHash}
 
+	fmt.Println(justifiedHead)
+
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
@@ -107,26 +109,27 @@ func (s *StateService) setBlockState(hash chainhash.Hash, state *primitives.Stat
 }
 
 func (s *StateService) loadStateMap() error {
-	finalizedNode := s.finalizedHead.node
+	justifiedNode := s.justifiedHead.node
 
-	finalizedNodeWithChildren, err := s.db.GetBlockRow(finalizedNode.Hash)
+	justifiedNodeWithChildren, err := s.db.GetBlockRow(justifiedNode.Hash)
 	if err != nil {
 		return err
 	}
 
-	loadQueue := finalizedNodeWithChildren.Children
+	loadQueue := justifiedNodeWithChildren.Children
 
-	finalizedState, err := s.db.GetFinalizedState()
+	justifiedState, err := s.db.GetJustifiedState()
 	if err != nil {
 		return err
 	}
 
-	s.setBlockState(finalizedNode.Hash, finalizedState)
+	s.setBlockState(justifiedNode.Hash, justifiedState)
 
-	s.blockChain.SetTip(&finalizedNode)
+	s.blockChain.SetTip(&justifiedNode)
 
 	for len(loadQueue) > 0 {
 		toLoad := loadQueue[0]
+		s.log.Infof("loading %s", toLoad)
 		loadQueue = loadQueue[1:]
 
 		node, err := s.db.GetBlockRow(toLoad)
@@ -134,7 +137,7 @@ func (s *StateService) loadStateMap() error {
 			return err
 		}
 
-		bl, err := s.db.GetRawBlock(node.Locator, node.Hash)
+		bl, err := s.db.GetRawBlock(node.Hash)
 		if err != nil {
 			return err
 		}
@@ -175,7 +178,6 @@ func (s *StateService) loadBlockchainFromDisk(genesisHash chainhash.Hash) error 
 	if err != nil {
 		return err
 	}
-	fmt.Println(s.blockIndex)
 	s.log.Info("loading justified and finalized states...")
 	err = s.loadJustifiedAndFinalizedStates()
 	if err != nil {

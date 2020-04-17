@@ -117,12 +117,12 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
-	loc, err := ch.db.AddRawBlock(block)
+	err = ch.db.AddRawBlock(block)
 	if err != nil {
 		return err
 	}
 
-	row, err := ch.state.blockIndex.Add(*block, *loc)
+	row, err := ch.state.blockIndex.Add(*block)
 	if err != nil {
 		return err
 	}
@@ -192,10 +192,10 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	if !found {
 		return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
 	}
-	if err := ch.db.SetFinalizedHead(newState.JustifiedEpochHash); err != nil {
+	if err := ch.db.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
 		return err
 	}
-	if err := ch.db.SetFinalizedState(justifiedState); err != nil {
+	if err := ch.db.SetJustifiedState(justifiedState); err != nil {
 		return err
 	}
 

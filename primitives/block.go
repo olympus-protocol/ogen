@@ -1,8 +1,6 @@
 package primitives
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"time"
 
@@ -74,11 +72,6 @@ func (m *Block) Encode(w io.Writer) error {
 }
 
 func (m *Block) Decode(r io.Reader) error {
-	buf, ok := r.(*bytes.Buffer)
-	if !ok {
-		return fmt.Errorf("MsgBlock.Decode reader is not a " +
-			"*bytes.Buffer")
-	}
 	err := m.Header.Deserialize(r)
 	if err != nil {
 		return err
@@ -89,27 +82,23 @@ func (m *Block) Decode(r io.Reader) error {
 	}
 	m.Txs = make([]Tx, txCount)
 	for i := uint64(0); i < txCount; i++ {
-		var tx Tx
-		err := tx.Decode(r)
+		err := m.Txs[i].Decode(r)
 		if err != nil {
 			return err
 		}
-		m.Txs[i] = tx
 	}
 	voteCount, err := serializer.ReadVarInt(r)
 	if err != nil {
 		return err
 	}
 	m.Votes = make([]MultiValidatorVote, voteCount)
-	for i := uint64(0); i < txCount; i++ {
-		var vote MultiValidatorVote
-		err := vote.Deserialize(r)
+	for i := range m.Votes {
+		err := m.Votes[i].Deserialize(r)
 		if err != nil {
 			return err
 		}
-		m.Votes[i] = vote
 	}
-	err = serializer.ReadElements(buf, &m.Signature, &m.RandaoSignature, &m.StateRoot)
+	err = serializer.ReadElements(r, &m.Signature, &m.RandaoSignature, &m.StateRoot)
 	if err != nil {
 		return err
 	}
