@@ -119,7 +119,7 @@ func (s *StateService) loadStateMap() error {
 
 	s.setBlockState(justifiedNode.Hash, justifiedState)
 
-	s.blockChain.SetTip(&justifiedNode)
+	s.blockChain.SetTip(justifiedNode)
 
 	for len(loadQueue) > 0 {
 		toLoad := loadQueue[0]

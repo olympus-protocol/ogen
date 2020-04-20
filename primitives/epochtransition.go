@@ -8,7 +8,8 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-func (s *State) getEffectiveBalance(index uint32, p *params.ChainParams) uint64 {
+// GetEffectiveBalance gets the balance of a validator.
+func (s *State) GetEffectiveBalance(index uint32, p *params.ChainParams) uint64 {
 	b := s.ValidatorRegistry[index].Balance
 	if b >= p.DepositAmount {
 		return p.DepositAmount
@@ -145,7 +146,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 
 		// start validators if needed
 		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount {
-			balanceChurn += s.getEffectiveBalance(index, p)
+			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
 				break
@@ -163,7 +164,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 		index := uint32(idx)
 
 		if validator.Status == StatusActivePendingExit {
-			balanceChurn += s.getEffectiveBalance(index, p)
+			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
 				break
@@ -302,7 +303,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 	baseRewardQuotient := p.BaseRewardQuotient * intSqrt(totalBalance/p.UnitsPerCoin)
 
 	baseReward := func(index uint32) uint64 {
-		return s.getEffectiveBalance(index, p) / baseRewardQuotient / 5
+		return s.GetEffectiveBalance(index, p) / baseRewardQuotient / 5
 	}
 
 	if s.Slot >= 2*p.EpochLength {
@@ -368,7 +369,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 
 				w.Balance -= baseReward(idx) * 3
 				if !previousEpochVotersMatchingTargetHash.contains(idx) {
-					w.Balance -= s.getEffectiveBalance(idx, p) * finalityDelay / p.InactivityPenaltyQuotient
+					w.Balance -= s.GetEffectiveBalance(idx, p) * finalityDelay / p.InactivityPenaltyQuotient
 				}
 			}
 		}

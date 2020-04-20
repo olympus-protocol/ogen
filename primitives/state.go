@@ -79,6 +79,18 @@ type State struct {
 	PreviousEpochVotes []AcceptedVoteInfo
 }
 
+// GetActiveValidatorIndices gets validator indices where the validator is active.
+func (s *State) GetActiveValidatorIndices() []uint32 {
+	vals := make([]uint32, 0, len(s.ValidatorRegistry))
+	for i, v := range s.ValidatorRegistry {
+		if v.IsActive() {
+			vals = append(vals, uint32(i))
+		}
+	}
+
+	return vals
+}
+
 // Serialize serializes the state to the writer.
 func (s *State) Serialize(w io.Writer) error {
 	if err := serializer.WriteElements(w,

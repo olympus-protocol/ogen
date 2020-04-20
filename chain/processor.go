@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
@@ -75,6 +76,87 @@ func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
 	//	return err
 	//}
 	return nil
+}
+
+type blockRowAndValidator struct {
+	row       *index.BlockRow
+	validator uint32
+}
+
+// UpdateChainHead updates the blockchain head if needed
+func (ch *Blockchain) UpdateChainHead() error {
+	_, justifiedState := ch.state.GetJustifiedHead()
+
+	activeValidatorIndices := justifiedState.GetActiveValidatorIndices()
+	var targets []blockRowAndValidator
+	for _, i := range activeValidatorIndices {
+		bl, err := ch.getLatestAttestationTarget(i)
+		if err != nil {
+			continue
+		}
+		targets = append(targets, blockRowAndValidator{
+			row:       bl,
+			validator: i})
+	}
+
+	getVoteCount := func(block *index.BlockRow) uint64 {
+		votes := uint64(0)
+		for _, target := range targets {
+			node := target.row.GetAncestorAtSlot(block.Slot)
+			if node == nil {
+				return 0
+			}
+			if node.Hash.IsEqual(&block.Hash) {
+				votes += justifiedState.GetEffectiveBalance(target.validator, &ch.params) / 1e8
+			}
+		}
+		return votes
+	}
+
+	head, _ := ch.state.GetJustifiedHead()
+
+	// this may seem weird, but it occurs when importing when the justified block is not
+	// imported, but the finalized head is. It should never occur other than that
+	if head == nil {
+		head, _ = ch.state.GetFinalizedHead()
+	}
+
+	for {
+		children := head.Children
+		if len(children) == 0 {
+			ch.state.blockChain.SetTip(head)
+
+			err := ch.db.SetTip(head.Hash)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+		bestVoteCountChild := children[0]
+		bestVotes := getVoteCount(bestVoteCountChild)
+		for _, c := range children[1:] {
+			vc := getVoteCount(c)
+			if vc > bestVotes {
+				bestVoteCountChild = c
+				bestVotes = vc
+			}
+		}
+		head = bestVoteCountChild
+	}
+}
+
+func (ch *Blockchain) getLatestAttestationTarget(validator uint32) (*index.BlockRow, error) {
+	att, err := ch.db.GetLatestVote(validator)
+	if err != nil {
+		return nil, err
+	}
+
+	node, ok := ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
+	if !ok {
+		return nil, errors.New("couldn't find block attested to by validator in index")
+	}
+	return node, nil
 }
 
 // ProcessBlock processes an incoming block from a peer or the miner.
@@ -160,10 +242,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	ch.state.setBlockState(rowHash, newState)
 
 	// TODO: remove when we have fork choice
-	ch.state.blockChain.SetTip(row)
-
-	blockHash := block.Hash()
-	if err := ch.db.SetTip(blockHash); err != nil {
+	if err := ch.UpdateChainHead(); err != nil {
 		return err
 	}
 

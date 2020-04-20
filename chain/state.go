@@ -66,7 +66,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockVi
 }
 
 type blockNodeAndState struct {
-	node  index.BlockRow
+	node  *index.BlockRow
 	state primitives.State
 }
 
@@ -96,8 +96,24 @@ func (s *StateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedS
 		return fmt.Errorf("could not find block with hash %s", finalizedHash)
 	}
 
-	s.finalizedHead = blockNodeAndState{*finalizedNode, finalizedState}
+	s.finalizedHead = blockNodeAndState{finalizedNode, finalizedState}
 	return nil
+}
+
+// GetFinalizedHead gets the current finalized head.
+func (s *StateService) GetFinalizedHead() (*index.BlockRow, primitives.State) {
+	s.headLock.Lock()
+	defer s.headLock.Unlock()
+
+	return s.finalizedHead.node, s.finalizedHead.state
+}
+
+// GetJustifiedHead gets the current justified head.
+func (s *StateService) GetJustifiedHead() (*index.BlockRow, primitives.State) {
+	s.headLock.Lock()
+	defer s.headLock.Unlock()
+
+	return s.justifiedHead.node, s.justifiedHead.state
 }
 
 func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedState primitives.State) error {
@@ -109,7 +125,7 @@ func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 		return fmt.Errorf("could not find block with hash %s", justifiedHash)
 	}
 
-	s.justifiedHead = blockNodeAndState{*justifiedNode, justifiedState}
+	s.justifiedHead = blockNodeAndState{justifiedNode, justifiedState}
 
 	return nil
 }
