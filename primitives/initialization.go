@@ -1,16 +1,47 @@
 package primitives
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+type InitializationPubkey [48]byte
+
+func (ip InitializationPubkey) MarshalJSON() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	outBuf := base64.NewEncoder(base64.StdEncoding, buf)
+	_, err := outBuf.Write(ip[:])
+	if err != nil {
+		return nil, err
+	}
+	return []byte(fmt.Sprintf("\"%s\"", string(buf.Bytes()))), nil
+}
+
+func (ip *InitializationPubkey) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	reader := base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer([]byte(s)))
+	out, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+	copy(ip[:], out)
+	return nil
+}
+
 // ValidatorInitialization is the parameters needed to initialize validators.
 type ValidatorInitialization struct {
-	PubKey       [48]byte
-	PayeeAddress string
+	PubKey       InitializationPubkey `json:"pubkey"`
+	PayeeAddress string `json:"withdraw_address"`
 }
 
 // InitializationParameters are used in conjunction with ChainParams to generate

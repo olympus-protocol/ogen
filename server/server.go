@@ -161,7 +161,6 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 	cfg := peers.Config{
 		Log:          logger,
 		Listen:       config.Listen,
-		AddNodes:     config.AddNodes,
 		ConnectNodes: config.ConnectNodes,
 		Port:         config.Port,
 		MaxPeers:     config.MaxPeers,
@@ -175,8 +174,6 @@ func loadWalletsManConfig(config *config.Config, logger *logger.Logger, gui bool
 		Log:      logger,
 		Path:     config.DataFolder,
 		Enabled:  config.Wallet,
-		AddrGap:  config.AddrGap,
-		Accounts: config.AccountsGenerate,
 		Gui:      gui,
 	}
 	return cfg

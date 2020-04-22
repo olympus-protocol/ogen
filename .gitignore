@@ -30,3 +30,4 @@ db/blockdb/blocks
 db/blockdb/db
 build/
 vendor/
+chain.json

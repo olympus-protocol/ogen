@@ -14,11 +14,10 @@ import (
 )
 
 const currWalletVersion = 100000
+const accounts = 100
 
 type Config struct {
 	Log      *logger.Logger
-	Accounts int32
-	AddrGap  int32
 	Path     string
 	Enabled  bool
 	Gui      bool
@@ -179,7 +178,7 @@ func (wm *WalletMan) initWallet(pass string) error {
 		return err
 	}
 	newCredentials := walletdb.WalletCredentials{
-		Accounts: make(map[int32]walletdb.Account, wm.config.Accounts),
+		Accounts: make(map[int32]walletdb.Account, accounts),
 		Mnemonic: mnemonic,
 	}
 	purpose, err := hdRoot.Child(44 + hdwallets.HardenedKeyStart)
@@ -190,7 +189,7 @@ func (wm *WalletMan) initWallet(pass string) error {
 	if err != nil {
 		return err
 	}
-	for i := int32(0); i < wm.config.Accounts; i++ {
+	for i := int32(0); i < accounts; i++ {
 		acc, err := coin.Child(uint32(i) + hdwallets.HardenedKeyStart)
 		if err != nil {
 			return err

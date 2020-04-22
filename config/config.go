@@ -2,10 +2,9 @@ package config
 
 import (
 	"errors"
+	"github.com/BurntSushi/toml"
 	"log"
 	"os"
-
-	"github.com/BurntSushi/toml"
 )
 
 var (
@@ -24,13 +23,10 @@ type Config struct {
 	Listen           bool
 	NetworkName      string
 	ConnectNodes     []string
-	AddNodes         []string
 	Port             int32
 	MaxPeers         int32
 	Mode             string
 	Wallet           bool
-	AddrGap          int32
-	AccountsGenerate int32
 }
 
 var defaultConfig = Config{
@@ -42,8 +38,6 @@ var defaultConfig = Config{
 	MaxPeers:         9,
 	Mode:             "node",
 	Wallet:           true,
-	AddrGap:          20,
-	AccountsGenerate: 10,
 }
 
 func OgenVersion() string {
@@ -91,12 +85,6 @@ func LoadConfig(dataDirPath string) *Config {
 	}
 	if loadedConfig.Mode == "" {
 		loadedConfig.Mode = defaultConfig.Mode
-	}
-	if loadedConfig.AccountsGenerate == 0 {
-		loadedConfig.AccountsGenerate = defaultConfig.AccountsGenerate
-	}
-	if loadedConfig.AddrGap == 0 {
-		loadedConfig.AddrGap = defaultConfig.AddrGap
 	}
 	return &loadedConfig
 }
