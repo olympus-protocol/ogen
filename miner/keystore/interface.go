@@ -20,7 +20,7 @@ type BadgerKeystore struct {
 }
 
 func NewBadgerKeystore(path string) (*BadgerKeystore, error) {
-	bdb, err := badger.Open(badger.DefaultOptions(path))
+	bdb, err := badger.Open(badger.DefaultOptions(path).WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}

@@ -162,9 +162,7 @@ func initConfig() {
 		}
 
 		DataFolder = ogenDir
-
-		fmt.Println(ogenDir)
-
+		
 		// Search config in home directory with name ".cobra" (without extension).
 		viper.AddConfigPath(ogenDir)
 		viper.SetConfigName("config")
