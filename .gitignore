@@ -31,3 +31,4 @@ db/blockdb/db
 build/
 vendor/
 chain.json
+__debug_bin
