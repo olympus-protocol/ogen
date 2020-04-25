@@ -23,7 +23,7 @@ type Config struct {
 
 // Keystore is an interface to access keys.
 type Keystore interface {
-	GetKeyForWorker(w *primitives.Worker) (*bls.SecretKey, bool)
+	GetKey(w *primitives.Worker) (*bls.SecretKey, bool)
 }
 
 // BasicKeystore is a basic key store.
@@ -31,8 +31,8 @@ type BasicKeystore struct {
 	keys map[[48]byte]bls.SecretKey
 }
 
-// GetKeyForWorker gets the key for a certain worker.
-func (b *BasicKeystore) GetKeyForWorker(w *primitives.Worker) (*bls.SecretKey, bool) {
+// GetKey gets the key for a certain worker.
+func (b *BasicKeystore) GetKey(w *primitives.Worker) (*bls.SecretKey, bool) {
 	key, found := b.keys[w.PubKey]
 	return &key, found
 }
@@ -92,7 +92,11 @@ func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
 }
 
 func (m *Miner) getCurrentSlot() uint64 {
-	return uint64(time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
+	slot := int64(time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
+	if slot < 0 {
+		return 0
+	}
+	return uint64(slot)
 }
 
 // getNextSlotTime gets the next slot time.
@@ -133,6 +137,9 @@ func (m *Miner) Start() error {
 				}
 
 				state, err := s.GetStateForHashAtSlot(tipHash, slotToVote, &view, &m.params)
+				if err != nil {
+					panic(err)
+				}
 
 				min, max := state.GetVoteCommittee(slotToVote, &m.params)
 				toEpoch := (slotToVote - 1) / m.params.EpochLength
@@ -150,7 +157,7 @@ func (m *Miner) Start() error {
 				for i := min; i <= max; i++ {
 					validator := state.ValidatorRegistry[i]
 
-					if k, found := m.keystore.GetKeyForWorker(&validator); found {
+					if k, found := m.keystore.GetKey(&validator); found {
 						sig, err := bls.Sign(k, dataHash[:])
 						if err != nil {
 							panic(err)
@@ -187,12 +194,12 @@ func (m *Miner) Start() error {
 					panic(err)
 				}
 
-				slotIndex := tip.Slot % m.params.EpochLength
+				slotIndex := (slotToPropose + m.params.EpochLength - 1) % m.params.EpochLength
 
 				proposerIndex := state.ProposerQueue[slotIndex]
 				proposer := state.ValidatorRegistry[proposerIndex]
 
-				if k, found := m.keystore.GetKeyForWorker(&proposer); found {
+				if k, found := m.keystore.GetKey(&proposer); found {
 					votes := m.mempool.get(slotToPropose, &m.params)
 
 					block := primitives.Block{

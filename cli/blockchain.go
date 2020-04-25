@@ -1,54 +1,29 @@
 package cli
 
 import (
-	"crypto/rand"
+	"encoding/json"
 	"fmt"
-	"github.com/olympus-protocol/ogen/bls"
+	"io/ioutil"
+	"os"
+	"path"
+
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/miner"
+	"github.com/olympus-protocol/ogen/miner/keystore"
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"path"
-	"time"
+	"golang.org/x/net/context"
 )
-
-const numTestValidators = 128
 
 const (
-	version  = "0.1.0"
+	version = "0.1.0"
 )
 
-func getTestInitializationParameters() (*primitives.InitializationParameters, []bls.SecretKey) {
-	vals := make([]primitives.ValidatorInitialization, numTestValidators)
-	keys := make([]bls.SecretKey, numTestValidators)
-	for i := range vals {
-		k, err := bls.RandSecretKey(rand.Reader)
-		if err != nil {
-			panic(err)
-		}
-
-		keys[i] = *k
-
-		vals[i] = primitives.ValidatorInitialization{
-			PubKey:       keys[i].DerivePublicKey().Serialize(),
-			PayeeAddress: "",
-		}
-	}
-
-	return &primitives.InitializationParameters{
-		InitialValidators: vals,
-		GenesisTime:       time.Now().Add(1 * time.Second),
-	}, keys
-}
-
 // loadOgen is the main function to run ogen.
-func loadOgen(configParams *config.Config, log *logger.Logger) error {
+func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger) error {
 	var currParams params.ChainParams
 	switch configParams.NetworkName {
 	case "mainnet":
@@ -60,24 +35,36 @@ func loadOgen(configParams *config.Config, log *logger.Logger) error {
 	if err != nil {
 		return err
 	}
-	ip, keys := getTestInitializationParameters()
-	listenChan := config.InterruptListener(log)
-	s, err := server.NewServer(configParams, log, currParams, db, false, *ip, miner.NewBasicKeystore(keys))
+	k, err := keystore.NewBadgerKeystore(path.Join(configParams.DataFolder, "wallet"))
+	if err != nil {
+		return err
+	}
+	s, err := server.NewServer(configParams, log, currParams, db, false, configParams.InitConfig, k)
 	if err != nil {
 		return err
 	}
 	go s.Start()
-	<-listenChan
+	<-ctx.Done()
+	db.Close()
 	err = s.Stop()
 	if err != nil {
-
+		panic(err)
 	}
-	db.Close()
 	return nil
 }
 
+func getChainFile(path string) (*config.ChainFile, error) {
+	chainFileBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	chainFile := new(config.ChainFile)
+	err = json.Unmarshal(chainFileBytes, chainFile)
+	return chainFile, err
+}
+
 var (
-	DataFolder       string
+	DataFolder string
 
 	rootCmd = &cobra.Command{
 		Use:   "ogen",
@@ -85,8 +72,19 @@ var (
 		Long: `A Golang implementation of the Olympus protocol.
 Next generation blockchain secured by CASPER.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			log := logger.New(os.Stdin)
+			if viper.GetBool("debug") {
+				log = log.WithDebug()
+			}
+
+			ip, err := getChainFile(viper.GetString("chainfile"))
+			if err != nil {
+				log.Fatalf("could not load chainfile: %s", err)
+			}
+
 			c := &config.Config{
 				DataFolder:   DataFolder,
+				InitConfig:   ip.ToInitializationParameters(),
 				Debug:        viper.GetBool("debug"),
 				Listen:       viper.GetBool("listen"),
 				NetworkName:  viper.GetString("network"),
@@ -96,20 +94,20 @@ Next generation blockchain secured by CASPER.`,
 				Mode:         viper.GetString("mode"),
 				Wallet:       viper.GetBool("wallet"),
 			}
-			log := logger.New(os.Stdin)
-			if viper.GetBool("debug") {
-				log = log.WithDebug()
-			}
+
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
 			log.Trace("loading log on debug mode")
-			err := loadOgen(c, log)
+			ctx, cancel := context.WithCancel(context.Background())
+
+			config.InterruptListener(log, cancel)
+
+			err = loadOgen(ctx, c, log)
 			if err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 )
-
 
 // Execute executes the root command.
 func Execute() error {
@@ -129,6 +127,7 @@ func init() {
 	rootCmd.Flags().String("mode", "node", "type of node to run")
 	rootCmd.Flags().Bool("wallet", true, "enable wallet")
 	rootCmd.Flags().StringSlice("connect", []string{}, "IP addresses of nodes to connect to initially")
+	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
@@ -162,7 +161,7 @@ func initConfig() {
 		}
 
 		DataFolder = ogenDir
-		
+
 		// Search config in home directory with name ".cobra" (without extension).
 		viper.AddConfigPath(ogenDir)
 		viper.SetConfigName("config")
@@ -172,8 +171,6 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} else {
-		fmt.Println(err)
 	}
 
 	err := viper.BindPFlags(rootCmd.Flags())

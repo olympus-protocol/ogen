@@ -2,41 +2,42 @@ package chain
 
 import (
 	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-func (s *StateService) initializeDatabase(blockNode *index.BlockRow, state primitives.State) error {
+func (s *StateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *index.BlockRow, state primitives.State) error {
 	s.blockChain.SetTip(blockNode)
 
 	s.setFinalizedHead(blockNode.Hash, state)
 	s.setJustifiedHead(blockNode.Hash, state)
-	if err := s.db.SetBlockRow(blockNode.ToBlockNodeDisk()); err != nil {
+	if err := txn.SetBlockRow(blockNode.ToBlockNodeDisk()); err != nil {
 		return err
 	}
 
-	if err := s.db.SetFinalizedHead(blockNode.Hash); err != nil {
+	if err := txn.SetFinalizedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := s.db.SetJustifiedHead(blockNode.Hash); err != nil {
+	if err := txn.SetJustifiedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := s.db.SetFinalizedState(&state); err != nil {
+	if err := txn.SetFinalizedState(&state); err != nil {
 		return err
 	}
-	if err := s.db.SetJustifiedState(&state); err != nil {
+	if err := txn.SetJustifiedState(&state); err != nil {
 		return err
 	}
 
-	if err := s.db.SetTip(blockNode.Hash); err != nil {
+	if err := txn.SetTip(blockNode.Hash); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *StateService) loadBlockIndex(genesisHash chainhash.Hash) error {
-	justifiedHead, err := s.db.GetJustifiedHead()
+func (s *StateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
+	justifiedHead, err := txn.GetJustifiedHead()
 	if err != nil {
 		return err
 	}
@@ -45,9 +46,12 @@ func (s *StateService) loadBlockIndex(genesisHash chainhash.Hash) error {
 
 	for len(queue) > 0 {
 		current := queue[0]
+
+		s.log.Debugf("loading block node %s", current)
+
 		queue = queue[1:]
 
-		rowDisk, err := s.db.GetBlockRow(current)
+		rowDisk, err := txn.GetBlockRow(current)
 		if err != nil {
 			return err
 		}
@@ -67,23 +71,25 @@ func (s *StateService) loadBlockIndex(genesisHash chainhash.Hash) error {
 	return nil
 }
 
-func (s *StateService) loadJustifiedAndFinalizedStates() error {
-	finalizedHead, err := s.db.GetFinalizedHead()
+func (s *StateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error {
+	finalizedHead, err := txn.GetFinalizedHead()
 	if err != nil {
 		return err
 	}
-	finalizedState, err := s.db.GetFinalizedState()
+	finalizedState, err := txn.GetFinalizedState()
 	if err != nil {
 		return err
 	}
-	justifiedHead, err := s.db.GetJustifiedHead()
+	justifiedHead, err := txn.GetJustifiedHead()
 	if err != nil {
 		return err
 	}
-	justifiedState, err := s.db.GetJustifiedState()
+	justifiedState, err := txn.GetJustifiedState()
 	if err != nil {
 		return err
 	}
+
+	s.log.Infof("loaded justified head: %s and finalized head %s", justifiedHead, finalizedHead)
 
 	if err := s.setFinalizedHead(finalizedHead, *finalizedState); err != nil {
 		return err
@@ -102,17 +108,17 @@ func (s *StateService) setBlockState(hash chainhash.Hash, state *primitives.Stat
 	s.stateMap[hash] = newStateDerivedFromBlock(state)
 }
 
-func (s *StateService) loadStateMap() error {
+func (s *StateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 	justifiedNode := s.justifiedHead.node
 
-	justifiedNodeWithChildren, err := s.db.GetBlockRow(justifiedNode.Hash)
+	justifiedNodeWithChildren, err := txn.GetBlockRow(justifiedNode.Hash)
 	if err != nil {
 		return err
 	}
 
 	loadQueue := justifiedNodeWithChildren.Children
 
-	justifiedState, err := s.db.GetJustifiedState()
+	justifiedState, err := txn.GetJustifiedState()
 	if err != nil {
 		return err
 	}
@@ -125,12 +131,14 @@ func (s *StateService) loadStateMap() error {
 		toLoad := loadQueue[0]
 		loadQueue = loadQueue[1:]
 
-		node, err := s.db.GetBlockRow(toLoad)
+		node, err := txn.GetBlockRow(toLoad)
 		if err != nil {
 			return err
 		}
 
-		bl, err := s.db.GetRawBlock(node.Hash)
+		s.log.Debugf("calculating block state for %s with previous %s", node.Hash, node.Parent)
+
+		bl, err := txn.GetRawBlock(node.Hash)
 		if err != nil {
 			return err
 		}
@@ -145,17 +153,15 @@ func (s *StateService) loadStateMap() error {
 			return err
 		}
 
-		// TODO: fork choice on importing
-
 		loadQueue = append(loadQueue, node.Children...)
 	}
 
-	justifiedHead, err := s.db.GetJustifiedHead()
+	justifiedHead, err := txn.GetJustifiedHead()
 	if err != nil {
 		return err
 	}
 
-	justifiedHeadState, err := s.db.GetJustifiedState()
+	justifiedHeadState, err := txn.GetJustifiedState()
 	if err != nil {
 		return err
 	}
@@ -165,21 +171,23 @@ func (s *StateService) loadStateMap() error {
 	return nil
 }
 
-func (s *StateService) loadBlockchainFromDisk(genesisHash chainhash.Hash) error {
+func (s *StateService) loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
 	s.log.Info("loading block index...")
-	err := s.loadBlockIndex(genesisHash)
+	err := s.loadBlockIndex(txn, genesisHash)
 	if err != nil {
 		return err
 	}
 	s.log.Info("loading justified and finalized states...")
-	err = s.loadJustifiedAndFinalizedStates()
+	err = s.loadJustifiedAndFinalizedStates(txn)
 	if err != nil {
 		return err
 	}
 	s.log.Info("populating state map")
-	err = s.loadStateMap()
+	err = s.loadStateMap(txn)
 	if err != nil {
 		return err
 	}
+	return nil
+
 	return nil
 }

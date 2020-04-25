@@ -3,20 +3,21 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path"
+	"time"
+
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/miner/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"path"
-	"time"
 )
 
 var (
 	genesisTimeString int64
 	connect           []string
 	withdrawAddress   string
-	outFile string
+	outFile           string
 )
 
 func init() {
@@ -47,12 +48,7 @@ var generateChainCmd = &cobra.Command{
 			return
 		}
 
-		var genesisTime time.Time
-		if genesisTimeString == 0 {
-			genesisTime = time.Unix(time.Now().Unix(), 0)
-		} else {
-			genesisTime = time.Unix(genesisTimeString, 0)
-		}
+		genesisTime := time.Unix(genesisTimeString, 0)
 
 		validators := make([]primitives.ValidatorInitialization, len(keys))
 		for i := range validators {

@@ -1,8 +1,6 @@
 package wallet
 
 import (
-	"bufio"
-	"fmt"
 	"github.com/olympus-protocol/ogen/db/walletdb"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
@@ -51,63 +49,6 @@ func raw(start bool) error {
 	return rawMode.Wait()
 }
 
-func (wm *WalletMan) readPass(first bool) (string, error) {
-	var rs []rune
-	_ = raw(true)
-	var str string
-	if first {
-		str = "Please enter your wallet password: "
-	} else {
-		str = "Please enter your password again to confirm: "
-	}
-	fmt.Print(str)
-	defer func() {
-		_ = raw(false)
-	}()
-	for {
-		inp := bufio.NewReader(os.Stdin)
-		r, _, err := inp.ReadRune()
-		if err != nil {
-			_ = raw(false)
-			panic(err)
-		}
-		if r == '\x03' { // ctrl+c
-			break
-		} else if r == '\r' { // enter
-			return string(rs), nil
-		} else if r == '\u007f' { // backspace
-			fmt.Printf("\033[1D\033[K")
-			continue
-		}
-		rs = append(rs, r)
-	}
-	return "", nil
-}
-
-func (wm *WalletMan) askPassword() (string, error) {
-	// Handle password for GUI
-	var pass string
-	if wm.config.Gui {
-
-	} else {
-	ask:
-		// Handle password for cli
-		firstPass, err := wm.readPass(true)
-		if err != nil {
-			return "", err
-		}
-		fmt.Println("")
-		secondPass, err := wm.readPass(false)
-		if firstPass == secondPass {
-			pass = firstPass
-		} else {
-			wm.log.Warn("Passwords doesn't match, please try again")
-			goto ask
-		}
-	}
-	return pass, nil
-}
-
 func (wm *WalletMan) Start() error {
 	wm.log.Info("Starting WalletMan instance")
 start:
@@ -116,11 +57,7 @@ start:
 		// no meta bucket means the wallet is not initialized.
 		// here we should create the wallet struct.
 		if err == walletdb.ErrorNoMetaBucket {
-			pass, err := wm.askPassword()
-			if err != nil {
-				wm.log.Fatal("unable to get password to initialize wallet database")
-			}
-			err = wm.initWallet(pass)
+			err = wm.initWallet("")
 			goto start
 		}
 		wm.log.Warn("Unable to load wallet metadata. Possible wallet corruption")

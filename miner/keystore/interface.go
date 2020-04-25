@@ -2,15 +2,17 @@ package keystore
 
 import (
 	"crypto/rand"
+
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/primitives"
 )
 
 // Keystore is an interface to a simple keystore.
 type Keystore interface {
 	GenerateNewKey() (*bls.SecretKey, error)
-	GetKey(*bls.PublicKey) (*bls.SecretKey, error)
-	HasKey(*bls.PublicKey) (bool, error)
+	GetKey(*primitives.Worker) (*bls.SecretKey, bool)
+	HasKey(*primitives.Worker) (bool, error)
 	GetKeys() ([]*bls.SecretKey, error)
 	Close() error
 }
@@ -56,8 +58,8 @@ func (b *BadgerKeystore) GetKeys() ([]*bls.SecretKey, error) {
 	return secKeys, nil
 }
 
-func (b *BadgerKeystore) GetKey(key *bls.PublicKey) (*bls.SecretKey, error) {
-	pubBytes := key.Serialize()
+func (b *BadgerKeystore) GetKey(worker *primitives.Worker) (*bls.SecretKey, bool) {
+	pubBytes := worker.PubKey
 
 	var secretBytes [32]byte
 	err := b.db.View(func(txn *badger.Txn) error {
@@ -70,15 +72,15 @@ func (b *BadgerKeystore) GetKey(key *bls.PublicKey) (*bls.SecretKey, error) {
 		return err
 	})
 	if err != nil {
-		return nil, err
+		return nil, false
 	}
 
 	secretKey := bls.DeserializeSecretKey(secretBytes)
-	return &secretKey, nil
+	return &secretKey, true
 }
 
-func (b *BadgerKeystore) HasKey(key *bls.PublicKey) (result bool, err error) {
-	pubBytes := key.Serialize()
+func (b *BadgerKeystore) HasKey(worker *primitives.Worker) (result bool, err error) {
+	pubBytes := worker.PubKey
 
 	err = b.db.View(func(txn *badger.Txn) error {
 		_, err := txn.Get(pubBytes[:])

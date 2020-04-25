@@ -3,15 +3,11 @@ package primitives
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
-
-var log = logger.New(os.Stdin)
 
 // GetVoteCommittee gets the committee for a certain block.
 func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32, max uint32) {

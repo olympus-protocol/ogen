@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -23,11 +24,11 @@ type BlockView interface {
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested
 // slot.
-func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams) error {
+func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log *logger.Logger) error {
 	for s.Slot < requestedSlot {
 		// this only happens when there wasn't a block at the first slot of the epoch
 		if s.Slot/p.EpochLength > s.EpochIndex && s.Slot%p.EpochLength == 0 {
-			err := s.ProcessEpochTransition(p)
+			err := s.ProcessEpochTransition(p, log)
 			if err != nil {
 				return err
 			}

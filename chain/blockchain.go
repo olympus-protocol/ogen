@@ -63,16 +63,23 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 		return nil, err
 	}
 	var genesisTime time.Time
-	genesisTime, err = db.GetGenesisTime()
-	if err != nil {
-		config.Log.Debugf("using genesis time %s from params", ip.GenesisTime)
-		genesisTime = ip.GenesisTime
-		if err := db.SetGenesisTime(ip.GenesisTime); err != nil {
-			return nil, err
+	err = db.Update(func(tx blockdb.DBUpdateTransaction) error {
+		genesisTime, err = tx.GetGenesisTime()
+		if err != nil {
+			config.Log.Debugf("using genesis time %s from params", ip.GenesisTime)
+			genesisTime = ip.GenesisTime
+			if err := tx.SetGenesisTime(ip.GenesisTime); err != nil {
+				return err
+			}
+		} else {
+			config.Log.Debugf("using genesis time %s from db", genesisTime)
 		}
-	} else {
-		config.Log.Debugf("using genesis time %s from db", genesisTime)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
 	ch := &Blockchain{
 		log:         config.Log,
 		config:      config,
@@ -82,5 +89,7 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 		notifees:    make(map[BlockchainNotifee]struct{}),
 		genesisTime: genesisTime,
 	}
-	return ch, nil
+	return ch, db.Update(func(txn blockdb.DBUpdateTransaction) error {
+		return ch.UpdateChainHead(txn)
+	})
 }

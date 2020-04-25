@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
@@ -84,13 +85,13 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *Blockchain) UpdateChainHead() error {
+func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
 	activeValidatorIndices := justifiedState.GetActiveValidatorIndices()
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
-		bl, err := ch.getLatestAttestationTarget(i)
+		bl, err := ch.getLatestAttestationTarget(txn, i)
 		if err != nil {
 			continue
 		}
@@ -126,7 +127,7 @@ func (ch *Blockchain) UpdateChainHead() error {
 		if len(children) == 0 {
 			ch.state.blockChain.SetTip(head)
 
-			err := ch.db.SetTip(head.Hash)
+			err := txn.SetTip(head.Hash)
 			if err != nil {
 				return err
 			}
@@ -146,17 +147,18 @@ func (ch *Blockchain) UpdateChainHead() error {
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(validator uint32) (*index.BlockRow, error) {
-	att, err := ch.db.GetLatestVote(validator)
+func (ch *Blockchain) getLatestAttestationTarget(txn blockdb.DBViewTransaction, validator uint32) (row *index.BlockRow, err error) {
+	var att *primitives.MultiValidatorVote
+	att, err = txn.GetLatestVote(validator)
 	if err != nil {
 		return nil, err
 	}
 
-	node, ok := ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
+	row, ok := ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
 	if !ok {
 		return nil, errors.New("couldn't find block attested to by validator in index")
 	}
-	return node, nil
+	return row, nil
 }
 
 // ProcessBlock processes an incoming block from a peer or the miner.
@@ -199,94 +201,97 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
-	err = ch.db.AddRawBlock(block)
-	if err != nil {
-		return err
-	}
+	return ch.db.Update(func(txn blockdb.DBUpdateTransaction) error {
+		err = txn.AddRawBlock(block)
+		if err != nil {
+			return err
+		}
 
-	row, err := ch.state.blockIndex.Add(*block)
-	if err != nil {
-		return err
-	}
+		row, err := ch.state.blockIndex.Add(*block)
+		if err != nil {
+			return err
+		}
 
-	// set current block row in database
-	if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
-		return err
-	}
+		// set current block row in database
+		if err := txn.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
+			return err
+		}
 
-	// update parent to point at current
-	if err := ch.db.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
-		return err
-	}
+		// update parent to point at current
+		if err := txn.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
+			return err
+		}
 
-	for _, a := range block.Votes {
-		min, max := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
+		for _, a := range block.Votes {
+			min, max := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
 
-		validators := make([]uint32, 0, max-min)
+			validators := make([]uint32, 0, max-min)
 
-		for i := range a.ParticipationBitfield {
-			for j := 0; j < 8; j++ {
-				if a.ParticipationBitfield[i]&(1<<uint(j)) != 0 {
-					validator := uint32(i*8+j) + min
-					validators = append(validators, validator)
+			for i := range a.ParticipationBitfield {
+				for j := 0; j < 8; j++ {
+					if a.ParticipationBitfield[i]&(1<<uint(j)) != 0 {
+						validator := uint32(i*8+j) + min
+						validators = append(validators, validator)
+					}
 				}
+			}
+
+			if err := txn.SetLatestVoteIfNeeded(validators, &a); err != nil {
+				return err
 			}
 		}
 
-		if err := ch.db.SetLatestVoteIfNeeded(validators, &a); err != nil {
+		rowHash := row.Hash
+		ch.state.setBlockState(rowHash, newState)
+
+		// TODO: remove when we have fork choice
+		if err := ch.UpdateChainHead(txn); err != nil {
 			return err
 		}
-	}
 
-	rowHash := row.Hash
-	ch.state.setBlockState(rowHash, newState)
+		view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
+		if err != nil {
+			return err
+		}
 
-	// TODO: remove when we have fork choice
-	if err := ch.UpdateChainHead(); err != nil {
-		return err
-	}
+		finalizedSlot := newState.FinalizedEpoch * ch.params.EpochLength
+		finalizedHash, err := view.GetHashBySlot(finalizedSlot)
+		if err != nil {
+			return err
+		}
+		finalizedState, found := ch.state.GetStateForHash(finalizedHash)
+		if !found {
+			return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
+		}
+		if err := txn.SetFinalizedHead(finalizedHash); err != nil {
+			return err
+		}
+		if err := txn.SetFinalizedState(finalizedState); err != nil {
+			return err
+		}
 
-	view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
-	if err != nil {
-		return err
-	}
+		justifiedState, found := ch.state.GetStateForHash(newState.JustifiedEpochHash)
+		if !found {
+			return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
+		}
+		if err := txn.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
+			return err
+		}
+		if err := txn.SetJustifiedState(justifiedState); err != nil {
+			return err
+		}
 
-	finalizedSlot := newState.FinalizedEpoch * ch.params.EpochLength
-	finalizedHash, err := view.GetHashBySlot(finalizedSlot)
-	if err != nil {
-		return err
-	}
-	finalizedState, found := ch.state.GetStateForHash(finalizedHash)
-	if !found {
-		return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
-	}
-	if err := ch.db.SetFinalizedHead(finalizedHash); err != nil {
-		return err
-	}
-	if err := ch.db.SetFinalizedState(finalizedState); err != nil {
-		return err
-	}
+		// TODO: delete state before finalized
 
-	justifiedState, found := ch.state.GetStateForHash(newState.JustifiedEpochHash)
-	if !found {
-		return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
-	}
-	if err := ch.db.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
-		return err
-	}
-	if err := ch.db.SetJustifiedState(justifiedState); err != nil {
-		return err
-	}
+		ch.log.Infof("New block accepted. Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
 
-	// TODO: delete state before finalized
-
-	ch.log.Infof("New block accepted Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
-
-	ch.notifeeLock.RLock()
-	for i := range ch.notifees {
-		i.NewTip(row, block)
-	}
-	ch.notifeeLock.RUnlock()
+		ch.notifeeLock.RLock()
+		for i := range ch.notifees {
+			i.NewTip(row, block)
+		}
+		ch.notifeeLock.RUnlock()
+		return nil
+	})
 
 	return nil
 }

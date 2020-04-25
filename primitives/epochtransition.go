@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -221,7 +222,8 @@ func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chai
 	return s.LatestBlockHashes[slotToGet%p.LatestBlockRootsLength]
 }
 
-func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
+// ProcessEpochTransition runs an epoch transition on the state.
+func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger) error {
 	totalBalance := s.getActiveBalance(p)
 
 	// These are voters who voted for a target of the previous epoch.
@@ -286,16 +288,16 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams) error {
 		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
 	}
 
-	log.Infof("justification: %b, previousEpoch: %d, justifiedEpoch: %d, currentEpoch: %d", s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpoch, s.EpochIndex)
+	log.Debugf("justification: %b, previousEpoch: %d, justifiedEpoch: %d, currentEpoch: %d", s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpoch, s.EpochIndex)
 
 	if (s.JustificationBitfield>>1)%4 == 3 && s.PreviousJustifiedEpoch == s.EpochIndex-2 { // 110 <- old previous justified would be
-		log.Infof("finalized epoch %d", s.PreviousJustifiedEpoch)
+		log.Debugf("finalized epoch %d", s.PreviousJustifiedEpoch)
 		s.FinalizedEpoch = s.PreviousJustifiedEpoch
 	}
 
 	if ((s.JustificationBitfield>>0)%8 == 7 && s.JustifiedEpoch == s.EpochIndex-1) || // 111
 		((s.JustificationBitfield>>0)%4 == 3 && s.JustifiedEpoch == s.EpochIndex) {
-		log.Infof("finalized epoch %d", s.PreviousJustifiedEpoch)
+		log.Debugf("finalized epoch %d", s.PreviousJustifiedEpoch)
 		s.FinalizedEpoch = s.PreviousJustifiedEpoch
 		s.JustifiedEpoch = s.EpochIndex
 	}

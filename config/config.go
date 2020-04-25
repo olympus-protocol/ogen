@@ -2,9 +2,8 @@ package config
 
 import (
 	"errors"
-	"github.com/BurntSushi/toml"
-	"log"
-	"os"
+
+	"github.com/olympus-protocol/ogen/primitives"
 )
 
 var (
@@ -18,15 +17,16 @@ const (
 )
 
 type Config struct {
-	DataFolder       string
-	Debug            bool
-	Listen           bool
-	NetworkName      string
-	ConnectNodes     []string
-	Port             int32
-	MaxPeers         int32
-	Mode             string
-	Wallet           bool
+	DataFolder   string
+	Debug        bool
+	Listen       bool
+	NetworkName  string
+	ConnectNodes []string
+	Port         int32
+	MaxPeers     int32
+	Mode         string
+	Wallet       bool
+	InitConfig   primitives.InitializationParameters
 }
 
 func OgenVersion() string {

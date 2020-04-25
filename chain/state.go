@@ -33,7 +33,7 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock *primitives.State) *stat
 	}
 }
 
-func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams) (*primitives.State, error) {
+func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams, log *logger.Logger) (*primitives.State, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -44,7 +44,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockVi
 	if slot < s.lastSlot {
 		derivedState := s.firstSlotState.Copy()
 
-		err := derivedState.ProcessSlots(slot, view, p)
+		err := derivedState.ProcessSlots(slot, view, p, log)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockVi
 
 	view.SetTipSlot(s.lastSlot)
 
-	err := s.lastSlotState.ProcessSlots(slot, view, p)
+	err := s.lastSlotState.ProcessSlots(slot, view, p, log)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,9 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, 
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
-	err := db.AddRawBlock(&genesisBlock)
+	err := s.db.Update(func(txn blockdb.DBUpdateTransaction) error {
+		return txn.AddRawBlock(&genesisBlock)
+	})
 	if err != nil {
 		return err
 	}
@@ -153,15 +155,18 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, 
 	s.blockIndex = blockIndex
 	s.blockChain = NewChain(row)
 
-	if _, err := db.GetBlockRow(genesisHash); err != nil {
-		if err := s.initializeDatabase(row, genesisState); err != nil {
-			return err
+	return db.Update(func(txn blockdb.DBUpdateTransaction) error {
+		if _, err := txn.GetBlockRow(genesisHash); err != nil {
+			if err := s.initializeDatabase(txn, row, genesisState); err != nil {
+				return err
+			}
+		} else {
+			if err := s.loadBlockchainFromDisk(txn, genesisHash); err != nil {
+				return err
+			}
 		}
-	} else {
-		if err := s.loadBlockchainFromDisk(genesisHash); err != nil {
-			return err
-		}
-	}
+		return nil
+	})
 	return nil
 }
 
@@ -183,11 +188,15 @@ func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 	s.lock.RLock()
 	derivedState, found := s.stateMap[hash]
 	s.lock.RUnlock()
+	if slot > derivedState.lastSlot+1000 {
+		return nil, fmt.Errorf("tried to get block too far in future")
+	}
+
 	if !found {
 		return nil, fmt.Errorf("could not find state for block %s", hash)
 	}
 
-	return derivedState.deriveState(slot, view, p)
+	return derivedState.deriveState(slot, view, p, s.log)
 }
 
 // Add adds a block to the blockchain.
