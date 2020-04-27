@@ -8,7 +8,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/txs/txverifier"
 )
@@ -60,23 +59,6 @@ func (ch *Blockchain) newTxPayloadInv(txs []primitives.Tx, blocks int) (*TxPaylo
 		return nil, ErrorTooManyGenerateTx
 	}
 	return txPayloads, nil
-}
-
-func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
-	// TODO: this is disabled for now because we don't have transaction execution done.
-	// if we have a block that spends an input, we need to update our state representation
-	// for that block before we try to verify other blocks.
-
-	//txs := blockInv.GetTxs()
-	//txPayloadInv, err := ch.newTxPayloadInv(txs, len(blockInv.GetBlocks()))
-	//if err != nil {
-	//	return err
-	//}
-	//err = ch.verifyTx(txPayloadInv)
-	//if err != nil {
-	//	return err
-	//}
-	return nil
 }
 
 type blockRowAndValidator struct {

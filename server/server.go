@@ -50,9 +50,11 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start peer manager")
 	}
-	err = s.Miner.Start()
-	if err != nil {
-		log.Fatalln("unable to start miner thread")
+	if s.Miner != nil {
+		err = s.Miner.Start()
+		if err != nil {
+			log.Fatalln("unable to start miner thread")
+		}
 	}
 	switch s.config.Mode {
 	case "api":
@@ -72,7 +74,9 @@ func (s *Server) Stop() error {
 			return err
 		}
 	}
-	s.Miner.Stop()
+	if s.Miner != nil {
+		s.Miner.Stop()
+	}
 	return nil
 }
 
@@ -90,9 +94,12 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
-	min, err := miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan, keys)
-	if err != nil {
-		return nil, err
+	var min *miner.Miner
+	if configParams.MiningEnabled {
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan, keys)
+		if err != nil {
+			return nil, err
+		}
 	}
 	txPool := mempool.InitMempool(loadMempoolConfig(configParams, logger), currParams)
 	workersMan := workers.NewWorkersMan(loadWorkersConfig(configParams, logger), currParams)
@@ -162,6 +169,7 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 		Log:          logger,
 		Listen:       config.Listen,
 		ConnectNodes: config.ConnectNodes,
+		AddNodes:     config.AddNodes,
 		Port:         config.Port,
 		MaxPeers:     config.MaxPeers,
 		Path:         config.DataFolder,
@@ -171,10 +179,10 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 
 func loadWalletsManConfig(config *config.Config, logger *logger.Logger, gui bool) wallet.Config {
 	cfg := wallet.Config{
-		Log:      logger,
-		Path:     config.DataFolder,
-		Enabled:  config.Wallet,
-		Gui:      gui,
+		Log:     logger,
+		Path:    config.DataFolder,
+		Enabled: config.Wallet,
+		Gui:     gui,
 	}
 	return cfg
 }

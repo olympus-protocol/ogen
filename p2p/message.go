@@ -14,7 +14,7 @@ const (
 	MsgGetAddrCmd   = "getaddr"
 	MsgAddrCmd      = "addr"
 	MsgGetBlocksCmd = "getblocks"
-	MsgBlockCmd     = "block"
+	MsgBlocksCmd    = "blocks"
 	MsgBlocksInvCmd = "blocksinv"
 	MsgTxCmd        = "tx"
 )
@@ -51,12 +51,10 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgGetAddr{}
 	case MsgGetAddrCmd:
 		msg = &MsgGetAddr{}
-	case MsgBlockCmd:
-		msg = &MsgBlock{}
+	case MsgBlocksCmd:
+		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
-	case MsgBlocksInvCmd:
-		msg = &MsgBlockInv{}
 	case MsgTxCmd:
 		msg = &MsgTx{}
 	default:

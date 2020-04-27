@@ -1,7 +1,8 @@
-package peer
+package peers
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -9,87 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
-
-type Status int
-
-const (
-	Handshaked Status = iota
-	Syncing
-	Disconnect
-	Ban
-)
-
-type BlocksInvMsg struct {
-	Peer   *Peer
-	Blocks *p2p.MsgBlockInv
-}
-
-func newBlocksInvMsg(p *Peer, blocks *p2p.MsgBlockInv) *BlocksInvMsg {
-	blockInvMsg := &BlocksInvMsg{
-		Peer:   p,
-		Blocks: blocks,
-	}
-	return blockInvMsg
-}
-
-type DataReqMsg struct {
-	Peer    *Peer
-	Request string
-	Payload *chainhash.Hash
-}
-
-func newDataRequestMsg(p *Peer, req string, payload *chainhash.Hash) *DataReqMsg {
-	dataReqMsg := &DataReqMsg{
-		Peer:    p,
-		Request: req,
-		Payload: payload,
-	}
-	return dataReqMsg
-}
-
-type TxMsg struct {
-	Peer *Peer
-	Tx   *p2p.MsgTx
-}
-
-func newTxMsg(p *Peer, Tx *p2p.MsgTx) *TxMsg {
-	txMsg := &TxMsg{
-		Peer: p,
-		Tx:   Tx,
-	}
-	return txMsg
-}
-
-type BlockMsg struct {
-	Peer  *Peer
-	Block *p2p.MsgBlock
-}
-
-func newBlockMsg(p *Peer, block *p2p.MsgBlock) *BlockMsg {
-	blockMsg := &BlockMsg{
-		Peer:  p,
-		Block: block,
-	}
-	return blockMsg
-}
-
-type PeerMsg struct {
-	Peer   *Peer
-	Status Status
-}
-
-func newPeerMsg(p *Peer, status Status) *PeerMsg {
-	peerMsg := &PeerMsg{
-		Peer:   p,
-		Status: status,
-	}
-	return peerMsg
-}
 
 type Peer struct {
 	// Ogen main config
@@ -123,7 +50,6 @@ type Peer struct {
 	closeSignal chan interface{}
 
 	// Chans for PeerMan Communication
-	ManChan       chan interface{}
 	mainCloseChan chan interface{}
 
 	// Locks for safe usage
@@ -131,22 +57,27 @@ type Peer struct {
 
 	// For syncMan sync peer selector
 	selectedForSync bool
+
+	blockchain *chain.Blockchain
+	peerman    *PeerMan
 }
 
 func (p *Peer) Start(lastBlockHeight uint64) {
 	// First version handshake
 	err := p.versionHandshake(lastBlockHeight)
 	if err != nil {
-		p.log.Errorf("disconnecting peer %v", p.GetID())
-		p.ManChan <- newPeerMsg(p, Disconnect)
+		p.log.Errorf("disconnecting peer %v because of error %s", p.GetID(), err)
+		p.peerman.Disconnect(p)
+		return
 	}
-	p.ManChan <- newPeerMsg(p, Handshaked)
+	p.peerman.Handshake(p)
 	// Init message listener
 	go func() {
 		err := p.messageListener()
 		if err != nil {
 			p.log.Errorf("disconnecting peer %v", p.GetID())
-			p.ManChan <- newPeerMsg(p, Disconnect)
+			p.peerman.Disconnect(p)
+			return
 		}
 	}()
 	// Init ping/pong
@@ -154,13 +85,14 @@ func (p *Peer) Start(lastBlockHeight uint64) {
 		err := p.pingRoutine()
 		if err != nil {
 			p.log.Errorf("disconnecting peer %v", p.GetID())
-			p.ManChan <- newPeerMsg(p, Disconnect)
+			p.peerman.Disconnect(p)
 		}
 	}()
 }
 
 func (p *Peer) versionHandshake(lastBlockHeight uint64) error {
 	if p.inbound {
+		p.log.Debug("running inbound version handshake")
 		err := p.handleInboundPeerHandshake(lastBlockHeight)
 		if err != nil {
 			p.log.Errorf("unable to perform inbound handshake for peer: %v", p.GetID())
@@ -168,16 +100,20 @@ func (p *Peer) versionHandshake(lastBlockHeight uint64) error {
 		}
 	}
 	if !p.inbound {
+		p.log.Debug("running outbound version handshake")
 		err := p.handleOutboundPeerHandshake(lastBlockHeight)
 		if err != nil {
-			p.log.Errorf("unable to perform inbound handshake for peer: %v", p.GetID())
+			p.log.Errorf("unable to perform outbound handshake for peer: %v", p.GetID())
 			return err
 		}
 	}
 	return nil
 }
 
+var zeroHash = chainhash.Hash{}
+
 func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
+	// first, we read their version
 	remoteMsgVersion, _, err := p.readMessage()
 	if err != nil {
 		return ErrorReadRemote
@@ -187,15 +123,21 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 		return ErrorNoVersionFirst
 	}
 	p.updateStats(msgVersion)
+
+	// acknowledge their version message
 	verack := p2p.NewMsgVerack()
 	err = p.writeMessage(verack)
 	if err != nil {
 		return ErrorWriteRemote
 	}
+
+	// send our version
 	err = p.writeMessage(p.versionMsg(lastBlockHeight))
 	if err != nil {
 		return ErrorWriteRemote
 	}
+
+	// wait for them to acknowledge our version message
 	remoteMsgVerack, _, err := p.readMessage()
 	if err != nil {
 		return ErrorReadRemote
@@ -204,7 +146,20 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	if !ok {
 		return ErrorNoVerackAfterVersion
 	}
+
+	// mark verack as received
 	p.verackReceived = true
+
+	p.log.Debugf("their last block: %d our last block: %d", msgVersion.LastBlock, lastBlockHeight)
+	if msgVersion.LastBlock > lastBlockHeight {
+		err := p.writeMessage(&p2p.MsgGetBlocks{
+			LocatorHashes: p.blockchain.GetLocatorHashes(),
+			HashStop:      zeroHash,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -218,6 +173,7 @@ func (p *Peer) handleOutboundPeerHandshake(lastBlockHeight uint64) error {
 	if !ok {
 		return ErrorNoVerackAfterVersion
 	}
+	p.verackReceived = true
 	remoteMsgVersion, _, _ := p.readMessage()
 	msgVersion, ok := remoteMsgVersion.(*p2p.MsgVersion)
 	if !ok {
@@ -228,6 +184,16 @@ func (p *Peer) handleOutboundPeerHandshake(lastBlockHeight uint64) error {
 	err = p.writeMessage(verack)
 	if err != nil {
 		return ErrorWriteRemote
+	}
+	p.log.Debugf("their last block: %d our last block: %d", msgVersion.LastBlock, lastBlockHeight)
+	if msgVersion.LastBlock > lastBlockHeight {
+		err := p.writeMessage(&p2p.MsgGetBlocks{
+			LocatorHashes: p.blockchain.GetLocatorHashes(),
+			HashStop:      zeroHash,
+		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -301,6 +267,57 @@ func (p *Peer) Stop() {
 	_ = p.conn.Close()
 }
 
+const maxBlocksPerMessage = 500
+
+func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
+	// first block is tip, so we check each block in order and check if the block matches
+	firstCommon := p.blockchain.State().Chain().Genesis()
+	locatorHashesGenesis := &msg.LocatorHashes[len(msg.LocatorHashes)-1]
+
+	if !firstCommon.Hash.IsEqual(locatorHashesGenesis) {
+		return fmt.Errorf("incorrect genesis block (got: %s, expected: %s)", locatorHashesGenesis, firstCommon.Hash)
+	}
+
+	for _, b := range msg.LocatorHashes {
+		if b, found := p.blockchain.State().Index().Get(b); found {
+			firstCommon = b
+			break
+		}
+	}
+
+	p.log.Debugf("found first common block %s", firstCommon.Hash)
+
+	blocksToSend := make([]primitives.Block, 0, 500)
+
+	if firstCommon.Hash.IsEqual(locatorHashesGenesis) {
+		fc, ok := p.blockchain.State().Chain().Next(firstCommon)
+		if !ok {
+			return nil
+		}
+		firstCommon = fc
+	}
+
+	for firstCommon != nil && len(blocksToSend) < maxBlocksPerMessage {
+		block, err := p.blockchain.GetBlock(firstCommon.Hash)
+		if err != nil {
+			return err
+		}
+
+		var ok bool
+		blocksToSend = append(blocksToSend, *block)
+		firstCommon, ok = p.blockchain.State().Chain().Next(firstCommon)
+		if !ok {
+			break
+		}
+	}
+
+	p.log.Debugf("sending %d blocks", len(blocksToSend))
+
+	return p.writeMessage(&p2p.MsgBlocks{
+		Blocks: blocksToSend,
+	})
+}
+
 func (p *Peer) messageListener() error {
 	p.log.Tracef("starting message listener for peer %v", p.GetID())
 	for {
@@ -317,10 +334,10 @@ func (p *Peer) messageListener() error {
 			// Initial connection handlers
 			case *p2p.MsgVersion:
 				p.log.Errorf("handshake already received, duplicated version from peer %v", p.GetID())
-				p.ManChan <- newPeerMsg(p, Disconnect)
+				p.peerman.Disconnect(p)
 			case *p2p.MsgVerack:
 				p.log.Errorf("handshake already received, duplicated verack from peer %v", p.GetID())
-				p.ManChan <- newPeerMsg(p, Disconnect)
+				p.peerman.Disconnect(p)
 			case *p2p.MsgPing:
 				p.log.Tracef("received ping msg from peer %v", p.GetID())
 				err := p.pong(msg.Nonce)
@@ -337,25 +354,33 @@ func (p *Peer) messageListener() error {
 			// Address sharing handlers
 			case *p2p.MsgGetAddr:
 				p.log.Tracef("received getaddr msg from peer %v", p.GetID())
-				p.ManChan <- newDataRequestMsg(p, "getaddr", nil)
+				// TODO: fix
 			case *p2p.MsgAddr:
 				p.log.Tracef("received addr msg from peer %v", p.GetID())
 
 			// Blocks handlers
-			case *p2p.MsgBlock:
-				p.log.Tracef("received block msg from peer %v", p.GetID())
-				p.ManChan <- newBlockMsg(p, msg)
 			case *p2p.MsgGetBlocks:
 				p.log.Tracef("received getblocks msg from peer %v", p.GetID())
-				p.ManChan <- newDataRequestMsg(p, "getblocks", &msg.LastBlockHash)
-			case *p2p.MsgBlockInv:
-				p.log.Tracef("received blockinv msg from peer %v", p.GetID())
-				p.ManChan <- newBlocksInvMsg(p, msg)
+				if err := p.sendBlocksToPeer(msg); err != nil {
+					p.log.Errorf("error sending blocks to peer: %s", err)
+				}
+				// TODO: fix
+				// p.ManChan <- newDataRequestMsg(p, "getblocks", &msg.LastBlockHash)
+			case *p2p.MsgBlocks:
+				p.log.Tracef("received blocks msg from peer %v", p.GetID())
+				for _, b := range msg.Blocks {
+					p.log.Debugf("processing block %s", b.Hash())
+					if err := p.blockchain.ProcessBlock(&b); err != nil {
+						p.log.Errorf("error processing block from peer: %s", err)
+						break
+					}
+				}
+				// p.ManChan <- newBlocksInvMsg(p, msg)
 
 			// Tx handlers
 			case *p2p.MsgTx:
 				p.log.Tracef("received tx msg from peer %v", p.GetID())
-				p.ManChan <- newTxMsg(p, msg)
+				// p.ManChan <- newTxMsg(p, msg)
 			}
 		}
 	}
@@ -408,18 +433,6 @@ func (p *Peer) SetLastBlock(lastBlock uint64) {
 	p.peerLock.RUnlock()
 }
 
-func (p *Peer) SendGetBlocks(getBlocks *p2p.MsgGetBlocks) error {
-	return p.writeMessage(getBlocks)
-}
-
-func (p *Peer) SendBlock(blocks *p2p.MsgBlock) error {
-	return p.writeMessage(blocks)
-}
-
-func (p *Peer) SendBlockInv(blockInv *p2p.MsgBlockInv) error {
-	return p.writeMessage(blockInv)
-}
-
 func (p *Peer) IsSelectedForSync() bool {
 	return p.selectedForSync
 }
@@ -429,7 +442,7 @@ func (p *Peer) SetPeerSync(syncing bool) {
 	return
 }
 
-func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, messageChan chan interface{}, log *logger.Logger) *Peer {
+func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
 	peer := &Peer{
 		id:              id,
 		log:             log,
@@ -438,9 +451,10 @@ func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, ti
 		inbound:         inbound,
 		outbound:        !inbound,
 		connectionTime:  time,
-		ManChan:         messageChan,
 		NetMagic:        p2p.MainNet,
 		selectedForSync: false,
+		blockchain:      peerMgr.chain,
+		peerman:         peerMgr,
 	}
 	return peer
 }

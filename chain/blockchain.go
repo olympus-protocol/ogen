@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 type BlockInfo struct {
@@ -56,6 +57,14 @@ func (ch *Blockchain) GenesisTime() time.Time {
 	return ch.genesisTime
 }
 
+// GetBlock gets a block from the database.
+func (ch *Blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err error) {
+	return block, ch.db.View(func(txn blockdb.DBViewTransaction) error {
+		block, err = txn.GetRawBlock(h)
+		return err
+	})
+}
+
 // NewBlockchain constructs a new blockchain.
 func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (*Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
@@ -63,16 +72,17 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 		return nil, err
 	}
 	var genesisTime time.Time
+
 	err = db.Update(func(tx blockdb.DBUpdateTransaction) error {
 		genesisTime, err = tx.GetGenesisTime()
 		if err != nil {
-			config.Log.Debugf("using genesis time %s from params", ip.GenesisTime)
+			config.Log.Infof("using genesis time %d from params", ip.GenesisTime.Unix())
 			genesisTime = ip.GenesisTime
 			if err := tx.SetGenesisTime(ip.GenesisTime); err != nil {
 				return err
 			}
 		} else {
-			config.Log.Debugf("using genesis time %s from db", genesisTime)
+			config.Log.Infof("using genesis time %d from db", genesisTime.Unix())
 		}
 		return nil
 	})

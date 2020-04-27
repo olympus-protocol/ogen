@@ -188,6 +188,4 @@ func (s *StateService) loadBlockchainFromDisk(txn blockdb.DBViewTransaction, gen
 		return err
 	}
 	return nil
-
-	return nil
 }

@@ -87,6 +87,14 @@ type StateService struct {
 	justifiedHead blockNodeAndState
 }
 
+func (s *StateService) Chain() *Chain {
+	return s.blockChain
+}
+
+func (s *StateService) Index() *index.BlockIndex {
+	return s.blockIndex
+}
+
 func (s *StateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedState primitives.State) error {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()

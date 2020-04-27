@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
@@ -77,22 +78,30 @@ Next generation blockchain secured by CASPER.`,
 				log = log.WithDebug()
 			}
 
-			ip, err := getChainFile(viper.GetString("chainfile"))
+			cf, err := getChainFile(viper.GetString("chainfile"))
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
 
+			ip := cf.ToInitializationParameters()
+			genesisTime := viper.GetUint64("genesistime")
+			if genesisTime != 0 {
+				ip.GenesisTime = time.Unix(int64(genesisTime), 0)
+			}
+
 			c := &config.Config{
-				DataFolder:   DataFolder,
-				InitConfig:   ip.ToInitializationParameters(),
-				Debug:        viper.GetBool("debug"),
-				Listen:       viper.GetBool("listen"),
-				NetworkName:  viper.GetString("network"),
-				ConnectNodes: viper.GetStringSlice("connect"),
-				Port:         int32(viper.GetUint("port")),
-				MaxPeers:     int32(viper.GetUint("maxpeers")),
-				Mode:         viper.GetString("mode"),
-				Wallet:       viper.GetBool("wallet"),
+				DataFolder:    DataFolder,
+				InitConfig:    ip,
+				Debug:         viper.GetBool("debug"),
+				Listen:        viper.GetBool("listen"),
+				NetworkName:   viper.GetString("network"),
+				ConnectNodes:  viper.GetStringSlice("connect"),
+				AddNodes:      viper.GetStringSlice("add"),
+				Port:          int32(viper.GetUint("port")),
+				MaxPeers:      int32(viper.GetUint("maxpeers")),
+				Mode:          viper.GetString("mode"),
+				Wallet:        viper.GetBool("wallet"),
+				MiningEnabled: viper.GetBool("enablemining"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -127,7 +136,10 @@ func init() {
 	rootCmd.Flags().String("mode", "node", "type of node to run")
 	rootCmd.Flags().Bool("wallet", true, "enable wallet")
 	rootCmd.Flags().StringSlice("connect", []string{}, "IP addresses of nodes to connect to initially")
+	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add")
 	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
+	rootCmd.Flags().Bool("enablemining", true, "should mining be enabled")
+	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {

@@ -35,6 +35,21 @@ func (br *BlockRow) GetAncestorAtSlot(slot uint64) *BlockRow {
 	return current
 }
 
+// GetAncestorAtHeight gets the block row ancestor at a certain height.
+func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
+	if br.Height < height {
+		return nil
+	}
+
+	current := br
+
+	// go up to the slot after the slot we're searching for
+	for height < current.Height {
+		current = current.Parent
+	}
+	return current
+}
+
 var zeroHash = chainhash.Hash{}
 
 // BlockIndex is an index from hash to BlockRow.

@@ -3,19 +3,33 @@ package p2p
 import (
 	"bytes"
 	"fmt"
+	"io"
+
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 type MsgGetBlocks struct {
-	LastBlockHash chainhash.Hash
+	HashStop      chainhash.Hash
+	LocatorHashes []chainhash.Hash
 }
 
 func (m *MsgGetBlocks) Encode(w io.Writer) error {
-	err := serializer.WriteElement(w, m.LastBlockHash)
+	err := serializer.WriteElement(w, m.HashStop)
 	if err != nil {
 		return err
+	}
+
+	err = serializer.WriteVarInt(w, uint64(len(m.LocatorHashes)))
+	if err != nil {
+		return err
+	}
+
+	for _, c := range m.LocatorHashes {
+		err = serializer.WriteElement(w, c)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -26,9 +40,21 @@ func (m *MsgGetBlocks) Decode(r io.Reader) error {
 		return fmt.Errorf("MsgVersion.Decode reader is not a " +
 			"*bytes.Buffer")
 	}
-	err := serializer.ReadElement(buf, &m.LastBlockHash)
+	err := serializer.ReadElement(buf, &m.HashStop)
 	if err != nil {
 		return err
+	}
+	numHashes, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+
+	m.LocatorHashes = make([]chainhash.Hash, numHashes)
+	for i := range m.LocatorHashes {
+		err = serializer.ReadElement(r, &m.LocatorHashes[i])
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -38,12 +64,13 @@ func (m *MsgGetBlocks) Command() string {
 }
 
 func (m *MsgGetBlocks) MaxPayloadLength() uint32 {
-	return chainhash.HashSize
+	return chainhash.HashSize + 40*chainhash.HashSize + 9
 }
 
-func NewMsgGetBlock(hash chainhash.Hash) *MsgGetBlocks {
+func NewMsgGetBlock(hashStop chainhash.Hash, locatorHashes []chainhash.Hash) *MsgGetBlocks {
 	m := &MsgGetBlocks{
-		LastBlockHash: hash,
+		HashStop:      hashStop,
+		LocatorHashes: locatorHashes,
 	}
 	return m
 }

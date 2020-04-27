@@ -17,16 +17,18 @@ const (
 )
 
 type Config struct {
-	DataFolder   string
-	Debug        bool
-	Listen       bool
-	NetworkName  string
-	ConnectNodes []string
-	Port         int32
-	MaxPeers     int32
-	Mode         string
-	Wallet       bool
-	InitConfig   primitives.InitializationParameters
+	DataFolder    string
+	Debug         bool
+	Listen        bool
+	NetworkName   string
+	ConnectNodes  []string
+	AddNodes      []string
+	Port          int32
+	MaxPeers      int32
+	Mode          string
+	Wallet        bool
+	MiningEnabled bool
+	InitConfig    primitives.InitializationParameters
 }
 
 func OgenVersion() string {

@@ -53,11 +53,28 @@ func (c *Chain) Tip() *index.BlockRow {
 	return c.chain[len(c.chain)-1]
 }
 
-func (c *Chain) GetNodeByHeight(height int32) (*index.BlockRow, bool) {
+func (c *Chain) Genesis() *index.BlockRow {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.chain[0]
+}
+
+func (c *Chain) Next(row *index.BlockRow) (*index.BlockRow, bool) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	if height >= int32(len(c.chain)) {
+	if uint64(len(c.chain)) <= row.Height+1 {
+		return nil, false
+	}
+
+	return c.chain[row.Height+1], true
+}
+
+func (c *Chain) GetNodeByHeight(height uint64) (*index.BlockRow, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if height >= uint64(len(c.chain)) {
 		return nil, false
 	}
 
