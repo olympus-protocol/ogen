@@ -1,11 +1,11 @@
 package peers
 
 import (
-	"math/big"
 	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -81,16 +81,12 @@ func pickPercent(vs []primitives.SingleValidatorVote, pct float32) []primitives.
 	return shuffledVotes[:num]
 }
 
-func (m *Mempool) GetVotesNotInBloom(bloom []uint8) []primitives.SingleValidatorVote {
+func (m *Mempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
 	votes := make([]primitives.SingleValidatorVote, 0)
 	for _, vs := range m.pool {
 		for _, v := range vs.individualVotes {
 			vh := v.Hash()
-			vhBig := new(big.Int).SetBytes(vh[:])
-			vhBig.Mod(vhBig, big.NewInt(bloomSize))
-			bloomIdx := vhBig.Uint64()
-
-			if bloom[bloomIdx/8]&(1<<uint(bloomIdx%8)) != 0 {
+			if bloom.Has(vh) {
 				continue
 			}
 

@@ -3,7 +3,6 @@ package peers
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 	"net"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/p2p"
@@ -59,10 +59,10 @@ type Peer struct {
 	// For syncMan sync peer selector
 	selectedForSync bool
 
-	blockchain  *chain.Blockchain
-	peerman     *PeerMan
-	bloomFilter []uint8
-	bloomLock   sync.Mutex
+	blockchain       *chain.Blockchain
+	peerman          *PeerMan
+	voteBloomFilter  *bloom.BloomFilter
+	blockBloomFilter *bloom.BloomFilter
 }
 
 func (p *Peer) Start(lastBlockHeight uint64) {
@@ -211,18 +211,11 @@ func (p *Peer) updateStats(msgVersion *p2p.MsgVersion) {
 }
 
 func (p *Peer) sendMempool() error {
-	p.bloomLock.Lock()
-	possibleVotes := p.peerman.mempool.GetVotesNotInBloom(p.bloomFilter)
-	defer p.bloomLock.Unlock()
+	possibleVotes := p.peerman.mempool.GetVotesNotInBloom(p.voteBloomFilter)
 	// send 50% of these
 	votesToSend := pickPercent(possibleVotes, 0.5)
 	for _, v := range votesToSend {
-		vh := v.Hash()
-		vhBig := new(big.Int).SetBytes(vh[:])
-		vhBig.Mod(vhBig, big.NewInt(bloomSize))
-		bloomIdx := vhBig.Uint64()
-
-		p.bloomFilter[bloomIdx/8] |= (1 << uint(bloomIdx%8))
+		p.voteBloomFilter.Add(v.Hash())
 	}
 
 	return p.writeMessage(&p2p.MsgVotes{
@@ -299,6 +292,17 @@ func (p *Peer) Stop() {
 
 const maxBlocksPerMessage = 500
 
+func (p *Peer) submitBlock(block *primitives.Block) error {
+	bh := block.Hash()
+	if p.blockBloomFilter.Has(bh) {
+		return nil
+	}
+	p.blockBloomFilter.Add(bh)
+	return p.writeMessage(&p2p.MsgBlocks{
+		Blocks: []primitives.Block{*block},
+	})
+}
+
 func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
 	// first block is tip, so we check each block in order and check if the block matches
 	firstCommon := p.blockchain.State().Chain().Genesis()
@@ -333,8 +337,13 @@ func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
 			return err
 		}
 
-		var ok bool
 		blocksToSend = append(blocksToSend, *block)
+		p.blockBloomFilter.Add(firstCommon.Hash)
+
+		if firstCommon.Hash.IsEqual(&msg.HashStop) {
+			break
+		}
+		var ok bool
 		firstCommon, ok = p.blockchain.State().Chain().Next(firstCommon)
 		if !ok {
 			break
@@ -350,18 +359,12 @@ func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
 
 func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
 	vh := vote.Hash()
-	vhBig := new(big.Int).SetBytes(vh[:])
-	vhBig.Mod(vhBig, big.NewInt(bloomSize))
-	bloomIdx := vhBig.Uint64()
-
-	p.bloomLock.Lock()
-	if p.bloomFilter[bloomIdx/8]&(1<<uint(bloomIdx%8)) != 0 {
+	if p.voteBloomFilter.Has(vh) {
 		// already sent it
 		return nil
 	}
 
-	p.bloomFilter[bloomIdx/8] |= (1 << uint(bloomIdx%8))
-	p.bloomLock.Unlock()
+	p.voteBloomFilter.Add(vh)
 
 	return p.writeMessage(&p2p.MsgVotes{
 		Votes: []primitives.SingleValidatorVote{*vote},
@@ -419,10 +422,26 @@ func (p *Peer) messageListener() error {
 			case *p2p.MsgBlocks:
 				p.log.Tracef("received blocks msg from peer %v", p.GetID())
 				for _, b := range msg.Blocks {
-					p.log.Debugf("processing block %s", b.Hash())
+					if !p.blockchain.State().Index().Have(b.Header.PrevBlockHash) {
+						err = p.writeMessage(&p2p.MsgGetBlocks{
+							LocatorHashes: p.blockchain.GetLocatorHashes(),
+							HashStop:      b.Header.PrevBlockHash,
+						})
+						if err != nil {
+							p.log.Error(err)
+						}
+						break
+					}
+
+					bh := b.Hash()
+					p.blockBloomFilter.Add(bh)
+					p.log.Debugf("processing block %s", bh)
 					if err := p.blockchain.ProcessBlock(&b); err != nil {
 						p.log.Errorf("error processing block from peer: %s", err)
 						break
+					}
+					if err := p.peerman.SubmitBlock(&b); err != nil {
+						p.log.Error(err)
 					}
 				}
 				// p.ManChan <- newBlocksInvMsg(p, msg)
@@ -431,7 +450,7 @@ func (p *Peer) messageListener() error {
 			case *p2p.MsgVotes:
 				p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
 				for _, v := range msg.Votes {
-					p.log.Infof("adding vote %s", v.Hash())
+					p.voteBloomFilter.Add(v.Hash())
 					p.peerman.mempool.Add(&v, v.OutOf)
 				}
 			case *p2p.MsgTx:
@@ -498,23 +517,26 @@ func (p *Peer) SetPeerSync(syncing bool) {
 	return
 }
 
-// bloomSize is prime order
-const bloomSize = 1024 * 1024
+const (
+	voteBloomFilterSize  = 1024 * 1024
+	blockBloomFilterSize = 1024 * 1024
+)
 
 func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
 	peer := &Peer{
-		id:              id,
-		log:             log,
-		conn:            conn,
-		address:         addr,
-		inbound:         inbound,
-		outbound:        !inbound,
-		connectionTime:  time,
-		NetMagic:        p2p.MainNet,
-		selectedForSync: false,
-		blockchain:      peerMgr.chain,
-		peerman:         peerMgr,
-		bloomFilter:     make([]uint8, bloomSize),
+		id:               id,
+		log:              log,
+		conn:             conn,
+		address:          addr,
+		inbound:          inbound,
+		outbound:         !inbound,
+		connectionTime:   time,
+		NetMagic:         p2p.MainNet,
+		selectedForSync:  false,
+		blockchain:       peerMgr.chain,
+		peerman:          peerMgr,
+		voteBloomFilter:  bloom.NewBloomFilter(voteBloomFilterSize),
+		blockBloomFilter: bloom.NewBloomFilter(blockBloomFilterSize),
 	}
 	return peer
 }

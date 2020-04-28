@@ -189,12 +189,14 @@ func (m *Miner) Start() error {
 
 				view, err := s.GetSubView(tipHash)
 				if err != nil {
-					panic(err)
+					m.log.Error(err)
+					return
 				}
 
 				state, err := s.GetStateForHashAtSlot(tipHash, slotToPropose, &view, &m.params)
 				if err != nil {
-					panic(err)
+					m.log.Error(err)
+					return
 				}
 
 				slotIndex := (slotToPropose + m.params.EpochLength - 1) % m.params.EpochLength
@@ -222,17 +224,23 @@ func (m *Miner) Start() error {
 
 					blockSig, err := bls.Sign(k, blockHash[:])
 					if err != nil {
-						panic(err)
+						m.log.Error(err)
+						return
 					}
 					randaoSig, err := bls.Sign(k, randaoHash[:])
 					if err != nil {
-						panic(err)
+						m.log.Error(err)
+						return
 					}
 
 					block.Signature = blockSig.Serialize()
 					block.RandaoSignature = randaoSig.Serialize()
 					if err := m.chain.ProcessBlock(&block); err != nil {
-						panic(err)
+						m.log.Error(err)
+						return
+					}
+					if err := m.peersMan.SubmitBlock(&block); err != nil {
+						m.log.Error(err)
 					}
 				}
 

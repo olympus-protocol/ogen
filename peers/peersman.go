@@ -213,6 +213,18 @@ func (pm *PeerMan) SubmitVote(vote *primitives.SingleValidatorVote) error {
 	return nil
 }
 
+// SubmitBlock sends a block to peers.
+func (pm *PeerMan) SubmitBlock(block *primitives.Block) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
+	for _, p := range pm.peers {
+		if err := p.submitBlock(block); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (pm *PeerMan) Handshake(p *Peer) {
 	pm.log.Infof("new peer handshaked addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
 	pm.addPeer(p)
