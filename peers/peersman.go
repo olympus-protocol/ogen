@@ -12,6 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
@@ -45,7 +46,8 @@ type PeerMan struct {
 	peersDB     *filedb.FileDB
 	bannedPeers *filedb.FileDB
 	// Services Pointers
-	chain *chain.Blockchain
+	chain   *chain.Blockchain
+	mempool *Mempool
 }
 
 func (pm *PeerMan) listener() {
@@ -200,6 +202,17 @@ func (pm *PeerMan) Disconnect(p *Peer) {
 	pm.removePeer(p)
 }
 
+func (pm *PeerMan) SubmitVote(vote *primitives.SingleValidatorVote) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
+	for _, p := range pm.peers {
+		if err := p.submitVote(vote); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (pm *PeerMan) Handshake(p *Peer) {
 	pm.log.Infof("new peer handshaked addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
 	pm.addPeer(p)
@@ -266,7 +279,7 @@ func (pm *PeerMan) GetPeersCount() int32 {
 	return int32(count)
 }
 
-func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain) (*PeerMan, error) {
+func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, mempool *Mempool) (*PeerMan, error) {
 	peersDbMetaData := filedb.MetaData{
 		Version:     100000,
 		Timestamp:   time.Now().Unix(),
@@ -297,6 +310,7 @@ func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockcha
 		peersDB:      peersdb,
 		bannedPeers:  bansDB,
 		chain:        chain,
+		mempool:      mempool,
 	}
 	return peersMan, nil
 }

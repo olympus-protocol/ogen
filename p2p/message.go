@@ -17,6 +17,7 @@ const (
 	MsgBlocksCmd    = "blocks"
 	MsgBlocksInvCmd = "blocksinv"
 	MsgTxCmd        = "tx"
+	MsgVoteCmd      = "vote"
 )
 
 const MessageHeaderSize = 24
@@ -57,6 +58,8 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgGetBlocks{}
 	case MsgTxCmd:
 		msg = &MsgTx{}
+	case MsgVoteCmd:
+		msg = &MsgVotes{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

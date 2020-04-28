@@ -1,7 +1,10 @@
-package miner
+package peers
 
 import (
+	"math/big"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
@@ -62,7 +65,42 @@ type Mempool struct {
 	pool     map[chainhash.Hash]*mempoolVote
 }
 
-func (m *Mempool) add(vote *primitives.SingleValidatorVote, outOf uint32) {
+func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]primitives.SingleValidatorVote, len(vals))
+	perm := r.Perm(len(vals))
+	for i, randIndex := range perm {
+		ret[i] = vals[randIndex]
+	}
+	return ret
+}
+
+func pickPercent(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
+	num := int(pct * float32(len(vs)))
+	shuffledVotes := shuffleVotes(vs)
+	return shuffledVotes[:num]
+}
+
+func (m *Mempool) GetVotesNotInBloom(bloom []uint8) []primitives.SingleValidatorVote {
+	votes := make([]primitives.SingleValidatorVote, 0)
+	for _, vs := range m.pool {
+		for _, v := range vs.individualVotes {
+			vh := v.Hash()
+			vhBig := new(big.Int).SetBytes(vh[:])
+			vhBig.Mod(vhBig, big.NewInt(bloomSize))
+			bloomIdx := vhBig.Uint64()
+
+			if bloom[bloomIdx/8]&(1<<uint(bloomIdx%8)) != 0 {
+				continue
+			}
+
+			votes = append(votes, *v)
+		}
+	}
+	return votes
+}
+
+func (m *Mempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	voteHash := vote.Data.Hash()
@@ -77,7 +115,7 @@ func (m *Mempool) add(vote *primitives.SingleValidatorVote, outOf uint32) {
 	}
 }
 
-func (m *Mempool) get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
+func (m *Mempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
 	votes := make([]primitives.MultiValidatorVote, 0)
 	for i := range m.pool {
 		if m.pool[i].voteData.Slot < slot-p.MinAttestationInclusionDelay {
@@ -93,7 +131,7 @@ func (m *Mempool) get(slot uint64, p *params.ChainParams) []primitives.MultiVali
 	return votes
 }
 
-func (m *Mempool) remove(b *primitives.Block) {
+func (m *Mempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	for _, v := range b.Votes {

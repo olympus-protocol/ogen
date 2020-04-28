@@ -90,13 +90,14 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
-	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch)
+	m := peers.NewMempool()
+	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, m)
 	if err != nil {
 		return nil, err
 	}
 	var min *miner.Miner
 	if configParams.MiningEnabled {
-		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan, keys)
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan, keys, m)
 		if err != nil {
 			return nil, err
 		}

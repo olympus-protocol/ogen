@@ -61,6 +61,8 @@ func (a *AcceptedVoteInfo) Deserialize(r io.Reader) (err error) {
 	return serializer.ReadElements(r, &a.Proposer, &a.InclusionDelay)
 }
 
+const MaxVoteDataSize = 8 + 8 + 32 + 8 + 32 + 32
+
 // VoteData is the part of a vote that needs to be signed.
 type VoteData struct {
 	// Slot is the slot the validators were assigned.
@@ -111,10 +113,17 @@ type SingleValidatorVote struct {
 	Data      VoteData
 	Signature bls.Signature
 	Offset    uint32
+	OutOf     uint32
+}
+
+func (v *SingleValidatorVote) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = v.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
 }
 
 // Serialize serializes a SingleValidatorVote to a writer.
-func (v *SingleValidatorVote) Serialize(w io.Writer) error {
+func (v *SingleValidatorVote) Encode(w io.Writer) error {
 	if err := v.Data.Serialize(w); err != nil {
 		return err
 	}
@@ -122,11 +131,11 @@ func (v *SingleValidatorVote) Serialize(w io.Writer) error {
 	if _, err := w.Write(sig[:]); err != nil {
 		return err
 	}
-	return serializer.WriteElements(w, v.Offset)
+	return serializer.WriteElements(w, v.Offset, v.OutOf)
 }
 
 // Deserialize deserializes a SingleValidatorVote from a reader.
-func (v *SingleValidatorVote) Deserialize(r io.Reader) error {
+func (v *SingleValidatorVote) Decode(r io.Reader) error {
 	if err := v.Data.Deserialize(r); err != nil {
 		return err
 	}
@@ -134,7 +143,12 @@ func (v *SingleValidatorVote) Deserialize(r io.Reader) error {
 	if _, err := r.Read(sigBytes[:]); err != nil {
 		return err
 	}
-	return serializer.ReadElements(r, &v.Offset)
+	sig, err := bls.DeserializeSignature(sigBytes)
+	if err != nil {
+		return err
+	}
+	v.Signature = *sig
+	return serializer.ReadElements(r, &v.Offset, &v.OutOf)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.

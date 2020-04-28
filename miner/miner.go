@@ -63,11 +63,11 @@ type Miner struct {
 	context    context.Context
 	Stop       context.CancelFunc
 
-	mempool *Mempool
+	mempool *peers.Mempool
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, mempool *peers.Mempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	miner = &Miner{
 		log:        config.Log,
@@ -80,7 +80,7 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 		keystore:   keys,
 		context:    ctx,
 		Stop:       cancel,
-		mempool:    NewMempool(),
+		mempool:    mempool,
 	}
 	chain.Notify(miner)
 	return miner, nil
@@ -88,7 +88,7 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 
 // NewTip implements the BlockchainNotifee interface.
 func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
-	m.mempool.remove(block)
+	m.mempool.Remove(block)
 }
 
 func (m *Miner) getCurrentSlot() uint64 {
@@ -167,9 +167,12 @@ func (m *Miner) Start() error {
 							Data:      data,
 							Signature: *sig,
 							Offset:    i - min,
+							OutOf:     max - min,
 						}
 
-						m.mempool.add(&vote, max-min)
+						m.mempool.Add(&vote, max-min)
+
+						m.peersMan.SubmitVote(&vote)
 					}
 				}
 				slotToVote++
@@ -200,7 +203,7 @@ func (m *Miner) Start() error {
 				proposer := state.ValidatorRegistry[proposerIndex]
 
 				if k, found := m.keystore.GetKey(&proposer); found {
-					votes := m.mempool.get(slotToPropose, &m.params)
+					votes := m.mempool.Get(slotToPropose, &m.params)
 
 					block := primitives.Block{
 						Header: primitives.BlockHeader{

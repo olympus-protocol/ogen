@@ -3,6 +3,7 @@ package peers
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"net"
 	"strconv"
 	"strings"
@@ -58,8 +59,10 @@ type Peer struct {
 	// For syncMan sync peer selector
 	selectedForSync bool
 
-	blockchain *chain.Blockchain
-	peerman    *PeerMan
+	blockchain  *chain.Blockchain
+	peerman     *PeerMan
+	bloomFilter []uint8
+	bloomLock   sync.Mutex
 }
 
 func (p *Peer) Start(lastBlockHeight uint64) {
@@ -82,7 +85,7 @@ func (p *Peer) Start(lastBlockHeight uint64) {
 	}()
 	// Init ping/pong
 	go func() {
-		err := p.pingRoutine()
+		err := p.peerRoutine()
 		if err != nil {
 			p.log.Errorf("disconnecting peer %v", p.GetID())
 			p.peerman.Disconnect(p)
@@ -207,17 +210,44 @@ func (p *Peer) updateStats(msgVersion *p2p.MsgVersion) {
 	p.peerLock.Unlock()
 }
 
-func (p *Peer) pingRoutine() error {
-	p.log.Tracef("starting ping routine for peer %v", p.GetID())
+func (p *Peer) sendMempool() error {
+	p.bloomLock.Lock()
+	possibleVotes := p.peerman.mempool.GetVotesNotInBloom(p.bloomFilter)
+	defer p.bloomLock.Unlock()
+	// send 50% of these
+	votesToSend := pickPercent(possibleVotes, 0.5)
+	for _, v := range votesToSend {
+		vh := v.Hash()
+		vhBig := new(big.Int).SetBytes(vh[:])
+		vhBig.Mod(vhBig, big.NewInt(bloomSize))
+		bloomIdx := vhBig.Uint64()
+
+		p.bloomFilter[bloomIdx/8] |= (1 << uint(bloomIdx%8))
+	}
+
+	return p.writeMessage(&p2p.MsgVotes{
+		Votes: votesToSend,
+	})
+}
+
+func (p *Peer) peerRoutine() error {
+	p.log.Tracef("starting peer routine for peer %v", p.GetID())
+	pingTicker := time.NewTicker(15 * time.Second)
+	mempoolTicker := time.NewTicker(5 * time.Minute)
 	for {
 		select {
 		case <-p.closeSignal:
 			break
-		default:
-			time.Sleep(15 * time.Second)
+		case <-pingTicker.C:
 			err := p.ping()
 			if err != nil {
 				p.log.Errorf("unable to ping peer %v", p.GetID())
+				return err
+			}
+		case <-mempoolTicker.C:
+			err := p.sendMempool()
+			if err != nil {
+				p.log.Errorf("unable to send mempool: %s", err)
 				return err
 			}
 		}
@@ -318,6 +348,26 @@ func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
 	})
 }
 
+func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
+	vh := vote.Hash()
+	vhBig := new(big.Int).SetBytes(vh[:])
+	vhBig.Mod(vhBig, big.NewInt(bloomSize))
+	bloomIdx := vhBig.Uint64()
+
+	p.bloomLock.Lock()
+	if p.bloomFilter[bloomIdx/8]&(1<<uint(bloomIdx%8)) != 0 {
+		// already sent it
+		return nil
+	}
+
+	p.bloomFilter[bloomIdx/8] |= (1 << uint(bloomIdx%8))
+	p.bloomLock.Unlock()
+
+	return p.writeMessage(&p2p.MsgVotes{
+		Votes: []primitives.SingleValidatorVote{*vote},
+	})
+}
+
 func (p *Peer) messageListener() error {
 	p.log.Tracef("starting message listener for peer %v", p.GetID())
 	for {
@@ -378,6 +428,12 @@ func (p *Peer) messageListener() error {
 				// p.ManChan <- newBlocksInvMsg(p, msg)
 
 			// Tx handlers
+			case *p2p.MsgVotes:
+				p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
+				for _, v := range msg.Votes {
+					p.log.Infof("adding vote %s", v.Hash())
+					p.peerman.mempool.Add(&v, v.OutOf)
+				}
 			case *p2p.MsgTx:
 				p.log.Tracef("received tx msg from peer %v", p.GetID())
 				// p.ManChan <- newTxMsg(p, msg)
@@ -442,6 +498,9 @@ func (p *Peer) SetPeerSync(syncing bool) {
 	return
 }
 
+// bloomSize is prime order
+const bloomSize = 1024 * 1024
+
 func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
 	peer := &Peer{
 		id:              id,
@@ -455,6 +514,7 @@ func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, ti
 		selectedForSync: false,
 		blockchain:      peerMgr.chain,
 		peerman:         peerMgr,
+		bloomFilter:     make([]uint8, bloomSize),
 	}
 	return peer
 }
