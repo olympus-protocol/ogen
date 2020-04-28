@@ -233,6 +233,27 @@ func (s *StateService) Add(block *primitives.Block) (*primitives.State, error) {
 	return &newState, nil
 }
 
+func (s *StateService) RemoveBeforeSlot(slot uint64) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	numRemoved := 0
+
+	for i := range s.stateMap {
+		row, found := s.blockIndex.Get(i)
+		if !found {
+			delete(s.stateMap, i)
+			numRemoved++
+			continue
+		}
+
+		if row.Slot < slot {
+			delete(s.stateMap, i)
+			numRemoved++
+			continue
+		}
+	}
+}
+
 // GetRowByHash gets a specific row by hash.
 func (s *StateService) GetRowByHash(h chainhash.Hash) (*index.BlockRow, bool) {
 	return s.blockIndex.Get(h)

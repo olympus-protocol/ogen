@@ -252,6 +252,8 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
+		ch.state.RemoveBeforeSlot(newState.FinalizedEpoch * ch.params.EpochLength)
+
 		justifiedState, found := ch.state.GetStateForHash(newState.JustifiedEpochHash)
 		if !found {
 			return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
