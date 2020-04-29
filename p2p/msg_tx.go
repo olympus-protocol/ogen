@@ -31,7 +31,3 @@ func (m *MsgTx) Command() string {
 func (m *MsgTx) MaxPayloadLength() uint32 {
 	return maxTxSize
 }
-
-func (m *MsgTx) AddPayload(payload []byte) {
-	m.Payload = payload
-}

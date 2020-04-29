@@ -63,11 +63,11 @@ type Miner struct {
 	context    context.Context
 	Stop       context.CancelFunc
 
-	mempool *peers.Mempool
+	mempool *peers.VoteMempool
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, mempool *peers.Mempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, mempool *peers.VoteMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	miner = &Miner{
 		log:        config.Log,

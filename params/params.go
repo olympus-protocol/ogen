@@ -30,6 +30,7 @@ type ChainParams struct {
 	EjectionBalance              uint64
 	MaxBalanceChurnQuotient      uint64
 	MaxVotesPerBlock             uint64
+	MaxTxsPerBlock               uint64
 	LatestBlockRootsLength       uint64
 	MinAttestationInclusionDelay uint64
 	DepositAmount                uint64
@@ -82,6 +83,7 @@ var Mainnet = ChainParams{
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 60,
+	MaxTxsPerBlock:               1000,
 }
 
 var TestNet = ChainParams{
@@ -116,4 +118,5 @@ var TestNet = ChainParams{
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
+	MaxTxsPerBlock:               1000,
 }

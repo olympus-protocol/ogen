@@ -41,7 +41,7 @@ func (ip *InitializationPubkey) UnmarshalJSON(data []byte) error {
 // ValidatorInitialization is the parameters needed to initialize validators.
 type ValidatorInitialization struct {
 	PubKey       InitializationPubkey `json:"pubkey"`
-	PayeeAddress string `json:"withdraw_address"`
+	PayeeAddress string               `json:"withdraw_address"`
 }
 
 // InitializationParameters are used in conjunction with ChainParams to generate
@@ -70,7 +70,8 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 
 	return &State{
 		UtxoState: UtxoState{
-			UTXOs: make(map[chainhash.Hash]Utxo),
+			Balances: make(map[[20]byte]uint64),
+			Nonces:   make(map[[20]byte]uint64),
 		},
 		GovernanceState: GovernanceState{
 			Proposals: make(map[chainhash.Hash]GovernanceProposal),

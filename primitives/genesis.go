@@ -10,6 +10,7 @@ import (
 var coinbaseTx = Tx{
 	TxVersion: 1,
 	TxType:    TxCoins,
+	Payload:   &GenesisPayload{},
 }
 
 var genesisHash = chainhash.Hash([chainhash.HashSize]byte{

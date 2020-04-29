@@ -20,11 +20,12 @@ type BlockHeader struct {
 	Timestamp      time.Time
 	Slot           uint64
 	StateRoot      chainhash.Hash
+	FeeAddress     [20]byte
 }
 
 func (bh *BlockHeader) Serialize(w io.Writer) error {
 	sec := uint32(bh.Timestamp.Unix())
-	err := serializer.WriteElements(w, bh.Version, bh.Nonce, bh.TxMerkleRoot, bh.VoteMerkleRoot, bh.PrevBlockHash, bh.Slot, bh.StateRoot, sec)
+	err := serializer.WriteElements(w, bh.Version, bh.FeeAddress, bh.Nonce, bh.TxMerkleRoot, bh.VoteMerkleRoot, bh.PrevBlockHash, bh.Slot, bh.StateRoot, sec)
 	if err != nil {
 		return err
 	}
@@ -32,7 +33,7 @@ func (bh *BlockHeader) Serialize(w io.Writer) error {
 }
 
 func (bh *BlockHeader) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &bh.Version, &bh.Nonce, &bh.TxMerkleRoot, &bh.VoteMerkleRoot, &bh.PrevBlockHash, &bh.Slot, &bh.StateRoot, (*serializer.Uint32Time)(&bh.Timestamp))
+	err := serializer.ReadElements(r, &bh.Version, &bh.FeeAddress, &bh.Nonce, &bh.TxMerkleRoot, &bh.VoteMerkleRoot, &bh.PrevBlockHash, &bh.Slot, &bh.StateRoot, (*serializer.Uint32Time)(&bh.Timestamp))
 	if err != nil {
 		return err
 	}

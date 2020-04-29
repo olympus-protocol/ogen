@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -53,127 +54,73 @@ func NewOutPoint(hash chainhash.Hash, index int64) *OutPoint {
 	}
 }
 
-type Utxo struct {
-	OutPoint          OutPoint
-	PrevInputsPubKeys [][48]byte
-	Owner             string
-	Amount            int64
-}
-
-// Serialize serializes the UtxoRow to a writer.
-func (u *Utxo) Serialize(w io.Writer) error {
-	err := u.OutPoint.Serialize(w)
-	if err != nil {
-		return err
-	}
-	err = serializer.WriteVarString(w, u.Owner)
-	if err != nil {
-		return err
-	}
-	err = serializer.WriteVarInt(w, uint64(len(u.PrevInputsPubKeys)))
-	if err != nil {
-		return err
-	}
-	for _, pub := range u.PrevInputsPubKeys {
-		err = serializer.WriteElements(w, pub)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(u.Amount))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Deserialize deserializes a UtxoRow from a reader.
-func (u *Utxo) Deserialize(r io.Reader) error {
-	err := u.OutPoint.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	u.Owner, err = serializer.ReadVarString(r)
-	if err != nil {
-		return err
-	}
-	count, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	u.PrevInputsPubKeys = make([][48]byte, 0, count)
-	for i := uint64(0); i < count; i++ {
-		var pubKey [48]byte
-		err = serializer.ReadElement(r, &pubKey)
-		if err != nil {
-			return err
-		}
-		u.PrevInputsPubKeys = append(u.PrevInputsPubKeys, pubKey)
-	}
-	amount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	u.Amount = int64(amount)
-	return nil
-}
-
-// Hash calculates the hash of a UTXO.
-func (u *Utxo) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = u.OutPoint.Serialize(buf)
-	return chainhash.DoubleHashH(buf.Bytes())
-}
-
-// Copy returns a copy of the UTXO.
-func (u *Utxo) Copy() Utxo {
-	u2 := *u
-
-	u2.PrevInputsPubKeys = make([][48]byte, len(u.PrevInputsPubKeys))
-	for i, p := range u.PrevInputsPubKeys {
-		copy(u2.PrevInputsPubKeys[i][:], p[:])
-	}
-
-	return u2
-}
-
 // UtxoState is the state that we
 type UtxoState struct {
-	UTXOs map[chainhash.Hash]Utxo
+	Balances map[[20]byte]uint64
+	Nonces   map[[20]byte]uint64
+}
+
+// ApplyTransaction applies a transaction to the coin state.
+func (u *UtxoState) ApplyTransaction(tx *CoinPayload, blockWithdrawalAddress [20]byte) error {
+	pkh := tx.FromPubkeyHash()
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+	}
+
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+	}
+
+	if err := tx.VerifySig(); err != nil {
+		return err
+	}
+
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
+	return nil
 }
 
 // Copy copies UtxoState and returns a new one.
 func (u *UtxoState) Copy() UtxoState {
 	u2 := *u
-	u2.UTXOs = make(map[chainhash.Hash]Utxo)
-	for i, c := range u.UTXOs {
-		u2.UTXOs[i] = c.Copy()
+	u2.Balances = make(map[[20]byte]uint64)
+	u2.Nonces = make(map[[20]byte]uint64)
+	for i, c := range u.Balances {
+		u2.Balances[i] = c
+	}
+	for i, c := range u.Nonces {
+		u2.Nonces[i] = c
 	}
 	return u2
 }
 
-// Have checks if a UTXO exists.
-func (u *UtxoState) Have(c chainhash.Hash) bool {
-	_, found := u.UTXOs[c]
-	return found
-}
-
-// Get gets the UTXO from state.
-func (u *UtxoState) Get(c chainhash.Hash) Utxo {
-	return u.UTXOs[c]
-}
-
 func (u *UtxoState) Serialize(w io.Writer) error {
-	if err := serializer.WriteVarInt(w, uint64(len(u.UTXOs))); err != nil {
+	if err := serializer.WriteVarInt(w, uint64(len(u.Balances))); err != nil {
 		return err
 	}
 
-	for h, utxo := range u.UTXOs {
+	for h, b := range u.Balances {
 		if _, err := w.Write(h[:]); err != nil {
 			return err
 		}
 
-		if err := utxo.Serialize(w); err != nil {
+		if err := serializer.WriteElement(w, b); err != nil {
+			return err
+		}
+	}
+
+	if err := serializer.WriteVarInt(w, uint64(len(u.Nonces))); err != nil {
+		return err
+	}
+
+	for h, b := range u.Nonces {
+		if _, err := w.Write(h[:]); err != nil {
+			return err
+		}
+
+		if err := serializer.WriteElement(w, b); err != nil {
 			return err
 		}
 	}
@@ -182,28 +129,49 @@ func (u *UtxoState) Serialize(w io.Writer) error {
 }
 
 func (u *UtxoState) Deserialize(r io.Reader) error {
-	if u.UTXOs == nil {
-		u.UTXOs = make(map[chainhash.Hash]Utxo)
+	if u.Balances == nil {
+		u.Balances = make(map[[20]byte]uint64)
+	}
+	if u.Nonces == nil {
+		u.Nonces = make(map[[20]byte]uint64)
 	}
 
-	numUtxos, err := serializer.ReadVarInt(r)
-
+	numBalances, err := serializer.ReadVarInt(r)
 	if err != nil {
 		return err
 	}
 
-	for i := uint64(0); i < numUtxos; i++ {
-		var hash chainhash.Hash
+	for i := uint64(0); i < numBalances; i++ {
+		var hash [20]byte
 		if _, err := r.Read(hash[:]); err != nil {
 			return err
 		}
 
-		var utxo Utxo
-		if err := utxo.Deserialize(r); err != nil {
+		var balance uint64
+		if err := serializer.ReadElement(r, &balance); err != nil {
 			return err
 		}
 
-		u.UTXOs[hash] = utxo
+		u.Balances[hash] = balance
+	}
+
+	numNonces, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+
+	for i := uint64(0); i < numNonces; i++ {
+		var hash [20]byte
+		if _, err := r.Read(hash[:]); err != nil {
+			return err
+		}
+
+		var nonce uint64
+		if err := serializer.ReadElement(r, &nonce); err != nil {
+			return err
+		}
+
+		u.Nonces[hash] = nonce
 	}
 
 	return nil

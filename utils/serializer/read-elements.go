@@ -96,6 +96,12 @@ func ReadElement(r io.Reader, element interface{}) error {
 			return err
 		}
 		return nil
+	case *[20]byte:
+		_, err := io.ReadFull(r, e[:])
+		if err != nil {
+			return err
+		}
+		return nil
 
 	case *chainhash.Hash:
 		_, err := io.ReadFull(r, e[:])

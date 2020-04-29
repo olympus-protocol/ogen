@@ -60,7 +60,7 @@ func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
 	}
 }
 
-type Mempool struct {
+type VoteMempool struct {
 	poolLock sync.RWMutex
 	pool     map[chainhash.Hash]*mempoolVote
 }
@@ -81,7 +81,7 @@ func pickPercent(vs []primitives.SingleValidatorVote, pct float32) []primitives.
 	return shuffledVotes[:num]
 }
 
-func (m *Mempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
+func (m *VoteMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
 	votes := make([]primitives.SingleValidatorVote, 0)
 	for _, vs := range m.pool {
 		for _, v := range vs.individualVotes {
@@ -96,7 +96,7 @@ func (m *Mempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.Sing
 	return votes
 }
 
-func (m *Mempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
+func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	voteHash := vote.Data.Hash()
@@ -109,7 +109,7 @@ func (m *Mempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
 	}
 }
 
-func (m *Mempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
+func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
 	votes := make([]primitives.MultiValidatorVote, 0)
 	for i := range m.pool {
 		if m.pool[i].voteData.Slot < slot-p.MinAttestationInclusionDelay {
@@ -125,7 +125,7 @@ func (m *Mempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiVali
 	return votes
 }
 
-func (m *Mempool) Remove(b *primitives.Block) {
+func (m *VoteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	for _, v := range b.Votes {
@@ -143,8 +143,8 @@ func (m *Mempool) Remove(b *primitives.Block) {
 }
 
 // NewMempool creates a new mempool.
-func NewMempool() *Mempool {
-	return &Mempool{
+func NewMempool() *VoteMempool {
+	return &VoteMempool{
 		pool: make(map[chainhash.Hash]*mempoolVote),
 	}
 }

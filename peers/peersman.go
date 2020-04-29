@@ -47,7 +47,7 @@ type PeerMan struct {
 	bannedPeers *filedb.FileDB
 	// Services Pointers
 	chain   *chain.Blockchain
-	mempool *Mempool
+	mempool *VoteMempool
 }
 
 func (pm *PeerMan) listener() {
@@ -291,7 +291,7 @@ func (pm *PeerMan) GetPeersCount() int32 {
 	return int32(count)
 }
 
-func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, mempool *Mempool) (*PeerMan, error) {
+func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, mempool *VoteMempool) (*PeerMan, error) {
 	peersDbMetaData := filedb.MetaData{
 		Version:     100000,
 		Timestamp:   time.Now().Unix(),

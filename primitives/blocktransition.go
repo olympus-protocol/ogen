@@ -115,6 +115,10 @@ func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, propos
 
 // ProcessBlock runs a block transition on the state and mutates state.
 func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
+	if b.Header.Slot != s.Slot {
+		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
+	}
+
 	voteMerkleRoot := b.VotesMerkleRoot()
 	transactionMerkleRoot := b.TransactionMerkleRoot()
 
@@ -124,10 +128,6 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	if !b.Header.VoteMerkleRoot.IsEqual(&voteMerkleRoot) {
 		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
-	}
-
-	if b.Header.Slot != s.Slot {
-		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
 	}
 
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
@@ -143,6 +143,17 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSig, err := bls.DeserializeSignature(b.RandaoSignature)
 	if err != nil {
 		return err
+	}
+
+	for _, tx := range b.Txs {
+		switch p := tx.Payload.(type) {
+		case *CoinPayload:
+			if err := s.UtxoState.ApplyTransaction(p, b.Header.FeeAddress); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("payload missing from transaction")
+		}
 	}
 
 	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
