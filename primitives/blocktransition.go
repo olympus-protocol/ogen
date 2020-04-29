@@ -115,6 +115,17 @@ func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, propos
 
 // ProcessBlock runs a block transition on the state and mutates state.
 func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
+	voteMerkleRoot := b.VotesMerkleRoot()
+	transactionMerkleRoot := b.TransactionMerkleRoot()
+
+	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
+		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
+	}
+
+	if !b.Header.VoteMerkleRoot.IsEqual(&voteMerkleRoot) {
+		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
+	}
+
 	if b.Header.Slot != s.Slot {
 		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
 	}

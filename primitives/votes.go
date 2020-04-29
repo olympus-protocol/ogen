@@ -158,6 +158,13 @@ type MultiValidatorVote struct {
 	ParticipationBitfield []uint8
 }
 
+// Hash calculates the hash of the vote.
+func (v *MultiValidatorVote) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = v.Serialize(buf)
+	return chainhash.HashH(buf.Bytes())
+}
+
 // Serialize serializes a MultiValidatorVote to a writer.
 func (v *MultiValidatorVote) Serialize(w io.Writer) error {
 	if err := v.Data.Serialize(w); err != nil {

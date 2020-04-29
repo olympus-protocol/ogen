@@ -24,10 +24,11 @@ var genesisHash = chainhash.Hash([chainhash.HashSize]byte{
 func GetGenesisBlock(params params.ChainParams) Block {
 	return Block{
 		Header: BlockHeader{
-			Version:       1,
-			PrevBlockHash: chainhash.Hash{},
-			MerkleRoot:    chainhash.Hash{},
-			Timestamp:     time.Unix(0x0, 0),
+			Version:        1,
+			PrevBlockHash:  chainhash.Hash{},
+			TxMerkleRoot:   chainhash.Hash{},
+			VoteMerkleRoot: chainhash.Hash{},
+			Timestamp:      time.Unix(0x0, 0),
 		},
 		Txs: []Tx{coinbaseTx},
 	}

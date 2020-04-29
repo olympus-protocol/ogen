@@ -2,9 +2,7 @@ package primitives
 
 import (
 	"io"
-	"time"
 
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
@@ -22,20 +20,44 @@ type Block struct {
 	RandaoSignature [96]byte
 }
 
-func (b *Block) MinerSig() (*bls.Signature, error) {
-	return bls.DeserializeSignature(b.Signature)
-}
-
-func (b *Block) GetTime() time.Time {
-	return b.Header.Timestamp
-}
-
-func (b *Block) GetTx(index int32) *Tx {
-	return &b.Txs[index]
-}
-
 func (b *Block) Hash() chainhash.Hash {
 	return b.Header.Hash()
+}
+
+func merkleRootTxs(txs []Tx) chainhash.Hash {
+	if len(txs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(txs) == 1 {
+		return txs[0].Hash()
+	}
+	mid := len(txs) / 2
+	h1 := merkleRootTxs(txs[:mid])
+	h2 := merkleRootTxs(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+func (b *Block) TransactionMerkleRoot() chainhash.Hash {
+	return merkleRootTxs(b.Txs)
+}
+
+func merkleRootVotes(votes []MultiValidatorVote) chainhash.Hash {
+	if len(votes) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(votes) == 1 {
+		return votes[0].Hash()
+	}
+	mid := len(votes) / 2
+	h1 := merkleRootVotes(votes[:mid])
+	h2 := merkleRootVotes(votes[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+func (b *Block) VotesMerkleRoot() chainhash.Hash {
+	return merkleRootVotes(b.Votes)
 }
 
 func (m *Block) Encode(w io.Writer) error {

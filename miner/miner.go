@@ -211,13 +211,15 @@ func (m *Miner) Start() error {
 						Header: primitives.BlockHeader{
 							Version:       0,
 							Nonce:         0,
-							MerkleRoot:    chainhash.Hash{},
 							PrevBlockHash: tipHash,
 							Timestamp:     time.Now(),
 							Slot:          slotToPropose,
 						},
 						Votes: votes,
 					}
+
+					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
+					block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
 
 					blockHash := block.Hash()
 					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
