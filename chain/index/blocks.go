@@ -123,7 +123,7 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	}
 
 	row := &BlockRow{
-		StateRoot: block.StateRoot,
+		StateRoot: block.Header.StateRoot,
 		Height:    prev.Height + 1,
 		Parent:    prev,
 		Hash:      block.Header.Hash(),

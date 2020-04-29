@@ -17,7 +17,6 @@ const (
 type Block struct {
 	Header          BlockHeader
 	Votes           []MultiValidatorVote
-	StateRoot       chainhash.Hash
 	Txs             []Tx
 	Signature       [96]byte
 	RandaoSignature [96]byte
@@ -64,7 +63,7 @@ func (m *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
-	err = serializer.WriteElements(w, m.Signature, m.RandaoSignature, m.StateRoot)
+	err = serializer.WriteElements(w, m.Signature, m.RandaoSignature)
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,7 @@ func (m *Block) Decode(r io.Reader) error {
 			return err
 		}
 	}
-	err = serializer.ReadElements(r, &m.Signature, &m.RandaoSignature, &m.StateRoot)
+	err = serializer.ReadElements(r, &m.Signature, &m.RandaoSignature)
 	if err != nil {
 		return err
 	}
