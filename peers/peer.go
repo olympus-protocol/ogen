@@ -448,7 +448,7 @@ func (p *Peer) messageListener() error {
 
 			// Tx handlers
 			case *p2p.MsgVotes:
-				p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
+				// p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
 				for _, v := range msg.Votes {
 					p.voteBloomFilter.Add(v.Hash())
 					p.peerman.mempool.Add(&v, v.OutOf)

@@ -166,16 +166,16 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	}
 
 	// a. verify transactions
-	ch.log.Debugf("tx inventory created types to verify: %v", len(txPayloadInv.txs))
+	// ch.log.Debugf("tx inventory created types to verify: %v", len(txPayloadInv.txs))
 	err = ch.verifyTx(oldState, txPayloadInv)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
-	ch.log.Debugf("tx verification finished successfully")
+	// ch.log.Debugf("tx verification finished successfully")
 
 	// b. apply block transition to state
-	ch.log.Debugf("attempting to apply block to state")
+	// ch.log.Debugf("attempting to apply block to state")
 	// TODO: better fork choice here
 	newState, err := ch.State().Add(block)
 	if err != nil {
