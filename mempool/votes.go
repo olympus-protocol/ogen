@@ -1,4 +1,4 @@
-package peers
+package mempool
 
 import (
 	"math/rand"
@@ -75,7 +75,7 @@ func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleVali
 	return ret
 }
 
-func pickPercent(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
+func PickPercentVotes(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
 	num := int(pct * float32(len(vs)))
 	shuffledVotes := shuffleVotes(vs)
 	return shuffledVotes[:num]
@@ -142,8 +142,8 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 
 }
 
-// NewMempool creates a new mempool.
-func NewMempool() *VoteMempool {
+// NewVoteMempool creates a new mempool.
+func NewVoteMempool() *VoteMempool {
 	return &VoteMempool{
 		pool: make(map[chainhash.Hash]*mempoolVote),
 	}

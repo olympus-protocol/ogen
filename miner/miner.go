@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -63,11 +64,11 @@ type Miner struct {
 	context    context.Context
 	Stop       context.CancelFunc
 
-	mempool *peers.VoteMempool
+	mempool *mempool.VoteMempool
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, mempool *peers.VoteMempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, mempool *mempool.VoteMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	miner = &Miner{
 		log:        config.Log,

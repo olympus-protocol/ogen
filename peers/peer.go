@@ -13,6 +13,7 @@ import (
 	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -213,7 +214,7 @@ func (p *Peer) updateStats(msgVersion *p2p.MsgVersion) {
 func (p *Peer) sendMempool() error {
 	possibleVotes := p.peerman.mempool.GetVotesNotInBloom(p.voteBloomFilter)
 	// send 50% of these
-	votesToSend := pickPercent(possibleVotes, 0.5)
+	votesToSend := mempool.PickPercentVotes(possibleVotes, 0.5)
 	for _, v := range votesToSend {
 		p.voteBloomFilter.Add(v.Hash())
 	}

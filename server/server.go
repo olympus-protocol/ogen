@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/explorer"
 	"github.com/olympus-protocol/ogen/gov"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
@@ -88,7 +89,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
-	m := peers.NewMempool()
+	m := mempool.NewVoteMempool()
 	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, m)
 	if err != nil {
 		return nil, err
