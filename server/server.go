@@ -9,7 +9,6 @@ import (
 	"github.com/olympus-protocol/ogen/explorer"
 	"github.com/olympus-protocol/ogen/gov"
 	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
@@ -28,7 +27,6 @@ type Server struct {
 	PeerMan   *peers.PeerMan
 	WalletMan *wallet.WalletMan
 	Miner     *miner.Miner
-	Mempool   *mempool.Mempool
 	GovMan    *gov.GovMan
 	WorkerMan *workers.WorkerMan
 	UsersMan  *users.UserMan
@@ -102,7 +100,6 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 			return nil, err
 		}
 	}
-	txPool := mempool.InitMempool(loadMempoolConfig(configParams, logger), currParams)
 	workersMan := workers.NewWorkersMan(loadWorkersConfig(configParams, logger), currParams)
 	govMan := gov.NewGovMan(loadGovConfig(configParams, logger), currParams)
 	usersMan := users.NewUsersMan(loadUsersConfig(configParams, logger), currParams)
@@ -114,7 +111,6 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 		PeerMan:   peersMan,
 		WalletMan: walletsMan,
 		Miner:     min,
-		Mempool:   txPool,
 		WorkerMan: workersMan,
 		GovMan:    govMan,
 		UsersMan:  usersMan,
@@ -139,13 +135,6 @@ func loadUsersConfig(config *config.Config, logger *logger.Logger) users.Config 
 
 func loadWorkersConfig(config *config.Config, logger *logger.Logger) workers.Config {
 	cfg := workers.Config{
-		Log: logger,
-	}
-	return cfg
-}
-
-func loadMempoolConfig(config *config.Config, logger *logger.Logger) mempool.Config {
-	cfg := mempool.Config{
 		Log: logger,
 	}
 	return cfg

@@ -18,27 +18,15 @@ const (
 	TxUsers
 )
 
-type TxAction = int32
-
-const (
-	Transfer TxAction = iota + 1
-	Revoke
-	Update
-	Upload
-	Generate
-	Pay
-)
-
 type Tx struct {
 	Time      int64
 	TxVersion int32
 	TxType    TxType
-	TxAction  TxAction
 	Payload   []byte
 }
 
 func (t *Tx) Encode(w io.Writer) error {
-	err := serializer.WriteElements(w, t.TxVersion, t.TxType, t.TxAction, t.Time)
+	err := serializer.WriteElements(w, t.TxVersion, t.TxType, t.Time)
 	if err != nil {
 		return err
 	}
@@ -50,7 +38,7 @@ func (t *Tx) Encode(w io.Writer) error {
 }
 
 func (t *Tx) Decode(r io.Reader) error {
-	err := serializer.ReadElements(r, &t.TxVersion, &t.TxType, &t.TxAction, &t.Time)
+	err := serializer.ReadElements(r, &t.TxVersion, &t.TxType, &t.Time)
 	if err != nil {
 		return err
 	}
