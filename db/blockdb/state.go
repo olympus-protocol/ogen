@@ -3,6 +3,9 @@ package blockdb
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/olympus-protocol/ogen/logger"
@@ -17,6 +20,9 @@ type BlockDB struct {
 	log      *logger.Logger
 	badgerdb *badger.DB
 	params   params.ChainParams
+
+	requestedClose uint32
+	canClose       sync.WaitGroup
 }
 
 type BlockDBUpdateTransaction struct {
@@ -47,11 +53,22 @@ func NewBlockDB(path string, params params.ChainParams, log *logger.Logger) (*Bl
 
 // Close closes the database.
 func (bdb *BlockDB) Close() {
+	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
+		return
+	}
+	atomic.StoreUint32(&bdb.requestedClose, 1)
+	bdb.canClose.Wait()
 	_ = bdb.badgerdb.Close()
 }
 
 // Update gets a transaction for updating the database.
 func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
+	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
+		return fmt.Errorf("database is closing")
+	}
+
+	bdb.canClose.Add(1)
+	defer bdb.canClose.Done()
 	return bdb.badgerdb.Update(func(tx *badger.Txn) error {
 		blockTxn := BlockDBReadTransaction{
 			db:          bdb,
@@ -65,6 +82,12 @@ func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 
 // View gets a transaction for viewing the database.
 func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
+	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
+		return fmt.Errorf("database is closing")
+	}
+
+	bdb.canClose.Add(1)
+	defer bdb.canClose.Done()
 	return bdb.badgerdb.Update(func(tx *badger.Txn) error {
 		blockTxn := &BlockDBReadTransaction{
 			db:          bdb,
