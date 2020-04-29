@@ -132,22 +132,24 @@ type TxPayload interface {
 }
 
 type Tx struct {
-	Time      int64
 	TxVersion int32
 	TxType    TxType
 	Payload   TxPayload
 }
 
 func (t *Tx) Encode(w io.Writer) error {
-	err := serializer.WriteElements(w, t.TxVersion, t.TxType, t.Time)
+	err := serializer.WriteElements(w, t.TxVersion, t.TxType)
 	if err != nil {
 		return err
+	}
+	if t.Payload == nil {
+		return fmt.Errorf("transaction missing payload")
 	}
 	return t.Payload.Encode(w)
 }
 
 func (t *Tx) Decode(r io.Reader) error {
-	err := serializer.ReadElements(r, &t.TxVersion, &t.TxType, &t.Time)
+	err := serializer.ReadElements(r, &t.TxVersion, &t.TxType)
 	if err != nil {
 		return err
 	}

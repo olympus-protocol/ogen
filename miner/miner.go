@@ -64,24 +64,26 @@ type Miner struct {
 	context    context.Context
 	Stop       context.CancelFunc
 
-	mempool *mempool.VoteMempool
+	voteMempool  *mempool.VoteMempool
+	coinsMempool *mempool.CoinsMempool
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, mempool *mempool.VoteMempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	miner = &Miner{
-		log:        config.Log,
-		config:     config,
-		params:     params,
-		chain:      chain,
-		walletsMan: walletsMan,
-		peersMan:   peersMan,
-		mineActive: true,
-		keystore:   keys,
-		context:    ctx,
-		Stop:       cancel,
-		mempool:    mempool,
+		log:          config.Log,
+		config:       config,
+		params:       params,
+		chain:        chain,
+		walletsMan:   walletsMan,
+		peersMan:     peersMan,
+		mineActive:   true,
+		keystore:     keys,
+		context:      ctx,
+		Stop:         cancel,
+		voteMempool:  voteMempool,
+		coinsMempool: coinsMempool,
 	}
 	chain.Notify(miner)
 	return miner, nil
@@ -89,7 +91,8 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 
 // NewTip implements the BlockchainNotifee interface.
 func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
-	m.mempool.Remove(block)
+	m.voteMempool.Remove(block)
+	m.coinsMempool.RemoveByBlock(block)
 }
 
 func (m *Miner) getCurrentSlot() uint64 {
@@ -171,7 +174,7 @@ func (m *Miner) Start() error {
 							OutOf:     max - min,
 						}
 
-						m.mempool.Add(&vote, max-min)
+						m.voteMempool.Add(&vote, max-min)
 
 						m.peersMan.SubmitVote(&vote)
 					}
@@ -206,7 +209,8 @@ func (m *Miner) Start() error {
 				proposer := state.ValidatorRegistry[proposerIndex]
 
 				if k, found := m.keystore.GetKey(&proposer); found {
-					votes := m.mempool.Get(slotToPropose, &m.params)
+					votes := m.voteMempool.Get(slotToPropose, &m.params)
+					coinTxs := m.coinsMempool.Get(m.params.MaxTxsPerBlock, *state)
 
 					block := primitives.Block{
 						Header: primitives.BlockHeader{
@@ -217,6 +221,7 @@ func (m *Miner) Start() error {
 							Slot:          slotToPropose,
 						},
 						Votes: votes,
+						Txs:   coinTxs,
 					}
 
 					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
