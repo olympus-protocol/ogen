@@ -168,17 +168,6 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		}
 	}
 
-	for _, v := range s.CurrentEpochVotes {
-		validators := 0
-		for _, b := range v.ParticipationBitfield {
-			for i := 0; i < 8; i++ {
-				if b&(1<<i) != 0 {
-					validators++
-				}
-			}
-		}
-	}
-
 	for i := range s.NextRANDAO {
 		s.NextRANDAO[i] ^= b.RandaoSignature[i]
 	}

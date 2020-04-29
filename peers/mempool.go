@@ -104,8 +104,6 @@ func (m *Mempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
 	if vs, found := m.pool[voteHash]; found {
 		vs.add(vote)
 	} else {
-		participationBitfield := make([]uint8, (outOf+7)/8)
-		participationBitfield[vote.Offset/8] |= (1 << uint(vote.Offset%8))
 		m.pool[voteHash] = newMempoolVote(outOf, &vote.Data)
 		m.pool[voteHash].add(vote)
 	}
@@ -118,7 +116,7 @@ func (m *Mempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiVali
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
 				Signature:             *m.pool[i].aggregateSignature,
-				ParticipationBitfield: m.pool[i].participationBitfield,
+				ParticipationBitfield: append([]uint8(nil), m.pool[i].participationBitfield...),
 			}
 			votes = append(votes, vote)
 		}
