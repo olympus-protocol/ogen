@@ -2,6 +2,7 @@ package server
 
 import (
 	"log"
+	"path"
 
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/config"
@@ -26,7 +27,7 @@ type Server struct {
 
 	Chain     *chain.Blockchain
 	PeerMan   *peers.PeerMan
-	WalletMan *wallet.WalletMan
+	Wallet    *wallet.Wallet
 	Miner     *miner.Miner
 	GovMan    *gov.GovMan
 	WorkerMan *workers.WorkerMan
@@ -36,7 +37,7 @@ type Server struct {
 
 func (s *Server) Start() {
 	if s.config.Wallet {
-		err := s.WalletMan.Start()
+		err := s.Wallet.Start()
 		if err != nil {
 			log.Fatalln("unable to start wallet manager")
 		}
@@ -68,7 +69,7 @@ func (s *Server) Stop() error {
 	s.Chain.Stop()
 	s.PeerMan.Stop()
 	if s.config.Wallet {
-		err := s.WalletMan.Stop()
+		err := s.Wallet.Stop()
 		if err != nil {
 			return err
 		}
@@ -79,9 +80,9 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters, keys miner.Keystore) (*Server, error) {
+func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
-	walletsMan, err := wallet.NewWalletMan(loadWalletsManConfig(configParams, logger, gui), currParams)
+	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger))
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	}
 	var min *miner.Miner
 	if configParams.MiningEnabled {
-		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan, keys, voteMempool, coinsMempool)
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, peersMan, voteMempool, coinsMempool)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +112,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 
 		Chain:     ch,
 		PeerMan:   peersMan,
-		WalletMan: walletsMan,
+		Wallet:    w,
 		Miner:     min,
 		WorkerMan: workersMan,
 		GovMan:    govMan,
@@ -169,12 +170,10 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 	return cfg
 }
 
-func loadWalletsManConfig(config *config.Config, logger *logger.Logger, gui bool) wallet.Config {
+func loadWalletsManConfig(config *config.Config, logger *logger.Logger) wallet.Config {
 	cfg := wallet.Config{
-		Log:     logger,
-		Path:    config.DataFolder,
-		Enabled: config.Wallet,
-		Gui:     gui,
+		Log:  logger,
+		Path: path.Join(config.DataFolder, "wallet"),
 	}
 	return cfg
 }

@@ -1,183 +1,271 @@
 package wallet
 
 import (
-	"github.com/olympus-protocol/ogen/db/walletdb"
-	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/utils/bip39"
-	"github.com/olympus-protocol/ogen/utils/hdwallets"
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha512"
+	"fmt"
+	"io"
 	"os"
-	"os/exec"
-	"strconv"
+	"syscall"
+
+	"github.com/dgraph-io/badger"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/hdwallets"
+	"github.com/pkg/errors"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
-const currWalletVersion = 100000
-const accounts = 100
+var PolisNetPrefix = &hdwallets.NetPrefix{
+	ExtPub:  []byte{0x1f, 0x74, 0x90, 0xf0},
+	ExtPriv: []byte{0x11, 0x24, 0xd9, 0x70},
+}
 
 type Config struct {
-	Log      *logger.Logger
-	Path     string
-	Enabled  bool
-	Gui      bool
+	Log  *logger.Logger
+	Path string
 }
 
-type activeWallet struct {
-	meta        *walletdb.WalletMetaData
-	credentials *walletdb.WalletCredentials
-	utxos       []walletdb.WalletUtxo
-	txs         []walletdb.WalletTx
-}
-type WalletMan struct {
-	log          *logger.Logger
-	config       Config
-	params       params.ChainParams
-	wallet       *walletdb.WalletDB
-	activeWallet activeWallet
+// Keystore is an interface to a simple keystore.
+type Keystore interface {
+	GenerateNewValidatorKey() (*bls.SecretKey, error)
+	GetValidatorKey(*primitives.Worker) (*bls.SecretKey, bool)
+	HasValidatorKey(*primitives.Worker) (bool, error)
+	GetValidatorKeys() ([]*bls.SecretKey, error)
+	Close() error
 }
 
-func raw(start bool) error {
-	r := "raw"
-	if !start {
-		r = "-raw"
-	}
-	rawMode := exec.Command("stty", r)
-	rawMode.Stdin = os.Stdin
-	err := rawMode.Run()
+type Wallet struct {
+	db  *badger.DB
+	log *logger.Logger
+
+	hasMaster       bool
+	encryptedMaster []byte
+	decryptedMaster []byte
+}
+
+var walletDBKey = []byte("master-key-encrypted")
+var walletDBSalt = []byte("master-key-salt")
+
+func NewWallet(c Config) (*Wallet, error) {
+	bdb, err := badger.Open(badger.DefaultOptions(c.Path).WithLogger(nil))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return rawMode.Wait()
-}
 
-func (wm *WalletMan) Start() error {
-	wm.log.Info("Starting WalletMan instance")
-start:
-	walletMeta, err := wm.wallet.GetMetadata()
-	if err != nil {
-		// no meta bucket means the wallet is not initialized.
-		// here we should create the wallet struct.
-		if err == walletdb.ErrorNoMetaBucket {
-			err = wm.initWallet("")
-			goto start
+	encryptedMaster := []byte{}
+	hasMaster := false
+	err = bdb.Update(func(txn *badger.Txn) error {
+		i, err := txn.Get(walletDBKey)
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		} else {
+			encryptedMasterBytes, err := i.ValueCopy(nil)
+			if err != nil {
+				return err
+			}
+			encryptedMaster = encryptedMasterBytes
+			hasMaster = true
 		}
-		wm.log.Warn("Unable to load wallet metadata. Possible wallet corruption")
-		return err
-	}
-	walletCreds, err := wm.wallet.GetCredentials()
+		return nil
+	})
 	if err != nil {
-		wm.log.Fatal("Unable to load wallet credentials. Possible wallet corruption")
-		return err
-	}
-	walletUtxos, err := wm.wallet.GetUtxos()
-	if err != nil {
-		wm.log.Fatal("Unable to load wallet utxos. Need wallet rescan")
-		return err
-	}
-	walletTxs, err := wm.wallet.GetTxs()
-	if err != nil {
-		wm.log.Fatal("Unable to load wallet txs. Need wallet rescan")
-		return err
-	}
-	wm.activeWallet = activeWallet{
-		meta:        walletMeta,
-		credentials: walletCreds,
-		utxos:       walletUtxos,
-		txs:         walletTxs,
+		return nil, err
 	}
 
-	return nil
+	return &Wallet{
+		db:              bdb,
+		encryptedMaster: encryptedMaster,
+		hasMaster:       hasMaster,
+		log:             c.Log,
+	}, nil
 }
 
-func (wm *WalletMan) initWallet(pass string) error {
-	newMeta := walletdb.WalletMetaData{
-		Version:         currWalletVersion,
-		Txs:             0,
-		Utxos:           0,
-		Accounts:        0,
-		LastBlockHash:   wm.params.GenesisHash,
-		LastBlockHeight: 0,
-	}
-	err := wm.wallet.StoreMetadata(newMeta)
-	if err != nil {
-		return err
-	}
-	entropy, err := bip39.NewEntropy(256)
-	if err != nil {
-		return err
-	}
-	mnemonic, err := bip39.NewMnemonic(entropy)
-	if err != nil {
-		return err
-	}
-	seed := bip39.NewSeed(mnemonic, pass)
-	hdRoot, err := hdwallets.NewMaster(seed, &wm.params.HDPrefixes)
-	if err != nil {
-		return err
-	}
-	newCredentials := walletdb.WalletCredentials{
-		Accounts: make(map[int32]walletdb.Account, accounts),
-		Mnemonic: mnemonic,
-	}
-	purpose, err := hdRoot.Child(44 + hdwallets.HardenedKeyStart)
-	if err != nil {
-		return err
-	}
-	coin, err := purpose.Child(wm.params.HDCoinIndex + hdwallets.HardenedKeyStart)
-	if err != nil {
-		return err
-	}
-	for i := int32(0); i < accounts; i++ {
-		acc, err := coin.Child(uint32(i) + hdwallets.HardenedKeyStart)
+func (b *Wallet) Start() error {
+	if !b.hasMaster {
+		var fd int
+		if terminal.IsTerminal(syscall.Stdin) {
+			fd = syscall.Stdin
+		} else {
+			tty, err := os.Open("/dev/tty")
+			if err != nil {
+				return errors.Wrap(err, "error allocating terminal")
+			}
+			defer tty.Close()
+			fd = int(tty.Fd())
+		}
+		fmt.Println("Creating new wallet...")
+		var password []byte
+
+		for {
+			fmt.Printf("Enter a password: ")
+			pass, err := terminal.ReadPassword(fd)
+			if err != nil {
+				return errors.Wrap(err, "error reading password")
+			}
+			fmt.Println()
+			fmt.Printf("Re-enter the password: ")
+			passVerify, err := terminal.ReadPassword(fd)
+			if err != nil {
+				return errors.Wrap(err, "error reading password")
+			}
+			fmt.Println()
+
+			if bytes.Equal(pass, passVerify) {
+				password = pass
+				break
+			} else {
+				fmt.Println("Passwords do not match. Please try again.")
+			}
+		}
+
+		// generate random salt
+		var salt [8]byte
+		_, err := rand.Reader.Read(salt[:])
+		if err != nil {
+			return errors.Wrap(err, "error reading from random")
+		}
+		encryptionKey := pbkdf2.Key(password, salt[:], 20000, 32, sha512.New)
+
+		block, err := aes.NewCipher(encryptionKey)
+		if err != nil {
+			return errors.Wrap(err, "error creating cipher")
+		}
+
+		nonce := make([]byte, 12)
+		if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+			return errors.Wrap(err, "error reading from random")
+		}
+
+		aesgcm, err := cipher.NewGCM(block)
+		if err != nil {
+			return errors.Wrap(err, "error creating GCM")
+		}
+
+		masterKey := make([]byte, 32)
+		if _, err := io.ReadFull(rand.Reader, masterKey); err != nil {
+			return errors.Wrap(err, "error reading from random")
+		}
+
+		ciphertext := aesgcm.Seal(nil, nonce, masterKey, nil)
+
+		err = b.db.Update(func(tx *badger.Txn) error {
+			if err := tx.Set(walletDBKey, ciphertext[:]); err != nil {
+				return err
+			}
+
+			if err := tx.Set(walletDBSalt, salt[:]); err != nil {
+				return err
+			}
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-		pubAcc, err := acc.Neuter(&wm.params.HDPrefixes)
+
+		b.encryptedMaster = ciphertext
+		b.hasMaster = true
+	}
+
+	return nil
+}
+
+func (w *Wallet) Stop() error {
+	return w.db.Close()
+}
+
+func (b *Wallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
+	secKeys := make([]*bls.SecretKey, 0)
+	err := b.db.View(func(txn *badger.Txn) error {
+		iter := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer iter.Close()
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			i := iter.Item()
+			val, err := i.ValueCopy(nil)
+			if err != nil {
+				return err
+			}
+			if len(val) == 32 {
+				var valBytes [32]byte
+				copy(valBytes[:], val)
+				secretKey := bls.DeserializeSecretKey(valBytes)
+				secKeys = append(secKeys, &secretKey)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return secKeys, nil
+}
+
+func (b *Wallet) GetValidatorKey(worker *primitives.Worker) (*bls.SecretKey, bool) {
+	pubBytes := worker.PubKey
+
+	var secretBytes [32]byte
+	err := b.db.View(func(txn *badger.Txn) error {
+		i, err := txn.Get(pubBytes[:])
 		if err != nil {
 			return err
 		}
-		newAcc := walletdb.Account{
-			Number:            i,
-			Path:              "m/44'/" + strconv.Itoa(int(wm.params.HDCoinIndex)) + "'/" + strconv.Itoa(int(i)) + "'",
-			ExtendedPublicKey: pubAcc.String(),
+
+		_, err = i.ValueCopy(secretBytes[:])
+		return err
+	})
+	if err != nil {
+		return nil, false
+	}
+
+	secretKey := bls.DeserializeSecretKey(secretBytes)
+	return &secretKey, true
+}
+
+func (b *Wallet) HasValidatorKey(worker *primitives.Worker) (result bool, err error) {
+	pubBytes := worker.PubKey
+
+	err = b.db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get(pubBytes[:])
+		if err == badger.ErrKeyNotFound {
+			result = false
 		}
-		newCredentials.AddAccount(newAcc)
-		acc.Zero()
-	}
+		if err != nil {
+			return err
+		}
+		result = true
+		return nil
+	})
 
-	coin.Zero()
-	purpose.Zero()
-	hdRoot.Zero()
-	err = wm.wallet.StoreCredentials(&newCredentials)
-	if err != nil {
-		return err
-	}
-	err = wm.wallet.InitUtxosBucket()
-	if err != nil {
-		return err
-	}
-	err = wm.wallet.InitTxBucket()
-	if err != nil {
-		return err
-	}
-	return nil
+	return result, err
 }
 
-func (wm *WalletMan) Stop() error {
-	wm.log.Info("Stoping WalletMan instance")
-	err := wm.wallet.Close()
+func (b *Wallet) GenerateNewValidatorKey() (*bls.SecretKey, error) {
+	key, err := bls.RandSecretKey(rand.Reader)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	return nil
+
+	keyBytes := key.Serialize()
+
+	pub := key.DerivePublicKey()
+	pubBytes := pub.Serialize()
+
+	err = b.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(pubBytes[:], keyBytes[:])
+	})
+
+	return key, err
 }
 
-func NewWalletMan(config Config, params params.ChainParams) (*WalletMan, error) {
-	walletDB := walletdb.NewWalletDB(config.Path + "/wallet.dat")
-	wm := &WalletMan{
-		log:    config.Log,
-		config: config,
-		params: params,
-		wallet: walletDB,
-	}
-	return wm, nil
+func (b *Wallet) Close() error {
+	return b.db.Close()
 }
+
+var _ Keystore = &Wallet{}

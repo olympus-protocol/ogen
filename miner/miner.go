@@ -14,7 +14,6 @@ import (
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/wallet"
 )
 
 // Config is a config for the miner.
@@ -24,7 +23,7 @@ type Config struct {
 
 // Keystore is an interface to access keys.
 type Keystore interface {
-	GetKey(w *primitives.Worker) (*bls.SecretKey, bool)
+	GetValidatorKey(w *primitives.Worker) (*bls.SecretKey, bool)
 }
 
 // BasicKeystore is a basic key store.
@@ -57,7 +56,7 @@ type Miner struct {
 	config     Config
 	params     params.ChainParams
 	chain      *chain.Blockchain
-	walletsMan *wallet.WalletMan
+	walletsMan Keystore
 	peersMan   *peers.PeerMan
 	mineActive bool
 	keystore   Keystore
@@ -69,17 +68,17 @@ type Miner struct {
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, walletsMan *wallet.WalletMan, peersMan *peers.PeerMan, keys Keystore, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, miningWallet Keystore, peersMan *peers.PeerMan, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	miner = &Miner{
 		log:          config.Log,
 		config:       config,
 		params:       params,
 		chain:        chain,
-		walletsMan:   walletsMan,
+		walletsMan:   miningWallet,
 		peersMan:     peersMan,
 		mineActive:   true,
-		keystore:     keys,
+		keystore:     miningWallet,
 		context:      ctx,
 		Stop:         cancel,
 		voteMempool:  voteMempool,
@@ -161,7 +160,7 @@ func (m *Miner) Start() error {
 				for i := min; i <= max; i++ {
 					validator := state.ValidatorRegistry[i]
 
-					if k, found := m.keystore.GetKey(&validator); found {
+					if k, found := m.keystore.GetValidatorKey(&validator); found {
 						sig, err := bls.Sign(k, dataHash[:])
 						if err != nil {
 							panic(err)
@@ -208,7 +207,7 @@ func (m *Miner) Start() error {
 				proposerIndex := state.ProposerQueue[slotIndex]
 				proposer := state.ValidatorRegistry[proposerIndex]
 
-				if k, found := m.keystore.GetKey(&proposer); found {
+				if k, found := m.keystore.GetValidatorKey(&proposer); found {
 					votes := m.voteMempool.Get(slotToPropose, &m.params)
 					coinTxs := m.coinsMempool.Get(m.params.MaxTxsPerBlock, *state)
 

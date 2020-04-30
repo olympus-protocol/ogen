@@ -3,12 +3,15 @@ package cli
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/miner/keystore"
-	"github.com/spf13/cobra"
+	"os"
 	"path"
 	"strconv"
+
+	"github.com/fatih/color"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/wallet"
+	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -19,7 +22,7 @@ var generateKeysCmd = &cobra.Command{
 	Use:   "generate <numkeys>",
 	Short: "Generates validator keys and saves them to your key store",
 	Long:  `Generates validator keys and saves them to your key store`,
-	Args: cobra.MaximumNArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 
@@ -33,14 +36,17 @@ var generateKeysCmd = &cobra.Command{
 		}
 
 		keystorePath := path.Join(DataFolder, "wallet")
-		k, err := keystore.NewBadgerKeystore(keystorePath)
+		k, err := wallet.NewWallet(wallet.Config{
+			Path: keystorePath,
+			Log:  logger.New(os.Stdout),
+		})
 		if err != nil {
 			panic(err)
 		}
 
 		keys := make([]*bls.SecretKey, numKeys)
 		for i := 0; i < numKeys; i++ {
-			key, err := k.GenerateNewKey()
+			key, err := k.GenerateNewValidatorKey()
 			if err != nil {
 				fmt.Printf("error generating key: %s\n", err)
 				return

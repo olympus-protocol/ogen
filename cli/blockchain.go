@@ -11,7 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/miner/keystore"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/server"
 	"github.com/spf13/cobra"
@@ -36,11 +35,7 @@ func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logg
 	if err != nil {
 		return err
 	}
-	k, err := keystore.NewBadgerKeystore(path.Join(configParams.DataFolder, "wallet"))
-	if err != nil {
-		return err
-	}
-	s, err := server.NewServer(configParams, log, currParams, db, false, configParams.InitConfig, k)
+	s, err := server.NewServer(configParams, log, currParams, db, false, configParams.InitConfig)
 	if err != nil {
 		return err
 	}

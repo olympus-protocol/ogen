@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"time"
 
 	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/miner/keystore"
+	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
 
@@ -35,14 +37,17 @@ var generateChainCmd = &cobra.Command{
 	Long:  `Generates chain file from keys in your wallet`,
 	Run: func(cmd *cobra.Command, args []string) {
 		keystorePath := path.Join(DataFolder, "wallet")
-		k, err := keystore.NewBadgerKeystore(keystorePath)
+		k, err := wallet.NewWallet(wallet.Config{
+			Log:  logger.New(os.Stdout),
+			Path: keystorePath,
+		})
 		if err != nil {
 			fmt.Printf("could not open database: %s\n", err)
 			return
 		}
 		defer k.Close()
 
-		keys, err := k.GetKeys()
+		keys, err := k.GetValidatorKeys()
 		if err != nil {
 			fmt.Printf("could not get keys from database: %s\n", err)
 			return
