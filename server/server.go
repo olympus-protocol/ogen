@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/explorer"
@@ -32,6 +33,7 @@ type Server struct {
 	GovMan    *gov.GovMan
 	WorkerMan *workers.WorkerMan
 	UsersMan  *users.UserMan
+	RPC       *chainrpc.RPCServer
 	Gui       bool
 }
 
@@ -49,6 +51,9 @@ func (s *Server) Start() {
 	err = s.PeerMan.Start()
 	if err != nil {
 		log.Fatalln("unable to start peer manager")
+	}
+	if err := chainrpc.ServeRPC(s.RPC); err != nil {
+		log.Fatalf("unable to start RPC: %s", err)
 	}
 	if s.Miner != nil {
 		err = s.Miner.Start()
@@ -86,6 +91,11 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
+	rpc := chainrpc.NewRPCServer(&chainrpc.Config{
+		Network: "tcp",
+		Address: ":1234",
+		Log:     logger,
+	})
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {
 		return nil, err
@@ -118,6 +128,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 		GovMan:    govMan,
 		UsersMan:  usersMan,
 		Gui:       gui,
+		RPC:       rpc,
 	}
 	return s, nil
 }
