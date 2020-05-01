@@ -14,7 +14,6 @@ func (b *Wallet) GetBalance() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	fmt.Printf("%x\n", pkh)
 	if len(pkh) != 20 {
 		return 0, fmt.Errorf("expecting address to be 20 bytes, but got %d bytes", len(pkh))
 	}
@@ -60,10 +59,6 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 		Nonce:         nonce,
 		Fee:           100,
 	}
-
-	pkh := payload.FromPubkeyHash()
-
-	fmt.Printf("our pk: %x, pkh: %x\n", payload.FromPublicKey.Serialize(), pkh)
 
 	sigMsg := payload.SignatureMessage()
 	sig, err := bls.Sign(priv, sigMsg[:])
