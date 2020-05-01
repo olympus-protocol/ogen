@@ -63,11 +63,31 @@ func (c *RPCClient) GetBalance() (uint64, error) {
 	return bal, c.Call("Wallet.GetBalance", nil, &bal)
 }
 
-func (c *RPCClient) SendToAddress(to string, amount uint64, password []byte) (chainhash.Hash, error) {
+func (c *RPCClient) SendToAddress(to string, amount uint64, askpass func() ([]byte, error)) (*chainhash.Hash, error) {
 	var out chainhash.Hash
-	return out, c.Call("Wallet.SendToAddress", &SendToAddressRequest{
+	err := c.Call("Wallet.SendToAddress", &SendToAddressRequest{
 		ToAddress: to,
 		Amount:    amount,
-		Password:  password,
+		Password:  []byte{},
 	}, &out)
+	if err.Error() == "wallet locked, need authentication" {
+		pass, err := askpass()
+		if err != nil {
+			return nil, err
+		}
+		err = c.Call("Wallet.SendToAddress", &SendToAddressRequest{
+			ToAddress: to,
+			Amount:    amount,
+			Password:  pass,
+		}, &out)
+		if err != nil {
+			return nil, err
+		}
+
+		return &out, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
 }
