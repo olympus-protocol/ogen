@@ -3,10 +3,12 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/olympus-protocol/ogen/chainrpc"
+	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +20,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{
 		{Text: "getbalance", Description: "Get balance of wallet"},
 		{Text: "getaddress", Description: "Get current wallet addresses"},
-		{Text: "send", Description: "Send money to a user"},
+		{Text: "sendtoaddress", Description: "Send money to a user"},
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
@@ -45,13 +47,54 @@ var walletCmd = &cobra.Command{
 
 			switch words[0] {
 			case "getaddress":
-				var address string
 				address, err := rpcClient.GetAddress()
 				if err != nil {
 					fmt.Println(err)
-					return
+					continue
 				}
 				fmt.Println(address)
+			case "getbalance":
+				bal, err := rpcClient.GetBalance()
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				fmt.Printf("Balance: %d\n", bal)
+			case "sendtoaddress":
+				if len(words) != 3 {
+					fmt.Println("Usage: sendtoaddress <toaddress> <amount>")
+					continue
+				}
+				toAddress := words[1]
+				amount, err := strconv.ParseInt(words[2], 10, 64)
+				if err != nil {
+					fmt.Println("Usage: sendtoaddress <toaddress> <amount>")
+					continue
+				}
+				if amount <= 0 {
+					fmt.Println("amount must be positive")
+					continue
+				}
+				txid, err := rpcClient.SendToAddress(toAddress, uint64(amount), nil)
+
+				if err.Error() == "wallet locked, need authentication" {
+					fmt.Printf("Password: ")
+					pass, err := wallet.AskPass()
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+
+					txid, err = rpcClient.SendToAddress(toAddress, uint64(amount), pass)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+				} else if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				fmt.Printf("Sent transaction: %s\n", txid)
 			default:
 				fmt.Printf("Unknown command: %s\n", words[0])
 			}

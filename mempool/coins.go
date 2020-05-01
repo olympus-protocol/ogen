@@ -53,12 +53,16 @@ func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.UtxoS
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
+	fmt.Printf("pk: %x pkh: %x\n", item.FromPublicKey.Serialize(), item.FromPubkeyHash())
+
 	fpkh := item.FromPubkeyHash()
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
 	}
+
+	fmt.Printf("%x = %d %v\n", fpkh, state.Balances[fpkh], state.Balances)
 
 	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err

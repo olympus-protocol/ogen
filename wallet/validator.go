@@ -1,0 +1,101 @@
+package wallet
+
+import (
+	"crypto/rand"
+
+	"github.com/dgraph-io/badger"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/primitives"
+)
+
+// Keystore is an interface to a simple keystore.
+type Keystore interface {
+	GenerateNewValidatorKey() (*bls.SecretKey, error)
+	GetValidatorKey(*primitives.Worker) (*bls.SecretKey, bool)
+	HasValidatorKey(*primitives.Worker) (bool, error)
+	GetValidatorKeys() ([]*bls.SecretKey, error)
+	Close() error
+}
+
+func (b *Wallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
+	secKeys := make([]*bls.SecretKey, 0)
+	err := b.db.View(func(txn *badger.Txn) error {
+		iter := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer iter.Close()
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			i := iter.Item()
+			val, err := i.ValueCopy(nil)
+			if err != nil {
+				return err
+			}
+			if len(val) == 32 {
+				var valBytes [32]byte
+				copy(valBytes[:], val)
+				secretKey := bls.DeserializeSecretKey(valBytes)
+				secKeys = append(secKeys, &secretKey)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return secKeys, nil
+}
+
+func (b *Wallet) GetValidatorKey(worker *primitives.Worker) (*bls.SecretKey, bool) {
+	pubBytes := worker.PubKey
+
+	var secretBytes [32]byte
+	err := b.db.View(func(txn *badger.Txn) error {
+		i, err := txn.Get(pubBytes[:])
+		if err != nil {
+			return err
+		}
+
+		_, err = i.ValueCopy(secretBytes[:])
+		return err
+	})
+	if err != nil {
+		return nil, false
+	}
+
+	secretKey := bls.DeserializeSecretKey(secretBytes)
+	return &secretKey, true
+}
+
+func (b *Wallet) HasValidatorKey(worker *primitives.Worker) (result bool, err error) {
+	pubBytes := worker.PubKey
+
+	err = b.db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get(pubBytes[:])
+		if err == badger.ErrKeyNotFound {
+			result = false
+		}
+		if err != nil {
+			return err
+		}
+		result = true
+		return nil
+	})
+
+	return result, err
+}
+
+func (b *Wallet) GenerateNewValidatorKey() (*bls.SecretKey, error) {
+	key, err := bls.RandSecretKey(rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	keyBytes := key.Serialize()
+
+	pub := key.DerivePublicKey()
+	pubBytes := pub.Serialize()
+
+	err = b.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(pubBytes[:], keyBytes[:])
+	})
+
+	return key, err
+}

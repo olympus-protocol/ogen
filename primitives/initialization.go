@@ -3,6 +3,7 @@ package primitives
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -68,10 +69,17 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		}
 	}
 
+	premineAddr, _ := hex.DecodeString("56caff1115c721bea4532de37cfdc412386cbf79")
+
+	var premineAddrArr [20]byte
+	copy(premineAddrArr[:], premineAddr)
+
 	return &State{
 		UtxoState: UtxoState{
-			Balances: make(map[[20]byte]uint64),
-			Nonces:   make(map[[20]byte]uint64),
+			Balances: map[[20]byte]uint64{
+				premineAddrArr: 200000,
+			},
+			Nonces: make(map[[20]byte]uint64),
 		},
 		GovernanceState: GovernanceState{
 			Proposals: make(map[chainhash.Hash]GovernanceProposal),
