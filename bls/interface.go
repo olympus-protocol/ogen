@@ -93,6 +93,12 @@ func DeserializeSecretKey(b [32]byte) SecretKey {
 	return SecretKey{*k}
 }
 
+// DeriveSecretKey deserializes a secret key from bytes.
+func DeriveSecretKey(b [32]byte) SecretKey {
+	k := bls.DeriveSecretKey(b)
+	return SecretKey{*k}
+}
+
 func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (SecretKey, error) {
 	var prefix string
 	if contract {
@@ -122,19 +128,12 @@ func NewPublicKey(p *bls.PublicKey) *PublicKey {
 	return &PublicKey{p: *p}
 }
 
-func (p PublicKey) ToBech32(prefixes Prefixes, contract bool) (string, error) {
-	var prefix string
-	if contract {
-		prefix = prefixes.ContractPubKey
-	} else {
-		prefix = prefixes.PubKey
-	}
-	ser := p.Serialize()
-	hash := chainhash.HashB(ser[:])
-	ripemd160 := chainhash.Hash160(hash)
-	copyNet := append([]byte(prefix), ripemd160...)
-	dHash := chainhash.DoubleHashB(copyNet)
-	return bech32.Encode(prefix, dHash), nil
+func (p PublicKey) ToBech32(prefixes Prefixes) (string, error) {
+	out := make([]byte, 20)
+	pkS := p.p.Serialize()
+	h := chainhash.HashH(pkS[:])
+	copy(out[:], h[:20])
+	return bech32.Encode(prefixes.PubKey, out), nil
 }
 
 func (p PublicKey) String() string {

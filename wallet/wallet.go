@@ -6,15 +6,23 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha512"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
+	"sync"
+	"sync/atomic"
 	"syscall"
+	"time"
 
+	"github.com/btcsuite/btcutil/bech32"
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/hdwallets"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/pbkdf2"
@@ -41,39 +49,101 @@ type Keystore interface {
 }
 
 type Wallet struct {
-	db  *badger.DB
-	log *logger.Logger
+	db     *badger.DB
+	log    *logger.Logger
+	params *params.ChainParams
+	chain  *chain.Blockchain
 
 	hasMaster       bool
 	encryptedMaster []byte
-	decryptedMaster []byte
+	salt            []byte
+	nonce           []byte
+
+	masterPriv atomic.Value
+	masterLock uint32
+
+	lastNonce     uint64
+	lastNonceLock sync.Mutex
+
+	walletAddress string
 }
 
-var walletDBKey = []byte("master-key-encrypted")
-var walletDBSalt = []byte("master-key-salt")
+var walletDBKey = []byte("encryption-key-ciphertext")
+var walletDBSalt = []byte("encryption-key-salt")
+var walletDBNonce = []byte("encryption-key-nonce")
+var walletDBLastTxNonce = []byte("last-tx-nonce")
+var walletDBAddress = []byte("wallet-address")
 
-func NewWallet(c Config) (*Wallet, error) {
+func NewWallet(c Config, params params.ChainParams, ch *chain.Blockchain) (*Wallet, error) {
 	bdb, err := badger.Open(badger.DefaultOptions(c.Path).WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}
 
-	encryptedMaster := []byte{}
+	var encryptedMaster []byte
+	var salt []byte
+	var nonce []byte
+	var lastNonce uint64
+	var address string
+
 	hasMaster := false
 	err = bdb.Update(func(txn *badger.Txn) error {
-		i, err := txn.Get(walletDBKey)
+		masterItem, err := txn.Get(walletDBKey)
 		if err == badger.ErrKeyNotFound {
 			return nil
 		} else if err != nil {
 			return err
-		} else {
-			encryptedMasterBytes, err := i.ValueCopy(nil)
-			if err != nil {
-				return err
-			}
-			encryptedMaster = encryptedMasterBytes
-			hasMaster = true
 		}
+		saltItem, err := txn.Get(walletDBSalt)
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		nonceItem, err := txn.Get(walletDBNonce)
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		txNonce, err := txn.Get(walletDBLastTxNonce)
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		addressItem, err := txn.Get(walletDBAddress)
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		addressBytes, err := addressItem.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		encryptedMasterBytes, err := masterItem.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		saltBytes, err := saltItem.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		nonceBytes, err := nonceItem.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		txNonceBytes, err := txNonce.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+		lastNonce = binary.BigEndian.Uint64(txNonceBytes)
+		salt = saltBytes
+		encryptedMaster = encryptedMasterBytes
+		nonce = nonceBytes
+		hasMaster = true
+		address = string(addressBytes)
 		return nil
 	})
 	if err != nil {
@@ -83,12 +153,141 @@ func NewWallet(c Config) (*Wallet, error) {
 	return &Wallet{
 		db:              bdb,
 		encryptedMaster: encryptedMaster,
+		salt:            salt,
+		nonce:           nonce,
+		lastNonce:       lastNonce,
 		hasMaster:       hasMaster,
 		log:             c.Log,
+		params:          &params,
+		walletAddress:   address,
+		chain:           ch,
 	}, nil
 }
 
+func (b *Wallet) unlock(authentication []byte) error {
+	if !atomic.CompareAndSwapUint32(&b.masterLock, 0, 1) {
+		return nil
+	}
+
+	encryptionKey := pbkdf2.Key(authentication, b.salt, 20000, 32, sha512.New)
+
+	block, err := aes.NewCipher(encryptionKey)
+	if err != nil {
+		return errors.Wrap(err, "error creating cipher")
+	}
+
+	nonce := make([]byte, 12)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return errors.Wrap(err, "error reading from random")
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return errors.Wrap(err, "error creating GCM")
+	}
+
+	masterSeed, err := aesgcm.Open(nil, b.nonce, b.encryptedMaster, nil)
+	if err != nil {
+		return errors.Wrap(err, "could not decrypt master key")
+	}
+
+	var secretKeyBytes [32]byte
+	copy(secretKeyBytes[:], masterSeed)
+
+	secKey := bls.DeriveSecretKey(secretKeyBytes)
+
+	b.masterPriv.Store(secKey)
+
+	go func() {
+		<-time.After(time.Minute * 2)
+		b.masterPriv.Store(nil)
+		atomic.StoreUint32(&b.masterLock, 0)
+	}()
+
+	return nil
+}
+
+func (b *Wallet) unlockIfNeeded(authentication []byte) (*bls.SecretKey, error) {
+	privVal := b.masterPriv.Load()
+	if privVal == nil {
+		if authentication == nil {
+			return nil, fmt.Errorf("wallet locked, need authentication")
+		}
+
+		if err := b.unlock(authentication); err != nil {
+			return nil, err
+		}
+
+		privVal = b.masterPriv.Load()
+	}
+
+	return privVal.(*bls.SecretKey), nil
+}
+
+func (b *Wallet) GetAddress() string {
+	return b.walletAddress
+}
+
+func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) (*chainhash.Hash, error) {
+	priv, err := b.unlockIfNeeded(authentication)
+	if err != nil {
+		return nil, err
+	}
+
+	_, data, err := bech32.Decode(to)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(data) != 20 {
+		return nil, fmt.Errorf("invalid address")
+	}
+
+	var toPkh [20]byte
+
+	copy(toPkh[:], data)
+
+	pub := priv.DerivePublicKey()
+
+	b.lastNonceLock.Lock()
+	b.lastNonce++
+	nonce := b.lastNonce
+	b.lastNonceLock.Unlock()
+
+	payload := &primitives.CoinPayload{
+		To:            toPkh,
+		FromPublicKey: *pub,
+		Amount:        amount,
+		Nonce:         nonce,
+		Fee:           100,
+	}
+
+	sigMsg := payload.SignatureMessage()
+	sig, err := bls.Sign(priv, sigMsg[:])
+	if err != nil {
+		return nil, err
+	}
+
+	payload.Signature = *sig
+
+	tx := &primitives.Tx{
+		TxType:    primitives.TxCoins,
+		TxVersion: 0,
+		Payload:   payload,
+	}
+
+	if err := b.chain.SubmitCoinTransaction(payload); err != nil {
+		return nil, err
+	}
+
+	txHash := tx.Hash()
+
+	return &txHash, nil
+}
+
 func (b *Wallet) Start() error {
+	var password []byte
+
 	if !b.hasMaster {
 		var fd int
 		if terminal.IsTerminal(syscall.Stdin) {
@@ -102,7 +301,6 @@ func (b *Wallet) Start() error {
 			fd = int(tty.Fd())
 		}
 		fmt.Println("Creating new wallet...")
-		var password []byte
 
 		for {
 			fmt.Printf("Enter a password: ")
@@ -149,28 +347,46 @@ func (b *Wallet) Start() error {
 			return errors.Wrap(err, "error creating GCM")
 		}
 
-		masterKey := make([]byte, 32)
-		if _, err := io.ReadFull(rand.Reader, masterKey); err != nil {
+		var privateKeyBytes [32]byte
+		if _, err := io.ReadFull(rand.Reader, privateKeyBytes[:]); err != nil {
 			return errors.Wrap(err, "error reading from random")
 		}
 
-		ciphertext := aesgcm.Seal(nil, nonce, masterKey, nil)
+		privateKey := bls.DeriveSecretKey(privateKeyBytes)
+		address, err := privateKey.DerivePublicKey().ToBech32(b.params.AddressPrefixes)
+		if err != nil {
+			return errors.Wrap(err, "could not get public key from private key")
+		}
+
+		ciphertext := aesgcm.Seal(nil, nonce, privateKeyBytes[:], nil)
 
 		err = b.db.Update(func(tx *badger.Txn) error {
 			if err := tx.Set(walletDBKey, ciphertext[:]); err != nil {
 				return err
 			}
 
+			if err := tx.Set(walletDBAddress, []byte(address)); err != nil {
+				return err
+			}
+
 			if err := tx.Set(walletDBSalt, salt[:]); err != nil {
 				return err
 			}
-			return nil
+
+			if err := tx.Set(walletDBLastTxNonce, []byte{0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
+				return err
+			}
+
+			return tx.Set(walletDBNonce, nonce[:])
 		})
 		if err != nil {
 			return err
 		}
 
 		b.encryptedMaster = ciphertext
+		b.salt = salt[:]
+		b.nonce = nonce
+		b.lastNonce = 0
 		b.hasMaster = true
 	}
 

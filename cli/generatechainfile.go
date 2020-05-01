@@ -10,6 +10,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
@@ -40,7 +41,7 @@ var generateChainCmd = &cobra.Command{
 		k, err := wallet.NewWallet(wallet.Config{
 			Log:  logger.New(os.Stdout),
 			Path: keystorePath,
-		})
+		}, params.Mainnet, nil)
 		if err != nil {
 			fmt.Printf("could not open database: %s\n", err)
 			return

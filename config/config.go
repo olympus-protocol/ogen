@@ -18,6 +18,7 @@ const (
 
 type Config struct {
 	DataFolder    string
+	RPCAddress    string
 	Debug         bool
 	Listen        bool
 	NetworkName   string

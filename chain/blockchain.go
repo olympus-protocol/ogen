@@ -6,6 +6,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -34,10 +35,16 @@ type Blockchain struct {
 	db blockdb.DB
 
 	// StateService
-	state *StateService
+	state   *StateService
+	mempool *mempool.CoinsMempool
 
 	notifees    map[BlockchainNotifee]struct{}
 	notifeeLock sync.RWMutex
+}
+
+func (ch *Blockchain) SubmitCoinTransaction(tx *primitives.CoinPayload) error {
+	state := ch.state.TipState()
+	return ch.mempool.Add(*tx, &state.UtxoState)
 }
 
 func (ch *Blockchain) Start() (err error) {
@@ -66,7 +73,7 @@ func (ch *Blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err e
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (*Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters, m *mempool.CoinsMempool) (*Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
@@ -98,6 +105,7 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 		state:       state,
 		notifees:    make(map[BlockchainNotifee]struct{}),
 		genesisTime: genesisTime,
+		mempool:     m,
 	}
 	return ch, db.Update(func(txn blockdb.DBUpdateTransaction) error {
 		return ch.UpdateChainHead(txn)

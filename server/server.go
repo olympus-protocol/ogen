@@ -33,7 +33,7 @@ type Server struct {
 	GovMan    *gov.GovMan
 	WorkerMan *workers.WorkerMan
 	UsersMan  *users.UserMan
-	RPC       *chainrpc.RPCServer
+	RPC       *chainrpc.Wallet
 	Gui       bool
 }
 
@@ -41,7 +41,7 @@ func (s *Server) Start() {
 	if s.config.Wallet {
 		err := s.Wallet.Start()
 		if err != nil {
-			log.Fatalln("unable to start wallet manager")
+			log.Fatalf("unable to start wallet manager: %s", err)
 		}
 	}
 	err := s.Chain.Start()
@@ -52,9 +52,7 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start peer manager")
 	}
-	if err := chainrpc.ServeRPC(s.RPC); err != nil {
-		log.Fatalf("unable to start RPC: %s", err)
-	}
+	chainrpc.ServeRPC(s.RPC, loadRPCConfig(s.config, s.log))
 	if s.Miner != nil {
 		err = s.Miner.Start()
 		if err != nil {
@@ -87,21 +85,17 @@ func (s *Server) Stop() error {
 
 func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
-	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger))
-	if err != nil {
-		return nil, err
-	}
-	rpc := chainrpc.NewRPCServer(&chainrpc.Config{
-		Network: "tcp",
-		Address: ":1234",
-		Log:     logger,
-	})
-	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
-	if err != nil {
-		return nil, err
-	}
-	voteMempool := mempool.NewVoteMempool()
 	coinsMempool := mempool.NewCoinsMempool()
+	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip, coinsMempool)
+	if err != nil {
+		return nil, err
+	}
+	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger), currParams, ch)
+	if err != nil {
+		return nil, err
+	}
+	rpc := chainrpc.NewRPCWallet(w)
+	voteMempool := mempool.NewVoteMempool()
 	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, voteMempool)
 	if err != nil {
 		return nil, err
@@ -187,4 +181,12 @@ func loadWalletsManConfig(config *config.Config, logger *logger.Logger) wallet.C
 		Path: path.Join(config.DataFolder, "wallet"),
 	}
 	return cfg
+}
+
+func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
+	return chainrpc.Config{
+		Log:     logger,
+		Address: config.RPCAddress,
+		Network: "tcp",
+	}
 }

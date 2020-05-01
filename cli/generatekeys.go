@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,7 @@ var generateKeysCmd = &cobra.Command{
 		k, err := wallet.NewWallet(wallet.Config{
 			Path: keystorePath,
 			Log:  logger.New(os.Stdout),
-		})
+		}, params.Mainnet, nil)
 		if err != nil {
 			panic(err)
 		}

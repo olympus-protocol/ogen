@@ -97,6 +97,7 @@ Next generation blockchain secured by CASPER.`,
 				Mode:          viper.GetString("mode"),
 				Wallet:        viper.GetBool("wallet"),
 				MiningEnabled: viper.GetBool("enablemining"),
+				RPCAddress:    viper.GetString("rpclisten"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -135,6 +136,7 @@ func init() {
 	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
 	rootCmd.Flags().Bool("enablemining", true, "should mining be enabled")
 	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
+	rootCmd.Flags().String("rpclisten", ":24127", "RPC listen address")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
