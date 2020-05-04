@@ -27,8 +27,8 @@ func (r *Wallet) GetAddress(req *http.Request, args *interface{}, reply *string)
 	return nil
 }
 
-func (w *Wallet) GetBalance(req *http.Request, args *interface{}, reply *uint64) error {
-	bal, err := w.wallet.GetBalance()
+func (w *Wallet) GetBalance(req *http.Request, args *string, reply *uint64) error {
+	bal, err := w.wallet.GetBalance(*args)
 	if err != nil {
 		return err
 	}

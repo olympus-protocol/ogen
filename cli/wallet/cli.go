@@ -50,12 +50,16 @@ func (wc *WalletCLI) GetAddress() (string, error) {
 	return fmt.Sprintf("Wallet address: %s", address), nil
 }
 
-func (wc *WalletCLI) GetBalance() (string, error) {
-	bal, err := wc.rpcClient.GetBalance()
+func (wc *WalletCLI) GetBalance(args []string) (string, error) {
+	addr := ""
+	if len(args) > 0 {
+		addr = args[0]
+	}
+	bal, err := wc.rpcClient.GetBalance(addr)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Wallet balance: %d\n", bal), nil
+	return fmt.Sprintf("Wallet balance: %d", bal), nil
 }
 
 func (wc *WalletCLI) SendToAddress(args []string) (string, error) {
@@ -74,7 +78,7 @@ func (wc *WalletCLI) SendToAddress(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Sent transaction: %s\n", txid), nil
+	return fmt.Sprintf("Sent transaction: %s", txid), nil
 }
 
 func (wc *WalletCLI) Run() {
@@ -98,7 +102,7 @@ func (wc *WalletCLI) Run() {
 		case "getaddress":
 			out, err = wc.GetAddress()
 		case "getbalance":
-			out, err = wc.GetBalance()
+			out, err = wc.GetBalance(args[1:])
 		case "sendtoaddress":
 			out, err = wc.SendToAddress(args[1:])
 		default:

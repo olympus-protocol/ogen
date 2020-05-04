@@ -9,8 +9,11 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-func (b *Wallet) GetBalance() (uint64, error) {
-	_, pkh, err := bech32.Decode(b.info.address)
+func (b *Wallet) GetBalance(addr string) (uint64, error) {
+	if addr == "" {
+		addr = b.info.address
+	}
+	_, pkh, err := bech32.Decode(addr)
 	if err != nil {
 		return 0, err
 	}

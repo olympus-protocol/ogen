@@ -30,5 +30,5 @@ db/blockdb/blocks
 db/blockdb/db
 build/
 vendor/
-chain.json
+chain*.json
 __debug_bin

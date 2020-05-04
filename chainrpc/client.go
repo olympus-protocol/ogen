@@ -58,9 +58,9 @@ func (c *RPCClient) GetAddress() (string, error) {
 	return addr, c.Call("Wallet.GetAddress", nil, &addr)
 }
 
-func (c *RPCClient) GetBalance() (uint64, error) {
+func (c *RPCClient) GetBalance(address string) (uint64, error) {
 	var bal uint64
-	return bal, c.Call("Wallet.GetBalance", nil, &bal)
+	return bal, c.Call("Wallet.GetBalance", &address, &bal)
 }
 
 func (c *RPCClient) SendToAddress(to string, amount uint64, askpass func() ([]byte, error)) (*chainhash.Hash, error) {
