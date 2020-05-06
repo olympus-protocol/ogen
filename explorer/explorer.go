@@ -79,6 +79,9 @@ func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers
 		lastBlocks[lastBlock.Hash.String()] = lastBlock
 		currBlock := lastBlock.Parent
 		for i := 0; i < 4; i++ {
+			if currBlock.Parent == nil {
+				break
+			}
 			lastBlocks[currBlock.Hash.String()] = currBlock
 			currBlock = currBlock.Parent
 		}
