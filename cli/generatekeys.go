@@ -40,7 +40,7 @@ var generateKeysCmd = &cobra.Command{
 		k, err := wallet.NewWallet(wallet.Config{
 			Path: keystorePath,
 			Log:  logger.New(os.Stdout),
-		}, params.Mainnet, nil)
+		}, params.Mainnet, nil, nil)
 		if err != nil {
 			panic(err)
 		}

@@ -49,7 +49,7 @@ func makeEmptyMessage(command string) (Message, error) {
 	case MsgPongCmd:
 		msg = &MsgPong{}
 	case MsgAddrCmd:
-		msg = &MsgGetAddr{}
+		msg = &MsgAddr{}
 	case MsgGetAddrCmd:
 		msg = &MsgGetAddr{}
 	case MsgBlocksCmd:

@@ -2,6 +2,7 @@ package peers
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -36,8 +37,9 @@ type PeerMan struct {
 	// Custom PeerMan Properties
 	addNodes     []string
 	connectNodes []string
-	peers        map[int]*Peer
-	peersLock    sync.RWMutex
+
+	peers     map[int]*Peer
+	peersLock sync.RWMutex
 
 	// Peer Communication Channels
 	closePeerChan chan Peer
@@ -47,8 +49,74 @@ type PeerMan struct {
 	peersDB     *filedb.FileDB
 	bannedPeers *filedb.FileDB
 	// Services Pointers
-	chain   *chain.Blockchain
-	mempool *mempool.VoteMempool
+	chain *chain.Blockchain
+
+	voteMempool *mempool.VoteMempool
+	coinMempool *mempool.CoinsMempool
+}
+
+func (pm *PeerMan) Peers() []*Peer {
+	pm.peersLock.RLock()
+	defer pm.peersLock.RUnlock()
+
+	peers := make([]*Peer, 0, len(pm.peers))
+	for _, p := range pm.peers {
+		peers = append(peers, p)
+	}
+
+	return peers
+}
+
+func (pm *PeerMan) needsPeers() bool {
+	pm.peersLock.Lock()
+	numPeers := len(pm.peers)
+	pm.peersLock.Unlock()
+
+	return int32(numPeers) < pm.config.MaxPeers
+}
+
+func (pm *PeerMan) connectPeer(peerIP string) {
+	if peerIP == "127.0.0.1:"+strconv.Itoa(int(pm.config.Port)) || peerIP == "localhost:"+strconv.Itoa(int(pm.config.Port)) {
+		// Prevent self connections
+		return
+	}
+	conn, err := pm.dial(peerIP)
+	if err != nil {
+		pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
+		return
+	}
+	// TODO: improve this
+	newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
+	go pm.syncNewPeer(newPeer)
+}
+
+func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
+	pm.peersLock.RLock()
+	defer pm.peersLock.RUnlock()
+	if int32(len(pm.peers)) >= pm.config.MaxPeers {
+		return nil
+	}
+
+	if int32(len(addrs)) > pm.config.MaxPeers-int32(len(pm.peers)) {
+		addrs = addrs[:pm.config.MaxPeers-int32(len(pm.peers))]
+	}
+
+outer:
+	for _, addr := range addrs {
+		for _, p := range pm.peers {
+			if p.address.IP.Equal(addr.IP) && p.address.Port == addr.Port {
+				continue outer
+			}
+		}
+		peerIP := fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
+		pm.connectPeer(peerIP)
+	}
+
+	return nil
+}
+
+func (pm *PeerMan) ListenPort() uint16 {
+	return uint16(pm.config.Port)
 }
 
 func (pm *PeerMan) listener() {
@@ -68,15 +136,7 @@ func (pm *PeerMan) listener() {
 		if err != nil {
 			pm.log.Fatalf("Unable to bind connect to peer")
 		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, newAddr, true, time.Now(), pm.log, pm)
+		newPeer := NewPeer(len(pm.peers)+1, conn, true, time.Now(), pm.log, pm)
 		pm.syncNewPeer(newPeer)
 	}
 }
@@ -172,25 +232,7 @@ func (pm *PeerMan) querySeeders() []string {
 
 func (pm *PeerMan) initialPeersConnection(initialPeers []string) {
 	for _, peerIP := range initialPeers {
-		if peerIP == "127.0.0.1:"+strconv.Itoa(int(pm.config.Port)) || peerIP == "localhost:"+strconv.Itoa(int(pm.config.Port)) {
-			// Prevent self connections
-			continue
-		}
-		conn, err := pm.dial(peerIP)
-		if err != nil {
-			pm.log.Tracef("Unable to dial peer %v", peerIP)
-			continue
-		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, newAddr, false, time.Now(), pm.log, pm)
-		pm.syncNewPeer(newPeer)
+		pm.connectPeer(peerIP)
 	}
 }
 
@@ -199,7 +241,10 @@ func (pm *PeerMan) syncNewPeer(p *Peer) {
 }
 
 func (pm *PeerMan) Disconnect(p *Peer) {
-	pm.log.Infof("removing peer addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("removing peer addr=%v:%v ", addr.IP, addr.Port)
+	}
 	pm.removePeer(p)
 }
 
@@ -208,6 +253,17 @@ func (pm *PeerMan) SubmitVote(vote *primitives.SingleValidatorVote) error {
 	defer pm.peersLock.Unlock()
 	for _, p := range pm.peers {
 		if err := p.submitVote(vote); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (pm *PeerMan) SubmitTx(tx *primitives.CoinPayload) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
+	for _, p := range pm.peers {
+		if err := p.submitTx(tx); err != nil {
 			return err
 		}
 	}
@@ -227,7 +283,10 @@ func (pm *PeerMan) SubmitBlock(block *primitives.Block) error {
 }
 
 func (pm *PeerMan) Handshake(p *Peer) {
-	pm.log.Infof("new peer handshaked addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("new peer handshaked addr=%v:%v ", addr.IP, addr.Port)
+	}
 	pm.addPeer(p)
 	rawPeerData, err := p.GetSerializedData()
 	if err != nil {
@@ -241,7 +300,10 @@ func (pm *PeerMan) Handshake(p *Peer) {
 }
 
 func (pm *PeerMan) Ban(p *Peer) {
-	pm.log.Infof("banning peer addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("banning peer addr=%v:%v ", addr.IP, addr.Port)
+	}
 	pm.removePeer(p)
 	rawPeerData, err := p.GetSerializedData()
 	if err != nil {
@@ -292,7 +354,7 @@ func (pm *PeerMan) GetPeersCount() int32 {
 	return int32(count)
 }
 
-func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, mempool *mempool.VoteMempool) (*PeerMan, error) {
+func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, voteMempool *mempool.VoteMempool, coinMempool *mempool.CoinsMempool) (*PeerMan, error) {
 	peersDbMetaData := filedb.MetaData{
 		Version:     100000,
 		Timestamp:   time.Now().Unix(),
@@ -323,7 +385,8 @@ func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockcha
 		peersDB:      peersdb,
 		bannedPeers:  bansDB,
 		chain:        chain,
-		mempool:      mempool,
+		voteMempool:  voteMempool,
+		coinMempool:  coinMempool,
 	}
 	return peersMan, nil
 }

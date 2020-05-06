@@ -32,6 +32,9 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 	shouldRemove = true
 	newVotes := make([]*primitives.SingleValidatorVote, 0, len(mv.individualVotes))
 	for _, v := range mv.individualVotes {
+		if len(participationBitfield) >= int(v.Offset/8) {
+			return shouldRemove
+		}
 		if participationBitfield[v.Offset/8]&(1<<uint(v.Offset%8)) == 0 {
 			newVotes = append(newVotes, v)
 			shouldRemove = false
@@ -63,6 +66,7 @@ func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
 type VoteMempool struct {
 	poolLock sync.RWMutex
 	pool     map[chainhash.Hash]*mempoolVote
+	params   *params.ChainParams
 }
 
 func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
@@ -111,12 +115,12 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
 
 func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
 	votes := make([]primitives.MultiValidatorVote, 0)
-	for i := range m.pool {
-		if m.pool[i].voteData.Slot < slot-p.MinAttestationInclusionDelay {
+	for i, v := range m.pool {
+		if v.voteData.Slot < slot-p.MinAttestationInclusionDelay && slot <= v.voteData.Slot+m.params.EpochLength-1 {
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
 				Signature:             *m.pool[i].aggregateSignature,
-				ParticipationBitfield: append([]uint8(nil), m.pool[i].participationBitfield...),
+				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
 			votes = append(votes, vote)
 		}
@@ -138,13 +142,17 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 		if shouldRemove {
 			delete(m.pool, voteHash)
 		}
-	}
 
+		if b.Header.Slot >= v.Data.Slot+m.params.EpochLength-1 {
+			delete(m.pool, voteHash)
+		}
+	}
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool() *VoteMempool {
+func NewVoteMempool(p *params.ChainParams) *VoteMempool {
 	return &VoteMempool{
-		pool: make(map[chainhash.Hash]*mempoolVote),
+		pool:   make(map[chainhash.Hash]*mempoolVote),
+		params: p,
 	}
 }

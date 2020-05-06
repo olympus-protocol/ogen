@@ -6,6 +6,8 @@ import (
 )
 
 func init() {
+	walletCmd.Flags().String("rpc", "http://localhost:24127", "RPC address and port to connect to")
+
 	rootCmd.AddCommand(walletCmd)
 }
 

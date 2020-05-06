@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
+
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, error) {

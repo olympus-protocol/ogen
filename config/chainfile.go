@@ -22,7 +22,7 @@ func (cf *ChainFile) ToInitializationParameters() primitives.InitializationParam
 	}
 
 	if cf.GenesisTime == 0 {
-		ip.GenesisTime = time.Now().Add(5 * time.Second)
+		ip.GenesisTime = time.Unix(time.Now().Add(5*time.Second).Unix(), 0)
 	}
 
 	return ip

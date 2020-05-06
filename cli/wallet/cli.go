@@ -33,6 +33,35 @@ type WalletCLI struct {
 	rpcClient *chainrpc.RPCClient
 }
 
+func amountStringToAmount(a string) (uint64, error) {
+	if strings.Contains(".", a) {
+		parts := strings.Split(".", a)
+		whole, err := strconv.ParseInt(parts[0], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		fractional, err := strconv.ParseInt(parts[1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		return uint64(whole*1000 + fractional), nil
+	}
+	whole, err := strconv.ParseInt(a, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(whole) * 1000, nil
+}
+
+func amountToAmountString(amount uint64) string {
+	whole := amount / 1000
+	fractional := amount % 1000
+
+	return fmt.Sprintf("%d.%.03d", whole, fractional)
+}
+
 var ctrlCKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
 	Key: prompt.ControlC,
 	Fn:  func(*prompt.Buffer) { os.Exit(0) },
@@ -59,7 +88,7 @@ func (wc *WalletCLI) GetBalance(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Wallet balance: %d", bal), nil
+	return fmt.Sprintf("Wallet balance: %s", amountToAmountString(bal)), nil
 }
 
 func (wc *WalletCLI) SendToAddress(args []string) (string, error) {
@@ -67,18 +96,18 @@ func (wc *WalletCLI) SendToAddress(args []string) (string, error) {
 		return "", fmt.Errorf("Usage: sendtoaddress <toaddress> <amount>")
 	}
 	toAddress := args[0]
-	amount, err := strconv.ParseInt(args[1], 10, 64)
+	amount, err := amountStringToAmount(args[1])
 	if err != nil {
 		return "", fmt.Errorf("Usage: sendtoaddress <toaddress> <amount>")
 	}
 	if amount <= 0 {
 		return "", fmt.Errorf("amount must be positive")
 	}
-	txid, err := wc.rpcClient.SendToAddress(toAddress, uint64(amount), askWalletPass)
+	_, err = wc.rpcClient.SendToAddress(toAddress, uint64(amount), askWalletPass)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Sent transaction: %s", txid), nil
+	return fmt.Sprintf("Sent transaction"), nil
 }
 
 func (wc *WalletCLI) Run() {
@@ -124,7 +153,11 @@ func NewWalletCLI(rpcClient *chainrpc.RPCClient) *WalletCLI {
 }
 
 func RunWallet(cmd *cobra.Command, args []string) {
-	rpcClient := chainrpc.NewRPCClient("http://localhost:24127")
+	rpc, err := cmd.Flags().GetString("rpc")
+	if err != nil {
+		panic(err)
+	}
+	rpcClient := chainrpc.NewRPCClient(rpc)
 	walletCLI := NewWalletCLI(rpcClient)
 	walletCLI.Run()
 }

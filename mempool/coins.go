@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
@@ -46,6 +47,23 @@ func newCoinMempoolItem() *coinMempoolItem {
 type CoinsMempool struct {
 	mempool map[[20]byte]*coinMempoolItem
 	lock    sync.RWMutex
+}
+
+func (cm *CoinsMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.CoinPayload {
+	cm.lock.RLock()
+	defer cm.lock.RUnlock()
+	txs := make([]primitives.CoinPayload, 0)
+	for _, item := range cm.mempool {
+		for _, tx := range item.transactions {
+			vh := tx.Hash()
+			if bloom.Has(vh) {
+				continue
+			}
+
+			txs = append(txs, tx)
+		}
+	}
+	return txs
 }
 
 // Add adds an item to the coins mempool.

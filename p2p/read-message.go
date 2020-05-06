@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"unicode/utf8"
+
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 func readMessageHeader(r io.Reader) (int, *messageHeader, error) {

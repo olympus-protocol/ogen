@@ -2,12 +2,12 @@ package wallet
 
 import (
 	"sync"
-	"sync/atomic"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/utils/hdwallets"
 )
 
@@ -25,15 +25,14 @@ type Wallet struct {
 	db     *badger.DB
 	log    *logger.Logger
 	params *params.ChainParams
-	chain  *chain.Blockchain
+
+	chain   *chain.Blockchain
+	peerman *peers.PeerMan
 
 	hasMaster bool
 
 	info          walletInfo
 	lastNonceLock sync.Mutex
-
-	masterPriv atomic.Value
-	masterLock uint32
 }
 
 var walletDBKey = []byte("encryption-key-ciphertext")
@@ -42,7 +41,7 @@ var walletDBNonce = []byte("encryption-key-nonce")
 var walletDBLastTxNonce = []byte("last-tx-nonce")
 var walletDBAddress = []byte("wallet-address")
 
-func NewWallet(c Config, params params.ChainParams, ch *chain.Blockchain) (*Wallet, error) {
+func NewWallet(c Config, params params.ChainParams, ch *chain.Blockchain, peerman *peers.PeerMan) (*Wallet, error) {
 	bdb, err := badger.Open(badger.DefaultOptions(c.Path).WithLogger(nil))
 	if err != nil {
 		return nil, err
@@ -54,6 +53,7 @@ func NewWallet(c Config, params params.ChainParams, ch *chain.Blockchain) (*Wall
 		log:       c.Log,
 		params:    &params,
 		chain:     ch,
+		peerman:   peerman,
 	}
 
 	if err := w.loadFromDisk(); err != nil {

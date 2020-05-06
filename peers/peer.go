@@ -2,6 +2,7 @@ package peers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -18,6 +19,7 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/pkg/errors"
 )
 
 type Peer struct {
@@ -37,7 +39,7 @@ type Peer struct {
 	id             int
 	inbound        bool
 	outbound       bool
-	address        serializer.NetAddress
+	address        *serializer.NetAddress
 	conn           net.Conn
 	connectionTime time.Time
 	lastPingTime   int64
@@ -49,7 +51,8 @@ type Peer struct {
 	verackReceived bool
 
 	// Internal Chan
-	closeSignal chan interface{}
+	ctx   context.Context
+	Close context.CancelFunc
 
 	// Chans for PeerMan Communication
 	mainCloseChan chan interface{}
@@ -63,6 +66,7 @@ type Peer struct {
 	blockchain       *chain.Blockchain
 	peerman          *PeerMan
 	voteBloomFilter  *bloom.BloomFilter
+	coinBloomFilter  *bloom.BloomFilter
 	blockBloomFilter *bloom.BloomFilter
 }
 
@@ -75,11 +79,15 @@ func (p *Peer) Start(lastBlockHeight uint64) {
 		return
 	}
 	p.peerman.Handshake(p)
+	if p.peerman.needsPeers() {
+		fmt.Println("asking for some peers")
+		p.writeMessage(&p2p.MsgGetAddr{})
+	}
 	// Init message listener
 	go func() {
 		err := p.messageListener()
 		if err != nil {
-			p.log.Errorf("disconnecting peer %v", p.GetID())
+			p.log.Errorf("disconnecting peer %v because of %s", p.GetID(), err)
 			p.peerman.Disconnect(p)
 			return
 		}
@@ -88,7 +96,7 @@ func (p *Peer) Start(lastBlockHeight uint64) {
 	go func() {
 		err := p.peerRoutine()
 		if err != nil {
-			p.log.Errorf("disconnecting peer %v", p.GetID())
+			p.log.Errorf("disconnecting peer %v because of %s", p.GetID(), err)
 			p.peerman.Disconnect(p)
 		}
 	}()
@@ -120,7 +128,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	// first, we read their version
 	remoteMsgVersion, _, err := p.readMessage()
 	if err != nil {
-		return ErrorReadRemote
+		return errors.Wrap(err, "error reading from remote")
 	}
 	msgVersion, ok := remoteMsgVersion.(*p2p.MsgVersion)
 	if !ok {
@@ -136,7 +144,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	}
 
 	// send our version
-	err = p.writeMessage(p.versionMsg(lastBlockHeight))
+	err = p.writeMessage(p.versionMsg(lastBlockHeight, p.peerman.ListenPort()))
 	if err != nil {
 		return ErrorWriteRemote
 	}
@@ -144,7 +152,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	// wait for them to acknowledge our version message
 	remoteMsgVerack, _, err := p.readMessage()
 	if err != nil {
-		return ErrorReadRemote
+		return errors.Wrap(err, "error reading from remote")
 	}
 	_, ok = remoteMsgVerack.(*p2p.MsgVerack)
 	if !ok {
@@ -168,7 +176,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 }
 
 func (p *Peer) handleOutboundPeerHandshake(lastBlockHeight uint64) error {
-	err := p.writeMessage(p.versionMsg(lastBlockHeight))
+	err := p.writeMessage(p.versionMsg(lastBlockHeight, p.peerman.ListenPort()))
 	if err != nil {
 		return ErrorWriteRemote
 	}
@@ -208,35 +216,55 @@ func (p *Peer) updateStats(msgVersion *p2p.MsgVersion) {
 	p.services = msgVersion.Services
 	p.lastBlock = msgVersion.LastBlock
 	p.userAgent = msgVersion.UserAgent
+	p.address = &msgVersion.AddrMe
 	p.peerLock.Unlock()
 }
 
 func (p *Peer) sendMempool() error {
-	possibleVotes := p.peerman.mempool.GetVotesNotInBloom(p.voteBloomFilter)
+	possibleVotes := p.peerman.voteMempool.GetVotesNotInBloom(p.voteBloomFilter)
 	// send 50% of these
 	votesToSend := mempool.PickPercentVotes(possibleVotes, 0.5)
 	for _, v := range votesToSend {
 		p.voteBloomFilter.Add(v.Hash())
 	}
 
-	return p.writeMessage(&p2p.MsgVotes{
+	if err := p.writeMessage(&p2p.MsgVotes{
 		Votes: votesToSend,
-	})
+	}); err != nil {
+		return err
+	}
+
+	possibleTxs := p.peerman.coinMempool.GetVotesNotInBloom(p.coinBloomFilter)
+	for _, tx := range possibleTxs {
+		p.coinBloomFilter.Add(tx.Hash())
+	}
+
+	if err := p.writeMessage(&p2p.MsgTx{
+		Txs: possibleTxs,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Peer) peerRoutine() error {
 	p.log.Tracef("starting peer routine for peer %v", p.GetID())
-	pingTicker := time.NewTicker(15 * time.Second)
+	pingTicker := time.NewTicker(60 * time.Second)
 	mempoolTicker := time.NewTicker(5 * time.Minute)
+outer:
 	for {
 		select {
-		case <-p.closeSignal:
-			break
+		case <-p.ctx.Done():
+			break outer
 		case <-pingTicker.C:
 			err := p.ping()
 			if err != nil {
-				p.log.Errorf("unable to ping peer %v", p.GetID())
+				p.log.Errorf("unable to ping peer %v: %s", p.GetID(), err)
 				return err
+			}
+			if p.peerman.needsPeers() {
+				p.writeMessage(&p2p.MsgGetAddr{})
 			}
 		case <-mempoolTicker.C:
 			err := p.sendMempool()
@@ -246,6 +274,7 @@ func (p *Peer) peerRoutine() error {
 			}
 		}
 	}
+	return nil
 }
 
 func (p *Peer) ping() error {
@@ -270,24 +299,27 @@ func (p *Peer) pong(nonce uint64) error {
 	return nil
 }
 
-func (p *Peer) versionMsg(lastBlockHeight uint64) *p2p.MsgVersion {
+func (p *Peer) versionMsg(lastBlockHeight uint64, listenPort uint16) *p2p.MsgVersion {
 	meInformation := strings.Split(p.conn.LocalAddr().String(), ":")
-	meIP, mePortString := meInformation[0], meInformation[1]
-	mePort, _ := strconv.Atoi(mePortString)
+	meIP, _ := meInformation[0], meInformation[1]
+
 	youInformation := strings.Split(p.conn.RemoteAddr().String(), ":")
 	youIP, youPortString := youInformation[0], youInformation[1]
 	youPort, _ := strconv.Atoi(youPortString)
-	me := serializer.NewNetAddress(time.Now(), net.ParseIP(meIP), uint16(mePort))
+
+	me := serializer.NewNetAddress(time.Now(), net.ParseIP(meIP), listenPort)
 	me.Timestamp = time.Now().Unix()
+
 	you := serializer.NewNetAddress(time.Now(), net.ParseIP(youIP), uint16(youPort))
 	you.Timestamp = time.Now().Unix()
+
 	nonce, _ := serializer.RandomUint64()
 	msg := p2p.NewMsgVersion(*me, *you, nonce, lastBlockHeight)
 	return msg
 }
 
 func (p *Peer) Stop() {
-	p.closeSignal <- struct{}{}
+	p.Close()
 	_ = p.conn.Close()
 }
 
@@ -372,94 +404,145 @@ func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
 	})
 }
 
+func (p *Peer) submitTx(tx *primitives.CoinPayload) error {
+	th := tx.Hash()
+	if p.coinBloomFilter.Has(th) {
+		// already sent it
+		return nil
+	}
+
+	p.coinBloomFilter.Add(th)
+
+	return p.writeMessage(&p2p.MsgTx{
+		Txs: []primitives.CoinPayload{*tx},
+	})
+}
+
 func (p *Peer) messageListener() error {
 	p.log.Tracef("starting message listener for peer %v", p.GetID())
+outer:
 	for {
 		select {
-		case <-p.closeSignal:
-			break
+		case <-p.ctx.Done():
+			break outer
 		default:
+			p.log.Debug("reading...")
 			rmsg, _, err := p.readMessage()
 			if err != nil {
-				return ErrorReadRemote
+				return errors.Wrap(err, "error reading from remote")
 			}
-			switch msg := rmsg.(type) {
+			p.log.Debugf("read message %s", rmsg.Command())
+			go func() {
+				switch msg := rmsg.(type) {
 
-			// Initial connection handlers
-			case *p2p.MsgVersion:
-				p.log.Errorf("handshake already received, duplicated version from peer %v", p.GetID())
-				p.peerman.Disconnect(p)
-			case *p2p.MsgVerack:
-				p.log.Errorf("handshake already received, duplicated verack from peer %v", p.GetID())
-				p.peerman.Disconnect(p)
-			case *p2p.MsgPing:
-				p.log.Tracef("received ping msg from peer %v", p.GetID())
-				err := p.pong(msg.Nonce)
-				if err != nil {
-					return err
-				}
-			case *p2p.MsgPong:
-				p.log.Tracef("received pong msg from peer %v", p.GetID())
-				if msg.Nonce != p.lastPingNonce {
+				// Initial connection handlers
+				case *p2p.MsgVersion:
+					p.log.Errorf("handshake already received, duplicated version from peer %v", p.GetID())
+					p.peerman.Disconnect(p)
+				case *p2p.MsgVerack:
+					p.log.Errorf("handshake already received, duplicated verack from peer %v", p.GetID())
+					p.peerman.Disconnect(p)
+				case *p2p.MsgPing:
+					p.log.Tracef("received ping msg from peer %v", p.GetID())
+					err := p.pong(msg.Nonce)
+					if err != nil {
+						p.log.Errorf("Error processing ping: %s", err)
+					}
+				case *p2p.MsgPong:
 					p.log.Tracef("received pong msg from peer %v", p.GetID())
-					return ErrorPingNonceMismatch
-				}
+					if msg.Nonce != p.lastPingNonce {
+						p.log.Tracef("received pong msg from peer %v", p.GetID())
+						p.log.Errorf("Error processing ping: %s", ErrorPingNonceMismatch)
+					}
 
-			// Address sharing handlers
-			case *p2p.MsgGetAddr:
-				p.log.Tracef("received getaddr msg from peer %v", p.GetID())
-				// TODO: fix
-			case *p2p.MsgAddr:
-				p.log.Tracef("received addr msg from peer %v", p.GetID())
-
-			// Blocks handlers
-			case *p2p.MsgGetBlocks:
-				p.log.Tracef("received getblocks msg from peer %v", p.GetID())
-				if err := p.sendBlocksToPeer(msg); err != nil {
-					p.log.Errorf("error sending blocks to peer: %s", err)
-				}
-				// TODO: fix
-				// p.ManChan <- newDataRequestMsg(p, "getblocks", &msg.LastBlockHash)
-			case *p2p.MsgBlocks:
-				p.log.Tracef("received blocks msg from peer %v", p.GetID())
-				for _, b := range msg.Blocks {
-					if !p.blockchain.State().Index().Have(b.Header.PrevBlockHash) {
-						err = p.writeMessage(&p2p.MsgGetBlocks{
-							LocatorHashes: p.blockchain.GetLocatorHashes(),
-							HashStop:      b.Header.PrevBlockHash,
-						})
-						if err != nil {
-							p.log.Error(err)
+				// Address sharing handlers
+				case *p2p.MsgGetAddr:
+					p.log.Tracef("received getaddr msg from peer %v", p.GetID())
+					knownPeers := make([]*serializer.NetAddress, 0)
+					for _, peer := range p.peerman.Peers() {
+						if p != peer && peer.address != nil {
+							knownPeers = append(knownPeers, peer.address)
 						}
-						break
 					}
-
-					bh := b.Hash()
-					p.blockBloomFilter.Add(bh)
-					p.log.Debugf("processing block %s", bh)
-					if err := p.blockchain.ProcessBlock(&b); err != nil {
-						p.log.Errorf("error processing block from peer: %s", err)
-						break
+					if len(knownPeers) > 0 {
+						if err := p.writeMessage(&p2p.MsgAddr{
+							AddrList: knownPeers,
+						}); err != nil {
+							p.log.Errorf("error responding to get addrs: %s", err)
+						}
 					}
-					if err := p.peerman.SubmitBlock(&b); err != nil {
+				case *p2p.MsgAddr:
+					p.log.Tracef("received addr msg from peer %v", p.GetID())
+					if err := p.peerman.receiveAddrs(msg.AddrList); err != nil {
 						p.log.Error(err)
 					}
-				}
-				// p.ManChan <- newBlocksInvMsg(p, msg)
 
-			// Tx handlers
-			case *p2p.MsgVotes:
-				// p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
-				for _, v := range msg.Votes {
-					p.voteBloomFilter.Add(v.Hash())
-					p.peerman.mempool.Add(&v, v.OutOf)
+				// Blocks handlers
+				case *p2p.MsgGetBlocks:
+					p.log.Tracef("received getblocks msg from peer %v", p.GetID())
+					if err := p.sendBlocksToPeer(msg); err != nil {
+						p.log.Errorf("error sending blocks to peer: %s", err)
+					}
+					// TODO: fix
+				case *p2p.MsgBlocks:
+					p.log.Tracef("received blocks msg from peer %v", p.GetID())
+					for _, b := range msg.Blocks {
+						if !p.blockchain.State().Index().Have(b.Header.PrevBlockHash) {
+							p.log.Debugf("don't have block %s, requesting", b.Header.PrevBlockHash)
+							err = p.writeMessage(&p2p.MsgGetBlocks{
+								LocatorHashes: p.blockchain.GetLocatorHashes(),
+								HashStop:      b.Hash(),
+							})
+							if err != nil {
+								p.log.Error(err)
+							}
+							break
+						}
+
+						if p.blockchain.State().Index().Have(b.Hash()) {
+							continue
+						}
+
+						bh := b.Hash()
+						p.blockBloomFilter.Add(bh)
+						p.log.Debugf("processing block %s", bh)
+						if err := p.blockchain.ProcessBlock(&b); err != nil {
+							p.log.Errorf("error processing block from peer: %s", err)
+							break
+						}
+						if err := p.peerman.SubmitBlock(&b); err != nil {
+							p.log.Error(err)
+						}
+					}
+
+				// Tx handlers
+				case *p2p.MsgVotes:
+					// p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
+					for _, v := range msg.Votes {
+						p.voteBloomFilter.Add(v.Hash())
+						p.peerman.voteMempool.Add(&v, v.OutOf)
+					}
+				case *p2p.MsgTx:
+					p.log.Tracef("received tx msg from peer %v", p.GetID())
+					state := p.peerman.chain.State().TipState()
+					for _, tx := range msg.Txs {
+						if err := p.peerman.coinMempool.Add(tx, &state.UtxoState); err != nil {
+							continue
+						}
+						p.coinBloomFilter.Add(tx.Hash())
+					}
+
+					// relay to peers:
+					for _, tx := range msg.Txs {
+						if err := p.peerman.SubmitTx(&tx); err != nil {
+							p.log.Errorf("error submitting transaction: %s", err)
+						}
+					}
 				}
-			case *p2p.MsgTx:
-				p.log.Tracef("received tx msg from peer %v", p.GetID())
-				// p.ManChan <- newTxMsg(p, msg)
-			}
+			}()
 		}
 	}
+	return nil
 }
 
 func (p *Peer) readMessage() (p2p.Message, []byte, error) {
@@ -473,7 +556,7 @@ func (p *Peer) writeMessage(msg p2p.Message) error {
 	return err
 }
 
-func (p *Peer) GetAddr() serializer.NetAddress {
+func (p *Peer) GetAddr() *serializer.NetAddress {
 	p.peerLock.RLock()
 	address := p.address
 	p.peerLock.RUnlock()
@@ -489,7 +572,7 @@ func (p *Peer) GetID() int {
 
 func (p *Peer) GetSerializedData() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
-	err := serializer.WriteNetAddress(buf, &p.address)
+	err := serializer.WriteNetAddress(buf, p.address)
 	if err != nil {
 		return nil, err
 	}
@@ -521,14 +604,15 @@ func (p *Peer) SetPeerSync(syncing bool) {
 const (
 	voteBloomFilterSize  = 1024 * 1024
 	blockBloomFilterSize = 1024 * 1024
+	coinBloomFilterSize  = 1024 * 1024
 )
 
-func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
+func NewPeer(id int, conn net.Conn, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
+	ctx, cancel := context.WithCancel(context.Background())
 	peer := &Peer{
 		id:               id,
 		log:              log,
 		conn:             conn,
-		address:          addr,
 		inbound:          inbound,
 		outbound:         !inbound,
 		connectionTime:   time,
@@ -538,6 +622,9 @@ func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, ti
 		peerman:          peerMgr,
 		voteBloomFilter:  bloom.NewBloomFilter(voteBloomFilterSize),
 		blockBloomFilter: bloom.NewBloomFilter(blockBloomFilterSize),
+		coinBloomFilter:  bloom.NewBloomFilter(coinBloomFilterSize),
+		ctx:              ctx,
+		Close:            cancel,
 	}
 	return peer
 }

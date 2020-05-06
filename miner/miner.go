@@ -188,8 +188,6 @@ func (m *Miner) Start() error {
 
 				s := m.chain.State()
 
-				m.log.Infof("proposing for slot %d", slotToPropose)
-
 				view, err := s.GetSubView(tipHash)
 				if err != nil {
 					m.log.Error(err)
@@ -208,6 +206,7 @@ func (m *Miner) Start() error {
 				proposer := state.ValidatorRegistry[proposerIndex]
 
 				if k, found := m.keystore.GetValidatorKey(&proposer); found {
+					m.log.Infof("proposing for slot %d", slotToPropose)
 					votes := m.voteMempool.Get(slotToPropose, &m.params)
 					coinTxs := m.coinsMempool.Get(m.params.MaxTxsPerBlock, *state)
 

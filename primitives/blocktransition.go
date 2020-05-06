@@ -55,6 +55,10 @@ func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 				break
 			}
 
+			if v.ParticipationBitfield[i]&(1<<uint(j)) == 0 {
+				continue
+			}
+
 			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validator].PubKey)
 			if err != nil {
 				return err

@@ -60,7 +60,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 		FromPublicKey: *pub,
 		Amount:        amount,
 		Nonce:         nonce,
-		Fee:           100,
+		Fee:           1,
 	}
 
 	sigMsg := payload.SignatureMessage()
@@ -78,6 +78,10 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 	}
 
 	if err := b.chain.SubmitCoinTransaction(payload); err != nil {
+		return nil, err
+	}
+
+	if err := b.peerman.SubmitTx(payload); err != nil {
 		return nil, err
 	}
 

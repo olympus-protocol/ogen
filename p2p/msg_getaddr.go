@@ -1,6 +1,8 @@
 package p2p
 
-import "io"
+import (
+	"io"
+)
 
 type MsgGetAddr struct{}
 
