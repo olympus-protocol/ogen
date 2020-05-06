@@ -3,16 +3,17 @@ package p2p
 import (
 	"errors"
 	"fmt"
-	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
 	"time"
+
+	"github.com/olympus-protocol/ogen/config"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 type MsgVersion struct {
 	ProtocolVersion int32                 // 4 bytes
 	UserAgent       string                // MaxUserAgentLen (bytes)
-	LastBlock       int32                 // 4 bytes
+	LastBlock       uint64                // 4 bytes
 	Nonce           uint64                // 8 bytes
 	Services        ServiceFlag           // 8 bytes
 	Timestamp       int64                 // 8 bytes
@@ -120,7 +121,7 @@ func (m *MsgVersion) MaxPayloadLength() uint32 {
 }
 
 func NewMsgVersion(me serializer.NetAddress, you serializer.NetAddress, nonce uint64,
-	lastBlock int32) *MsgVersion {
+	lastBlock uint64) *MsgVersion {
 	return &MsgVersion{
 		ProtocolVersion: int32(ProtocolVersion),
 		Services:        0,

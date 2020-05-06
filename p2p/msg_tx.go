@@ -2,64 +2,49 @@ package p2p
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
 )
 
 const (
 	maxTxSize = 1024 * 300 // 300 KB
 )
 
-
 type MsgTx struct {
-	primitives.Tx
+	Txs []primitives.CoinPayload
 }
 
-type OutPoint struct {
-	TxHash chainhash.Hash
-	Index  int64
-}
-
-func (o *OutPoint) IsNull() bool {
-	zeroHash := chainhash.Hash{}
-	if o.TxHash == zeroHash && o.Index == 0 {
-		return true
-	}
-	return false
-}
-
-func (o *OutPoint) Serialize(w io.Writer) error {
-	err := serializer.WriteElements(w, o.TxHash, o.Index)
-	if err != nil {
+func (m *MsgTx) Encode(w io.Writer) error {
+	if err := serializer.WriteVarInt(w, uint64(len(m.Txs))); err != nil {
 		return err
 	}
+
+	for _, tx := range m.Txs {
+		if err := tx.Encode(w); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (o *OutPoint) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &o.TxHash, &o.Index)
+func (m *MsgTx) Decode(r io.Reader) error {
+	numTxs, err := serializer.ReadVarInt(r)
 	if err != nil {
 		return err
 	}
+
+	m.Txs = make([]primitives.CoinPayload, numTxs)
+	for i := range m.Txs {
+		if err := m.Txs[i].Decode(r); err != nil {
+			return err
+		}
+	}
+
 	return nil
-}
-
-func (o *OutPoint) Hash() (chainhash.Hash, error) {
-	buf := bytes.NewBuffer([]byte{})
-	err := o.Serialize(buf)
-	if err != nil {
-		return chainhash.Hash{}, err
-	}
-	return chainhash.DoubleHashH(buf.Bytes()), nil
-}
-
-func NewOutPoint(hash chainhash.Hash, index int64) *OutPoint {
-	return &OutPoint{
-		TxHash: hash,
-		Index:  index,
-	}
 }
 
 func (m *MsgTx) TxHash() (chainhash.Hash, error) {
@@ -71,15 +56,10 @@ func (m *MsgTx) TxHash() (chainhash.Hash, error) {
 	return chainhash.DoubleHashH(buf.Bytes()), nil
 }
 
-
 func (m *MsgTx) Command() string {
 	return MsgTxCmd
 }
 
 func (m *MsgTx) MaxPayloadLength() uint32 {
 	return maxTxSize
-}
-
-func (m *MsgTx) AddPayload(payload []byte) {
-	m.Payload = payload
 }

@@ -1,55 +1,15 @@
 package main
 
 import (
-	"flag"
-	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/db/blockdb"
+	"github.com/olympus-protocol/ogen/cli"
 	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/server"
 	"os"
 )
 
+var log = logger.New(os.Stdin)
+
 func main() {
-	var dataDirPath = flag.String("datadir", "", "Directory to store Ogen data")
-	flag.Parse()
-	conf := config.LoadConfig(*dataDirPath)
-	log := logger.New(os.Stdin)
-	if conf.Debug {
-		log = log.WithDebug()
-	}
-	log.Infof("Starting Ogen v%v", config.OgenVersion())
-	log.Trace("loading log on debug mode")
-	err := loadOgen(conf, log)
-	if err != nil {
-		log.Fatal(err)
-	}
+	cli.Execute()
 }
 
-// loadOgen is the main function to run ogen.
-func loadOgen(configParams *config.Config, log *logger.Logger) error {
-	var currParams params.ChainParams
-	switch configParams.NetworkName {
-	case "mainnet":
-		currParams = params.Mainnet
-	default:
-		currParams = params.TestNet
-	}
-	db, err := blockdb.NewBlockDB(configParams.DataFolder, currParams, log)
-	if err != nil {
-		return err
-	}
-	listenChan := config.InterruptListener(log)
-	s, err := server.NewServer(configParams, log, currParams, db, false)
-	if err != nil {
-		return err
-	}
-	go s.Start()
-	<-listenChan
-	err = s.Stop()
-	if err != nil {
 
-	}
-	db.Close()
-	return nil
-}

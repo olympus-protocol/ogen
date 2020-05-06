@@ -2,15 +2,16 @@ package p2p
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/primitives"
 	"testing"
 	"time"
+
+	"github.com/olympus-protocol/ogen/primitives"
 )
 
 var (
 	TestTx = primitives.Tx{
 		TxVersion: 1,
-		TxType:    primitives.Coins,
+		TxType:    primitives.TxCoins,
 		TxAction:  primitives.Transfer,
 		Time:      time.Unix(1572830409, 0).Unix(),
 	}

@@ -2,6 +2,10 @@ package chain_test
 
 import (
 	"crypto/rand"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/db/blockdb/mock"
@@ -9,25 +13,48 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"os"
-	"testing"
-	"time"
 )
 
 var log = logger.New(os.Stdout).Quiet()
 
+const NumTestValidators = 128
+
+func getTestInitializationParameters() (*primitives.InitializationParameters, []bls.SecretKey) {
+	vals := make([]primitives.ValidatorInitialization, NumTestValidators)
+	keys := make([]bls.SecretKey, NumTestValidators)
+	for i := range vals {
+		k, err := bls.RandSecretKey(rand.Reader)
+		if err != nil {
+			panic(err)
+		}
+
+		keys[i] = *k
+
+		vals[i] = primitives.ValidatorInitialization{
+			PubKey:       keys[i].DerivePublicKey().Serialize(),
+			PayeeAddress: "",
+		}
+	}
+
+	return &primitives.InitializationParameters{
+		InitialValidators: vals,
+		GenesisTime:       time.Now().Add(1 * time.Second),
+	}, keys
+}
 
 func TestBlockchainTipGenesis(t *testing.T) {
 	db := mock.NewMemoryDB()
 
+	ip, _ := getTestInitializationParameters()
+
 	b, err := chain.NewBlockchain(chain.Config{
 		Log: log,
-	}, params.Mainnet, db)
+	}, params.Mainnet, db, *ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	genesis := b.State().View.Tip()
+	genesis := b.State().Tip()
 	if genesis.Height != 0 {
 		t.Fatal("expected genesis height to be 0")
 	}
@@ -40,14 +67,16 @@ func TestBlockchainTipGenesis(t *testing.T) {
 func TestBlockchainTipAddBlock(t *testing.T) {
 	db := mock.NewMemoryDB()
 
+	ip, _ := getTestInitializationParameters()
+
 	b, err := chain.NewBlockchain(chain.Config{
 		Log: log,
-	}, params.Mainnet, db)
+	}, params.Mainnet, db, *ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	genesis := b.State().View.Tip()
+	genesis := b.State().Tip()
 	if genesis.Height != 0 {
 		t.Fatal("expected genesis height to be 0")
 	}
@@ -73,13 +102,11 @@ func TestBlockchainTipAddBlock(t *testing.T) {
 	}
 
 	err = b.ProcessBlock(&primitives.Block{
-		Header: newBlockHeader,
+		Header:    newBlockHeader,
 		Txs:       nil,
-		PubKey:    secretKey.DerivePublicKey().Serialize(),
 		Signature: sig.Serialize(),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 }
-

@@ -1,44 +1,63 @@
 package primitives
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/olympus-protocol/ogen/bls"
+	"io"
+
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"io"
-	"time"
 )
 
 const (
 	maxBlockSize = 1024 * 512 // 512 kilobytes
 )
 
+// Block is a block in the blockchain.
 type Block struct {
-	Header    BlockHeader
-	Txs       []Tx
-	PubKey    [48]byte
-	Signature [96]byte
-}
-
-func (b *Block) MinerPubKey() (*bls.PublicKey, error) {
-	return bls.DeserializePublicKey(b.PubKey)
-}
-
-func (b *Block) MinerSig() (*bls.Signature, error) {
-	return bls.DeserializeSignature(b.Signature)
-}
-
-func (b *Block) GetTime() time.Time {
-	return b.Header.Timestamp
-}
-
-func (b *Block) GetTx(index int32) *Tx {
-	return &b.Txs[index]
+	Header          BlockHeader
+	Votes           []MultiValidatorVote
+	Txs             []Tx
+	Signature       [96]byte
+	RandaoSignature [96]byte
 }
 
 func (b *Block) Hash() chainhash.Hash {
 	return b.Header.Hash()
+}
+
+func merkleRootTxs(txs []Tx) chainhash.Hash {
+	if len(txs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(txs) == 1 {
+		return txs[0].Hash()
+	}
+	mid := len(txs) / 2
+	h1 := merkleRootTxs(txs[:mid])
+	h2 := merkleRootTxs(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+func (b *Block) TransactionMerkleRoot() chainhash.Hash {
+	return merkleRootTxs(b.Txs)
+}
+
+func merkleRootVotes(votes []MultiValidatorVote) chainhash.Hash {
+	if len(votes) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(votes) == 1 {
+		return votes[0].Hash()
+	}
+	mid := len(votes) / 2
+	h1 := merkleRootVotes(votes[:mid])
+	h2 := merkleRootVotes(votes[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+func (b *Block) VotesMerkleRoot() chainhash.Hash {
+	return merkleRootVotes(b.Votes)
 }
 
 func (m *Block) Encode(w io.Writer) error {
@@ -56,21 +75,24 @@ func (m *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
-	err = serializer.WriteElements(w, m.PubKey, m.Signature)
+	err = serializer.WriteVarInt(w, uint64(len(m.Votes)))
+	if err != nil {
+		return err
+	}
+	for _, vote := range m.Votes {
+		err := vote.Serialize(w)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteElements(w, m.Signature, m.RandaoSignature)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-
-
 func (m *Block) Decode(r io.Reader) error {
-	buf, ok := r.(*bytes.Buffer)
-	if !ok {
-		return fmt.Errorf("MsgBlock.Decode reader is not a " +
-			"*bytes.Buffer")
-	}
 	err := m.Header.Deserialize(r)
 	if err != nil {
 		return err
@@ -81,14 +103,23 @@ func (m *Block) Decode(r io.Reader) error {
 	}
 	m.Txs = make([]Tx, txCount)
 	for i := uint64(0); i < txCount; i++ {
-		var tx Tx
-		err := tx.Decode(r)
+		err := m.Txs[i].Decode(r)
 		if err != nil {
 			return err
 		}
-		m.Txs[i] = tx
 	}
-	err = serializer.ReadElements(buf, &m.PubKey, &m.Signature)
+	voteCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	m.Votes = make([]MultiValidatorVote, voteCount)
+	for i := range m.Votes {
+		err := m.Votes[i].Deserialize(r)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.ReadElements(r, &m.Signature, &m.RandaoSignature)
 	if err != nil {
 		return err
 	}

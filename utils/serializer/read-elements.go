@@ -2,9 +2,10 @@ package serializer
 
 import (
 	"encoding/binary"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"io"
 	"time"
+
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 func ReadElement(r io.Reader, element interface{}) error {
@@ -95,12 +96,30 @@ func ReadElement(r io.Reader, element interface{}) error {
 			return err
 		}
 		return nil
+	case *[20]byte:
+		_, err := io.ReadFull(r, e[:])
+		if err != nil {
+			return err
+		}
+		return nil
 
 	case *chainhash.Hash:
 		_, err := io.ReadFull(r, e[:])
 		if err != nil {
 			return err
 		}
+		return nil
+	case *string:
+		l, err := ReadVarInt(r)
+		if err != nil {
+			return err
+		}
+		output := make([]byte, l)
+		_, err = io.ReadFull(r, output)
+		if err != nil {
+			return err
+		}
+		*e = string(output)
 		return nil
 	}
 

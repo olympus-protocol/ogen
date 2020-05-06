@@ -2,13 +2,14 @@ package index_test
 
 import (
 	"bytes"
+	"testing"
+	"time"
+
 	"github.com/go-test/deep"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"testing"
-	"time"
 )
 
 func TestSerializeDeserializeRow(t *testing.T) {
@@ -20,11 +21,11 @@ func TestSerializeDeserializeRow(t *testing.T) {
 		Timestamp:     time.Unix(5, 0),
 	}
 	blockRow := index.BlockRow{
-		Header: header,
+		Header:  header,
 		Locator: blockdb.BlockLocation{},
 		Height:  7,
 		Parent:  nil,
-		Hash: header.Hash(),
+		Hash:    header.Hash(),
 	}
 
 	b := bytes.NewBuffer([]byte{})
@@ -67,7 +68,7 @@ func TestSerializeDeserializeIndex(t *testing.T) {
 		Timestamp:     time.Unix(5, 0),
 	}
 
-	_, err = blockIndex.Add(blockHeader, blockdb.BlockLocation{})
+	_, err = blockIndex.Add(blockHeader)
 	if err != nil {
 		t.Fatal(err)
 	}

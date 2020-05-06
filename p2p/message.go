@@ -14,9 +14,10 @@ const (
 	MsgGetAddrCmd   = "getaddr"
 	MsgAddrCmd      = "addr"
 	MsgGetBlocksCmd = "getblocks"
-	MsgBlockCmd     = "block"
+	MsgBlocksCmd    = "blocks"
 	MsgBlocksInvCmd = "blocksinv"
 	MsgTxCmd        = "tx"
+	MsgVoteCmd      = "vote"
 )
 
 const MessageHeaderSize = 24
@@ -48,17 +49,17 @@ func makeEmptyMessage(command string) (Message, error) {
 	case MsgPongCmd:
 		msg = &MsgPong{}
 	case MsgAddrCmd:
-		msg = &MsgGetAddr{}
+		msg = &MsgAddr{}
 	case MsgGetAddrCmd:
 		msg = &MsgGetAddr{}
-	case MsgBlockCmd:
-		msg = &MsgBlock{}
+	case MsgBlocksCmd:
+		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
-	case MsgBlocksInvCmd:
-		msg = &MsgBlockInv{}
 	case MsgTxCmd:
 		msg = &MsgTx{}
+	case MsgVoteCmd:
+		msg = &MsgVotes{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

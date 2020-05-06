@@ -1,17 +1,18 @@
 package config
 
 import (
-	"github.com/olympus-protocol/ogen/logger"
+	"context"
 	"os"
 	"os/signal"
+
+	"github.com/olympus-protocol/ogen/logger"
 )
 
 var shutdownRequestChannel = make(chan struct{})
 
 var interruptSignals = []os.Signal{os.Interrupt}
 
-func InterruptListener(log *logger.Logger) <-chan struct{} {
-	c := make(chan struct{})
+func InterruptListener(log *logger.Logger, cancel context.CancelFunc) {
 	go func() {
 		interruptChannel := make(chan os.Signal, 1)
 		signal.Notify(interruptChannel, interruptSignals...)
@@ -22,7 +23,7 @@ func InterruptListener(log *logger.Logger) <-chan struct{} {
 		case <-shutdownRequestChannel:
 			log.Warn("Shutdown requested.  Shutting down...")
 		}
-		close(c)
+		cancel()
 		for {
 			select {
 			case sig := <-interruptChannel:
@@ -35,5 +36,4 @@ func InterruptListener(log *logger.Logger) <-chan struct{} {
 			}
 		}
 	}()
-	return c
 }

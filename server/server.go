@@ -1,7 +1,11 @@
 package server
 
 import (
+	"log"
+	"path"
+
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/explorer"
@@ -11,10 +15,10 @@ import (
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/olympus-protocol/ogen/workers"
-	"log"
 )
 
 type Server struct {
@@ -24,20 +28,20 @@ type Server struct {
 
 	Chain     *chain.Blockchain
 	PeerMan   *peers.PeerMan
-	WalletMan *wallet.WalletMan
+	Wallet    *wallet.Wallet
 	Miner     *miner.Miner
-	Mempool   *mempool.Mempool
 	GovMan    *gov.GovMan
 	WorkerMan *workers.WorkerMan
 	UsersMan  *users.UserMan
+	RPC       *chainrpc.Wallet
 	Gui       bool
 }
 
 func (s *Server) Start() {
 	if s.config.Wallet {
-		err := s.WalletMan.Start()
+		err := s.Wallet.Start()
 		if err != nil {
-			log.Fatalln("unable to start wallet manager")
+			log.Fatalf("unable to start wallet manager: %s", err)
 		}
 	}
 	err := s.Chain.Start()
@@ -48,9 +52,12 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start peer manager")
 	}
-	err = s.Miner.Start()
-	if err != nil {
-		log.Fatalln("unable to start miner thread")
+	chainrpc.ServeRPC(s.RPC, loadRPCConfig(s.config, s.log))
+	if s.Miner != nil {
+		err = s.Miner.Start()
+		if err != nil {
+			log.Fatalln("unable to start miner thread")
+		}
 	}
 	switch s.config.Mode {
 	case "api":
@@ -65,34 +72,42 @@ func (s *Server) Stop() error {
 	s.Chain.Stop()
 	s.PeerMan.Stop()
 	if s.config.Wallet {
-		err := s.WalletMan.Stop()
+		err := s.Wallet.Stop()
 		if err != nil {
 			return err
 		}
 	}
-	s.Miner.Stop()
+	if s.Miner != nil {
+		s.Miner.Stop()
+	}
 	return nil
 }
 
-func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool) (*Server, error) {
+func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
-	walletsMan, err := wallet.NewWalletMan(loadWalletsManConfig(configParams, logger, gui), currParams)
+	coinsMempool := mempool.NewCoinsMempool()
+	voteMempool := mempool.NewVoteMempool(&currParams)
+	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip, coinsMempool)
 	if err != nil {
 		return nil, err
 	}
-	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db)
+	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, voteMempool, coinsMempool)
 	if err != nil {
 		return nil, err
 	}
-	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch)
+	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger), currParams, ch, peersMan)
 	if err != nil {
 		return nil, err
 	}
-	min, err := miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, walletsMan, peersMan)
-	if err != nil {
-		return nil, err
+	rpc := chainrpc.NewRPCWallet(w)
+
+	var min *miner.Miner
+	if configParams.MiningEnabled {
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, peersMan, voteMempool, coinsMempool)
+		if err != nil {
+			return nil, err
+		}
 	}
-	txPool := mempool.InitMempool(loadMempoolConfig(configParams, logger), currParams)
 	workersMan := workers.NewWorkersMan(loadWorkersConfig(configParams, logger), currParams)
 	govMan := gov.NewGovMan(loadGovConfig(configParams, logger), currParams)
 	usersMan := users.NewUsersMan(loadUsersConfig(configParams, logger), currParams)
@@ -102,13 +117,13 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 
 		Chain:     ch,
 		PeerMan:   peersMan,
-		WalletMan: walletsMan,
+		Wallet:    w,
 		Miner:     min,
-		Mempool:   txPool,
 		WorkerMan: workersMan,
 		GovMan:    govMan,
 		UsersMan:  usersMan,
 		Gui:       gui,
+		RPC:       rpc,
 	}
 	return s, nil
 }
@@ -134,13 +149,6 @@ func loadWorkersConfig(config *config.Config, logger *logger.Logger) workers.Con
 	return cfg
 }
 
-func loadMempoolConfig(config *config.Config, logger *logger.Logger) mempool.Config {
-	cfg := mempool.Config{
-		Log: logger,
-	}
-	return cfg
-}
-
 func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config {
 	cfg := chain.Config{
 		Log: logger,
@@ -150,8 +158,7 @@ func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config 
 
 func loadMinerConfig(config *config.Config, logger *logger.Logger) miner.Config {
 	cfg := miner.Config{
-		Log:      logger,
-		MinerKey: config.MinerPrivKey,
+		Log: logger,
 	}
 	return cfg
 }
@@ -160,8 +167,8 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 	cfg := peers.Config{
 		Log:          logger,
 		Listen:       config.Listen,
-		AddNodes:     config.AddNodes,
 		ConnectNodes: config.ConnectNodes,
+		AddNodes:     config.AddNodes,
 		Port:         config.Port,
 		MaxPeers:     config.MaxPeers,
 		Path:         config.DataFolder,
@@ -169,14 +176,18 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 	return cfg
 }
 
-func loadWalletsManConfig(config *config.Config, logger *logger.Logger, gui bool) wallet.Config {
+func loadWalletsManConfig(config *config.Config, logger *logger.Logger) wallet.Config {
 	cfg := wallet.Config{
-		Log:      logger,
-		Path:     config.DataFolder,
-		Enabled:  config.Wallet,
-		AddrGap:  config.AddrGap,
-		Accounts: config.AccountsGenerate,
-		Gui:      gui,
+		Log:  logger,
+		Path: path.Join(config.DataFolder, "wallet"),
 	}
 	return cfg
+}
+
+func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
+	return chainrpc.Config{
+		Log:     logger,
+		Address: config.RPCAddress,
+		Network: "tcp",
+	}
 }

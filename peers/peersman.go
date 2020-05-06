@@ -2,19 +2,20 @@ package peers
 
 import (
 	"bytes"
-	"errors"
-	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/db/filedb"
-	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/p2p"
-	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/peers/peer"
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"fmt"
 	"net"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/db/filedb"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
+	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 type Config struct {
@@ -36,11 +37,12 @@ type PeerMan struct {
 	// Custom PeerMan Properties
 	addNodes     []string
 	connectNodes []string
-	peers        map[int]*peer.Peer
-	peersLock    sync.RWMutex
+
+	peers     map[int]*Peer
+	peersLock sync.RWMutex
 
 	// Peer Communication Channels
-	closePeerChan chan peer.Peer
+	closePeerChan chan Peer
 	msgChan       chan p2p.Message
 
 	// Peers DB
@@ -49,10 +51,72 @@ type PeerMan struct {
 	// Services Pointers
 	chain *chain.Blockchain
 
-	peersSyncLock sync.RWMutex
-	peersAhead    map[int]*peer.Peer
-	peersBehind   map[int]*peer.Peer
-	peersEqual    map[int]*peer.Peer
+	voteMempool *mempool.VoteMempool
+	coinMempool *mempool.CoinsMempool
+}
+
+func (pm *PeerMan) Peers() []*Peer {
+	pm.peersLock.RLock()
+	defer pm.peersLock.RUnlock()
+
+	peers := make([]*Peer, 0, len(pm.peers))
+	for _, p := range pm.peers {
+		peers = append(peers, p)
+	}
+
+	return peers
+}
+
+func (pm *PeerMan) needsPeers() bool {
+	pm.peersLock.Lock()
+	numPeers := len(pm.peers)
+	pm.peersLock.Unlock()
+
+	return int32(numPeers) < pm.config.MaxPeers
+}
+
+func (pm *PeerMan) connectPeer(peerIP string) {
+	if peerIP == "127.0.0.1:"+strconv.Itoa(int(pm.config.Port)) || peerIP == "localhost:"+strconv.Itoa(int(pm.config.Port)) {
+		// Prevent self connections
+		return
+	}
+	conn, err := pm.dial(peerIP)
+	if err != nil {
+		pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
+		return
+	}
+	// TODO: improve this
+	newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
+	go pm.syncNewPeer(newPeer)
+}
+
+func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
+	pm.peersLock.RLock()
+	defer pm.peersLock.RUnlock()
+	if int32(len(pm.peers)) >= pm.config.MaxPeers {
+		return nil
+	}
+
+	if int32(len(addrs)) > pm.config.MaxPeers-int32(len(pm.peers)) {
+		addrs = addrs[:pm.config.MaxPeers-int32(len(pm.peers))]
+	}
+
+outer:
+	for _, addr := range addrs {
+		for _, p := range pm.peers {
+			if p.address.IP.Equal(addr.IP) && p.address.Port == addr.Port {
+				continue outer
+			}
+		}
+		peerIP := fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
+		pm.connectPeer(peerIP)
+	}
+
+	return nil
+}
+
+func (pm *PeerMan) ListenPort() uint16 {
+	return uint16(pm.config.Port)
 }
 
 func (pm *PeerMan) listener() {
@@ -72,15 +136,7 @@ func (pm *PeerMan) listener() {
 		if err != nil {
 			pm.log.Fatalf("Unable to bind connect to peer")
 		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := peer.NewPeer(len(pm.peers)+1, conn, newAddr, true, time.Now(), make(chan interface{}), pm.log)
+		newPeer := NewPeer(len(pm.peers)+1, conn, true, time.Now(), pm.log, pm)
 		pm.syncNewPeer(newPeer)
 	}
 }
@@ -107,8 +163,7 @@ func (pm *PeerMan) Start() error {
 	if len(pm.connectNodes) != 0 {
 		// If there are connect nodes configured, ignore everything and use them
 		initialPeers = pm.connectNodes
-	}
-	if len(pm.addNodes) != 0 {
+	} else if len(pm.addNodes) != 0 {
 		// If there are add nodes configured, ignore everything and use them
 		initialPeers = pm.addNodes
 	}
@@ -118,8 +173,6 @@ func (pm *PeerMan) Start() error {
 	pm.initialPeersConnection(initialPeers)
 	// Run connection routine for constant peer number maintaining
 	go pm.peersLockup()
-	// Run possible sync routine for constantly catch the chain from peers
-	go pm.peersSync()
 	return nil
 }
 
@@ -179,206 +232,98 @@ func (pm *PeerMan) querySeeders() []string {
 
 func (pm *PeerMan) initialPeersConnection(initialPeers []string) {
 	for _, peerIP := range initialPeers {
-		if peerIP == "127.0.0.1:"+strconv.Itoa(int(pm.config.Port)) || peerIP == "localhost:"+strconv.Itoa(int(pm.config.Port)) {
-			// Prevent self connections
-			continue
-		}
-		conn, err := pm.dial(peerIP)
-		if err != nil {
-			pm.log.Tracef("Unable to dial peer %v", peerIP)
-			continue
-		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := peer.NewPeer(len(pm.peers)+1, conn, newAddr, false, time.Now(), make(chan interface{}), pm.log)
-		pm.syncNewPeer(newPeer)
+		pm.connectPeer(peerIP)
 	}
 }
 
-func (pm *PeerMan) syncNewPeer(p *peer.Peer) {
-	go pm.peerChan(p)
-	p.Start(pm.chain.State().View.Height())
+func (pm *PeerMan) syncNewPeer(p *Peer) {
+	p.Start(pm.chain.State().Height())
 }
 
-func (pm *PeerMan) peerChan(p *peer.Peer) {
-	for {
-		select {
-		// TODO close chan
-		default:
-			rmsg := <-p.ManChan
-			switch msg := rmsg.(type) {
-			case *peer.PeerMsg:
-				// Ignore error, the only reason it can fail is
-				// because of data storage.
-				_ = pm.handlePeerMsg(msg)
-			case *peer.BlockMsg:
-				err := pm.handleBlockMsg(msg)
-				if err != nil {
-					// Add Ban Score
-				}
-			case *peer.TxMsg:
-				err := pm.handleTxMsg(msg)
-				if err != nil {
-					// Add Ban Score
-				}
-			case *peer.BlocksInvMsg:
-				err := pm.handleBlockInvMsg(msg)
-				if err != nil {
-
-				}
-			case *peer.DataReqMsg:
-				err := pm.handleDataRequestMsg(msg)
-				if err != nil {
-					pm.closePeerChan <- *msg.Peer
-				}
-			}
-		}
+func (pm *PeerMan) Disconnect(p *Peer) {
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("removing peer addr=%v:%v ", addr.IP, addr.Port)
 	}
+	pm.removePeer(p)
 }
 
-func (pm *PeerMan) handlePeerMsg(msg *peer.PeerMsg) error {
-	switch msg.Status {
-	case peer.Handshaked:
-		pm.log.Infof("new peer handshaked addr=%v:%v ", msg.Peer.GetAddr().IP, msg.Peer.GetAddr().Port)
-		pm.addPeer(msg.Peer)
-		pm.organizePeer(msg.Peer)
-		rawPeerData, err := msg.Peer.GetSerializedData()
-		if err != nil {
-			return err
-		}
-		err = pm.peersDB.Add(rawPeerData)
-		if err != nil {
-			return err
-		}
-		break
-	case peer.Syncing:
-		reqMsg := p2p.NewMsgGetBlock(pm.chain.State().View.Tip().Hash)
-		p := msg.Peer
-		p.SetPeerSync(true)
-		err := p.SendGetBlocks(reqMsg)
-		if err != nil {
-			return err
-		}
-	case peer.Disconnect:
-		pm.log.Infof("removing peer addr=%v:%v ", msg.Peer.GetAddr().IP, msg.Peer.GetAddr().Port)
-		pm.removePeer(msg.Peer)
-	case peer.Ban:
-		pm.log.Infof("banning peer addr=%v:%v ", msg.Peer.GetAddr().IP, msg.Peer.GetAddr().Port)
-		pm.removePeer(msg.Peer)
-		rawPeerData, err := msg.Peer.GetSerializedData()
-		if err != nil {
-			return err
-		}
-		err = pm.bannedPeers.Add(rawPeerData)
-		if err != nil {
-			return err
-		}
-		break
-	}
-	return nil
-}
-
-func (pm *PeerMan) handleBlockInvMsg(msg *peer.BlocksInvMsg) error {
-	if !msg.Peer.IsSelectedForSync() {
-		pm.log.Infof("block inv msg for non-requested peer")
-		return errors.New("non requested block inv msg")
-	}
-	pm.log.Infof("new block inv with %v blocks", len(msg.Blocks.GetBlocks()))
-	for _, block := range msg.Blocks.GetBlocks() {
-		err := pm.chain.ProcessBlock(&block.Block)
-		if err != nil {
-			return err
-		}
-	}
-	pm.organizePeer(msg.Peer)
-	return nil
-}
-
-func (pm *PeerMan) handleBlockMsg(msg *peer.BlockMsg) error {
-	blockHash := msg.Block.Header.Hash()
-	pm.log.Infof("new block received hash: %v", blockHash)
-	if pm.chain.State().IsSync() {
-		err := pm.chain.ProcessBlock(&msg.Block.Block)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	pm.log.Infof("ignored block, we are not synced yet")
-	return nil
-}
-
-func (pm *PeerMan) RelayBlockMsg(msg *p2p.MsgBlock) {
+func (pm *PeerMan) SubmitVote(vote *primitives.SingleValidatorVote) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
 	for _, p := range pm.peers {
-		err := p.SendBlock(msg)
-		if err != nil {
-
-		}
-	}
-}
-
-func (pm *PeerMan) handleTxMsg(msg *peer.TxMsg) error {
-	return nil
-}
-
-func (pm *PeerMan) handleDataRequestMsg(msg *peer.DataReqMsg) error {
-	switch msg.Request {
-	case "getblocks":
-		var blocksInv p2p.MsgBlockInv
-		for i := 0; i < p2p.MaxBlocksPerInv; i++ {
-			// TODO refactor
-		}
-		err := msg.Peer.SendBlockInv(&blocksInv)
-		if err != nil {
+		if err := p.submitVote(vote); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (pm *PeerMan) addPeer(p *peer.Peer) {
+func (pm *PeerMan) SubmitTx(tx *primitives.CoinPayload) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
+	for _, p := range pm.peers {
+		if err := p.submitTx(tx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SubmitBlock sends a block to peers.
+func (pm *PeerMan) SubmitBlock(block *primitives.Block) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
+	for _, p := range pm.peers {
+		if err := p.submitBlock(block); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (pm *PeerMan) Handshake(p *Peer) {
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("new peer handshaked addr=%v:%v ", addr.IP, addr.Port)
+	}
+	pm.addPeer(p)
+	rawPeerData, err := p.GetSerializedData()
+	if err != nil {
+		pm.log.Errorf("error serializing peer: %s", err)
+		return
+	}
+	err = pm.peersDB.Add(rawPeerData)
+	if err != nil {
+		pm.log.Errorf("error adding peer: %s", err)
+	}
+}
+
+func (pm *PeerMan) Ban(p *Peer) {
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("banning peer addr=%v:%v ", addr.IP, addr.Port)
+	}
+	pm.removePeer(p)
+	rawPeerData, err := p.GetSerializedData()
+	if err != nil {
+		pm.log.Errorf("error serializing peer: %s", err)
+		return
+	}
+	err = pm.bannedPeers.Add(rawPeerData)
+	if err != nil {
+		pm.log.Errorf("error banning peer: %s", err)
+		return
+	}
+}
+
+func (pm *PeerMan) addPeer(p *Peer) {
 	pm.peersLock.Lock()
 	pm.peers[len(pm.peers)+1] = p
 	pm.peersLock.Unlock()
 }
 
-func (pm *PeerMan) organizePeer(p *peer.Peer) {
-	tip := pm.chain.State().View.Tip()
-	if p.GetLastBlock() > tip.Height {
-		pm.peersSyncLock.Lock()
-		pm.peersAhead[p.GetID()] = p
-		pm.peersSyncLock.Unlock()
-	}
-	if p.GetLastBlock() < tip.Height {
-		pm.peersSyncLock.Lock()
-		pm.peersBehind[p.GetID()] = p
-		pm.peersSyncLock.Unlock()
-	}
-	if p.GetLastBlock() == tip.Height {
-		pm.peersSyncLock.Lock()
-		pm.peersEqual[p.GetID()] = p
-		pm.peersSyncLock.Unlock()
-	}
-	if len(pm.peersAhead) > 0 {
-		pm.chain.State().SetSyncStatus(false)
-		keys := reflect.ValueOf(pm.peersAhead).MapKeys()
-		// User the first peer on the map as a sync peer.
-		err := pm.handlePeerMsg(&peer.PeerMsg{Peer: pm.peersAhead[int(keys[0].Int())], Status: peer.Syncing})
-		if err != nil {
-			return
-		}
-	} else {
-		pm.chain.State().SetSyncStatus(true)
-	}
-}
-
-func (pm *PeerMan) removePeer(p *peer.Peer) {
+func (pm *PeerMan) removePeer(p *Peer) {
 	pm.peersLock.Lock()
 	delete(pm.peers, p.GetID())
 	pm.peersLock.Unlock()
@@ -392,48 +337,6 @@ lookup:
 	}
 	time.Sleep(time.Minute)
 	goto lookup
-}
-
-func (pm *PeerMan) peersSync() {
-	// Ask blocks for ahead peers
-	go func() {
-	start:
-		for len(pm.peersAhead) > 0 {
-			for id := range pm.peersAhead {
-				pm.peersSyncLock.Lock()
-				delete(pm.peersAhead, id)
-				pm.peersSyncLock.Unlock()
-			}
-		}
-		time.Sleep(10 * time.Second)
-		goto start
-	}()
-	// Send blocks for behind peers
-	go func() {
-	start:
-		for len(pm.peersBehind) > 0 {
-			for id := range pm.peersBehind {
-				pm.peersSyncLock.Lock()
-				delete(pm.peersBehind, id)
-				pm.peersSyncLock.Unlock()
-			}
-		}
-		time.Sleep(10 * time.Second)
-		goto start
-	}()
-	// Relay blocks to equal peers
-	go func() {
-	start:
-		for len(pm.peersEqual) > 0 {
-			for id := range pm.peersEqual {
-				pm.peersSyncLock.Lock()
-				delete(pm.peersEqual, id)
-				pm.peersSyncLock.Unlock()
-			}
-		}
-		time.Sleep(10 * time.Second)
-		goto start
-	}()
 }
 
 func (pm *PeerMan) dial(addres string) (net.Conn, error) {
@@ -451,7 +354,7 @@ func (pm *PeerMan) GetPeersCount() int32 {
 	return int32(count)
 }
 
-func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain) (*PeerMan, error) {
+func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, voteMempool *mempool.VoteMempool, coinMempool *mempool.CoinsMempool) (*PeerMan, error) {
 	peersDbMetaData := filedb.MetaData{
 		Version:     100000,
 		Timestamp:   time.Now().Unix(),
@@ -478,13 +381,12 @@ func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockcha
 		params:       params,
 		addNodes:     config.AddNodes,
 		connectNodes: config.ConnectNodes,
-		peers:        make(map[int]*peer.Peer),
+		peers:        make(map[int]*Peer),
 		peersDB:      peersdb,
 		bannedPeers:  bansDB,
 		chain:        chain,
-		peersEqual:   make(map[int]*peer.Peer),
-		peersBehind:  make(map[int]*peer.Peer),
-		peersAhead:   make(map[int]*peer.Peer),
+		voteMempool:  voteMempool,
+		coinMempool:  coinMempool,
 	}
 	return peersMan, nil
 }

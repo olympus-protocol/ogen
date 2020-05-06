@@ -3,99 +3,106 @@ package chain
 import (
 	"errors"
 	"fmt"
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/p2p"
+	"time"
+
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/state"
-	"github.com/olympus-protocol/ogen/txs/txverifier"
-	"sync"
 )
 
-type txSchemes struct {
-	Type   primitives.TxType
-	Action primitives.TxAction
+type blockRowAndValidator struct {
+	row       *index.BlockRow
+	validator uint32
 }
 
-type TxPayloadInv struct {
-	txs  map[txSchemes][]primitives.Tx
-	lock sync.RWMutex
-}
+// UpdateChainHead updates the blockchain head if needed
+func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
+	_, justifiedState := ch.state.GetJustifiedHead()
 
-func (txp *TxPayloadInv) Add(scheme txSchemes, tx primitives.Tx, wg *sync.WaitGroup) {
-	defer wg.Done()
-	txp.lock.Lock()
-	txp.txs[scheme] = append(txp.txs[scheme], tx)
-	txp.lock.Unlock()
-	return
-}
-
-var (
-	ErrorTooManyGenerateTx = errors.New("chainProcessor-too-many-generate: the block contains more generate tx than expected")
-	ErrorInvalidBlockSig   = errors.New("chainProcessor-block-sig-verify: the block signature verification failed")
-	ErrorPubKeyNoMatch     = errors.New("chainProcessor-invalid-signer: the block signer is not valid")
-)
-
-func (ch *Blockchain) newTxPayloadInv(txs []primitives.Tx, blocks int) (*TxPayloadInv, error) {
-	txPayloads := &TxPayloadInv{
-		txs: make(map[txSchemes][]primitives.Tx),
-	}
-	var wg sync.WaitGroup
-	for _, tx := range txs {
-		wg.Add(1)
-		scheme := txSchemes{
-			Type:   tx.TxType,
-			Action: tx.TxAction,
+	activeValidatorIndices := justifiedState.GetActiveValidatorIndices()
+	var targets []blockRowAndValidator
+	for _, i := range activeValidatorIndices {
+		bl, err := ch.getLatestAttestationTarget(txn, i)
+		if err != nil {
+			continue
 		}
-		go func(scheme txSchemes, tx primitives.Tx) {
-			txPayloads.Add(scheme, tx, &wg)
-		}(scheme, tx)
+		targets = append(targets, blockRowAndValidator{
+			row:       bl,
+			validator: i})
 	}
-	wg.Wait()
-	if len(txPayloads.txs[txSchemes{
-		Type:   primitives.Coins,
-		Action: primitives.Generate,
-	}]) > blocks {
-		return nil, ErrorTooManyGenerateTx
+
+	getVoteCount := func(block *index.BlockRow) uint64 {
+		votes := uint64(0)
+		for _, target := range targets {
+			node := target.row.GetAncestorAtSlot(block.Slot)
+			if node == nil {
+				return 0
+			}
+			if node.Hash.IsEqual(&block.Hash) {
+				votes += justifiedState.GetEffectiveBalance(target.validator, &ch.params) / 1e8
+			}
+		}
+		return votes
 	}
-	return txPayloads, nil
+
+	head, _ := ch.state.GetJustifiedHead()
+
+	// this may seem weird, but it occurs when importing when the justified block is not
+	// imported, but the finalized head is. It should never occur other than that
+	if head == nil {
+		head, _ = ch.state.GetFinalizedHead()
+	}
+
+	for {
+		children := head.Children
+		if len(children) == 0 {
+			ch.state.blockChain.SetTip(head)
+
+			ch.log.Infof("setting head to %s", head.Hash)
+
+			err := txn.SetTip(head.Hash)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+		bestVoteCountChild := children[0]
+		bestVotes := getVoteCount(bestVoteCountChild)
+		for _, c := range children[1:] {
+			vc := getVoteCount(c)
+			if vc > bestVotes {
+				bestVoteCountChild = c
+				bestVotes = vc
+			}
+		}
+		head = bestVoteCountChild
+	}
 }
 
-func (ch *Blockchain) ProcessBlockInv(blockInv p2p.MsgBlockInv) error {
-	// TODO: this is disabled for now because we don't have transaction execution done.
-	// if we have a block that spends an input, we need to update our state representation
-	// for that block before we try to verify other blocks.
+func (ch *Blockchain) getLatestAttestationTarget(txn blockdb.DBViewTransaction, validator uint32) (row *index.BlockRow, err error) {
+	var att *primitives.MultiValidatorVote
+	att, err = txn.GetLatestVote(validator)
+	if err != nil {
+		return nil, err
+	}
 
-	//txs := blockInv.GetTxs()
-	//txPayloadInv, err := ch.newTxPayloadInv(txs, len(blockInv.GetBlocks()))
-	//if err != nil {
-	//	return err
-	//}
-	//err = ch.verifyTx(txPayloadInv)
-	//if err != nil {
-	//	return err
-	//}
-	return nil
+	row, ok := ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
+	if !ok {
+		return nil, errors.New("couldn't find block attested to by validator in index")
+	}
+	return row, nil
 }
 
+// ProcessBlock processes an incoming block from a peer or the miner.
 func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
-
-	// a. ensure we have the parent block
-	parentBlock, ok := ch.state.View.GetRowByHash(block.Header.PrevBlockHash)
-	if !ok {
-		return fmt.Errorf("missing parent block: %s", block.Header.PrevBlockHash)
-	}
-
-	height := parentBlock.Height + 1
-
-	// b. verify block signature
-	err := ch.verifyBlockSig(block, uint32(height))
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-
 	// b. get parent block
+	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
+
+	if time.Now().Before(blockTime) {
+		return fmt.Errorf("block %d processed at %s, but should wait until %s", block.Header.Slot, time.Now(), blockTime)
+	}
 
 	// 2. verify block against previous block's state
 	oldState, found := ch.state.GetStateForHash(block.Header.PrevBlockHash)
@@ -103,90 +110,105 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		return fmt.Errorf("missing parent block state: %s", block.Header.PrevBlockHash)
 	}
 
-	txPayloadInv, err := ch.newTxPayloadInv(block.Txs, 1)
+	newState, err := ch.State().Add(block)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
 	}
 
-	// a. verify transactions
-	ch.log.Debugf("tx inventory created types to verify: %v", len(txPayloadInv.txs))
-	err = ch.verifyTx(oldState, txPayloadInv)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	ch.log.Debugf("tx verification finished successfully")
-
-	// b. apply block transition to state
-	ch.log.Debugf("attempting to apply block to state")
-	newState, err := oldState.TransitionBlock(block)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	ch.log.Infof("New block accepted Hash: %v", block.Hash())
-
-	// 3. write block to database
-	blocator, err := ch.db.AddRawBlock(block)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-
-	// 4. add block to chain and set new state
-	// TODO: better fork choice
-	err = ch.state.Add(block, *blocator, true, &newState)
-	if err != nil {
-		ch.log.Warn(err)
-		return err
-	}
-	return nil
-}
-
-func (ch *Blockchain) verifyBlockSig(block *primitives.Block, height uint32) error {
-	if height < ch.params.LastPreWorkersBlock {
-		sig, err := block.MinerSig()
+	return ch.db.Update(func(txn blockdb.DBUpdateTransaction) error {
+		err = txn.AddRawBlock(block)
 		if err != nil {
 			return err
 		}
-		pubKey, err := block.MinerPubKey()
-		if err != nil {
-			return err
-		}
-		blockHash := block.Hash()
-		valid, err := bls.VerifySig(pubKey, blockHash[:], sig)
-		if err != nil {
-			return err
-		}
-		if !valid {
-			return ErrorInvalidBlockSig
-		}
-		//pubKeyHash, err := pubKey.ToBech32(ch.params.AddressPrefixes, false)
-		//if err != nil {
-		//	return err
-		//}
-		// TODO: ensure block pubkey matches expected worker
-		//equal := reflect.DeepEqual(pubKeyHash, ch.params.PreWorkersPubKeyHash)
-		//if !equal {
-		//	return ErrorPubKeyNoMatch
-		//}
-		ch.log.Infof("Block signature verified: pre-workers phase.")
-	} else {
-		// TODO use worker lists
-		ch.log.Infof("Block signature verified: Worker rewarded: ")
-	}
-	return nil
-}
 
-func (ch *Blockchain) verifyTx(prevState *state.State, inv *TxPayloadInv) error {
-
-	for scheme, txs := range inv.txs {
-		txVerifier := txverifier.NewTxVerifier(&*prevState, &ch.params)
-		err := txVerifier.VerifyTxsBatch(txs, scheme.Type, scheme.Action)
+		row, err := ch.state.blockIndex.Add(*block)
 		if err != nil {
 			return err
 		}
-	}
+
+		// set current block row in database
+		if err := txn.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
+			return err
+		}
+
+		// update parent to point at current
+		if err := txn.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
+			return err
+		}
+
+		for _, a := range block.Votes {
+			min, max := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
+
+			validators := make([]uint32, 0, max-min)
+
+			for i := range a.ParticipationBitfield {
+				for j := 0; j < 8; j++ {
+					if a.ParticipationBitfield[i]&(1<<uint(j)) != 0 {
+						validator := uint32(i*8+j) + min
+						validators = append(validators, validator)
+					}
+				}
+			}
+
+			if err := txn.SetLatestVoteIfNeeded(validators, &a); err != nil {
+				return err
+			}
+		}
+
+		rowHash := row.Hash
+		ch.state.setBlockState(rowHash, newState)
+
+		// TODO: remove when we have fork choice
+		if err := ch.UpdateChainHead(txn); err != nil {
+			return err
+		}
+
+		view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
+		if err != nil {
+			return err
+		}
+
+		finalizedSlot := newState.FinalizedEpoch * ch.params.EpochLength
+		finalizedHash, err := view.GetHashBySlot(finalizedSlot)
+		if err != nil {
+			return err
+		}
+		finalizedState, found := ch.state.GetStateForHash(finalizedHash)
+		if !found {
+			return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
+		}
+		if err := txn.SetFinalizedHead(finalizedHash); err != nil {
+			return err
+		}
+		if err := txn.SetFinalizedState(finalizedState); err != nil {
+			return err
+		}
+
+		ch.state.RemoveBeforeSlot(newState.FinalizedEpoch * ch.params.EpochLength)
+
+		justifiedState, found := ch.state.GetStateForHash(newState.JustifiedEpochHash)
+		if !found {
+			return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
+		}
+		if err := txn.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
+			return err
+		}
+		if err := txn.SetJustifiedState(justifiedState); err != nil {
+			return err
+		}
+
+		// TODO: delete state before finalized
+
+		ch.log.Infof("New block accepted. Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
+
+		ch.notifeeLock.RLock()
+		for i := range ch.notifees {
+			i.NewTip(row, block)
+		}
+		ch.notifeeLock.RUnlock()
+		return nil
+	})
+
 	return nil
 }

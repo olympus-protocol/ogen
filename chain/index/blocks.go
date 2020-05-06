@@ -1,80 +1,56 @@
 package index
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/olympus-protocol/ogen/primitives"
-	"io"
 	"sync"
+
+	"github.com/olympus-protocol/ogen/primitives"
 
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // BlockRow represents a single row in the block index.
 type BlockRow struct {
-	Header     primitives.BlockHeader
-	Locator    blockdb.BlockLocation
-	Height     int32
-	parentHash chainhash.Hash
-	Hash       chainhash.Hash
-	Parent     *BlockRow
+	StateRoot chainhash.Hash
+	Height    uint64
+	Slot      uint64
+	Hash      chainhash.Hash
+	Parent    *BlockRow
+	Children  []*BlockRow
 }
 
-// Serialize serializes a block index row to the writer.
-func (br *BlockRow) Serialize(w io.Writer) error {
-	err := br.Locator.Serialize(w)
-	if err != nil {
-		return err
-	}
-	err = br.Header.Serialize(w)
-	if err != nil {
-		return err
+// GetAncestorAtSlot gets the block row ancestor at a certain slot.
+func (br *BlockRow) GetAncestorAtSlot(slot uint64) *BlockRow {
+	if br.Slot < slot {
+		return nil
 	}
 
-	parentHash := chainhash.Hash{}
-	if br.Parent != nil {
-		parentHash = br.Parent.Header.Hash()
+	current := br
+
+	// go up to the slot after the slot we're searching for
+	for slot < current.Slot {
+		current = current.Parent
 	}
-	err = serializer.WriteElements(w, br.Height, parentHash)
-	if err != nil {
-		return err
-	}
-	return nil
+	return current
 }
 
-// Deserialize deserializes a block row from the provided reader.
-func (br *BlockRow) Deserialize(r io.Reader) error {
-	err := br.Locator.Deserialize(r)
-	if err != nil {
-		return err
+// GetAncestorAtHeight gets the block row ancestor at a certain height.
+func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
+	if br.Height < height {
+		return nil
 	}
-	err = br.Header.Deserialize(r)
-	if err != nil {
-		return err
+
+	current := br
+
+	// go up to the slot after the slot we're searching for
+	for height < current.Height {
+		current = current.Parent
 	}
-	err = serializer.ReadElements(r, &br.Height, &br.parentHash)
-	if err != nil {
-		return err
-	}
-	br.Hash = br.Header.Hash()
-	return nil
+	return current
 }
 
 var zeroHash = chainhash.Hash{}
-
-func (br *BlockRow) attach(index *BlockIndex) error {
-	if !br.parentHash.IsEqual(&zeroHash) {
-		parentRow, found := index.get(br.parentHash)
-		if !found {
-			return fmt.Errorf("could not find parent in block index")
-		}
-
-		br.Parent = parentRow
-	}
-	return nil
-}
 
 // BlockIndex is an index from hash to BlockRow.
 type BlockIndex struct {
@@ -82,53 +58,32 @@ type BlockIndex struct {
 	index map[chainhash.Hash]*BlockRow
 }
 
-// Serialize serializes the block row to the specified writer.
-func (i *BlockIndex) Serialize(w io.Writer) error {
-	i.lock.RLock()
-	defer i.lock.RUnlock()
-	err := serializer.WriteVarInt(w, uint64(len(i.index)))
-	if err != nil {
-		return err
-	}
-	for _, row := range i.index {
-		err = row.Serialize(w)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Deserialize deserializes the block index from the specified reader.
-func (i *BlockIndex) Deserialize(r io.Reader) error {
+// LoadBlockNode loads a block node and connects it to the parent block.
+func (i *BlockIndex) LoadBlockNode(row *blockdb.BlockNodeDisk) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	buf, _ := r.(*bytes.Buffer)
-	if buf.Len() > 0 {
-		count, err := serializer.ReadVarInt(r)
-		if err != nil {
-			return err
-		}
-		i.index = make(map[chainhash.Hash]*BlockRow, count)
-		for k := uint64(0); k < count; k++ {
-			var row BlockRow
-			err = row.Deserialize(r)
-			if err != nil {
-				return err
-			}
-			err = i.add(&row)
-			if err != nil {
-				return err
-			}
-		}
+
+	parent, found := i.get(row.Parent)
+	if !found && row.Slot != 0 {
+		return nil, fmt.Errorf("missing parent block %s", row.Parent)
 	}
-	for _, r := range i.index {
-		err := r.attach(i)
-		if err != nil {
-			return err
-		}
+
+	newNode := &BlockRow{
+		Hash:      row.Hash,
+		Height:    row.Height,
+		Slot:      row.Slot,
+		StateRoot: row.StateRoot,
+		Parent:    parent,
+		Children:  make([]*BlockRow, 0),
 	}
-	return nil
+
+	i.index[row.Hash] = newNode
+
+	if parent != nil {
+		parent.Children = append(parent.Children, newNode)
+	}
+
+	return newNode, nil
 }
 
 func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
@@ -136,6 +91,7 @@ func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
 	return row, found
 }
 
+// Get gets a block from the block index.
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
@@ -153,27 +109,31 @@ func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 }
 
 func (i *BlockIndex) add(row *BlockRow) error {
-	blockHash := row.Header.Hash()
-	i.index[blockHash] = row
+	i.index[row.Hash] = row
 	return nil
 }
 
 // Add adds a row to the block index.
-func (i *BlockIndex) Add(header primitives.BlockHeader, locator blockdb.BlockLocation) (*BlockRow, error) {
+func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	prev, found := i.index[header.PrevBlockHash]
+	prev, found := i.index[block.Header.PrevBlockHash]
 	if !found {
-		return nil, fmt.Errorf("could not add block to index: could not find parent with hash %s", header.PrevBlockHash)
+		return nil, fmt.Errorf("could not add block to index: could not find parent with hash %s", block.Header.PrevBlockHash)
 	}
 
 	row := &BlockRow{
-		Header:  header,
-		Locator: locator,
-		Height:  prev.Height + 1,
-		Parent:  prev,
-		Hash: header.Hash(),
+		StateRoot: block.Header.StateRoot,
+		Height:    prev.Height + 1,
+		Parent:    prev,
+		Hash:      block.Header.Hash(),
+		Slot:      block.Header.Slot,
+		Children:  make([]*BlockRow, 0),
 	}
+
+	prev.Children = append(prev.Children, row)
+
+	i.index[block.Header.PrevBlockHash] = prev
 
 	err := i.add(row)
 	if err != nil {
@@ -184,17 +144,38 @@ func (i *BlockIndex) Add(header primitives.BlockHeader, locator blockdb.BlockLoc
 }
 
 // InitBlocksIndex creates a new block index.
-func InitBlocksIndex(genesisHeader primitives.BlockHeader, genesisLoc blockdb.BlockLocation) (*BlockIndex, error) {
-	headerHash := genesisHeader.Hash()
+func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
+	headerHash := genesisBlock.Header.Hash()
 	return &BlockIndex{
 		index: map[chainhash.Hash]*BlockRow{
 			headerHash: {
-				Header:  genesisHeader,
-				Locator: genesisLoc,
-				Height:  0,
-				Parent:  nil,
-				Hash: genesisHeader.Hash(),
+				Height: 0,
+				Parent: nil,
+				Hash:   genesisBlock.Header.Hash(),
 			},
 		},
 	}, nil
+}
+
+// ToBlockNodeDisk converts an in-memory representation of a block row
+// to a serializable version.
+func (br *BlockRow) ToBlockNodeDisk() *blockdb.BlockNodeDisk {
+	children := make([]chainhash.Hash, len(br.Children))
+	for i := range children {
+		children[i] = br.Children[i].Hash
+	}
+
+	parent := chainhash.Hash{}
+	if br.Parent != nil {
+		parent = br.Parent.Hash
+	}
+
+	return &blockdb.BlockNodeDisk{
+		StateRoot: br.StateRoot,
+		Height:    br.Height,
+		Slot:      br.Slot,
+		Children:  children,
+		Hash:      br.Hash,
+		Parent:    parent,
+	}
 }
