@@ -16,7 +16,6 @@
     <!-- Styles -->
     <link rel="stylesheet" href="../static/css/styles.css">
     <link rel="stylesheet" href="../static/css/navbar.css">
-    <link rel="stylesheet" href="../static/css/dashboard.css">
     <link rel="stylesheet" href="../static/css/home.css">
     <link rel="stylesheet" href="../static/css/footer.css">
     <!-- Page Styles -->
@@ -41,13 +40,13 @@
                         <a class="nav-link active nav-active" href="/blocks">Blocks</a>
                     </li>
                 </ul>
-                <form class="form-inline my-2 my-lg-0">
+                <!-- <form class="form-inline my-2 my-lg-0">
                     <input class="form-control mr-sm-2" type="search"
                         placeholder="Search for block, transaction or address" aria-label="Search" />
                     <button class="btn btn-outline-search my-2 my-sm-0">
                         <span class="FA-icon-regular">search</span>
                     </button>
-                </form>
+                </form> -->
             </div>
         </nav>
     </header>
@@ -62,19 +61,15 @@
                             <tr>
                                 <th scope="col">Height</th>
                                 <th scope="col">Hash</th>
-                                <th scope="col">Timestamp</th>
                                 <th scope="col">Transactions</th>
-                                <th scope="col">Size (bytes)</th>
                             </tr>
                         </thead>
                         <tbody class="tbody-block">
                         {{ range $block := .Blocks}}
                             <tr>
                                 <td>{{$block.Height}}</td>
-                                <td><a href="/block/{{$block.Hash}}">{{$block.Hash}}</a></td>
-                                <td>{{$block.Timestamp}}</td>
+                                <td><a>{{$block.Hash}}</a></td>
                                 <td>{{$block.Transactions}}</td>
-                                <td>{{$block.Size}}</td>
                             </tr>
                         {{end}}
                         </tbody>
@@ -87,9 +82,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="abs-center">
-                <img class="footer-img" src="../static/img/kindynos.png" alt="Kindynos" />
-            </div>
+            
         </div>
     </footer>
 

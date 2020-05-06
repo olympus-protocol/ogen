@@ -12,14 +12,6 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-type BlockInfo struct {
-	Height       int32
-	Hash         string
-	Timestamp    string
-	Transactions int
-	Size         uint32
-}
-
 type Config struct {
 	Log *logger.Logger
 }
