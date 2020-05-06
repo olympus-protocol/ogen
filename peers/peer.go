@@ -19,6 +19,7 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/pkg/errors"
 )
 
 type Peer struct {
@@ -38,7 +39,7 @@ type Peer struct {
 	id             int
 	inbound        bool
 	outbound       bool
-	address        serializer.NetAddress
+	address        *serializer.NetAddress
 	conn           net.Conn
 	connectionTime time.Time
 	lastPingTime   int64
@@ -77,11 +78,15 @@ func (p *Peer) Start(lastBlockHeight uint64) {
 		return
 	}
 	p.peerman.Handshake(p)
+	if p.peerman.needsPeers() {
+		fmt.Println("asking for some peers")
+		p.writeMessage(&p2p.MsgGetAddr{})
+	}
 	// Init message listener
 	go func() {
 		err := p.messageListener()
 		if err != nil {
-			p.log.Errorf("disconnecting peer %v", p.GetID())
+			p.log.Errorf("disconnecting peer %v because of %s", p.GetID(), err)
 			p.peerman.Disconnect(p)
 			return
 		}
@@ -90,7 +95,7 @@ func (p *Peer) Start(lastBlockHeight uint64) {
 	go func() {
 		err := p.peerRoutine()
 		if err != nil {
-			p.log.Errorf("disconnecting peer %v", p.GetID())
+			p.log.Errorf("disconnecting peer %v because of %s", p.GetID(), err)
 			p.peerman.Disconnect(p)
 		}
 	}()
@@ -122,7 +127,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	// first, we read their version
 	remoteMsgVersion, _, err := p.readMessage()
 	if err != nil {
-		return ErrorReadRemote
+		return errors.Wrap(err, "error reading from remote")
 	}
 	msgVersion, ok := remoteMsgVersion.(*p2p.MsgVersion)
 	if !ok {
@@ -138,7 +143,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	}
 
 	// send our version
-	err = p.writeMessage(p.versionMsg(lastBlockHeight))
+	err = p.writeMessage(p.versionMsg(lastBlockHeight, p.peerman.ListenPort()))
 	if err != nil {
 		return ErrorWriteRemote
 	}
@@ -146,7 +151,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 	// wait for them to acknowledge our version message
 	remoteMsgVerack, _, err := p.readMessage()
 	if err != nil {
-		return ErrorReadRemote
+		return errors.Wrap(err, "error reading from remote")
 	}
 	_, ok = remoteMsgVerack.(*p2p.MsgVerack)
 	if !ok {
@@ -170,7 +175,7 @@ func (p *Peer) handleInboundPeerHandshake(lastBlockHeight uint64) error {
 }
 
 func (p *Peer) handleOutboundPeerHandshake(lastBlockHeight uint64) error {
-	err := p.writeMessage(p.versionMsg(lastBlockHeight))
+	err := p.writeMessage(p.versionMsg(lastBlockHeight, p.peerman.ListenPort()))
 	if err != nil {
 		return ErrorWriteRemote
 	}
@@ -210,6 +215,7 @@ func (p *Peer) updateStats(msgVersion *p2p.MsgVersion) {
 	p.services = msgVersion.Services
 	p.lastBlock = msgVersion.LastBlock
 	p.userAgent = msgVersion.UserAgent
+	p.address = &msgVersion.AddrMe
 	p.peerLock.Unlock()
 }
 
@@ -240,6 +246,9 @@ outer:
 			if err != nil {
 				p.log.Errorf("unable to ping peer %v: %s", p.GetID(), err)
 				return err
+			}
+			if p.peerman.needsPeers() {
+				p.writeMessage(&p2p.MsgGetAddr{})
 			}
 		case <-mempoolTicker.C:
 			err := p.sendMempool()
@@ -274,17 +283,20 @@ func (p *Peer) pong(nonce uint64) error {
 	return nil
 }
 
-func (p *Peer) versionMsg(lastBlockHeight uint64) *p2p.MsgVersion {
+func (p *Peer) versionMsg(lastBlockHeight uint64, listenPort uint16) *p2p.MsgVersion {
 	meInformation := strings.Split(p.conn.LocalAddr().String(), ":")
-	meIP, mePortString := meInformation[0], meInformation[1]
-	mePort, _ := strconv.Atoi(mePortString)
+	meIP, _ := meInformation[0], meInformation[1]
+
 	youInformation := strings.Split(p.conn.RemoteAddr().String(), ":")
 	youIP, youPortString := youInformation[0], youInformation[1]
 	youPort, _ := strconv.Atoi(youPortString)
-	me := serializer.NewNetAddress(time.Now(), net.ParseIP(meIP), uint16(mePort))
+
+	me := serializer.NewNetAddress(time.Now(), net.ParseIP(meIP), listenPort)
 	me.Timestamp = time.Now().Unix()
+
 	you := serializer.NewNetAddress(time.Now(), net.ParseIP(youIP), uint16(youPort))
 	you.Timestamp = time.Now().Unix()
+
 	nonce, _ := serializer.RandomUint64()
 	msg := p2p.NewMsgVersion(*me, *you, nonce, lastBlockHeight)
 	return msg
@@ -387,7 +399,7 @@ outer:
 			p.log.Debug("reading...")
 			rmsg, _, err := p.readMessage()
 			if err != nil {
-				return ErrorReadRemote
+				return errors.Wrap(err, "error reading from remote")
 			}
 			p.log.Debugf("read message %s", rmsg.Command())
 			go func() {
@@ -417,13 +429,17 @@ outer:
 				case *p2p.MsgGetAddr:
 					p.log.Tracef("received getaddr msg from peer %v", p.GetID())
 					knownPeers := make([]*serializer.NetAddress, 0)
-					for _, p := range p.peerman.Peers() {
-						knownPeers = append(knownPeers, &p.address)
+					for _, peer := range p.peerman.Peers() {
+						if p != peer && peer.address != nil {
+							knownPeers = append(knownPeers, peer.address)
+						}
 					}
-					if err := p.writeMessage(&p2p.MsgAddr{
-						AddrList: knownPeers,
-					}); err != nil {
-						p.log.Errorf("error responding to get addrs: %s", err)
+					if len(knownPeers) > 0 {
+						if err := p.writeMessage(&p2p.MsgAddr{
+							AddrList: knownPeers,
+						}); err != nil {
+							p.log.Errorf("error responding to get addrs: %s", err)
+						}
 					}
 				case *p2p.MsgAddr:
 					p.log.Tracef("received addr msg from peer %v", p.GetID())
@@ -491,7 +507,7 @@ func (p *Peer) writeMessage(msg p2p.Message) error {
 	return err
 }
 
-func (p *Peer) GetAddr() serializer.NetAddress {
+func (p *Peer) GetAddr() *serializer.NetAddress {
 	p.peerLock.RLock()
 	address := p.address
 	p.peerLock.RUnlock()
@@ -507,7 +523,7 @@ func (p *Peer) GetID() int {
 
 func (p *Peer) GetSerializedData() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
-	err := serializer.WriteNetAddress(buf, &p.address)
+	err := serializer.WriteNetAddress(buf, p.address)
 	if err != nil {
 		return nil, err
 	}
@@ -541,13 +557,12 @@ const (
 	blockBloomFilterSize = 1024 * 1024
 )
 
-func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
+func NewPeer(id int, conn net.Conn, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
 	ctx, cancel := context.WithCancel(context.Background())
 	peer := &Peer{
 		id:               id,
 		log:              log,
 		conn:             conn,
-		address:          addr,
 		inbound:          inbound,
 		outbound:         !inbound,
 		connectionTime:   time,

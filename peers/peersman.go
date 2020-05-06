@@ -64,6 +64,14 @@ func (pm *PeerMan) Peers() []*Peer {
 	return peers
 }
 
+func (pm *PeerMan) needsPeers() bool {
+	pm.peersLock.Lock()
+	numPeers := len(pm.peers)
+	pm.peersLock.Unlock()
+
+	return int32(numPeers) < pm.config.MaxPeers
+}
+
 func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
 	pm.peersLock.RLock()
 	defer pm.peersLock.RUnlock()
@@ -71,26 +79,26 @@ func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
 		return nil
 	}
 
-	for _, addr := range addrs[:pm.config.MaxPeers-int32(len(pm.peers))] {
+	if int32(len(addrs)) > pm.config.MaxPeers-int32(len(pm.peers)) {
+		addrs = addrs[:pm.config.MaxPeers-int32(len(pm.peers))]
+	}
+
+	for _, addr := range addrs {
 		peerIP := fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
 		conn, err := pm.dial(peerIP)
 		if err != nil {
-			pm.log.Tracef("Unable to dial peer %v", peerIP)
+			pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
 			continue
 		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, newAddr, false, time.Now(), pm.log, pm)
+		newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
 		go pm.syncNewPeer(newPeer)
 	}
 
 	return nil
+}
+
+func (pm *PeerMan) ListenPort() uint16 {
+	return uint16(pm.config.Port)
 }
 
 func (pm *PeerMan) listener() {
@@ -110,15 +118,7 @@ func (pm *PeerMan) listener() {
 		if err != nil {
 			pm.log.Fatalf("Unable to bind connect to peer")
 		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, newAddr, true, time.Now(), pm.log, pm)
+		newPeer := NewPeer(len(pm.peers)+1, conn, true, time.Now(), pm.log, pm)
 		pm.syncNewPeer(newPeer)
 	}
 }
@@ -220,18 +220,10 @@ func (pm *PeerMan) initialPeersConnection(initialPeers []string) {
 		}
 		conn, err := pm.dial(peerIP)
 		if err != nil {
-			pm.log.Tracef("Unable to dial peer %v", peerIP)
+			pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
 			continue
 		}
-		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-
-		portParse, _ := strconv.Atoi(port)
-		newAddr := serializer.NetAddress{
-			IP:        net.ParseIP(ip),
-			Port:      uint16(portParse),
-			Timestamp: time.Now().Unix(),
-		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, newAddr, false, time.Now(), pm.log, pm)
+		newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
 		pm.syncNewPeer(newPeer)
 	}
 }
@@ -241,7 +233,10 @@ func (pm *PeerMan) syncNewPeer(p *Peer) {
 }
 
 func (pm *PeerMan) Disconnect(p *Peer) {
-	pm.log.Infof("removing peer addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("removing peer addr=%v:%v ", addr.IP, addr.Port)
+	}
 	pm.removePeer(p)
 }
 
@@ -269,7 +264,10 @@ func (pm *PeerMan) SubmitBlock(block *primitives.Block) error {
 }
 
 func (pm *PeerMan) Handshake(p *Peer) {
-	pm.log.Infof("new peer handshaked addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("new peer handshaked addr=%v:%v ", addr.IP, addr.Port)
+	}
 	pm.addPeer(p)
 	rawPeerData, err := p.GetSerializedData()
 	if err != nil {
@@ -283,7 +281,10 @@ func (pm *PeerMan) Handshake(p *Peer) {
 }
 
 func (pm *PeerMan) Ban(p *Peer) {
-	pm.log.Infof("banning peer addr=%v:%v ", p.GetAddr().IP, p.GetAddr().Port)
+	addr := p.GetAddr()
+	if addr != nil {
+		pm.log.Infof("banning peer addr=%v:%v ", addr.IP, addr.Port)
+	}
 	pm.removePeer(p)
 	rawPeerData, err := p.GetSerializedData()
 	if err != nil {
