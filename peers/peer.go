@@ -458,6 +458,7 @@ outer:
 					p.log.Tracef("received blocks msg from peer %v", p.GetID())
 					for _, b := range msg.Blocks {
 						if !p.blockchain.State().Index().Have(b.Header.PrevBlockHash) {
+							p.log.Debugf("don't have block %s, requesting", b.Header.PrevBlockHash)
 							err = p.writeMessage(&p2p.MsgGetBlocks{
 								LocatorHashes: p.blockchain.GetLocatorHashes(),
 								HashStop:      b.Hash(),
@@ -466,6 +467,10 @@ outer:
 								p.log.Error(err)
 							}
 							break
+						}
+
+						if p.blockchain.State().Index().Have(b.Hash()) {
+							continue
 						}
 
 						bh := b.Hash()

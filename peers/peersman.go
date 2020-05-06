@@ -37,8 +37,9 @@ type PeerMan struct {
 	// Custom PeerMan Properties
 	addNodes     []string
 	connectNodes []string
-	peers        map[int]*Peer
-	peersLock    sync.RWMutex
+
+	peers     map[int]*Peer
+	peersLock sync.RWMutex
 
 	// Peer Communication Channels
 	closePeerChan chan Peer
@@ -72,6 +73,21 @@ func (pm *PeerMan) needsPeers() bool {
 	return int32(numPeers) < pm.config.MaxPeers
 }
 
+func (pm *PeerMan) connectPeer(peerIP string) {
+	if peerIP == "127.0.0.1:"+strconv.Itoa(int(pm.config.Port)) || peerIP == "localhost:"+strconv.Itoa(int(pm.config.Port)) {
+		// Prevent self connections
+		return
+	}
+	conn, err := pm.dial(peerIP)
+	if err != nil {
+		pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
+		return
+	}
+	// TODO: improve this
+	newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
+	go pm.syncNewPeer(newPeer)
+}
+
 func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
 	pm.peersLock.RLock()
 	defer pm.peersLock.RUnlock()
@@ -83,15 +99,15 @@ func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
 		addrs = addrs[:pm.config.MaxPeers-int32(len(pm.peers))]
 	}
 
+outer:
 	for _, addr := range addrs {
-		peerIP := fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
-		conn, err := pm.dial(peerIP)
-		if err != nil {
-			pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
-			continue
+		for _, p := range pm.peers {
+			if p.address.IP.Equal(addr.IP) && p.address.Port == addr.Port {
+				continue outer
+			}
 		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
-		go pm.syncNewPeer(newPeer)
+		peerIP := fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
+		pm.connectPeer(peerIP)
 	}
 
 	return nil
@@ -214,17 +230,7 @@ func (pm *PeerMan) querySeeders() []string {
 
 func (pm *PeerMan) initialPeersConnection(initialPeers []string) {
 	for _, peerIP := range initialPeers {
-		if peerIP == "127.0.0.1:"+strconv.Itoa(int(pm.config.Port)) || peerIP == "localhost:"+strconv.Itoa(int(pm.config.Port)) {
-			// Prevent self connections
-			continue
-		}
-		conn, err := pm.dial(peerIP)
-		if err != nil {
-			pm.log.Tracef("Unable to dial peer %v: %s", peerIP, err)
-			continue
-		}
-		newPeer := NewPeer(len(pm.peers)+1, conn, false, time.Now(), pm.log, pm)
-		pm.syncNewPeer(newPeer)
+		pm.connectPeer(peerIP)
 	}
 }
 
