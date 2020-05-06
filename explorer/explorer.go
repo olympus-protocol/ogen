@@ -109,7 +109,7 @@ func getBlocks(chain *chain.Blockchain) map[string]BlockInfo {
 	}
 	if lastBlock.Parent != nil  {
 		currBlock := lastBlock.Parent
-		for currBlock.Height == 0 {
+		for currBlock.Parent != nil {
 			blocks[currBlock.Hash.String()] = BlockInfo{
 				Height:       currBlock.Height,
 				Hash:         currBlock.Hash.String(),
