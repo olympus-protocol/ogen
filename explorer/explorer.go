@@ -1,7 +1,6 @@
 package explorer
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 
