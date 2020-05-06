@@ -2,6 +2,7 @@ package peers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -49,7 +50,8 @@ type Peer struct {
 	verackReceived bool
 
 	// Internal Chan
-	closeSignal chan interface{}
+	ctx   context.Context
+	Close context.CancelFunc
 
 	// Chans for PeerMan Communication
 	mainCloseChan chan interface{}
@@ -228,14 +230,15 @@ func (p *Peer) peerRoutine() error {
 	p.log.Tracef("starting peer routine for peer %v", p.GetID())
 	pingTicker := time.NewTicker(15 * time.Second)
 	mempoolTicker := time.NewTicker(5 * time.Minute)
+outer:
 	for {
 		select {
-		case <-p.closeSignal:
-			break
+		case <-p.ctx.Done():
+			break outer
 		case <-pingTicker.C:
 			err := p.ping()
 			if err != nil {
-				p.log.Errorf("unable to ping peer %v", p.GetID())
+				p.log.Errorf("unable to ping peer %v: %s", p.GetID(), err)
 				return err
 			}
 		case <-mempoolTicker.C:
@@ -246,6 +249,7 @@ func (p *Peer) peerRoutine() error {
 			}
 		}
 	}
+	return nil
 }
 
 func (p *Peer) ping() error {
@@ -287,7 +291,7 @@ func (p *Peer) versionMsg(lastBlockHeight uint64) *p2p.MsgVersion {
 }
 
 func (p *Peer) Stop() {
-	p.closeSignal <- struct{}{}
+	p.Close()
 	_ = p.conn.Close()
 }
 
@@ -374,10 +378,11 @@ func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
 
 func (p *Peer) messageListener() error {
 	p.log.Tracef("starting message listener for peer %v", p.GetID())
+outer:
 	for {
 		select {
-		case <-p.closeSignal:
-			break
+		case <-p.ctx.Done():
+			break outer
 		default:
 			p.log.Debug("reading...")
 			rmsg, _, err := p.readMessage()
@@ -414,6 +419,9 @@ func (p *Peer) messageListener() error {
 					// TODO: fix
 				case *p2p.MsgAddr:
 					p.log.Tracef("received addr msg from peer %v", p.GetID())
+					if err := p.peerman.receiveAddrs(msg.AddrList); err != nil {
+						p.log.Error(err)
+					}
 
 				// Blocks handlers
 				case *p2p.MsgGetBlocks:
@@ -461,6 +469,7 @@ func (p *Peer) messageListener() error {
 			}()
 		}
 	}
+	return nil
 }
 
 func (p *Peer) readMessage() (p2p.Message, []byte, error) {
@@ -525,6 +534,7 @@ const (
 )
 
 func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
+	ctx, cancel := context.WithCancel(context.Background())
 	peer := &Peer{
 		id:               id,
 		log:              log,
@@ -539,6 +549,8 @@ func NewPeer(id int, conn net.Conn, addr serializer.NetAddress, inbound bool, ti
 		peerman:          peerMgr,
 		voteBloomFilter:  bloom.NewBloomFilter(voteBloomFilterSize),
 		blockBloomFilter: bloom.NewBloomFilter(blockBloomFilterSize),
+		ctx:              ctx,
+		Close:            cancel,
 	}
 	return peer
 }

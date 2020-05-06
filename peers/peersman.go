@@ -2,6 +2,7 @@ package peers
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -49,6 +50,35 @@ type PeerMan struct {
 	// Services Pointers
 	chain   *chain.Blockchain
 	mempool *mempool.VoteMempool
+}
+
+func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
+	pm.peersLock.RLock()
+	defer pm.peersLock.RUnlock()
+	if int32(len(pm.peers)) >= pm.config.MaxPeers {
+		return nil
+	}
+
+	for _, addr := range addrs[:pm.config.MaxPeers-int32(len(pm.peers))] {
+		peerIP := fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
+		conn, err := pm.dial(peerIP)
+		if err != nil {
+			pm.log.Tracef("Unable to dial peer %v", peerIP)
+			continue
+		}
+		ip, port, err := net.SplitHostPort(conn.RemoteAddr().String())
+
+		portParse, _ := strconv.Atoi(port)
+		newAddr := serializer.NetAddress{
+			IP:        net.ParseIP(ip),
+			Port:      uint16(portParse),
+			Timestamp: time.Now().Unix(),
+		}
+		newPeer := NewPeer(len(pm.peers)+1, conn, newAddr, false, time.Now(), pm.log, pm)
+		go pm.syncNewPeer(newPeer)
+	}
+
+	return nil
 }
 
 func (pm *PeerMan) listener() {
