@@ -73,11 +73,10 @@ func loadTemplates() (*template.Template, error) {
 }
 
 func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers.PeerMan) MainInfo {
+	lastBlocks := make(map[string]*index.BlockRow)
 	lastBlock := chain.State().Tip()
-	lastBlocks := map[string]*index.BlockRow{
-		lastBlock.Hash.String(): lastBlock,
-	}
 	if lastBlock.Parent != nil {
+		lastBlocks[lastBlock.Hash.String()] = lastBlock
 		currBlock := lastBlock.Parent
 		for i := 0; i < 4; i++ {
 			lastBlocks[currBlock.Hash.String()] = currBlock
@@ -98,16 +97,15 @@ func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers
 }
 
 func getBlocks(chain *chain.Blockchain) map[string]BlockInfo {
+	blocks := make(map[string]BlockInfo)
 	lastBlock := chain.State().Tip()
-	lastBlockInfo := BlockInfo{
-		Height:       lastBlock.Height,
-		Hash:         lastBlock.Hash.String(),
-		Transactions: 0,
-	}
-	blocks := map[string]BlockInfo{
-		lastBlockInfo.Hash: lastBlockInfo,
-	}
 	if lastBlock.Parent != nil  {
+		lastBlockInfo := BlockInfo{
+			Height:       lastBlock.Height,
+			Hash:         lastBlock.Hash.String(),
+			Transactions: 0,
+		}
+		blocks[lastBlock.Hash.String()] = lastBlockInfo
 		currBlock := lastBlock.Parent
 		for currBlock.Parent != nil {
 			blocks[currBlock.Hash.String()] = BlockInfo{
