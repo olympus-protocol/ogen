@@ -95,7 +95,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 		return nil, err
 	}
 	rpc := chainrpc.NewRPCWallet(w)
-	voteMempool := mempool.NewVoteMempool()
+	voteMempool := mempool.NewVoteMempool(&currParams)
 	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, voteMempool)
 	if err != nil {
 		return nil, err
