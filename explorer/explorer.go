@@ -77,7 +77,7 @@ func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers
 	lastBlocks := map[string]*index.BlockRow{
 		lastBlock.Hash.String(): lastBlock,
 	}
-	if lastBlock.Height != 0 && lastBlock.Parent != nil {
+	if lastBlock.Parent != nil {
 		currBlock := lastBlock.Parent
 		for i := 0; i < 4; i++ {
 			lastBlocks[currBlock.Hash.String()] = currBlock
@@ -107,7 +107,7 @@ func getBlocks(chain *chain.Blockchain) map[string]BlockInfo {
 	blocks := map[string]BlockInfo{
 		lastBlockInfo.Hash: lastBlockInfo,
 	}
-	if lastBlock.Height != 0 && lastBlock.Parent != nil {
+	if lastBlock.Parent != nil  {
 		currBlock := lastBlock.Parent
 		for currBlock.Height == 0 {
 			blocks[currBlock.Hash.String()] = BlockInfo{
