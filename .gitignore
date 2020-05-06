@@ -32,3 +32,4 @@ build/
 vendor/
 chain*.json
 __debug_bin
+release/

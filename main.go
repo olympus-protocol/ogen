@@ -11,5 +11,3 @@ var log = logger.New(os.Stdin)
 func main() {
 	cli.Execute()
 }
-
-
