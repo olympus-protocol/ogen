@@ -86,20 +86,21 @@ func (s *Server) Stop() error {
 func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
 	coinsMempool := mempool.NewCoinsMempool()
+	voteMempool := mempool.NewVoteMempool(&currParams)
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip, coinsMempool)
 	if err != nil {
 		return nil, err
 	}
-	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger), currParams, ch)
+	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, voteMempool, coinsMempool)
+	if err != nil {
+		return nil, err
+	}
+	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger), currParams, ch, peersMan)
 	if err != nil {
 		return nil, err
 	}
 	rpc := chainrpc.NewRPCWallet(w)
-	voteMempool := mempool.NewVoteMempool(&currParams)
-	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, voteMempool)
-	if err != nil {
-		return nil, err
-	}
+
 	var min *miner.Miner
 	if configParams.MiningEnabled {
 		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, peersMan, voteMempool, coinsMempool)

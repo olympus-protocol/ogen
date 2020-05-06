@@ -124,7 +124,11 @@ func NewWalletCLI(rpcClient *chainrpc.RPCClient) *WalletCLI {
 }
 
 func RunWallet(cmd *cobra.Command, args []string) {
-	rpcClient := chainrpc.NewRPCClient("http://localhost:24127")
+	rpc, err := cmd.Flags().GetString("rpc")
+	if err != nil {
+		panic(err)
+	}
+	rpcClient := chainrpc.NewRPCClient(rpc)
 	walletCLI := NewWalletCLI(rpcClient)
 	walletCLI.Run()
 }

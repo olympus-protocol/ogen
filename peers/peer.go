@@ -66,6 +66,7 @@ type Peer struct {
 	blockchain       *chain.Blockchain
 	peerman          *PeerMan
 	voteBloomFilter  *bloom.BloomFilter
+	coinBloomFilter  *bloom.BloomFilter
 	blockBloomFilter *bloom.BloomFilter
 }
 
@@ -220,21 +221,36 @@ func (p *Peer) updateStats(msgVersion *p2p.MsgVersion) {
 }
 
 func (p *Peer) sendMempool() error {
-	possibleVotes := p.peerman.mempool.GetVotesNotInBloom(p.voteBloomFilter)
+	possibleVotes := p.peerman.voteMempool.GetVotesNotInBloom(p.voteBloomFilter)
 	// send 50% of these
 	votesToSend := mempool.PickPercentVotes(possibleVotes, 0.5)
 	for _, v := range votesToSend {
 		p.voteBloomFilter.Add(v.Hash())
 	}
 
-	return p.writeMessage(&p2p.MsgVotes{
+	if err := p.writeMessage(&p2p.MsgVotes{
 		Votes: votesToSend,
-	})
+	}); err != nil {
+		return err
+	}
+
+	possibleTxs := p.peerman.coinMempool.GetVotesNotInBloom(p.coinBloomFilter)
+	for _, tx := range possibleTxs {
+		p.coinBloomFilter.Add(tx.Hash())
+	}
+
+	if err := p.writeMessage(&p2p.MsgTx{
+		Txs: possibleTxs,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Peer) peerRoutine() error {
 	p.log.Tracef("starting peer routine for peer %v", p.GetID())
-	pingTicker := time.NewTicker(15 * time.Second)
+	pingTicker := time.NewTicker(60 * time.Second)
 	mempoolTicker := time.NewTicker(5 * time.Minute)
 outer:
 	for {
@@ -376,7 +392,7 @@ func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
 
 func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
 	vh := vote.Hash()
-	if p.voteBloomFilter.Has(vh) || true {
+	if p.voteBloomFilter.Has(vh) {
 		// already sent it
 		return nil
 	}
@@ -385,6 +401,20 @@ func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
 
 	return p.writeMessage(&p2p.MsgVotes{
 		Votes: []primitives.SingleValidatorVote{*vote},
+	})
+}
+
+func (p *Peer) submitTx(tx *primitives.CoinPayload) error {
+	th := tx.Hash()
+	if p.coinBloomFilter.Has(th) {
+		// already sent it
+		return nil
+	}
+
+	p.coinBloomFilter.Add(th)
+
+	return p.writeMessage(&p2p.MsgTx{
+		Txs: []primitives.CoinPayload{*tx},
 	})
 }
 
@@ -490,10 +520,24 @@ outer:
 					// p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
 					for _, v := range msg.Votes {
 						p.voteBloomFilter.Add(v.Hash())
-						p.peerman.mempool.Add(&v, v.OutOf)
+						p.peerman.voteMempool.Add(&v, v.OutOf)
 					}
 				case *p2p.MsgTx:
 					p.log.Tracef("received tx msg from peer %v", p.GetID())
+					state := p.peerman.chain.State().TipState()
+					for _, tx := range msg.Txs {
+						if err := p.peerman.coinMempool.Add(tx, &state.UtxoState); err != nil {
+							continue
+						}
+						p.coinBloomFilter.Add(tx.Hash())
+					}
+
+					// relay to peers:
+					for _, tx := range msg.Txs {
+						if err := p.peerman.SubmitTx(&tx); err != nil {
+							p.log.Errorf("error submitting transaction: %s", err)
+						}
+					}
 				}
 			}()
 		}
@@ -560,6 +604,7 @@ func (p *Peer) SetPeerSync(syncing bool) {
 const (
 	voteBloomFilterSize  = 1024 * 1024
 	blockBloomFilterSize = 1024 * 1024
+	coinBloomFilterSize  = 1024 * 1024
 )
 
 func NewPeer(id int, conn net.Conn, inbound bool, time time.Time, log *logger.Logger, peerMgr *PeerMan) *Peer {
@@ -577,6 +622,7 @@ func NewPeer(id int, conn net.Conn, inbound bool, time time.Time, log *logger.Lo
 		peerman:          peerMgr,
 		voteBloomFilter:  bloom.NewBloomFilter(voteBloomFilterSize),
 		blockBloomFilter: bloom.NewBloomFilter(blockBloomFilterSize),
+		coinBloomFilter:  bloom.NewBloomFilter(coinBloomFilterSize),
 		ctx:              ctx,
 		Close:            cancel,
 	}

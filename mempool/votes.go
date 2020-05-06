@@ -32,6 +32,9 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 	shouldRemove = true
 	newVotes := make([]*primitives.SingleValidatorVote, 0, len(mv.individualVotes))
 	for _, v := range mv.individualVotes {
+		if len(participationBitfield) >= int(v.Offset/8) {
+			return shouldRemove
+		}
 		if participationBitfield[v.Offset/8]&(1<<uint(v.Offset%8)) == 0 {
 			newVotes = append(newVotes, v)
 			shouldRemove = false

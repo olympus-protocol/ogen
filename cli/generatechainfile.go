@@ -41,7 +41,7 @@ var generateChainCmd = &cobra.Command{
 		k, err := wallet.NewWallet(wallet.Config{
 			Log:  logger.New(os.Stdout),
 			Path: keystorePath,
-		}, params.Mainnet, nil)
+		}, params.Mainnet, nil, nil)
 		if err != nil {
 			fmt.Printf("could not open database: %s\n", err)
 			return

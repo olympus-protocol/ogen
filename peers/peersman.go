@@ -49,8 +49,10 @@ type PeerMan struct {
 	peersDB     *filedb.FileDB
 	bannedPeers *filedb.FileDB
 	// Services Pointers
-	chain   *chain.Blockchain
-	mempool *mempool.VoteMempool
+	chain *chain.Blockchain
+
+	voteMempool *mempool.VoteMempool
+	coinMempool *mempool.CoinsMempool
 }
 
 func (pm *PeerMan) Peers() []*Peer {
@@ -257,6 +259,17 @@ func (pm *PeerMan) SubmitVote(vote *primitives.SingleValidatorVote) error {
 	return nil
 }
 
+func (pm *PeerMan) SubmitTx(tx *primitives.CoinPayload) error {
+	pm.peersLock.Lock()
+	defer pm.peersLock.Unlock()
+	for _, p := range pm.peers {
+		if err := p.submitTx(tx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SubmitBlock sends a block to peers.
 func (pm *PeerMan) SubmitBlock(block *primitives.Block) error {
 	pm.peersLock.Lock()
@@ -341,7 +354,7 @@ func (pm *PeerMan) GetPeersCount() int32 {
 	return int32(count)
 }
 
-func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, mempool *mempool.VoteMempool) (*PeerMan, error) {
+func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockchain, voteMempool *mempool.VoteMempool, coinMempool *mempool.CoinsMempool) (*PeerMan, error) {
 	peersDbMetaData := filedb.MetaData{
 		Version:     100000,
 		Timestamp:   time.Now().Unix(),
@@ -372,7 +385,8 @@ func NewPeersMan(config Config, params params.ChainParams, chain *chain.Blockcha
 		peersDB:      peersdb,
 		bannedPeers:  bansDB,
 		chain:        chain,
-		mempool:      mempool,
+		voteMempool:  voteMempool,
+		coinMempool:  coinMempool,
 	}
 	return peersMan, nil
 }

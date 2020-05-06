@@ -69,7 +69,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		}
 	}
 
-	premineAddr, _ := hex.DecodeString("56caff1115c721bea4532de37cfdc412386cbf79")
+	premineAddr, _ := hex.DecodeString("3ef0b7dc02ecffc7e7ddac52ff0f689b8b838e49")
 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)

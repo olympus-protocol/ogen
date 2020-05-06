@@ -58,6 +58,8 @@ func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 		if len(children) == 0 {
 			ch.state.blockChain.SetTip(head)
 
+			ch.log.Infof("setting head to %s", head.Hash)
+
 			err := txn.SetTip(head.Hash)
 			if err != nil {
 				return err

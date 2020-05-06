@@ -81,6 +81,10 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 		return nil, err
 	}
 
+	if err := b.peerman.SubmitTx(payload); err != nil {
+		return nil, err
+	}
+
 	txHash := tx.Hash()
 
 	return &txHash, nil

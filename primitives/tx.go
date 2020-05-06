@@ -29,6 +29,12 @@ type CoinPayload struct {
 	Signature     bls.Signature
 }
 
+func (c *CoinPayload) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = c.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
+}
+
 func (c *CoinPayload) FromPubkeyHash() (out [20]byte) {
 	pkS := c.FromPublicKey.Serialize()
 	h := chainhash.HashH(pkS[:])
