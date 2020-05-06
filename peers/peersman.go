@@ -52,6 +52,18 @@ type PeerMan struct {
 	mempool *mempool.VoteMempool
 }
 
+func (pm *PeerMan) Peers() []*Peer {
+	pm.peersLock.RLock()
+	defer pm.peersLock.RUnlock()
+
+	peers := make([]*Peer, 0, len(pm.peers))
+	for _, p := range pm.peers {
+		peers = append(peers, p)
+	}
+
+	return peers
+}
+
 func (pm *PeerMan) receiveAddrs(addrs []*serializer.NetAddress) error {
 	pm.peersLock.RLock()
 	defer pm.peersLock.RUnlock()

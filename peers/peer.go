@@ -416,7 +416,15 @@ outer:
 				// Address sharing handlers
 				case *p2p.MsgGetAddr:
 					p.log.Tracef("received getaddr msg from peer %v", p.GetID())
-					// TODO: fix
+					knownPeers := make([]*serializer.NetAddress, 0)
+					for _, p := range p.peerman.Peers() {
+						knownPeers = append(knownPeers, &p.address)
+					}
+					if err := p.writeMessage(&p2p.MsgAddr{
+						AddrList: knownPeers,
+					}); err != nil {
+						p.log.Errorf("error responding to get addrs: %s", err)
+					}
 				case *p2p.MsgAddr:
 					p.log.Tracef("received addr msg from peer %v", p.GetID())
 					if err := p.peerman.receiveAddrs(msg.AddrList); err != nil {
