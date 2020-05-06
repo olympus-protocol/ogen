@@ -39,6 +39,9 @@ type ChainParams struct {
 	InactivityPenaltyQuotient    uint64
 	IncluderRewardQuotient       uint64
 	SlotDuration                 uint64
+
+	ChainFileHash chainhash.Hash
+	ChainFileURL  string
 }
 
 var NetworkNames = map[string]string{
@@ -86,6 +89,8 @@ var Mainnet = ChainParams{
 	MaxTxsPerBlock:               1000,
 }
 
+var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
+
 var TestNet = ChainParams{
 	Name:           "test",
 	DefaultP2PPort: "24126",
@@ -119,4 +124,6 @@ var TestNet = ChainParams{
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 10,
 	MaxTxsPerBlock:               1000,
+	ChainFileHash:                *testnetChainFileHash,
+	ChainFileURL:                 "",
 }

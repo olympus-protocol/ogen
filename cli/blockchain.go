@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/server"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -23,14 +25,7 @@ const (
 )
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger) error {
-	var currParams params.ChainParams
-	switch configParams.NetworkName {
-	case "mainnet":
-		currParams = params.Mainnet
-	default:
-		currParams = params.TestNet
-	}
+func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
 	db, err := blockdb.NewBlockDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -49,14 +44,39 @@ func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logg
 	return nil
 }
 
-func getChainFile(path string) (*config.ChainFile, error) {
-	chainFileBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
+func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile, error) {
 	chainFile := new(config.ChainFile)
-	err = json.Unmarshal(chainFileBytes, chainFile)
-	return chainFile, err
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		resp, err := http.Get(currParams.ChainFileURL)
+		if err != nil {
+			return nil, err
+		}
+		chainFileBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		chainFileBytesHash := chainhash.HashH(chainFileBytes)
+		if !chainFileBytesHash.IsEqual(&currParams.ChainFileHash) {
+			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash, chainFileBytesHash)
+		}
+
+		err = json.Unmarshal(chainFileBytes, chainFile)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		chainFileBytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(chainFileBytes, chainFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return chainFile, nil
 }
 
 var (
@@ -73,7 +93,17 @@ Next generation blockchain secured by CASPER.`,
 				log = log.WithDebug()
 			}
 
-			cf, err := getChainFile(viper.GetString("chainfile"))
+			networkName := viper.GetString("network")
+
+			var currParams params.ChainParams
+			switch networkName {
+			case "mainnet":
+				currParams = params.Mainnet
+			default:
+				currParams = params.TestNet
+			}
+
+			cf, err := getChainFile(viper.GetString("chainfile"), currParams)
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
@@ -89,7 +119,7 @@ Next generation blockchain secured by CASPER.`,
 				InitConfig:    ip,
 				Debug:         viper.GetBool("debug"),
 				Listen:        viper.GetBool("listen"),
-				NetworkName:   viper.GetString("network"),
+				NetworkName:   networkName,
 				ConnectNodes:  viper.GetStringSlice("connect"),
 				AddNodes:      viper.GetStringSlice("add"),
 				Port:          int32(viper.GetUint("port")),
@@ -106,7 +136,7 @@ Next generation blockchain secured by CASPER.`,
 
 			config.InterruptListener(log, cancel)
 
-			err = loadOgen(ctx, c, log)
+			err = loadOgen(ctx, c, log, currParams)
 			if err != nil {
 				log.Fatal(err)
 			}
