@@ -360,7 +360,7 @@ func (p *Peer) sendBlocksToPeer(msg *p2p.MsgGetBlocks) error {
 
 func (p *Peer) submitVote(vote *primitives.SingleValidatorVote) error {
 	vh := vote.Hash()
-	if p.voteBloomFilter.Has(vh) {
+	if p.voteBloomFilter.Has(vh) || true {
 		// already sent it
 		return nil
 	}
@@ -379,85 +379,86 @@ func (p *Peer) messageListener() error {
 		case <-p.closeSignal:
 			break
 		default:
+			p.log.Debug("reading...")
 			rmsg, _, err := p.readMessage()
 			if err != nil {
 				return ErrorReadRemote
 			}
-			switch msg := rmsg.(type) {
+			p.log.Debugf("read message %s", rmsg.Command())
+			go func() {
+				switch msg := rmsg.(type) {
 
-			// Initial connection handlers
-			case *p2p.MsgVersion:
-				p.log.Errorf("handshake already received, duplicated version from peer %v", p.GetID())
-				p.peerman.Disconnect(p)
-			case *p2p.MsgVerack:
-				p.log.Errorf("handshake already received, duplicated verack from peer %v", p.GetID())
-				p.peerman.Disconnect(p)
-			case *p2p.MsgPing:
-				p.log.Tracef("received ping msg from peer %v", p.GetID())
-				err := p.pong(msg.Nonce)
-				if err != nil {
-					return err
-				}
-			case *p2p.MsgPong:
-				p.log.Tracef("received pong msg from peer %v", p.GetID())
-				if msg.Nonce != p.lastPingNonce {
+				// Initial connection handlers
+				case *p2p.MsgVersion:
+					p.log.Errorf("handshake already received, duplicated version from peer %v", p.GetID())
+					p.peerman.Disconnect(p)
+				case *p2p.MsgVerack:
+					p.log.Errorf("handshake already received, duplicated verack from peer %v", p.GetID())
+					p.peerman.Disconnect(p)
+				case *p2p.MsgPing:
+					p.log.Tracef("received ping msg from peer %v", p.GetID())
+					err := p.pong(msg.Nonce)
+					if err != nil {
+						p.log.Errorf("Error processing ping: %s", err)
+					}
+				case *p2p.MsgPong:
 					p.log.Tracef("received pong msg from peer %v", p.GetID())
-					return ErrorPingNonceMismatch
-				}
+					if msg.Nonce != p.lastPingNonce {
+						p.log.Tracef("received pong msg from peer %v", p.GetID())
+						p.log.Errorf("Error processing ping: %s", ErrorPingNonceMismatch)
+					}
 
-			// Address sharing handlers
-			case *p2p.MsgGetAddr:
-				p.log.Tracef("received getaddr msg from peer %v", p.GetID())
-				// TODO: fix
-			case *p2p.MsgAddr:
-				p.log.Tracef("received addr msg from peer %v", p.GetID())
+				// Address sharing handlers
+				case *p2p.MsgGetAddr:
+					p.log.Tracef("received getaddr msg from peer %v", p.GetID())
+					// TODO: fix
+				case *p2p.MsgAddr:
+					p.log.Tracef("received addr msg from peer %v", p.GetID())
 
-			// Blocks handlers
-			case *p2p.MsgGetBlocks:
-				p.log.Tracef("received getblocks msg from peer %v", p.GetID())
-				if err := p.sendBlocksToPeer(msg); err != nil {
-					p.log.Errorf("error sending blocks to peer: %s", err)
-				}
-				// TODO: fix
-				// p.ManChan <- newDataRequestMsg(p, "getblocks", &msg.LastBlockHash)
-			case *p2p.MsgBlocks:
-				p.log.Tracef("received blocks msg from peer %v", p.GetID())
-				for _, b := range msg.Blocks {
-					if !p.blockchain.State().Index().Have(b.Header.PrevBlockHash) {
-						err = p.writeMessage(&p2p.MsgGetBlocks{
-							LocatorHashes: p.blockchain.GetLocatorHashes(),
-							HashStop:      b.Header.PrevBlockHash,
-						})
-						if err != nil {
+				// Blocks handlers
+				case *p2p.MsgGetBlocks:
+					p.log.Tracef("received getblocks msg from peer %v", p.GetID())
+					if err := p.sendBlocksToPeer(msg); err != nil {
+						p.log.Errorf("error sending blocks to peer: %s", err)
+					}
+					// TODO: fix
+				case *p2p.MsgBlocks:
+					p.log.Tracef("received blocks msg from peer %v", p.GetID())
+					for _, b := range msg.Blocks {
+						if !p.blockchain.State().Index().Have(b.Header.PrevBlockHash) {
+							err = p.writeMessage(&p2p.MsgGetBlocks{
+								LocatorHashes: p.blockchain.GetLocatorHashes(),
+								HashStop:      b.Hash(),
+							})
+							if err != nil {
+								p.log.Error(err)
+							}
+							break
+						}
+
+						bh := b.Hash()
+						p.blockBloomFilter.Add(bh)
+						p.log.Debugf("processing block %s", bh)
+						if err := p.blockchain.ProcessBlock(&b); err != nil {
+							p.log.Errorf("error processing block from peer: %s", err)
+							break
+						}
+						if err := p.peerman.SubmitBlock(&b); err != nil {
 							p.log.Error(err)
 						}
-						break
 					}
 
-					bh := b.Hash()
-					p.blockBloomFilter.Add(bh)
-					p.log.Debugf("processing block %s", bh)
-					if err := p.blockchain.ProcessBlock(&b); err != nil {
-						p.log.Errorf("error processing block from peer: %s", err)
-						break
+				// Tx handlers
+				case *p2p.MsgVotes:
+					// p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
+					for _, v := range msg.Votes {
+						p.voteBloomFilter.Add(v.Hash())
+						p.peerman.mempool.Add(&v, v.OutOf)
 					}
-					if err := p.peerman.SubmitBlock(&b); err != nil {
-						p.log.Error(err)
-					}
+				case *p2p.MsgTx:
+					p.log.Tracef("received tx msg from peer %v", p.GetID())
 				}
-				// p.ManChan <- newBlocksInvMsg(p, msg)
-
-			// Tx handlers
-			case *p2p.MsgVotes:
-				// p.log.Tracef("received votes msg from peer %v with %d votes", p.GetID(), len(msg.Votes))
-				for _, v := range msg.Votes {
-					p.voteBloomFilter.Add(v.Hash())
-					p.peerman.mempool.Add(&v, v.OutOf)
-				}
-			case *p2p.MsgTx:
-				p.log.Tracef("received tx msg from peer %v", p.GetID())
-				// p.ManChan <- newTxMsg(p, msg)
-			}
+			}()
 		}
 	}
 }

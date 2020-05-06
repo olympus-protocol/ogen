@@ -20,6 +20,7 @@ type BlockDB struct {
 	log      *logger.Logger
 	badgerdb *badger.DB
 	params   params.ChainParams
+	lock     sync.RWMutex
 
 	requestedClose uint32
 	canClose       sync.WaitGroup
@@ -63,6 +64,8 @@ func (bdb *BlockDB) Close() {
 
 // Update gets a transaction for updating the database.
 func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
+	bdb.lock.Lock()
+	defer bdb.lock.Unlock()
 	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
 		return fmt.Errorf("database is closing")
 	}
@@ -82,6 +85,8 @@ func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 
 // View gets a transaction for viewing the database.
 func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
+	bdb.lock.RLock()
+	defer bdb.lock.RUnlock()
 	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
 		return fmt.Errorf("database is closing")
 	}

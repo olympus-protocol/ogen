@@ -117,6 +117,6 @@ var TestNet = ChainParams{
 	DepositAmount:                10000,
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 1,
+	SlotDuration:                 10,
 	MaxTxsPerBlock:               1000,
 }
