@@ -77,7 +77,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	return &State{
 		UtxoState: UtxoState{
 			Balances: map[[20]byte]uint64{
-				premineAddrArr: 200000,
+				premineAddrArr: 1000 * 1000000, // 1 million coins
 			},
 			Nonces: make(map[[20]byte]uint64),
 		},

@@ -125,5 +125,5 @@ var TestNet = ChainParams{
 	SlotDuration:                 10,
 	MaxTxsPerBlock:               1000,
 	ChainFileHash:                *testnetChainFileHash,
-	ChainFileURL:                 "",
+	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 }

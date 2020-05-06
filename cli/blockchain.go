@@ -61,6 +61,8 @@ func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile
 			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash, chainFileBytesHash)
 		}
 
+		ioutil.WriteFile(path, chainFileBytes, 0644)
+
 		err = json.Unmarshal(chainFileBytes, chainFile)
 		if err != nil {
 			return nil, err
