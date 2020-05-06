@@ -1,36 +1,37 @@
 package explorer
 
 import (
+	"html/template"
+	"net/http"
+
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/peers"
-	"github.com/olympus-protocol/ogen/primitives"
-	"html/template"
-	"net/http"
 )
 
 type MainInfo struct {
 	Version       string
-	UserAgent     string
 	Protocol      uint32
-	Mode          string
+	UserAgent     string
 	Network       string
 	Sync          bool
-	LastBlock     int32
+	LastBlock     uint64
 	LastBlockHash string
 	LastBlockTime string
-	Size          string
-	MempoolTxs    int
-	Masternodes   int
 	Peers         int32
-	Proposals     int
-	Votes         int
-	LastBlocks    map[string]*primitives.Block
+	LastBlocks    map[string]*index.BlockRow
+}
+
+type BlockInfo struct {
+	Height       uint64
+	Hash         string
+	Transactions int
 }
 
 type BlocksInfo struct {
-	Blocks []chain.BlockInfo
+	Blocks map[string]BlockInfo
 }
 
 func LoadApi(conf *config.Config, chainInstance *chain.Blockchain, peersMan *peers.PeerMan) error {
@@ -41,14 +42,15 @@ func LoadApi(conf *config.Config, chainInstance *chain.Blockchain, peersMan *pee
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("explorer/static"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mainInfo := loadChainStats(conf, chainInstance, peersMan)
-		err := templates.ExecuteTemplate(w, "dbindex.html", mainInfo)
+		err := templates.ExecuteTemplate(w, "index.html", mainInfo)
 		if err != nil {
 			// TODO handle error
 		}
 	})
 	http.HandleFunc("/blocks", func(w http.ResponseWriter, r *http.Request) {
+		blocks := getBlocks(chainInstance)
 		// TODO refactor
-		blocksInfo := BlocksInfo{}
+		blocksInfo := BlocksInfo{Blocks: blocks}
 		err := templates.ExecuteTemplate(w, "blocks.html", blocksInfo)
 		if err != nil {
 			// TODO handle error
@@ -63,7 +65,7 @@ func LoadApi(conf *config.Config, chainInstance *chain.Blockchain, peersMan *pee
 
 func loadTemplates() (*template.Template, error) {
 	tplFuncMap := make(template.FuncMap)
-	tpl, err := template.New("").Funcs(tplFuncMap).ParseFiles("./explorer/views/dbindex.html", "./explorer/views/blocks.html")
+	tpl, err := template.New("").Funcs(tplFuncMap).ParseFiles("./explorer/views/index.html", "./explorer/views/blocks.html")
 	if err != nil {
 		return nil, err
 	}
@@ -71,17 +73,51 @@ func loadTemplates() (*template.Template, error) {
 }
 
 func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers.PeerMan) MainInfo {
-	// TODO ref.
-	return MainInfo{
-		Version:     config.OgenVersion(),
-		UserAgent:   p2p.DefaultUserAgent,
-		Protocol:    p2p.ProtocolVersion,
-		Mode:        conf.Mode,
-		Sync:        false,
-		MempoolTxs:  0,
-		Masternodes: 0,
-		Peers:       peerMan.GetPeersCount(),
-		Proposals:   0,
-		Votes:       0,
+	lastBlock := chain.State().Tip()
+	lastBlocks := map[string]*index.BlockRow{
+		lastBlock.Hash.String(): lastBlock,
 	}
+	if lastBlock.Height != 0 {
+		currBlock := lastBlock.Parent
+		for i := 0; i < 4; i++ {
+			lastBlocks[currBlock.Hash.String()] = currBlock
+			currBlock = currBlock.Parent
+		}
+	}
+	info := MainInfo{
+		LastBlockHash: lastBlock.Hash.String(),
+		Protocol:      p2p.ProtocolVersion,
+		LastBlock:     lastBlock.Height,
+		Version:       config.OgenVersion(),
+		UserAgent:     p2p.DefaultUserAgent,
+		Sync:          true,
+		Peers:         peerMan.GetPeersCount(),
+		LastBlocks:    lastBlocks,
+	}
+	return info
+}
+
+func getBlocks(chain *chain.Blockchain) map[string]BlockInfo {
+	lastBlock := chain.State().Tip()
+	lastBlockInfo := BlockInfo{
+		Height:       lastBlock.Height,
+		Hash:         lastBlock.Hash.String(),
+		Transactions: 0,
+	}
+	blocks := map[string]BlockInfo{
+		lastBlockInfo.Hash: lastBlockInfo,
+	}
+	if lastBlock.Height == 0 {
+		return blocks
+	}
+	currBlock := lastBlock.Parent
+	for currBlock.Height == 0 {
+		blocks[currBlock.Hash.String()] = BlockInfo{
+			Height:       currBlock.Height,
+			Hash:         currBlock.Hash.String(),
+			Transactions: 0,
+		}
+		currBlock = currBlock.Parent
+	}
+	return blocks
 }

@@ -1,26 +1,26 @@
 @font-face {
     font-family: 'All Round Gothic';
-    src: url('../fonts/AllRoundGothic.ttf');
+    src: url('../fonts/all-round-gothic.ttf');
   }
   
   @font-face {
     font-family: 'Century Gothic';
-    src: url('../fonts/GOTHIC.TTF');
+    src: url('../fonts/gothic.TTF');
   }
   
   @font-face {
     font-family: 'Font Awesome Regular';
-    src: url('../fonts/FAR.otf');
+    src: url('../fonts/far.otf');
   }
 
   @font-face {
     font-family: 'Font Awesome Solid';
-    src: url('../fonts/FAS.otf');
+    src: url('../fonts/fas.otf');
   }
   
   @font-face {
     font-family: 'Font Awesome Brand';
-    src: url('../fonts/FAB.otf');
+    src: url('../fonts/fab.otf');
   }
 
   body{

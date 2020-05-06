@@ -20,8 +20,8 @@ import (
 
 func AskPass() ([]byte, error) {
 	var fd int
-	if terminal.IsTerminal(syscall.Stdin) {
-		fd = syscall.Stdin
+	if terminal.IsTerminal(int(syscall.Stdin)) {
+		fd = int(syscall.Stdin)
 	} else {
 		tty, err := os.Open("/dev/tty")
 		if err != nil {
