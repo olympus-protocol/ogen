@@ -3,35 +3,18 @@ package p2p
 import (
 	"errors"
 	"fmt"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 	"io"
+
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
-const MaxAddrPerMsg = 1000
+const MaxAddrPerMsg = 32
+const MaxAddrPerPeer = 2
 
 type MsgAddr struct {
-	AddrList []*serializer.NetAddress
-}
-
-func (m *MsgAddr) AddAddress(na *serializer.NetAddress) error {
-	if len(m.AddrList)+1 > MaxAddrPerMsg {
-		str := fmt.Sprintf("too many addresses in message [max %v]",
-			MaxAddrPerMsg)
-		return errors.New(str)
-	}
-
-	m.AddrList = append(m.AddrList, na)
-	return nil
-}
-
-func (m *MsgAddr) AddAddresses(netAddrs ...*serializer.NetAddress) error {
-	for _, na := range netAddrs {
-		err := m.AddAddress(na)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	AddrList []peer.AddrInfo
 }
 
 func (m *MsgAddr) Encode(w io.Writer) error {
@@ -46,8 +29,30 @@ func (m *MsgAddr) Encode(w io.Writer) error {
 		return err
 	}
 	for _, na := range m.AddrList {
-		err = serializer.WriteNetAddress(w, na)
+		if len(na.Addrs) > MaxAddrPerPeer {
+			return fmt.Errorf("too many addresses for message "+
+				"[count %v, max %v]", len(na.Addrs), MaxAddrPerPeer)
+		}
+		if err := serializer.WriteVarInt(w, uint64(len(na.Addrs))); err != nil {
+			return err
+		}
+		for _, a := range na.Addrs {
+			b, err := a.MarshalBinary()
+			if err != nil {
+				return err
+			}
+
+			if err := serializer.WriteVarBytes(w, b); err != nil {
+				return err
+			}
+		}
+
+		b, err := na.ID.MarshalBinary()
 		if err != nil {
+			return err
+		}
+
+		if err := serializer.WriteVarBytes(w, b); err != nil {
 			return err
 		}
 	}
@@ -64,19 +69,41 @@ func (m *MsgAddr) Decode(r io.Reader) error {
 			"[count %v, max %v]", count, MaxAddrPerMsg)
 		return errors.New(str)
 	}
-	addrList := make([]serializer.NetAddress, count)
-	m.AddrList = make([]*serializer.NetAddress, 0, count)
-	for i := uint64(0); i < count; i++ {
-		na := &addrList[i]
-		err := serializer.ReadNetAddress(r, na)
+	m.AddrList = make([]peer.AddrInfo, count)
+	for i := range m.AddrList {
+		countAddr, err := serializer.ReadVarInt(r)
 		if err != nil {
 			return err
 		}
-		err = m.AddAddress(na)
+
+		if countAddr > MaxAddrPerPeer {
+			return fmt.Errorf("too many addresses for message (count: %d, max: %d)", countAddr, MaxAddrPerPeer)
+		}
+
+		addrs := make([]multiaddr.Multiaddr, countAddr)
+		for j := range addrs {
+			addrBytes, err := serializer.ReadVarBytes(r)
+			if err != nil {
+				return err
+			}
+
+			if err := addrs[j].UnmarshalBinary(addrBytes); err != nil {
+				return err
+			}
+		}
+
+		peerIDBytes, err := serializer.ReadVarBytes(r)
 		if err != nil {
 			return err
 		}
+
+		if err := m.AddrList[i].ID.UnmarshalBinary(peerIDBytes); err != nil {
+			return err
+		}
+
+		m.AddrList[i].Addrs = addrs
 	}
+
 	return nil
 }
 

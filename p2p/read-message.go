@@ -43,13 +43,11 @@ func discardInput(r io.Reader, n uint32) {
 	}
 }
 
-func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (int, Message, []byte, error) {
+func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 
-	totalBytes := 0
-	n, hdr, err := readMessageHeader(r)
-	totalBytes += n
+	_, hdr, err := readMessageHeader(r)
 	if err != nil {
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	if hdr.length > MaxMessagePayload {
@@ -57,7 +55,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (int, Message, []byte, 
 			"indicates %d bytes, but max message payload is %d "+
 			"bytes.", hdr.length, MaxMessagePayload)
 		err = errors.New(str)
-		return totalBytes, nil, nil, err
+		return nil, err
 
 	}
 
@@ -65,7 +63,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (int, Message, []byte, 
 		discardInput(r, hdr.length)
 		str := fmt.Sprintf("message from other network [%v]", hdr.magic)
 		err = errors.New(str)
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	command := hdr.command
@@ -73,13 +71,13 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (int, Message, []byte, 
 		discardInput(r, hdr.length)
 		str := fmt.Sprintf("invalid command %v", []byte(command))
 		err = errors.New(str)
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	msg, err := makeEmptyMessage(command)
 	if err != nil {
 		discardInput(r, hdr.length)
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	mpl := msg.MaxPayloadLength()
@@ -89,14 +87,13 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (int, Message, []byte, 
 			"indicates %v bytes, but max payload size for "+
 			"messages of type [%v] is %v.", hdr.length, command, mpl)
 		err = errors.New(str)
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	payload := make([]byte, hdr.length)
-	n, err = io.ReadFull(r, payload)
-	totalBytes += n
+	_, err = io.ReadFull(r, payload)
 	if err != nil {
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	checksum := chainhash.DoubleHashB(payload)[0:4]
@@ -105,14 +102,14 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (int, Message, []byte, 
 			"indicates %v, but actual checksum is %v.",
 			hdr.checksum, checksum)
 		err = errors.New(str)
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
 	pr := bytes.NewBuffer(payload)
 	err = msg.Decode(pr)
 	if err != nil {
-		return totalBytes, nil, nil, err
+		return nil, err
 	}
 
-	return totalBytes, msg, payload, nil
+	return msg, nil
 }

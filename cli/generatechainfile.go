@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -38,7 +39,7 @@ var generateChainCmd = &cobra.Command{
 	Long:  `Generates chain file from keys in your wallet`,
 	Run: func(cmd *cobra.Command, args []string) {
 		keystorePath := path.Join(DataFolder, "wallet")
-		k, err := wallet.NewWallet(wallet.Config{
+		k, err := wallet.NewWallet(context.Background(), wallet.Config{
 			Log:  logger.New(os.Stdout),
 			Path: keystorePath,
 		}, params.Mainnet, nil, nil)

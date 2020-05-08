@@ -34,7 +34,7 @@ type BlocksInfo struct {
 	Blocks map[string]BlockInfo
 }
 
-func LoadApi(conf *config.Config, chainInstance *chain.Blockchain, peersMan *peers.PeerMan) error {
+func LoadApi(conf *config.Config, chainInstance *chain.Blockchain, peersMan *peers.HostNode) error {
 	templates, err := loadTemplates()
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func loadTemplates() (*template.Template, error) {
 	return tpl, nil
 }
 
-func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers.PeerMan) MainInfo {
+func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers.HostNode) MainInfo {
 	lastBlocks := make(map[string]*index.BlockRow)
 	lastBlock := chain.State().Tip()
 	if lastBlock.Parent != nil {
@@ -93,7 +93,7 @@ func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers
 		Version:       config.OgenVersion(),
 		UserAgent:     p2p.DefaultUserAgent,
 		Sync:          true,
-		Peers:         peerMan.GetPeersCount(),
+		Peers:         int32(peerMan.PeersConnected()),
 		LastBlocks:    lastBlocks,
 	}
 	return info
@@ -102,7 +102,7 @@ func loadChainStats(conf *config.Config, chain *chain.Blockchain, peerMan *peers
 func getBlocks(chain *chain.Blockchain) map[string]BlockInfo {
 	blocks := make(map[string]BlockInfo)
 	lastBlock := chain.State().Tip()
-	if lastBlock.Parent != nil  {
+	if lastBlock.Parent != nil {
 		lastBlockInfo := BlockInfo{
 			Height:       lastBlock.Height,
 			Hash:         lastBlock.Hash.String(),

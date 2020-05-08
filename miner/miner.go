@@ -1,8 +1,10 @@
 package miner
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"time"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -57,7 +59,6 @@ type Miner struct {
 	params     params.ChainParams
 	chain      *chain.Blockchain
 	walletsMan Keystore
-	peersMan   *peers.PeerMan
 	mineActive bool
 	keystore   Keystore
 	context    context.Context
@@ -65,24 +66,37 @@ type Miner struct {
 
 	voteMempool  *mempool.VoteMempool
 	coinsMempool *mempool.CoinsMempool
+
+	blockTopic *pubsub.Topic
+	voteTopic  *pubsub.Topic
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, miningWallet Keystore, peersMan *peers.PeerMan, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, miningWallet Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
+	blockTopic, err := hostnode.Topic("blocks")
+	if err != nil {
+		return nil, err
+	}
+	voteTopic, err := hostnode.Topic("votes")
+	if err != nil {
+		return nil, err
+	}
 	miner = &Miner{
 		log:          config.Log,
 		config:       config,
 		params:       params,
 		chain:        chain,
 		walletsMan:   miningWallet,
-		peersMan:     peersMan,
 		mineActive:   true,
 		keystore:     miningWallet,
 		context:      ctx,
 		Stop:         cancel,
 		voteMempool:  voteMempool,
 		coinsMempool: coinsMempool,
+
+		blockTopic: blockTopic,
+		voteTopic:  voteTopic,
 	}
 	chain.Notify(miner)
 	return miner, nil
@@ -110,6 +124,32 @@ func (m *Miner) getNextBlockTime(nextSlot uint64) time.Time {
 // getNextSlotTime gets the next slot time.
 func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
 	return m.chain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(m.params.SlotDuration) / 2)
+}
+
+func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
+	buf := bytes.NewBuffer([]byte{})
+	err := vote.Encode(buf)
+	if err != nil {
+		m.log.Errorf("error encoding vote: %s", err)
+		return
+	}
+
+	if err := m.voteTopic.Publish(m.context, buf.Bytes()); err != nil {
+		m.log.Errorf("error publishing vote: %s", err)
+	}
+}
+
+func (m *Miner) publishBlock(block *primitives.Block) {
+	buf := bytes.NewBuffer([]byte{})
+	err := block.Encode(buf)
+	if err != nil {
+		m.log.Error(err)
+		return
+	}
+
+	if err := m.blockTopic.Publish(m.context, buf.Bytes()); err != nil {
+		m.log.Errorf("error publishing block: %s", err)
+	}
 }
 
 // Start runs the miner.
@@ -175,7 +215,7 @@ func (m *Miner) Start() error {
 
 						m.voteMempool.Add(&vote, max-min)
 
-						m.peersMan.SubmitVote(&vote)
+						go m.publishVote(&vote)
 					}
 				}
 				slotToVote++
@@ -245,9 +285,8 @@ func (m *Miner) Start() error {
 						m.log.Error(err)
 						return
 					}
-					if err := m.peersMan.SubmitBlock(&block); err != nil {
-						m.log.Error(err)
-					}
+
+					m.publishBlock(&block)
 				}
 
 				slotToPropose++

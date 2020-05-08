@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"path"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/explorer"
 	"github.com/olympus-protocol/ogen/gov"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/mempool"
@@ -27,7 +27,7 @@ type Server struct {
 	params params.ChainParams
 
 	Chain     *chain.Blockchain
-	PeerMan   *peers.PeerMan
+	HostNode  *peers.HostNode
 	Wallet    *wallet.Wallet
 	Miner     *miner.Miner
 	GovMan    *gov.GovMan
@@ -48,9 +48,9 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start chain instance")
 	}
-	err = s.PeerMan.Start()
+	err = s.HostNode.Start()
 	if err != nil {
-		log.Fatalln("unable to start peer manager")
+		log.Fatalln("unable to start host node")
 	}
 	chainrpc.ServeRPC(s.RPC, loadRPCConfig(s.config, s.log))
 	if s.Miner != nil {
@@ -61,16 +61,16 @@ func (s *Server) Start() {
 	}
 	switch s.config.Mode {
 	case "api":
-		err := explorer.LoadApi(s.config, s.Chain, s.PeerMan)
-		if err != nil {
-			log.Fatal("unable to start api")
-		}
+		// err := explorer.LoadApi(s.config, s.Chain, s.HostNode)
+		// if err != nil {
+		// 	log.Fatal("unable to start api")
+		// }
 	}
 }
 
 func (s *Server) Stop() error {
 	s.Chain.Stop()
-	s.PeerMan.Stop()
+	// s.HostNode.Stop()
 	if s.config.Wallet {
 		err := s.Wallet.Stop()
 		if err != nil {
@@ -83,7 +83,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
 	coinsMempool := mempool.NewCoinsMempool()
 	voteMempool := mempool.NewVoteMempool(&currParams)
@@ -91,11 +91,11 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 	if err != nil {
 		return nil, err
 	}
-	peersMan, err := peers.NewPeersMan(loadPeersManConfig(configParams, logger), currParams, ch, voteMempool, coinsMempool)
+	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger))
 	if err != nil {
 		return nil, err
 	}
-	w, err := wallet.NewWallet(loadWalletsManConfig(configParams, logger), currParams, ch, peersMan)
+	w, err := wallet.NewWallet(ctx, loadWalletsManConfig(configParams, logger), currParams, ch, hostnode)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {
-		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, peersMan, voteMempool, coinsMempool)
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, hostnode, voteMempool, coinsMempool)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +116,7 @@ func NewServer(configParams *config.Config, logger *logger.Logger, currParams pa
 		log:    logger,
 
 		Chain:     ch,
-		PeerMan:   peersMan,
+		HostNode:   hostnode,
 		Wallet:    w,
 		Miner:     min,
 		WorkerMan: workersMan,
@@ -165,13 +165,12 @@ func loadMinerConfig(config *config.Config, logger *logger.Logger) miner.Config 
 
 func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
 	cfg := peers.Config{
-		Log:          logger,
-		Listen:       config.Listen,
-		ConnectNodes: config.ConnectNodes,
-		AddNodes:     config.AddNodes,
-		Port:         config.Port,
-		MaxPeers:     config.MaxPeers,
-		Path:         config.DataFolder,
+		Log:      logger,
+		Listen:   config.Listen,
+		AddNodes: config.AddNodes,
+		Port:     config.Port,
+		MaxPeers: config.MaxPeers,
+		Path:     config.DataFolder,
 	}
 	return cfg
 }

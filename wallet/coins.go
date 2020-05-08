@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -27,6 +28,18 @@ func (b *Wallet) GetBalance(addr string) (uint64, error) {
 		return 0, nil
 	}
 	return out, nil
+}
+
+func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
+	buf := bytes.NewBuffer([]byte{})
+	err := payload.Encode(buf)
+	if err != nil {
+		b.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := b.txTopic.Publish(b.ctx, buf.Bytes()); err != nil {
+		b.log.Errorf("error broadcasting transaction: %s", err)
+	}
 }
 
 func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) (*chainhash.Hash, error) {
@@ -81,9 +94,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 		return nil, err
 	}
 
-	if err := b.peerman.SubmitTx(payload); err != nil {
-		return nil, err
-	}
+	b.broadcastTx(payload)
 
 	txHash := tx.Hash()
 

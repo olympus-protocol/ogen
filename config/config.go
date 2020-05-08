@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
@@ -20,10 +22,9 @@ type Config struct {
 	DataFolder    string
 	RPCAddress    string
 	Debug         bool
-	Listen        bool
+	Listen        []multiaddr.Multiaddr
 	NetworkName   string
-	ConnectNodes  []string
-	AddNodes      []string
+	AddNodes      []peer.AddrInfo
 	Port          int32
 	MaxPeers      int32
 	Mode          string

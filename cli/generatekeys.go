@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -37,7 +38,7 @@ var generateKeysCmd = &cobra.Command{
 		}
 
 		keystorePath := path.Join(DataFolder, "wallet")
-		k, err := wallet.NewWallet(wallet.Config{
+		k, err := wallet.NewWallet(context.Background(), wallet.Config{
 			Path: keystorePath,
 			Log:  logger.New(os.Stdout),
 		}, params.Mainnet, nil, nil)

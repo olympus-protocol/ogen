@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"path"
 	"time"
 
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/logger"
@@ -18,6 +21,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
+
+	mnet "github.com/multiformats/go-multiaddr-net"
 )
 
 const (
@@ -30,7 +35,7 @@ func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logg
 	if err != nil {
 		return err
 	}
-	s, err := server.NewServer(configParams, log, currParams, db, false, configParams.InitConfig)
+	s, err := server.NewServer(ctx, configParams, log, currParams, db, false, configParams.InitConfig)
 	if err != nil {
 		return err
 	}
@@ -81,6 +86,28 @@ func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile
 	return chainFile, nil
 }
 
+func tcpAddressStringToMultiaddr(addrString string) (multiaddr.Multiaddr, error) {
+	netAddr, err := net.ResolveTCPAddr("tcp", addrString)
+	if err != nil {
+		return nil, err
+	}
+
+	return mnet.FromNetAddr(netAddr)
+}
+
+func tcpAddressesStringToMultiaddr(addrStrings []string) ([]multiaddr.Multiaddr, error) {
+	out := make([]multiaddr.Multiaddr, len(addrStrings))
+	for i := range out {
+		o, err := tcpAddressStringToMultiaddr(addrStrings[i])
+		if err != nil {
+			return nil, err
+		}
+		out[i] = o
+	}
+
+	return out, nil
+}
+
 var (
 	DataFolder string
 
@@ -116,14 +143,33 @@ Next generation blockchain secured by CASPER.`,
 				ip.GenesisTime = time.Unix(int64(genesisTime), 0)
 			}
 
+			listenAddr, err := tcpAddressStringToMultiaddr(viper.GetString("listen"))
+			if err != nil {
+				log.Fatalf("error parsing listen address: %s", err)
+			}
+
+			addNodesStrs := viper.GetStringSlice("add")
+			addNodes := make([]peer.AddrInfo, len(addNodesStrs))
+			for i := range addNodes {
+				maddr, err := multiaddr.NewMultiaddr(addNodesStrs[i])
+				if err != nil {
+					log.Fatalf("error parsing add node %s: %s", addNodesStrs[i], err)
+				}
+				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
+				if err != nil {
+					log.Fatal("error parsing add node %s: %s", maddr, pinfo)
+				}
+
+				addNodes[i] = *pinfo
+			}
+
 			c := &config.Config{
 				DataFolder:    DataFolder,
 				InitConfig:    ip,
 				Debug:         viper.GetBool("debug"),
-				Listen:        viper.GetBool("listen"),
+				Listen:        []multiaddr.Multiaddr{listenAddr},
 				NetworkName:   networkName,
-				ConnectNodes:  viper.GetStringSlice("connect"),
-				AddNodes:      viper.GetStringSlice("add"),
+				AddNodes:      addNodes,
 				Port:          int32(viper.GetUint("port")),
 				MaxPeers:      int32(viper.GetUint("maxpeers")),
 				Mode:          viper.GetString("mode"),
@@ -157,9 +203,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "data directory to store Ogen data")
 	rootCmd.PersistentFlags().Bool("debug", false, "log debugging info")
 
-	rootCmd.Flags().Bool("listen", true, "listen for new connections")
+	rootCmd.Flags().String("listen", "0.0.0.0:24126", "listen for new connections")
 	rootCmd.Flags().String("network", "testnet", "network name to use (testnet or mainnet)")
-	rootCmd.Flags().Uint16("port", 24126, "port to listen on for P2P connections")
 	rootCmd.Flags().Uint16("maxpeers", 9, "maximum peers to connect to or allow connections for")
 	rootCmd.Flags().String("mode", "node", "type of node to run")
 	rootCmd.Flags().Bool("wallet", true, "enable wallet")
