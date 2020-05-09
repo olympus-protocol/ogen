@@ -103,7 +103,7 @@ func (p *ProtocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 	err := processMessages(p.ctx, p.host.netMagic, r, func(message p2p.Message) error {
 		cmd := message.Command()
 
-		p.log.Debugf("processing message %s from peer %s", cmd, id)
+		p.log.Tracef("processing message %s from peer %s", cmd, id)
 
 		p.messageHandlersLock.RLock()
 		if handler, found := p.messageHandlers[cmd]; found {
@@ -139,7 +139,6 @@ func (p *ProtocolHandler) sendMessages(id peer.ID, w io.Writer) {
 	go func() {
 		for msg := range msgChan {
 			err := p2p.WriteMessage(w, msg, p.host.netMagic)
-			p.log.Tracef("writing message %s to peer %s", msg.Command(), id)
 			if err != nil {
 				p.log.Errorf("error sending message to peer %s: %s", id, err)
 
@@ -170,7 +169,6 @@ func (p *ProtocolHandler) handleStream(s network.Stream) {
 
 // SendMessage writes a message to a peer.
 func (p *ProtocolHandler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
-	p.log.Tracef("sending message %s to peer %s", msg.Command(), toPeer)
 	p.outgoingMessagesLock.RLock()
 	msgsChan, found := p.outgoingMessages[toPeer]
 	p.outgoingMessagesLock.RUnlock()

@@ -77,12 +77,16 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	timeout := time.Second * 5
 
 	for _, p := range peers {
+		if p.ID == cm.host.host.ID() {
+			continue
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		if err := cm.host.host.Connect(ctx, p); err != nil {
 			cm.log.Tracef("error connecting to suggested peer %s: %s", p, err)
 			cancel()
 			continue
 		}
+		cancel()
 	}
 
 	return nil

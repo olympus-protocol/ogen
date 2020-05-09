@@ -37,12 +37,12 @@ func (m *MsgAddr) Encode(w io.Writer) error {
 			return err
 		}
 		for _, a := range na.Addrs {
-			b, err := a.MarshalBinary()
-			if err != nil {
-				return err
-			}
+			// b, err :=
+			// if err != nil {
+			// 	return err
+			// }
 
-			if err := serializer.WriteVarBytes(w, b); err != nil {
+			if err := serializer.WriteVarBytes(w, a.Bytes()); err != nil {
 				return err
 			}
 		}
@@ -87,9 +87,12 @@ func (m *MsgAddr) Decode(r io.Reader) error {
 				return err
 			}
 
-			if err := addrs[j].UnmarshalBinary(addrBytes); err != nil {
+			a, err := multiaddr.NewMultiaddrBytes(addrBytes)
+			if err != nil {
 				return err
 			}
+
+			addrs[j] = a
 		}
 
 		peerIDBytes, err := serializer.ReadVarBytes(r)
