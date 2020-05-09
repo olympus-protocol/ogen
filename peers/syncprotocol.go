@@ -13,6 +13,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -30,6 +31,8 @@ type SyncProtocol struct {
 	log    *logger.Logger
 
 	chain *chain.Blockchain
+	coins *mempool.CoinsMempool
+	votes *mempool.VoteMempool
 
 	protocolHandler *ProtocolHandler
 }
@@ -47,7 +50,7 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 }
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
-func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *chain.Blockchain) (*SyncProtocol, error) {
+func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *chain.Blockchain, coinsMempool *mempool.CoinsMempool, voteMempool *mempool.VoteMempool) (*SyncProtocol, error) {
 	ph := newProtocolHandler(ctx, syncProtocolID, host, config)
 	sp := &SyncProtocol{
 		host:            host,
@@ -56,6 +59,8 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 		ctx:             ctx,
 		protocolHandler: ph,
 		chain:           chain,
+		coins:           coinsMempool,
+		votes:           voteMempool,
 	}
 
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
@@ -67,18 +72,53 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 	if err := ph.RegisterHandler(p2p.MsgBlocksCmd, sp.handleBlocks); err != nil {
 		return nil, err
 	}
-
-	blockTopic, err := host.Topic("blocks")
-	if err != nil {
+	if err := ph.RegisterHandler(p2p.MsgVoteCmd, sp.handleVoteMsg); err != nil {
 		return nil, err
+	}
+
+	if err := sp.listenForBroadcasts(); err != nil {
+		return nil, err
+	}
+
+	host.Notify(sp)
+
+	return sp, nil
+}
+
+func (sp *SyncProtocol) handleVote(id peer.ID, vote *primitives.SingleValidatorVote) error {
+	sp.log.Tracef("received vote from peer %s", id)
+
+	sp.votes.Add(vote, vote.OutOf)
+
+	return nil
+}
+
+func (sp *SyncProtocol) handleVoteMsg(id peer.ID, msg p2p.Message) error {
+	voteMsg, ok := msg.(*p2p.MsgVotes)
+	if !ok {
+		return errors.New("did not receive vote message")
+	}
+
+	for _, v := range voteMsg.Votes {
+		// TODO: validate vote here
+		sp.handleVote(id, &v)
+	}
+
+	return nil
+}
+
+func (sp *SyncProtocol) listenForBroadcasts() error {
+	blockTopic, err := sp.host.Topic("blocks")
+	if err != nil {
+		return err
 	}
 
 	blockSub, err := blockTopic.Subscribe()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	go listenToTopic(ctx, blockSub, func(data []byte, id peer.ID) {
+	go listenToTopic(sp.ctx, blockSub, func(data []byte, id peer.ID) {
 		buf := bytes.NewReader(data)
 		var block primitives.Block
 
@@ -92,9 +132,31 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 		}
 	})
 
-	host.Notify(sp)
+	voteTopic, err := sp.host.Topic("votes")
+	if err != nil {
+		return err
+	}
 
-	return sp, nil
+	voteSub, err := voteTopic.Subscribe()
+	if err != nil {
+		return err
+	}
+
+	go listenToTopic(sp.ctx, voteSub, func(data []byte, id peer.ID) {
+		buf := bytes.NewReader(data)
+		var vote primitives.SingleValidatorVote
+
+		if err := vote.Decode(buf); err != nil {
+			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
+			return
+		}
+
+		if err := sp.handleVote(id, &vote); err != nil {
+			sp.log.Errorf("error handling incoming block from peer: %s", err)
+		}
+	})
+
+	return nil
 }
 
 func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {

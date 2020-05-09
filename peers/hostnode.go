@@ -10,6 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/p2p"
 
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
@@ -67,7 +68,7 @@ type HostNode struct {
 var hostDBKey = []byte("host-key")
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain, db *badger.DB) (*HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain, db *badger.DB, coinsMempool *mempool.CoinsMempool, voteMempool *mempool.VoteMempool) (*HostNode, error) {
 	ps := pstoremem.NewPeerstore()
 
 	var priv crypto.PrivKey
@@ -154,7 +155,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	}
 	hostNode.discoveryProtocol = discovery
 
-	sync, err := NewSyncProtocol(ctx, hostNode, config, blockchain)
+	sync, err := NewSyncProtocol(ctx, hostNode, config, blockchain, coinsMempool, voteMempool)
 	if err != nil {
 		return nil, err
 	}

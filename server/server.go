@@ -93,7 +93,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, walletDB)
+	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, walletDB, coinsMempool, voteMempool)
 	if err != nil {
 		return nil, err
 	}

@@ -77,10 +77,12 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	miner = &Miner{
