@@ -9,7 +9,8 @@ import (
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
-const maxBlockSize = 1024 * 512 * 500 // 512 KB
+const MaxBlockSize = 1024 * 512 // 512 KB
+const MaxBlocksPerMsg = 500
 
 type MsgBlocks struct {
 	Blocks []primitives.Block
@@ -20,7 +21,7 @@ func (m *MsgBlocks) Command() string {
 }
 
 func (m *MsgBlocks) MaxPayloadLength() uint32 {
-	return maxBlockSize
+	return MaxBlockSize * MaxBlocksPerMsg
 }
 
 func NewMsgBlocks(b []primitives.Block) *MsgBlocks {

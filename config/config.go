@@ -28,7 +28,6 @@ type Config struct {
 	Port          int32
 	MaxPeers      int32
 	Mode          string
-	Wallet        bool
 	MiningEnabled bool
 	InitConfig    primitives.InitializationParameters
 }

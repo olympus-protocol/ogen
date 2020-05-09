@@ -9,6 +9,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
@@ -39,10 +40,15 @@ var generateChainCmd = &cobra.Command{
 	Long:  `Generates chain file from keys in your wallet`,
 	Run: func(cmd *cobra.Command, args []string) {
 		keystorePath := path.Join(DataFolder, "wallet")
+
+		walletDB, err := badger.Open(badger.DefaultOptions(keystorePath).WithLogger(nil))
+		if err != nil {
+			panic(err)
+		}
 		k, err := wallet.NewWallet(context.Background(), wallet.Config{
 			Log:  logger.New(os.Stdout),
 			Path: keystorePath,
-		}, params.Mainnet, nil, nil)
+		}, params.Mainnet, nil, nil, walletDB)
 		if err != nil {
 			fmt.Printf("could not open database: %s\n", err)
 			return

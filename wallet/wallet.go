@@ -2,8 +2,9 @@ package wallet
 
 import (
 	"context"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"sync"
+
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/chain"
@@ -28,7 +29,7 @@ type Wallet struct {
 	log    *logger.Logger
 	params *params.ChainParams
 
-	chain    *chain.Blockchain
+	chain *chain.Blockchain
 
 	txTopic *pubsub.Topic
 
@@ -36,7 +37,7 @@ type Wallet struct {
 
 	info          walletInfo
 	lastNonceLock sync.Mutex
-	ctx context.Context
+	ctx           context.Context
 }
 
 var walletDBKey = []byte("encryption-key-ciphertext")
@@ -45,13 +46,9 @@ var walletDBNonce = []byte("encryption-key-nonce")
 var walletDBLastTxNonce = []byte("last-tx-nonce")
 var walletDBAddress = []byte("wallet-address")
 
-func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode) (*Wallet, error) {
-	bdb, err := badger.Open(badger.DefaultOptions(c.Path).WithLogger(nil))
-	if err != nil {
-		return nil, err
-	}
-
+func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, walletDB *badger.DB) (*Wallet, error) {
 	var txTopic *pubsub.Topic
+	var err error
 	if hostnode != nil {
 		txTopic, err = hostnode.Topic("tx")
 		if err != nil {
@@ -60,13 +57,13 @@ func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *cha
 	}
 
 	w := &Wallet{
-		db:        bdb,
+		db:        walletDB,
 		hasMaster: false,
 		log:       c.Log,
 		params:    &params,
 		chain:     ch,
-		txTopic:  txTopic,
-		ctx: ctx,
+		txTopic:   txTopic,
+		ctx:       ctx,
 	}
 
 	if err := w.loadFromDisk(); err != nil {

@@ -17,7 +17,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-const olympusDiscoveryProtocolID = protocol.ID("/ogen/discovery/1.0.0")
+const DiscoveryProtocolID = protocol.ID("/ogen/discovery/1.0.0")
 
 // DiscoveryProtocol is the service to discover other peers.
 type DiscoveryProtocol struct {
@@ -32,9 +32,9 @@ type DiscoveryProtocol struct {
 	protocolHandler *ProtocolHandler
 }
 
-// NewConnectionManager creates a new discovery service.
-func NewConnectionManager(ctx context.Context, host *HostNode, config Config) *DiscoveryProtocol {
-	ph := newProtocolHandler(ctx, olympusDiscoveryProtocolID, host)
+// NewDiscoveryProtocol creates a new discovery service.
+func NewDiscoveryProtocol(ctx context.Context, host *HostNode, config Config) (*DiscoveryProtocol, error) {
+	ph := newProtocolHandler(ctx, DiscoveryProtocolID, host, config)
 	dp := &DiscoveryProtocol{
 		host:            host,
 		ctx:             ctx,
@@ -43,10 +43,15 @@ func NewConnectionManager(ctx context.Context, host *HostNode, config Config) *D
 		protocolHandler: ph,
 		log:             config.Log,
 	}
-	ph.RegisterHandler(p2p.MsgGetAddrCmd, dp.handleGetAddr)
-	ph.RegisterHandler(p2p.MsgAddrCmd, dp.handleAddr)
+	if err := ph.RegisterHandler(p2p.MsgGetAddrCmd, dp.handleGetAddr); err != nil {
+		return nil, err
+	}
+	if err := ph.RegisterHandler(p2p.MsgAddrCmd, dp.handleAddr); err != nil {
+		return nil, err
+	}
+	host.Notify(dp)
 
-	return dp
+	return dp, nil
 }
 
 const connectionTimeout = 10 * time.Second
@@ -123,6 +128,9 @@ func (cm *DiscoveryProtocol) Start() error {
 			select {
 			case <-askForPeersTicker.C:
 				possiblePeersToAsk := cm.host.GetPeerList()
+				if len(possiblePeersToAsk) == 0 {
+					continue
+				}
 				peerIdxToAsk := rand.Int() % len(possiblePeersToAsk)
 				peerToAsk := possiblePeersToAsk[peerIdxToAsk]
 
@@ -157,17 +165,6 @@ func (cm *DiscoveryProtocol) connect(pi peer.AddrInfo) error {
 	return nil
 }
 
-// HandleOutgoing handles outgoing streams.
-func (cm *DiscoveryProtocol) HandleOutgoing(id protocol.ID, s network.Stream) error {
-	// we don't care about this protocol ID
-	if id != olympusDiscoveryProtocolID {
-		return nil
-	}
-
-	cm.protocolHandler.handleStream(s)
-	return nil
-}
-
 // Listen is called when we start listening on a multiaddr.
 func (cm *DiscoveryProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
 
@@ -175,7 +172,19 @@ func (cm *DiscoveryProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
 func (cm *DiscoveryProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
 
 // Connected is called when we connect to a peer.
-func (cm *DiscoveryProtocol) Connected(net network.Network, conn network.Conn) {}
+func (cm *DiscoveryProtocol) Connected(net network.Network, conn network.Conn) {
+	if conn.Stat().Direction != network.DirOutbound {
+		return
+	}
+
+	// open a stream for the discovery protocol:
+	s, err := cm.host.host.NewStream(cm.ctx, conn.RemotePeer(), DiscoveryProtocolID)
+	if err != nil {
+		cm.log.Errorf("could not open stream for connection: %s", err)
+	}
+
+	cm.protocolHandler.handleStream(s)
+}
 
 // Disconnected is called when we disconnect from a peer.
 func (cm *DiscoveryProtocol) Disconnected(net network.Network, conn network.Conn) {}

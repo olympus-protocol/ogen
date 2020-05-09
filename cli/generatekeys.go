@@ -8,6 +8,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/dgraph-io/badger"
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/logger"
@@ -36,12 +37,17 @@ var generateKeysCmd = &cobra.Command{
 				return
 			}
 		}
-
 		keystorePath := path.Join(DataFolder, "wallet")
+
+		walletDB, err := badger.Open(badger.DefaultOptions(keystorePath).WithLogger(nil))
+		if err != nil {
+			panic(err)
+		}
+
 		k, err := wallet.NewWallet(context.Background(), wallet.Config{
 			Path: keystorePath,
 			Log:  logger.New(os.Stdout),
-		}, params.Mainnet, nil, nil)
+		}, params.Mainnet, nil, nil, walletDB)
 		if err != nil {
 			panic(err)
 		}

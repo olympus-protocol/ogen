@@ -5,6 +5,7 @@ import (
 	"log"
 	"path"
 
+	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
@@ -38,13 +39,11 @@ type Server struct {
 }
 
 func (s *Server) Start() {
-	if s.config.Wallet {
-		err := s.Wallet.Start()
-		if err != nil {
-			log.Fatalf("unable to start wallet manager: %s", err)
-		}
+	err := s.Wallet.Start()
+	if err != nil {
+		log.Fatalf("unable to start wallet manager: %s", err)
 	}
-	err := s.Chain.Start()
+	err = s.Chain.Start()
 	if err != nil {
 		log.Fatalln("unable to start chain instance")
 	}
@@ -71,11 +70,9 @@ func (s *Server) Start() {
 func (s *Server) Stop() error {
 	s.Chain.Stop()
 	// s.HostNode.Stop()
-	if s.config.Wallet {
-		err := s.Wallet.Stop()
-		if err != nil {
-			return err
-		}
+	err := s.Wallet.Stop()
+	if err != nil {
+		return err
 	}
 	if s.Miner != nil {
 		s.Miner.Stop()
@@ -91,11 +88,16 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger))
+	walletConf := loadWalletsManConfig(configParams, logger)
+	walletDB, err := badger.Open(badger.DefaultOptions(walletConf.Path).WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}
-	w, err := wallet.NewWallet(ctx, loadWalletsManConfig(configParams, logger), currParams, ch, hostnode)
+	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, walletDB)
+	if err != nil {
+		return nil, err
+	}
+	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +118,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		log:    logger,
 
 		Chain:     ch,
-		HostNode:   hostnode,
+		HostNode:  hostnode,
 		Wallet:    w,
 		Miner:     min,
 		WorkerMan: workersMan,

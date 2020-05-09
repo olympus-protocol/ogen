@@ -44,7 +44,6 @@ func discardInput(r io.Reader, n uint32) {
 }
 
 func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
-
 	_, hdr, err := readMessageHeader(r)
 	if err != nil {
 		return nil, err
@@ -77,7 +76,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 	msg, err := makeEmptyMessage(command)
 	if err != nil {
 		discardInput(r, hdr.length)
-		return nil, err
+		return nil, fmt.Errorf("error creating new command %s: %s", command, err)
 	}
 
 	mpl := msg.MaxPayloadLength()
@@ -93,7 +92,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 	payload := make([]byte, hdr.length)
 	_, err = io.ReadFull(r, payload)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading payload of command %s: %s", command, err)
 	}
 
 	checksum := chainhash.DoubleHashB(payload)[0:4]
@@ -108,7 +107,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 	pr := bytes.NewBuffer(payload)
 	err = msg.Decode(pr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding payload of command %s: %s", command, err)
 	}
 
 	return msg, nil

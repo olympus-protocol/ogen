@@ -2,10 +2,13 @@ package peers
 
 import (
 	"context"
+	"crypto/rand"
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger"
 	"github.com/libp2p/go-libp2p"
+	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/p2p"
 
@@ -44,27 +47,70 @@ type HostNode struct {
 	gossipSub *pubsub.PubSub
 	ctx       context.Context
 
-	topics map[string]*pubsub.Topic
+	topics     map[string]*pubsub.Topic
 	topicsLock sync.RWMutex
 
 	timeoutInterval   time.Duration
 	heartbeatInterval time.Duration
 
-	// connMgr handles peer connMgr (mDNS, DHT, etc)
-	connMgr  *DiscoveryProtocol
 	netMagic p2p.NetMagic
 
 	log *logger.Logger
+
+	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
+	discoveryProtocol *DiscoveryProtocol
+
+	// syncProtocol handles peer syncing
+	syncProtocol *SyncProtocol
 }
 
+var hostDBKey = []byte("host-key")
+
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config) (*HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain, db *badger.DB) (*HostNode, error) {
 	ps := pstoremem.NewPeerstore()
+
+	var priv crypto.PrivKey
+	err := db.Update(func(tx *badger.Txn) error {
+		i, err := tx.Get(hostDBKey)
+		if err == badger.ErrKeyNotFound {
+			priv, _, err = crypto.GenerateEd25519Key(rand.Reader)
+			if err != nil {
+				return err
+			}
+
+			privBytes, err := crypto.MarshalPrivateKey(priv)
+			if err != nil {
+				return err
+			}
+
+			tx.Set(hostDBKey, privBytes)
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		keyBytes, err := i.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+
+		key, err := crypto.UnmarshalPrivateKey(keyBytes)
+		if err != nil {
+			return err
+		}
+
+		priv = key
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs(config.Listen...),
-		libp2p.Identity(config.PrivateKey),
+		libp2p.Identity(priv),
 		libp2p.EnableRelay(),
 		libp2p.Peerstore(ps),
 	)
@@ -99,13 +145,20 @@ func NewHostNode(ctx context.Context, config Config) (*HostNode, error) {
 		timeoutInterval:   timeoutInterval,
 		heartbeatInterval: heartbeatInterval,
 		log:               config.Log,
-		topics: map[string]*pubsub.Topic{},
+		topics:            map[string]*pubsub.Topic{},
 	}
 
-	discovery := NewConnectionManager(ctx, hostNode, config)
-	hostNode.connMgr = discovery
+	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)
+	if err != nil {
+		return nil, err
+	}
+	hostNode.discoveryProtocol = discovery
 
-	h.Network().Notify(discovery)
+	sync, err := NewSyncProtocol(ctx, hostNode, config, blockchain)
+	if err != nil {
+		return nil, err
+	}
+	hostNode.syncProtocol = sync
 
 	return hostNode, nil
 }
@@ -125,22 +178,6 @@ func (node *HostNode) Topic(topic string) (*pubsub.Topic, error) {
 	return t, nil
 }
 
-// OpenStreams opens streams to peer after connecting.
-func (node *HostNode) OpenStreams(id peer.ID, p protocol.ID) error {
-	// discovery stream
-	stream, err := node.host.NewStream(node.ctx, id, p)
-	if err != nil {
-		return err
-	}
-
-	err = node.connMgr.HandleOutgoing(p, stream)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // GetContext returns the context
 func (node *HostNode) GetContext() context.Context {
 	return node.ctx
@@ -150,7 +187,6 @@ func (node *HostNode) GetContext() context.Context {
 func (node *HostNode) GetHost() host.Host {
 	return node.host
 }
-
 
 // SubscribeMessage registers a handler for a network topic.
 func (node *HostNode) SubscribeMessage(topic string, handler func([]byte, peer.ID)) (*pubsub.Subscription, error) {
@@ -253,8 +289,9 @@ func (node *HostNode) GetPeerDirection(id peer.ID) network.Direction {
 	return conns[0].Stat().Direction
 }
 
+// Start the host node and start discovering peers.
 func (node *HostNode) Start() error {
-	if err := node.connMgr.Start(); err != nil {
+	if err := node.discoveryProtocol.Start(); err != nil {
 		return err
 	}
 

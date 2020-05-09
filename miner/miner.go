@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"time"
+
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"

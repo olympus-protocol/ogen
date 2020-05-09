@@ -50,7 +50,7 @@ type ConnectionManagerNotifee interface {
 }
 
 // newProtocolHandler constructs a new protocol handler for a specific protocol ID.
-func newProtocolHandler(ctx context.Context, id protocol.ID, host *HostNode) *ProtocolHandler {
+func newProtocolHandler(ctx context.Context, id protocol.ID, host *HostNode, config Config) *ProtocolHandler {
 	ph := &ProtocolHandler{
 		ID:               id,
 		host:             host,
@@ -58,6 +58,7 @@ func newProtocolHandler(ctx context.Context, id protocol.ID, host *HostNode) *Pr
 		outgoingMessages: make(map[peer.ID]chan p2p.Message),
 		ctx:              ctx,
 		notifees:         make([]ConnectionManagerNotifee, 0),
+		log:              config.Log,
 	}
 
 	host.setStreamHandler(id, ph.handleStream)
@@ -100,8 +101,20 @@ func processMessages(ctx context.Context, net p2p.NetMagic, stream io.Reader, ha
 
 func (p *ProtocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 	err := processMessages(p.ctx, p.host.netMagic, r, func(message p2p.Message) error {
-		p.log.Debugf("received message")
+		cmd := message.Command()
 
+		p.log.Debugf("processing message %s from peer %s", cmd, id)
+
+		p.messageHandlersLock.RLock()
+		if handler, found := p.messageHandlers[cmd]; found {
+			p.messageHandlersLock.RUnlock()
+			err := handler(id, message)
+			if err != nil {
+				return err
+			}
+		} else {
+			p.messageHandlersLock.RUnlock()
+		}
 		return nil
 	})
 	if err != nil {
@@ -126,8 +139,9 @@ func (p *ProtocolHandler) sendMessages(id peer.ID, w io.Writer) {
 	go func() {
 		for msg := range msgChan {
 			err := p2p.WriteMessage(w, msg, p.host.netMagic)
+			p.log.Tracef("writing message %s to peer %s", msg.Command(), id)
 			if err != nil {
-				p.log.Tracef("error sending message to peer %s: %s", id, err)
+				p.log.Errorf("error sending message to peer %s: %s", id, err)
 
 				p.notifeeLock.Lock()
 				for _, n := range p.notifees {
@@ -144,7 +158,7 @@ func (p *ProtocolHandler) sendMessages(id peer.ID, w io.Writer) {
 func (p *ProtocolHandler) handleStream(s network.Stream) {
 	p.sendMessages(s.Conn().RemotePeer(), s)
 
-	p.log.Tracef("handling messages from peer %s", s.Conn().RemotePeer())
+	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
 	go p.receiveMessages(s.Conn().RemotePeer(), s)
 
 	p.notifeeLock.Lock()
@@ -175,13 +189,7 @@ func (p *ProtocolHandler) Listen(network.Network, multiaddr.Multiaddr) {}
 func (p *ProtocolHandler) ListenClose(network.Network, multiaddr.Multiaddr) {}
 
 // Connected is called when we connect to a peer.
-func (p *ProtocolHandler) Connected(net network.Network, conn network.Conn) {
-	if conn.Stat().Direction != network.DirOutbound {
-		return
-	}
-
-	_ = p.host.OpenStreams(conn.RemotePeer(), p.ID)
-}
+func (p *ProtocolHandler) Connected(net network.Network, conn network.Conn) {}
 
 // Disconnected is called when we disconnect to a peer.
 func (p *ProtocolHandler) Disconnected(net network.Network, conn network.Conn) {

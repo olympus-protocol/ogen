@@ -8,7 +8,6 @@ import (
 
 const (
 	MsgVersionCmd   = "version"
-	MsgVerackCmd    = "verack"
 	MsgPingCmd      = "ping"
 	MsgPongCmd      = "pong"
 	MsgGetAddrCmd   = "getaddr"
@@ -42,8 +41,6 @@ func makeEmptyMessage(command string) (Message, error) {
 	switch command {
 	case MsgVersionCmd:
 		msg = &MsgVersion{}
-	case MsgVerackCmd:
-		msg = &MsgVerack{}
 	case MsgPingCmd:
 		msg = &MsgPing{}
 	case MsgPongCmd:
