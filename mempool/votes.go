@@ -116,7 +116,9 @@ func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleVali
 
 // AddValidate validates, then adds the vote to the mempool.
 func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *primitives.State) error {
-	// TODO: validate vote
+	if err := state.IsVoteValid(vote.AsMulti(), m.params); err != nil {
+		return err
+	}
 
 	m.Add(vote)
 	return nil

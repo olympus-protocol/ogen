@@ -90,8 +90,6 @@ func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.UtxoS
 		mpi = cm.mempool[fpkh]
 	}
 
-	// TODO: verify against UTXO state
-
 	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err
 	}

@@ -116,6 +116,17 @@ type SingleValidatorVote struct {
 	OutOf     uint32
 }
 
+// AsMulti returns the single validator vote as a multi validator vote.
+func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
+	participationBitfield := make([]uint8, (v.OutOf+7)/8)
+	participationBitfield[v.Offset/8] |= (1 << uint(v.Offset%8))
+	return &MultiValidatorVote{
+		Data:                  v.Data,
+		Signature:             v.Signature,
+		ParticipationBitfield: participationBitfield,
+	}
+}
+
 func (v *SingleValidatorVote) Hash() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
 	_ = v.Encode(buf)

@@ -24,7 +24,7 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32
 	return
 }
 
-func (s *State) isVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
 	if v.Data.ToEpoch == s.EpochIndex {
 		if v.Data.FromEpoch != s.JustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
@@ -93,7 +93,7 @@ func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, propos
 		return errors.New("vote slot did not match target epoch")
 	}
 
-	err := s.isVoteValid(v, p)
+	err := s.IsVoteValid(v, p)
 	if err != nil {
 		return err
 	}
