@@ -157,7 +157,16 @@ func (m *Miner) publishBlock(block *primitives.Block) {
 
 // Start runs the miner.
 func (m *Miner) Start() error {
-	m.log.Info("starting miner")
+	numOurs := 0
+	numTotal := 0
+	for _, w := range m.chain.State().TipState().ValidatorRegistry {
+		if _, ok := m.keystore.GetValidatorKey(&w); ok {
+			numOurs++
+		}
+		numTotal++
+	}
+
+	m.log.Infof("starting miner with %d/%d active validators", numOurs, numTotal)
 
 	go func() {
 		slotToPropose := m.getCurrentSlot() + 1
@@ -216,7 +225,7 @@ func (m *Miner) Start() error {
 							OutOf:     max - min,
 						}
 
-						m.voteMempool.Add(&vote, max-min)
+						m.voteMempool.Add(&vote)
 
 						go m.publishVote(&vote)
 					}

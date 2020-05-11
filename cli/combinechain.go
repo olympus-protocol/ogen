@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/spf13/cobra"
@@ -47,9 +48,12 @@ var combineChainCmd = &cobra.Command{
 		newValidators := make([]primitives.ValidatorInitialization, 0)
 		newInitialPeers := make([]string, 0)
 		for _, c := range chainFiles {
+			color.Yellow("combining chain file with %d validators and %d initial connections", len(c.Validators), len(c.InitialConnections))
 			newValidators = append(newValidators, c.Validators...)
 			newInitialPeers = append(newInitialPeers, c.InitialConnections...)
 		}
+
+		color.Green("new chain file has %d validators and %d initial connections", len(newValidators), len(newInitialPeers))
 
 		newChainFile := config.ChainFile{
 			Validators:         newValidators,

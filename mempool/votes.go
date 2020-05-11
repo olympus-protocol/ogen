@@ -1,13 +1,19 @@
 package mempool
 
 import (
+	"bytes"
+	"context"
 	"math/rand"
 	"sync"
 	"time"
 
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -64,9 +70,12 @@ func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
 }
 
 type VoteMempool struct {
-	poolLock sync.RWMutex
-	pool     map[chainhash.Hash]*mempoolVote
-	params   *params.ChainParams
+	poolLock   sync.RWMutex
+	pool       map[chainhash.Hash]*mempoolVote
+	params     *params.ChainParams
+	log        *logger.Logger
+	ctx        context.Context
+	blockchain *chain.Blockchain
 }
 
 func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
@@ -100,7 +109,7 @@ func (m *VoteMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.
 	return votes
 }
 
-func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
+func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *primitives.State) error {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	voteHash := vote.Data.Hash()
@@ -108,7 +117,22 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote, outOf uint32) {
 	if vs, found := m.pool[voteHash]; found {
 		vs.add(vote)
 	} else {
-		m.pool[voteHash] = newMempoolVote(outOf, &vote.Data)
+		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
+		m.pool[voteHash].add(vote)
+	}
+
+	return nil
+}
+
+func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
+	m.poolLock.Lock()
+	defer m.poolLock.Unlock()
+	voteHash := vote.Data.Hash()
+
+	if vs, found := m.pool[voteHash]; found {
+		vs.add(vote)
+	} else {
+		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
 		m.pool[voteHash].add(vote)
 	}
 }
@@ -149,10 +173,52 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	}
 }
 
-// NewVoteMempool creates a new mempool.
-func NewVoteMempool(p *params.ChainParams) *VoteMempool {
-	return &VoteMempool{
-		pool:   make(map[chainhash.Hash]*mempoolVote),
-		params: p,
+func (vm *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
+	for {
+		msg, err := topic.Next(vm.ctx)
+		if err != nil {
+			vm.log.Warnf("error getting next message in votes topic: %s", err)
+			return
+		}
+
+		txBuf := bytes.NewReader(msg.Data)
+		tx := new(primitives.SingleValidatorVote)
+
+		if err := tx.Decode(txBuf); err != nil {
+			// TODO: ban peer
+			vm.log.Warnf("peer sent invalid vote: %s", err)
+			continue
+		}
+
+		currentState := vm.blockchain.State().TipState()
+
+		err = vm.AddValidate(tx, currentState)
+		if err != nil {
+			vm.log.Warnf("error adding transaction to mempool: %s", err)
+		}
 	}
+}
+
+// NewVoteMempool creates a new mempool.
+func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode) (*VoteMempool, error) {
+	vm := &VoteMempool{
+		pool:       make(map[chainhash.Hash]*mempoolVote),
+		params:     p,
+		log:        log,
+		ctx:        ctx,
+		blockchain: ch,
+	}
+	voteTopic, err := hostnode.Topic("votes")
+	if err != nil {
+		return nil, err
+	}
+
+	voteSub, err := voteTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	go vm.handleSubscription(voteSub)
+
+	return vm, nil
 }

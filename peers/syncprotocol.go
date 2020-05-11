@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -13,7 +14,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -31,10 +31,11 @@ type SyncProtocol struct {
 	log    *logger.Logger
 
 	chain *chain.Blockchain
-	coins *mempool.CoinsMempool
-	votes *mempool.VoteMempool
 
 	protocolHandler *ProtocolHandler
+
+	notifees     []SyncNotifee
+	notifeesLock sync.Mutex
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -50,7 +51,7 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 }
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
-func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *chain.Blockchain, coinsMempool *mempool.CoinsMempool, voteMempool *mempool.VoteMempool) (*SyncProtocol, error) {
+func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *chain.Blockchain) (*SyncProtocol, error) {
 	ph := newProtocolHandler(ctx, syncProtocolID, host, config)
 	sp := &SyncProtocol{
 		host:            host,
@@ -59,8 +60,6 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 		ctx:             ctx,
 		protocolHandler: ph,
 		chain:           chain,
-		coins:           coinsMempool,
-		votes:           voteMempool,
 	}
 
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
@@ -70,9 +69,6 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 		return nil, err
 	}
 	if err := ph.RegisterHandler(p2p.MsgBlocksCmd, sp.handleBlocks); err != nil {
-		return nil, err
-	}
-	if err := ph.RegisterHandler(p2p.MsgVoteCmd, sp.handleVoteMsg); err != nil {
 		return nil, err
 	}
 
@@ -85,24 +81,13 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 	return sp, nil
 }
 
-func (sp *SyncProtocol) handleVote(id peer.ID, vote *primitives.SingleValidatorVote) error {
-	sp.votes.Add(vote, vote.OutOf)
-
-	return nil
+type SyncNotifee interface {
 }
 
-func (sp *SyncProtocol) handleVoteMsg(id peer.ID, msg p2p.Message) error {
-	voteMsg, ok := msg.(*p2p.MsgVotes)
-	if !ok {
-		return errors.New("did not receive vote message")
-	}
-
-	for _, v := range voteMsg.Votes {
-		// TODO: validate vote here
-		sp.handleVote(id, &v)
-	}
-
-	return nil
+func (sp *SyncProtocol) Notify(notifee SyncNotifee) {
+	sp.notifeesLock.Lock()
+	defer sp.notifeesLock.Unlock()
+	sp.notifees = append(sp.notifees, notifee)
 }
 
 func (sp *SyncProtocol) listenForBroadcasts() error {
@@ -126,30 +111,6 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 		}
 
 		if err := sp.handleBlock(id, &block); err != nil {
-			sp.log.Errorf("error handling incoming block from peer: %s", err)
-		}
-	})
-
-	voteTopic, err := sp.host.Topic("votes")
-	if err != nil {
-		return err
-	}
-
-	voteSub, err := voteTopic.Subscribe()
-	if err != nil {
-		return err
-	}
-
-	go listenToTopic(sp.ctx, voteSub, func(data []byte, id peer.ID) {
-		buf := bytes.NewReader(data)
-		var vote primitives.SingleValidatorVote
-
-		if err := vote.Decode(buf); err != nil {
-			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
-			return
-		}
-
-		if err := sp.handleVote(id, &vote); err != nil {
 			sp.log.Errorf("error handling incoming block from peer: %s", err)
 		}
 	})

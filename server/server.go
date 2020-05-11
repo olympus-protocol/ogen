@@ -82,8 +82,6 @@ func (s *Server) Stop() error {
 
 func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
-	coinsMempool := mempool.NewCoinsMempool()
-	voteMempool := mempool.NewVoteMempool(&currParams)
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {
 		return nil, err
@@ -93,7 +91,15 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, walletDB, coinsMempool, voteMempool)
+	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, walletDB)
+	if err != nil {
+		return nil, err
+	}
+	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hostnode)
+	if err != nil {
+		return nil, err
+	}
+	voteMempool, err := mempool.NewVoteMempool(ctx, logger, &currParams, ch, hostnode)
 	if err != nil {
 		return nil, err
 	}

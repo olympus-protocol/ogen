@@ -53,11 +53,9 @@ var walletDBAddress = []byte("wallet-address")
 func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, walletDB *badger.DB, mempool *mempool.CoinsMempool) (*Wallet, error) {
 	var txTopic *pubsub.Topic
 	var err error
-	if hostnode != nil {
-		txTopic, err = hostnode.Topic("tx")
-		if err != nil {
-			return nil, err
-		}
+	txTopic, err = hostnode.Topic("tx")
+	if err != nil {
+		return nil, err
 	}
 
 	w := &Wallet{

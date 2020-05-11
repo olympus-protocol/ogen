@@ -10,6 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+// GetBalance gets the balance of an address or of the wallet address.
 func (b *Wallet) GetBalance(addr string) (uint64, error) {
 	if addr == "" {
 		addr = b.info.address
@@ -42,6 +43,7 @@ func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
 	}
 }
 
+// SendToAddress sends an amount to an address with the given password and parameters.
 func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) (*chainhash.Hash, error) {
 	priv, err := b.unlockIfNeeded(authentication)
 	if err != nil {

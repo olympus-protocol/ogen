@@ -1,8 +1,15 @@
 package mempool
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"sync"
+
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/peers"
 
 	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -19,7 +26,8 @@ func (cmi *coinMempoolItem) add(item primitives.CoinPayload, maxAmount uint64) e
 	}
 
 	if _, ok := cmi.transactions[item.Nonce]; ok {
-		return fmt.Errorf("found existing transaction with same nonce: %d", item.Nonce)
+		// silently accept since we already have this
+		return nil
 	}
 
 	cmi.balanceSpent += item.Amount + item.Fee
@@ -45,6 +53,11 @@ func newCoinMempoolItem() *coinMempoolItem {
 
 // CoinsMempool represents a mempool for coin transactions.
 type CoinsMempool struct {
+	blockchain *chain.Blockchain
+	topic      *pubsub.Topic
+	ctx        context.Context
+	log        *logger.Logger
+
 	mempool map[[20]byte]*coinMempoolItem
 	lock    sync.RWMutex
 }
@@ -134,9 +147,53 @@ outer:
 	return allTransactions
 }
 
-// NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool() *CoinsMempool {
-	return &CoinsMempool{
-		mempool: make(map[[20]byte]*coinMempoolItem),
+func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
+	for {
+		msg, err := topic.Next(cm.ctx)
+		if err != nil {
+			cm.log.Warnf("error getting next message in coins topic: %s", err)
+			return
+		}
+
+		txBuf := bytes.NewReader(msg.Data)
+		tx := new(primitives.CoinPayload)
+
+		if err := tx.Decode(txBuf); err != nil {
+			// TODO: ban peer
+			cm.log.Warnf("peer sent invalid transaction: %s", err)
+			continue
+		}
+
+		currentState := cm.blockchain.State().TipState().UtxoState
+
+		err = cm.Add(*tx, &currentState)
+		if err != nil {
+			cm.log.Warnf("error adding transaction to mempool: %s", err)
+		}
 	}
+}
+
+// NewCoinsMempool constructs a new coins mempool.
+func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockchain, hostNode *peers.HostNode) (*CoinsMempool, error) {
+	topic, err := hostNode.Topic("tx")
+	if err != nil {
+		return nil, err
+	}
+
+	topicSub, err := topic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	cm := &CoinsMempool{
+		mempool:    make(map[[20]byte]*coinMempoolItem),
+		ctx:        ctx,
+		blockchain: ch,
+		topic:      topic,
+		log:        log,
+	}
+
+	go cm.handleSubscription(topicSub)
+
+	return cm, nil
 }
