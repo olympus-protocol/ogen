@@ -5,11 +5,13 @@ package bls_test
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"reflect"
-	"testing"
 )
 
 func TestBasicSignature(t *testing.T) {
@@ -324,19 +326,12 @@ func TestPubKeyHash(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to get deserialize public key")
 	}
-	encPub, err := pubKey.ToBech32(params.Mainnet.AddressPrefixes, false)
+	encPub, err := pubKey.ToBech32(params.Mainnet.AddressPrefixes)
 	if err != nil {
 		t.Fatal("unable to get public bech32")
 	}
-	equal := reflect.DeepEqual(encPub, "olpub1yne583dks9ptymxya4dkakkx0sd2kyz58umv42wrt9vfq3xlkqgsh0xff2")
-	if !equal {
-		t.Fatal("pubKeyHashes doesn't match")
-	}
-	encPubContract, err := pubKey.ToBech32(params.Mainnet.AddressPrefixes, true)
-	if err != nil {
-		t.Fatal("unable to get public bech32")
-	}
-	equal = reflect.DeepEqual(encPubContract, "ctpub1rdden82dqeks8ajkgxajwfaxe52zdjmpxkvc3decrl98kk8xghcqq3dz88")
+	fmt.Println(encPub)
+	equal := reflect.DeepEqual(encPub, "olpub1qxwuvk98q2k3r93a66kl72wtwz2mjupl0vl857")
 	if !equal {
 		t.Fatal("pubKeyHashes doesn't match")
 	}

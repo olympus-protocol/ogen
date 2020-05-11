@@ -100,7 +100,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// b. get parent block
 	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
 
-	if time.Now().Before(blockTime) {
+	if ch.config.CheckTime && time.Now().Before(blockTime) {
 		return fmt.Errorf("block %d processed at %s, but should wait until %s", block.Header.Slot, time.Now(), blockTime)
 	}
 

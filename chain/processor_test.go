@@ -2,6 +2,8 @@ package chain_test
 
 import (
 	"crypto/rand"
+	"fmt"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"os"
 	"testing"
 	"time"
@@ -12,7 +14,6 @@ import (
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var log = logger.New(os.Stdout).Quiet()
@@ -67,10 +68,11 @@ func TestBlockchainTipGenesis(t *testing.T) {
 func TestBlockchainTipAddBlock(t *testing.T) {
 	db := mock.NewMemoryDB()
 
-	ip, _ := getTestInitializationParameters()
+	ip, keys := getTestInitializationParameters()
 
 	b, err := chain.NewBlockchain(chain.Config{
 		Log: log,
+		CheckTime: false,
 	}, params.Mainnet, db, *ip)
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +90,6 @@ func TestBlockchainTipAddBlock(t *testing.T) {
 	newBlockHeader := primitives.BlockHeader{
 		Version:       0,
 		Nonce:         0,
-		MerkleRoot:    chainhash.Hash{},
 		PrevBlockHash: genesis.Hash,
 		Timestamp:     time.Time{},
 	}
@@ -101,10 +102,18 @@ func TestBlockchainTipAddBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", 0)))
+
+	randaoSig, err := bls.Sign(secretKey, slotHash[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = b.ProcessBlock(&primitives.Block{
 		Header:    newBlockHeader,
 		Txs:       nil,
 		Signature: sig.Serialize(),
+		RandaoSignature: randaoSig.Serialize(),
 	})
 	if err != nil {
 		t.Fatal(err)
