@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/mempool"
 	"sync"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -29,7 +30,8 @@ type Wallet struct {
 	log    *logger.Logger
 	params *params.ChainParams
 
-	chain *chain.Blockchain
+	chain   *chain.Blockchain
+	mempool *mempool.CoinsMempool
 
 	txTopic *pubsub.Topic
 
@@ -38,6 +40,8 @@ type Wallet struct {
 	info          walletInfo
 	lastNonceLock sync.Mutex
 	ctx           context.Context
+
+	*ValidatorWallet
 }
 
 var walletDBKey = []byte("encryption-key-ciphertext")
@@ -46,7 +50,7 @@ var walletDBNonce = []byte("encryption-key-nonce")
 var walletDBLastTxNonce = []byte("last-tx-nonce")
 var walletDBAddress = []byte("wallet-address")
 
-func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, walletDB *badger.DB) (*Wallet, error) {
+func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, walletDB *badger.DB, mempool *mempool.CoinsMempool) (*Wallet, error) {
 	var txTopic *pubsub.Topic
 	var err error
 	if hostnode != nil {
@@ -63,7 +67,9 @@ func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *cha
 		params:    &params,
 		chain:     ch,
 		txTopic:   txTopic,
+		mempool:   mempool,
 		ctx:       ctx,
+		ValidatorWallet: NewValidatorWallet(walletDB),
 	}
 
 	if err := w.loadFromDisk(); err != nil {

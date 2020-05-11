@@ -90,7 +90,9 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 		Payload:   payload,
 	}
 
-	if err := b.chain.SubmitCoinTransaction(payload); err != nil {
+	currentState := b.chain.State().TipState()
+
+	if err := b.mempool.Add(*payload, &currentState.UtxoState); err != nil {
 		return nil, err
 	}
 

@@ -8,6 +8,10 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
+type ValidatorWallet struct {
+	db     *badger.DB
+}
+
 // Keystore is an interface to a simple keystore.
 type Keystore interface {
 	GenerateNewValidatorKey() (*bls.SecretKey, error)
@@ -17,9 +21,19 @@ type Keystore interface {
 	Close() error
 }
 
-func (b *Wallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
+func NewValidatorWallet(walletDB *badger.DB) *ValidatorWallet {
+	return &ValidatorWallet{walletDB}
+}
+
+var _ Keystore = &ValidatorWallet{}
+
+func (vw *ValidatorWallet) Close() error {
+	return vw.db.Close()
+}
+
+func (vw *ValidatorWallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	secKeys := make([]*bls.SecretKey, 0)
-	err := b.db.View(func(txn *badger.Txn) error {
+	err := vw.db.View(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.DefaultIteratorOptions)
 		defer iter.Close()
 		for iter.Rewind(); iter.Valid(); iter.Next() {
@@ -43,11 +57,11 @@ func (b *Wallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	return secKeys, nil
 }
 
-func (b *Wallet) GetValidatorKey(worker *primitives.Worker) (*bls.SecretKey, bool) {
+func (vw *ValidatorWallet) GetValidatorKey(worker *primitives.Worker) (*bls.SecretKey, bool) {
 	pubBytes := worker.PubKey
 
 	var secretBytes [32]byte
-	err := b.db.View(func(txn *badger.Txn) error {
+	err := vw.db.View(func(txn *badger.Txn) error {
 		i, err := txn.Get(pubBytes[:])
 		if err != nil {
 			return err
@@ -64,10 +78,10 @@ func (b *Wallet) GetValidatorKey(worker *primitives.Worker) (*bls.SecretKey, boo
 	return &secretKey, true
 }
 
-func (b *Wallet) HasValidatorKey(worker *primitives.Worker) (result bool, err error) {
+func (vw *ValidatorWallet) HasValidatorKey(worker *primitives.Worker) (result bool, err error) {
 	pubBytes := worker.PubKey
 
-	err = b.db.View(func(txn *badger.Txn) error {
+	err = vw.db.View(func(txn *badger.Txn) error {
 		_, err := txn.Get(pubBytes[:])
 		if err == badger.ErrKeyNotFound {
 			result = false
@@ -82,7 +96,7 @@ func (b *Wallet) HasValidatorKey(worker *primitives.Worker) (result bool, err er
 	return result, err
 }
 
-func (b *Wallet) GenerateNewValidatorKey() (*bls.SecretKey, error) {
+func (vw *ValidatorWallet) GenerateNewValidatorKey() (*bls.SecretKey, error) {
 	key, err := bls.RandSecretKey(rand.Reader)
 	if err != nil {
 		panic(err)
@@ -93,7 +107,7 @@ func (b *Wallet) GenerateNewValidatorKey() (*bls.SecretKey, error) {
 	pub := key.DerivePublicKey()
 	pubBytes := pub.Serialize()
 
-	err = b.db.Update(func(txn *badger.Txn) error {
+	err = vw.db.Update(func(txn *badger.Txn) error {
 		return txn.Set(pubBytes[:], keyBytes[:])
 	})
 

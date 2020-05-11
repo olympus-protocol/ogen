@@ -1,18 +1,14 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
@@ -45,14 +41,7 @@ var generateChainCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		k, err := wallet.NewWallet(context.Background(), wallet.Config{
-			Log:  logger.New(os.Stdout),
-			Path: keystorePath,
-		}, params.Mainnet, nil, nil, walletDB)
-		if err != nil {
-			fmt.Printf("could not open database: %s\n", err)
-			return
-		}
+		k := wallet.NewValidatorWallet(walletDB)
 		defer k.Close()
 
 		keys, err := k.GetValidatorKeys()

@@ -86,8 +86,6 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 }
 
 func (sp *SyncProtocol) handleVote(id peer.ID, vote *primitives.SingleValidatorVote) error {
-	sp.log.Tracef("received vote from peer %s", id)
-
 	sp.votes.Add(vote, vote.OutOf)
 
 	return nil
@@ -163,11 +161,17 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	bh := block.Hash()
 	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
 		sp.log.Debugf("don't have block %s, requesting", block.Header.PrevBlockHash)
-		err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-			LocatorHashes: sp.chain.GetLocatorHashes(),
-			HashStop:      bh,
-		})
-		return err
+		// TODO: better peer selection for syncing
+		peers := sp.host.GetPeerList()
+		if len(peers) > 0 {
+			err := sp.protocolHandler.SendMessage(peers[0], &p2p.MsgGetBlocks{
+				LocatorHashes: sp.chain.GetLocatorHashes(),
+				HashStop:      bh,
+			})
+			return err
+		} else {
+			return nil
+		}
 	}
 
 	if sp.chain.State().Index().Have(bh) {

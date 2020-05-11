@@ -84,7 +84,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
 	coinsMempool := mempool.NewCoinsMempool()
 	voteMempool := mempool.NewVoteMempool(&currParams)
-	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip, coinsMempool)
+	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB)
+	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB, coinsMempool)
 	if err != nil {
 		return nil, err
 	}

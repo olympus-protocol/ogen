@@ -1,18 +1,14 @@
 package cli
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"path"
 	"strconv"
 
 	"github.com/dgraph-io/badger"
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
@@ -44,13 +40,7 @@ var generateKeysCmd = &cobra.Command{
 			panic(err)
 		}
 
-		k, err := wallet.NewWallet(context.Background(), wallet.Config{
-			Path: keystorePath,
-			Log:  logger.New(os.Stdout),
-		}, params.Mainnet, nil, nil, walletDB)
-		if err != nil {
-			panic(err)
-		}
+		k := wallet.NewValidatorWallet(walletDB)
 
 		keys := make([]*bls.SecretKey, numKeys)
 		for i := 0; i < numKeys; i++ {
