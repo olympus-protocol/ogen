@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"math/rand"
+	"sort"
 	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
@@ -69,9 +69,14 @@ func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
 	}
 }
 
+// VoteMempool is a mempool that keeps track of votes.
 type VoteMempool struct {
-	poolLock   sync.RWMutex
-	pool       map[chainhash.Hash]*mempoolVote
+	poolLock sync.Mutex
+	pool     map[chainhash.Hash]*mempoolVote
+
+	// index 0 is highest priorized, 1 is less, etc
+	poolOrder []chainhash.Hash
+
 	params     *params.ChainParams
 	log        *logger.Logger
 	ctx        context.Context
@@ -88,42 +93,66 @@ func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleVali
 	return ret
 }
 
-func PickPercentVotes(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
-	num := int(pct * float32(len(vs)))
-	shuffledVotes := shuffleVotes(vs)
-	return shuffledVotes[:num]
-}
+// func PickPercentVotes(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
+// 	num := int(pct * float32(len(vs)))
+// 	shuffledVotes := shuffleVotes(vs)
+// 	return shuffledVotes[:num]
+// }
 
-func (m *VoteMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
-	votes := make([]primitives.SingleValidatorVote, 0)
-	for _, vs := range m.pool {
-		for _, v := range vs.individualVotes {
-			vh := v.Hash()
-			if bloom.Has(vh) {
-				continue
-			}
+// func (m *VoteMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
+// 	votes := make([]primitives.SingleValidatorVote, 0)
+// 	for _, vs := range m.pool {
+// 		for _, v := range vs.individualVotes {
+// 			vh := v.Hash()
+// 			if bloom.Has(vh) {
+// 				continue
+// 			}
 
-			votes = append(votes, *v)
-		}
-	}
-	return votes
-}
+// 			votes = append(votes, *v)
+// 		}
+// 	}
+// 	return votes
+// }
 
+// AddValidate validates, then adds the vote to the mempool.
 func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *primitives.State) error {
-	m.poolLock.Lock()
-	defer m.poolLock.Unlock()
-	voteHash := vote.Data.Hash()
+	// TODO: validate vote
 
-	if vs, found := m.pool[voteHash]; found {
-		vs.add(vote)
-	} else {
-		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
-		m.pool[voteHash].add(vote)
-	}
-
+	m.Add(vote)
 	return nil
 }
 
+// sortMempool sorts the poolOrder so that the highest priority transactions come first
+// and assumes you hold the poolLock.
+func (m *VoteMempool) sortMempool() {
+	sort.Slice(m.poolOrder, func(i, j int) bool {
+		// return if i is higher priority than j
+		iHash := m.poolOrder[i]
+		jHash := m.poolOrder[j]
+		iData := m.pool[iHash].voteData
+		iNumVotes := len(m.pool[iHash].individualVotes)
+		jData := m.pool[jHash].voteData
+		jNumVotes := len(m.pool[iHash].individualVotes)
+
+		// first sort by slot
+		if iData.Slot < jData.Slot {
+			return true
+		} else if iData.Slot > jData.Slot {
+			return false
+		}
+
+		if iNumVotes > jNumVotes {
+			return true
+		} else if iNumVotes < jNumVotes {
+			return false
+		}
+
+		// arbitrary
+		return true
+	})
+}
+
+// Add adds a vote to the mempool.
 func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
@@ -133,13 +162,20 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		vs.add(vote)
 	} else {
 		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
+		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote)
 	}
+
+	m.sortMempool()
 }
 
+// Get gets a vote from the mempool.
 func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
+	m.poolLock.Lock()
+	defer m.poolLock.Unlock()
 	votes := make([]primitives.MultiValidatorVote, 0)
-	for i, v := range m.pool {
+	for _, i := range m.poolOrder {
+		v := m.pool[i]
 		if v.voteData.Slot < slot-p.MinAttestationInclusionDelay && slot <= v.voteData.Slot+m.params.EpochLength-1 {
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
@@ -153,6 +189,20 @@ func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.Multi
 	return votes
 }
 
+// Assumes you already hold the poolLock mutex.
+func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
+	newOrder := make([]chainhash.Hash, 0, len(m.poolOrder)-1)
+
+	for _, vh := range m.poolOrder {
+		if !vh.IsEqual(&h) {
+			newOrder = append(newOrder, vh)
+		}
+	}
+
+	m.poolOrder = newOrder
+}
+
+// Remove removes mempool items that are no longer relevant.
 func (m *VoteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
@@ -165,10 +215,12 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 		}
 		if shouldRemove {
 			delete(m.pool, voteHash)
+			m.removeFromOrder(voteHash)
 		}
 
 		if b.Header.Slot >= v.Data.Slot+m.params.EpochLength-1 {
 			delete(m.pool, voteHash)
+			m.removeFromOrder(voteHash)
 		}
 	}
 }
