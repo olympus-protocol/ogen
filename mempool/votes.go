@@ -225,11 +225,11 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	}
 }
 
-func (vm *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
+func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
 	for {
-		msg, err := topic.Next(vm.ctx)
+		msg, err := topic.Next(m.ctx)
 		if err != nil {
-			vm.log.Warnf("error getting next message in votes topic: %s", err)
+			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
 		}
 
@@ -238,15 +238,15 @@ func (vm *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
 
 		if err := tx.Decode(txBuf); err != nil {
 			// TODO: ban peer
-			vm.log.Warnf("peer sent invalid vote: %s", err)
+			m.log.Warnf("peer sent invalid vote: %s", err)
 			continue
 		}
 
-		currentState := vm.blockchain.State().TipState()
+		currentState := m.blockchain.State().TipState()
 
-		err = vm.AddValidate(tx, currentState)
+		err = m.AddValidate(tx, currentState)
 		if err != nil {
-			vm.log.Warnf("error adding transaction to mempool: %s", err)
+			m.log.Warnf("error adding transaction to mempool: %s", err)
 		}
 	}
 }
