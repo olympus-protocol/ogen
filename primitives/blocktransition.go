@@ -33,7 +33,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		if !s.JustifiedEpochHash.IsEqual(&v.Data.FromHash) {
 			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash, v.Data.FromHash)
 		}
-	} else if v.Data.ToEpoch == s.EpochIndex-1 {
+	} else if s.EpochIndex > 0 && v.Data.ToEpoch == s.EpochIndex-1 {
 		if v.Data.FromEpoch != s.PreviousJustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match previous justified epoch (expected: %d, got: %d)", s.PreviousJustifiedEpoch, v.Data.FromEpoch)
 		}
@@ -42,7 +42,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash, v.Data.FromHash)
 		}
 	} else {
-		return fmt.Errorf("vote should have target epoch of either the current epoch (%d) or the previous epoch (%d) but got %d", s.EpochIndex, s.EpochIndex-1, v.Data.FromEpoch)
+		return fmt.Errorf("vote should have target epoch of either the current epoch (%d) or the previous epoch (%d) but got %d", s.EpochIndex, s.EpochIndex-1, v.Data.ToEpoch)
 	}
 
 	aggPubs := bls.NewAggregatePublicKey()

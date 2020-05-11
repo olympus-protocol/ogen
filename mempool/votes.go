@@ -244,7 +244,18 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
 			continue
 		}
 
-		currentState := m.blockchain.State().TipState()
+		firstSlotAllowedToInclude := tx.Data.Slot + m.params.MinAttestationInclusionDelay
+		tipHash := m.blockchain.State().Tip().Hash
+		view, err := m.blockchain.State().GetSubView(tipHash)
+		if err != nil {
+			m.log.Warnf("could not get block view representing current tip: %s", err)
+			continue
+		}
+		currentState, err := m.blockchain.State().GetStateForHashAtSlot(tipHash, firstSlotAllowedToInclude, &view, m.params)
+		if err != nil {
+			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
+			continue
+		}
 
 		err = m.AddValidate(tx, currentState)
 		if err != nil {
