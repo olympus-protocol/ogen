@@ -11,7 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/peers"
 
-	"github.com/olympus-protocol/ogen/bloom"
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
@@ -62,22 +61,22 @@ type CoinsMempool struct {
 	lock    sync.RWMutex
 }
 
-func (cm *CoinsMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.CoinPayload {
-	cm.lock.RLock()
-	defer cm.lock.RUnlock()
-	txs := make([]primitives.CoinPayload, 0)
-	for _, item := range cm.mempool {
-		for _, tx := range item.transactions {
-			vh := tx.Hash()
-			if bloom.Has(vh) {
-				continue
-			}
+// func (cm *CoinsMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.CoinPayload {
+// 	cm.lock.RLock()
+// 	defer cm.lock.RUnlock()
+// 	txs := make([]primitives.CoinPayload, 0)
+// 	for _, item := range cm.mempool {
+// 		for _, tx := range item.transactions {
+// 			vh := tx.Hash()
+// 			if bloom.Has(vh) {
+// 				continue
+// 			}
 
-			txs = append(txs, tx)
-		}
-	}
-	return txs
-}
+// 			txs = append(txs, tx)
+// 		}
+// 	}
+// 	return txs
+// }
 
 // Add adds an item to the coins mempool.
 func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.UtxoState) error {
@@ -90,6 +89,8 @@ func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.UtxoS
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
 	}
+
+	// TODO: verify against UTXO state
 
 	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err
