@@ -39,6 +39,8 @@ type ChainParams struct {
 	InactivityPenaltyQuotient    uint64
 	IncluderRewardQuotient       uint64
 	SlotDuration                 uint64
+	MaxDeposits                  uint64
+	MaxWithdrawals               uint64
 
 	ChainFileHash chainhash.Hash
 	ChainFileURL  string
@@ -87,6 +89,8 @@ var Mainnet = ChainParams{
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 60,
 	MaxTxsPerBlock:               1000,
+	MaxDeposits:                  32,
+	MaxWithdrawals:               32,
 }
 
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
@@ -126,4 +130,6 @@ var TestNet = ChainParams{
 	MaxTxsPerBlock:               1000,
 	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
+	MaxDeposits:                  32,
+	MaxWithdrawals:               32,
 }
