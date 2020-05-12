@@ -124,16 +124,28 @@ type PublicKey struct {
 	p bls.PublicKey
 }
 
+// NewPublicKey constructs a new public key based on a raw public key from
+// the BLS library.
 func NewPublicKey(p *bls.PublicKey) *PublicKey {
 	return &PublicKey{p: *p}
 }
 
+// ToBech32 converts the public key to a Bech32 address.
 func (p PublicKey) ToBech32(prefixes Prefixes) (string, error) {
 	out := make([]byte, 20)
 	pkS := p.p.Serialize()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return bech32.Encode(prefixes.PubKey, out), nil
+}
+
+// Hash calculates the hash of the public key.
+func (p PublicKey) Hash() [20]byte {
+	pkS := p.p.Serialize()
+	h := chainhash.HashH(pkS[:])
+	var hBytes [20]byte
+	copy(hBytes[:], h[:])
+	return hBytes
 }
 
 func (p PublicKey) String() string {

@@ -65,15 +65,16 @@ type Miner struct {
 	context    context.Context
 	Stop       context.CancelFunc
 
-	voteMempool  *mempool.VoteMempool
-	coinsMempool *mempool.CoinsMempool
+	voteMempool    *mempool.VoteMempool
+	coinsMempool   *mempool.CoinsMempool
+	actionsMempool *mempool.ActionMempool
 
 	blockTopic *pubsub.Topic
 	voteTopic  *pubsub.Topic
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, miningWallet Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, miningWallet Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -86,17 +87,18 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 		return nil, err
 	}
 	miner = &Miner{
-		log:          config.Log,
-		config:       config,
-		params:       params,
-		chain:        chain,
-		walletsMan:   miningWallet,
-		mineActive:   true,
-		keystore:     miningWallet,
-		context:      ctx,
-		Stop:         cancel,
-		voteMempool:  voteMempool,
-		coinsMempool: coinsMempool,
+		log:            config.Log,
+		config:         config,
+		params:         params,
+		chain:          chain,
+		walletsMan:     miningWallet,
+		mineActive:     true,
+		keystore:       miningWallet,
+		context:        ctx,
+		Stop:           cancel,
+		voteMempool:    voteMempool,
+		coinsMempool:   coinsMempool,
+		actionsMempool: actionsMempool,
 
 		blockTopic: blockTopic,
 		voteTopic:  voteTopic,
@@ -259,8 +261,16 @@ func (m *Miner) Start() error {
 
 				if k, found := m.keystore.GetValidatorKey(&proposer); found {
 					m.log.Infof("proposing for slot %d", slotToPropose)
+
 					votes := m.voteMempool.Get(slotToPropose, &m.params)
-					coinTxs := m.coinsMempool.Get(m.params.MaxTxsPerBlock, *state)
+
+					depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDeposits), state)
+					if err != nil {
+						m.log.Error(err)
+						return
+					}
+
+					coinTxs, state := m.coinsMempool.Get(m.params.MaxTxsPerBlock, state)
 
 					block := primitives.Block{
 						Header: primitives.BlockHeader{
@@ -270,8 +280,9 @@ func (m *Miner) Start() error {
 							Timestamp:     time.Now(),
 							Slot:          slotToPropose,
 						},
-						Votes: votes,
-						Txs:   coinTxs,
+						Votes:    votes,
+						Txs:      coinTxs,
+						Deposits: depositTxs,
 					}
 
 					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()

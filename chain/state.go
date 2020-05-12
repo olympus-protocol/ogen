@@ -274,7 +274,10 @@ func NewStateService(log *logger.Logger, ip primitives.InitializationParameters,
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 
-	genesisState := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	genesisState, err := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	if err != nil {
+		return nil, err
+	}
 
 	ss := &StateService{
 		params: params,
@@ -284,7 +287,7 @@ func NewStateService(log *logger.Logger, ip primitives.InitializationParameters,
 		},
 		db: db,
 	}
-	err := ss.initChainState(db, params, *genesisState)
+	err = ss.initChainState(db, params, *genesisState)
 	if err != nil {
 		return nil, err
 	}

@@ -31,10 +31,9 @@ const (
 
 // Worker is a worker in the queue.
 type Worker struct {
-	OutPoint     OutPoint
 	Balance      uint64
 	PubKey       [48]byte
-	PayeeAddress string
+	PayeeAddress [20]byte
 	Status       WorkerStatus
 }
 
@@ -45,20 +44,11 @@ func (wr *Worker) IsActive() bool {
 
 // Serialize serializes a WorkerRow to the provided writer.
 func (wr *Worker) Serialize(w io.Writer) error {
-	err := wr.OutPoint.Serialize(w)
-	if err != nil {
-		return err
-	}
-
 	return serializer.WriteElements(w, wr.Balance, wr.PubKey, wr.PayeeAddress, wr.Status)
 }
 
 // Deserialize deserializes a worker row from the provided reader.
 func (wr *Worker) Deserialize(r io.Reader) error {
-	err := wr.OutPoint.Deserialize(r)
-	if err != nil {
-		return err
-	}
 	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress, &wr.Status)
 }
 

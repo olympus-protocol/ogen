@@ -103,6 +103,10 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
+	actionsMempool, err := mempool.NewActionMempool(ctx, logger, &currParams, ch, hostnode)
+	if err != nil {
+		return nil, err
+	}
 	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB, coinsMempool)
 	if err != nil {
 		return nil, err
@@ -111,7 +115,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {
-		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, hostnode, voteMempool, coinsMempool)
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, hostnode, voteMempool, coinsMempool, actionsMempool)
 		if err != nil {
 			return nil, err
 		}

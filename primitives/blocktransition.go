@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -24,6 +25,72 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32
 	return
 }
 
+// IsDepositValid validates signatures and ensures that a deposit is valid.
+func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
+	pkh := deposit.PublicKey.Hash()
+	if s.UtxoState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
+		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.UtxoState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
+	}
+
+	// first validate signature
+	buf := bytes.NewBuffer([]byte{})
+
+	if err := deposit.Data.Encode(buf); err != nil {
+		return err
+	}
+
+	depositHash := chainhash.HashH(buf.Bytes())
+
+	valid, err := bls.VerifySig(&deposit.PublicKey, depositHash[:], &deposit.Signature)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("deposit signature is not valid")
+	}
+
+	validatorPubkey := deposit.Data.PublicKey.Serialize()
+
+	// now, ensure we don't already have this validator
+	for _, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey[:], validatorPubkey[:]) {
+			return fmt.Errorf("validator already registered")
+		}
+	}
+
+	pubkeyHash := chainhash.HashH(validatorPubkey[:])
+	valid, err = bls.VerifySig(&deposit.Data.PublicKey, pubkeyHash[:], &deposit.Data.ProofOfPossession)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("proof-of-possession is not valid")
+	}
+
+	return nil
+}
+
+// ApplyDeposit applies a deposit to the state.
+func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
+	if err := s.IsDepositValid(deposit, p); err != nil {
+		return err
+	}
+
+	pkh := deposit.PublicKey.Hash()
+
+	s.UtxoState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
+
+	s.ValidatorRegistry = append(s.ValidatorRegistry, Worker{
+		Balance:      p.DepositAmount * p.UnitsPerCoin,
+		PubKey:       deposit.PublicKey.Serialize(),
+		PayeeAddress: deposit.Data.WithdrawalAddress,
+		Status:       StatusStarting,
+	})
+
+	return nil
+}
+
+// IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
 	if v.Data.ToEpoch == s.EpochIndex {
 		if v.Data.FromEpoch != s.JustifiedEpoch {
@@ -152,6 +219,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSig, err := bls.DeserializeSignature(b.RandaoSignature)
 	if err != nil {
 		return err
+	}
+
+	for _, d := range b.Deposits {
+		if err := s.ApplyDeposit(&d, p); err != nil {
+			return err
+		}
 	}
 
 	for _, tx := range b.Txs {
