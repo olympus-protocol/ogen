@@ -125,6 +125,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	voteMerkleRoot := b.VotesMerkleRoot()
 	transactionMerkleRoot := b.TransactionMerkleRoot()
+	depositMerkleRoot := b.DepositMerkleRoot()
 
 	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
@@ -132,6 +133,10 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	if !b.Header.VoteMerkleRoot.IsEqual(&voteMerkleRoot) {
 		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
+	}
+
+	if !b.Header.DepositMerkleRoot.IsEqual(&depositMerkleRoot) {
+		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
 	}
 
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {

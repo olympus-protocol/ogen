@@ -276,6 +276,7 @@ func (m *Miner) Start() error {
 
 					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
 					block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
+					block.Header.DepositMerkleRoot = block.DepositMerkleRoot()
 
 					blockHash := block.Hash()
 					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
