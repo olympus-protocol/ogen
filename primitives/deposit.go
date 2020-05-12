@@ -1,9 +1,11 @@
 package primitives
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 // Deposit is a deposit a user can submit to queue as a validator.
@@ -41,6 +43,13 @@ func (d *Deposit) Decode(r io.Reader) error {
 		return err
 	}
 	return d.Data.Decode(r)
+}
+
+// Hash calculates the hash of the deposit
+func (d *Deposit) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = d.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
 }
 
 // DepositData is the part of the deposit that is signed

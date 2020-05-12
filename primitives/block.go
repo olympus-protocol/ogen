@@ -16,10 +16,12 @@ type Block struct {
 	Header          BlockHeader
 	Votes           []MultiValidatorVote
 	Txs             []Tx
+	Deposits        []Deposit
 	Signature       [96]byte
 	RandaoSignature [96]byte
 }
 
+// Hash calculates the hash of the block.
 func (b *Block) Hash() chainhash.Hash {
 	return b.Header.Hash()
 }
@@ -38,6 +40,26 @@ func merkleRootTxs(txs []Tx) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
+// DepositMerkleRoot calculates the merkle root of the deposits in the block.
+func (b *Block) DepositMerkleRoot() chainhash.Hash {
+	return merkleRootDeposits(b.Deposits)
+}
+
+func merkleRootDeposits(deposits []Deposit) chainhash.Hash {
+	if len(deposits) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(deposits) == 1 {
+		return deposits[0].Hash()
+	}
+	mid := len(deposits) / 2
+	h1 := merkleRootDeposits(deposits[:mid])
+	h2 := merkleRootDeposits(deposits[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// TransactionMerkleRoot calculates the merkle root of the transactions in the block.
 func (b *Block) TransactionMerkleRoot() chainhash.Hash {
 	return merkleRootTxs(b.Txs)
 }
@@ -56,44 +78,58 @@ func merkleRootVotes(votes []MultiValidatorVote) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
+// VotesMerkleRoot calculates the merkle root of the transactions in the block.
 func (b *Block) VotesMerkleRoot() chainhash.Hash {
 	return merkleRootVotes(b.Votes)
 }
 
-func (m *Block) Encode(w io.Writer) error {
-	err := m.Header.Serialize(w)
+// Encode encodes the block to the given writer.
+func (b *Block) Encode(w io.Writer) error {
+	err := b.Header.Serialize(w)
 	if err != nil {
 		return err
 	}
-	err = serializer.WriteVarInt(w, uint64(len(m.Txs)))
+	err = serializer.WriteVarInt(w, uint64(len(b.Txs)))
 	if err != nil {
 		return err
 	}
-	for _, tx := range m.Txs {
+	for _, tx := range b.Txs {
 		err := tx.Encode(w)
 		if err != nil {
 			return err
 		}
 	}
-	err = serializer.WriteVarInt(w, uint64(len(m.Votes)))
+	err = serializer.WriteVarInt(w, uint64(len(b.Votes)))
 	if err != nil {
 		return err
 	}
-	for _, vote := range m.Votes {
+	for _, vote := range b.Votes {
 		err := vote.Serialize(w)
 		if err != nil {
 			return err
 		}
 	}
-	err = serializer.WriteElements(w, m.Signature, m.RandaoSignature)
+
+	err = serializer.WriteVarInt(w, uint64(len(b.Deposits)))
+	if err != nil {
+		return err
+	}
+	for _, deposit := range b.Deposits {
+		err := deposit.Encode(w)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteElements(w, b.Signature, b.RandaoSignature)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Block) Decode(r io.Reader) error {
-	err := m.Header.Deserialize(r)
+// Decode decodes the block from the given reader.
+func (b *Block) Decode(r io.Reader) error {
+	err := b.Header.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -101,9 +137,9 @@ func (m *Block) Decode(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	m.Txs = make([]Tx, txCount)
+	b.Txs = make([]Tx, txCount)
 	for i := uint64(0); i < txCount; i++ {
-		err := m.Txs[i].Decode(r)
+		err := b.Txs[i].Decode(r)
 		if err != nil {
 			return err
 		}
@@ -112,14 +148,25 @@ func (m *Block) Decode(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	m.Votes = make([]MultiValidatorVote, voteCount)
-	for i := range m.Votes {
-		err := m.Votes[i].Deserialize(r)
+	b.Votes = make([]MultiValidatorVote, voteCount)
+	for i := range b.Votes {
+		err := b.Votes[i].Deserialize(r)
 		if err != nil {
 			return err
 		}
 	}
-	err = serializer.ReadElements(r, &m.Signature, &m.RandaoSignature)
+	depositCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	b.Deposits = make([]Deposit, depositCount)
+	for i := range b.Deposits {
+		err := b.Votes[i].Deserialize(r)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.ReadElements(r, &b.Signature, &b.RandaoSignature)
 	if err != nil {
 		return err
 	}
