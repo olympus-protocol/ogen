@@ -25,6 +25,52 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32
 	return
 }
 
+// IsExitValid checks if an exit is valid.
+func (s *State) IsExitValid(exit *Exit) error {
+	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Serialize())
+	msgHash := chainhash.HashH([]byte(msg))
+
+	valid, err := bls.VerifySig(&exit.ValidatorPubkey, msgHash[:], &exit.Signature)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return fmt.Errorf("exit signature is not valid")
+	}
+
+	pubkeySerialized := exit.ValidatorPubkey.Serialize()
+
+	foundActiveValidator := false
+	for _, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
+			foundActiveValidator = true
+		}
+	}
+
+	if !foundActiveValidator {
+		return fmt.Errorf("could not find active validator with pubkey: %x", pubkeySerialized[:])
+	}
+
+	return nil
+}
+
+// ApplyExit processes an exit request.
+func (s *State) ApplyExit(exit *Exit) error {
+	if err := s.IsExitValid(exit); err != nil {
+		return err
+	}
+
+	pubkeySerialized := exit.ValidatorPubkey.Serialize()
+
+	for i, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
+			s.ValidatorRegistry[i].Status = StatusActivePendingExit
+		}
+	}
+
+	return nil
+}
+
 // IsDepositValid validates signatures and ensures that a deposit is valid.
 func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
 	pkh := deposit.PublicKey.Hash()
@@ -285,6 +331,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	for _, v := range b.Votes {
 		if err := s.processVote(&v, p, proposerIndex); err != nil {
+			return err
+		}
+	}
+
+	for _, e := range b.Exits {
+		if err := s.ApplyExit(&e); err != nil {
 			return err
 		}
 	}
