@@ -17,6 +17,9 @@ type ActionMempool struct {
 	depositsLock sync.Mutex
 	deposits     []primitives.Deposit
 
+	exitsLock sync.Mutex
+	exits     []primitives.Exit
+
 	params     *params.ChainParams
 	ctx        context.Context
 	log        *logger.Logger
@@ -71,4 +74,42 @@ func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]pr
 	am.deposits = newMempool
 
 	return deposits, withState, nil
+}
+
+// AddExit adds a deposit to the mempool.
+func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State) error {
+	if err := state.IsExitValid(exit); err != nil {
+		return err
+	}
+
+	am.exitsLock.Lock()
+	defer am.exitsLock.Unlock()
+
+	am.exits = append(am.exits, *exit)
+
+	return nil
+}
+
+// GetExits gets exits from the mempool. Mutates withState.
+func (am *ActionMempool) GetExits(num int, state *primitives.State) ([]primitives.Exit, error) {
+	am.exitsLock.Lock()
+	defer am.exitsLock.Unlock()
+	exits := make([]primitives.Exit, 0, num)
+	newMempool := make([]primitives.Exit, 0, len(am.exits))
+
+	for _, e := range am.exits {
+		if err := state.ApplyExit(&e); err != nil {
+			continue
+		}
+		// if there is no error, it can be part of the new mempool
+		newMempool = append(newMempool, e)
+
+		if len(exits) < num {
+			exits = append(exits, e)
+		}
+	}
+
+	am.exits = newMempool
+
+	return exits, nil
 }

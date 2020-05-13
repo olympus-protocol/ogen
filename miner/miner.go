@@ -272,6 +272,12 @@ func (m *Miner) Start() error {
 
 					coinTxs, state := m.coinsMempool.Get(m.params.MaxTxsPerBlock, state)
 
+					exitTxs, err := m.actionsMempool.GetExits(int(m.params.MaxExitsPerBlock), state)
+					if err != nil {
+						m.log.Error(err)
+						return
+					}
+
 					block := primitives.Block{
 						Header: primitives.BlockHeader{
 							Version:       0,
@@ -283,6 +289,7 @@ func (m *Miner) Start() error {
 						Votes:    votes,
 						Txs:      coinTxs,
 						Deposits: depositTxs,
+						Exits:    exitTxs,
 					}
 
 					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
