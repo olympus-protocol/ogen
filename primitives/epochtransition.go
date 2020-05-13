@@ -118,6 +118,7 @@ func (s *State) ExitValidator(index uint32, status WorkerStatus, p *params.Chain
 	}
 
 	s.UtxoState.Balances[validator.PayeeAddress] += validator.Balance
+	validator.Balance = 0
 
 	return nil
 }
