@@ -91,3 +91,15 @@ func (c *RPCClient) SendToAddress(to string, amount uint64, askpass func() ([]by
 
 	return &out, nil
 }
+
+// ListValidators lists validators managed by or owner by this wallet.
+func (c *RPCClient) ListValidators() (*ValidatorListReponse, error) {
+	var out ValidatorListReponse
+
+	err := c.Call("Wallet.ListValidators", &Empty{}, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}

@@ -31,6 +31,20 @@ func (b *Wallet) GetBalance(addr string) (uint64, error) {
 	return out, nil
 }
 
+// GetAddressRaw returns the pubkey hash of the wallet.
+func (b *Wallet) GetAddressRaw() ([20]byte, error) {
+	_, pkh, err := bech32.Decode(b.info.address)
+	if err != nil {
+		return [20]byte{}, err
+	}
+	if len(pkh) != 20 {
+		return [20]byte{}, fmt.Errorf("expecting address to be 20 bytes, but got %d bytes", len(pkh))
+	}
+	var pkhBytes [20]byte
+	copy(pkhBytes[:], pkh)
+	return pkhBytes, nil
+}
+
 func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
 	buf := bytes.NewBuffer([]byte{})
 	err := payload.Encode(buf)

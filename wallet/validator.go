@@ -9,14 +9,14 @@ import (
 )
 
 type ValidatorWallet struct {
-	db     *badger.DB
+	db *badger.DB
 }
 
 // Keystore is an interface to a simple keystore.
 type Keystore interface {
 	GenerateNewValidatorKey() (*bls.SecretKey, error)
 	GetValidatorKey(*primitives.Worker) (*bls.SecretKey, bool)
-	HasValidatorKey(*primitives.Worker) (bool, error)
+	HasValidatorKey([48]byte) (bool, error)
 	GetValidatorKeys() ([]*bls.SecretKey, error)
 	Close() error
 }
@@ -78,9 +78,7 @@ func (vw *ValidatorWallet) GetValidatorKey(worker *primitives.Worker) (*bls.Secr
 	return &secretKey, true
 }
 
-func (vw *ValidatorWallet) HasValidatorKey(worker *primitives.Worker) (result bool, err error) {
-	pubBytes := worker.PubKey
-
+func (vw *ValidatorWallet) HasValidatorKey(pubBytes [48]byte) (result bool, err error) {
 	err = vw.db.View(func(txn *badger.Txn) error {
 		_, err := txn.Get(pubBytes[:])
 		if err == badger.ErrKeyNotFound {

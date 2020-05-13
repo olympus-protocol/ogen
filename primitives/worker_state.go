@@ -9,6 +9,21 @@ import (
 // WorkerStatus represents the status of a worker.
 type WorkerStatus uint8
 
+func (w WorkerStatus) String() string {
+	switch w {
+	case StatusActive:
+		return "active"
+	case StatusActivePendingExit:
+		return "pending exit"
+	case StatusExitedWithPenalty:
+		return "penalty exit"
+	case StatusExitedWithoutPenalty:
+		return "exited"
+	default:
+		return "unknown"
+	}
+}
+
 const (
 	// StatusStarting is when the validator is waiting to join.
 	StatusStarting WorkerStatus = iota

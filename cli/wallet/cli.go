@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -110,6 +111,45 @@ func (wc *WalletCLI) SendToAddress(args []string) (string, error) {
 	return fmt.Sprintf("Sent transaction"), nil
 }
 
+const validatorsPerPage = 32
+
+// ListValidators lists the validators owned or managed by the wallet.
+func (wc *WalletCLI) ListValidators(args []string) (string, error) {
+	validators, err := wc.rpcClient.ListValidators()
+	if err != nil {
+		return "", fmt.Errorf("could not get validator list: %s", err)
+	}
+
+	page := 1
+	if len(args) == 1 {
+		page, err = strconv.Atoi(args[0])
+		if err != nil {
+			return "", err
+		}
+	}
+
+	numVals := 0
+
+	if page > len(validators.Validators)/validatorsPerPage+1 {
+		return "", fmt.Errorf("page %d is out of range (1 - %d)", page, len(validators.Validators)/validatorsPerPage)
+	}
+
+	if page <= 0 {
+		return "", fmt.Errorf("page %d is out of range (1 - %d)", page, len(validators.Validators)/validatorsPerPage)
+	}
+
+	color.Magenta(" %-67s | %-20s | %-12s | %8s | %6s\n", "Public Key", "Balance", "Status", "Managed?", "Owned?")
+	for _, v := range validators.Validators[(page-1)*validatorsPerPage:] {
+		fmt.Printf(" %-67s | %-20f | %-12s | %-8t | %-6t\n", base64.StdEncoding.EncodeToString(v.Pubkey[:]), float64(v.Balance)/1000, v.Status, v.HavePrivateKey, v.HaveWithdrawalKey)
+		numVals++
+		if numVals == validatorsPerPage {
+			break
+		}
+	}
+
+	return fmt.Sprintf("Page %d/%d, Showing validators %d-%d/%d", page, len(validators.Validators)/validatorsPerPage+1, (page-1)*validatorsPerPage, page*validatorsPerPage, len(validators.Validators)), nil
+}
+
 func (wc *WalletCLI) Run() {
 	color.Green("Welcome to the Olympus Wallet CLI")
 	for {
@@ -134,6 +174,8 @@ func (wc *WalletCLI) Run() {
 			out, err = wc.GetBalance(args[1:])
 		case "sendtoaddress":
 			out, err = wc.SendToAddress(args[1:])
+		case "listvalidators":
+			out, err = wc.ListValidators(args[1:])
 		default:
 			err = fmt.Errorf("Unknown command: %s", args[0])
 		}

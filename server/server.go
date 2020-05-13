@@ -111,7 +111,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc := chainrpc.NewRPCWallet(w)
+	rpc := chainrpc.NewRPCWallet(w, ch)
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {
