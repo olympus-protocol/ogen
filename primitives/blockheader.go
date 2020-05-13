@@ -17,6 +17,7 @@ type BlockHeader struct {
 	TxMerkleRoot      chainhash.Hash
 	VoteMerkleRoot    chainhash.Hash
 	DepositMerkleRoot chainhash.Hash
+	ExitMerkleRoot    chainhash.Hash
 	PrevBlockHash     chainhash.Hash
 	Timestamp         time.Time
 	Slot              uint64

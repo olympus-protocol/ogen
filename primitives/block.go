@@ -17,6 +17,7 @@ type Block struct {
 	Votes           []MultiValidatorVote
 	Txs             []Tx
 	Deposits        []Deposit
+	Exits           []Exit
 	Signature       [96]byte
 	RandaoSignature [96]byte
 }
@@ -36,6 +37,25 @@ func merkleRootTxs(txs []Tx) chainhash.Hash {
 	mid := len(txs) / 2
 	h1 := merkleRootTxs(txs[:mid])
 	h2 := merkleRootTxs(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// ExitMerkleRoot calculates the merkle root of the exits in the block.
+func (b *Block) ExitMerkleRoot() chainhash.Hash {
+	return merkleRootDeposits(b.Deposits)
+}
+
+func merkleRootExits(exits []Exit) chainhash.Hash {
+	if len(exits) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(exits) == 1 {
+		return exits[0].Hash()
+	}
+	mid := len(exits) / 2
+	h1 := merkleRootExits(exits[:mid])
+	h2 := merkleRootExits(exits[mid:])
 
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
@@ -120,6 +140,16 @@ func (b *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
+	err = serializer.WriteVarInt(w, uint64(len(b.Exits)))
+	if err != nil {
+		return err
+	}
+	for _, exit := range b.Exits {
+		err := exit.Encode(w)
+		if err != nil {
+			return err
+		}
+	}
 	err = serializer.WriteElements(w, b.Signature, b.RandaoSignature)
 	if err != nil {
 		return err
@@ -161,7 +191,18 @@ func (b *Block) Decode(r io.Reader) error {
 	}
 	b.Deposits = make([]Deposit, depositCount)
 	for i := range b.Deposits {
-		err := b.Votes[i].Deserialize(r)
+		err := b.Deposits[i].Decode(r)
+		if err != nil {
+			return err
+		}
+	}
+	exitCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	b.Exits = make([]Exit, exitCount)
+	for i := range b.Exits {
+		err := b.Exits[i].Decode(r)
 		if err != nil {
 			return err
 		}

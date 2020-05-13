@@ -1,9 +1,11 @@
 package primitives
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
@@ -43,4 +45,11 @@ func (e *Exit) Decode(r io.Reader) error {
 	e.Signature = *sig
 
 	return nil
+}
+
+// Hash calculates the hash of the exit.
+func (e *Exit) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = e.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
 }

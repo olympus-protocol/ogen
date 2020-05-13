@@ -193,6 +193,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	voteMerkleRoot := b.VotesMerkleRoot()
 	transactionMerkleRoot := b.TransactionMerkleRoot()
 	depositMerkleRoot := b.DepositMerkleRoot()
+	exitMerkleRoot := b.ExitMerkleRoot()
 
 	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
@@ -206,8 +207,24 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
 	}
 
+	if !b.Header.ExitMerkleRoot.IsEqual(&exitMerkleRoot) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
+	}
+
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
 		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes))
+	}
+
+	if uint64(len(b.Txs)) > p.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs))
+	}
+
+	if uint64(len(b.Deposits)) > p.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits))
+	}
+
+	if uint64(len(b.Exits)) > p.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
 	}
 
 	blockHash := b.Hash()

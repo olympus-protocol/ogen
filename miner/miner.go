@@ -264,7 +264,7 @@ func (m *Miner) Start() error {
 
 					votes := m.voteMempool.Get(slotToPropose, &m.params)
 
-					depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDeposits), state)
+					depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDepositsPerBlock), state)
 					if err != nil {
 						m.log.Error(err)
 						return
