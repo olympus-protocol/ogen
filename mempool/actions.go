@@ -1,9 +1,11 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"sync"
 
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
@@ -29,13 +31,64 @@ type ActionMempool struct {
 
 // NewActionMempool constructs a new action mempool.
 func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, blockchain *chain.Blockchain, hostnode *peers.HostNode) (*ActionMempool, error) {
-	return &ActionMempool{
+	depositTopic, err := hostnode.Topic("deposits")
+	if err != nil {
+		return nil, err
+	}
+
+	depositTopicSub, err := depositTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	exitTopic, err := hostnode.Topic("exits")
+	if err != nil {
+		return nil, err
+	}
+
+	exitTopicSub, err := exitTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	am := &ActionMempool{
 		params:     p,
 		ctx:        ctx,
 		log:        log,
 		blockchain: blockchain,
 		hostNode:   hostnode,
-	}, nil
+	}
+
+	go am.handleDepositSub(depositTopicSub)
+	go am.handleExitSub(exitTopicSub)
+
+	return am, nil
+}
+
+func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
+	for {
+		msg, err := sub.Next(am.ctx)
+		if err != nil {
+			am.log.Warnf("error getting next message in deposits topic: %s", err)
+			return
+		}
+
+		txBuf := bytes.NewReader(msg.Data)
+		tx := new(primitives.Deposit)
+
+		if err := tx.Decode(txBuf); err != nil {
+			// TODO: ban peer
+			am.log.Warnf("peer sent invalid deposit: %s", err)
+			continue
+		}
+
+		currentState := am.blockchain.State().TipState()
+
+		err = am.AddDeposit(tx, currentState)
+		if err != nil {
+			am.log.Warnf("error adding transaction to mempool: %s", err)
+		}
+	}
 }
 
 // AddDeposit adds a deposit to the mempool.
@@ -74,6 +127,32 @@ func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]pr
 	am.deposits = newMempool
 
 	return deposits, withState, nil
+}
+
+func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
+	for {
+		msg, err := sub.Next(am.ctx)
+		if err != nil {
+			am.log.Warnf("error getting next message in deposits topic: %s", err)
+			return
+		}
+
+		txBuf := bytes.NewReader(msg.Data)
+		tx := new(primitives.Exit)
+
+		if err := tx.Decode(txBuf); err != nil {
+			// TODO: ban peer
+			am.log.Warnf("peer sent invalid deposit: %s", err)
+			continue
+		}
+
+		currentState := am.blockchain.State().TipState()
+
+		err = am.AddExit(tx, currentState)
+		if err != nil {
+			am.log.Warnf("error adding transaction to mempool: %s", err)
+		}
+	}
 }
 
 // AddExit adds a deposit to the mempool.
