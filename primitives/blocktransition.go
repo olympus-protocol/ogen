@@ -208,7 +208,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	if !b.Header.ExitMerkleRoot.IsEqual(&exitMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", exitMerkleRoot, b.Header.ExitMerkleRoot)
 	}
 
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
