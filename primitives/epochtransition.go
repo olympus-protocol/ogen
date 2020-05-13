@@ -114,7 +114,10 @@ func (s *State) ExitValidator(index uint32, status WorkerStatus, p *params.Chain
 
 	if status == StatusExitedWithPenalty {
 		// TODO: slashings - reward includer
+		return nil
 	}
+
+	s.UtxoState.Balances[validator.PayeeAddress] += validator.Balance
 
 	return nil
 }
