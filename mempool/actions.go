@@ -133,7 +133,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
 		if err != nil {
-			am.log.Warnf("error getting next message in deposits topic: %s", err)
+			am.log.Warnf("error getting next message in exits topic: %s", err)
 			return
 		}
 
