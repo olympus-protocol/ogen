@@ -57,6 +57,81 @@ func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
 	}
 }
 
+func (b *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
+	buf := bytes.NewBuffer([]byte{})
+	err := deposit.Encode(buf)
+	if err != nil {
+		b.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := b.txTopic.Publish(b.ctx, buf.Bytes()); err != nil {
+		b.log.Errorf("error broadcasting transaction: %s", err)
+	}
+}
+
+// StartValidator signs a validator deposit.
+func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
+	priv, err := b.unlockIfNeeded(authentication)
+	if err != nil {
+		return nil, err
+	}
+	pub := priv.DerivePublicKey()
+
+	validatorPriv, err := bls.DeserializeSecretKey(validatorPrivBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	validatorPub := validatorPriv.DerivePublicKey()
+	validatorPubBytes := validatorPub.Serialize()
+	validatorPubHash := chainhash.HashH(validatorPubBytes[:])
+
+	validatorProofOfPossession, err := bls.Sign(validatorPriv, validatorPubHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := b.GetAddressRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	depositData := &primitives.DepositData{
+		PublicKey:         *validatorPub,
+		ProofOfPossession: *validatorProofOfPossession,
+		WithdrawalAddress: addr,
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+
+	if err := depositData.Encode(buf); err != nil {
+		return nil, err
+	}
+
+	depositHash := chainhash.HashH(buf.Bytes())
+
+	depositSig, err := bls.Sign(priv, depositHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	deposit := &primitives.Deposit{
+		PublicKey: *pub,
+		Signature: *depositSig,
+		Data:      *depositData,
+	}
+
+	currentState := b.chain.State().TipState()
+
+	if err := b.actionMempool.AddDeposit(deposit, currentState); err != nil {
+		return nil, err
+	}
+
+	b.broadcastDeposit(deposit)
+
+	return deposit, nil
+}
+
 // SendToAddress sends an amount to an address with the given password and parameters.
 func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) (*chainhash.Hash, error) {
 	priv, err := b.unlockIfNeeded(authentication)

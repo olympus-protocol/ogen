@@ -2,8 +2,9 @@ package wallet
 
 import (
 	"context"
-	"github.com/olympus-protocol/ogen/mempool"
 	"sync"
+
+	"github.com/olympus-protocol/ogen/mempool"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
@@ -30,10 +31,12 @@ type Wallet struct {
 	log    *logger.Logger
 	params *params.ChainParams
 
-	chain   *chain.Blockchain
-	mempool *mempool.CoinsMempool
+	chain         *chain.Blockchain
+	mempool       *mempool.CoinsMempool
+	actionMempool *mempool.ActionMempool
 
-	txTopic *pubsub.Topic
+	txTopic      *pubsub.Topic
+	depositTopic *pubsub.Topic
 
 	hasMaster bool
 
@@ -50,23 +53,29 @@ var walletDBNonce = []byte("encryption-key-nonce")
 var walletDBLastTxNonce = []byte("last-tx-nonce")
 var walletDBAddress = []byte("wallet-address")
 
-func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, walletDB *badger.DB, mempool *mempool.CoinsMempool) (*Wallet, error) {
-	var txTopic *pubsub.Topic
-	var err error
-	txTopic, err = hostnode.Topic("tx")
+// NewWallet creates a new wallet.
+func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, walletDB *badger.DB, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (*Wallet, error) {
+	txTopic, err := hostnode.Topic("tx")
+	if err != nil {
+		return nil, err
+	}
+
+	depositTopic, err := hostnode.Topic("deposits")
 	if err != nil {
 		return nil, err
 	}
 
 	w := &Wallet{
-		db:        walletDB,
-		hasMaster: false,
-		log:       c.Log,
-		params:    &params,
-		chain:     ch,
-		txTopic:   txTopic,
-		mempool:   mempool,
-		ctx:       ctx,
+		db:              walletDB,
+		hasMaster:       false,
+		log:             c.Log,
+		params:          &params,
+		chain:           ch,
+		txTopic:         txTopic,
+		depositTopic:    depositTopic,
+		mempool:         mempool,
+		ctx:             ctx,
+		actionMempool:   actionMempool,
 		ValidatorWallet: NewValidatorWallet(walletDB),
 	}
 

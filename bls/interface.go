@@ -5,6 +5,7 @@ package bls
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -88,9 +89,12 @@ func (s SecretKey) ToBech32(prefixes Prefixes, contract bool) string {
 }
 
 // DeserializeSecretKey deserializes a secret key from bytes.
-func DeserializeSecretKey(b [32]byte) SecretKey {
+func DeserializeSecretKey(b [32]byte) (*SecretKey, error) {
 	k := bls.DeserializeSecretKey(b)
-	return SecretKey{*k}
+	if k == nil {
+		return nil, fmt.Errorf("invalid secret key")
+	}
+	return &SecretKey{*k}, nil
 }
 
 // DeriveSecretKey deserializes a secret key from bytes.
