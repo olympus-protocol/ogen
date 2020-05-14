@@ -45,8 +45,11 @@ func (vw *ValidatorWallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
 			if len(val) == 32 {
 				var valBytes [32]byte
 				copy(valBytes[:], val)
-				secretKey := bls.DeserializeSecretKey(valBytes)
-				secKeys = append(secKeys, &secretKey)
+				secretKey, err := bls.DeserializeSecretKey(valBytes)
+				if err != nil {
+					return err
+				}
+				secKeys = append(secKeys, secretKey)
 			}
 		}
 		return nil
@@ -74,8 +77,11 @@ func (vw *ValidatorWallet) GetValidatorKey(worker *primitives.Worker) (*bls.Secr
 		return nil, false
 	}
 
-	secretKey := bls.DeserializeSecretKey(secretBytes)
-	return &secretKey, true
+	secretKey, err := bls.DeserializeSecretKey(secretBytes)
+	if err != nil {
+		return nil, false
+	}
+	return secretKey, true
 }
 
 func (vw *ValidatorWallet) HasValidatorKey(pubBytes [48]byte) (result bool, err error) {

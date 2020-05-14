@@ -107,7 +107,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB, coinsMempool)
+	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}

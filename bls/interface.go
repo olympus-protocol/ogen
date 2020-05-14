@@ -103,7 +103,7 @@ func DeriveSecretKey(b [32]byte) SecretKey {
 	return SecretKey{*k}
 }
 
-func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (SecretKey, error) {
+func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (*SecretKey, error) {
 	var prefix string
 	if contract {
 		prefix = prefixes.ContractPrivKey
@@ -112,15 +112,15 @@ func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (Secre
 	}
 	net, privKeyBytes, err := bech32.Decode(secret)
 	if err != nil {
-		return SecretKey{}, err
+		return nil, err
 	}
 	if net != prefix {
-		return SecretKey{}, errors.New("key networks doesn't match")
+		return nil, errors.New("key networks doesn't match")
 	}
 	var rawPriv [32]byte
 	buf := bytes.NewBuffer(rawPriv[:0])
 	buf.Write(privKeyBytes)
-	return DeserializeSecretKey(rawPriv), nil
+	return DeserializeSecretKey(rawPriv)
 }
 
 // PublicKey corresponding to secret key used in the BLS scheme.
