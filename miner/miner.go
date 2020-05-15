@@ -111,6 +111,7 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
 	m.voteMempool.Remove(block)
 	m.coinsMempool.RemoveByBlock(block)
+	m.actionsMempool.RemoveByBlock(block)
 }
 
 func (m *Miner) getCurrentSlot() uint64 {

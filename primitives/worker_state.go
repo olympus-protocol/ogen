@@ -19,6 +19,8 @@ func (w WorkerStatus) String() string {
 		return "penalty exit"
 	case StatusExitedWithoutPenalty:
 		return "exited"
+	case StatusStarting:
+		return "starting"
 	default:
 		return "unknown"
 	}

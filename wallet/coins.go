@@ -64,7 +64,7 @@ func (b *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
 		b.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := b.txTopic.Publish(b.ctx, buf.Bytes()); err != nil {
+	if err := b.depositTopic.Publish(b.ctx, buf.Bytes()); err != nil {
 		b.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }

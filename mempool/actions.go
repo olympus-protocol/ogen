@@ -100,6 +100,12 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 	am.depositsLock.Lock()
 	defer am.depositsLock.Unlock()
 
+	for _, d := range am.deposits {
+		if d.Data.PublicKey.Equals(deposit.Data.PublicKey) {
+			return nil
+		}
+	}
+
 	am.deposits = append(am.deposits, *deposit)
 
 	return nil
@@ -127,6 +133,43 @@ func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]pr
 	am.deposits = newMempool
 
 	return deposits, withState, nil
+}
+
+// RemoveByBlock removes transactions that were in an accepted block.
+func (am *ActionMempool) RemoveByBlock(b *primitives.Block) {
+	am.depositsLock.Lock()
+	newDeposits := make([]primitives.Deposit, 0, len(am.deposits))
+outer:
+	for _, d1 := range am.deposits {
+		for _, d2 := range b.Deposits {
+			if d1.Data.PublicKey.Equals(d2.Data.PublicKey) {
+				continue outer
+			}
+		}
+
+		newDeposits = append(newDeposits, d1)
+	}
+
+	am.deposits = newDeposits
+
+	am.depositsLock.Unlock()
+
+	am.exitsLock.Lock()
+	newExits := make([]primitives.Exit, 0, len(am.exits))
+outer1:
+	for _, e1 := range am.exits {
+		for _, e2 := range b.Exits {
+			if e1.ValidatorPubkey.Equals(e2.ValidatorPubkey) {
+				continue outer1
+			}
+		}
+
+		newExits = append(newExits, e1)
+	}
+
+	am.exits = newExits
+
+	am.exitsLock.Unlock()
 }
 
 func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
@@ -163,6 +206,12 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 
 	am.exitsLock.Lock()
 	defer am.exitsLock.Unlock()
+
+	for _, e := range am.exits {
+		if e.ValidatorPubkey.Equals(exit.ValidatorPubkey) {
+			return nil
+		}
+	}
 
 	am.exits = append(am.exits, *exit)
 
