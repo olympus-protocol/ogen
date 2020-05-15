@@ -31,6 +31,9 @@ func (d *Deposit) Encode(w io.Writer) error {
 	if _, err := w.Write(sigBytes[:]); err != nil {
 		return err
 	}
+	if err := d.Data.Encode(w); err != nil {
+		return err
+	}
 	return d.Data.Encode(w)
 }
 
@@ -42,6 +45,9 @@ func (d *Deposit) Decode(r io.Reader) error {
 		return err
 	}
 	if _, err := r.Read(sigBytes[:]); err != nil {
+		return err
+	}
+	if err := d.Data.Decode(r); err != nil {
 		return err
 	}
 	sig, err := bls.DeserializeSignature(sigBytes)

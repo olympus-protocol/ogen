@@ -114,7 +114,7 @@ func (w *Wallet) ListValidators(req *http.Request, args *interface{}, reply *Val
 
 // ValidatorKeyResponse is the response to a generate key request.
 type ValidatorKeyResponse struct {
-	PublicKey [48]byte
+	PrivateKey [32]byte
 }
 
 // GenerateValidatorKey generates a validator key and adds it to the wallet.
@@ -125,7 +125,7 @@ func (w *Wallet) GenerateValidatorKey(req *http.Request, args *interface{}, repl
 	}
 
 	*reply = ValidatorKeyResponse{
-		PublicKey: secKey.DerivePublicKey().Serialize(),
+		PrivateKey: secKey.Serialize(),
 	}
 	return nil
 }

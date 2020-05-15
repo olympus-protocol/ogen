@@ -111,6 +111,18 @@ func (c *RPCClient) ListValidators() (*ValidatorListReponse, error) {
 	return &out, nil
 }
 
+// GenerateValidatorKey generates a validator key.
+func (c *RPCClient) GenerateValidatorKey() (*ValidatorKeyResponse, error) {
+	var out ValidatorKeyResponse
+
+	err := c.Call("Wallet.GenerateValidatorKey", &Empty{}, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
 // StartValidator starts a validator by signing a deposit.
 func (c *RPCClient) StartValidator(privkey [32]byte, askpass func() ([]byte, error)) (*primitives.Deposit, error) {
 	deposit := new(primitives.Deposit)
@@ -128,6 +140,8 @@ func (c *RPCClient) StartValidator(privkey [32]byte, askpass func() ([]byte, err
 			PrivateKey: privkey,
 			Password:   pass,
 		}, deposit)
+
+		return deposit, err
 	}
 
 	return deposit, err

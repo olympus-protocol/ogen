@@ -11,6 +11,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/wallet"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +20,9 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "getbalance", Description: "Get balance of wallet"},
 		{Text: "getaddress", Description: "Get current wallet addresses"},
 		{Text: "sendtoaddress", Description: "Send money to a user"},
+		{Text: "listvalidators", Description: "List owned and managed validators"},
+		{Text: "startvalidator", Description: "Start a validator by submitting a deposit transaction"},
+		{Text: "generatevalidatorkey", Description: "Generates a validator key and allows managing it"},
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
@@ -150,6 +154,48 @@ func (wc *WalletCLI) ListValidators(args []string) (string, error) {
 	return fmt.Sprintf("Page %d/%d, Showing validators %d-%d/%d", page, len(validators.Validators)/validatorsPerPage+1, (page-1)*validatorsPerPage, page*validatorsPerPage, len(validators.Validators)), nil
 }
 
+// StartValidator starts a validator given it's private key.
+func (wc *WalletCLI) StartValidator(args []string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("Usage: startvalidator <privkey>")
+	}
+
+	privkey, err := base64.StdEncoding.DecodeString(args[0])
+	if err != nil {
+		return "", errors.Wrap(err, "cannot parse privkey")
+	}
+
+	if len(privkey) != 32 {
+		return "", fmt.Errorf("expected private key to be 32 bytes long, but got %d", len(privkey))
+	}
+
+	var privKeyBytes [32]byte
+	copy(privKeyBytes[:], privkey)
+
+	deposit, err := wc.rpcClient.StartValidator(privKeyBytes, askWalletPass)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println(deposit)
+	fmt.Println(deposit.Data)
+	fmt.Println(deposit.Data.PublicKey)
+	pubkey := deposit.Data.PublicKey.Serialize()
+
+	return fmt.Sprintf("started validator %s", base64.StdEncoding.EncodeToString(pubkey[:])), nil
+}
+
+// GenerateValidatorKey generates a validator key and starts managing it.
+func (wc *WalletCLI) GenerateValidatorKey() (string, error) {
+	key, err := wc.rpcClient.GenerateValidatorKey()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Validator Private Key: %s", base64.StdEncoding.EncodeToString(key.PrivateKey[:])), nil
+}
+
+// Run runs the wallet CLI.
 func (wc *WalletCLI) Run() {
 	color.Green("Welcome to the Olympus Wallet CLI")
 	for {
@@ -176,6 +222,10 @@ func (wc *WalletCLI) Run() {
 			out, err = wc.SendToAddress(args[1:])
 		case "listvalidators":
 			out, err = wc.ListValidators(args[1:])
+		case "startvalidator":
+			out, err = wc.StartValidator(args[1:])
+		case "generatevalidatorkey":
+			out, err = wc.GenerateValidatorKey()
 		default:
 			err = fmt.Errorf("Unknown command: %s", args[0])
 		}
