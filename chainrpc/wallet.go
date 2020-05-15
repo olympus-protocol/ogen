@@ -91,10 +91,12 @@ func (w *Wallet) ListValidators(req *http.Request, args *interface{}, reply *Val
 			hasWithdrawalKey = true
 		}
 		ok, err := w.wallet.ValidatorWallet.HasValidatorKey(v.PubKey)
+		var hasPrivateKey bool
 		if err != nil {
-			return err
+			hasPrivateKey = false
+		} else {
+			hasPrivateKey = ok
 		}
-		hasPrivateKey := ok
 
 		validators = append(validators, ValidatorResponse{
 			Pubkey:            v.PubKey,
@@ -136,13 +138,20 @@ type StartValidatorRequest struct {
 	Password   []byte
 }
 
+// StartValidatorResponse is the response to starting a validator.
+type StartValidatorResponse struct {
+	PublicKey [48]byte
+}
+
 // StartValidator starts a validator.
-func (w *Wallet) StartValidator(req *http.Request, args *StartValidatorRequest, reply *primitives.Deposit) error {
+func (w *Wallet) StartValidator(req *http.Request, args *StartValidatorRequest, reply *StartValidatorResponse) error {
 	deposit, err := w.wallet.StartValidator(args.Password, args.PrivateKey)
 	if err != nil {
 		return err
 	}
 
-	*reply = *deposit
+	*reply = StartValidatorResponse{
+		PublicKey: deposit.Data.PublicKey.Serialize(),
+	}
 	return nil
 }

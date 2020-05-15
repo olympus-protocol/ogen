@@ -105,10 +105,6 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	}
 
 	// 2. verify block against previous block's state
-	oldState, found := ch.state.GetStateForHash(block.Header.PrevBlockHash)
-	if !found {
-		return fmt.Errorf("missing parent block state: %s", block.Header.PrevBlockHash)
-	}
 
 	newState, err := ch.State().Add(block)
 	if err != nil {
@@ -138,7 +134,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		}
 
 		for _, a := range block.Votes {
-			validators := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
+			validators := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
 
 			if err := txn.SetLatestVoteIfNeeded(validators, &a); err != nil {
 				return err

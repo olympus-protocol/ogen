@@ -260,7 +260,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		epochBoundaryHash = s.GetRecentBlockHash(s.Slot-p.EpochLength-1, p)
 	}
 
-	// previousEpochVotersMap maps validator to their vote
+	// previousEpochVotersMap maps validator to their assigned vote
 	previousEpochVotersMap := make(map[uint32]*AcceptedVoteInfo)
 
 	for _, v := range s.PreviousEpochVotes {
@@ -273,13 +273,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		if v.Data.ToHash.IsEqual(&previousEpochBoundaryHash) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		for i, validatorIdx := range validatorIndices {
-			b := uint64(i) / 8
-			o := uint64(i) % 8
-
-			if v.ParticipationBitfield[b]&(1<<o) != 0 {
-				previousEpochVotersMap[validatorIdx] = &v
-			}
+		for _, validatorIdx := range validatorIndices {
+			previousEpochVotersMap[validatorIdx] = &v
 		}
 	}
 

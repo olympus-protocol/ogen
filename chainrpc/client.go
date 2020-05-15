@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/rpc/json"
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -124,8 +123,8 @@ func (c *RPCClient) GenerateValidatorKey() (*ValidatorKeyResponse, error) {
 }
 
 // StartValidator starts a validator by signing a deposit.
-func (c *RPCClient) StartValidator(privkey [32]byte, askpass func() ([]byte, error)) (*primitives.Deposit, error) {
-	deposit := new(primitives.Deposit)
+func (c *RPCClient) StartValidator(privkey [32]byte, askpass func() ([]byte, error)) (*StartValidatorResponse, error) {
+	deposit := new(StartValidatorResponse)
 
 	err := c.Call("Wallet.StartValidator", &StartValidatorRequest{
 		PrivateKey: privkey,
