@@ -177,9 +177,6 @@ func (wc *WalletCLI) StartValidator(args []string) (string, error) {
 		return "", err
 	}
 
-	fmt.Println(deposit)
-	fmt.Println(deposit.Data)
-	fmt.Println(deposit.Data.PublicKey)
 	pubkey := deposit.Data.PublicKey.Serialize()
 
 	return fmt.Sprintf("started validator %s", base64.StdEncoding.EncodeToString(pubkey[:])), nil

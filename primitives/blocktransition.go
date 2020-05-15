@@ -11,18 +11,25 @@ import (
 )
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32, max uint32) {
-	numValidatorsAtSlot := uint32(uint64(len(s.ValidatorRegistry))/p.EpochLength) + 1
-	slotIndex := uint32(slot % p.EpochLength)
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) []uint32 {
+	if slot/p.EpochLength == s.EpochIndex {
+		assignments := s.CurrentEpochVoteAssignments
+		slotIndex := uint64(slot % p.EpochLength)
+		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
+		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
-	min = slotIndex * numValidatorsAtSlot
-	max = min + numValidatorsAtSlot
+		return assignments[min:max]
+	} else if slot/p.EpochLength == s.EpochIndex-1 {
+		assignments := s.PreviousEpochVoteAssignments
+		slotIndex := uint64(slot % p.EpochLength)
+		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
+		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
-	if max >= uint32(len(s.ValidatorRegistry)) {
-		max = uint32(len(s.ValidatorRegistry) - 1)
+		return assignments[min:max]
 	}
 
-	return
+	// TODO: better handling
+	panic("Tried to get vote committee out of range")
 }
 
 // IsExitValid checks if an exit is valid.
@@ -159,12 +166,12 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	}
 
 	aggPubs := bls.NewAggregatePublicKey()
-	min, max := s.GetVoteCommittee(v.Data.Slot, p)
+	validators := s.GetVoteCommittee(v.Data.Slot, p)
 	for i := range v.ParticipationBitfield {
 		for j := 0; j < 8; j++ {
-			validator := min + uint32((i*8)+j)
+			validator := uint32((i * 8) + j)
 
-			if validator > max {
+			if validator >= uint32(len(validators)) {
 				break
 			}
 
@@ -172,7 +179,9 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 				continue
 			}
 
-			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validator].PubKey)
+			validatorIdx := validators[validator]
+
+			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validatorIdx].PubKey)
 			if err != nil {
 				return err
 			}

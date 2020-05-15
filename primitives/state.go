@@ -44,6 +44,9 @@ type State struct {
 	// ProposerQueue is the queue of validators scheduled to create a block.
 	ProposerQueue []uint32
 
+	PreviousEpochVoteAssignments []uint32
+	CurrentEpochVoteAssignments  []uint32
+
 	// NextProposerQueue is the queue of validators scheduled to create a block
 	// in the next epoch.
 	NextProposerQueue []uint32
@@ -140,6 +143,22 @@ func (s *State) Serialize(w io.Writer) error {
 			return err
 		}
 	}
+	if err := serializer.WriteVarInt(w, uint64(len(s.CurrentEpochVoteAssignments))); err != nil {
+		return err
+	}
+	for _, p := range s.CurrentEpochVoteAssignments {
+		if err := serializer.WriteElement(w, p); err != nil {
+			return err
+		}
+	}
+	if err := serializer.WriteVarInt(w, uint64(len(s.PreviousEpochVoteAssignments))); err != nil {
+		return err
+	}
+	for _, p := range s.PreviousEpochVoteAssignments {
+		if err := serializer.WriteElement(w, p); err != nil {
+			return err
+		}
+	}
 	if err := serializer.WriteVarInt(w, uint64(len(s.LatestBlockHashes))); err != nil {
 		return err
 	}
@@ -226,6 +245,26 @@ func (s *State) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	s.CurrentEpochVoteAssignments = make([]uint32, num)
+	for i := range s.CurrentEpochVoteAssignments {
+		if err := serializer.ReadElement(r, &s.CurrentEpochVoteAssignments[i]); err != nil {
+			return err
+		}
+	}
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	s.PreviousEpochVoteAssignments = make([]uint32, num)
+	for i := range s.PreviousEpochVoteAssignments {
+		if err := serializer.ReadElement(r, &s.PreviousEpochVoteAssignments[i]); err != nil {
+			return err
+		}
+	}
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
 	s.LatestBlockHashes = make([]chainhash.Hash, num)
 	for i := range s.LatestBlockHashes {
 		if err := serializer.ReadElement(r, &s.LatestBlockHashes[i]); err != nil {
@@ -283,6 +322,16 @@ func (s *State) Copy() State {
 	s2.NextProposerQueue = make([]uint32, len(s.NextProposerQueue))
 	for i, c := range s.NextProposerQueue {
 		s2.NextProposerQueue[i] = c
+	}
+
+	s2.CurrentEpochVoteAssignments = make([]uint32, len(s.CurrentEpochVoteAssignments))
+	for i, c := range s.CurrentEpochVoteAssignments {
+		s2.CurrentEpochVoteAssignments[i] = c
+	}
+
+	s2.PreviousEpochVoteAssignments = make([]uint32, len(s.PreviousEpochVoteAssignments))
+	for i, c := range s.PreviousEpochVoteAssignments {
+		s2.PreviousEpochVoteAssignments[i] = c
 	}
 
 	s2.LatestBlockHashes = make([]chainhash.Hash, len(s.LatestBlockHashes))

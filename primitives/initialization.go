@@ -83,7 +83,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)
 
-	return &State{
+	s := &State{
 		UtxoState: UtxoState{
 			Balances: map[[20]byte]uint64{
 				premineAddrArr: 1000 * 1000000, // 1 million coins
@@ -113,5 +113,9 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		PreviousJustifiedEpoch:        0,
 		PreviousJustifiedEpochHash:    genesisHash,
 		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
-	}, nil
+	}
+	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, s.GetActiveValidatorIndices())
+	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, s.GetActiveValidatorIndices())
+
+	return s, nil
 }

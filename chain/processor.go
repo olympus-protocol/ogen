@@ -138,18 +138,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		}
 
 		for _, a := range block.Votes {
-			min, max := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
-
-			validators := make([]uint32, 0, max-min)
-
-			for i := range a.ParticipationBitfield {
-				for j := 0; j < 8; j++ {
-					if a.ParticipationBitfield[i]&(1<<uint(j)) != 0 {
-						validator := uint32(i*8+j) + min
-						validators = append(validators, validator)
-					}
-				}
-			}
+			validators := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
 
 			if err := txn.SetLatestVoteIfNeeded(validators, &a); err != nil {
 				return err

@@ -57,13 +57,12 @@ func (vg *voterGroup) add(id uint32, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(validators []Worker, bitfield []uint8, offset uint32) {
-	for i, b := range bitfield {
-		for j := 0; j < 8; j++ {
-			val := i*8 + j + int(offset)
-			if b&(1<<j) > 0 && val < len(validators) {
-				vg.add(uint32(val), validators[val].Balance)
-			}
+func (vg *voterGroup) addFromBitfield(registry []Worker, bitfield []uint8, validatorIndices []uint32) {
+	for idx, validatorIdx := range validatorIndices {
+		b := idx / 8
+		j := idx % 8
+		if b&(1<<j) > 0 {
+			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
 }
@@ -189,9 +188,23 @@ func generateRandNumber(from chainhash.Hash, max uint32) uint64 {
 	randaoBig := new(big.Int)
 	randaoBig.SetBytes(from[:])
 
-	numValidator := big.NewInt(int64(max))
+	numValidator := big.NewInt(int64(max + 1))
 
 	return randaoBig.Mod(randaoBig, numValidator).Uint64()
+}
+
+// Shuffle shuffles workers using a RANDAO.
+func Shuffle(randao chainhash.Hash, vals []uint32) []uint32 {
+	nextProposers := make([]uint32, len(vals))
+	copy(nextProposers, vals)
+
+	for i := uint64(0); i < uint64(len(nextProposers)-1); i++ {
+		j := i + generateRandNumber(randao, uint32(len(nextProposers))-uint32(i)-1)
+		nextProposers[i], nextProposers[j] = nextProposers[j], nextProposers[i]
+		randao = chainhash.HashH(randao[:])
+	}
+
+	return nextProposers
 }
 
 // DetermineNextProposers gets the next shuffling.
@@ -247,31 +260,34 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		epochBoundaryHash = s.GetRecentBlockHash(s.Slot-p.EpochLength-1, p)
 	}
 
+	// previousEpochVotersMap maps validator to their vote
 	previousEpochVotersMap := make(map[uint32]*AcceptedVoteInfo)
 
 	for _, v := range s.PreviousEpochVotes {
-		min, _ := s.GetVoteCommittee(v.Data.Slot, p)
-		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
+		validatorIndices := s.GetVoteCommittee(v.Data.Slot, p)
+		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot, p)
 		if v.Data.BeaconBlockHash.IsEqual(&actualBlockHash) {
-			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
+			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
 		if v.Data.ToHash.IsEqual(&previousEpochBoundaryHash) {
-			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
+			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		for i := range v.ParticipationBitfield {
-			for j := 0; j < 8; j++ {
-				val := uint32(i*8+j) + min
-				previousEpochVotersMap[val] = &v
+		for i, validatorIdx := range validatorIndices {
+			b := uint64(i) / 8
+			o := uint64(i) % 8
+
+			if v.ParticipationBitfield[b]&(1<<o) != 0 {
+				previousEpochVotersMap[validatorIdx] = &v
 			}
 		}
 	}
 
 	for _, v := range s.CurrentEpochVotes {
-		min, _ := s.GetVoteCommittee(v.Data.Slot, p)
+		validators := s.GetVoteCommittee(v.Data.Slot, p)
 
 		if v.Data.ToHash.IsEqual(&epochBoundaryHash) {
-			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, min)
+			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validators)
 		}
 	}
 
@@ -401,6 +417,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 	s.ProposerQueue = s.NextProposerQueue
 	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, s.ValidatorRegistry, p)
+
+	copy(s.PreviousEpochVoteAssignments, s.CurrentEpochVoteAssignments)
 
 	copy(s.RANDAO[:], s.NextRANDAO[:])
 

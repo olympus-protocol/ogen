@@ -198,7 +198,14 @@ func (m *Miner) Start() error {
 					panic(err)
 				}
 
-				min, max := state.GetVoteCommittee(slotToVote, &m.params)
+				if state.EpochIndex != slotToVote/m.params.EpochLength {
+					err := state.ProcessEpochTransition(&m.params, m.log)
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				validators := state.GetVoteCommittee(slotToVote, &m.params)
 				toEpoch := (slotToVote - 1) / m.params.EpochLength
 
 				data := primitives.VoteData{
@@ -211,8 +218,8 @@ func (m *Miner) Start() error {
 
 				dataHash := data.Hash()
 
-				for i := min; i <= max; i++ {
-					validator := state.ValidatorRegistry[i]
+				for i, validatorIdx := range validators {
+					validator := state.ValidatorRegistry[validatorIdx]
 
 					if k, found := m.keystore.GetValidatorKey(&validator); found {
 						sig, err := bls.Sign(k, dataHash[:])
@@ -223,8 +230,8 @@ func (m *Miner) Start() error {
 						vote := primitives.SingleValidatorVote{
 							Data:      data,
 							Signature: *sig,
-							Offset:    i - min,
-							OutOf:     max - min,
+							Offset:    uint32(i),
+							OutOf:     uint32(len(validators)),
 						}
 
 						m.voteMempool.Add(&vote)
