@@ -185,8 +185,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// TODO: delete state before finalized
 
-		ch.log.Infof("New block accepted. Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
-		ch.log.Infof("Justification Bitfield: %b, Previous Epoch: %d, Justified Epoch: %d, Current Epoch: %d", newState.JustificationBitfield, newState.PreviousJustifiedEpoch, newState.JustifiedEpoch, newState.EpochIndex)
+		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.FinalizedEpoch, newState.JustifiedEpoch)
 
 		ch.notifeeLock.RLock()
 		for i := range ch.notifees {

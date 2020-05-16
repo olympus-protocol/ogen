@@ -79,8 +79,8 @@ var Mainnet = ChainParams{
 	IncluderRewardQuotient:       8,
 	GovernanceProposalFee:        amount.AmountType(50), // 50 POLIS
 	EpochLength:                  5,
-	EjectionBalance:              1000,
-	MaxBalanceChurnQuotient:      32,
+	EjectionBalance:              1000, // POLIS
+	MaxBalanceChurnQuotient:      8,
 	MaxVotesPerBlock:             32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,

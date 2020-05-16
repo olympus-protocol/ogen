@@ -149,7 +149,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 		index := uint32(idx)
 
 		// start validators if needed
-		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount {
+		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
@@ -389,7 +389,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	for index, validator := range s.ValidatorRegistry {
-		if validator.IsActive() && validator.Balance < p.EjectionBalance {
+		if validator.IsActive() && validator.Balance < p.EjectionBalance*p.UnitsPerCoin {
 			err := s.UpdateValidatorStatus(uint32(index), StatusExitedWithoutPenalty, p)
 			if err != nil {
 				return err
@@ -404,6 +404,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		if err != nil {
 			return err
 		}
+
+		s.LatestValidatorRegistryChange = s.EpochIndex
 	}
 
 	s.ProposerQueue = s.NextProposerQueue
