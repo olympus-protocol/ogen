@@ -61,7 +61,7 @@ func (vg *voterGroup) addFromBitfield(registry []Worker, bitfield []uint8, valid
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
-		if b&(1<<j) > 0 {
+		if bitfield[b]&(1<<j) > 0 {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
@@ -303,16 +303,12 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
 	}
 
-	log.Debugf("justification: %b, previousEpoch: %d, justifiedEpoch: %d, currentEpoch: %d", s.JustificationBitfield, s.PreviousJustifiedEpoch, s.JustifiedEpoch, s.EpochIndex)
-
 	if (s.JustificationBitfield>>1)%4 == 3 && s.PreviousJustifiedEpoch == s.EpochIndex-2 { // 110 <- old previous justified would be
-		log.Debugf("finalized epoch %d", s.PreviousJustifiedEpoch)
 		s.FinalizedEpoch = s.PreviousJustifiedEpoch
 	}
 
 	if ((s.JustificationBitfield>>0)%8 == 7 && s.JustifiedEpoch == s.EpochIndex-1) || // 111
 		((s.JustificationBitfield>>0)%4 == 3 && s.JustifiedEpoch == s.EpochIndex) {
-		log.Debugf("finalized epoch %d", s.PreviousJustifiedEpoch)
 		s.FinalizedEpoch = s.PreviousJustifiedEpoch
 		s.JustifiedEpoch = s.EpochIndex
 	}

@@ -174,6 +174,9 @@ func (m *Miner) Start() error {
 	go func() {
 		slotToPropose := m.getCurrentSlot() + 1
 		slotToVote := slotToPropose
+		if slotToVote == 0 {
+			slotToVote = 1
+		}
 		blockTimer := time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
 		voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
 
@@ -197,13 +200,6 @@ func (m *Miner) Start() error {
 				state, err := s.GetStateForHashAtSlot(tipHash, slotToVote, &view, &m.params)
 				if err != nil {
 					panic(err)
-				}
-
-				if state.EpochIndex != slotToVote/m.params.EpochLength {
-					err := state.ProcessEpochTransition(&m.params, m.log)
-					if err != nil {
-						panic(err)
-					}
 				}
 
 				validators := state.GetVoteCommittee(slotToVote, &m.params)

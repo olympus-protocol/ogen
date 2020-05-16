@@ -12,14 +12,14 @@ import (
 
 // GetVoteCommittee gets the committee for a certain block.
 func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) []uint32 {
-	if slot/p.EpochLength == s.EpochIndex {
+	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
 		return assignments[min:max]
-	} else if slot/p.EpochLength == s.EpochIndex-1 {
+	} else if (slot-1)/p.EpochLength == s.EpochIndex-1 {
 		assignments := s.PreviousEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
@@ -145,6 +145,9 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 // IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+	if v.Data.Slot == 0 {
+		return fmt.Errorf("slot out of range")
+	}
 	if v.Data.ToEpoch == s.EpochIndex {
 		if v.Data.FromEpoch != s.JustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
