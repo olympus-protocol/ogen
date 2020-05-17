@@ -48,10 +48,12 @@ const (
 
 // Worker is a worker in the queue.
 type Worker struct {
-	Balance      uint64
-	PubKey       [48]byte
-	PayeeAddress [20]byte
-	Status       WorkerStatus
+	Balance          uint64
+	PubKey           [48]byte
+	PayeeAddress     [20]byte
+	Status           WorkerStatus
+	FirstActiveEpoch int64
+	LastActiveEpoch  int64
 }
 
 // IsActive checks if a validator is currently active.
@@ -59,14 +61,21 @@ func (wr *Worker) IsActive() bool {
 	return wr.Status == StatusActive || wr.Status == StatusActivePendingExit
 }
 
+// IsActiveAtEpoch checks if a validator is active at a slot.
+func (wr *Worker) IsActiveAtEpoch(epoch int64) bool {
+	return wr.IsActive() &&
+		(wr.FirstActiveEpoch == -1 || wr.FirstActiveEpoch <= epoch) &&
+		(wr.LastActiveEpoch == -1 || epoch <= wr.LastActiveEpoch)
+}
+
 // Serialize serializes a WorkerRow to the provided writer.
 func (wr *Worker) Serialize(w io.Writer) error {
-	return serializer.WriteElements(w, wr.Balance, wr.PubKey, wr.PayeeAddress, wr.Status)
+	return serializer.WriteElements(w, wr.Balance, wr.PubKey, wr.PayeeAddress, wr.Status, wr.FirstActiveEpoch, wr.LastActiveEpoch)
 }
 
 // Deserialize deserializes a worker row from the provided reader.
 func (wr *Worker) Deserialize(r io.Reader) error {
-	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress, &wr.Status)
+	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress, &wr.Status, &wr.FirstActiveEpoch, &wr.LastActiveEpoch)
 }
 
 // Copy returns a copy of the worker.

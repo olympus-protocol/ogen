@@ -71,10 +71,12 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		copy(pkhBytes[:], pkh)
 
 		initialValidators[i] = Worker{
-			Balance:      p.DepositAmount * p.UnitsPerCoin,
-			PubKey:       v.PubKey,
-			PayeeAddress: pkhBytes,
-			Status:       StatusActive,
+			Balance:          p.DepositAmount * p.UnitsPerCoin,
+			PubKey:           v.PubKey,
+			PayeeAddress:     pkhBytes,
+			Status:           StatusActive,
+			FirstActiveEpoch: 0,
+			LastActiveEpoch:  -1,
 		}
 	}
 
@@ -102,8 +104,6 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		NextRANDAO:                    chainhash.Hash{},
 		Slot:                          0,
 		EpochIndex:                    0,
-		ProposerQueue:                 DetermineNextProposers(chainhash.Hash{}, initialValidators, p),
-		NextProposerQueue:             DetermineNextProposers(chainhash.Hash{}, initialValidators, p),
 		JustificationBitfield:         0,
 		JustifiedEpoch:                0,
 		FinalizedEpoch:                0,
@@ -114,8 +114,12 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		PreviousJustifiedEpochHash:    genesisHash,
 		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
 	}
-	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, s.GetActiveValidatorIndices())
-	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, s.GetActiveValidatorIndices())
+
+	activeValidators := s.GetValidatorIndicesActiveAt(0)
+	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 
 	return s, nil
 }

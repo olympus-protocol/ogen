@@ -19,7 +19,7 @@ type blockRowAndValidator struct {
 func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
-	activeValidatorIndices := justifiedState.GetActiveValidatorIndices()
+	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(int64(justifiedState.EpochIndex))
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
 		bl, err := ch.getLatestAttestationTarget(txn, i)

@@ -82,11 +82,11 @@ type State struct {
 	PreviousEpochVotes []AcceptedVoteInfo
 }
 
-// GetActiveValidatorIndices gets validator indices where the validator is active.
-func (s *State) GetActiveValidatorIndices() []uint32 {
+// GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
+func (s *State) GetValidatorIndicesActiveAt(epoch int64) []uint32 {
 	vals := make([]uint32, 0, len(s.ValidatorRegistry))
 	for i, v := range s.ValidatorRegistry {
-		if v.IsActive() {
+		if v.IsActiveAtEpoch(epoch) {
 			vals = append(vals, uint32(i))
 		}
 	}

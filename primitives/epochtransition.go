@@ -149,7 +149,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 		index := uint32(idx)
 
 		// start validators if needed
-		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin {
+		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= int64(s.EpochIndex) {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
@@ -208,7 +208,7 @@ func Shuffle(randao chainhash.Hash, vals []uint32) []uint32 {
 }
 
 // DetermineNextProposers gets the next shuffling.
-func DetermineNextProposers(randao chainhash.Hash, registry []Worker, p *params.ChainParams) []uint32 {
+func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint32, p *params.ChainParams) []uint32 {
 	validatorsChosen := make(map[uint64]struct{})
 	nextProposers := make([]uint32, p.EpochLength)
 
@@ -217,7 +217,7 @@ func DetermineNextProposers(randao chainhash.Hash, registry []Worker, p *params.
 		var val uint64
 
 		for found {
-			val = generateRandNumber(randao, uint32(len(registry)))
+			val = generateRandNumber(randao, uint32(len(activeValidators)-1))
 			randao = chainhash.HashH(randao[:])
 			_, found = validatorsChosen[val]
 		}
@@ -409,7 +409,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	s.ProposerQueue = s.NextProposerQueue
-	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, s.ValidatorRegistry, p)
+	activeValidators := s.GetValidatorIndicesActiveAt(int64(s.EpochIndex + 1))
+	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, activeValidators, p)
 
 	copy(s.PreviousEpochVoteAssignments, s.CurrentEpochVoteAssignments)
 

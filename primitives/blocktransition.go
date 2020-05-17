@@ -134,10 +134,12 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	s.UtxoState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
 	s.ValidatorRegistry = append(s.ValidatorRegistry, Worker{
-		Balance:      p.DepositAmount * p.UnitsPerCoin,
-		PubKey:       deposit.Data.PublicKey.Serialize(),
-		PayeeAddress: deposit.Data.WithdrawalAddress,
-		Status:       StatusStarting,
+		Balance:          p.DepositAmount * p.UnitsPerCoin,
+		PubKey:           deposit.Data.PublicKey.Serialize(),
+		PayeeAddress:     deposit.Data.WithdrawalAddress,
+		Status:           StatusStarting,
+		FirstActiveEpoch: int64(s.EpochIndex) + 2,
+		LastActiveEpoch:  -1,
 	})
 
 	return nil
