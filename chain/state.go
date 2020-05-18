@@ -19,6 +19,8 @@ type stateDerivedFromBlock struct {
 	lastSlot      uint64
 	lastSlotState *primitives.State
 
+	totalReceipts []*primitives.EpochReceipt
+
 	lock *sync.Mutex
 }
 
@@ -33,36 +35,38 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock *primitives.State) *stat
 	}
 }
 
-func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams, log *logger.Logger) (*primitives.State, error) {
+func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams, log *logger.Logger) (*primitives.State, []*primitives.EpochReceipt, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if slot == s.lastSlot {
-		return s.lastSlotState, nil
+		return s.lastSlotState, s.totalReceipts, nil
 	}
 
 	if slot < s.lastSlot {
 		derivedState := s.firstSlotState.Copy()
 
-		err := derivedState.ProcessSlots(slot, view, p, log)
+		receipts, err := derivedState.ProcessSlots(slot, view, p, log)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+
 		view.SetTipSlot(slot)
 
-		return &derivedState, nil
+		return &derivedState, receipts, nil
 	}
 
 	view.SetTipSlot(s.lastSlot)
 
-	err := s.lastSlotState.ProcessSlots(slot, view, p, log)
+	receipts, err := s.lastSlotState.ProcessSlots(slot, view, p, log)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	s.totalReceipts = append(s.totalReceipts, receipts...)
 	s.lastSlot = slot
 
-	return s.lastSlotState, nil
+	return s.lastSlotState, s.totalReceipts, nil
 }
 
 type blockNodeAndState struct {
@@ -220,45 +224,45 @@ func (s *StateService) GetStateForHash(hash chainhash.Hash) (*primitives.State, 
 }
 
 // GetStateForHashAtSlot gets the state for a certain block hash at a certain slot.
-func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view primitives.BlockView, p *params.ChainParams) (*primitives.State, error) {
+func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view primitives.BlockView, p *params.ChainParams) (*primitives.State, []*primitives.EpochReceipt, error) {
 	s.lock.RLock()
 	derivedState, found := s.stateMap[hash]
 	s.lock.RUnlock()
 	if slot > derivedState.lastSlot+1000 {
-		return nil, fmt.Errorf("tried to get block too far in future")
+		return nil, nil, fmt.Errorf("tried to get block too far in future")
 	}
 
 	if !found {
-		return nil, fmt.Errorf("could not find state for block %s", hash)
+		return nil, nil, fmt.Errorf("could not find state for block %s", hash)
 	}
 
 	return derivedState.deriveState(slot, view, p, s.log)
 }
 
 // Add adds a block to the blockchain.
-func (s *StateService) Add(block *primitives.Block) (*primitives.State, error) {
+func (s *StateService) Add(block *primitives.Block) (*primitives.State, []*primitives.EpochReceipt, error) {
 	lastBlockHash := block.Header.PrevBlockHash
 
 	view, err := s.GetSubView(lastBlockHash)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	lastBlockState, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &s.params)
+	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &s.params)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	newState := lastBlockState.Copy()
 
 	err = newState.ProcessBlock(block, &s.params)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	s.setBlockState(block.Hash(), &newState)
 
-	return &newState, nil
+	return &newState, receipts, nil
 }
 
 // RemoveBeforeSlot removes state before a certain slot.

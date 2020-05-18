@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/olympus-protocol/ogen/logger"
@@ -239,8 +240,79 @@ func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chai
 	return s.LatestBlockHashes[slotToGet%p.LatestBlockRootsLength]
 }
 
+type ReceiptType uint8
+
+const (
+	RewardMatchedFromEpoch ReceiptType = iota
+	PenaltyMissingFromEpoch
+	RewardMatchedToEpoch
+	PenaltyMissingToEpoch
+	RewardMatchedBeaconBlock
+	PenaltyMissingBeaconBlock
+	RewardIncludedVote
+	RewardInclusionDistance
+	PenaltyInactivityLeak
+	PenaltyInactivityLeakNoVote
+)
+
+func (r ReceiptType) String() string {
+	switch r {
+	case RewardMatchedFromEpoch:
+		return "voted for correct from epoch"
+	case RewardMatchedToEpoch:
+		return "voted for correct to epoch"
+	case RewardMatchedBeaconBlock:
+		return "voted for correct beacon"
+	case RewardIncludedVote:
+		return "included vote in proposal"
+	case RewardInclusionDistance:
+		return "inclusion distance reward"
+	case PenaltyInactivityLeak:
+		return "inactivity leak"
+	case PenaltyInactivityLeakNoVote:
+		return "did not vote with inactivity leak"
+	case PenaltyMissingBeaconBlock:
+		return "voted for wrong beacon block"
+	case PenaltyMissingFromEpoch:
+		return "voted for wrong from epoch"
+	case PenaltyMissingToEpoch:
+		return "voted for wrong to epoch"
+	default:
+		return fmt.Sprintf("invalid receipt type: %d", r)
+	}
+}
+
+// EpochReceipt is a balance change carried our by an epoch transition.
+type EpochReceipt struct {
+	Type      ReceiptType
+	Amount    int64
+	Validator uint32
+}
+
+func (e *EpochReceipt) String() string {
+	if e.Amount > 0 {
+		return fmt.Sprintf("Reward: Validator %d: %s for %f POLIS", e.Validator, e.Type, float64(e.Amount)/1000)
+	} else {
+		return fmt.Sprintf("Penalty: Validator %d: %s for %f POLIS", e.Validator, e.Type, float64(e.Amount)/1000)
+	}
+}
+
+// GetTotalBalances gets the total balances of the state.
+func (s *State) GetTotalBalances() uint64 {
+	total := uint64(0)
+	for _, v := range s.ValidatorRegistry {
+		total += v.Balance
+	}
+
+	for _, v := range s.UtxoState.Balances {
+		total += v
+	}
+
+	return total
+}
+
 // ProcessEpochTransition runs an epoch transition on the state.
-func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger) error {
+func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger) ([]*EpochReceipt, error) {
 	totalBalance := s.getActiveBalance(p)
 
 	// These are voters who voted for a target of the previous epoch.
@@ -266,7 +338,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	for _, v := range s.PreviousEpochVotes {
 		validatorIndices := s.GetVoteCommittee(v.Data.Slot, p)
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
-		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot, p)
+		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
 		if v.Data.BeaconBlockHash.IsEqual(&actualBlockHash) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
@@ -313,10 +385,30 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		s.JustifiedEpoch = s.EpochIndex
 	}
 
-	baseRewardQuotient := p.BaseRewardQuotient * intSqrt(totalBalance/p.UnitsPerCoin)
+	const numRewards = 5
 
 	baseReward := func(index uint32) uint64 {
-		return s.GetEffectiveBalance(index, p) / baseRewardQuotient / 5
+		return s.GetEffectiveBalance(index, p) * p.UnitsPerCoin * p.BaseRewardPerBlock * p.EpochLength / totalBalance / numRewards
+	}
+
+	receipts := make([]*EpochReceipt, 0)
+
+	rewardValidator := func(index uint32, reward uint64, why ReceiptType) {
+		s.ValidatorRegistry[index].Balance += reward
+		receipts = append(receipts, &EpochReceipt{
+			Validator: index,
+			Amount:    int64(reward),
+			Type:      why,
+		})
+	}
+
+	penalizeValidator := func(index uint32, penalty uint64, why ReceiptType) {
+		s.ValidatorRegistry[index].Balance -= penalty
+		receipts = append(receipts, &EpochReceipt{
+			Validator: index,
+			Amount:    -int64(penalty),
+			Type:      why,
+		})
 	}
 
 	if s.Slot >= 2*p.EpochLength {
@@ -328,45 +420,60 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 			// votes matching source rewarded
 			if previousEpochVoters.contains(idx) {
-				reward := baseReward(idx) * previousEpochVoters.totalBalance / totalBalance
-				s.ValidatorRegistry[idx].Balance += reward
+				reward := baseReward(idx)
+				rewardValidator(idx, reward, RewardMatchedFromEpoch)
 			} else {
 				penalty := baseReward(idx)
-				s.ValidatorRegistry[idx].Balance -= penalty
+				penalizeValidator(idx, penalty, PenaltyMissingFromEpoch)
 			}
 
 			// votes matching target rewarded
 			if previousEpochVotersMatchingTargetHash.contains(idx) {
-				reward := baseReward(idx) * previousEpochVoters.totalBalance / totalBalance
-				s.ValidatorRegistry[idx].Balance += reward
+				reward := baseReward(idx)
+				rewardValidator(idx, reward, RewardMatchedToEpoch)
 			} else {
 				penalty := baseReward(idx)
-				s.ValidatorRegistry[idx].Balance -= penalty
+				penalizeValidator(idx, penalty, PenaltyMissingToEpoch)
 			}
 
 			// votes matching beacon block rewarded
 			if previousEpochVotersMatchingBeaconBlock.contains(idx) {
-				reward := baseReward(idx) * previousEpochVoters.totalBalance / totalBalance
-				s.ValidatorRegistry[idx].Balance += reward
+				reward := baseReward(idx)
+				rewardValidator(idx, reward, RewardMatchedBeaconBlock)
 			} else {
 				penalty := baseReward(idx)
-				s.ValidatorRegistry[idx].Balance -= penalty
+				penalizeValidator(idx, penalty, PenaltyMissingBeaconBlock)
 			}
 		}
 
 		// inclusion rewards
+		proposerRewardInclusion := make(map[uint32]uint64)
+		proposerRewardDistance := make(map[uint32]uint64)
 		for voter := range previousEpochVoters.voters {
 			vote := previousEpochVotersMap[voter]
 
 			proposerIndex := vote.Proposer
 
-			reward := baseReward(proposerIndex) / p.IncluderRewardQuotient
-			s.ValidatorRegistry[proposerIndex].Balance += reward
+			reward := baseReward(proposerIndex)
+			if _, ok := proposerRewardInclusion[proposerIndex]; !ok {
+				proposerRewardInclusion[proposerIndex] = 0
+			}
+			proposerRewardInclusion[proposerIndex] += reward
 
 			inclusionDistance := vote.InclusionDelay
 
-			reward = baseReward(voter) * p.MinAttestationInclusionDelay / inclusionDistance
-			s.ValidatorRegistry[voter].Balance += reward
+			reward = baseReward(proposerIndex) * p.MinAttestationInclusionDelay / inclusionDistance
+			if _, ok := proposerRewardDistance[proposerIndex]; !ok {
+				proposerRewardDistance[proposerIndex] = 0
+			}
+			proposerRewardDistance[proposerIndex] += reward
+		}
+
+		for validator, amount := range proposerRewardInclusion {
+			rewardValidator(validator, amount/p.IncluderRewardQuotient, RewardIncludedVote)
+		}
+		for validator, amount := range proposerRewardDistance {
+			rewardValidator(validator, amount, RewardInclusionDistance)
 		}
 
 		// Penalize all validators after 4 epochs and punish validators who did not
@@ -380,9 +487,13 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 					continue
 				}
 
-				w.Balance -= baseReward(idx) * 3
+				penalty := baseReward(idx) * numRewards
+
+				penalizeValidator(idx, penalty, PenaltyInactivityLeak)
+
 				if !previousEpochVotersMatchingTargetHash.contains(idx) {
-					w.Balance -= s.GetEffectiveBalance(idx, p) * finalityDelay / p.InactivityPenaltyQuotient
+					penalty := s.GetEffectiveBalance(idx, p) * finalityDelay / p.InactivityPenaltyQuotient
+					penalizeValidator(idx, penalty, PenaltyInactivityLeakNoVote)
 				}
 			}
 		}
@@ -392,7 +503,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		if validator.IsActive() && validator.Balance < p.EjectionBalance*p.UnitsPerCoin {
 			err := s.UpdateValidatorStatus(uint32(index), StatusExitedWithoutPenalty, p)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -402,7 +513,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	if s.FinalizedEpoch > s.LatestValidatorRegistryChange {
 		err := s.updateValidatorRegistry(p)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		s.LatestValidatorRegistryChange = s.EpochIndex
@@ -419,5 +530,5 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	s.PreviousEpochVotes = s.CurrentEpochVotes
 	s.CurrentEpochVotes = make([]AcceptedVoteInfo, 0)
 
-	return nil
+	return receipts, nil
 }

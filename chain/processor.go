@@ -106,10 +106,35 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// 2. verify block against previous block's state
 
-	newState, err := ch.State().Add(block)
+	newState, receipts, err := ch.State().Add(block)
 	if err != nil {
 		ch.log.Warn(err)
 		return err
+	}
+
+	if len(receipts) > 0 {
+		msg := "\nEpoch Receipts\n----------\n"
+		receiptTypes := make(map[primitives.ReceiptType]int64)
+
+		for _, r := range receipts {
+			if _, ok := receiptTypes[r.Type]; !ok {
+				receiptTypes[r.Type] = r.Amount
+			} else {
+				receiptTypes[r.Type] += r.Amount
+			}
+		}
+
+		for rt, amount := range receiptTypes {
+			if amount > 0 {
+				msg += fmt.Sprintf("rewarded %d for %s\n", amount, rt)
+			} else if amount < 0 {
+				msg += fmt.Sprintf("penalized %d for %s\n", -amount, rt)
+			} else {
+				msg += fmt.Sprintf("neutral increments for %s\n", rt)
+			}
+		}
+
+		ch.log.Debugf(msg)
 	}
 
 	return ch.db.Update(func(txn blockdb.DBUpdateTransaction) error {

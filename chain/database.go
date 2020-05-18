@@ -143,7 +143,7 @@ func (s *StateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 			return err
 		}
 
-		_, err = s.Add(bl)
+		_, _, err = s.Add(bl)
 		if err != nil {
 			return err
 		}

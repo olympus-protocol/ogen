@@ -81,6 +81,18 @@ func (c *Chain) GetNodeByHeight(height uint64) (*index.BlockRow, bool) {
 	return c.chain[height], true
 }
 
+// GetNodeBySlot returns the node at a specific slot.
+func (c *Chain) GetNodeBySlot(slot uint64) (*index.BlockRow, bool) {
+	tip := c.Tip()
+	if tip == nil {
+		return nil, false
+	}
+	if tip.Slot < slot {
+		return tip, true
+	}
+	return tip.GetAncestorAtSlot(slot), true
+}
+
 // NewBlockchain creates a new chain.
 func NewChain(genesisBlock *index.BlockRow) *Chain {
 	chain := make([]*index.BlockRow, 1, 1000)

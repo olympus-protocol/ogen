@@ -24,19 +24,22 @@ type BlockView interface {
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested
 // slot.
-func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log *logger.Logger) error {
+func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log *logger.Logger) ([]*EpochReceipt, error) {
+	totalReceipts := make([]*EpochReceipt, 0)
+
 	for s.Slot < requestedSlot {
 		// this only happens when there wasn't a block at the first slot of the epoch
 		if s.Slot/p.EpochLength > s.EpochIndex && s.Slot%p.EpochLength == 0 {
-			err := s.ProcessEpochTransition(p, log)
+			receipts, err := s.ProcessEpochTransition(p, log)
 			if err != nil {
-				return err
+				return nil, err
 			}
+			totalReceipts = append(totalReceipts, receipts...)
 		}
 
 		tip, err := view.Tip()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		s.ProcessSlot(p, tip)
@@ -44,5 +47,5 @@ func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.Cha
 		view.SetTipSlot(s.Slot)
 	}
 
-	return nil
+	return totalReceipts, nil
 }

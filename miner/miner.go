@@ -197,7 +197,7 @@ func (m *Miner) Start() error {
 					panic(err)
 				}
 
-				state, err := s.GetStateForHashAtSlot(tipHash, slotToVote, &view, &m.params)
+				state, _, err := s.GetStateForHashAtSlot(tipHash, slotToVote, &view, &m.params)
 				if err != nil {
 					panic(err)
 				}
@@ -205,12 +205,18 @@ func (m *Miner) Start() error {
 				validators := state.GetVoteCommittee(slotToVote, &m.params)
 				toEpoch := (slotToVote - 1) / m.params.EpochLength
 
+				beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
+				if !found {
+					panic("could not find block")
+				}
+
 				data := primitives.VoteData{
-					Slot:      slotToVote,
-					FromEpoch: state.JustifiedEpoch,
-					FromHash:  state.JustifiedEpochHash,
-					ToEpoch:   toEpoch,
-					ToHash:    state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
+					Slot:            slotToVote,
+					FromEpoch:       state.JustifiedEpoch,
+					FromHash:        state.JustifiedEpochHash,
+					ToEpoch:         toEpoch,
+					ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
+					BeaconBlockHash: beaconBlock.Hash,
 				}
 
 				dataHash := data.Hash()
@@ -252,7 +258,7 @@ func (m *Miner) Start() error {
 					return
 				}
 
-				state, err := s.GetStateForHashAtSlot(tipHash, slotToPropose, &view, &m.params)
+				state, _, err := s.GetStateForHashAtSlot(tipHash, slotToPropose, &view, &m.params)
 				if err != nil {
 					m.log.Error(err)
 					return

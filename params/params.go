@@ -26,7 +26,6 @@ type ChainParams struct {
 	BlockReductionPercentage   float64
 
 	EpochLength                  uint64
-	BlockTimeSpan                int64
 	EjectionBalance              uint64
 	MaxBalanceChurnQuotient      uint64
 	MaxVotesPerBlock             uint64
@@ -34,7 +33,7 @@ type ChainParams struct {
 	LatestBlockRootsLength       uint64
 	MinAttestationInclusionDelay uint64
 	DepositAmount                uint64
-	BaseRewardQuotient           uint64
+	BaseRewardPerBlock           uint64
 	UnitsPerCoin                 uint64
 	InactivityPenaltyQuotient    uint64
 	IncluderRewardQuotient       uint64
@@ -67,7 +66,6 @@ var Mainnet = ChainParams{
 	},
 	LastPreWorkersBlock:          500,
 	PreWorkersPubKeyHash:         "olpub12vjdayxm6eygqkxrtyvt0jnjxn8965wflynmf4d899pnkzp9glmslqcvce",
-	BlockTimeSpan:                120,    // 120 seconds
 	BlocksReductionCycle:         262800, // 1 year
 	SuperBlockCycle:              21600,  // 1 month
 	SuperBlockStartHeight:        0,      // TODO define
@@ -75,7 +73,7 @@ var Mainnet = ChainParams{
 	ProfitSharingStartCycle:      0,      // TODO define
 	GovernanceBudgetPercentage:   0.2,    // 20%
 	BlockReductionPercentage:     0.2,    // 20%
-	BaseRewardQuotient:           1024,
+	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	GovernanceProposalFee:        amount.AmountType(50), // 50 POLIS
 	EpochLength:                  5,
@@ -110,12 +108,11 @@ var TestNet = ChainParams{
 	},
 	LastPreWorkersBlock:          10,
 	PreWorkersPubKeyHash:         "1HWfiw9Lbg2vh8A1sZDsp5BVLHeW41V13R", // 5JbK2h1P7BQTmwJgCPRonJzCqRMNpFPvsAPTwrHBdT7DmEzzsUK
-	BlockTimeSpan:                60,                                   // 60 seconds
 	BlocksReductionCycle:         259200,                               // 6 months
 	SuperBlockCycle:              1440,                                 // 1 day
 	GovernanceBudgetPercentage:   0.2,                                  // 20%
 	BlockReductionPercentage:     0.2,                                  // 20%
-	BaseRewardQuotient:           1024,
+	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
 	EjectionBalance:              1000,
