@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -53,28 +54,38 @@ type InitializationParameters struct {
 }
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
-func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) *State {
+func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (*State, error) {
 	initialValidators := make([]Worker, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
+		_, pkh, err := bech32.Decode(v.PayeeAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(pkh) != 20 {
+			return nil, fmt.Errorf("expected payee address to be length 20, got %d", len(pkh))
+		}
+
+		var pkhBytes [20]byte
+		copy(pkhBytes[:], pkh)
+
 		initialValidators[i] = Worker{
-			OutPoint: OutPoint{
-				TxHash: [32]byte{},
-				Index:  0,
-			},
-			Balance:      p.DepositAmount * p.UnitsPerCoin,
-			PubKey:       v.PubKey,
-			PayeeAddress: v.PayeeAddress,
-			Status:       StatusActive,
+			Balance:          p.DepositAmount * p.UnitsPerCoin,
+			PubKey:           v.PubKey,
+			PayeeAddress:     pkhBytes,
+			Status:           StatusActive,
+			FirstActiveEpoch: 0,
+			LastActiveEpoch:  -1,
 		}
 	}
 
-	premineAddr, _ := hex.DecodeString("d6a0ebece6b6f9027236157a519ccffe14084f0d")
+	premineAddr, _ := hex.DecodeString("3ef0b7dc02ecffc7e7ddac52ff0f689b8b838e49")
 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)
 
-	return &State{
+	s := &State{
 		UtxoState: UtxoState{
 			Balances: map[[20]byte]uint64{
 				premineAddrArr: 1000 * 1000000, // 1 million coins
@@ -93,8 +104,6 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		NextRANDAO:                    chainhash.Hash{},
 		Slot:                          0,
 		EpochIndex:                    0,
-		ProposerQueue:                 DetermineNextProposers(chainhash.Hash{}, initialValidators, p),
-		NextProposerQueue:             DetermineNextProposers(chainhash.Hash{}, initialValidators, p),
 		JustificationBitfield:         0,
 		JustifiedEpoch:                0,
 		FinalizedEpoch:                0,
@@ -105,4 +114,12 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		PreviousJustifiedEpochHash:    genesisHash,
 		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
 	}
+
+	activeValidators := s.GetValidatorIndicesActiveAt(0)
+	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+
+	return s, nil
 }

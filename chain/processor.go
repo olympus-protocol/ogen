@@ -19,10 +19,10 @@ type blockRowAndValidator struct {
 func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
-	activeValidatorIndices := justifiedState.GetActiveValidatorIndices()
+	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(int64(justifiedState.EpochIndex))
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
-		bl, err := ch.getLatestAttestationTarget(txn, i)
+		bl, err := ch.getLatestAttestationTarget(i)
 		if err != nil {
 			continue
 		}
@@ -80,14 +80,14 @@ func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(txn blockdb.DBViewTransaction, validator uint32) (row *index.BlockRow, err error) {
+func (ch *Blockchain) getLatestAttestationTarget(validator uint32) (row *index.BlockRow, err error) {
 	var att *primitives.MultiValidatorVote
-	att, err = txn.GetLatestVote(validator)
-	if err != nil {
-		return nil, err
+	att, ok := ch.state.GetLatestVote(validator)
+	if !ok {
+		return nil, fmt.Errorf("attestation target not found")
 	}
 
-	row, ok := ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
+	row, ok = ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
 	if !ok {
 		return nil, errors.New("couldn't find block attested to by validator in index")
 	}
@@ -105,10 +105,6 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	}
 
 	// 2. verify block against previous block's state
-	oldState, found := ch.state.GetStateForHash(block.Header.PrevBlockHash)
-	if !found {
-		return fmt.Errorf("missing parent block state: %s", block.Header.PrevBlockHash)
-	}
 
 	newState, err := ch.State().Add(block)
 	if err != nil {
@@ -138,22 +134,9 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		}
 
 		for _, a := range block.Votes {
-			min, max := oldState.GetVoteCommittee(a.Data.Slot, &ch.params)
+			validators := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
 
-			validators := make([]uint32, 0, max-min)
-
-			for i := range a.ParticipationBitfield {
-				for j := 0; j < 8; j++ {
-					if a.ParticipationBitfield[i]&(1<<uint(j)) != 0 {
-						validator := uint32(i*8+j) + min
-						validators = append(validators, validator)
-					}
-				}
-			}
-
-			if err := txn.SetLatestVoteIfNeeded(validators, &a); err != nil {
-				return err
-			}
+			ch.state.SetLatestVotesIfNeeded(validators, &a)
 		}
 
 		rowHash := row.Hash
@@ -200,7 +183,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// TODO: delete state before finalized
 
-		ch.log.Infof("New block accepted. Hash: %v, Slot: %d", block.Hash(), block.Header.Slot)
+		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.FinalizedEpoch, newState.JustifiedEpoch)
 
 		ch.notifeeLock.RLock()
 		for i := range ch.notifees {

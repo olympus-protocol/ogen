@@ -31,6 +31,20 @@ func (b *Wallet) GetBalance(addr string) (uint64, error) {
 	return out, nil
 }
 
+// GetAddressRaw returns the pubkey hash of the wallet.
+func (b *Wallet) GetAddressRaw() ([20]byte, error) {
+	_, pkh, err := bech32.Decode(b.info.address)
+	if err != nil {
+		return [20]byte{}, err
+	}
+	if len(pkh) != 20 {
+		return [20]byte{}, fmt.Errorf("expecting address to be 20 bytes, but got %d bytes", len(pkh))
+	}
+	var pkhBytes [20]byte
+	copy(pkhBytes[:], pkh)
+	return pkhBytes, nil
+}
+
 func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
 	buf := bytes.NewBuffer([]byte{})
 	err := payload.Encode(buf)
@@ -41,6 +55,132 @@ func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
 	if err := b.txTopic.Publish(b.ctx, buf.Bytes()); err != nil {
 		b.log.Errorf("error broadcasting transaction: %s", err)
 	}
+}
+
+func (b *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
+	buf := bytes.NewBuffer([]byte{})
+	err := deposit.Encode(buf)
+	if err != nil {
+		b.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := b.depositTopic.Publish(b.ctx, buf.Bytes()); err != nil {
+		b.log.Errorf("error broadcasting transaction: %s", err)
+	}
+}
+
+// StartValidator signs a validator deposit.
+func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
+	priv, err := b.unlockIfNeeded(authentication)
+	if err != nil {
+		return nil, err
+	}
+	pub := priv.DerivePublicKey()
+
+	validatorPriv, err := bls.DeserializeSecretKey(validatorPrivBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	validatorPub := validatorPriv.DerivePublicKey()
+	validatorPubBytes := validatorPub.Serialize()
+	validatorPubHash := chainhash.HashH(validatorPubBytes[:])
+
+	validatorProofOfPossession, err := bls.Sign(validatorPriv, validatorPubHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := b.GetAddressRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	depositData := &primitives.DepositData{
+		PublicKey:         *validatorPub,
+		ProofOfPossession: *validatorProofOfPossession,
+		WithdrawalAddress: addr,
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+
+	if err := depositData.Encode(buf); err != nil {
+		return nil, err
+	}
+
+	depositHash := chainhash.HashH(buf.Bytes())
+
+	depositSig, err := bls.Sign(priv, depositHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	deposit := &primitives.Deposit{
+		PublicKey: *pub,
+		Signature: *depositSig,
+		Data:      *depositData,
+	}
+
+	currentState := b.chain.State().TipState()
+
+	if err := b.actionMempool.AddDeposit(deposit, currentState); err != nil {
+		return nil, err
+	}
+
+	b.broadcastDeposit(deposit)
+
+	return deposit, nil
+}
+
+func (b *Wallet) broadcastExit(exit *primitives.Exit) {
+	buf := bytes.NewBuffer([]byte{})
+	err := exit.Encode(buf)
+	if err != nil {
+		b.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := b.exitTopic.Publish(b.ctx, buf.Bytes()); err != nil {
+		b.log.Errorf("error broadcasting transaction: %s", err)
+	}
+}
+
+// ExitValidator submits an exit transaction for a certain validator.
+func (w *Wallet) ExitValidator(authentication []byte, validatorPubKey [48]byte) (*primitives.Exit, error) {
+	priv, err := w.unlockIfNeeded(authentication)
+	if err != nil {
+		return nil, err
+	}
+
+	validatorPub, err := bls.DeserializePublicKey(validatorPubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	currentState := w.chain.State().TipState()
+
+	pub := priv.DerivePublicKey()
+
+	msg := fmt.Sprintf("exit %x", validatorPub.Serialize())
+	msgHash := chainhash.HashH([]byte(msg))
+
+	sig, err := bls.Sign(priv, msgHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	exit := &primitives.Exit{
+		ValidatorPubkey: *validatorPub,
+		WithdrawPubkey:  *pub,
+		Signature:       *sig,
+	}
+
+	if err := w.actionMempool.AddExit(exit, currentState); err != nil {
+		return nil, err
+	}
+
+	w.broadcastExit(exit)
+
+	return exit, nil
 }
 
 // SendToAddress sends an amount to an address with the given password and parameters.

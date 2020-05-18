@@ -5,6 +5,7 @@ package bls
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -88,9 +89,12 @@ func (s SecretKey) ToBech32(prefixes Prefixes, contract bool) string {
 }
 
 // DeserializeSecretKey deserializes a secret key from bytes.
-func DeserializeSecretKey(b [32]byte) SecretKey {
+func DeserializeSecretKey(b [32]byte) (*SecretKey, error) {
 	k := bls.DeserializeSecretKey(b)
-	return SecretKey{*k}
+	if k == nil {
+		return nil, fmt.Errorf("invalid secret key")
+	}
+	return &SecretKey{*k}, nil
 }
 
 // DeriveSecretKey deserializes a secret key from bytes.
@@ -99,7 +103,7 @@ func DeriveSecretKey(b [32]byte) SecretKey {
 	return SecretKey{*k}
 }
 
-func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (SecretKey, error) {
+func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (*SecretKey, error) {
 	var prefix string
 	if contract {
 		prefix = prefixes.ContractPrivKey
@@ -108,15 +112,15 @@ func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (Secre
 	}
 	net, privKeyBytes, err := bech32.Decode(secret)
 	if err != nil {
-		return SecretKey{}, err
+		return nil, err
 	}
 	if net != prefix {
-		return SecretKey{}, errors.New("key networks doesn't match")
+		return nil, errors.New("key networks doesn't match")
 	}
 	var rawPriv [32]byte
 	buf := bytes.NewBuffer(rawPriv[:0])
 	buf.Write(privKeyBytes)
-	return DeserializeSecretKey(rawPriv), nil
+	return DeserializeSecretKey(rawPriv)
 }
 
 // PublicKey corresponding to secret key used in the BLS scheme.
@@ -124,16 +128,28 @@ type PublicKey struct {
 	p bls.PublicKey
 }
 
+// NewPublicKey constructs a new public key based on a raw public key from
+// the BLS library.
 func NewPublicKey(p *bls.PublicKey) *PublicKey {
 	return &PublicKey{p: *p}
 }
 
+// ToBech32 converts the public key to a Bech32 address.
 func (p PublicKey) ToBech32(prefixes Prefixes) (string, error) {
 	out := make([]byte, 20)
 	pkS := p.p.Serialize()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return bech32.Encode(prefixes.PubKey, out), nil
+}
+
+// Hash calculates the hash of the public key.
+func (p PublicKey) Hash() [20]byte {
+	pkS := p.p.Serialize()
+	h := chainhash.HashH(pkS[:])
+	var hBytes [20]byte
+	copy(hBytes[:], h[:])
+	return hBytes
 }
 
 func (p PublicKey) String() string {

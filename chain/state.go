@@ -85,12 +85,40 @@ type StateService struct {
 	headLock      sync.Mutex
 	finalizedHead blockNodeAndState
 	justifiedHead blockNodeAndState
+
+	latestVotes     map[uint32]*primitives.MultiValidatorVote
+	latestVotesLock sync.RWMutex
 }
 
+// GetLatestVote gets the latest vote for this validator.
+func (s *StateService) GetLatestVote(val uint32) (*primitives.MultiValidatorVote, bool) {
+	s.latestVotesLock.RLock()
+	s.latestVotesLock.RUnlock()
+
+	v, ok := s.latestVotes[val]
+
+	return v, ok
+}
+
+// SetLatestVotesIfNeeded sets the latest vote for this validator.
+func (s *StateService) SetLatestVotesIfNeeded(vals []uint32, vote *primitives.MultiValidatorVote) {
+	s.latestVotesLock.Lock()
+	defer s.latestVotesLock.Unlock()
+	for _, v := range vals {
+		oldVote, ok := s.latestVotes[v]
+		if ok && oldVote.Data.Slot >= vote.Data.Slot {
+			continue
+		}
+		s.latestVotes[v] = vote
+	}
+}
+
+// Chain gets the blockchain.
 func (s *StateService) Chain() *Chain {
 	return s.blockChain
 }
 
+// Index gets the block index.
 func (s *StateService) Index() *index.BlockIndex {
 	return s.blockIndex
 }
@@ -233,6 +261,7 @@ func (s *StateService) Add(block *primitives.Block) (*primitives.State, error) {
 	return &newState, nil
 }
 
+// RemoveBeforeSlot removes state before a certain slot.
 func (s *StateService) RemoveBeforeSlot(slot uint64) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -274,7 +303,10 @@ func NewStateService(log *logger.Logger, ip primitives.InitializationParameters,
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 
-	genesisState := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	genesisState, err := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	if err != nil {
+		return nil, err
+	}
 
 	ss := &StateService{
 		params: params,
@@ -282,9 +314,10 @@ func NewStateService(log *logger.Logger, ip primitives.InitializationParameters,
 		stateMap: map[chainhash.Hash]*stateDerivedFromBlock{
 			genesisHash: newStateDerivedFromBlock(genesisState),
 		},
-		db: db,
+		latestVotes: make(map[uint32]*primitives.MultiValidatorVote),
+		db:          db,
 	}
-	err := ss.initChainState(db, params, *genesisState)
+	err = ss.initChainState(db, params, *genesisState)
 	if err != nil {
 		return nil, err
 	}

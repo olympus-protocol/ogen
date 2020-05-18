@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -10,21 +11,152 @@ import (
 )
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) (min uint32, max uint32) {
-	numValidatorsAtSlot := uint32(uint64(len(s.ValidatorRegistry))/p.EpochLength) + 1
-	slotIndex := uint32(slot % p.EpochLength)
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) []uint32 {
+	if (slot-1)/p.EpochLength == s.EpochIndex {
+		assignments := s.CurrentEpochVoteAssignments
+		slotIndex := uint64(slot % p.EpochLength)
+		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
+		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
-	min = slotIndex * numValidatorsAtSlot
-	max = min + numValidatorsAtSlot
+		return assignments[min:max]
+	} else if (slot-1)/p.EpochLength == s.EpochIndex-1 {
+		assignments := s.PreviousEpochVoteAssignments
+		slotIndex := uint64(slot % p.EpochLength)
+		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
+		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
-	if max >= uint32(len(s.ValidatorRegistry)) {
-		max = uint32(len(s.ValidatorRegistry) - 1)
+		return assignments[min:max]
 	}
 
-	return
+	// TODO: better handling
+	panic("Tried to get vote committee out of range")
 }
 
+// IsExitValid checks if an exit is valid.
+func (s *State) IsExitValid(exit *Exit) error {
+	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Serialize())
+	msgHash := chainhash.HashH([]byte(msg))
+
+	valid, err := bls.VerifySig(&exit.WithdrawPubkey, msgHash[:], &exit.Signature)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return fmt.Errorf("exit signature is not valid")
+	}
+
+	pkh := exit.WithdrawPubkey.Hash()
+
+	pubkeySerialized := exit.ValidatorPubkey.Serialize()
+
+	foundActiveValidator := false
+	for _, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
+			if !bytes.Equal(v.PayeeAddress[:], pkh[:]) {
+				return fmt.Errorf("withdraw pubkey does not match withdraw address (expected: %x, got: %x)", pkh, v.PayeeAddress)
+			}
+
+			foundActiveValidator = true
+		}
+	}
+
+	if !foundActiveValidator {
+		return fmt.Errorf("could not find active validator with pubkey: %x", pubkeySerialized[:])
+	}
+
+	return nil
+}
+
+// ApplyExit processes an exit request.
+func (s *State) ApplyExit(exit *Exit) error {
+	if err := s.IsExitValid(exit); err != nil {
+		return err
+	}
+
+	pubkeySerialized := exit.ValidatorPubkey.Serialize()
+
+	for i, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
+			s.ValidatorRegistry[i].Status = StatusActivePendingExit
+			s.ValidatorRegistry[i].LastActiveEpoch = int64(s.EpochIndex) + 2
+		}
+	}
+
+	return nil
+}
+
+// IsDepositValid validates signatures and ensures that a deposit is valid.
+func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
+	pkh := deposit.PublicKey.Hash()
+	if s.UtxoState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
+		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.UtxoState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
+	}
+
+	// first validate signature
+	buf := bytes.NewBuffer([]byte{})
+
+	if err := deposit.Data.Encode(buf); err != nil {
+		return err
+	}
+
+	depositHash := chainhash.HashH(buf.Bytes())
+
+	valid, err := bls.VerifySig(&deposit.PublicKey, depositHash[:], &deposit.Signature)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("deposit signature is not valid")
+	}
+
+	validatorPubkey := deposit.Data.PublicKey.Serialize()
+
+	// now, ensure we don't already have this validator
+	for _, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey[:], validatorPubkey[:]) {
+			return fmt.Errorf("validator already registered")
+		}
+	}
+
+	pubkeyHash := chainhash.HashH(validatorPubkey[:])
+	valid, err = bls.VerifySig(&deposit.Data.PublicKey, pubkeyHash[:], &deposit.Data.ProofOfPossession)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("proof-of-possession is not valid")
+	}
+
+	return nil
+}
+
+// ApplyDeposit applies a deposit to the state.
+func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
+	if err := s.IsDepositValid(deposit, p); err != nil {
+		return err
+	}
+
+	pkh := deposit.PublicKey.Hash()
+
+	s.UtxoState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
+
+	s.ValidatorRegistry = append(s.ValidatorRegistry, Worker{
+		Balance:          p.DepositAmount * p.UnitsPerCoin,
+		PubKey:           deposit.Data.PublicKey.Serialize(),
+		PayeeAddress:     deposit.Data.WithdrawalAddress,
+		Status:           StatusStarting,
+		FirstActiveEpoch: int64(s.EpochIndex) + 2,
+		LastActiveEpoch:  -1,
+	})
+
+	return nil
+}
+
+// IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+	if v.Data.Slot == 0 {
+		return fmt.Errorf("slot out of range")
+	}
 	if v.Data.ToEpoch == s.EpochIndex {
 		if v.Data.FromEpoch != s.JustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
@@ -46,12 +178,12 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	}
 
 	aggPubs := bls.NewAggregatePublicKey()
-	min, max := s.GetVoteCommittee(v.Data.Slot, p)
+	validators := s.GetVoteCommittee(v.Data.Slot, p)
 	for i := range v.ParticipationBitfield {
 		for j := 0; j < 8; j++ {
-			validator := min + uint32((i*8)+j)
+			validator := uint32((i * 8) + j)
 
-			if validator > max {
+			if validator >= uint32(len(validators)) {
 				break
 			}
 
@@ -59,7 +191,9 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 				continue
 			}
 
-			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validator].PubKey)
+			validatorIdx := validators[validator]
+
+			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validatorIdx].PubKey)
 			if err != nil {
 				return err
 			}
@@ -125,6 +259,8 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	voteMerkleRoot := b.VotesMerkleRoot()
 	transactionMerkleRoot := b.TransactionMerkleRoot()
+	depositMerkleRoot := b.DepositMerkleRoot()
+	exitMerkleRoot := b.ExitMerkleRoot()
 
 	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
@@ -134,8 +270,28 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
 	}
 
+	if !b.Header.DepositMerkleRoot.IsEqual(&depositMerkleRoot) {
+		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
+	}
+
+	if !b.Header.ExitMerkleRoot.IsEqual(&exitMerkleRoot) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", exitMerkleRoot, b.Header.ExitMerkleRoot)
+	}
+
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
 		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes))
+	}
+
+	if uint64(len(b.Txs)) > p.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs))
+	}
+
+	if uint64(len(b.Deposits)) > p.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits))
+	}
+
+	if uint64(len(b.Exits)) > p.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
 	}
 
 	blockHash := b.Hash()
@@ -147,6 +303,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSig, err := bls.DeserializeSignature(b.RandaoSignature)
 	if err != nil {
 		return err
+	}
+
+	for _, d := range b.Deposits {
+		if err := s.ApplyDeposit(&d, p); err != nil {
+			return err
+		}
 	}
 
 	for _, tx := range b.Txs {
@@ -190,6 +352,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	for _, v := range b.Votes {
 		if err := s.processVote(&v, p, proposerIndex); err != nil {
+			return err
+		}
+	}
+
+	for _, e := range b.Exits {
+		if err := s.ApplyExit(&e); err != nil {
 			return err
 		}
 	}

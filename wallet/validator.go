@@ -9,14 +9,14 @@ import (
 )
 
 type ValidatorWallet struct {
-	db     *badger.DB
+	db *badger.DB
 }
 
 // Keystore is an interface to a simple keystore.
 type Keystore interface {
 	GenerateNewValidatorKey() (*bls.SecretKey, error)
 	GetValidatorKey(*primitives.Worker) (*bls.SecretKey, bool)
-	HasValidatorKey(*primitives.Worker) (bool, error)
+	HasValidatorKey([48]byte) (bool, error)
 	GetValidatorKeys() ([]*bls.SecretKey, error)
 	Close() error
 }
@@ -45,8 +45,11 @@ func (vw *ValidatorWallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
 			if len(val) == 32 {
 				var valBytes [32]byte
 				copy(valBytes[:], val)
-				secretKey := bls.DeserializeSecretKey(valBytes)
-				secKeys = append(secKeys, &secretKey)
+				secretKey, err := bls.DeserializeSecretKey(valBytes)
+				if err != nil {
+					return err
+				}
+				secKeys = append(secKeys, secretKey)
 			}
 		}
 		return nil
@@ -74,13 +77,14 @@ func (vw *ValidatorWallet) GetValidatorKey(worker *primitives.Worker) (*bls.Secr
 		return nil, false
 	}
 
-	secretKey := bls.DeserializeSecretKey(secretBytes)
-	return &secretKey, true
+	secretKey, err := bls.DeserializeSecretKey(secretBytes)
+	if err != nil {
+		return nil, false
+	}
+	return secretKey, true
 }
 
-func (vw *ValidatorWallet) HasValidatorKey(worker *primitives.Worker) (result bool, err error) {
-	pubBytes := worker.PubKey
-
+func (vw *ValidatorWallet) HasValidatorKey(pubBytes [48]byte) (result bool, err error) {
 	err = vw.db.View(func(txn *badger.Txn) error {
 		_, err := txn.Get(pubBytes[:])
 		if err == badger.ErrKeyNotFound {

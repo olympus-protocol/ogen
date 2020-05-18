@@ -117,18 +117,16 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 	}
 }
 
-// Get gets transactions to be included in a block.
-func (cm *CoinsMempool) Get(maxTransactions uint64, state primitives.State) []primitives.Tx {
+// Get gets transactions to be included in a block. Mutates state.
+func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]primitives.Tx, *primitives.State) {
 	cm.lock.RLock()
 	defer cm.lock.RUnlock()
 	allTransactions := make([]primitives.Tx, 0, maxTransactions)
 
-	stateTest := state.Copy()
-
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := stateTest.UtxoState.ApplyTransaction(&tx, [20]byte{}); err != nil {
+			if err := state.UtxoState.ApplyTransaction(&tx, [20]byte{}); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, primitives.Tx{
@@ -143,7 +141,7 @@ outer:
 	}
 
 	// we can prioritize here, but we aren't to keep it simple
-	return allTransactions
+	return allTransactions, state
 }
 
 func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {

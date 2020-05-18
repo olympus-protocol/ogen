@@ -39,6 +39,8 @@ type ChainParams struct {
 	InactivityPenaltyQuotient    uint64
 	IncluderRewardQuotient       uint64
 	SlotDuration                 uint64
+	MaxDepositsPerBlock          uint64
+	MaxExitsPerBlock             uint64
 
 	ChainFileHash chainhash.Hash
 	ChainFileURL  string
@@ -77,16 +79,18 @@ var Mainnet = ChainParams{
 	IncluderRewardQuotient:       8,
 	GovernanceProposalFee:        amount.AmountType(50), // 50 POLIS
 	EpochLength:                  5,
-	EjectionBalance:              1000,
-	MaxBalanceChurnQuotient:      32,
+	EjectionBalance:              1000, // POLIS
+	MaxBalanceChurnQuotient:      8,
 	MaxVotesPerBlock:             32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                10000,
-	UnitsPerCoin:                 100000000,
+	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 60,
 	MaxTxsPerBlock:               1000,
+	MaxDepositsPerBlock:          32,
+	MaxExitsPerBlock:             32,
 }
 
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
@@ -120,10 +124,12 @@ var TestNet = ChainParams{
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                10000,
-	UnitsPerCoin:                 100000000,
+	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 2,
 	MaxTxsPerBlock:               1000,
 	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
+	MaxDepositsPerBlock:          32,
+	MaxExitsPerBlock:             32,
 }

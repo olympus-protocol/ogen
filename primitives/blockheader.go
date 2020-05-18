@@ -12,15 +12,17 @@ import (
 var MaxBlockHeaderBytes = 76
 
 type BlockHeader struct {
-	Version        int32
-	Nonce          int32
-	TxMerkleRoot   chainhash.Hash
-	VoteMerkleRoot chainhash.Hash
-	PrevBlockHash  chainhash.Hash
-	Timestamp      time.Time
-	Slot           uint64
-	StateRoot      chainhash.Hash
-	FeeAddress     [20]byte
+	Version           int32
+	Nonce             int32
+	TxMerkleRoot      chainhash.Hash
+	VoteMerkleRoot    chainhash.Hash
+	DepositMerkleRoot chainhash.Hash
+	ExitMerkleRoot    chainhash.Hash
+	PrevBlockHash     chainhash.Hash
+	Timestamp         time.Time
+	Slot              uint64
+	StateRoot         chainhash.Hash
+	FeeAddress        [20]byte
 }
 
 func (bh *BlockHeader) Serialize(w io.Writer) error {
