@@ -58,13 +58,6 @@ func (s *Server) Start() {
 			log.Fatalln("unable to start miner thread")
 		}
 	}
-	switch s.config.Mode {
-	case "api":
-		// err := explorer.LoadApi(s.config, s.Chain, s.HostNode)
-		// if err != nil {
-		// 	log.Fatal("unable to start api")
-		// }
-	}
 }
 
 func (s *Server) Stop() error {

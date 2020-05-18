@@ -172,7 +172,6 @@ Next generation blockchain secured by CASPER.`,
 				AddNodes:      addNodes,
 				Port:          int32(viper.GetUint("port")),
 				MaxPeers:      int32(viper.GetUint("maxpeers")),
-				Mode:          viper.GetString("mode"),
 				MiningEnabled: viper.GetBool("enablemining"),
 				RPCAddress:    viper.GetString("rpclisten"),
 			}
@@ -205,7 +204,6 @@ func init() {
 	rootCmd.Flags().String("listen", "0.0.0.0:24126", "listen for new connections")
 	rootCmd.Flags().String("network", "testnet", "network name to use (testnet or mainnet)")
 	rootCmd.Flags().Uint16("maxpeers", 9, "maximum peers to connect to or allow connections for")
-	rootCmd.Flags().String("mode", "node", "type of node to run")
 	rootCmd.Flags().StringSlice("connect", []string{}, "IP addresses of nodes to connect to initially")
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add")
 	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")

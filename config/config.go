@@ -27,7 +27,6 @@ type Config struct {
 	AddNodes      []peer.AddrInfo
 	Port          int32
 	MaxPeers      int32
-	Mode          string
 	MiningEnabled bool
 	InitConfig    primitives.InitializationParameters
 }
