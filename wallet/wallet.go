@@ -37,6 +37,7 @@ type Wallet struct {
 
 	txTopic      *pubsub.Topic
 	depositTopic *pubsub.Topic
+	exitTopic    *pubsub.Topic
 
 	hasMaster bool
 
@@ -65,6 +66,11 @@ func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *cha
 		return nil, err
 	}
 
+	exitTopic, err := hostnode.Topic("exits")
+	if err != nil {
+		return nil, err
+	}
+
 	w := &Wallet{
 		db:              walletDB,
 		hasMaster:       false,
@@ -73,6 +79,7 @@ func NewWallet(ctx context.Context, c Config, params params.ChainParams, ch *cha
 		chain:           ch,
 		txTopic:         txTopic,
 		depositTopic:    depositTopic,
+		exitTopic:       exitTopic,
 		mempool:         mempool,
 		ctx:             ctx,
 		actionMempool:   actionMempool,

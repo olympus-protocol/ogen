@@ -132,6 +132,57 @@ func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]by
 	return deposit, nil
 }
 
+func (b *Wallet) broadcastExit(exit *primitives.Exit) {
+	buf := bytes.NewBuffer([]byte{})
+	err := exit.Encode(buf)
+	if err != nil {
+		b.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := b.exitTopic.Publish(b.ctx, buf.Bytes()); err != nil {
+		b.log.Errorf("error broadcasting transaction: %s", err)
+	}
+}
+
+// ExitValidator submits an exit transaction for a certain validator.
+func (w *Wallet) ExitValidator(authentication []byte, validatorPubKey [48]byte) (*primitives.Exit, error) {
+	priv, err := w.unlockIfNeeded(authentication)
+	if err != nil {
+		return nil, err
+	}
+
+	validatorPub, err := bls.DeserializePublicKey(validatorPubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	currentState := w.chain.State().TipState()
+
+	pub := priv.DerivePublicKey()
+
+	msg := fmt.Sprintf("exit %x", validatorPub.Serialize())
+	msgHash := chainhash.HashH([]byte(msg))
+
+	sig, err := bls.Sign(priv, msgHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	exit := &primitives.Exit{
+		ValidatorPubkey: *validatorPub,
+		WithdrawPubkey:  *pub,
+		Signature:       *sig,
+	}
+
+	if err := w.actionMempool.AddExit(exit, currentState); err != nil {
+		return nil, err
+	}
+
+	w.broadcastExit(exit)
+
+	return exit, nil
+}
+
 // SendToAddress sends an amount to an address with the given password and parameters.
 func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) (*chainhash.Hash, error) {
 	priv, err := b.unlockIfNeeded(authentication)

@@ -145,3 +145,27 @@ func (c *RPCClient) StartValidator(privkey [32]byte, askpass func() ([]byte, err
 
 	return deposit, err
 }
+
+// ExitValidator exits a validator by signing a exit.
+func (c *RPCClient) ExitValidator(pubkey [48]byte, askpass func() ([]byte, error)) (*ExitValidatorResponse, error) {
+	exit := new(ExitValidatorResponse)
+
+	err := c.Call("Wallet.ExitValidator", &ExitValidatorRequest{
+		ValidatorPubKey: pubkey,
+		Password:        []byte{},
+	}, exit)
+	if err.Error() == "wallet locked, need authentication" {
+		pass, err := askpass()
+		if err != nil {
+			return nil, err
+		}
+		err = c.Call("Wallet.ExitValidator", &ExitValidatorRequest{
+			ValidatorPubKey: pubkey,
+			Password:        pass,
+		}, exit)
+
+		return exit, err
+	}
+
+	return exit, err
+}

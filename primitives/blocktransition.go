@@ -37,7 +37,7 @@ func (s *State) IsExitValid(exit *Exit) error {
 	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Serialize())
 	msgHash := chainhash.HashH([]byte(msg))
 
-	valid, err := bls.VerifySig(&exit.ValidatorPubkey, msgHash[:], &exit.Signature)
+	valid, err := bls.VerifySig(&exit.WithdrawPubkey, msgHash[:], &exit.Signature)
 	if err != nil {
 		return err
 	}
@@ -45,11 +45,17 @@ func (s *State) IsExitValid(exit *Exit) error {
 		return fmt.Errorf("exit signature is not valid")
 	}
 
+	pkh := exit.WithdrawPubkey.Hash()
+
 	pubkeySerialized := exit.ValidatorPubkey.Serialize()
 
 	foundActiveValidator := false
 	for _, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
+			if !bytes.Equal(v.PayeeAddress[:], pkh[:]) {
+				return fmt.Errorf("withdraw pubkey does not match withdraw address (expected: %x, got: %x)", pkh, v.PayeeAddress)
+			}
+
 			foundActiveValidator = true
 		}
 	}
@@ -72,6 +78,7 @@ func (s *State) ApplyExit(exit *Exit) error {
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
 			s.ValidatorRegistry[i].Status = StatusActivePendingExit
+			s.ValidatorRegistry[i].LastActiveEpoch = int64(s.EpochIndex) + 2
 		}
 	}
 

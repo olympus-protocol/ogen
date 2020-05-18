@@ -155,3 +155,28 @@ func (w *Wallet) StartValidator(req *http.Request, args *StartValidatorRequest, 
 	}
 	return nil
 }
+
+// ExitValidatorRequest is the request to exit a validator.
+type ExitValidatorRequest struct {
+	ValidatorPubKey [48]byte
+	Password        []byte
+}
+
+// ExitValidatorResponse is the response to exiting a validator.
+type ExitValidatorResponse struct {
+	Success bool
+}
+
+// ExitValidator exits the validator.
+func (w *Wallet) ExitValidator(req *http.Request, args *ExitValidatorRequest, reply *ExitValidatorResponse) error {
+	_, err := w.wallet.ExitValidator(args.Password, args.ValidatorPubKey)
+	if err != nil {
+		return err
+	}
+
+	*reply = ExitValidatorResponse{
+		Success: true,
+	}
+
+	return nil
+}

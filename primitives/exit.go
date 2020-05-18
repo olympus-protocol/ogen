@@ -12,6 +12,7 @@ import (
 // Exit exits the validator from the queue.
 type Exit struct {
 	ValidatorPubkey bls.PublicKey
+	WithdrawPubkey  bls.PublicKey
 	Signature       bls.Signature
 }
 
@@ -19,16 +20,18 @@ type Exit struct {
 func (e *Exit) Encode(w io.Writer) error {
 	sigBytes := e.Signature.Serialize()
 	pubBytes := e.ValidatorPubkey.Serialize()
+	withdrawPub := e.WithdrawPubkey.Serialize()
 
-	return serializer.WriteElements(w, sigBytes, pubBytes)
+	return serializer.WriteElements(w, sigBytes, pubBytes, withdrawPub)
 }
 
 // Decode decodes the exit from the given reader.
 func (e *Exit) Decode(r io.Reader) error {
 	var sigBytes [96]byte
 	var pubBytes [48]byte
+	var withdrawPubBytes [48]byte
 
-	if err := serializer.ReadElements(r, &sigBytes, &pubBytes); err != nil {
+	if err := serializer.ReadElements(r, &sigBytes, &pubBytes, &withdrawPubBytes); err != nil {
 		return err
 	}
 
@@ -40,9 +43,14 @@ func (e *Exit) Decode(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	withdrawPub, err := bls.DeserializePublicKey(withdrawPubBytes)
+	if err != nil {
+		return err
+	}
 
 	e.ValidatorPubkey = *pub
 	e.Signature = *sig
+	e.WithdrawPubkey = *withdrawPub
 
 	return nil
 }

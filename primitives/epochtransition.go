@@ -167,7 +167,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 	for idx, validator := range s.ValidatorRegistry {
 		index := uint32(idx)
 
-		if validator.Status == StatusActivePendingExit {
+		if validator.Status == StatusActivePendingExit && validator.LastActiveEpoch <= int64(s.EpochIndex) {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
