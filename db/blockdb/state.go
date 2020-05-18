@@ -2,7 +2,6 @@ package blockdb
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -163,71 +162,6 @@ func setKey(tx *BlockDBUpdateTransaction, key []byte, to []byte) error {
 
 var latestVotePrefix = []byte("latest-vote")
 
-// GetLatestVote gets the latest vote by a validator.
-func (brt *BlockDBReadTransaction) GetLatestVote(validator uint32) (*primitives.MultiValidatorVote, error) {
-	var validatorBytes [4]byte
-	binary.BigEndian.PutUint32(validatorBytes[:], validator)
-	key := append(latestVotePrefix, validatorBytes[:]...)
-
-	voteSer, err := getKey(brt, key)
-	if err != nil {
-		return nil, err
-	}
-
-	vote := new(primitives.MultiValidatorVote)
-	err = vote.Deserialize(bytes.NewBuffer(voteSer))
-	return vote, err
-}
-
-// SetLatestVoteIfNeeded sets the latest for a validator.
-func (but *BlockDBUpdateTransaction) SetLatestVoteIfNeeded(validators []uint32, vote *primitives.MultiValidatorVote) error {
-	buf := bytes.NewBuffer([]byte{})
-
-	err := vote.Serialize(buf)
-	if err != nil {
-		return err
-	}
-	for _, validator := range validators {
-		var validatorBytes [4]byte
-		binary.BigEndian.PutUint32(validatorBytes[:], validator)
-		key := append(latestVotePrefix, validatorBytes[:]...)
-
-		existingItem, err := but.transaction.Get(key)
-		if err == badger.ErrKeyNotFound {
-			err := but.transaction.Set(key, buf.Bytes())
-			if err != nil {
-				return err
-			}
-			continue
-		}
-		if err != nil {
-			return err
-		}
-
-		existingBytes, err := existingItem.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		existingBytesBuf := bytes.NewBuffer(existingBytes)
-
-		oldVote := new(primitives.MultiValidatorVote)
-		err = oldVote.Deserialize(existingBytesBuf)
-		if err != nil {
-			return err
-		}
-
-		if oldVote.Data.Slot >= vote.Data.Slot {
-			continue
-		}
-
-		if err := but.transaction.Set(key, buf.Bytes()); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 var tipKey = []byte("chain-tip")
 
 // SetTip sets the current best tip of the blockchain.
@@ -374,7 +308,6 @@ type DB interface {
 // DBTransactionRead is a transaction to view the state of the database.
 type DBViewTransaction interface {
 	GetRawBlock(hash chainhash.Hash) (*primitives.Block, error)
-	GetLatestVote(validator uint32) (*primitives.MultiValidatorVote, error)
 	GetTip() (chainhash.Hash, error)
 	GetFinalizedState() (*primitives.State, error)
 	GetJustifiedState() (*primitives.State, error)
@@ -387,7 +320,6 @@ type DBViewTransaction interface {
 // DBTransaction is a transaction to update the state of the database.
 type DBUpdateTransaction interface {
 	AddRawBlock(block *primitives.Block) error
-	SetLatestVoteIfNeeded(validators []uint32, vote *primitives.MultiValidatorVote) error
 	SetTip(chainhash.Hash) error
 	SetFinalizedState(*primitives.State) error
 	SetJustifiedState(*primitives.State) error

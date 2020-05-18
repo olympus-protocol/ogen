@@ -22,7 +22,7 @@ func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(int64(justifiedState.EpochIndex))
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
-		bl, err := ch.getLatestAttestationTarget(txn, i)
+		bl, err := ch.getLatestAttestationTarget(i)
 		if err != nil {
 			continue
 		}
@@ -80,14 +80,14 @@ func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(txn blockdb.DBViewTransaction, validator uint32) (row *index.BlockRow, err error) {
+func (ch *Blockchain) getLatestAttestationTarget(validator uint32) (row *index.BlockRow, err error) {
 	var att *primitives.MultiValidatorVote
-	att, err = txn.GetLatestVote(validator)
-	if err != nil {
-		return nil, err
+	att, ok := ch.state.GetLatestVote(validator)
+	if !ok {
+		return nil, fmt.Errorf("attestation target not found")
 	}
 
-	row, ok := ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
+	row, ok = ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
 	if !ok {
 		return nil, errors.New("couldn't find block attested to by validator in index")
 	}
@@ -136,9 +136,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		for _, a := range block.Votes {
 			validators := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
 
-			if err := txn.SetLatestVoteIfNeeded(validators, &a); err != nil {
-				return err
-			}
+			ch.state.SetLatestVotesIfNeeded(validators, &a)
 		}
 
 		rowHash := row.Hash
