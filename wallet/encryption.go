@@ -39,9 +39,9 @@ func (b *Wallet) unlock(authentication []byte) (*bls.SecretKey, error) {
 	var secretKeyBytes [32]byte
 	copy(secretKeyBytes[:], masterSeed)
 
-	secKey := bls.DeriveSecretKey(secretKeyBytes)
+	secKey, err := bls.SecretKeyFromBytes(secretKeyBytes[:])
 
-	return &secKey, nil
+	return secKey, err
 }
 
 func (b *Wallet) unlockIfNeeded(authentication []byte) (*bls.SecretKey, error) {

@@ -75,21 +75,18 @@ func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]by
 	if err != nil {
 		return nil, err
 	}
-	pub := priv.DerivePublicKey()
+	pub := priv.PublicKey()
 
-	validatorPriv, err := bls.DeserializeSecretKey(validatorPrivBytes)
+	validatorPriv, err := bls.SecretKeyFromBytes(validatorPrivBytes[:])
 	if err != nil {
 		return nil, err
 	}
 
-	validatorPub := validatorPriv.DerivePublicKey()
-	validatorPubBytes := validatorPub.Serialize()
+	validatorPub := validatorPriv.PublicKey()
+	validatorPubBytes := validatorPub.Marshal()
 	validatorPubHash := chainhash.HashH(validatorPubBytes[:])
 
-	validatorProofOfPossession, err := bls.Sign(validatorPriv, validatorPubHash[:])
-	if err != nil {
-		return nil, err
-	}
+	validatorProofOfPossession := validatorPriv.Sign(validatorPubHash[:])
 
 	addr, err := b.GetAddressRaw()
 	if err != nil {
@@ -110,10 +107,7 @@ func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]by
 
 	depositHash := chainhash.HashH(buf.Bytes())
 
-	depositSig, err := bls.Sign(priv, depositHash[:])
-	if err != nil {
-		return nil, err
-	}
+	depositSig := priv.Sign(depositHash[:])
 
 	deposit := &primitives.Deposit{
 		PublicKey: *pub,
@@ -151,22 +145,19 @@ func (w *Wallet) ExitValidator(authentication []byte, validatorPubKey [48]byte) 
 		return nil, err
 	}
 
-	validatorPub, err := bls.DeserializePublicKey(validatorPubKey)
+	validatorPub, err := bls.PublicKeyFromBytes(validatorPubKey[:])
 	if err != nil {
 		return nil, err
 	}
 
 	currentState := w.chain.State().TipState()
 
-	pub := priv.DerivePublicKey()
+	pub := priv.PublicKey()
 
-	msg := fmt.Sprintf("exit %x", validatorPub.Serialize())
+	msg := fmt.Sprintf("exit %x", validatorPub.Marshal())
 	msgHash := chainhash.HashH([]byte(msg))
 
-	sig, err := bls.Sign(priv, msgHash[:])
-	if err != nil {
-		return nil, err
-	}
+	sig := priv.Sign(msgHash[:])
 
 	exit := &primitives.Exit{
 		ValidatorPubkey: *validatorPub,
@@ -203,7 +194,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 
 	copy(toPkh[:], data)
 
-	pub := priv.DerivePublicKey()
+	pub := priv.PublicKey()
 
 	b.lastNonceLock.Lock()
 	b.info.lastNonce++
@@ -219,10 +210,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 	}
 
 	sigMsg := payload.SignatureMessage()
-	sig, err := bls.Sign(priv, sigMsg[:])
-	if err != nil {
-		return nil, err
-	}
+	sig := priv.Sign(sigMsg[:])
 
 	payload.Signature = *sig
 

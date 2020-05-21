@@ -49,7 +49,7 @@ const (
 // Worker is a worker in the queue.
 type Worker struct {
 	Balance          uint64
-	PubKey           [48]byte
+	PubKey           []byte
 	PayeeAddress     [20]byte
 	Status           WorkerStatus
 	FirstActiveEpoch int64
@@ -70,12 +70,23 @@ func (wr *Worker) IsActiveAtEpoch(epoch int64) bool {
 
 // Serialize serializes a WorkerRow to the provided writer.
 func (wr *Worker) Serialize(w io.Writer) error {
-	return serializer.WriteElements(w, wr.Balance, wr.PubKey, wr.PayeeAddress, wr.Status, wr.FirstActiveEpoch, wr.LastActiveEpoch)
+	if err := serializer.WriteElements(w, wr.Balance, wr.PayeeAddress, wr.Status, wr.FirstActiveEpoch, wr.LastActiveEpoch); err != nil {
+		return err
+	}
+	return serializer.WriteVarBytes(w, wr.PubKey)
 }
 
 // Deserialize deserializes a worker row from the provided reader.
 func (wr *Worker) Deserialize(r io.Reader) error {
-	return serializer.ReadElements(r, &wr.Balance, &wr.PubKey, &wr.PayeeAddress, &wr.Status, &wr.FirstActiveEpoch, &wr.LastActiveEpoch)
+	if err := serializer.ReadElements(r, &wr.Balance, &wr.PayeeAddress, &wr.Status, &wr.FirstActiveEpoch, &wr.LastActiveEpoch); err != nil {
+		return err
+	}
+	pub, err := serializer.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	wr.PubKey = pub
+	return nil
 }
 
 // Copy returns a copy of the worker.

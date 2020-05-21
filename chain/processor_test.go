@@ -1,112 +1,97 @@
 package chain_test
 
-import (
-	"crypto/rand"
-	"os"
-	"testing"
-	"time"
+// var log = logger.New(os.Stdout).Quiet()
 
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/db/blockdb/mock"
-	"github.com/olympus-protocol/ogen/logger"
-	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
-)
+// const NumTestValidators = 128
 
-var log = logger.New(os.Stdout).Quiet()
+// func getTestInitializationParameters() (*primitives.InitializationParameters, []bls.SecretKey) {
+// 	vals := make([]primitives.ValidatorInitialization, NumTestValidators)
+// 	keys := make([]bls.SecretKey, NumTestValidators)
+// 	for i := range vals {
+// 		k, err := bls.RandSecretKey(rand.Reader)
+// 		if err != nil {
+// 			panic(err)
+// 		}
 
-const NumTestValidators = 128
+// 		keys[i] = *k
 
-func getTestInitializationParameters() (*primitives.InitializationParameters, []bls.SecretKey) {
-	vals := make([]primitives.ValidatorInitialization, NumTestValidators)
-	keys := make([]bls.SecretKey, NumTestValidators)
-	for i := range vals {
-		k, err := bls.RandSecretKey(rand.Reader)
-		if err != nil {
-			panic(err)
-		}
+// 		vals[i] = primitives.ValidatorInitialization{
+// 			PubKey:       keys[i].DerivePublicKey().Serialize(),
+// 			PayeeAddress: "",
+// 		}
+// 	}
 
-		keys[i] = *k
+// 	return &primitives.InitializationParameters{
+// 		InitialValidators: vals,
+// 		GenesisTime:       time.Now().Add(1 * time.Second),
+// 	}, keys
+// }
 
-		vals[i] = primitives.ValidatorInitialization{
-			PubKey:       keys[i].DerivePublicKey().Serialize(),
-			PayeeAddress: "",
-		}
-	}
+// func TestBlockchainTipGenesis(t *testing.T) {
+// 	db := mock.NewMemoryDB()
 
-	return &primitives.InitializationParameters{
-		InitialValidators: vals,
-		GenesisTime:       time.Now().Add(1 * time.Second),
-	}, keys
-}
+// 	ip, _ := getTestInitializationParameters()
 
-func TestBlockchainTipGenesis(t *testing.T) {
-	db := mock.NewMemoryDB()
+// 	b, err := chain.NewBlockchain(chain.Config{
+// 		Log: log,
+// 	}, params.Mainnet, db, *ip)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	ip, _ := getTestInitializationParameters()
+// 	genesis := b.State().Tip()
+// 	if genesis.Height != 0 {
+// 		t.Fatal("expected genesis height to be 0")
+// 	}
 
-	b, err := chain.NewBlockchain(chain.Config{
-		Log: log,
-	}, params.Mainnet, db, *ip)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	if genesis.Parent != nil {
+// 		t.Fatal("expected genesis parent to be nil")
+// 	}
+// }
 
-	genesis := b.State().Tip()
-	if genesis.Height != 0 {
-		t.Fatal("expected genesis height to be 0")
-	}
+// func TestBlockchainTipAddBlock(t *testing.T) {
+// 	db := mock.NewMemoryDB()
 
-	if genesis.Parent != nil {
-		t.Fatal("expected genesis parent to be nil")
-	}
-}
+// 	ip, _ := getTestInitializationParameters()
 
-func TestBlockchainTipAddBlock(t *testing.T) {
-	db := mock.NewMemoryDB()
+// 	b, err := chain.NewBlockchain(chain.Config{
+// 		Log: log,
+// 	}, params.Mainnet, db, *ip)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	ip, _ := getTestInitializationParameters()
+// 	genesis := b.State().Tip()
+// 	if genesis.Height != 0 {
+// 		t.Fatal("expected genesis height to be 0")
+// 	}
 
-	b, err := chain.NewBlockchain(chain.Config{
-		Log: log,
-	}, params.Mainnet, db, *ip)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	if genesis.Parent != nil {
+// 		t.Fatal("expected genesis parent to be nil")
+// 	}
 
-	genesis := b.State().Tip()
-	if genesis.Height != 0 {
-		t.Fatal("expected genesis height to be 0")
-	}
+// 	newBlockHeader := primitives.BlockHeader{
+// 		Version:       0,
+// 		Nonce:         0,
+// 		MerkleRoot:    chainhash.Hash{},
+// 		PrevBlockHash: genesis.Hash,
+// 		Timestamp:     time.Time{},
+// 	}
 
-	if genesis.Parent != nil {
-		t.Fatal("expected genesis parent to be nil")
-	}
+// 	msgHash := newBlockHeader.Hash()
+// 	secretKey, _ := bls.RandSecretKey(rand.Reader)
 
-	newBlockHeader := primitives.BlockHeader{
-		Version:       0,
-		Nonce:         0,
-		MerkleRoot:    chainhash.Hash{},
-		PrevBlockHash: genesis.Hash,
-		Timestamp:     time.Time{},
-	}
+// 	sig, err := bls.Sign(secretKey, msgHash[:])
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	msgHash := newBlockHeader.Hash()
-	secretKey, _ := bls.RandSecretKey(rand.Reader)
-
-	sig, err := bls.Sign(secretKey, msgHash[:])
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = b.ProcessBlock(&primitives.Block{
-		Header:    newBlockHeader,
-		Txs:       nil,
-		Signature: sig.Serialize(),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
+// 	err = b.ProcessBlock(&primitives.Block{
+// 		Header:    newBlockHeader,
+// 		Txs:       nil,
+// 		Signature: sig.Serialize(),
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// }

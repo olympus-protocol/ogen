@@ -138,7 +138,7 @@ func (v *SingleValidatorVote) Encode(w io.Writer) error {
 	if err := v.Data.Serialize(w); err != nil {
 		return err
 	}
-	sig := v.Signature.Serialize()
+	sig := v.Signature.Marshal()
 	if _, err := w.Write(sig[:]); err != nil {
 		return err
 	}
@@ -150,11 +150,11 @@ func (v *SingleValidatorVote) Decode(r io.Reader) error {
 	if err := v.Data.Deserialize(r); err != nil {
 		return err
 	}
-	var sigBytes [96]byte
+	sigBytes := make([]byte, 96)
 	if _, err := r.Read(sigBytes[:]); err != nil {
 		return err
 	}
-	sig, err := bls.DeserializeSignature(sigBytes)
+	sig, err := bls.SignatureFromBytes(sigBytes)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (v *MultiValidatorVote) Serialize(w io.Writer) error {
 	if err := v.Data.Serialize(w); err != nil {
 		return err
 	}
-	sig := v.Signature.Serialize()
+	sig := v.Signature.Marshal()
 	if err := serializer.WriteElement(w, sig); err != nil {
 		return err
 	}
@@ -193,11 +193,11 @@ func (v *MultiValidatorVote) Deserialize(r io.Reader) (err error) {
 	if err := v.Data.Deserialize(r); err != nil {
 		return err
 	}
-	var sigBytes [96]byte
+	sigBytes := make([]byte, 96)
 	if err := serializer.ReadElement(r, sigBytes[:]); err != nil {
 		return err
 	}
-	sig, err := bls.DeserializeSignature(sigBytes)
+	sig, err := bls.SignatureFromBytes(sigBytes)
 	if err != nil {
 		return err
 	}

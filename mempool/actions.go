@@ -101,7 +101,7 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 	defer am.depositsLock.Unlock()
 
 	for _, d := range am.deposits {
-		if d.Data.PublicKey.Equals(deposit.Data.PublicKey) {
+		if bytes.Equal(d.Data.PublicKey.Marshal(), deposit.Data.PublicKey.Marshal()) {
 			return nil
 		}
 	}
@@ -142,7 +142,7 @@ func (am *ActionMempool) RemoveByBlock(b *primitives.Block) {
 outer:
 	for _, d1 := range am.deposits {
 		for _, d2 := range b.Deposits {
-			if d1.Data.PublicKey.Equals(d2.Data.PublicKey) {
+			if bytes.Equal(d1.Data.PublicKey.Marshal(), d2.Data.PublicKey.Marshal()) {
 				continue outer
 			}
 		}
@@ -159,7 +159,7 @@ outer:
 outer1:
 	for _, e1 := range am.exits {
 		for _, e2 := range b.Exits {
-			if e1.ValidatorPubkey.Equals(e2.ValidatorPubkey) {
+			if bytes.Equal(e1.ValidatorPubkey.Marshal(), e2.ValidatorPubkey.Marshal()) {
 				continue outer1
 			}
 		}
@@ -208,7 +208,7 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 	defer am.exitsLock.Unlock()
 
 	for _, e := range am.exits {
-		if e.ValidatorPubkey.Equals(exit.ValidatorPubkey) {
+		if bytes.Equal(e.ValidatorPubkey.Marshal(), e.ValidatorPubkey.Marshal()) {
 			return nil
 		}
 	}

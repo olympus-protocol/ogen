@@ -54,8 +54,8 @@ var generateChainCmd = &cobra.Command{
 
 		validators := make([]primitives.ValidatorInitialization, len(keys))
 		for i := range validators {
-			pub := keys[i].DerivePublicKey()
-			pubSer := pub.Serialize()
+			pub := keys[i].PublicKey()
+			pubSer := pub.Marshal()
 			validators[i] = primitives.ValidatorInitialization{
 				PubKey:       pubSer,
 				PayeeAddress: withdrawAddress,

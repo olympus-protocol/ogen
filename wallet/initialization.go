@@ -89,18 +89,16 @@ func (w *Wallet) initializeWallet() error {
 		return errors.Wrap(err, "error creating GCM")
 	}
 
-	var privateKeyBytes [32]byte
-	if _, err := io.ReadFull(rand.Reader, privateKeyBytes[:]); err != nil {
-		return errors.Wrap(err, "error reading from random")
+	privateKey := bls.RandKey()
+	if err != nil {
+		return err
 	}
-
-	privateKey := bls.DeriveSecretKey(privateKeyBytes)
-	address, err := privateKey.DerivePublicKey().ToBech32(w.params.AddressPrefixes)
+	address, err := privateKey.PublicKey().ToBech32(w.params.AddressPrefixes)
 	if err != nil {
 		return errors.Wrap(err, "could not get public key from private key")
 	}
 
-	ciphertext := aesgcm.Seal(nil, nonce, privateKeyBytes[:], nil)
+	ciphertext := aesgcm.Seal(nil, nonce, privateKey.Marshal(), nil)
 
 	err = w.db.Update(func(tx *badger.Txn) error {
 		if err := tx.Set(walletDBKey, ciphertext[:]); err != nil {

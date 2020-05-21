@@ -36,7 +36,7 @@ func (c *CoinPayload) Hash() chainhash.Hash {
 }
 
 func (c *CoinPayload) FromPubkeyHash() (out [20]byte) {
-	pkS := c.FromPublicKey.Serialize()
+	pkS := c.FromPublicKey.Marshal()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return
@@ -46,8 +46,8 @@ func (c *CoinPayload) Encode(w io.Writer) error {
 	if err := serializer.WriteElements(w, c.To); err != nil {
 		return err
 	}
-	pubBytes := c.FromPublicKey.Serialize()
-	sigBytes := c.Signature.Serialize()
+	pubBytes := c.FromPublicKey.Marshal()
+	sigBytes := c.Signature.Marshal()
 	if _, err := w.Write(pubBytes[:]); err != nil {
 		return err
 	}
@@ -75,10 +75,7 @@ func (c *CoinPayload) SignatureMessage() chainhash.Hash {
 func (c *CoinPayload) VerifySig() error {
 	sigMsg := c.SignatureMessage()
 
-	valid, err := bls.VerifySig(&c.FromPublicKey, sigMsg[:], &c.Signature)
-	if err != nil {
-		return err
-	}
+	valid := c.Signature.Verify(sigMsg[:], &c.FromPublicKey)
 	if !valid {
 		return fmt.Errorf("signature is not valid")
 	}
@@ -90,13 +87,13 @@ func (c *CoinPayload) Decode(r io.Reader) error {
 	if err := serializer.ReadElements(r, &c.To); err != nil {
 		return err
 	}
-	var sigBytes [96]byte
-	var pubBytes [48]byte
+	sigBytes := make([]byte, 96)
+	pubBytes := make([]byte, 48)
 	_, err := r.Read(pubBytes[:])
 	if err != nil {
 		return err
 	}
-	pub, err := bls.DeserializePublicKey(pubBytes)
+	pub, err := bls.PublicKeyFromBytes(pubBytes)
 	if err != nil {
 		return err
 	}
@@ -105,7 +102,7 @@ func (c *CoinPayload) Decode(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	sig, err := bls.DeserializeSignature(sigBytes)
+	sig, err := bls.SignatureFromBytes(sigBytes)
 	if err != nil {
 		return err
 	}

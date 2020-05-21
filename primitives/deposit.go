@@ -22,8 +22,8 @@ type Deposit struct {
 
 // Encode encodes the deposit to the given writer.
 func (d *Deposit) Encode(w io.Writer) error {
-	sigBytes := d.Signature.Serialize()
-	pubBytes := d.PublicKey.Serialize()
+	sigBytes := d.Signature.Marshal()
+	pubBytes := d.PublicKey.Marshal()
 
 	if _, err := w.Write(pubBytes[:]); err != nil {
 		return err
@@ -39,8 +39,8 @@ func (d *Deposit) Encode(w io.Writer) error {
 
 // Decode decodes the deposit to the given writer.
 func (d *Deposit) Decode(r io.Reader) error {
-	var sigBytes [96]byte
-	var pubBytes [48]byte
+	sigBytes := make([]byte, 96)
+	pubBytes := make([]byte, 48)
 	if _, err := r.Read(pubBytes[:]); err != nil {
 		return err
 	}
@@ -50,11 +50,11 @@ func (d *Deposit) Decode(r io.Reader) error {
 	if err := d.Data.Decode(r); err != nil {
 		return err
 	}
-	sig, err := bls.DeserializeSignature(sigBytes)
+	sig, err := bls.SignatureFromBytes(sigBytes)
 	if err != nil {
 		return err
 	}
-	pub, err := bls.DeserializePublicKey(pubBytes)
+	pub, err := bls.PublicKeyFromBytes(pubBytes)
 	if err != nil {
 		return err
 	}
@@ -85,8 +85,8 @@ type DepositData struct {
 
 // Encode encodes the deposit data to a writer.
 func (dd *DepositData) Encode(w io.Writer) error {
-	pubBytes := dd.PublicKey.Serialize()
-	proofOfPossessionBytes := dd.ProofOfPossession.Serialize()
+	pubBytes := dd.PublicKey.Marshal()
+	proofOfPossessionBytes := dd.ProofOfPossession.Marshal()
 
 	if _, err := w.Write(pubBytes[:]); err != nil {
 		return err
@@ -103,8 +103,8 @@ func (dd *DepositData) Encode(w io.Writer) error {
 
 // Decode decodes the deposit data from a reader.
 func (dd *DepositData) Decode(r io.Reader) error {
-	var pubBytes [48]byte
-	var sigBytes [96]byte
+	pubBytes := make([]byte, 48)
+	sigBytes := make([]byte, 48)
 	var withdrawalAddress [20]byte
 
 	if _, err := io.ReadFull(r, pubBytes[:]); err != nil {
@@ -117,11 +117,11 @@ func (dd *DepositData) Decode(r io.Reader) error {
 		return err
 	}
 
-	sig, err := bls.DeserializeSignature(sigBytes)
+	sig, err := bls.SignatureFromBytes(sigBytes)
 	if err != nil {
 		return err
 	}
-	pub, err := bls.DeserializePublicKey(pubBytes)
+	pub, err := bls.PublicKeyFromBytes(pubBytes)
 	if err != nil {
 		return err
 	}

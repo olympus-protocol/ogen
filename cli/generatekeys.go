@@ -63,8 +63,8 @@ var generateKeysCmd = &cobra.Command{
 		//colorNormal := color.New(color.Fg)
 		for i, k := range keys {
 			colorHeader.Printf("Validator #%d\n", i)
-			kBytes := k.Serialize()
-			pkBytes := k.DerivePublicKey().Serialize()
+			kBytes := k.Marshal()
+			pkBytes := k.PublicKey().Marshal()
 			keyb64 := base64.StdEncoding.EncodeToString(kBytes[:])
 			pkb64 := base64.StdEncoding.EncodeToString(pkBytes[:])
 			colorSecret.Printf("Secret Key: ")

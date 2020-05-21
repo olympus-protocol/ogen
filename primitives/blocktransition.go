@@ -34,20 +34,17 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) []uint32 {
 
 // IsExitValid checks if an exit is valid.
 func (s *State) IsExitValid(exit *Exit) error {
-	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Serialize())
+	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Marshal())
 	msgHash := chainhash.HashH([]byte(msg))
 
-	valid, err := bls.VerifySig(&exit.WithdrawPubkey, msgHash[:], &exit.Signature)
-	if err != nil {
-		return err
-	}
+	valid := exit.Signature.Verify(msgHash[:], &exit.WithdrawPubkey)
 	if !valid {
 		return fmt.Errorf("exit signature is not valid")
 	}
 
 	pkh := exit.WithdrawPubkey.Hash()
 
-	pubkeySerialized := exit.ValidatorPubkey.Serialize()
+	pubkeySerialized := exit.ValidatorPubkey.Marshal()
 
 	foundActiveValidator := false
 	for _, v := range s.ValidatorRegistry {
@@ -73,7 +70,7 @@ func (s *State) ApplyExit(exit *Exit) error {
 		return err
 	}
 
-	pubkeySerialized := exit.ValidatorPubkey.Serialize()
+	pubkeySerialized := exit.ValidatorPubkey.Marshal()
 
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
@@ -101,15 +98,12 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 
 	depositHash := chainhash.HashH(buf.Bytes())
 
-	valid, err := bls.VerifySig(&deposit.PublicKey, depositHash[:], &deposit.Signature)
-	if err != nil {
-		return err
-	}
+	valid := deposit.Signature.Verify(depositHash[:], &deposit.PublicKey)
 	if !valid {
 		return errors.New("deposit signature is not valid")
 	}
 
-	validatorPubkey := deposit.Data.PublicKey.Serialize()
+	validatorPubkey := deposit.Data.PublicKey.Marshal()
 
 	// now, ensure we don't already have this validator
 	for _, v := range s.ValidatorRegistry {
@@ -119,10 +113,7 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 	}
 
 	pubkeyHash := chainhash.HashH(validatorPubkey[:])
-	valid, err = bls.VerifySig(&deposit.Data.PublicKey, pubkeyHash[:], &deposit.Data.ProofOfPossession)
-	if err != nil {
-		return err
-	}
+	valid = deposit.Data.ProofOfPossession.Verify(pubkeyHash[:], &deposit.Data.PublicKey)
 	if !valid {
 		return errors.New("proof-of-possession is not valid")
 	}
@@ -142,7 +133,7 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 	s.ValidatorRegistry = append(s.ValidatorRegistry, Worker{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
-		PubKey:           deposit.Data.PublicKey.Serialize(),
+		PubKey:           deposit.Data.PublicKey.Marshal(),
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
 		Status:           StatusStarting,
 		FirstActiveEpoch: int64(s.EpochIndex) + 2,
@@ -177,7 +168,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		return fmt.Errorf("vote should have target epoch of either the current epoch (%d) or the previous epoch (%d) but got %d", s.EpochIndex, s.EpochIndex-1, v.Data.ToEpoch)
 	}
 
-	aggPubs := bls.NewAggregatePublicKey()
+	aggPubs := make([]*bls.PublicKey, 0)
 	validators := s.GetVoteCommittee(v.Data.Slot, p)
 	for i := range v.ParticipationBitfield {
 		for j := 0; j < 8; j++ {
@@ -193,20 +184,16 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 
 			validatorIdx := validators[validator]
 
-			pub, err := bls.DeserializePublicKey(s.ValidatorRegistry[validatorIdx].PubKey)
+			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
 			if err != nil {
 				return err
 			}
-			aggPubs.AggregatePubKey(pub)
+			aggPubs = append(aggPubs, pub)
 		}
 	}
 
 	h := v.Data.Hash()
-	valid, err := bls.VerifySig(aggPubs, h[:], &v.Signature)
-	if err != nil {
-		return err
-	}
-
+	valid := v.Signature.FastAggregateVerify(aggPubs, h)
 	if !valid {
 		return fmt.Errorf("aggregate signature did not validate")
 	}
@@ -295,12 +282,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	blockHash := b.Hash()
-	blockSig, err := bls.DeserializeSignature(b.Signature)
+	blockSig, err := bls.SignatureFromBytes(b.Signature)
 	if err != nil {
 		return err
 	}
 
-	randaoSig, err := bls.DeserializeSignature(b.RandaoSignature)
+	randaoSig, err := bls.SignatureFromBytes(b.RandaoSignature)
 	if err != nil {
 		return err
 	}
@@ -327,25 +314,19 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 	proposer := s.ValidatorRegistry[proposerIndex]
 
-	workerPub, err := bls.DeserializePublicKey(proposer.PubKey)
+	workerPub, err := bls.PublicKeyFromBytes(proposer.PubKey)
 	if err != nil {
 		return err
 	}
 
 	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", b.Header.Slot)))
 
-	valid, err := bls.VerifySig(workerPub, blockHash[:], blockSig)
-	if err != nil {
-		return err
-	}
+	valid := blockSig.Verify(blockHash[:], workerPub)
 	if !valid {
 		return errors.New("error validating signature for block")
 	}
 
-	valid, err = bls.VerifySig(workerPub, slotHash[:], randaoSig)
-	if err != nil {
-		return err
-	}
+	valid = randaoSig.Verify(slotHash[:], workerPub)
 	if !valid {
 		return errors.New("error validating RANDAO signature for block")
 	}

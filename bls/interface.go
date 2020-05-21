@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Phore Project
-
+// Package bls implements a go-wrapper around a library implementing the
+// the BLS12-381 curve and signature scheme. This package exposes a public API for
+// verifying and aggregating BLS signatures used by Ethereum 2.0.
 package bls
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"io"
 
+	"github.com/dgraph-io/ristretto"
+	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	bls "github.com/phoreproject/bls/g1pubs"
+	"github.com/pkg/errors"
 )
 
 type Prefixes struct {
@@ -20,122 +20,145 @@ type Prefixes struct {
 	ContractPrivKey string
 }
 
+func init() {
+	if err := bls12.Init(bls12.BLS12_381); err != nil {
+		panic(err)
+	}
+	if err := bls12.SetETHmode(bls12.EthModeDraft05); err != nil {
+		panic(err)
+	}
+}
+
+// DomainByteLength length of domain byte array.
+const DomainByteLength = 4
+
+var maxKeys = int64(100000)
+var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
+	NumCounters: maxKeys,
+	MaxCost:     1 << 19, // 500 kb is cache max size
+	BufferItems: 64,
+})
+
+// CurveOrder for the BLS12-381 curve.
+const CurveOrder = "52435875175126190479447740508185965837690552500527637822603658699938581184513"
+
 // Signature used in the BLS signature scheme.
 type Signature struct {
-	s bls.Signature
+	s *bls12.Sign
 }
 
-// Serialize gets the binary representation of the signature.
-func (s Signature) Serialize() [96]byte {
-	return s.s.Serialize()
-}
-
-// Copy returns a copy of the signature.
-func (s Signature) Copy() *Signature {
-	c := s.s.Copy()
-	return &Signature{*c}
-}
-
-// DeserializeSignature deserializes a binary signature into the actual signature.
-func DeserializeSignature(b [96]byte) (*Signature, error) {
-	s, err := bls.DeserializeSignature(b)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Signature{s: *s}, nil
-}
-
-// SecretKey used in the BLS scheme.
-type SecretKey struct {
-	s bls.SecretKey
-}
-
-func NewSecret(s bls.SecretKey) *SecretKey {
-	return &SecretKey{s: s}
-}
-
-// RandSecretKey generates a random key given a byte reader.
-func RandSecretKey(r io.Reader) (*SecretKey, error) {
-	key, err := bls.RandKey(r)
-	if err != nil {
-		return nil, err
-	}
-	return &SecretKey{s: *key}, nil
-}
-
-// DerivePublicKey derives a public key from a secret key.
-func (s SecretKey) DerivePublicKey() *PublicKey {
-	pub := bls.PrivToPub(&s.s)
-	return &PublicKey{p: *pub}
-}
-
-// Serialize serializes a secret key to bytes.
-func (s SecretKey) Serialize() [32]byte {
-	return s.s.Serialize()
-}
-
-func (s SecretKey) ToBech32(prefixes Prefixes, contract bool) string {
-	ser := s.Serialize()
-	buf := bytes.NewBuffer([]byte{})
-	buf.Write(ser[:])
-	var prefix string
-	if contract {
-		prefix = prefixes.ContractPrivKey
-	} else {
-		prefix = prefixes.PrivKey
-	}
-	return bech32.Encode(prefix, buf.Bytes())
-}
-
-// DeserializeSecretKey deserializes a secret key from bytes.
-func DeserializeSecretKey(b [32]byte) (*SecretKey, error) {
-	k := bls.DeserializeSecretKey(b)
-	if k == nil {
-		return nil, fmt.Errorf("invalid secret key")
-	}
-	return &SecretKey{*k}, nil
-}
-
-// DeriveSecretKey deserializes a secret key from bytes.
-func DeriveSecretKey(b [32]byte) SecretKey {
-	k := bls.DeriveSecretKey(b)
-	return SecretKey{*k}
-}
-
-func NewSecretFromBech32(secret string, prefixes Prefixes, contract bool) (*SecretKey, error) {
-	var prefix string
-	if contract {
-		prefix = prefixes.ContractPrivKey
-	} else {
-		prefix = prefixes.PrivKey
-	}
-	net, privKeyBytes, err := bech32.Decode(secret)
-	if err != nil {
-		return nil, err
-	}
-	if net != prefix {
-		return nil, errors.New("key networks doesn't match")
-	}
-	var rawPriv [32]byte
-	buf := bytes.NewBuffer(rawPriv[:0])
-	buf.Write(privKeyBytes)
-	return DeserializeSecretKey(rawPriv)
-}
-
-// PublicKey corresponding to secret key used in the BLS scheme.
+// PublicKey used in the BLS signature scheme.
 type PublicKey struct {
-	p bls.PublicKey
+	p *bls12.PublicKey
 }
 
-// NewPublicKey constructs a new public key based on a raw public key from
-// the BLS library.
-func NewPublicKey(p *bls.PublicKey) *PublicKey {
-	return &PublicKey{p: *p}
+// SecretKey used in the BLS signature scheme.
+type SecretKey struct {
+	p *bls12.SecretKey
+}
+
+// RandKey creates a new private key using a random method provided as an io.Reader.
+func RandKey() *SecretKey {
+	secKey := &bls12.SecretKey{}
+	secKey.SetByCSPRNG()
+	return &SecretKey{secKey}
+}
+
+// SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
+func SecretKeyFromBytes(priv []byte) (*SecretKey, error) {
+	if len(priv) != 32 {
+		return nil, fmt.Errorf("secret key must be %d bytes", 32)
+	}
+	secKey := &bls12.SecretKey{}
+	err := secKey.Deserialize(priv)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal bytes into secret key")
+	}
+	return &SecretKey{p: secKey}, err
+}
+
+// PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
+func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
+	if len(pub) != 48 {
+		return nil, fmt.Errorf("public key must be %d bytes", 48)
+	}
+	if cv, ok := pubkeyCache.Get(string(pub)); ok {
+		return cv.(*PublicKey).Copy()
+	}
+	pubKey := &bls12.PublicKey{}
+	err := pubKey.Deserialize(pub)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal bytes into public key")
+	}
+	pubKeyObj := &PublicKey{p: pubKey}
+	copiedKey, err := pubKeyObj.Copy()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not copy public key")
+	}
+	pubkeyCache.Set(string(pub), copiedKey, 48)
+	return pubKeyObj, nil
+}
+
+// SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
+func SignatureFromBytes(sig []byte) (*Signature, error) {
+	if len(sig) != 96 {
+		return nil, fmt.Errorf("signature must be %d bytes", 96)
+	}
+	signature := &bls12.Sign{}
+	err := signature.Deserialize(sig)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal bytes into signature")
+	}
+	return &Signature{s: signature}, nil
+}
+
+// PublicKey obtains the public key corresponding to the BLS secret key.
+func (s *SecretKey) PublicKey() *PublicKey {
+	return &PublicKey{p: s.p.GetPublicKey()}
+}
+
+// Sign a message using a secret key - in a beacon/validator client.
+//
+// In IETF draft BLS specification:
+// Sign(SK, message) -> signature: a signing algorithm that generates
+//      a deterministic signature given a secret key SK and a message.
+//
+// In ETH2.0 specification:
+// def Sign(SK: int, message: Bytes) -> BLSSignature
+func (s *SecretKey) Sign(msg []byte) *Signature {
+	signature := s.p.SignByte(msg)
+	return &Signature{s: signature}
+}
+
+// Marshal a secret key into a LittleEndian byte slice.
+func (s *SecretKey) Marshal() []byte {
+	keyBytes := s.p.Serialize()
+	if len(keyBytes) < 32 {
+		emptyBytes := make([]byte, 32-len(keyBytes))
+		keyBytes = append(emptyBytes, keyBytes...)
+	}
+	return keyBytes
+}
+
+// Marshal a public key into a LittleEndian byte slice.
+func (p *PublicKey) Marshal() []byte {
+	return p.p.Serialize()
+}
+
+// Copy the public key to a new pointer reference.
+func (p *PublicKey) Copy() (*PublicKey, error) {
+	np := *p.p
+	return &PublicKey{p: &np}, nil
+}
+
+// Aggregate two public keys.
+func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
+	p.p.Add(p2.p)
+	return p
 }
 
 // ToBech32 converts the public key to a Bech32 address.
-func (p PublicKey) ToBech32(prefixes Prefixes) (string, error) {
+func (p *PublicKey) ToBech32(prefixes Prefixes) (string, error) {
 	out := make([]byte, 20)
 	pkS := p.p.Serialize()
 	h := chainhash.HashH(pkS[:])
@@ -144,7 +167,7 @@ func (p PublicKey) ToBech32(prefixes Prefixes) (string, error) {
 }
 
 // Hash calculates the hash of the public key.
-func (p PublicKey) Hash() [20]byte {
+func (p *PublicKey) Hash() [20]byte {
 	pkS := p.p.Serialize()
 	h := chainhash.HashH(pkS[:])
 	var hBytes [20]byte
@@ -152,109 +175,104 @@ func (p PublicKey) Hash() [20]byte {
 	return hBytes
 }
 
-func (p PublicKey) String() string {
-	return p.p.String()
+// Verify a bls signature given a public key, a message.
+//
+// In IETF draft BLS specification:
+// Verify(PK, message, signature) -> VALID or INVALID: a verification
+//      algorithm that outputs VALID if signature is a valid signature of
+//      message under public key PK, and INVALID otherwise.
+//
+// In ETH2.0 specification:
+// def Verify(PK: BLSPubkey, message: Bytes, signature: BLSSignature) -> bool
+func (s *Signature) Verify(msg []byte, pub *PublicKey) bool {
+	return s.s.VerifyByte(pub.p, msg)
 }
 
-// Serialize serializes a public key to bytes.
-func (p PublicKey) Serialize() [48]byte {
-	return p.p.Serialize()
-}
-
-// Equals checks if two public keys are equal.
-func (p PublicKey) Equals(other PublicKey) bool {
-	return p.p.Equals(other.p)
-}
-
-// DeserializePublicKey deserialies a public key from the provided bytes.
-func DeserializePublicKey(b [48]byte) (*PublicKey, error) {
-	p, err := bls.DeserializePublicKey(b)
-	if err != nil {
-		return nil, err
-	}
-	return &PublicKey{*p}, nil
-}
-
-// Copy returns a copy of the public key
-func (p PublicKey) Copy() PublicKey {
-	return p
-}
-
-// Sign a message using a secret key - in a beacon/validator client, this key will come from and be unlocked from the account keystore.
-func Sign(sec *SecretKey, msg []byte) (*Signature, error) {
-	s := bls.Sign(msg, &sec.s)
-	return &Signature{s: *s}, nil
-}
-
-// VerifySig against a public key.
-func VerifySig(pub *PublicKey, msg []byte, sig *Signature) (bool, error) {
-	return bls.Verify(msg, &pub.p, &sig.s), nil
-}
-
-// AggregateSigs puts multiple signatures into one using the underlying BLS sum functions.
-func AggregateSigs(sigs []*Signature) (*Signature, error) {
-	blsSigs := make([]*bls.Signature, len(sigs))
-	for i := range sigs {
-		blsSigs[i] = &sigs[i].s
-	}
-	aggSig := bls.AggregateSignatures(blsSigs)
-	return &Signature{s: *aggSig}, nil
-}
-
-// VerifyAggregate verifies a signature over many messages.
-func VerifyAggregate(pubkeys []*PublicKey, msgs [][]byte, signature *Signature) bool {
-	if len(pubkeys) != len(msgs) {
+// AggregateVerify verifies each public key against its respective message.
+// This is vulnerable to rogue public-key attack. Each user must
+// provide a proof-of-knowledge of the public key.
+//
+// In IETF draft BLS specification:
+// AggregateVerify((PK_1, message_1), ..., (PK_n, message_n),
+//      signature) -> VALID or INVALID: an aggregate verification
+//      algorithm that outputs VALID if signature is a valid aggregated
+//      signature for a collection of public keys and messages, and
+//      outputs INVALID otherwise.
+//
+// In ETH2.0 specification:
+// def AggregateVerify(pairs: Sequence[PK: BLSPubkey, message: Bytes], signature: BLSSignature) -> boo
+func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool {
+	size := len(pubKeys)
+	if size == 0 {
 		return false
 	}
+	if size != len(msgs) {
+		return false
+	}
+	msgSlices := []byte{}
+	var rawKeys []bls12.PublicKey
+	for i := 0; i < size; i++ {
+		msgSlices = append(msgSlices, msgs[i][:]...)
+		rawKeys = append(rawKeys, *pubKeys[i].p)
+	}
+	return s.s.AggregateVerify(rawKeys, msgSlices)
+}
 
-	blsPubs := make([]*bls.PublicKey, len(pubkeys))
-	for i := range pubkeys {
-		blsPubs[i] = &pubkeys[i].p
+// FastAggregateVerify verifies all the provided public keys with their aggregated signature.
+//
+// In IETF draft BLS specification:
+// FastAggregateVerify(PK_1, ..., PK_n, message, signature) -> VALID
+//      or INVALID: a verification algorithm for the aggregate of multiple
+//      signatures on the same message.  This function is faster than
+//      AggregateVerify.
+//
+// In ETH2.0 specification:
+// def FastAggregateVerify(PKs: Sequence[BLSPubkey], message: Bytes, signature: BLSSignature) -> bool
+func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool {
+	if len(pubKeys) == 0 {
+		return false
+	}
+	rawKeys := make([]bls12.PublicKey, len(pubKeys))
+	for i := 0; i < len(pubKeys); i++ {
+		rawKeys[i] = *pubKeys[i].p
 	}
 
-	return signature.s.VerifyAggregate(blsPubs, msgs)
+	return s.s.FastAggregateVerify(rawKeys, msg[:])
 }
 
-// VerifyAggregateCommon verifies a signature over a common message.
-func VerifyAggregateCommon(pubkeys []*PublicKey, msg []byte, signature *Signature) bool {
-	blsPubs := make([]*bls.PublicKey, len(pubkeys))
-	for i := range pubkeys {
-		blsPubs[i] = &pubkeys[i].p
-	}
-
-	return signature.s.VerifyAggregateCommon(blsPubs, msg)
-}
-
-// AggregatePubKeys aggregates some public keys into one.
-func AggregatePubKeys(pubkeys []*PublicKey) *PublicKey {
-	blsPubs := make([]*bls.PublicKey, len(pubkeys))
-	for i := range pubkeys {
-		blsPubs[i] = &pubkeys[i].p
-	}
-
-	newPub := bls.AggregatePublicKeys(blsPubs)
-
-	return &PublicKey{p: *newPub}
-}
-
-// AggregatePubKey adds another public key to this one.
-func (p *PublicKey) AggregatePubKey(other *PublicKey) {
-	p.p.Aggregate(&other.p)
-}
-
-// AggregateSig adds another signature to this one.
-func (s *Signature) AggregateSig(other *Signature) {
-	s.s.Aggregate(&other.s)
-}
-
-// NewAggregatePublicKey creates a blank public key.
-func NewAggregatePublicKey() *PublicKey {
-	pub := bls.NewAggregatePubkey()
-	return &PublicKey{p: *pub}
-}
-
-// NewAggregateSignature creates a blank signature key.
+// NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() *Signature {
-	sig := bls.NewAggregateSignature()
-	return &Signature{s: *sig}
+	return &Signature{s: bls12.HashAndMapToSignature([]byte{'m', 'o', 'c', 'k'})}
+}
+
+// AggregateSignatures converts a list of signatures into a single, aggregated sig.
+func AggregateSignatures(sigs []*Signature) *Signature {
+	if len(sigs) == 0 {
+		return nil
+	}
+
+	// Copy signature
+	signature := *sigs[0].s
+	for i := 1; i < len(sigs); i++ {
+		signature.Add(sigs[i].s)
+	}
+	return &Signature{s: &signature}
+}
+
+// Aggregate is an alias for AggregateSignatures, defined to conform to BLS specification.
+//
+// In IETF draft BLS specification:
+// Aggregate(signature_1, ..., signature_n) -> signature: an
+//      aggregation algorithm that compresses a collection of signatures
+//      into a single signature.
+//
+// In ETH2.0 specification:
+// def Aggregate(signatures: Sequence[BLSSignature]) -> BLSSignature
+func Aggregate(sigs []*Signature) *Signature {
+	return AggregateSignatures(sigs)
+}
+
+// Marshal a signature into a LittleEndian byte slice.
+func (s *Signature) Marshal() []byte {
+	return s.s.Serialize()
 }

@@ -21,7 +21,6 @@ import (
 type mempoolVote struct {
 	individualVotes       []*primitives.SingleValidatorVote
 	participationBitfield []uint8
-	aggregateSignature    *bls.Signature
 	voteData              *primitives.VoteData
 }
 
@@ -31,7 +30,6 @@ func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote) {
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
 	mv.participationBitfield[vote.Offset/8] |= (1 << uint(vote.Offset%8))
-	mv.aggregateSignature.AggregateSig(&vote.Signature)
 }
 
 func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool) {
@@ -51,19 +49,12 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 	for i, p := range participationBitfield {
 		mv.participationBitfield[i] &= ^p
 	}
-
-	newAggSig := bls.NewAggregateSignature()
-	for _, v := range newVotes {
-		newAggSig.AggregateSig(&v.Signature)
-	}
-	mv.aggregateSignature = newAggSig
 	return shouldRemove
 }
 
 func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
 		participationBitfield: make([]uint8, (outOf+7)/8),
-		aggregateSignature:    bls.NewAggregateSignature(),
 		individualVotes:       make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:              voteData,
 	}
@@ -179,9 +170,14 @@ func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.Multi
 	for _, i := range m.poolOrder {
 		v := m.pool[i]
 		if v.voteData.Slot < slot-p.MinAttestationInclusionDelay && slot <= v.voteData.Slot+m.params.EpochLength-1 {
+			sigs := make([]*bls.Signature, 0)
+			for _, v := range m.pool[i].individualVotes {
+				sigs = append(sigs, &v.Signature)
+			}
+			sig := bls.AggregateSignatures(sigs)
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
-				Signature:             *m.pool[i].aggregateSignature,
+				Signature:             *sig,
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
 			votes = append(votes, vote)

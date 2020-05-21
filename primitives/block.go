@@ -18,8 +18,8 @@ type Block struct {
 	Txs             []Tx
 	Deposits        []Deposit
 	Exits           []Exit
-	Signature       [96]byte
-	RandaoSignature [96]byte
+	Signature       []byte
+	RandaoSignature []byte
 }
 
 // Hash calculates the hash of the block.
@@ -150,8 +150,10 @@ func (b *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
-	err = serializer.WriteElements(w, b.Signature, b.RandaoSignature)
-	if err != nil {
+	if err := serializer.WriteVarBytes(w, b.Signature); err != nil {
+		return err
+	}
+	if err := serializer.WriteVarBytes(w, b.RandaoSignature); err != nil {
 		return err
 	}
 	return nil
@@ -207,9 +209,15 @@ func (b *Block) Decode(r io.Reader) error {
 			return err
 		}
 	}
-	err = serializer.ReadElements(r, &b.Signature, &b.RandaoSignature)
+	sig, err := serializer.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
+	randaoSig, err := serializer.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	b.Signature = sig
+	b.RandaoSignature = randaoSig
 	return nil
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-type InitializationPubkey [48]byte
+type InitializationPubkey []byte
 
 func (ip InitializationPubkey) MarshalJSON() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
@@ -36,7 +36,7 @@ func (ip *InitializationPubkey) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	copy(ip[:], out)
+	*ip = out
 	return nil
 }
 

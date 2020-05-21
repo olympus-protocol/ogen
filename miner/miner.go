@@ -26,7 +26,7 @@ type Config struct {
 
 // Keystore is an interface to access keys.
 type Keystore interface {
-	GetValidatorKey(w *primitives.Worker) (*bls.SecretKey, bool)
+	GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool)
 }
 
 // BasicKeystore is a basic key store.
@@ -36,7 +36,9 @@ type BasicKeystore struct {
 
 // GetKey gets the key for a certain worker.
 func (b *BasicKeystore) GetKey(w *primitives.Worker) (*bls.SecretKey, bool) {
-	key, found := b.keys[w.PubKey]
+	var pub [48]byte
+	copy(pub[:], w.PubKey)
+	key, found := b.keys[pub]
 	return &key, found
 }
 
@@ -44,7 +46,9 @@ func (b *BasicKeystore) GetKey(w *primitives.Worker) (*bls.SecretKey, bool) {
 func NewBasicKeystore(keys []bls.SecretKey) *BasicKeystore {
 	m := make(map[[48]byte]bls.SecretKey)
 	for _, k := range keys {
-		pub := k.DerivePublicKey().Serialize()
+		pubkey := k.PublicKey().Marshal()
+		var pub [48]byte
+		copy(pub[:], pubkey)
 		m[pub] = k
 	}
 
@@ -163,7 +167,7 @@ func (m *Miner) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range m.chain.State().TipState().ValidatorRegistry {
-		if _, ok := m.keystore.GetValidatorKey(&w); ok {
+		if _, ok := m.keystore.GetValidatorKey(w.PubKey); ok {
 			numOurs++
 		}
 		numTotal++
@@ -224,11 +228,8 @@ func (m *Miner) Start() error {
 				for i, validatorIdx := range validators {
 					validator := state.ValidatorRegistry[validatorIdx]
 
-					if k, found := m.keystore.GetValidatorKey(&validator); found {
-						sig, err := bls.Sign(k, dataHash[:])
-						if err != nil {
-							panic(err)
-						}
+					if k, found := m.keystore.GetValidatorKey(validator.PubKey); found {
+						sig := k.Sign(dataHash[:])
 
 						vote := primitives.SingleValidatorVote{
 							Data:      data,
@@ -269,7 +270,7 @@ func (m *Miner) Start() error {
 				proposerIndex := state.ProposerQueue[slotIndex]
 				proposer := state.ValidatorRegistry[proposerIndex]
 
-				if k, found := m.keystore.GetValidatorKey(&proposer); found {
+				if k, found := m.keystore.GetValidatorKey(proposer.PubKey); found {
 					m.log.Infof("proposing for slot %d", slotToPropose)
 
 					votes := m.voteMempool.Get(slotToPropose, &m.params)
@@ -310,19 +311,11 @@ func (m *Miner) Start() error {
 					blockHash := block.Hash()
 					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
 
-					blockSig, err := bls.Sign(k, blockHash[:])
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
-					randaoSig, err := bls.Sign(k, randaoHash[:])
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
+					blockSig := k.Sign(blockHash[:])
+					randaoSig := k.Sign(randaoHash[:])
 
-					block.Signature = blockSig.Serialize()
-					block.RandaoSignature = randaoSig.Serialize()
+					block.Signature = blockSig.Marshal()
+					block.RandaoSignature = randaoSig.Marshal()
 					if err := m.chain.ProcessBlock(&block); err != nil {
 						m.log.Error(err)
 						return

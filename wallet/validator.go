@@ -1,11 +1,10 @@
 package wallet
 
 import (
-	"crypto/rand"
+	"fmt"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/primitives"
 )
 
 type ValidatorWallet struct {
@@ -15,7 +14,7 @@ type ValidatorWallet struct {
 // Keystore is an interface to a simple keystore.
 type Keystore interface {
 	GenerateNewValidatorKey() (*bls.SecretKey, error)
-	GetValidatorKey(*primitives.Worker) (*bls.SecretKey, bool)
+	GetValidatorKey([]byte) (*bls.SecretKey, bool)
 	HasValidatorKey([48]byte) (bool, error)
 	GetValidatorKeys() ([]*bls.SecretKey, error)
 	Close() error
@@ -45,7 +44,7 @@ func (vw *ValidatorWallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
 			if len(val) == 32 {
 				var valBytes [32]byte
 				copy(valBytes[:], val)
-				secretKey, err := bls.DeserializeSecretKey(valBytes)
+				secretKey, err := bls.SecretKeyFromBytes(valBytes[:])
 				if err != nil {
 					return err
 				}
@@ -60,12 +59,10 @@ func (vw *ValidatorWallet) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	return secKeys, nil
 }
 
-func (vw *ValidatorWallet) GetValidatorKey(worker *primitives.Worker) (*bls.SecretKey, bool) {
-	pubBytes := worker.PubKey
-
+func (vw *ValidatorWallet) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool) {
 	var secretBytes [32]byte
 	err := vw.db.View(func(txn *badger.Txn) error {
-		i, err := txn.Get(pubBytes[:])
+		i, err := txn.Get(pubkey[:])
 		if err != nil {
 			return err
 		}
@@ -74,11 +71,12 @@ func (vw *ValidatorWallet) GetValidatorKey(worker *primitives.Worker) (*bls.Secr
 		return err
 	})
 	if err != nil {
+		fmt.Println(err)
 		return nil, false
 	}
-
-	secretKey, err := bls.DeserializeSecretKey(secretBytes)
+	secretKey, err := bls.SecretKeyFromBytes(secretBytes[:])
 	if err != nil {
+		fmt.Println(err)
 		return nil, false
 	}
 	return secretKey, true
@@ -101,17 +99,14 @@ func (vw *ValidatorWallet) HasValidatorKey(pubBytes [48]byte) (result bool, err 
 }
 
 func (vw *ValidatorWallet) GenerateNewValidatorKey() (*bls.SecretKey, error) {
-	key, err := bls.RandSecretKey(rand.Reader)
-	if err != nil {
-		panic(err)
-	}
+	key := bls.RandKey()
 
-	keyBytes := key.Serialize()
+	keyBytes := key.Marshal()
 
-	pub := key.DerivePublicKey()
-	pubBytes := pub.Serialize()
+	pub := key.PublicKey()
+	pubBytes := pub.Marshal()
 
-	err = vw.db.Update(func(txn *badger.Txn) error {
+	err := vw.db.Update(func(txn *badger.Txn) error {
 		return txn.Set(pubBytes[:], keyBytes[:])
 	})
 
