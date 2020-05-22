@@ -18,7 +18,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
-	"github.com/sirupsen/logrus"
 )
 
 const syncProtocolID = protocol.ID("/ogen/sync/1.0.0")
@@ -42,7 +41,6 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 	for {
 		msg, err := subscription.Next(ctx)
 		if err != nil {
-			logrus.WithField("error", err).Warn("error when getting next topic message")
 			break
 		}
 

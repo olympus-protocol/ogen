@@ -1,13 +1,14 @@
 // Package bls implements a go-wrapper around a library implementing the
-// the BLS12-381 curve and signature scheme. This package exposes a public API for
+// the bls-381 curve and signature scheme. This package exposes a public API for
 // verifying and aggregating BLS signatures used by Ethereum 2.0.
 package bls
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/dgraph-io/ristretto"
-	bls12 "github.com/herumi/bls-eth-go-binary/bls"
+	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/pkg/errors"
@@ -21,10 +22,10 @@ type Prefixes struct {
 }
 
 func init() {
-	if err := bls12.Init(bls12.BLS12_381); err != nil {
+	if err := bls.Init(bls.BLS12_381); err != nil {
 		panic(err)
 	}
-	if err := bls12.SetETHmode(bls12.EthModeDraft05); err != nil {
+	if err := bls.SetETHmode(bls.EthModeDraft05); err != nil {
 		panic(err)
 	}
 }
@@ -39,29 +40,33 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 	BufferItems: 64,
 })
 
-// CurveOrder for the BLS12-381 curve.
-const CurveOrder = "52435875175126190479447740508185965837690552500527637822603658699938581184513"
+// RFieldModulus for the bls-381 curve.
+var RFieldModulus, _ = new(big.Int).SetString("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10)
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
-	s *bls12.Sign
+	s *bls.Sign
 }
 
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
-	p *bls12.PublicKey
+	p *bls.PublicKey
 }
 
 // SecretKey used in the BLS signature scheme.
 type SecretKey struct {
-	p *bls12.SecretKey
+	p *bls.SecretKey
 }
 
 // RandKey creates a new private key using a random method provided as an io.Reader.
 func RandKey() *SecretKey {
-	secKey := &bls12.SecretKey{}
+	secKey := &bls.SecretKey{}
 	secKey.SetByCSPRNG()
 	return &SecretKey{secKey}
+}
+
+func DeriveSecretKey(bs []byte) *SecretKey {
+	return &SecretKey{bls.DeriveSecretKey(bs)}
 }
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
@@ -69,7 +74,7 @@ func SecretKeyFromBytes(priv []byte) (*SecretKey, error) {
 	if len(priv) != 32 {
 		return nil, fmt.Errorf("secret key must be %d bytes", 32)
 	}
-	secKey := &bls12.SecretKey{}
+	secKey := &bls.SecretKey{}
 	err := secKey.Deserialize(priv)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into secret key")
@@ -85,7 +90,7 @@ func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 	if cv, ok := pubkeyCache.Get(string(pub)); ok {
 		return cv.(*PublicKey).Copy()
 	}
-	pubKey := &bls12.PublicKey{}
+	pubKey := &bls.PublicKey{}
 	err := pubKey.Deserialize(pub)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into public key")
@@ -104,7 +109,7 @@ func SignatureFromBytes(sig []byte) (*Signature, error) {
 	if len(sig) != 96 {
 		return nil, fmt.Errorf("signature must be %d bytes", 96)
 	}
-	signature := &bls12.Sign{}
+	signature := &bls.Sign{}
 	err := signature.Deserialize(sig)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into signature")
@@ -138,6 +143,11 @@ func (s *SecretKey) Marshal() []byte {
 		keyBytes = append(emptyBytes, keyBytes...)
 	}
 	return keyBytes
+}
+
+// Add adds two secret keys together.
+func (s *SecretKey) Add(other *SecretKey) {
+	s.p.Add(other.p)
 }
 
 // Marshal a public key into a LittleEndian byte slice.
@@ -210,7 +220,7 @@ func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool 
 		return false
 	}
 	msgSlices := []byte{}
-	var rawKeys []bls12.PublicKey
+	var rawKeys []bls.PublicKey
 	for i := 0; i < size; i++ {
 		msgSlices = append(msgSlices, msgs[i][:]...)
 		rawKeys = append(rawKeys, *pubKeys[i].p)
@@ -232,7 +242,7 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 	if len(pubKeys) == 0 {
 		return false
 	}
-	rawKeys := make([]bls12.PublicKey, len(pubKeys))
+	rawKeys := make([]bls.PublicKey, len(pubKeys))
 	for i := 0; i < len(pubKeys); i++ {
 		rawKeys[i] = *pubKeys[i].p
 	}
@@ -242,7 +252,7 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 
 // NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() *Signature {
-	return &Signature{s: bls12.HashAndMapToSignature([]byte{'m', 'o', 'c', 'k'})}
+	return &Signature{s: bls.HashAndMapToSignature([]byte{'m', 'o', 'c', 'k'})}
 }
 
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.
