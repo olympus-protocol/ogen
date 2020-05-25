@@ -191,7 +191,7 @@ func TestExtendedKeyToFromString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	eskStr := esk.String()
+	eskStr := esk.ToBase58()
 
 	eskFromStr, err := bip32.NewKeyFromString(eskStr)
 	if err != nil {
@@ -223,7 +223,7 @@ func TestExtendedKeyToFromString(t *testing.T) {
 		t.Fatal("expected extended key parent FP to match after serializing/deserializing")
 	}
 
-	epkStr := epk.String()
+	epkStr := epk.ToBase58()
 
 	epkFromStr, err := bip32.NewKeyFromString(epkStr)
 	if err != nil {

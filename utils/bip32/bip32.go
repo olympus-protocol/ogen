@@ -416,8 +416,8 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
-// String returns the extended key as a human-readable base58-encoded string.
-func (k *ExtendedKey) String() string {
+// ToBase58 returns the extended key as a human-readable base58-encoded string.
+func (k *ExtendedKey) ToBase58() string {
 	if len(k.key) == 0 {
 		return "zeroed extended key"
 	}
@@ -617,7 +617,6 @@ func (h *Hash512) Size() int {
 func (h *Hash512) Sum(data []byte) []byte {
 	h0 := chainhash.HashB(append(h.currentData, 0))
 	h1 := chainhash.HashB(append(h.currentData, 1))
-
 	out := append(data, h0...)
 	out = append(out, h1...)
 	return out
