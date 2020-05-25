@@ -34,7 +34,7 @@ type Server struct {
 	GovMan    *gov.GovMan
 	WorkerMan *workers.WorkerMan
 	UsersMan  *users.UserMan
-	RPC       *chainrpc.Wallet
+	RPC       *chainrpc.RPCServices
 	Gui       bool
 }
 
@@ -104,7 +104,10 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc := chainrpc.NewRPCWallet(w, ch)
+	rpc := &chainrpc.RPCServices{
+		Wallet: chainrpc.NewRPCWallet(w, ch),
+		Chain:  chainrpc.NewRPCChain(ch),
+	}
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {
