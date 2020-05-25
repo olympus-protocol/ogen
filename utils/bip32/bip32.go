@@ -1,4 +1,4 @@
-package hdwallets
+package bip32
 
 // // References:
 // //   [BIP32]: BIP0032 - Hierarchical Deterministic Wallets
@@ -22,10 +22,15 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-// // NetPrefix are prefixes used per-network.
+// NetPrefix are prefixes used per-network.
 type NetPrefix struct {
-	ExtPub  []byte
-	ExtPriv []byte
+	Public  []byte
+	Private []byte
+}
+
+var Mainnet = &NetPrefix{
+	Public:  []byte{0x1f, 0x74, 0x90, 0xf0},
+	Private: []byte{0x11, 0x24, 0xd9, 0x70},
 }
 
 const (
@@ -365,7 +370,7 @@ func (k *ExtendedKey) Neuter(net *NetPrefix) (*ExtendedKey, error) {
 	}
 
 	// Get the associated public extended key version bytes.
-	version := net.ExtPub
+	version := net.Public
 
 	// Convert it to an extended public key.  The key for the new extended
 	// key will simply be the pubkey of the current extended private key.
@@ -447,17 +452,17 @@ func (k *ExtendedKey) String() string {
 // IsForNet returns whether or not the extended key is associated with the
 // passed bitcoin network.
 func (k *ExtendedKey) IsForNet(net *NetPrefix) bool {
-	return bytes.Equal(k.version, net.ExtPub) ||
-		bytes.Equal(k.version, net.ExtPriv)
+	return bytes.Equal(k.version, net.Public) ||
+		bytes.Equal(k.version, net.Private)
 }
 
 // SetNet associates the extended key, and any child keys yet to be derived from
 // it, with the passed network.
 func (k *ExtendedKey) SetNet(net *NetPrefix) {
 	if k.isPrivate {
-		k.version = net.ExtPriv
+		k.version = net.Private
 	} else {
-		k.version = net.ExtPub
+		k.version = net.Public
 	}
 }
 
@@ -512,7 +517,7 @@ func NewMaster(seed []byte, net *NetPrefix) (*ExtendedKey, error) {
 	secretKeySer := secretKey.Marshal()
 
 	parentFP := []byte{0x00, 0x00, 0x00, 0x00}
-	return NewExtendedKey(net.ExtPriv, secretKeySer[:], chainCode,
+	return NewExtendedKey(net.Private, secretKeySer[:], chainCode,
 		parentFP, 0, 0, true), nil
 }
 

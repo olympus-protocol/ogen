@@ -1,4 +1,4 @@
-package hdwallets_test
+package bip32_test
 
 import (
 	"bytes"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/olympus-protocol/ogen/utils/bip32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/hdwallets"
 )
 
 type XORShift struct {
@@ -30,11 +30,6 @@ func (xor *XORShift) Read(b []byte) (int, error) {
 	return len(b), nil
 }
 
-var polisNetPrefix = &hdwallets.NetPrefix{
-	ExtPub:  []byte{0x1f, 0x74, 0x90, 0xf0},
-	ExtPriv: []byte{0x11, 0x24, 0xd9, 0x70},
-}
-
 func TestExtendedPrivateKey(t *testing.T) {
 	// Checks to make sure HD.child(10).toPub() == HD.toPub().child(10)
 
@@ -42,7 +37,7 @@ func TestExtendedPrivateKey(t *testing.T) {
 
 	var key [64]byte
 	x.Read(key[:])
-	esk, err := hdwallets.NewMaster(key[:], polisNetPrefix)
+	esk, err := bip32.NewMaster(key[:], bip32.Mainnet)
 
 	if err != nil {
 		t.Fatal(err)
@@ -53,7 +48,7 @@ func TestExtendedPrivateKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	epk, err := esk.Neuter(polisNetPrefix)
+	epk, err := esk.Neuter(bip32.Mainnet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +80,7 @@ func TestExtended(t *testing.T) {
 
 	var key [64]byte
 	x.Read(key[:])
-	esk, err := hdwallets.NewMaster(key[:], polisNetPrefix)
+	esk, err := bip32.NewMaster(key[:], bip32.Mainnet)
 
 	if err != nil {
 		t.Fatal(err)
@@ -96,7 +91,7 @@ func TestExtended(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	epk, err := esk.Neuter(polisNetPrefix)
+	epk, err := esk.Neuter(bip32.Mainnet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,13 +122,13 @@ func TestBasicProperties(t *testing.T) {
 
 	var key [64]byte
 	x.Read(key[:])
-	esk, err := hdwallets.NewMaster(key[:], polisNetPrefix)
+	esk, err := bip32.NewMaster(key[:], bip32.Mainnet)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	epk, err := esk.Neuter(polisNetPrefix)
+	epk, err := esk.Neuter(bip32.Mainnet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,13 +164,13 @@ func TestBasicProperties(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	epkHardened, err := esk.Neuter(polisNetPrefix)
+	epkHardened, err := esk.Neuter(bip32.Mainnet)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	_, err = epkHardened.Child(10 + 0x80000000)
-	if err != hdwallets.ErrDeriveHardFromPublic {
+	if err != bip32.ErrDeriveHardFromPublic {
 		t.Fatal("incorrectly derived child from harded pubkey")
 	}
 }
@@ -185,20 +180,20 @@ func TestExtendedKeyToFromString(t *testing.T) {
 
 	var key [64]byte
 	x.Read(key[:])
-	esk, err := hdwallets.NewMaster(key[:], polisNetPrefix)
+	esk, err := bip32.NewMaster(key[:], bip32.Mainnet)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	epk, err := esk.Neuter(polisNetPrefix)
+	epk, err := esk.Neuter(bip32.Mainnet)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	eskStr := esk.String()
 
-	eskFromStr, err := hdwallets.NewKeyFromString(eskStr)
+	eskFromStr, err := bip32.NewKeyFromString(eskStr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +225,7 @@ func TestExtendedKeyToFromString(t *testing.T) {
 
 	epkStr := epk.String()
 
-	epkFromStr, err := hdwallets.NewKeyFromString(epkStr)
+	epkFromStr, err := bip32.NewKeyFromString(epkStr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +270,7 @@ func TestDeriveKey(t *testing.T) {
 
 	for i := 0; i < DeriveIterations; i++ {
 		hash := chainhash.DoubleHashB([]byte(fmt.Sprintf("%d", i)))
-		masterKey, err := hdwallets.NewMaster(hash, polisNetPrefix)
+		masterKey, err := bip32.NewMaster(hash, bip32.Mainnet)
 		if err != nil {
 			t.Fatal(err)
 		}
