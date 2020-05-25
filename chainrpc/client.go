@@ -56,6 +56,36 @@ func (c *RPCClient) Call(method string, args interface{}, res interface{}) error
 	return nil
 }
 
+// GetInfo gets the blockhash at current height
+func (c *RPCClient) GetChainInfo() (*ChainInfoResponse, error) {
+	var info ChainInfoResponse
+	err := c.Call("Chain.GetChainInfo", Empty{}, &info)
+	if err != nil {
+		return nil, err
+	}
+	return &info, nil
+}
+
+// GetBlockHash gets the blockhash at current height
+func (c *RPCClient) GetBlock(hash string) (string, error) {
+	var block string
+	err := c.Call("Chain.GetBlock", hash, &block)
+	if err != nil {
+		return "", err
+	}
+	return block, nil
+}
+
+// GetBlockHash gets the blockhash at current height
+func (c *RPCClient) GetBlockHash(height uint64) (*chainhash.Hash, error) {
+	var hash chainhash.Hash
+	err := c.Call("Chain.GetBlockHash", height, &hash)
+	if err != nil {
+		return nil, err
+	}
+	return &hash, nil
+}
+
 // GetAddress gets the address of the wallet.
 func (c *RPCClient) GetAddress() (string, error) {
 	var addr string

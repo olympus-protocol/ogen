@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
 	github.com/go-test/deep v1.0.6
+	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/gorilla/rpc v1.2.0
 	github.com/libp2p/go-libp2p v0.9.2
 	github.com/libp2p/go-libp2p-core v0.5.6

@@ -15,9 +15,15 @@ type Config struct {
 	Log     *logger.Logger
 }
 
-func ServeRPC(w *Wallet, config Config) {
+type RPCServices struct {
+	Wallet *Wallet
+	Chain  *Chain
+}
+
+func ServeRPC(services *RPCServices, config Config) {
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")
-	s.RegisterService(w, "Wallet")
+	s.RegisterService(services.Wallet, "Wallet")
+	s.RegisterService(services.Chain, "Chain")
 	go http.ListenAndServe(config.Address, s)
 }
