@@ -93,7 +93,7 @@ func (w *Wallet) initializeWallet() error {
 	if err != nil {
 		return err
 	}
-	address, err := privateKey.PublicKey().ToBech32(w.params.AddressPrefixes)
+	address, err := privateKey.PublicKey().ToAddress(w.params.AddrPrefix.Public)
 	if err != nil {
 		return errors.Wrap(err, "could not get public key from private key")
 	}

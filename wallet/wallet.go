@@ -13,13 +13,7 @@ import (
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
-	"github.com/olympus-protocol/ogen/utils/hdwallets"
 )
-
-var PolisNetPrefix = &hdwallets.NetPrefix{
-	ExtPub:  []byte{0x1f, 0x74, 0x90, 0xf0},
-	ExtPriv: []byte{0x11, 0x24, 0xd9, 0x70},
-}
 
 type Config struct {
 	Log  *logger.Logger

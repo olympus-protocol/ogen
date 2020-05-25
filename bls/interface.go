@@ -14,13 +14,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Prefixes struct {
-	PubKey          string
-	PrivKey         string
-	ContractPubKey  string
-	ContractPrivKey string
-}
-
 func init() {
 	if err := bls.Init(bls.BLS12_381); err != nil {
 		panic(err)
@@ -80,6 +73,11 @@ func SecretKeyFromBytes(priv []byte) (*SecretKey, error) {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into secret key")
 	}
 	return &SecretKey{p: secKey}, err
+}
+
+// ToWIF converts the private key to a Bech32 encoded string.
+func (p *PublicKey) ToWIF(privPrefix string) (string, error) {
+	return bech32.Encode(privPrefix, p.Marshal()), nil
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
@@ -167,13 +165,13 @@ func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
 	return p
 }
 
-// ToBech32 converts the public key to a Bech32 address.
-func (p *PublicKey) ToBech32(prefixes Prefixes) (string, error) {
+// ToAddress converts the public key to a Bech32 address.
+func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
 	out := make([]byte, 20)
 	pkS := p.p.Serialize()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
-	return bech32.Encode(prefixes.PubKey, out), nil
+	return bech32.Encode(pubPrefix, out), nil
 }
 
 // Hash calculates the hash of the public key.
