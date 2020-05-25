@@ -14,7 +14,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"hash"
 	"math/big"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -182,6 +181,11 @@ func (k *ExtendedKey) IsPrivate() bool {
 	return k.isPrivate
 }
 
+// ChainCode gets the chain code of the extended key.
+func (k *ExtendedKey) ChainCode() []byte {
+	return k.chainCode
+}
+
 // Depth returns the current derivation level with respect to the root.
 //
 // The root key has depth zero, and the field has a maximum of 255 due to
@@ -276,7 +280,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 	// data:
 	//   I = HMAC-SHA512(Key = chainCode, Data = data)
 
-	hmac512 := hmac.New(NewHash512, k.chainCode)
+	hmac512 := hmac.New(sha512.New, k.chainCode)
 	hmac512.Write(data)
 	ilr := hmac512.Sum(nil)
 
@@ -348,6 +352,29 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 	parentFP := chainhash.Hash160(publicKey)[:4]
 	return NewExtendedKey(k.version, childKey, childChainCode, parentFP,
 		k.depth+1, i, isPrivate), nil
+}
+
+// Identifier gets the 20-byte fingerprint of the public key.
+func (k *ExtendedKey) Identifier() ([]byte, error) {
+	publicKey, err := k.pubKeyBytes()
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Printf("%x\n", publicKey)
+
+	// The fingerprint of the parent for the derived child is the first 4
+	// bytes of the RIPEMD160(SHA256(parentPubKey)).
+	return chainhash.Hash160(publicKey), nil
+}
+
+// Fingerprint gets the 4-byte fingerprint of the public key.
+func (k *ExtendedKey) Fingerprint() ([]byte, error) {
+	id, err := k.Identifier()
+	if err != nil {
+		return nil, err
+	}
+
+	return id[:4], nil
 }
 
 // Neuter returns a new extended public key from this extended private key.  The
@@ -424,9 +451,9 @@ func (k *ExtendedKey) String() string {
 	//   version (4) || depth (1) || parent fingerprint (4)) ||
 	//   child num (4) || chain code (32) || key (priv ? 32 : 48)
 	serializedBytes := make([]byte, 0, serializedPubKeyLen+4)
-	serializedBytes = append(serializedBytes, k.version...)
-	serializedBytes = append(serializedBytes, k.depth)
-	serializedBytes = append(serializedBytes, k.parentFP...)
+	serializedBytes = append(serializedBytes, k.version...)  //  4 bytes
+	serializedBytes = append(serializedBytes, k.depth)       // 1 byte
+	serializedBytes = append(serializedBytes, k.parentFP...) //
 	serializedBytes = append(serializedBytes, childNumBytes[:]...)
 	serializedBytes = append(serializedBytes, k.chainCode...)
 	if k.isPrivate {
@@ -499,14 +526,17 @@ func NewMaster(seed []byte, net *NetPrefix) (*ExtendedKey, error) {
 	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
 		return nil, ErrInvalidSeedLen
 	}
-	hmac512 := hmac.New(NewHash512, masterKey)
+
+	hmac512 := hmac.New(sha512.New, masterKey)
 	hmac512.Write(seed)
 	lr := hmac512.Sum(nil)
+	fmt.Printf("%x\n", lr)
 	// Split "I" into two 32-byte sequences Il and Ir where:
 	//   Il = master secret key
 	//   Ir = master chain code
 	secretKey := bls.DeriveSecretKey(lr[:len(lr)/2])
 	chainCode := lr[len(lr)/2:]
+	fmt.Printf("secret: %x, chain code: %x\n", lr[:len(lr)/2], chainCode)
 	// Ensure the key in usable.
 
 	secretKeySer := secretKey.Marshal()
@@ -587,44 +617,4 @@ func GenerateSeed(length uint8) ([]byte, error) {
 	}
 
 	return buf, nil
-}
-
-// Hash512 is a 512-bit hash based on two SHA256 hashes concatenated together.
-type Hash512 struct {
-	currentData []byte
-}
-
-// BlockSize gets the block size of the hash (which is the same
-// as SHA256).
-func (h *Hash512) BlockSize() int { return sha512.BlockSize }
-
-// Reset resets the hash to the default state.
-func (h *Hash512) Reset() {
-	h.currentData = nil
-}
-
-// Size gets the size of the hash in bytes.
-func (h *Hash512) Size() int {
-	return 64
-}
-
-// Sum appends the checksum of the hash to the data provided and returns it.
-func (h *Hash512) Sum(data []byte) []byte {
-	h0 := chainhash.HashB(append(h.currentData, 0))
-	h1 := chainhash.HashB(append(h.currentData, 1))
-
-	out := append(data, h0...)
-	out = append(out, h1...)
-	return out
-}
-
-func (h *Hash512) Write(data []byte) (int, error) {
-	h.currentData = append(h.currentData, data...)
-	return len(data), nil
-}
-
-// NewHash512 creates a new 512-bit hash.
-func NewHash512() hash.Hash {
-	h := &Hash512{}
-	return h
 }
