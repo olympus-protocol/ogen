@@ -93,7 +93,7 @@ pack-darwin: build-darwin
 build-darwin:
 	@echo Building $(BINARY_NAME) for darwin
 	env GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
-
+	
 release: clean pack-darwin pack-linux-amd64 pack-linux-386 pack-linux-arm64 pack-linux-arm pack-windows-amd64 pack-windows-386
 	mkdir ./release
 	mv ogen-$(OGEN_VERSION)-* ./release
@@ -118,6 +118,7 @@ clean:
 	rm -rf ogen-linux*
 	rm -rf *.tar.gz
 	rm -rf *.zip
+	rm -rf release/
 
 
 
