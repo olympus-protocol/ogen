@@ -1,30 +1,30 @@
 package params
 
 import (
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/hdwallets"
 )
 
-type ChainParams struct {
-	Name                       string
-	DefaultP2PPort             string
-	GenesisHash                chainhash.Hash
-	HDPrefixes                 hdwallets.NetPrefix
-	HDCoinIndex                uint32
-	AddressPrefixes            bls.Prefixes
-	LastPreWorkersBlock        uint32
-	PreWorkersPubKeyHash       string
-	BlocksReductionCycle       uint32
-	SuperBlockCycle            uint32
-	SuperBlockStartHeight      uint32
-	GovernanceBudgetPercentage float64
-	ProfitSharingCycle         uint32
-	ProfitSharingStartCycle    uint32
-	GovernanceProposalFee      amount.AmountType
-	BlockReductionPercentage   float64
+type AddrPrefixes struct {
+	Public  string
+	Private string
+}
 
+type ChainParams struct {
+	Name                         string
+	DefaultP2PPort               string
+	GenesisHash                  chainhash.Hash
+	AddrPrefix                   AddrPrefixes
+	LastPreWorkersBlock          uint32
+	PreWorkersPubKeyHash         string
+	BlocksReductionCycle         uint32
+	SuperBlockCycle              uint32
+	SuperBlockStartHeight        uint32
+	GovernanceBudgetPercentage   float64
+	ProfitSharingCycle           uint32
+	ProfitSharingStartCycle      uint32
+	GovernanceProposalFee        amount.AmountType
+	BlockReductionPercentage     float64
 	EpochLength                  uint64
 	EjectionBalance              uint64
 	MaxBalanceChurnQuotient      uint64
@@ -53,16 +53,9 @@ var NetworkNames = map[string]string{
 var Mainnet = ChainParams{
 	Name:           "polis",
 	DefaultP2PPort: "24126",
-	HDPrefixes: hdwallets.NetPrefix{
-		ExtPub:  []byte{0x1f, 0x74, 0x90, 0xf0},
-		ExtPriv: []byte{0x11, 0x24, 0xd9, 0x70},
-	},
-	HDCoinIndex: 1997,
-	AddressPrefixes: bls.Prefixes{
-		PubKey:          "olpub",
-		PrivKey:         "olprv",
-		ContractPubKey:  "ctpub",
-		ContractPrivKey: "ctprv",
+	AddrPrefix: AddrPrefixes{
+		Public:  "olpub",
+		Private: "olprv",
 	},
 	LastPreWorkersBlock:          500,
 	PreWorkersPubKeyHash:         "olpub12vjdayxm6eygqkxrtyvt0jnjxn8965wflynmf4d899pnkzp9glmslqcvce",
@@ -94,19 +87,13 @@ var Mainnet = ChainParams{
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
 
 var TestNet = ChainParams{
-	Name:           "test",
-	DefaultP2PPort: "24126",
-	HDPrefixes: hdwallets.NetPrefix{
-		ExtPub:  nil,
-		ExtPriv: nil,
+	Name:                "test",
+	DefaultP2PPort:      "24126",
+	LastPreWorkersBlock: 10,
+	AddrPrefix: AddrPrefixes{
+		Public:  "tlpub",
+		Private: "tlprv",
 	},
-	AddressPrefixes: bls.Prefixes{
-		PubKey:          "tolpub",
-		PrivKey:         "tolprv",
-		ContractPrivKey: "tctpub",
-		ContractPubKey:  "tctprv",
-	},
-	LastPreWorkersBlock:          10,
 	PreWorkersPubKeyHash:         "1HWfiw9Lbg2vh8A1sZDsp5BVLHeW41V13R", // 5JbK2h1P7BQTmwJgCPRonJzCqRMNpFPvsAPTwrHBdT7DmEzzsUK
 	BlocksReductionCycle:         259200,                               // 6 months
 	SuperBlockCycle:              1440,                                 // 1 day

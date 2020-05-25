@@ -26,7 +26,7 @@ type Blockchain struct {
 	db blockdb.DB
 
 	// StateService
-	state   *StateService
+	state *StateService
 
 	notifees    map[BlockchainNotifee]struct{}
 	notifeeLock sync.RWMutex

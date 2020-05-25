@@ -20,19 +20,6 @@ else ifeq ($(LOWECASE_OS),windows)
     BINARY_NAME := ogen.exe
 endif
 
-install-deps: clean
-	@echo Install dependencies QT wallet for $(OS)
-ifeq ($(LOWECASE_OS),darwin)
-	./contrib/depends/install-osx.sh
-else ifeq ($(LOWECASE_OS),linux)
-	./contrib/depends/install-linux.sh
-else ifeq ($(LOWECASE_OS),windows)
-	./contrib/depends/install-windows.sh
-else
-	@echo No building specifications for $(OS)
-endif
-
-
 run: build
 	@echo Running $(BINARY_NAME)
 	./$(BINARY_NAME)
@@ -106,7 +93,7 @@ pack-darwin: build-darwin
 build-darwin:
 	@echo Building $(BINARY_NAME) for darwin
 	env GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
-
+	
 release: clean pack-darwin pack-linux-amd64 pack-linux-386 pack-linux-arm64 pack-linux-arm pack-windows-amd64 pack-windows-386
 	mkdir ./release
 	mv ogen-$(OGEN_VERSION)-* ./release
@@ -131,6 +118,7 @@ clean:
 	rm -rf ogen-linux*
 	rm -rf *.tar.gz
 	rm -rf *.zip
+	rm -rf release/
 
 
 

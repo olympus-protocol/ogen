@@ -1,4 +1,4 @@
-Go BLS HD Wallet tools
+Go BLS HD Wallet tools (BIP32)
 ------------------
 > This library is using the BLS12-381 curve to generate HD Wallets.
 > This should not be used for Bitcoin or any other cryptocurrency using the secp256k1 curve.
@@ -8,17 +8,17 @@ Go BLS HD Wallet tools
  
 ### Get this library
 
-        go get github.com/olympus-protocol/ogen/utils/hdwallets
+        go get github.com/olympus-protocol/ogen/utils/bip32
 
 ### Example
 
         // Generate a random 256 bit seed
-        seed, err := hdwallets.GenerateSeed(256)
+        seed, err := bip32.GenerateSeed(256)
 
         // Create a master private key:
         // To create extended keys, you must add the prefix definitions.
         // To use Bitcoin defaults use nil as prefix param.
-        masterprv := hdwallet.NewMaster(seed, nil)
+        masterprv := bip32.NewMaster(seed, nil)
 
         // Convert a private key to public key
         // To convert an extended key into the public form, you need to pass

@@ -1,45 +1,15 @@
-package wallet
+package rpcclient
 
 import (
 	"encoding/base64"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
-	"github.com/c-bata/go-prompt"
 	"github.com/fatih/color"
-	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
-
-func completer(d prompt.Document) []prompt.Suggest {
-	s := []prompt.Suggest{
-		{Text: "getbalance", Description: "Get balance of wallet"},
-		{Text: "getaddress", Description: "Get current wallet addresses"},
-		{Text: "sendtoaddress", Description: "Send money to a user"},
-		{Text: "listvalidators", Description: "List owned and managed validators"},
-		{Text: "startvalidator", Description: "Start a validator by submitting a deposit transaction"},
-		{Text: "generatevalidatorkey", Description: "Generates a validator key and allows managing it"},
-		{Text: "exitvalidator", Description: "Attempts to exit an owned validator"},
-	}
-	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
-}
-
-// Empty is the empty request.
-type Empty struct{}
-
-func askWalletPass() ([]byte, error) {
-	fmt.Printf("Password: ")
-	return wallet.AskPass()
-}
-
-// CLI is the module that allows validator and wallet operation.
-type CLI struct {
-	rpcClient *chainrpc.RPCClient
-}
 
 func amountStringToAmount(a string) (uint64, error) {
 	if strings.Contains(".", a) {
@@ -70,36 +40,35 @@ func amountToAmountString(amount uint64) string {
 	return fmt.Sprintf("%d.%.03d", whole, fractional)
 }
 
-var ctrlCKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
-	Key: prompt.ControlC,
-	Fn:  func(*prompt.Buffer) { os.Exit(0) },
-})
-var ctrlDKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
-	Key: prompt.ControlD,
-	Fn:  func(*prompt.Buffer) { os.Exit(0) },
-})
+func askWalletPass() ([]byte, error) {
+	fmt.Printf("Password: ")
+	return wallet.AskPass()
+}
 
-func (wc *CLI) GetAddress() (string, error) {
-	address, err := wc.rpcClient.GetAddress()
+// GetAddress returns the address of the wallet
+func (c *CLI) GetAddress() (string, error) {
+	address, err := c.rpcClient.GetAddress()
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("Wallet address: %s", address), nil
 }
 
-func (wc *CLI) GetBalance(args []string) (string, error) {
+// GetBalance returns balance of the wallet
+func (c *CLI) GetBalance(args []string) (string, error) {
 	addr := ""
 	if len(args) > 0 {
 		addr = args[0]
 	}
-	bal, err := wc.rpcClient.GetBalance(addr)
+	bal, err := c.rpcClient.GetBalance(addr)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("Wallet balance: %s", amountToAmountString(bal)), nil
 }
 
-func (wc *CLI) SendToAddress(args []string) (string, error) {
+// SendToAddress sends the selected amount to the specified address
+func (c *CLI) SendToAddress(args []string) (string, error) {
 	if len(args) != 2 {
 		return "", fmt.Errorf("Usage: sendtoaddress <toaddress> <amount>")
 	}
@@ -111,7 +80,7 @@ func (wc *CLI) SendToAddress(args []string) (string, error) {
 	if amount <= 0 {
 		return "", fmt.Errorf("amount must be positive")
 	}
-	_, err = wc.rpcClient.SendToAddress(toAddress, uint64(amount), askWalletPass)
+	_, err = c.rpcClient.SendToAddress(toAddress, uint64(amount), askWalletPass)
 	if err != nil {
 		return "", err
 	}
@@ -121,8 +90,8 @@ func (wc *CLI) SendToAddress(args []string) (string, error) {
 const validatorsPerPage = 32
 
 // ListValidators lists the validators owned or managed by the wallet.
-func (wc *CLI) ListValidators(args []string) (string, error) {
-	validators, err := wc.rpcClient.ListValidators()
+func (c *CLI) ListValidators(args []string) (string, error) {
+	validators, err := c.rpcClient.ListValidators()
 	if err != nil {
 		return "", fmt.Errorf("could not get validator list: %s", err)
 	}
@@ -158,7 +127,7 @@ func (wc *CLI) ListValidators(args []string) (string, error) {
 }
 
 // StartValidator starts a validator given it's private key.
-func (wc *CLI) StartValidator(args []string) (string, error) {
+func (c *CLI) StartValidator(args []string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Usage: startvalidator <privkey>")
 	}
@@ -175,7 +144,7 @@ func (wc *CLI) StartValidator(args []string) (string, error) {
 	var privKeyBytes [32]byte
 	copy(privKeyBytes[:], privkey)
 
-	deposit, err := wc.rpcClient.StartValidator(privKeyBytes, askWalletPass)
+	deposit, err := c.rpcClient.StartValidator(privKeyBytes, askWalletPass)
 	if err != nil {
 		return "", err
 	}
@@ -186,7 +155,7 @@ func (wc *CLI) StartValidator(args []string) (string, error) {
 }
 
 // ExitValidator exits a validator given it's public key.
-func (wc *CLI) ExitValidator(args []string) (string, error) {
+func (c *CLI) ExitValidator(args []string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Usage: exitvalidator <pubkey>")
 	}
@@ -203,7 +172,7 @@ func (wc *CLI) ExitValidator(args []string) (string, error) {
 	var pubKeyBytes [48]byte
 	copy(pubKeyBytes[:], pubkey)
 
-	_, err = wc.rpcClient.ExitValidator(pubKeyBytes, askWalletPass)
+	_, err = c.rpcClient.ExitValidator(pubKeyBytes, askWalletPass)
 	if err != nil {
 		return "", err
 	}
@@ -212,72 +181,11 @@ func (wc *CLI) ExitValidator(args []string) (string, error) {
 }
 
 // GenerateValidatorKey generates a validator key and starts managing it.
-func (wc *CLI) GenerateValidatorKey() (string, error) {
-	key, err := wc.rpcClient.GenerateValidatorKey()
+func (c *CLI) GenerateValidatorKey() (string, error) {
+	key, err := c.rpcClient.GenerateValidatorKey()
 	if err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf("Validator Private Key: %s", base64.StdEncoding.EncodeToString(key.PrivateKey[:])), nil
-}
-
-// Run runs the wallet CLI.
-func (wc *CLI) Run() {
-	color.Green("Welcome to the Olympus Wallet CLI")
-	for {
-		t := prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "), ctrlCKeybind, ctrlDKeybind)
-
-		args := strings.Split(t, " ")
-		if len(args) == 0 {
-			continue
-		}
-
-		if args[0] == "" {
-			continue
-		}
-
-		var out string
-		var err error
-
-		switch args[0] {
-		case "getaddress":
-			out, err = wc.GetAddress()
-		case "getbalance":
-			out, err = wc.GetBalance(args[1:])
-		case "sendtoaddress":
-			out, err = wc.SendToAddress(args[1:])
-		case "listvalidators":
-			out, err = wc.ListValidators(args[1:])
-		case "startvalidator":
-			out, err = wc.StartValidator(args[1:])
-		case "generatevalidatorkey":
-			out, err = wc.GenerateValidatorKey()
-		case "exitvalidator":
-			out, err = wc.ExitValidator(args[1:])
-		default:
-			err = fmt.Errorf("Unknown command: %s", args[0])
-		}
-
-		if err != nil {
-			color.Red("%s", err)
-		} else {
-			color.Green("%s", out)
-		}
-	}
-}
-
-func NewWalletCLI(rpcClient *chainrpc.RPCClient) *CLI {
-	return &CLI{
-		rpcClient: rpcClient,
-	}
-}
-
-func RunWallet(cmd *cobra.Command, args []string) {
-	rpc, err := cmd.Flags().GetString("rpc")
-	if err != nil {
-		panic(err)
-	}
-	rpcClient := chainrpc.NewRPCClient(rpc)
-	walletCLI := NewWalletCLI(rpcClient)
-	walletCLI.Run()
 }
