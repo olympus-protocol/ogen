@@ -20,19 +20,6 @@ else ifeq ($(LOWECASE_OS),windows)
     BINARY_NAME := ogen.exe
 endif
 
-install-deps: clean
-	@echo Install dependencies QT wallet for $(OS)
-ifeq ($(LOWECASE_OS),darwin)
-	./contrib/depends/install-osx.sh
-else ifeq ($(LOWECASE_OS),linux)
-	./contrib/depends/install-linux.sh
-else ifeq ($(LOWECASE_OS),windows)
-	./contrib/depends/install-windows.sh
-else
-	@echo No building specifications for $(OS)
-endif
-
-
 run: build
 	@echo Running $(BINARY_NAME)
 	./$(BINARY_NAME)
