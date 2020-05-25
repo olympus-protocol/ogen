@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/olympus-protocol/ogen/utils/hdwallets"
+	"github.com/olympus-protocol/ogen/utils/bip32"
 )
 
 // "invalid": {
@@ -100,11 +100,6 @@ import (
 // 	]
 // }
 
-var PolisNetPrefix = &hdwallets.NetPrefix{
-	ExtPub:  []byte{0x1f, 0x74, 0x90, 0xf0},
-	ExtPriv: []byte{0x11, 0x24, 0xd9, 0x70},
-}
-
 type MasterKeyInfo struct {
 	Seed        string `json:"seed"`
 	PubKey      string `json:"pubKey"`
@@ -144,11 +139,11 @@ type TestFixture struct {
 func generateValidKey(seedStr string) ValidKey {
 	seed, _ := hex.DecodeString(seedStr)
 
-	master, err := hdwallets.NewMaster(seed, PolisNetPrefix)
+	master, err := bip32.NewMaster(seed, bip32.Mainnet)
 	if err != nil {
 		panic(err)
 	}
-	masterPub, err := master.Neuter(PolisNetPrefix)
+	masterPub, err := master.Neuter(bip32.Mainnet)
 	if err != nil {
 		panic(err)
 	}
@@ -170,8 +165,8 @@ func generateValidKey(seedStr string) ValidKey {
 			PubKey:      hex.EncodeToString(pub.Marshal()),
 			PrivKey:     hex.EncodeToString(priv.Marshal()),
 			ChainCode:   hex.EncodeToString(master.ChainCode()),
-			Base58:      masterPub.String(),
-			Base58Priv:  master.String(),
+			Base58:      masterPub.ToBase58(),
+			Base58Priv:  master.ToBase58(),
 			Identifier:  hex.EncodeToString(id),
 			Fingerprint: hex.EncodeToString(fp),
 		},
