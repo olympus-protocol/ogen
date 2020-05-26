@@ -58,7 +58,7 @@ func (vg *voterGroup) add(id uint32, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []Worker, bitfield []uint8, validatorIndices []uint32) {
+func (vg *voterGroup) addFromBitfield(registry []Validator, bitfield []uint8, validatorIndices []uint32) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
@@ -102,7 +102,7 @@ func (s *State) InitiateValidatorExit(index uint32) error {
 }
 
 // ExitValidator handles state changes when a validator exits.
-func (s *State) ExitValidator(index uint32, status WorkerStatus, p *params.ChainParams) error {
+func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.ChainParams) error {
 	validator := &s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
@@ -117,14 +117,14 @@ func (s *State) ExitValidator(index uint32, status WorkerStatus, p *params.Chain
 		return nil
 	}
 
-	s.UtxoState.Balances[validator.PayeeAddress] += validator.Balance
+	s.CoinsState.Balances[validator.PayeeAddress] += validator.Balance
 	validator.Balance = 0
 
 	return nil
 }
 
 // UpdateValidatorStatus moves a validator to a specific status.
-func (s *State) UpdateValidatorStatus(index uint32, status WorkerStatus, p *params.ChainParams) error {
+func (s *State) UpdateValidatorStatus(index uint32, status ValidatorStatus, p *params.ChainParams) error {
 	if status == StatusActive {
 		err := s.ActivateValidator(index)
 		return err
@@ -194,7 +194,7 @@ func generateRandNumber(from chainhash.Hash, max uint32) uint64 {
 	return randaoBig.Mod(randaoBig, numValidator).Uint64()
 }
 
-// Shuffle shuffles workers using a RANDAO.
+// Shuffle shuffles validator using a RANDAO.
 func Shuffle(randao chainhash.Hash, vals []uint32) []uint32 {
 	nextProposers := make([]uint32, len(vals))
 	copy(nextProposers, vals)
@@ -304,7 +304,7 @@ func (s *State) GetTotalBalances() uint64 {
 		total += v.Balance
 	}
 
-	for _, v := range s.UtxoState.Balances {
+	for _, v := range s.CoinsState.Balances {
 		total += v
 	}
 

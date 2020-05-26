@@ -10,19 +10,10 @@ import (
 
 func TestUserCopy(t *testing.T) {
 	user := User{
-		OutPoint: OutPoint{
-			TxHash: chainhash.Hash{1},
-			Index:  2,
-		},
 		PubKey: [48]byte{3},
 		Name:   "test!",
 	}
 	user2 := user.Copy()
-
-	user.OutPoint.TxHash[0] = 2
-	if user2.OutPoint.TxHash[0] == 2 {
-		t.Fatal("mutating outpoint mutates copy")
-	}
 
 	user.PubKey[0] = 1
 	if user2.PubKey[0] == 1 {
@@ -37,10 +28,6 @@ func TestUserCopy(t *testing.T) {
 
 func TestUserDeserializeSerialize(t *testing.T) {
 	user := User{
-		OutPoint: OutPoint{
-			TxHash: chainhash.Hash{1},
-			Index:  2,
-		},
 		PubKey: [48]byte{3},
 		Name:   "test!",
 	}
@@ -65,10 +52,6 @@ func TestUserStateCopy(t *testing.T) {
 	userState := UserState{
 		Users: map[chainhash.Hash]User{
 			chainhash.Hash{14}: {
-				OutPoint: OutPoint{
-					TxHash: chainhash.Hash{1},
-					Index:  2,
-				},
 				PubKey: [48]byte{3},
 				Name:   "4",
 			},
@@ -90,10 +73,6 @@ func TestUserStateDeserializeSerialize(t *testing.T) {
 	userState := UserState{
 		Users: map[chainhash.Hash]User{
 			chainhash.Hash{14}: {
-				OutPoint: OutPoint{
-					TxHash: chainhash.Hash{1},
-					Index:  2,
-				},
 				PubKey: [48]byte{3},
 				Name:   "4",
 			},

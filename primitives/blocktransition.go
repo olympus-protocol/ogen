@@ -85,8 +85,8 @@ func (s *State) ApplyExit(exit *Exit) error {
 // IsDepositValid validates signatures and ensures that a deposit is valid.
 func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
 	pkh := deposit.PublicKey.Hash()
-	if s.UtxoState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
-		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.UtxoState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
+	if s.CoinsState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
+		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
 	}
 
 	// first validate signature
@@ -129,9 +129,9 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 	pkh := deposit.PublicKey.Hash()
 
-	s.UtxoState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
+	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
-	s.ValidatorRegistry = append(s.ValidatorRegistry, Worker{
+	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
 		PubKey:           deposit.Data.PublicKey.Marshal(),
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
@@ -301,7 +301,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	for _, tx := range b.Txs {
 		switch p := tx.Payload.(type) {
 		case *CoinPayload:
-			if err := s.UtxoState.ApplyTransaction(p, b.Header.FeeAddress); err != nil {
+			if err := s.CoinsState.ApplyTransaction(p, b.Header.FeeAddress); err != nil {
 				return err
 			}
 		default:
@@ -314,19 +314,19 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 	proposer := s.ValidatorRegistry[proposerIndex]
 
-	workerPub, err := bls.PublicKeyFromBytes(proposer.PubKey)
+	validatorPub, err := bls.PublicKeyFromBytes(proposer.PubKey)
 	if err != nil {
 		return err
 	}
 
 	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", b.Header.Slot)))
 
-	valid := blockSig.Verify(blockHash[:], workerPub)
+	valid := blockSig.Verify(blockHash[:], validatorPub)
 	if !valid {
 		return errors.New("error validating signature for block")
 	}
 
-	valid = randaoSig.Verify(slotHash[:], workerPub)
+	valid = randaoSig.Verify(slotHash[:], validatorPub)
 	if !valid {
 		return errors.New("error validating RANDAO signature for block")
 	}

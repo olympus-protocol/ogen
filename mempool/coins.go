@@ -79,7 +79,7 @@ type CoinsMempool struct {
 // }
 
 // Add adds an item to the coins mempool.
-func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.UtxoState) error {
+func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -126,7 +126,7 @@ func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := state.UtxoState.ApplyTransaction(&tx, [20]byte{}); err != nil {
+			if err := state.CoinsState.ApplyTransaction(&tx, [20]byte{}); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, primitives.Tx{
@@ -161,7 +161,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			continue
 		}
 
-		currentState := cm.blockchain.State().TipState().UtxoState
+		currentState := cm.blockchain.State().TipState().CoinsState
 
 		err = cm.Add(*tx, &currentState)
 		if err != nil {

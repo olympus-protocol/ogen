@@ -6,10 +6,10 @@ import (
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
-// WorkerStatus represents the status of a worker.
-type WorkerStatus uint8
+// ValidatorStatus represents the status of a Validator.
+type ValidatorStatus uint8
 
-func (w WorkerStatus) String() string {
+func (w ValidatorStatus) String() string {
 	switch w {
 	case StatusActive:
 		return "active"
@@ -28,7 +28,7 @@ func (w WorkerStatus) String() string {
 
 const (
 	// StatusStarting is when the validator is waiting to join.
-	StatusStarting WorkerStatus = iota
+	StatusStarting ValidatorStatus = iota
 
 	// StatusActive is when the validator is currently in the queue.
 	StatusActive
@@ -46,38 +46,38 @@ const (
 	StatusExitedWithoutPenalty
 )
 
-// Worker is a worker in the queue.
-type Worker struct {
+// Validator is a validator in the queue.
+type Validator struct {
 	Balance          uint64
 	PubKey           []byte
 	PayeeAddress     [20]byte
-	Status           WorkerStatus
+	Status           ValidatorStatus
 	FirstActiveEpoch int64
 	LastActiveEpoch  int64
 }
 
 // IsActive checks if a validator is currently active.
-func (wr *Worker) IsActive() bool {
+func (wr *Validator) IsActive() bool {
 	return wr.Status == StatusActive || wr.Status == StatusActivePendingExit
 }
 
 // IsActiveAtEpoch checks if a validator is active at a slot.
-func (wr *Worker) IsActiveAtEpoch(epoch int64) bool {
+func (wr *Validator) IsActiveAtEpoch(epoch int64) bool {
 	return wr.IsActive() &&
 		(wr.FirstActiveEpoch == -1 || wr.FirstActiveEpoch <= epoch) &&
 		(wr.LastActiveEpoch == -1 || epoch <= wr.LastActiveEpoch)
 }
 
-// Serialize serializes a WorkerRow to the provided writer.
-func (wr *Worker) Serialize(w io.Writer) error {
+// Serialize serializes a validator row to the provided writer.
+func (wr *Validator) Serialize(w io.Writer) error {
 	if err := serializer.WriteElements(w, wr.Balance, wr.PayeeAddress, wr.Status, wr.FirstActiveEpoch, wr.LastActiveEpoch); err != nil {
 		return err
 	}
 	return serializer.WriteVarBytes(w, wr.PubKey)
 }
 
-// Deserialize deserializes a worker row from the provided reader.
-func (wr *Worker) Deserialize(r io.Reader) error {
+// Deserialize deserializes a validator row from the provided reader.
+func (wr *Validator) Deserialize(r io.Reader) error {
 	if err := serializer.ReadElements(r, &wr.Balance, &wr.PayeeAddress, &wr.Status, &wr.FirstActiveEpoch, &wr.LastActiveEpoch); err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (wr *Worker) Deserialize(r io.Reader) error {
 	return nil
 }
 
-// Copy returns a copy of the worker.
-func (wr *Worker) Copy() Worker {
+// Copy returns a copy of the validator.
+func (wr *Validator) Copy() Validator {
 	return *wr
 }

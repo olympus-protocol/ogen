@@ -8,17 +8,12 @@ import (
 )
 
 type User struct {
-	OutPoint OutPoint
-	PubKey   [48]byte
-	Name     string
+	PubKey [48]byte
+	Name   string
 }
 
 // Serialize serializes the UserRow to a writer.
 func (ur *User) Serialize(w io.Writer) error {
-	err := ur.OutPoint.Serialize(w)
-	if err != nil {
-		return err
-	}
 	if err := serializer.WriteElements(w, ur.PubKey, ur.Name); err != nil {
 		return err
 	}
@@ -27,10 +22,6 @@ func (ur *User) Serialize(w io.Writer) error {
 
 // Deserialize deserializes a user from the writer.
 func (ur *User) Deserialize(r io.Reader) error {
-	err := ur.OutPoint.Deserialize(r)
-	if err != nil {
-		return err
-	}
 	if err := serializer.ReadElements(r, &ur.PubKey, &ur.Name); err != nil {
 		return err
 	}

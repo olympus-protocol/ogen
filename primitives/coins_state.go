@@ -1,67 +1,20 @@
 package primitives
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
-type OutPoint struct {
-	TxHash chainhash.Hash
-	Index  int64
-}
-
-func (o *OutPoint) IsNull() bool {
-	zeroHash := chainhash.Hash{}
-	if o.TxHash == zeroHash && o.Index == 0 {
-		return true
-	}
-	return false
-}
-
-func (o *OutPoint) Serialize(w io.Writer) error {
-	err := serializer.WriteElements(w, o.TxHash, o.Index)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (o *OutPoint) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &o.TxHash, &o.Index)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (o *OutPoint) Hash() (chainhash.Hash, error) {
-	buf := bytes.NewBuffer([]byte{})
-	err := o.Serialize(buf)
-	if err != nil {
-		return chainhash.Hash{}, err
-	}
-	return chainhash.DoubleHashH(buf.Bytes()), nil
-}
-
-func NewOutPoint(hash chainhash.Hash, index int64) *OutPoint {
-	return &OutPoint{
-		TxHash: hash,
-		Index:  index,
-	}
-}
-
-// UtxoState is the state that we
-type UtxoState struct {
+// CoinsState is the state that we
+type CoinsState struct {
 	Balances map[[20]byte]uint64
 	Nonces   map[[20]byte]uint64
 }
 
 // ApplyTransaction applies a transaction to the coin state.
-func (u *UtxoState) ApplyTransaction(tx *CoinPayload, blockWithdrawalAddress [20]byte) error {
+func (u *CoinsState) ApplyTransaction(tx *CoinPayload, blockWithdrawalAddress [20]byte) error {
 	pkh := tx.FromPubkeyHash()
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
@@ -82,8 +35,8 @@ func (u *UtxoState) ApplyTransaction(tx *CoinPayload, blockWithdrawalAddress [20
 	return nil
 }
 
-// Copy copies UtxoState and returns a new one.
-func (u *UtxoState) Copy() UtxoState {
+// Copy copies CoinsState and returns a new one.
+func (u *CoinsState) Copy() CoinsState {
 	u2 := *u
 	u2.Balances = make(map[[20]byte]uint64)
 	u2.Nonces = make(map[[20]byte]uint64)
@@ -96,7 +49,7 @@ func (u *UtxoState) Copy() UtxoState {
 	return u2
 }
 
-func (u *UtxoState) Serialize(w io.Writer) error {
+func (u *CoinsState) Serialize(w io.Writer) error {
 	if err := serializer.WriteVarInt(w, uint64(len(u.Balances))); err != nil {
 		return err
 	}
@@ -128,7 +81,7 @@ func (u *UtxoState) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (u *UtxoState) Deserialize(r io.Reader) error {
+func (u *CoinsState) Deserialize(r io.Reader) error {
 	if u.Balances == nil {
 		u.Balances = make(map[[20]byte]uint64)
 	}

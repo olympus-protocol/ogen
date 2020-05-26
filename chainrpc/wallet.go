@@ -63,11 +63,11 @@ func (w *Wallet) SendToAddress(req *http.Request, args *SendToAddressRequest, re
 
 // ValidatorResponse is the response the wallet sends for a validator.
 type ValidatorResponse struct {
-	Pubkey            [48]byte                `json: "pubkey"`
-	Balance           uint64                  `json: "balance"`
-	Status            primitives.WorkerStatus `json: "status"`
-	HavePrivateKey    bool                    `json: "have_private_key"`
-	HaveWithdrawalKey bool                    `json: "have_withdrawal_key"`
+	Pubkey            [48]byte                   `json: "pubkey"`
+	Balance           uint64                     `json: "balance"`
+	Status            primitives.ValidatorStatus `json: "status"`
+	HavePrivateKey    bool                       `json: "have_private_key"`
+	HaveWithdrawalKey bool                       `json: "have_withdrawal_key"`
 }
 
 // ValidatorListReponse is the response the wallet sends for a list of validators.

@@ -13,12 +13,11 @@ const LastBlockHashesSize = 8
 
 // State is the state of consensus in the blockchain.
 type State struct {
-	UtxoState       UtxoState
-	GovernanceState GovernanceState
-	UserState       UserState
+	CoinsState CoinsState
+	UserState  UserState
 
 	// ValidatorRegistry keeps track of validators in the state.
-	ValidatorRegistry []Worker
+	ValidatorRegistry []Validator
 
 	// LatestValidatorRegistryChange keeps track of the last time the validator
 	// registry was changed. We only want to update the registry if a block was
@@ -110,10 +109,7 @@ func (s *State) Serialize(w io.Writer) error {
 		s.NextRANDAO); err != nil {
 		return err
 	}
-	if err := s.UtxoState.Serialize(w); err != nil {
-		return err
-	}
-	if err := s.GovernanceState.Serialize(w); err != nil {
+	if err := s.CoinsState.Serialize(w); err != nil {
 		return err
 	}
 	if err := s.UserState.Serialize(w); err != nil {
@@ -202,10 +198,7 @@ func (s *State) Deserialize(r io.Reader) error {
 		&s.NextRANDAO); err != nil {
 		return err
 	}
-	if err := s.UtxoState.Deserialize(r); err != nil {
-		return err
-	}
-	if err := s.GovernanceState.Deserialize(r); err != nil {
+	if err := s.CoinsState.Deserialize(r); err != nil {
 		return err
 	}
 	if err := s.UserState.Deserialize(r); err != nil {
@@ -215,7 +208,7 @@ func (s *State) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	s.ValidatorRegistry = make([]Worker, num)
+	s.ValidatorRegistry = make([]Validator, num)
 	for i := range s.ValidatorRegistry {
 		if err := s.ValidatorRegistry[i].Deserialize(r); err != nil {
 			return err
@@ -305,10 +298,9 @@ func (s *State) Hash() chainhash.Hash {
 func (s *State) Copy() State {
 	s2 := *s
 
-	s2.UtxoState = s.UtxoState.Copy()
-	s2.GovernanceState = s.GovernanceState.Copy()
+	s2.CoinsState = s.CoinsState.Copy()
 	s2.UserState = s.UserState.Copy()
-	s2.ValidatorRegistry = make([]Worker, len(s.ValidatorRegistry))
+	s2.ValidatorRegistry = make([]Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {
 		s2.ValidatorRegistry[i] = c.Copy()

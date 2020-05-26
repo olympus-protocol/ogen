@@ -14,10 +14,6 @@ type TxType = int32
 
 const (
 	TxCoins TxType = iota + 1
-	TxWorker
-	TxGovernance
-	TxVotes
-	TxUsers
 )
 
 type CoinPayload struct {

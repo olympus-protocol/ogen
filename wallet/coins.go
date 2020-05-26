@@ -24,7 +24,7 @@ func (b *Wallet) GetBalance(addr string) (uint64, error) {
 	}
 	var pkhBytes [20]byte
 	copy(pkhBytes[:], pkh)
-	out, ok := b.chain.State().TipState().UtxoState.Balances[pkhBytes]
+	out, ok := b.chain.State().TipState().CoinsState.Balances[pkhBytes]
 	if !ok {
 		return 0, nil
 	}
@@ -222,7 +222,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 
 	currentState := b.chain.State().TipState()
 
-	if err := b.mempool.Add(*payload, &currentState.UtxoState); err != nil {
+	if err := b.mempool.Add(*payload, &currentState.CoinsState); err != nil {
 		return nil, err
 	}
 

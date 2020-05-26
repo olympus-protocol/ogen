@@ -10,16 +10,13 @@ import (
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/gov"
 	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/users"
 	"github.com/olympus-protocol/ogen/wallet"
-	"github.com/olympus-protocol/ogen/workers"
 )
 
 type Server struct {
@@ -27,15 +24,12 @@ type Server struct {
 	config *config.Config
 	params params.ChainParams
 
-	Chain     *chain.Blockchain
-	HostNode  *peers.HostNode
-	Wallet    *wallet.Wallet
-	Miner     *miner.Miner
-	GovMan    *gov.GovMan
-	WorkerMan *workers.WorkerMan
-	UsersMan  *users.UserMan
-	RPC       *chainrpc.RPCServices
-	Gui       bool
+	Chain    *chain.Blockchain
+	HostNode *peers.HostNode
+	Wallet   *wallet.Wallet
+	Miner    *miner.Miner
+	RPC      *chainrpc.RPCServices
+	Gui      bool
 }
 
 func (s *Server) Start() {
@@ -116,45 +110,18 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 			return nil, err
 		}
 	}
-	workersMan := workers.NewWorkersMan(loadWorkersConfig(configParams, logger), currParams)
-	govMan := gov.NewGovMan(loadGovConfig(configParams, logger), currParams)
-	usersMan := users.NewUsersMan(loadUsersConfig(configParams, logger), currParams)
 	s := &Server{
 		config: configParams,
 		log:    logger,
 
-		Chain:     ch,
-		HostNode:  hostnode,
-		Wallet:    w,
-		Miner:     min,
-		WorkerMan: workersMan,
-		GovMan:    govMan,
-		UsersMan:  usersMan,
-		Gui:       gui,
-		RPC:       rpc,
+		Chain:    ch,
+		HostNode: hostnode,
+		Wallet:   w,
+		Miner:    min,
+		Gui:      gui,
+		RPC:      rpc,
 	}
 	return s, nil
-}
-
-func loadGovConfig(config *config.Config, logger *logger.Logger) gov.Config {
-	cfg := gov.Config{
-		Log: logger,
-	}
-	return cfg
-}
-
-func loadUsersConfig(config *config.Config, logger *logger.Logger) users.Config {
-	cfg := users.Config{
-		Log: logger,
-	}
-	return cfg
-}
-
-func loadWorkersConfig(config *config.Config, logger *logger.Logger) workers.Config {
-	cfg := workers.Config{
-		Log: logger,
-	}
-	return cfg
 }
 
 func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config {

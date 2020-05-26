@@ -525,7 +525,7 @@ package peers
 // 					p.log.Tracef("received tx msg from peer %v", p.GetID())
 // 					state := p.peerman.chain.State().TipState()
 // 					for _, tx := range msg.Txs {
-// 						if err := p.peerman.coinMempool.Add(tx, &state.UtxoState); err != nil {
+// 						if err := p.peerman.coinMempool.Add(tx, &state.CoinsState); err != nil {
 // 							continue
 // 						}
 // 						p.coinBloomFilter.Add(tx.Hash())
