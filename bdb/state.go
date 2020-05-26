@@ -1,4 +1,4 @@
-package blockdb
+package bdb
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/logger"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/primitives"

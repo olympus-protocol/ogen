@@ -9,8 +9,8 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/utils/logger"
 
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 

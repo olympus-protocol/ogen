@@ -1,4 +1,4 @@
-package blockdb
+package bdb
 
 import (
 	"bytes"

@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
 )
 

@@ -12,12 +12,12 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/server"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -31,7 +31,7 @@ const (
 
 // loadOgen is the main function to run ogen.
 func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
-	db, err := blockdb.NewBlockDB(configParams.DataFolder, currParams, log)
+	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
 	}

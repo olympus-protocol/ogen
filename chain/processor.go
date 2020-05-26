@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/db/blockdb"
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
@@ -16,7 +16,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction) error {
+func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(int64(justifiedState.EpochIndex))
@@ -137,7 +137,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Debugf(msg)
 	}
 
-	return ch.db.Update(func(txn blockdb.DBUpdateTransaction) error {
+	return ch.db.Update(func(txn bdb.DBUpdateTransaction) error {
 		err = txn.AddRawBlock(block)
 		if err != nil {
 			return err

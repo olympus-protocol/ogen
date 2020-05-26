@@ -10,9 +10,9 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 type Config struct {

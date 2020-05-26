@@ -6,16 +6,16 @@ import (
 	"path"
 
 	"github.com/dgraph-io/badger"
+	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
 )
 
@@ -67,8 +67,8 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
-	logger.Tracef("loading network parameters for '%v'", params.NetworkNames[configParams.NetworkName])
+func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
+	logger.Tracef("loading network parameters for '%v'", currParams.Name)
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {
 		return nil, err

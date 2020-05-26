@@ -1,7 +1,6 @@
 package params
 
 import (
-	"github.com/olympus-protocol/ogen/utils/amount"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -21,7 +20,6 @@ type ChainParams struct {
 	GovernanceBudgetPercentage   float64
 	ProfitSharingCycle           uint32
 	ProfitSharingStartCycle      uint32
-	GovernanceProposalFee        amount.AmountType
 	BlockReductionPercentage     float64
 	EpochLength                  uint64
 	EjectionBalance              uint64
@@ -43,13 +41,8 @@ type ChainParams struct {
 	ChainFileURL  string
 }
 
-var NetworkNames = map[string]string{
-	"mainnet": "Main Network",
-	"test":    "Test Network",
-}
-
 var Mainnet = ChainParams{
-	Name:           "polis",
+	Name:           "mainnet",
 	DefaultP2PPort: "24126",
 	AddrPrefix: AddrPrefixes{
 		Public:  "olpub",
@@ -64,7 +57,6 @@ var Mainnet = ChainParams{
 	BlockReductionPercentage:     0.2,    // 20%
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
-	GovernanceProposalFee:        amount.AmountType(50), // 50 POLIS
 	EpochLength:                  5,
 	EjectionBalance:              1000, // POLIS
 	MaxBalanceChurnQuotient:      8,
@@ -83,7 +75,7 @@ var Mainnet = ChainParams{
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
 
 var TestNet = ChainParams{
-	Name:           "test",
+	Name:           "testnet",
 	DefaultP2PPort: "24126",
 	AddrPrefix: AddrPrefixes{
 		Public:  "tlpub",

@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 var shutdownRequestChannel = make(chan struct{})

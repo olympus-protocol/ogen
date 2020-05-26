@@ -7,7 +7,7 @@ package index_test
 
 // 	"github.com/go-test/deep"
 // 	"github.com/olympus-protocol/ogen/chain/index"
-// 	"github.com/olympus-protocol/ogen/db/blockdb"
+// 	"github.com/olympus-protocol/ogen/bdb"
 // 	"github.com/olympus-protocol/ogen/primitives"
 // 	"github.com/olympus-protocol/ogen/utils/chainhash"
 // )
@@ -22,7 +22,7 @@ package index_test
 // 	}
 // 	blockRow := index.BlockRow{
 // 		Header:  header,
-// 		Locator: blockdb.BlockLocation{},
+// 		Locator: db.BlockLocation{},
 // 		Height:  7,
 // 		Parent:  nil,
 // 		Hash:    header.Hash(),
@@ -53,7 +53,7 @@ package index_test
 // 		PrevBlockHash: chainhash.Hash{4},
 // 		Timestamp:     time.Unix(5, 0),
 // 	}
-// 	blockIndex, err := index.InitBlocksIndex(genesisHeader, blockdb.BlockLocation{})
+// 	blockIndex, err := index.InitBlocksIndex(genesisHeader, db.BlockLocation{})
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}

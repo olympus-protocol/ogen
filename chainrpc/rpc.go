@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
 
-	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 type Config struct {

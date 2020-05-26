@@ -8,8 +8,8 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/utils/logger"
 
 	"github.com/olympus-protocol/ogen/primitives"
 )

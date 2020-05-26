@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/olympus-protocol/ogen/cli"
-	"github.com/olympus-protocol/ogen/logger"
+	"github.com/olympus-protocol/ogen/utils/logger"
 	"os"
 )
 

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/db/blockdb"
-	"github.com/olympus-protocol/ogen/logger"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 type stateDerivedFromBlock struct {
@@ -80,7 +80,7 @@ type StateService struct {
 	log    *logger.Logger
 	lock   sync.RWMutex
 	params params.ChainParams
-	db     blockdb.DB
+	db     bdb.DB
 
 	blockIndex *index.BlockIndex
 	blockChain *Chain
@@ -170,7 +170,7 @@ func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 	return nil
 }
 
-func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, genesisState primitives.State) error {
+func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, genesisState primitives.State) error {
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("loading chain state...")
 
@@ -178,7 +178,7 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, 
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
-	err := s.db.Update(func(txn blockdb.DBUpdateTransaction) error {
+	err := s.db.Update(func(txn bdb.DBUpdateTransaction) error {
 		return txn.AddRawBlock(&genesisBlock)
 	})
 	if err != nil {
@@ -195,7 +195,7 @@ func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, 
 	s.blockIndex = blockIndex
 	s.blockChain = NewChain(row)
 
-	return db.Update(func(txn blockdb.DBUpdateTransaction) error {
+	return db.Update(func(txn bdb.DBUpdateTransaction) error {
 		if _, err := txn.GetBlockRow(genesisHash); err != nil {
 			if err := s.initializeDatabase(txn, row, genesisState); err != nil {
 				return err
@@ -303,7 +303,7 @@ func (s *StateService) TipState() *primitives.State {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
+func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db bdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 
