@@ -72,7 +72,7 @@ type ValidatorResponse struct {
 
 // ValidatorListReponse is the response the wallet sends for a list of validators.
 type ValidatorListReponse struct {
-	Validators []ValidatorResponse  `json: "validators"`
+	Validators []ValidatorResponse `json: "validators"`
 }
 
 // ListValidators lists all validators the user owns or controls.
