@@ -523,7 +523,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	activeValidators := s.GetValidatorIndicesActiveAt(int64(s.EpochIndex + 1))
 	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, activeValidators, p)
 
-	copy(s.PreviousEpochVoteAssignments, s.CurrentEpochVoteAssignments)
+	s.PreviousEpochVoteAssignments = s.CurrentEpochVoteAssignments
+	s.CurrentEpochVoteAssignments = Shuffle(s.RANDAO, activeValidators)
 
 	copy(s.RANDAO[:], s.NextRANDAO[:])
 

@@ -41,10 +41,10 @@ func (d *Deposit) Encode(w io.Writer) error {
 func (d *Deposit) Decode(r io.Reader) error {
 	sigBytes := make([]byte, 96)
 	pubBytes := make([]byte, 48)
-	if _, err := r.Read(pubBytes[:]); err != nil {
+	if _, err := io.ReadFull(r, pubBytes[:]); err != nil {
 		return err
 	}
-	if _, err := r.Read(sigBytes[:]); err != nil {
+	if _, err := io.ReadFull(r, sigBytes[:]); err != nil {
 		return err
 	}
 	if err := d.Data.Decode(r); err != nil {
@@ -104,7 +104,7 @@ func (dd *DepositData) Encode(w io.Writer) error {
 // Decode decodes the deposit data from a reader.
 func (dd *DepositData) Decode(r io.Reader) error {
 	pubBytes := make([]byte, 48)
-	sigBytes := make([]byte, 48)
+	sigBytes := make([]byte, 96)
 	var withdrawalAddress [20]byte
 
 	if _, err := io.ReadFull(r, pubBytes[:]); err != nil {

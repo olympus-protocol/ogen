@@ -24,7 +24,7 @@ var (
 func init() {
 	generateChainCmd.Flags().Int64Var(&genesisTimeString, "genesistime", 0, "sets a genesis time for the blockchain (defaults to now)")
 	generateChainCmd.Flags().StringSliceVar(&connect, "connect", []string{}, "IP addresses for initial connections for this blockchain")
-	generateChainCmd.Flags().StringVar(&withdrawAddress, "withdrawaddress", "olpub166swhm8xkmusyu3kz4a9r8x0lc2qsncd9jnke6", "withdraw address for validators or unspendable address if not defined")
+	generateChainCmd.Flags().StringVar(&withdrawAddress, "withdrawaddress", "tolpub1kehaj5wqe6f54phsef3pamzwlygt4ac4x3qw4h", "withdraw address for validators or unspendable address if not defined")
 	generateChainCmd.Flags().StringVar(&outFile, "out", "chain.json", "chain file to save")
 
 	rootCmd.AddCommand(generateChainCmd)
@@ -66,6 +66,7 @@ var generateChainCmd = &cobra.Command{
 			Validators:         validators,
 			GenesisTime:        genesisTime.Unix(),
 			InitialConnections: connect,
+			PremineAddress:     withdrawAddress,
 		}
 
 		chainFileBytes, err := json.Marshal(chainFile)

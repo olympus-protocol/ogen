@@ -33,3 +33,6 @@ chain*.json
 __debug_bin
 release/
 *.tar.gz
+
+db/blockdb/
+*.log

@@ -11,6 +11,7 @@ type ChainFile struct {
 	Validators         []primitives.ValidatorInitialization `json:"validators"`
 	GenesisTime        int64                                `json:"genesis_time"`
 	InitialConnections []string                             `json:"initial_connections"`
+	PremineAddress     string                               `json:"premine_address"`
 }
 
 // ToInitializationParameters converts the chain configuration file to initialization
@@ -19,6 +20,7 @@ func (cf *ChainFile) ToInitializationParameters() primitives.InitializationParam
 	ip := primitives.InitializationParameters{
 		InitialValidators: cf.Validators,
 		GenesisTime:       time.Unix(cf.GenesisTime, 0),
+		PremineAddress:    cf.PremineAddress,
 	}
 
 	if cf.GenesisTime == 0 {

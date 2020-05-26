@@ -3,7 +3,6 @@ package primitives
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -50,6 +49,7 @@ type ValidatorInitialization struct {
 // the new genesis state.
 type InitializationParameters struct {
 	InitialValidators []ValidatorInitialization
+	PremineAddress    string
 	GenesisTime       time.Time
 }
 
@@ -80,7 +80,10 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		}
 	}
 
-	premineAddr, _ := hex.DecodeString("3ef0b7dc02ecffc7e7ddac52ff0f689b8b838e49")
+	_, premineAddr, err := bech32.Decode(ip.PremineAddress)
+	if err != nil {
+		return nil, err
+	}
 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)
