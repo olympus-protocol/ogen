@@ -34,8 +34,8 @@ type BasicKeystore struct {
 	keys map[[48]byte]bls.SecretKey
 }
 
-// GetKey gets the key for a certain worker.
-func (b *BasicKeystore) GetKey(w *primitives.Worker) (*bls.SecretKey, bool) {
+// GetKey gets the key for a certain validator.
+func (b *BasicKeystore) GetKey(w *primitives.Validator) (*bls.SecretKey, bool) {
 	var pub [48]byte
 	copy(pub[:], w.PubKey)
 	key, found := b.keys[pub]

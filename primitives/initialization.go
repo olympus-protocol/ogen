@@ -55,7 +55,7 @@ type InitializationParameters struct {
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
 func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (*State, error) {
-	initialValidators := make([]Worker, len(ip.InitialValidators))
+	initialValidators := make([]Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
 		_, pkh, err := bech32.Decode(v.PayeeAddress)
@@ -70,7 +70,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		var pkhBytes [20]byte
 		copy(pkhBytes[:], pkh)
 
-		initialValidators[i] = Worker{
+		initialValidators[i] = Validator{
 			Balance:          p.DepositAmount * p.UnitsPerCoin,
 			PubKey:           v.PubKey,
 			PayeeAddress:     pkhBytes,
@@ -86,14 +86,11 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	copy(premineAddrArr[:], premineAddr)
 
 	s := &State{
-		UtxoState: UtxoState{
+		CoinsState: CoinsState{
 			Balances: map[[20]byte]uint64{
 				premineAddrArr: 1000 * 1000000, // 1 million coins
 			},
 			Nonces: make(map[[20]byte]uint64),
-		},
-		GovernanceState: GovernanceState{
-			Proposals: make(map[chainhash.Hash]GovernanceProposal),
 		},
 		UserState: UserState{
 			Users: make(map[chainhash.Hash]User),

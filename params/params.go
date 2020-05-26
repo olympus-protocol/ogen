@@ -15,8 +15,6 @@ type ChainParams struct {
 	DefaultP2PPort               string
 	GenesisHash                  chainhash.Hash
 	AddrPrefix                   AddrPrefixes
-	LastPreWorkersBlock          uint32
-	PreWorkersPubKeyHash         string
 	BlocksReductionCycle         uint32
 	SuperBlockCycle              uint32
 	SuperBlockStartHeight        uint32
@@ -57,8 +55,6 @@ var Mainnet = ChainParams{
 		Public:  "olpub",
 		Private: "olprv",
 	},
-	LastPreWorkersBlock:          500,
-	PreWorkersPubKeyHash:         "olpub12vjdayxm6eygqkxrtyvt0jnjxn8965wflynmf4d899pnkzp9glmslqcvce",
 	BlocksReductionCycle:         262800, // 1 year
 	SuperBlockCycle:              21600,  // 1 month
 	SuperBlockStartHeight:        0,      // TODO define
@@ -87,18 +83,16 @@ var Mainnet = ChainParams{
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
 
 var TestNet = ChainParams{
-	Name:                "test",
-	DefaultP2PPort:      "24126",
-	LastPreWorkersBlock: 10,
+	Name:           "test",
+	DefaultP2PPort: "24126",
 	AddrPrefix: AddrPrefixes{
 		Public:  "tlpub",
 		Private: "tlprv",
 	},
-	PreWorkersPubKeyHash:         "1HWfiw9Lbg2vh8A1sZDsp5BVLHeW41V13R", // 5JbK2h1P7BQTmwJgCPRonJzCqRMNpFPvsAPTwrHBdT7DmEzzsUK
-	BlocksReductionCycle:         259200,                               // 6 months
-	SuperBlockCycle:              1440,                                 // 1 day
-	GovernanceBudgetPercentage:   0.2,                                  // 20%
-	BlockReductionPercentage:     0.2,                                  // 20%
+	BlocksReductionCycle:         259200, // 6 months
+	SuperBlockCycle:              1440,   // 1 day
+	GovernanceBudgetPercentage:   0.2,    // 20%
+	BlockReductionPercentage:     0.2,    // 20%
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
