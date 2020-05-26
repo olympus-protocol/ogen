@@ -25,7 +25,7 @@ func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 		return nil, fmt.Errorf("public key must be %d bytes", 48)
 	}
 	if cv, ok := pubkeyCache.Get(string(pub)); ok {
-		return cv.(*PublicKey).Copy()
+		return cv.(*PublicKey).Copy(), nil
 	}
 	pubKey := &bls.PublicKey{}
 	err := pubKey.Deserialize(pub)
@@ -33,10 +33,7 @@ func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into public key")
 	}
 	pubKeyObj := &PublicKey{p: pubKey}
-	copiedKey, err := pubKeyObj.Copy()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not copy public key")
-	}
+	copiedKey := pubKeyObj.Copy()
 	pubkeyCache.Set(string(pub), copiedKey, 48)
 	return pubKeyObj, nil
 }
@@ -46,10 +43,15 @@ func (p *PublicKey) Marshal() []byte {
 	return p.p.Serialize()
 }
 
+// Equals checks if two public keys are equal.
+func (p *PublicKey) Equals(other *PublicKey) bool {
+	return p.p.IsEqual(other.p)
+}
+
 // Copy the public key to a new pointer reference.
-func (p *PublicKey) Copy() (*PublicKey, error) {
+func (p *PublicKey) Copy() *PublicKey {
 	np := *p.p
-	return &PublicKey{p: &np}, nil
+	return &PublicKey{p: &np}
 }
 
 // Aggregate two public keys.

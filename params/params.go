@@ -5,8 +5,9 @@ import (
 )
 
 type AddrPrefixes struct {
-	Public  string
-	Private string
+	Public   string
+	Private  string
+	Multisig string
 }
 
 type ChainParams struct {
@@ -45,8 +46,9 @@ var Mainnet = ChainParams{
 	Name:           "mainnet",
 	DefaultP2PPort: "24126",
 	AddrPrefix: AddrPrefixes{
-		Public:  "olpub",
-		Private: "olprv",
+		Public:   "olpub",
+		Private:  "olprv",
+		Multisig: "olmul",
 	},
 	BlocksReductionCycle:         262800, // 1 year
 	SuperBlockCycle:              21600,  // 1 month
@@ -78,8 +80,9 @@ var TestNet = ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "24126",
 	AddrPrefix: AddrPrefixes{
-		Public:  "tlpub",
-		Private: "tlprv",
+		Public:   "tlpub",
+		Private:  "tlprv",
+		Multisig: "tlmul",
 	},
 	BlocksReductionCycle:         259200, // 6 months
 	SuperBlockCycle:              1440,   // 1 day
