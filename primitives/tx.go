@@ -93,6 +93,26 @@ func (c *TransferSinglePayload) VerifySig() error {
 	return nil
 }
 
+// GetNonce gets the transaction nonce.
+func (c *TransferSinglePayload) GetNonce() uint64 {
+	return c.Nonce
+}
+
+// GetAmount gets the transaction amount to send.
+func (c *TransferSinglePayload) GetAmount() uint64 {
+	return c.Amount
+}
+
+// GetFee gets the transaction fee.
+func (c *TransferSinglePayload) GetFee() uint64 {
+	return c.Fee
+}
+
+// GetFromAddress gets the from address.
+func (c *TransferSinglePayload) GetFromAddress() [20]byte {
+	return c.FromPubkeyHash()
+}
+
 // Decode decodes the transaction payload from the given reader.
 func (c *TransferSinglePayload) Decode(r io.Reader) error {
 	if err := serializer.ReadElements(r, &c.To); err != nil {
@@ -153,8 +173,10 @@ func (c *TransferMultiPayload) Hash() chainhash.Hash {
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferMultiPayload) FromPubkeyHash() []byte {
-	return c.Signature.PublicKey.ToHash()
+func (c *TransferMultiPayload) FromPubkeyHash() [20]byte {
+	var out [20]byte
+	copy(out[:], c.Signature.PublicKey.ToHash())
+	return out
 }
 
 // Encode enccodes the transaction to the writer.
@@ -220,6 +242,21 @@ func (c *TransferMultiPayload) Decode(r io.Reader) error {
 	return nil
 }
 
+// GetNonce gets the transaction nonce.
+func (c *TransferMultiPayload) GetNonce() uint64 {
+	return c.Nonce
+}
+
+// GetAmount gets the transaction amount to send.
+func (c *TransferMultiPayload) GetAmount() uint64 {
+	return c.Amount
+}
+
+// GetFee gets the transaction fee.
+func (c *TransferMultiPayload) GetFee() uint64 {
+	return c.Fee
+}
+
 var _ TxPayload = &TransferMultiPayload{}
 
 // GenesisPayload is the payload of the genesis transaction.
@@ -235,6 +272,10 @@ func (g *GenesisPayload) Decode(r io.Reader) error { return nil }
 type TxPayload interface {
 	Encode(w io.Writer) error
 	Decode(r io.Reader) error
+	GetNonce() uint64
+	GetAmount() uint64
+	GetFee() uint64
+	FromPubkeyHash() [20]byte
 }
 
 // Tx represents a transaction on the blockchain.

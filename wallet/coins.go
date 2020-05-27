@@ -45,7 +45,7 @@ func (b *Wallet) GetAddressRaw() ([20]byte, error) {
 	return pkhBytes, nil
 }
 
-func (b *Wallet) broadcastTx(payload *primitives.TransferSinglePayload) {
+func (b *Wallet) broadcastTx(payload *primitives.Tx) {
 	buf := bytes.NewBuffer([]byte{})
 	err := payload.Encode(buf)
 	if err != nil {
@@ -222,11 +222,11 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 
 	currentState := b.chain.State().TipState()
 
-	if err := b.mempool.Add(*payload, &currentState.CoinsState); err != nil {
+	if err := b.mempool.Add(*tx, &currentState.CoinsState); err != nil {
 		return nil, err
 	}
 
-	b.broadcastTx(payload)
+	b.broadcastTx(tx)
 
 	txHash := tx.Hash()
 

@@ -13,8 +13,30 @@ type CoinsState struct {
 	Nonces   map[[20]byte]uint64
 }
 
+// ApplyTransactionSingle applies a transaction to the coin state.
+func (u *CoinsState) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte) error {
+	pkh := tx.FromPubkeyHash()
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+	}
+
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+	}
+
+	if err := tx.VerifySig(); err != nil {
+		return err
+	}
+
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
+	return nil
+}
+
 // ApplyTransaction applies a transaction to the coin state.
-func (u *CoinsState) ApplyTransaction(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte) error {
+func (u *CoinsState) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte) error {
 	pkh := tx.FromPubkeyHash()
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)

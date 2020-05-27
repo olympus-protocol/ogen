@@ -15,22 +15,26 @@ import (
 )
 
 type coinMempoolItem struct {
-	transactions map[uint64]primitives.TransferSinglePayload
+	transactions map[uint64]primitives.Tx
 	balanceSpent uint64
 }
 
-func (cmi *coinMempoolItem) add(item primitives.TransferSinglePayload, maxAmount uint64) error {
-	if item.Amount+item.Fee+cmi.balanceSpent >= maxAmount {
-		return fmt.Errorf("did not add transaction spending %d with balance of %d", item.Amount+item.Fee+cmi.balanceSpent, maxAmount)
+func (cmi *coinMempoolItem) add(item primitives.Tx, maxAmount uint64) error {
+	txNonce := item.Payload.GetNonce()
+	txAmount := item.Payload.GetAmount()
+	txFee := item.Payload.GetFee()
+
+	if txAmount+txFee+cmi.balanceSpent >= maxAmount {
+		return fmt.Errorf("did not add transaction spending %d with balance of %d", txAmount+txFee+cmi.balanceSpent, maxAmount)
 	}
 
-	if _, ok := cmi.transactions[item.Nonce]; ok {
+	if _, ok := cmi.transactions[txNonce]; ok {
 		// silently accept since we already have this
 		return nil
 	}
 
-	cmi.balanceSpent += item.Amount + item.Fee
-	cmi.transactions[item.Nonce] = item
+	cmi.balanceSpent += txAmount + txFee
+	cmi.transactions[txNonce] = item
 
 	return nil
 }
@@ -38,7 +42,7 @@ func (cmi *coinMempoolItem) add(item primitives.TransferSinglePayload, maxAmount
 func (cmi *coinMempoolItem) removeBefore(nonce uint64) {
 	for i := range cmi.transactions {
 		if i <= nonce {
-			cmi.balanceSpent -= cmi.transactions[i].Fee + cmi.transactions[i].Amount
+			cmi.balanceSpent -= cmi.transactions[i].Payload.GetFee() + cmi.transactions[i].Payload.GetAmount()
 			delete(cmi.transactions, i)
 		}
 	}
@@ -46,7 +50,7 @@ func (cmi *coinMempoolItem) removeBefore(nonce uint64) {
 
 func newCoinMempoolItem() *coinMempoolItem {
 	return &coinMempoolItem{
-		transactions: make(map[uint64]primitives.TransferSinglePayload),
+		transactions: make(map[uint64]primitives.Tx),
 	}
 }
 
@@ -79,11 +83,11 @@ type CoinsMempool struct {
 // }
 
 // Add adds an item to the coins mempool.
-func (cm *CoinsMempool) Add(item primitives.TransferSinglePayload, state *primitives.CoinsState) error {
+func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
-	fpkh := item.FromPubkeyHash()
+	fpkh := item.Payload.FromPubkeyHash()
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
@@ -126,14 +130,18 @@ func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := state.CoinsState.ApplyTransaction(&tx, [20]byte{}); err != nil {
-				continue
+			switch u := tx.Payload.(type) {
+			case *primitives.TransferSinglePayload:
+				if err := state.CoinsState.ApplyTransactionSingle(u, [20]byte{}); err != nil {
+					continue
+				}
+			case *primitives.TransferMultiPayload:
+				if err := state.CoinsState.ApplyTransactionMulti(u, [20]byte{}); err != nil {
+					continue
+				}
 			}
-			allTransactions = append(allTransactions, primitives.Tx{
-				TxVersion: 0,
-				TxType:    primitives.TxTransferSingle,
-				Payload:   &tx,
-			})
+
+			allTransactions = append(allTransactions, tx)
 			if uint64(len(allTransactions)) >= maxTransactions {
 				break outer
 			}
@@ -153,7 +161,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		}
 
 		txBuf := bytes.NewReader(msg.Data)
-		tx := new(primitives.TransferSinglePayload)
+		tx := new(primitives.Tx)
 
 		if err := tx.Decode(txBuf); err != nil {
 			// TODO: ban peer

@@ -301,7 +301,11 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	for _, tx := range b.Txs {
 		switch p := tx.Payload.(type) {
 		case *TransferSinglePayload:
-			if err := s.CoinsState.ApplyTransaction(p, b.Header.FeeAddress); err != nil {
+			if err := s.CoinsState.ApplyTransactionSingle(p, b.Header.FeeAddress); err != nil {
+				return err
+			}
+		case *TransferMultiPayload:
+			if err := s.CoinsState.ApplyTransactionMulti(p, b.Header.FeeAddress); err != nil {
 				return err
 			}
 		default:

@@ -7,12 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var coinbaseTx = Tx{
-	TxVersion: 1,
-	TxType:    TxTransferSingle,
-	Payload:   &GenesisPayload{},
-}
-
 var genesisHash = chainhash.Hash([chainhash.HashSize]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -30,6 +24,6 @@ func GetGenesisBlock(params params.ChainParams) Block {
 			VoteMerkleRoot: chainhash.Hash{},
 			Timestamp:      time.Unix(0x0, 0),
 		},
-		Txs: []Tx{coinbaseTx},
+		Txs: []Tx{},
 	}
 }
