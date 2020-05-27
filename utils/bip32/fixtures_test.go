@@ -1,12 +1,4 @@
-package main
-
-import (
-	"encoding/hex"
-	"encoding/json"
-	"os"
-
-	"github.com/olympus-protocol/ogen/utils/bip32"
-)
+package bip32_test
 
 // "invalid": {
 // 	"fromBase58": [
@@ -100,85 +92,85 @@ import (
 // 	]
 // }
 
-type MasterKeyInfo struct {
-	Seed        string `json:"seed"`
-	PubKey      string `json:"pubKey"`
-	PrivKey     string `json:"privKey"`
-	ChainCode   string `json:"chainCode"`
-	Base58      string `json:"base58"`
-	Base58Priv  string `json:"base58Priv"`
-	Identifier  string `json:"identifier"`
-	Fingerprint string `json:"fingerprint"`
-}
+// type MasterKeyInfo struct {
+// 	Seed        string `json:"seed"`
+// 	PubKey      string `json:"pubKey"`
+// 	PrivKey     string `json:"privKey"`
+// 	ChainCode   string `json:"chainCode"`
+// 	Base58      string `json:"base58"`
+// 	Base58Priv  string `json:"base58Priv"`
+// 	Identifier  string `json:"identifier"`
+// 	Fingerprint string `json:"fingerprint"`
+// }
 
-type ChildKeyInfo struct {
-	Path        string `json:"path"`
-	M           int    `json:"m"`
-	Hardened    bool   `json:"hardened"`
-	Index       int    `json:"index"`
-	Depth       int    `json:"depth"`
-	PubKey      string `json:"pubKey"`
-	PrivKey     string `json:"privKey"`
-	ChainCode   string `json:"chainCode"`
-	Base58      string `json:"base58"`
-	Base58Priv  string `json:"base58Priv"`
-	Identifier  string `json:"identifier"`
-	Fingerprint string `json:"fingerprint"`
-}
+// type ChildKeyInfo struct {
+// 	Path        string `json:"path"`
+// 	M           int    `json:"m"`
+// 	Hardened    bool   `json:"hardened"`
+// 	Index       int    `json:"index"`
+// 	Depth       int    `json:"depth"`
+// 	PubKey      string `json:"pubKey"`
+// 	PrivKey     string `json:"privKey"`
+// 	ChainCode   string `json:"chainCode"`
+// 	Base58      string `json:"base58"`
+// 	Base58Priv  string `json:"base58Priv"`
+// 	Identifier  string `json:"identifier"`
+// 	Fingerprint string `json:"fingerprint"`
+// }
 
-type ValidKey struct {
-	Comment  *string        `json:"comment"`
-	Master   MasterKeyInfo  `json:"master"`
-	Children []ChildKeyInfo `json:"children"`
-}
+// type ValidKey struct {
+// 	Comment  *string        `json:"comment"`
+// 	Master   MasterKeyInfo  `json:"master"`
+// 	Children []ChildKeyInfo `json:"children"`
+// }
 
-type TestFixture struct {
-	Valid []ValidKey
-}
+// type TestFixture struct {
+// 	Valid []ValidKey
+// }
 
-func generateValidKey(seedStr string) ValidKey {
-	seed, _ := hex.DecodeString(seedStr)
+// func generateValidKey(seedStr string) ValidKey {
+// 	seed, _ := hex.DecodeString(seedStr)
 
-	master, err := bip32.NewMaster(seed, bip32.Mainnet)
-	if err != nil {
-		panic(err)
-	}
-	masterPub, err := master.Neuter(bip32.Mainnet)
-	if err != nil {
-		panic(err)
-	}
-	id, _ := master.Identifier()
-	fp, _ := master.Fingerprint()
+// 	master, err := bip32.NewMaster(seed, bip32.Mainnet)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	masterPub, err := master.Neuter(bip32.Mainnet)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	id, _ := master.Identifier()
+// 	fp, _ := master.Fingerprint()
 
-	priv, err := master.BlsPrivKey()
-	if err != nil {
-		panic(err)
-	}
-	pub, err := master.BlsPubKey()
-	if err != nil {
-		panic(err)
-	}
-	return ValidKey{
-		Comment: nil,
-		Master: MasterKeyInfo{
-			Seed:        seedStr,
-			PubKey:      hex.EncodeToString(pub.Marshal()),
-			PrivKey:     hex.EncodeToString(priv.Marshal()),
-			ChainCode:   hex.EncodeToString(master.ChainCode()),
-			Base58:      masterPub.ToBase58(),
-			Base58Priv:  master.ToBase58(),
-			Identifier:  hex.EncodeToString(id),
-			Fingerprint: hex.EncodeToString(fp),
-		},
-	}
-}
+// 	priv, err := master.BlsPrivKey()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	pub, err := master.BlsPubKey()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return ValidKey{
+// 		Comment: nil,
+// 		Master: MasterKeyInfo{
+// 			Seed:        seedStr,
+// 			PubKey:      hex.EncodeToString(pub.Marshal()),
+// 			PrivKey:     hex.EncodeToString(priv.Marshal()),
+// 			ChainCode:   hex.EncodeToString(master.ChainCode()),
+// 			Base58:      masterPub.ToBase58(),
+// 			Base58Priv:  master.ToBase58(),
+// 			Identifier:  hex.EncodeToString(id),
+// 			Fingerprint: hex.EncodeToString(fp),
+// 		},
+// 	}
+// }
 
-func main() {
-	validKey := generateValidKey("000102030405060708090a0b0c0d0e0f")
-	out, err := json.MarshalIndent(validKey, "", "  ")
-	if err != nil {
-		panic(err)
-	}
+// func main() {
+// 	validKey := generateValidKey("000102030405060708090a0b0c0d0e0f")
+// 	out, err := json.MarshalIndent(validKey, "", "  ")
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	os.Stdout.Write(out)
-}
+// 	os.Stdout.Write(out)
+// }

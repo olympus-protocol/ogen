@@ -27,9 +27,9 @@ func NewRPCChain(ch *chain.Blockchain) *Chain {
 }
 
 type ChainInfoResponse struct {
-	Blocks        uint64 `json: "blocks"`
-	LastBlockHash string `json: "last_block_hash"`
-	Validators    uint64 `json: "validators"`
+	Blocks        uint64 `json:"blocks"`
+	LastBlockHash string `json:"last_block_hash"`
+	Validators    uint64 `json:"validators"`
 }
 
 // GetChainInfo sends money to an address.

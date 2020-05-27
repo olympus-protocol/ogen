@@ -8,15 +8,12 @@ import (
 
 const (
 	MsgVersionCmd   = "version"
-	MsgPingCmd      = "ping"
-	MsgPongCmd      = "pong"
 	MsgGetAddrCmd   = "getaddr"
 	MsgAddrCmd      = "addr"
 	MsgGetBlocksCmd = "getblocks"
 	MsgBlocksCmd    = "blocks"
 	MsgBlocksInvCmd = "blocksinv"
 	MsgTxCmd        = "tx"
-	MsgVoteCmd      = "vote"
 )
 
 const MessageHeaderSize = 24
@@ -41,10 +38,6 @@ func makeEmptyMessage(command string) (Message, error) {
 	switch command {
 	case MsgVersionCmd:
 		msg = &MsgVersion{}
-	case MsgPingCmd:
-		msg = &MsgPing{}
-	case MsgPongCmd:
-		msg = &MsgPong{}
 	case MsgAddrCmd:
 		msg = &MsgAddr{}
 	case MsgGetAddrCmd:
@@ -55,8 +48,6 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgGetBlocks{}
 	case MsgTxCmd:
 		msg = &MsgTx{}
-	case MsgVoteCmd:
-		msg = &MsgVotes{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}
