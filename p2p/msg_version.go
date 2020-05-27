@@ -8,10 +8,10 @@ import (
 )
 
 type MsgVersion struct {
-	ProtocolVersion int32       // 4 bytes
-	LastBlock       uint64      // 8 bytes
-	Nonce           uint64      // 8 bytes
-	Timestamp       int64       // 8 bytes
+	ProtocolVersion int32  // 4 bytes
+	LastBlock       uint64 // 8 bytes
+	Nonce           uint64 // 8 bytes
+	Timestamp       int64  // 8 bytes
 }
 
 func (m *MsgVersion) Encode(w io.Writer) error {

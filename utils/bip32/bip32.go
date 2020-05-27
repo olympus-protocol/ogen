@@ -365,7 +365,6 @@ func (k *ExtendedKey) Identifier() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Printf("%x\n", publicKey)
 
 	// The fingerprint of the parent for the derived child is the first 4
 	// bytes of the RIPEMD160(SHA256(parentPubKey)).
@@ -535,13 +534,11 @@ func NewMaster(seed []byte, net *NetPrefix) (*ExtendedKey, error) {
 	hmac512 := hmac.New(sha512.New, masterKey)
 	hmac512.Write(seed)
 	lr := hmac512.Sum(nil)
-	fmt.Printf("%x\n", lr)
 	// Split "I" into two 32-byte sequences Il and Ir where:
 	//   Il = master secret key
 	//   Ir = master chain code
 	secretKey := bls.DeriveSecretKey(lr[:len(lr)/2])
 	chainCode := lr[len(lr)/2:]
-	fmt.Printf("secret: %x, chain code: %x\n", lr[:len(lr)/2], chainCode)
 	// Ensure the key in usable.
 
 	secretKeySer := secretKey.Marshal()

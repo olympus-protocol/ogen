@@ -1,12 +1,4 @@
-package main
-
-import (
-	"encoding/hex"
-	"encoding/json"
-	"os"
-
-	"github.com/olympus-protocol/ogen/utils/bip32"
-)
+package bip32_test
 
 // "invalid": {
 // 	"fromBase58": [
