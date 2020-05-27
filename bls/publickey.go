@@ -2,6 +2,7 @@ package bls
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -12,6 +13,24 @@ import (
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
 	p *bls.PublicKey
+}
+
+// Encode encodes to the given writer.
+func (p *PublicKey) Encode(w io.Writer) error {
+	pubBytes := p.Marshal()
+	_, err := w.Write(pubBytes)
+
+	return err
+}
+
+// Decode decodes from the given reader.
+func (p *PublicKey) Decode(r io.Reader) error {
+	pubBytes := make([]byte, 48)
+	if _, err := io.ReadFull(r, pubBytes); err != nil {
+		return err
+	}
+
+	return p.p.Deserialize(pubBytes)
 }
 
 // ToWIF converts the private key to a Bech32 encoded string.
