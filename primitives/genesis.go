@@ -9,7 +9,7 @@ import (
 
 var coinbaseTx = Tx{
 	TxVersion: 1,
-	TxType:    TxCoins,
+	TxType:    TxTransferSingle,
 	Payload:   &GenesisPayload{},
 }
 

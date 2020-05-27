@@ -14,7 +14,7 @@ type CoinsState struct {
 }
 
 // ApplyTransaction applies a transaction to the coin state.
-func (u *CoinsState) ApplyTransaction(tx *CoinPayload, blockWithdrawalAddress [20]byte) error {
+func (u *CoinsState) ApplyTransaction(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte) error {
 	pkh := tx.FromPubkeyHash()
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)

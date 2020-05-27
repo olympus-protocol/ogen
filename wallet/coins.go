@@ -45,7 +45,7 @@ func (b *Wallet) GetAddressRaw() ([20]byte, error) {
 	return pkhBytes, nil
 }
 
-func (b *Wallet) broadcastTx(payload *primitives.CoinPayload) {
+func (b *Wallet) broadcastTx(payload *primitives.TransferSinglePayload) {
 	buf := bytes.NewBuffer([]byte{})
 	err := payload.Encode(buf)
 	if err != nil {
@@ -201,7 +201,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 	nonce := b.info.lastNonce
 	b.lastNonceLock.Unlock()
 
-	payload := &primitives.CoinPayload{
+	payload := &primitives.TransferSinglePayload{
 		To:            toPkh,
 		FromPublicKey: *pub,
 		Amount:        amount,
@@ -215,7 +215,7 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 	payload.Signature = *sig
 
 	tx := &primitives.Tx{
-		TxType:    primitives.TxCoins,
+		TxType:    primitives.TxTransferSingle,
 		TxVersion: 0,
 		Payload:   payload,
 	}

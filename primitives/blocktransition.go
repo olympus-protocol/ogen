@@ -300,7 +300,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	for _, tx := range b.Txs {
 		switch p := tx.Payload.(type) {
-		case *CoinPayload:
+		case *TransferSinglePayload:
 			if err := s.CoinsState.ApplyTransaction(p, b.Header.FeeAddress); err != nil {
 				return err
 			}

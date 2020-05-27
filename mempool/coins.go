@@ -15,11 +15,11 @@ import (
 )
 
 type coinMempoolItem struct {
-	transactions map[uint64]primitives.CoinPayload
+	transactions map[uint64]primitives.TransferSinglePayload
 	balanceSpent uint64
 }
 
-func (cmi *coinMempoolItem) add(item primitives.CoinPayload, maxAmount uint64) error {
+func (cmi *coinMempoolItem) add(item primitives.TransferSinglePayload, maxAmount uint64) error {
 	if item.Amount+item.Fee+cmi.balanceSpent >= maxAmount {
 		return fmt.Errorf("did not add transaction spending %d with balance of %d", item.Amount+item.Fee+cmi.balanceSpent, maxAmount)
 	}
@@ -46,7 +46,7 @@ func (cmi *coinMempoolItem) removeBefore(nonce uint64) {
 
 func newCoinMempoolItem() *coinMempoolItem {
 	return &coinMempoolItem{
-		transactions: make(map[uint64]primitives.CoinPayload),
+		transactions: make(map[uint64]primitives.TransferSinglePayload),
 	}
 }
 
@@ -79,7 +79,7 @@ type CoinsMempool struct {
 // }
 
 // Add adds an item to the coins mempool.
-func (cm *CoinsMempool) Add(item primitives.CoinPayload, state *primitives.CoinsState) error {
+func (cm *CoinsMempool) Add(item primitives.TransferSinglePayload, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -103,7 +103,7 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 	defer cm.lock.Unlock()
 	for _, tx := range b.Txs {
 		switch p := tx.Payload.(type) {
-		case *primitives.CoinPayload:
+		case *primitives.TransferSinglePayload:
 			fpkh := p.FromPubkeyHash()
 			mempoolItem, found := cm.mempool[fpkh]
 			if !found {
@@ -131,7 +131,7 @@ outer:
 			}
 			allTransactions = append(allTransactions, primitives.Tx{
 				TxVersion: 0,
-				TxType:    primitives.TxCoins,
+				TxType:    primitives.TxTransferSingle,
 				Payload:   &tx,
 			})
 			if uint64(len(allTransactions)) >= maxTransactions {
@@ -153,7 +153,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		}
 
 		txBuf := bytes.NewReader(msg.Data)
-		tx := new(primitives.CoinPayload)
+		tx := new(primitives.TransferSinglePayload)
 
 		if err := tx.Decode(txBuf); err != nil {
 			// TODO: ban peer

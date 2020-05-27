@@ -37,31 +37,31 @@ func (b Bitfield) MaxLength() uint {
 // Multipub represents multiple public keys that can be signed by
 // some subset numNeeded.
 type Multipub struct {
-	pubkeys   []*PublicKey
-	numNeeded uint16
+	PublicKeys []*PublicKey
+	NumNeeded  uint16
 }
 
 // NewMultipub constructs a new multi-pubkey.
 func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
 	return &Multipub{
-		pubkeys:   pubs,
-		numNeeded: numNeeded,
+		PublicKeys: pubs,
+		NumNeeded:  numNeeded,
 	}
 }
 
 // Encode encodes the public key to the given writer.
 func (m *Multipub) Encode(w io.Writer) error {
-	if err := serializer.WriteVarInt(w, uint64(len(m.pubkeys))); err != nil {
+	if err := serializer.WriteVarInt(w, uint64(len(m.PublicKeys))); err != nil {
 		return err
 	}
 
-	for _, p := range m.pubkeys {
+	for _, p := range m.PublicKeys {
 		if _, err := w.Write(p.Marshal()); err != nil {
 			return err
 		}
 	}
 
-	if err := serializer.WriteElement(w, m.numNeeded); err != nil {
+	if err := serializer.WriteElement(w, m.NumNeeded); err != nil {
 		return err
 	}
 
@@ -75,20 +75,20 @@ func (m *Multipub) Decode(r io.Reader) error {
 		return err
 	}
 
-	m.pubkeys = make([]*PublicKey, numPubkeys)
-	for i := range m.pubkeys {
+	m.PublicKeys = make([]*PublicKey, numPubkeys)
+	for i := range m.PublicKeys {
 		pkb := make([]byte, 48)
 		if _, err := io.ReadFull(r, pkb); err != nil {
 			return err
 		}
 
-		m.pubkeys[i], err = PublicKeyFromBytes(pkb)
+		m.PublicKeys[i], err = PublicKeyFromBytes(pkb)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := serializer.ReadElement(r, &m.numNeeded); err != nil {
+	if err := serializer.ReadElement(r, &m.NumNeeded); err != nil {
 		return err
 	}
 
@@ -98,10 +98,10 @@ func (m *Multipub) Decode(r io.Reader) error {
 // ToHash gets the hash of the multipub.
 func (m *Multipub) ToHash() []byte {
 	numNeeded := make([]byte, 2)
-	binary.BigEndian.PutUint16(numNeeded, m.numNeeded)
-	out := make([]byte, 0, 2+48*len(m.pubkeys))
+	binary.BigEndian.PutUint16(numNeeded, m.NumNeeded)
+	out := make([]byte, 0, 2+48*len(m.PublicKeys))
 	out = append(out, numNeeded...)
-	for _, p := range m.pubkeys {
+	for _, p := range m.PublicKeys {
 		out = append(out, p.Marshal()...)
 	}
 
@@ -116,38 +116,38 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
-	pub        Multipub
-	signatures []*Signature
-	keysSigned Bitfield
+	PublicKey  Multipub
+	Signatures []*Signature
+	KeysSigned Bitfield
 }
 
 // NewMultisig creates a new blank multisig.
 func NewMultisig(multipub Multipub) *Multisig {
 	return &Multisig{
-		pub:        multipub,
-		signatures: []*Signature{},
-		keysSigned: NewBitfield(uint(len(multipub.pubkeys))),
+		PublicKey:  multipub,
+		Signatures: []*Signature{},
+		KeysSigned: NewBitfield(uint(len(multipub.PublicKeys))),
 	}
 }
 
 // Encode encodes the multisig to the given writer.
 func (m *Multisig) Encode(w io.Writer) error {
-	if err := m.pub.Encode(w); err != nil {
+	if err := m.PublicKey.Encode(w); err != nil {
 		return err
 	}
 
-	if err := serializer.WriteVarInt(w, uint64(len(m.signatures))); err != nil {
+	if err := serializer.WriteVarInt(w, uint64(len(m.Signatures))); err != nil {
 		return err
 	}
 
-	for _, s := range m.signatures {
+	for _, s := range m.Signatures {
 		bs := s.Marshal()
 		if _, err := w.Write(bs); err != nil {
 			return err
 		}
 	}
 
-	if err := serializer.WriteVarBytes(w, m.keysSigned); err != nil {
+	if err := serializer.WriteVarBytes(w, m.KeysSigned); err != nil {
 		return err
 	}
 
@@ -156,7 +156,7 @@ func (m *Multisig) Encode(w io.Writer) error {
 
 // Decode decodes the multisig from the given reader.
 func (m *Multisig) Decode(r io.Reader) error {
-	if err := m.pub.Decode(r); err != nil {
+	if err := m.PublicKey.Decode(r); err != nil {
 		return err
 	}
 
@@ -165,9 +165,9 @@ func (m *Multisig) Decode(r io.Reader) error {
 		return err
 	}
 
-	m.signatures = make([]*Signature, numSigs)
+	m.Signatures = make([]*Signature, numSigs)
 
-	for i := range m.signatures {
+	for i := range m.Signatures {
 		sigBytes := make([]byte, 96)
 		_, err := io.ReadFull(r, sigBytes)
 		if err != nil {
@@ -179,7 +179,7 @@ func (m *Multisig) Decode(r io.Reader) error {
 			return err
 		}
 
-		m.signatures[i] = sig
+		m.Signatures[i] = sig
 	}
 
 	bitfield, err := serializer.ReadVarBytes(r)
@@ -187,7 +187,7 @@ func (m *Multisig) Decode(r io.Reader) error {
 		return err
 	}
 
-	m.keysSigned = bitfield
+	m.KeysSigned = bitfield
 
 	return nil
 }
@@ -197,8 +197,8 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	pub := secKey.PublicKey()
 
 	idx := -1
-	for i := range m.pub.pubkeys {
-		if m.pub.pubkeys[i].Equals(pub) {
+	for i := range m.PublicKey.PublicKeys {
+		if m.PublicKey.PublicKeys[i].Equals(pub) {
 			idx = i
 		}
 	}
@@ -207,7 +207,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
-	if m.keysSigned.Get(uint(idx)) {
+	if m.KeysSigned.Get(uint(idx)) {
 		return nil
 	}
 
@@ -215,36 +215,36 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 
 	sig := secKey.Sign(msgI[:])
 
-	m.signatures = append(m.signatures, sig)
-	m.keysSigned.Set(uint(idx))
+	m.Signatures = append(m.Signatures, sig)
+	m.KeysSigned.Set(uint(idx))
 
 	return nil
 }
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
-	if uint(len(m.pub.pubkeys)) > m.keysSigned.MaxLength() {
+	if uint(len(m.PublicKey.PublicKeys)) > m.KeysSigned.MaxLength() {
 		return false
 	}
 
-	if len(m.signatures) < int(m.pub.numNeeded) {
+	if len(m.Signatures) < int(m.PublicKey.NumNeeded) {
 		return false
 	}
 
-	aggSig := AggregateSignatures(m.signatures)
+	aggSig := AggregateSignatures(m.Signatures)
 
 	activePubs := make([]*PublicKey, 0)
-	for i := range m.pub.pubkeys {
-		if m.keysSigned.Get(uint(i)) {
-			activePubs = append(activePubs, m.pub.pubkeys[i])
+	for i := range m.PublicKey.PublicKeys {
+		if m.KeysSigned.Get(uint(i)) {
+			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 		}
 	}
 
-	if len(m.signatures) != len(activePubs) {
+	if len(m.Signatures) != len(activePubs) {
 		return false
 	}
 
-	msgs := make([][32]byte, len(m.signatures))
+	msgs := make([][32]byte, len(m.Signatures))
 	for i := range msgs {
 		msgs[i] = chainhash.HashH(append(msg, activePubs[i].Marshal()...))
 	}

@@ -14,7 +14,7 @@ const (
 )
 
 type MsgTx struct {
-	Txs []primitives.CoinPayload
+	Txs []primitives.TransferSinglePayload
 }
 
 func (m *MsgTx) Encode(w io.Writer) error {
@@ -37,7 +37,7 @@ func (m *MsgTx) Decode(r io.Reader) error {
 		return err
 	}
 
-	m.Txs = make([]primitives.CoinPayload, numTxs)
+	m.Txs = make([]primitives.TransferSinglePayload, numTxs)
 	for i := range m.Txs {
 		if err := m.Txs[i].Decode(r); err != nil {
 			return err
