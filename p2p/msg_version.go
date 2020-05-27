@@ -11,13 +11,11 @@ type MsgVersion struct {
 	ProtocolVersion int32       // 4 bytes
 	LastBlock       uint64      // 8 bytes
 	Nonce           uint64      // 8 bytes
-	Services        ServiceFlag // 8 bytes
 	Timestamp       int64       // 8 bytes
 }
 
 func (m *MsgVersion) Encode(w io.Writer) error {
-	err := serializer.WriteElements(w, m.ProtocolVersion, m.Services,
-		m.Timestamp, m.Nonce, m.LastBlock)
+	err := serializer.WriteElements(w, m.ProtocolVersion, m.Timestamp, m.Nonce, m.LastBlock)
 	if err != nil {
 		return err
 	}
@@ -25,7 +23,7 @@ func (m *MsgVersion) Encode(w io.Writer) error {
 }
 
 func (m *MsgVersion) Decode(r io.Reader) error {
-	err := serializer.ReadElements(r, &m.ProtocolVersion, &m.Services,
+	err := serializer.ReadElements(r, &m.ProtocolVersion,
 		(*int64)(&m.Timestamp), &m.Nonce, &m.LastBlock)
 	if err != nil {
 		return err
@@ -44,7 +42,6 @@ func (m *MsgVersion) MaxPayloadLength() uint32 {
 func NewMsgVersion(nonce uint64, lastBlock uint64) *MsgVersion {
 	return &MsgVersion{
 		ProtocolVersion: int32(ProtocolVersion),
-		Services:        0,
 		Timestamp:       time.Unix(time.Now().Unix(), 0).Unix(),
 		Nonce:           nonce,
 		LastBlock:       lastBlock,
