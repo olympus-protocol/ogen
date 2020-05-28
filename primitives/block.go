@@ -13,13 +13,16 @@ const (
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header          BlockHeader
-	Votes           []MultiValidatorVote
-	Txs             []Tx
-	Deposits        []Deposit
-	Exits           []Exit
-	Signature       []byte
-	RandaoSignature []byte
+	Header            BlockHeader
+	Votes             []MultiValidatorVote
+	Txs               []Tx
+	Deposits          []Deposit
+	Exits             []Exit
+	VoteSlashings     []VoteSlashing
+	RANDAOSlashings   []RANDAOSlashing
+	ProposerSlashings []ProposerSlashing
+	Signature         []byte
+	RandaoSignature   []byte
 }
 
 // Hash calculates the hash of the block.
@@ -103,6 +106,63 @@ func (b *Block) VotesMerkleRoot() chainhash.Hash {
 	return merkleRootVotes(b.Votes)
 }
 
+func merkleRootProposerSlashings(txs []ProposerSlashing) chainhash.Hash {
+	if len(txs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(txs) == 1 {
+		return txs[0].Hash()
+	}
+	mid := len(txs) / 2
+	h1 := merkleRootProposerSlashings(txs[:mid])
+	h2 := merkleRootProposerSlashings(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// ProposerSlashingsRoot calculates the hash of the proposer slashings included in the block.
+func (b *Block) ProposerSlashingsRoot() chainhash.Hash {
+	return merkleRootProposerSlashings(b.ProposerSlashings)
+}
+
+func merkleRootRANDAOSlashings(txs []RANDAOSlashing) chainhash.Hash {
+	if len(txs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(txs) == 1 {
+		return txs[0].Hash()
+	}
+	mid := len(txs) / 2
+	h1 := merkleRootRANDAOSlashings(txs[:mid])
+	h2 := merkleRootRANDAOSlashings(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// RANDAOSlashingsRoot calculates the merkle root of the RANDAO slashings included in the block.
+func (b *Block) RANDAOSlashingsRoot() chainhash.Hash {
+	return merkleRootRANDAOSlashings(b.RANDAOSlashings)
+}
+
+func merkleRootVoteSlashings(txs []VoteSlashing) chainhash.Hash {
+	if len(txs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(txs) == 1 {
+		return txs[0].Hash()
+	}
+	mid := len(txs) / 2
+	h1 := merkleRootVoteSlashings(txs[:mid])
+	h2 := merkleRootVoteSlashings(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// VoteSlashingRoot calculates the merkle root of the vote slashings included in the block.
+func (b *Block) VoteSlashingRoot() chainhash.Hash {
+	return merkleRootVoteSlashings(b.VoteSlashings)
+}
+
 // Encode encodes the block to the given writer.
 func (b *Block) Encode(w io.Writer) error {
 	err := b.Header.Serialize(w)
@@ -146,6 +206,36 @@ func (b *Block) Encode(w io.Writer) error {
 	}
 	for _, exit := range b.Exits {
 		err := exit.Encode(w)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteVarInt(w, uint64(len(b.VoteSlashings)))
+	if err != nil {
+		return err
+	}
+	for _, slashing := range b.VoteSlashings {
+		err := slashing.Encode(w)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteVarInt(w, uint64(len(b.ProposerSlashings)))
+	if err != nil {
+		return err
+	}
+	for _, slashing := range b.ProposerSlashings {
+		err := slashing.Encode(w)
+		if err != nil {
+			return err
+		}
+	}
+	err = serializer.WriteVarInt(w, uint64(len(b.RANDAOSlashings)))
+	if err != nil {
+		return err
+	}
+	for _, slashing := range b.RANDAOSlashings {
+		err := slashing.Encode(w)
 		if err != nil {
 			return err
 		}
@@ -205,6 +295,39 @@ func (b *Block) Decode(r io.Reader) error {
 	b.Exits = make([]Exit, exitCount)
 	for i := range b.Exits {
 		err := b.Exits[i].Decode(r)
+		if err != nil {
+			return err
+		}
+	}
+	voteSlashingCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	b.VoteSlashings = make([]VoteSlashing, voteSlashingCount)
+	for i := range b.VoteSlashings {
+		err := b.VoteSlashings[i].Decode(r)
+		if err != nil {
+			return err
+		}
+	}
+	propopserSlashingCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	b.ProposerSlashings = make([]ProposerSlashing, propopserSlashingCount)
+	for i := range b.ProposerSlashings {
+		err := b.ProposerSlashings[i].Decode(r)
+		if err != nil {
+			return err
+		}
+	}
+	randaoSlashingCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	b.RANDAOSlashings = make([]RANDAOSlashing, randaoSlashingCount)
+	for i := range b.RANDAOSlashings {
+		err := b.RANDAOSlashings[i].Decode(r)
 		if err != nil {
 			return err
 		}

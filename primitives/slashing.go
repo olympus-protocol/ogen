@@ -1,9 +1,11 @@
 package primitives
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
@@ -32,6 +34,13 @@ func (vs *VoteSlashing) Decode(r io.Reader) error {
 		return err
 	}
 	return vs.Vote2.Deserialize(r)
+}
+
+// Hash calculates the hash of the slashing.
+func (vs *VoteSlashing) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = vs.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
 }
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO
@@ -73,6 +82,13 @@ func (rs *RANDAOSlashing) Decode(r io.Reader) error {
 	rs.ValidatorPubkey = *pub
 
 	return nil
+}
+
+// Hash calculates the hash of the RANDAO slashing.
+func (rs *RANDAOSlashing) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = rs.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
 }
 
 // ProposerSlashing is a slashing to a block proposer that proposed
@@ -117,4 +133,11 @@ func (ps *ProposerSlashing) Decode(r io.Reader) error {
 		return err
 	}
 	return ps.ValidatorPublicKey.Decode(r)
+}
+
+// Hash calculates the hash of the proposer slashing.
+func (ps *ProposerSlashing) Hash() chainhash.Hash {
+	buf := bytes.NewBuffer([]byte{})
+	_ = ps.Encode(buf)
+	return chainhash.HashH(buf.Bytes())
 }
