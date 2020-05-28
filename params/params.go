@@ -4,12 +4,14 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+// AddrPrefixes are prefixes used for addresses.
 type AddrPrefixes struct {
 	Public   string
 	Private  string
 	Multisig string
 }
 
+// ChainParams are parameters that are unique for the chain.
 type ChainParams struct {
 	Name                         string
 	DefaultP2PPort               string
@@ -37,11 +39,15 @@ type ChainParams struct {
 	SlotDuration                 uint64
 	MaxDepositsPerBlock          uint64
 	MaxExitsPerBlock             uint64
+	MaxRANDAOSlashingsPerBlock   uint64
+	MaxProposerSlashingsPerBlock uint64
+	MaxVoteSlashingsPerBlock     uint64
 
 	ChainFileHash chainhash.Hash
 	ChainFileURL  string
 }
 
+// Mainnet are chain parameters used for the main network.
 var Mainnet = ChainParams{
 	Name:           "mainnet",
 	DefaultP2PPort: "24126",
@@ -72,10 +78,14 @@ var Mainnet = ChainParams{
 	MaxTxsPerBlock:               1000,
 	MaxDepositsPerBlock:          32,
 	MaxExitsPerBlock:             32,
+	MaxRANDAOSlashingsPerBlock:   20,
+	MaxProposerSlashingsPerBlock: 2,
+	MaxVoteSlashingsPerBlock:     10,
 }
 
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
 
+// TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "24126",
@@ -105,4 +115,7 @@ var TestNet = ChainParams{
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 	MaxDepositsPerBlock:          32,
 	MaxExitsPerBlock:             32,
+	MaxRANDAOSlashingsPerBlock:   20,
+	MaxProposerSlashingsPerBlock: 2,
+	MaxVoteSlashingsPerBlock:     10,
 }

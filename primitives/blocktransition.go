@@ -510,6 +510,18 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
 	}
 
+	if uint64(len(b.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
+		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
+	}
+
+	if uint64(len(b.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
+		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
+	}
+
+	if uint64(len(b.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
+		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
+	}
+
 	blockHash := b.Hash()
 	blockSig, err := bls.SignatureFromBytes(b.Signature)
 	if err != nil {
@@ -572,6 +584,24 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	for _, e := range b.Exits {
 		if err := s.ApplyExit(&e); err != nil {
+			return err
+		}
+	}
+
+	for _, rs := range b.RANDAOSlashings {
+		if err := s.ApplyRANDAOSlashing(&rs, p); err != nil {
+			return err
+		}
+	}
+
+	for _, vs := range b.VoteSlashings {
+		if err := s.ApplyVoteSlashing(&vs, p); err != nil {
+			return err
+		}
+	}
+
+	for _, ps := range b.ProposerSlashings {
+		if err := s.ApplyProposerSlashing(&ps, p); err != nil {
 			return err
 		}
 	}
