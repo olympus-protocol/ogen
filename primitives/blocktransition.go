@@ -10,6 +10,43 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+// IsProposerSlashingValid checks if a given proposer slashing is valid.
+func (s *State) IsProposerSlashingValid(ps *ProposerSlashing, p *params.ChainParams) error {
+	h1 := ps.BlockHeader1.Hash()
+	h2 := ps.BlockHeader2.Hash()
+
+	if h1.IsEqual(&h2) {
+		return fmt.Errorf("proposer-slashing: block headers are equal")
+	}
+
+	if ps.BlockHeader1.Slot != ps.BlockHeader2.Slot {
+		return fmt.Errorf("proposer-slashing: block headers do not have the same slot")
+	}
+
+	if !ps.Signature1.Verify(h1[:], &ps.ValidatorPublicKey) {
+		return fmt.Errorf("proposer-slashing: signature does not validate for block header 1")
+	}
+
+	if !ps.Signature2.Verify(h2[:], &ps.ValidatorPublicKey) {
+		return fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
+	}
+
+	pubkeyBytes := ps.ValidatorPublicKey.Marshal()
+
+	proposerIndex := -1
+	for i, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey, pubkeyBytes) {
+			proposerIndex = i
+		}
+	}
+
+	if proposerIndex < 0 {
+		return fmt.Errorf("proposer-slashing: validator is already exited")
+	}
+
+	return s.UpdateValidatorStatus(uint32(proposerIndex), StatusExitedWithPenalty, p)
+}
+
 // GetVoteCommittee gets the committee for a certain block.
 func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) []uint32 {
 	if (slot-1)/p.EpochLength == s.EpochIndex {
