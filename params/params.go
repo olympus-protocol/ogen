@@ -85,7 +85,7 @@ var Mainnet = ChainParams{
 	WhistleblowerRewardQuotient:  2, // Validator loses half their deposit
 }
 
-var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
+var testnetChainFileHash, _ = chainhash.NewHashFromStr("b2d8f4ed146850d3b086c4a938179418bc30755ed9957a73f22e7c5a34e66ac2")
 
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
