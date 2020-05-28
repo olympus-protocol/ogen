@@ -11,33 +11,24 @@ import (
 )
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) error {
+func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
 	if h1.IsEqual(&h2) {
-		return fmt.Errorf("proposer-slashing: block headers are equal")
+		return 0, fmt.Errorf("proposer-slashing: block headers are equal")
 	}
 
 	if ps.BlockHeader1.Slot != ps.BlockHeader2.Slot {
-		return fmt.Errorf("proposer-slashing: block headers do not have the same slot")
+		return 0, fmt.Errorf("proposer-slashing: block headers do not have the same slot")
 	}
 
 	if !ps.Signature1.Verify(h1[:], &ps.ValidatorPublicKey) {
-		return fmt.Errorf("proposer-slashing: signature does not validate for block header 1")
+		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 1")
 	}
 
 	if !ps.Signature2.Verify(h2[:], &ps.ValidatorPublicKey) {
-		return fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
-	}
-
-	return nil
-}
-
-// ApplyProposerSlashing applies the proposer slashing to the state.
-func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParams) error {
-	if err := s.IsProposerSlashingValid(ps); err != nil {
-		return err
+		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
 	}
 
 	pubkeyBytes := ps.ValidatorPublicKey.Marshal()
@@ -50,10 +41,20 @@ func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParam
 	}
 
 	if proposerIndex < 0 {
-		return fmt.Errorf("proposer-slashing: validator is already exited")
+		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return s.UpdateValidatorStatus(uint32(proposerIndex), StatusExitedWithPenalty, p)
+	return uint32(proposerIndex), nil
+}
+
+// ApplyProposerSlashing applies the proposer slashing to the state.
+func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParams) error {
+	proposerIndex, err := s.IsProposerSlashingValid(ps)
+	if err != nil {
+		return err
+	}
+
+	return s.UpdateValidatorStatus(proposerIndex, StatusExitedWithPenalty, p)
 }
 
 func isDoubleVote(v1 VoteData, v2 VoteData) bool {
@@ -180,6 +181,44 @@ func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error
 	}
 
 	return nil
+}
+
+// IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
+func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
+	if rs.Slot >= s.Slot {
+		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
+	}
+
+	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", rs.Slot)))
+
+	if !rs.RandaoReveal.Verify(slotHash[:], &rs.ValidatorPubkey) {
+		return 0, fmt.Errorf("randao-slashing: RANDAO reveal does not verify")
+	}
+
+	pubkeyBytes := rs.ValidatorPubkey.Marshal()
+
+	proposerIndex := -1
+	for i, v := range s.ValidatorRegistry {
+		if bytes.Equal(v.PubKey, pubkeyBytes) {
+			proposerIndex = i
+		}
+	}
+
+	if proposerIndex < 0 {
+		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
+	}
+
+	return uint32(proposerIndex), nil
+}
+
+// ApplyRANDAOSlashing applies the RANDAO slashing to the state.
+func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) error {
+	proposer, err := s.IsRANDAOSlashingValid(rs)
+	if err != nil {
+		return err
+	}
+
+	return s.UpdateValidatorStatus(proposer, StatusExitedWithPenalty, p)
 }
 
 // GetVoteCommittee gets the committee for a certain block.
