@@ -228,12 +228,12 @@ func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 	s.lock.RLock()
 	derivedState, found := s.stateMap[hash]
 	s.lock.RUnlock()
-	if slot > derivedState.lastSlot+1000 {
-		return nil, nil, fmt.Errorf("tried to get block too far in future")
-	}
-
 	if !found {
 		return nil, nil, fmt.Errorf("could not find state for block %s", hash)
+	}
+
+	if slot > derivedState.lastSlot+1000 {
+		return nil, nil, fmt.Errorf("tried to get block too far in future")
 	}
 
 	return derivedState.deriveState(slot, view, p, s.log)
