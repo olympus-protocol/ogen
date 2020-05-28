@@ -11,7 +11,7 @@ import (
 )
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *State) IsProposerSlashingValid(ps *ProposerSlashing, p *params.ChainParams) error {
+func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) error {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -31,6 +31,15 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing, p *params.ChainPar
 		return fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
 	}
 
+	return nil
+}
+
+// ApplyProposerSlashing applies the proposer slashing to the state.
+func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParams) error {
+	if err := s.IsProposerSlashingValid(ps); err != nil {
+		return err
+	}
+
 	pubkeyBytes := ps.ValidatorPublicKey.Marshal()
 
 	proposerIndex := -1
@@ -47,26 +56,152 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing, p *params.ChainPar
 	return s.UpdateValidatorStatus(uint32(proposerIndex), StatusExitedWithPenalty, p)
 }
 
+func isDoubleVote(v1 VoteData, v2 VoteData) bool {
+	return v1.ToEpoch == v2.ToEpoch
+}
+
+func isSurroundVote(v1 VoteData, v2 VoteData) bool {
+	if v1.FromEpoch < v2.FromEpoch {
+		// v1 surrounds v2
+		return v2.ToEpoch <= v1.ToEpoch
+	} else if v2.FromEpoch < v1.FromEpoch {
+		// v2 surrounds v1
+		return v1.ToEpoch <= v2.ToEpoch
+	} else {
+		return v1.ToEpoch != v2.ToEpoch
+	}
+}
+
+// IsVoteSlashingValid checks if the vote slashing is valid.
+func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint32, error) {
+	if vs.Vote1.Data.Equals(&vs.Vote2.Data) {
+		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
+	}
+
+	if !isDoubleVote(vs.Vote1.Data, vs.Vote1.Data) && !isSurroundVote(vs.Vote1.Data, vs.Vote2.Data) {
+		return nil, fmt.Errorf("vote-slashing: votes do not violate slashing rule")
+	}
+
+	voteParticipation1 := vs.Vote1.ParticipationBitfield
+	voteParticipation2 := vs.Vote2.ParticipationBitfield
+
+	voteCommittee1 := make(map[uint32]struct{})
+	common := make([]uint32, 0)
+
+	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot, p)
+	if err != nil {
+		return nil, err
+	}
+
+	validators2, err := s.GetVoteCommittee(vs.Vote2.Data.Slot, p)
+	if err != nil {
+		return nil, err
+	}
+
+	aggPubs1 := make([]*bls.PublicKey, 0)
+	aggPubs2 := make([]*bls.PublicKey, 0)
+
+	for i := range voteParticipation1 {
+		for j := 0; j < 8; j++ {
+			validator := uint32((i * 8) + j)
+
+			if validator >= uint32(len(validators1)) {
+				break
+			}
+
+			if voteParticipation1[i]&(1<<uint(j)) == 0 {
+				continue
+			}
+
+			validatorIdx := validators1[validator]
+
+			voteCommittee1[validatorIdx] = struct{}{}
+
+			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
+			if err != nil {
+				return nil, err
+			}
+			aggPubs1 = append(aggPubs1, pub)
+		}
+	}
+
+	if !vs.Vote1.Signature.FastAggregateVerify(aggPubs1, vs.Vote1.Data.Hash()) {
+		return nil, fmt.Errorf("vote-slashing: vote 1 does not validate")
+	}
+
+	for i := range voteParticipation2 {
+		for j := 0; j < 8; j++ {
+			validator := uint32((i * 8) + j)
+
+			if validator >= uint32(len(validators2)) {
+				break
+			}
+
+			if voteParticipation2[i]&(1<<uint(j)) == 0 {
+				continue
+			}
+
+			validatorIdx := validators2[validator]
+
+			if _, ok := voteCommittee1[validatorIdx]; ok {
+				common = append(common, validatorIdx)
+			}
+
+			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
+			if err != nil {
+				return nil, err
+			}
+			aggPubs2 = append(aggPubs2, pub)
+		}
+	}
+
+	if len(common) == 0 {
+		return nil, fmt.Errorf("vote-slashing: votes do not contain any common validators")
+	}
+
+	if !vs.Vote2.Signature.FastAggregateVerify(aggPubs2, vs.Vote2.Data.Hash()) {
+		return nil, fmt.Errorf("vote-slashing: vote 2 does not validate")
+	}
+
+	return common, nil
+}
+
+// ApplyVoteSlashing applies a vote slashing to the state.
+func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error {
+	common, err := s.IsVoteSlashingValid(vs, p)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range common {
+		if err := s.UpdateValidatorStatus(v, StatusExitedWithPenalty, p); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) []uint32 {
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint32, error) {
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
-		return assignments[min:max]
+		return assignments[min:max], nil
 	} else if (slot-1)/p.EpochLength == s.EpochIndex-1 {
 		assignments := s.PreviousEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 
-		return assignments[min:max]
+		return assignments[min:max], nil
 	}
 
 	// TODO: better handling
-	panic("Tried to get vote committee out of range")
+	return nil, fmt.Errorf("tried to get vote committee out of range: %d", slot)
 }
 
 // IsExitValid checks if an exit is valid.
@@ -206,7 +341,10 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	}
 
 	aggPubs := make([]*bls.PublicKey, 0)
-	validators := s.GetVoteCommittee(v.Data.Slot, p)
+	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
+	if err != nil {
+		return err
+	}
 	for i := range v.ParticipationBitfield {
 		for j := 0; j < 8; j++ {
 			validator := uint32((i * 8) + j)

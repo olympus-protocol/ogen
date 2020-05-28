@@ -61,6 +61,7 @@ func (a *AcceptedVoteInfo) Deserialize(r io.Reader) (err error) {
 	return serializer.ReadElements(r, &a.Proposer, &a.InclusionDelay)
 }
 
+// MaxVoteDataSize is the maximum size in bytes of vote data.
 const MaxVoteDataSize = 8 + 8 + 32 + 8 + 32 + 32
 
 // VoteData is the part of a vote that needs to be signed.
@@ -84,6 +85,16 @@ type VoteData struct {
 
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash chainhash.Hash
+}
+
+// Equals checks if vote data equals another vote data.
+func (v *VoteData) Equals(other *VoteData) bool {
+	if v.Slot != other.Slot || v.FromEpoch != other.FromEpoch || v.ToEpoch != other.ToEpoch ||
+		!v.FromHash.IsEqual(&other.FromHash) || !v.ToHash.IsEqual(&other.ToHash) || !v.BeaconBlockHash.IsEqual(&other.BeaconBlockHash) {
+		return false
+	}
+
+	return true
 }
 
 // Copy returns a copy of the vote data.

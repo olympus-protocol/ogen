@@ -159,7 +159,10 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		}
 
 		for _, a := range block.Votes {
-			validators := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
+			validators, err := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
+			if err != nil {
+				return err
+			}
 
 			ch.state.SetLatestVotesIfNeeded(validators, &a)
 		}

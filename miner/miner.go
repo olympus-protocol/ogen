@@ -206,7 +206,11 @@ func (m *Miner) Start() error {
 					panic(err)
 				}
 
-				validators := state.GetVoteCommittee(slotToVote, &m.params)
+				validators, err := state.GetVoteCommittee(slotToVote, &m.params)
+				if err != nil {
+					m.log.Errorf("error getting vote committee: %e", err)
+					continue
+				}
 				toEpoch := (slotToVote - 1) / m.params.EpochLength
 
 				beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
