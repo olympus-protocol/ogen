@@ -42,6 +42,7 @@ type ChainParams struct {
 	MaxRANDAOSlashingsPerBlock   uint64
 	MaxProposerSlashingsPerBlock uint64
 	MaxVoteSlashingsPerBlock     uint64
+	WhistleblowerRewardQuotient  uint64
 
 	ChainFileHash chainhash.Hash
 	ChainFileURL  string
@@ -81,6 +82,7 @@ var Mainnet = ChainParams{
 	MaxRANDAOSlashingsPerBlock:   20,
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
+	WhistleblowerRewardQuotient:  2, // Validator loses half their deposit
 }
 
 var testnetChainFileHash, _ = chainhash.NewHashFromStr("15f838a029028288ae8c5a5d07a2e6a4a5608d08fa3937f75c295d62f6fb30aa")
@@ -118,4 +120,5 @@ var TestNet = ChainParams{
 	MaxRANDAOSlashingsPerBlock:   20,
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
+	WhistleblowerRewardQuotient:  2,
 }

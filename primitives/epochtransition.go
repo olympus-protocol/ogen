@@ -113,7 +113,15 @@ func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.Ch
 	validator.Status = status
 
 	if status == StatusExitedWithPenalty {
-		// TODO: slashings - reward includer
+		slotIndex := (s.Slot + p.EpochLength - 1) % p.EpochLength
+
+		proposerIndex := s.ProposerQueue[slotIndex]
+
+		whistleblowerReward := s.GetEffectiveBalance(proposerIndex, p) / p.WhistleblowerRewardQuotient
+
+		s.ValidatorRegistry[proposerIndex].Balance += whistleblowerReward
+		s.ValidatorRegistry[index].Balance -= whistleblowerReward
+
 		return nil
 	}
 
