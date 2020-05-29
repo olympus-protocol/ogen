@@ -245,8 +245,36 @@ func (m *Miner) Start() error {
 						m.voteMempool.Add(&vote)
 
 						go m.publishVote(&vote)
+
+						// DO NOT UNCOMMENT: slashing test
+						// if validatorIdx == 0 {
+						// 	data2 := primitives.VoteData{
+						// 		Slot:            slotToVote,
+						// 		FromEpoch:       state.JustifiedEpoch,
+						// 		FromHash:        state.JustifiedEpochHash,
+						// 		ToEpoch:         toEpoch,
+						// 		ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
+						// 		BeaconBlockHash: chainhash.HashH([]byte("lol")),
+						// 	}
+
+						// 	data2Hash := data2.Hash()
+
+						// 	sig2 := k.Sign(data2Hash[:])
+
+						// 	vote2 := primitives.SingleValidatorVote{
+						// 		Data:      data2,
+						// 		Signature: *sig2,
+						// 		Offset:    uint32(i),
+						// 		OutOf:     uint32(len(validators)),
+						// 	}
+
+						// 	m.voteMempool.Add(&vote2)
+
+						// 	go m.publishVote(&vote2)
+						// }
 					}
 				}
+
 				slotToVote++
 				voteTimer = time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
 

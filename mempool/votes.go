@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
@@ -19,17 +20,34 @@ import (
 )
 
 type mempoolVote struct {
-	individualVotes       []*primitives.SingleValidatorVote
-	participationBitfield []uint8
-	voteData              *primitives.VoteData
+	individualVotes         []*primitives.SingleValidatorVote
+	participationBitfield   bls.Bitfield
+	participatingValidators map[uint32]struct{}
+	voteData                *primitives.VoteData
 }
 
-func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote) {
-	if mv.participationBitfield[vote.Offset/8]&(1<<uint(vote.Offset%8)) > 0 {
+func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidatorVote, bool) {
+	if !mv.participationBitfield.Get(uint(offset)) {
+		return nil, false
+	}
+
+	var vote *primitives.SingleValidatorVote
+	for _, v := range mv.individualVotes {
+		if v.Offset == offset {
+			vote = v
+		}
+	}
+
+	return vote, vote != nil
+}
+
+func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint32) {
+	if mv.participationBitfield.Get(uint(vote.Offset)) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	mv.participationBitfield[vote.Offset/8] |= (1 << uint(vote.Offset%8))
+	mv.participationBitfield.Set(uint(vote.Offset))
+	mv.participatingValidators[voter] = struct{}{}
 }
 
 func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool) {
@@ -54,9 +72,10 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 
 func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield: make([]uint8, (outOf+7)/8),
-		individualVotes:       make([]*primitives.SingleValidatorVote, 0, outOf),
-		voteData:              voteData,
+		participationBitfield:   make([]uint8, (outOf+7)/8),
+		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
+		voteData:                voteData,
+		participatingValidators: make(map[uint32]struct{}),
 	}
 }
 
@@ -72,6 +91,9 @@ type VoteMempool struct {
 	log        *logger.Logger
 	ctx        context.Context
 	blockchain *chain.Blockchain
+
+	notifees     []VoteSlashingNotifee
+	notifeesLock sync.Mutex
 }
 
 func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
@@ -151,12 +173,64 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	defer m.poolLock.Unlock()
 	voteHash := vote.Data.Hash()
 
+	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
+	tipHash := m.blockchain.State().Tip().Hash
+	view, err := m.blockchain.State().GetSubView(tipHash)
+	if err != nil {
+		m.log.Warnf("could not get block view representing current tip: %s", err)
+		return
+	}
+	currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tipHash, firstSlotAllowedToInclude, &view, m.params)
+	if err != nil {
+		m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
+		return
+	}
+
+	committee, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
+	if err != nil {
+		m.log.Error(err)
+		return
+	}
+
+	if vote.Offset >= uint32(len(committee)) {
+		return
+	}
+
+	voter := committee[vote.Offset]
+
+	// slashing check... check if this vote interferes with any
+	// votes in the mempool
+	voteData := vote.Data
+	for h, v := range m.pool {
+		if voteHash.IsEqual(&h) {
+			continue
+		}
+		if _, ok := v.participatingValidators[voter]; ok {
+			if v.voteData.IsDoubleVote(voteData) || v.voteData.IsSurroundVote(voteData) {
+				if v.voteData.IsDoubleVote(voteData) {
+					m.log.Warnf("found double vote for validator %d in vote %s and %s, reporting...", voter, vote.Data.String(), v.voteData.String())
+				}
+				if v.voteData.IsSurroundVote(voteData) {
+					m.log.Warnf("found surround vote for validator %d in vote %s and %s, reporting...", voter, vote.Data.String(), v.voteData.String())
+				}
+				conflicting, found := v.getVoteByOffset(vote.Offset)
+				if !found {
+					return
+				}
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(vote.AsMulti(), conflicting.AsMulti())
+				}
+			}
+			return
+		}
+	}
+
 	if vs, found := m.pool[voteHash]; found {
-		vs.add(vote)
+		vs.add(vote, voter)
 	} else {
 		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
-		m.pool[voteHash].add(vote)
+		m.pool[voteHash].add(vote, voter)
 	}
 
 	m.sortMempool()
@@ -223,12 +297,16 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	}
 }
 
-func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
+func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID) {
 	for {
 		msg, err := topic.Next(m.ctx)
 		if err != nil {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
+		}
+
+		if msg.GetFrom() == id {
+			continue
 		}
 
 		txBuf := bytes.NewReader(msg.Data)
@@ -260,6 +338,13 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription) {
 	}
 }
 
+// Notify registers a notifee to be notified when illegal votes occur.
+func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
+	m.notifeesLock.Lock()
+	defer m.notifeesLock.Unlock()
+	m.notifees = append(m.notifees, notifee)
+}
+
 // NewVoteMempool creates a new mempool.
 func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode) (*VoteMempool, error) {
 	vm := &VoteMempool{
@@ -268,6 +353,7 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 		log:        log,
 		ctx:        ctx,
 		blockchain: ch,
+		notifees:   make([]VoteSlashingNotifee, 0),
 	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
@@ -279,7 +365,12 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 		return nil, err
 	}
 
-	go vm.handleSubscription(voteSub)
+	go vm.handleSubscription(voteSub, hostnode.GetHost().ID())
 
 	return vm, nil
+}
+
+// VoteSlashingNotifee is notified when an illegal vote occurs.
+type VoteSlashingNotifee interface {
+	NotifyIllegalVotes(vote1 *primitives.MultiValidatorVote, vote2 *primitives.MultiValidatorVote)
 }

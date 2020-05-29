@@ -57,29 +57,13 @@ func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParam
 	return s.UpdateValidatorStatus(proposerIndex, StatusExitedWithPenalty, p)
 }
 
-func isDoubleVote(v1 VoteData, v2 VoteData) bool {
-	return v1.ToEpoch == v2.ToEpoch
-}
-
-func isSurroundVote(v1 VoteData, v2 VoteData) bool {
-	if v1.FromEpoch < v2.FromEpoch {
-		// v1 surrounds v2
-		return v2.ToEpoch <= v1.ToEpoch
-	} else if v2.FromEpoch < v1.FromEpoch {
-		// v2 surrounds v1
-		return v1.ToEpoch <= v2.ToEpoch
-	} else {
-		return v1.ToEpoch != v2.ToEpoch
-	}
-}
-
 // IsVoteSlashingValid checks if the vote slashing is valid.
 func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint32, error) {
 	if vs.Vote1.Data.Equals(&vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
 
-	if !isDoubleVote(vs.Vote1.Data, vs.Vote1.Data) && !isSurroundVote(vs.Vote1.Data, vs.Vote2.Data) {
+	if !vs.Vote1.Data.IsDoubleVote(vs.Vote1.Data) && !vs.Vote1.Data.IsSurroundVote(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes do not violate slashing rule")
 	}
 

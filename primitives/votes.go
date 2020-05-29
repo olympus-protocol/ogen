@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -85,6 +86,20 @@ type VoteData struct {
 
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash chainhash.Hash
+}
+
+func (v *VoteData) String() string {
+	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, v.BeaconBlockHash)
+}
+
+// IsDoubleVote checks if the two votes form a double vote.
+func (v *VoteData) IsDoubleVote(v2 VoteData) bool {
+	return v.ToEpoch == v2.ToEpoch && !v.Equals(&v2)
+}
+
+// IsSurroundVote checks if the two votes form a surrounded vote.
+func (v *VoteData) IsSurroundVote(v2 VoteData) bool {
+	return v.FromEpoch < v2.FromEpoch && v2.ToEpoch < v.ToEpoch
 }
 
 // Equals checks if vote data equals another vote data.

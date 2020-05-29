@@ -103,6 +103,10 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 		buf := bytes.NewReader(data)
 		var block primitives.Block
 
+		if id == sp.host.GetHost().ID() {
+			return
+		}
+
 		if err := block.Decode(buf); err != nil {
 			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
 			return
