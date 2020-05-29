@@ -1,8 +1,6 @@
 package wallet
 
 import (
-	"fmt"
-
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bls"
 )
@@ -71,12 +69,10 @@ func (vw *ValidatorWallet) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool)
 		return err
 	})
 	if err != nil {
-		fmt.Println(err)
 		return nil, false
 	}
 	secretKey, err := bls.SecretKeyFromBytes(secretBytes[:])
 	if err != nil {
-		fmt.Println(err)
 		return nil, false
 	}
 	return secretKey, true
