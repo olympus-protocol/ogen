@@ -34,7 +34,8 @@ func (bh *BlockHeader) Serialize(w io.Writer) error {
 	err := serializer.WriteElements(w, bh.Version, bh.FeeAddress, bh.Nonce,
 		bh.TxMerkleRoot, bh.VoteMerkleRoot, bh.PrevBlockHash,
 		bh.Slot, bh.StateRoot, sec, bh.VoteSlashingMerkleRoot,
-		bh.RANDAOSlashingMerkleRoot, bh.ProposerSlashingMerkleRoot)
+		bh.RANDAOSlashingMerkleRoot, bh.ProposerSlashingMerkleRoot,
+		bh.DepositMerkleRoot, bh.ExitMerkleRoot)
 	if err != nil {
 		return err
 	}
@@ -46,13 +47,15 @@ func (bh *BlockHeader) Deserialize(r io.Reader) error {
 	err := serializer.ReadElements(r, &bh.Version, &bh.FeeAddress, &bh.Nonce,
 		&bh.TxMerkleRoot, &bh.VoteMerkleRoot, &bh.PrevBlockHash,
 		&bh.Slot, &bh.StateRoot, (*serializer.Uint32Time)(&bh.Timestamp), &bh.VoteSlashingMerkleRoot,
-		&bh.RANDAOSlashingMerkleRoot, &bh.ProposerSlashingMerkleRoot)
+		&bh.RANDAOSlashingMerkleRoot, &bh.ProposerSlashingMerkleRoot,
+		&bh.DepositMerkleRoot, &bh.ExitMerkleRoot)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// Hash calculates the hash of the block header.
 func (bh *BlockHeader) Hash() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
 	_ = bh.Serialize(buf)
