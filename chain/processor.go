@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/bdb"
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
 )
@@ -99,6 +100,63 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 	// b. get parent block
 	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
+
+	blockHash := block.Hash()
+
+	if other, found := ch.State().Chain().GetNodeBySlot(block.Header.Slot); found && other.Slot == block.Header.Slot {
+		if other.Hash.IsEqual(&blockHash) {
+			return nil
+		}
+
+		lastBlockHash := block.Header.PrevBlockHash
+
+		view, err := ch.State().GetSubView(lastBlockHash)
+		if err != nil {
+			return err
+		}
+
+		lastBlockState, _, err := ch.State().GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &ch.params)
+		if err != nil {
+			return err
+		}
+
+		if err := lastBlockState.CheckBlockSignature(block, &ch.params); err != nil {
+			return err
+		}
+
+		otherBlock, err := ch.GetBlock(other.Hash)
+		if err != nil {
+			return err
+		}
+
+		proposerPub, err := lastBlockState.GetProposerPublicKey(block, &ch.params)
+		if err != nil {
+			return err
+		}
+
+		blockSig, err := bls.SignatureFromBytes(block.Signature)
+		if err != nil {
+			return err
+		}
+
+		otherSig, err := bls.SignatureFromBytes(otherBlock.Signature)
+		if err != nil {
+			return err
+		}
+
+		ch.log.Warnf("found duplicate block at slot %d, reporting...", block.Header.Slot)
+
+		for n := range ch.notifees {
+			n.ProposerSlashingConditionViolated(primitives.ProposerSlashing{
+				BlockHeader1:       block.Header,
+				BlockHeader2:       otherBlock.Header,
+				Signature1:         *blockSig,
+				Signature2:         *otherSig,
+				ValidatorPublicKey: *proposerPub,
+			})
+		}
+		return nil
+	}
 
 	if time.Now().Add(time.Second * 2).Before(blockTime) {
 		return fmt.Errorf("block %d processed at %s, but should wait until %s", block.Header.Slot, time.Now(), blockTime)

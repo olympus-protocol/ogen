@@ -162,6 +162,9 @@ func (m *Miner) publishBlock(block *primitives.Block) {
 	}
 }
 
+// ProposerSlashingConditionViolated implements chain notifee.
+func (m *Miner) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
+
 // Start runs the miner.
 func (m *Miner) Start() error {
 	numOurs := 0
