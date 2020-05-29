@@ -157,7 +157,7 @@ Next generation blockchain secured by CASPER.`,
 				}
 				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
 				if err != nil {
-					log.Fatal("error parsing add node %s: %s", maddr, pinfo)
+					log.Fatalf("error parsing add node %s: %s", maddr, pinfo)
 				}
 
 				addNodes[i] = *pinfo

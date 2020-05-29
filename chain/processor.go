@@ -220,6 +220,4 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.notifeeLock.RUnlock()
 		return nil
 	})
-
-	return nil
 }

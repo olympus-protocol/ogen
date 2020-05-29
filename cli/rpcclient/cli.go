@@ -7,7 +7,6 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/fatih/color"
-	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +34,7 @@ type Empty struct{}
 
 // CLI is the module that allows validator and wallet operation.
 type CLI struct {
-	rpcClient *chainrpc.RPCClient
+	rpcClient *RPCClient
 }
 
 var ctrlCKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
@@ -100,7 +99,7 @@ func (c *CLI) Run() {
 	}
 }
 
-func NewCLI(rpcClient *chainrpc.RPCClient) *CLI {
+func NewCLI(rpcClient *RPCClient) *CLI {
 	return &CLI{
 		rpcClient: rpcClient,
 	}
@@ -111,7 +110,7 @@ func Run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	rpcClient := chainrpc.NewRPCClient(rpc)
+	rpcClient := NewRPCClient(rpc)
 	cli := NewCLI(rpcClient)
 	cli.Run()
 }
