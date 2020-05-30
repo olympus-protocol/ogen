@@ -91,21 +91,19 @@ func (s *chainServer) Sync(in *proto.SyncInfo, stream proto.Chain_SyncServer) er
 		return nil
 	}
 
-	// If the user sends an empty blockhash sync is from Genesis we skip
-	if in.BlockHash == "" {
-		blockRow = s.chain.State().Chain().Genesis()
-	} else {
-		ok := true
-		hash, err := chainhash.NewHashFromStr(in.BlockHash)
-		if err != nil {
-			return errors.New("unable to decode hash from string")
-		}
-		blockRow, ok = s.chain.State().GetRowByHash(*hash)
-		if !ok {
-			return errors.New("block starting point doesnt exist")
-		}
+	ok := true
+	hash, err := chainhash.NewHashFromStr(in.BlockHash)
+	if err != nil {
+		return errors.New("unable to decode hash from string")
 	}
-	
+	currBlockRow, ok := s.chain.State().GetRowByHash(*hash)
+	if !ok {
+		return errors.New("block starting point doesnt exist")
+	}
+	blockRow, ok = s.chain.State().Chain().Next(currBlockRow)
+	if !ok {
+		return errors.New("there is no next blockrow")
+	}
 	for {
 		ok := true
 		rawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
