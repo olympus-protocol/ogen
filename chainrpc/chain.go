@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -78,4 +79,54 @@ func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.GetBlockHashIn
 	return &proto.GetBlockHashResponse{
 		BlockHash: blockRow.Hash.String(),
 	}, nil
+}
+
+func (s *chainServer) Sync(in *proto.SyncInfo, stream proto.Chain_SyncServer) error {
+	blockRow := new(index.BlockRow)
+	if in.FullSync {
+		var exist bool
+		blockRow, exist = s.chain.State().Chain().GetNodeByHeight(0)
+		if !exist {
+			return errors.New("unable to get genesis block row")
+		}
+	} else {
+		var exist bool
+		hash, err := chainhash.NewHashFromStr(in.FromBlockHash)
+		if err != nil {
+			return errors.New("unable to decode block from hash")
+		}
+		blockRow, exist = s.chain.State().GetRowByHash(*hash)
+		if !exist {
+			return errors.New("unable to get genesis block row")
+		}
+	}
+	if !in.FullSync {
+		firstRawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
+		if err != nil {
+			return errors.New("unable get first raw block")
+		}
+		firsBlock := &proto.SyncStreamResponse{
+			RawBlock: hex.EncodeToString(firstRawBlock),
+		}
+		stream.Send(firsBlock)
+	}
+	for {
+		blockRow = blockRow.Parent
+		if blockRow == nil {
+			break
+		}
+		rawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
+		if err != nil {
+			return errors.New("unable get first raw block")
+		}
+		response := &proto.SyncStreamResponse{
+			RawBlock: hex.EncodeToString(rawBlock),
+		}
+		stream.Send(response)
+	}
+	return nil
+}
+
+func (s *chainServer) Subscribe(in *proto.SubscribeInfo, stream proto.Chain_SubscribeServer) error {
+	return nil
 }

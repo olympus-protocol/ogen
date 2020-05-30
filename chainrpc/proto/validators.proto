@@ -12,13 +12,16 @@ service Validators {
 }
 
 message GetValidatorsListResponse {
-    repeated ValidatorInfo  Validators = 1;
+    repeated ValidatorRegistry  Validators = 1;
 }
 
-message ValidatorInfo {
-    string publicKey = 1;
-    string balance = 2;
-    string status = 3;
+message ValidatorRegistry {
+    string balance = 1;
+    string publicKey = 2;
+    string payee_address = 3;
+    string status = 4;
+    int64 first_active_epoch = 5;
+    int64 last_active_epoch = 6;
 }
 
 message GenerateValidatorKeyResponse {

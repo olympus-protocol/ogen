@@ -18,12 +18,14 @@ type validatorsServer struct {
 
 func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*proto.GetValidatorsListResponse, error) {
 	validators := s.chain.State().TipState().ValidatorRegistry
-	validatorsResponse := make([]*proto.ValidatorInfo, len(validators))
+	validatorsResponse := make([]*proto.ValidatorRegistry, len(validators))
 	for i, v := range validators {
-		newValidator := &proto.ValidatorInfo{
-			PublicKey: hex.EncodeToString(v.PubKey),
-			Status:    v.Status.String(),
-			Balance:   decimal.NewFromInt(int64(v.Balance)).StringFixed(3),
+		newValidator := &proto.ValidatorRegistry{
+			PublicKey:        hex.EncodeToString(v.PubKey),
+			Status:           v.Status.String(),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).StringFixed(3),
+			FirstActiveEpoch: v.FirstActiveEpoch,
+			LastActiveEpoch:  v.LastActiveEpoch,
 		}
 		validatorsResponse[i] = newValidator
 	}

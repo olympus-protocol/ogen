@@ -10,12 +10,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Config config for the RPCServer
 type Config struct {
 	Network string
 	Address string
 	Log     *logger.Logger
 }
 
+// RPCServer struct model for the gRPC server
 type RPCServer struct {
 	log    *logger.Logger
 	config Config
@@ -30,11 +32,13 @@ func (s *RPCServer) registerServices() {
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
 }
 
+// Stop stops gRPC listener
 func (s *RPCServer) Stop() {
 	s.log.Info("stoping gRPC Server")
 	s.rpc.GracefulStop()
 }
 
+// Start starts gRPC listener
 func (s *RPCServer) Start() error {
 	s.registerServices()
 	s.log.Info("Starting gRPC Server")

@@ -9,7 +9,27 @@ service Chain {
     rpc GetRawBlock(GetBlockInfo) returns (GetBlockRawResponse) {}
     rpc GetBlock(GetBlockInfo) returns (GetBlockResponse) {}
     rpc GetBlockHash(GetBlockHashInfo) returns (GetBlockHashResponse) {}
-    
+    rpc Sync(SyncInfo) returns (stream SyncStreamResponse) {}
+    rpc Subscribe(SubscribeInfo) returns (stream SubscribeResponse) {}
+}
+
+message SyncInfo {
+    bool full_sync = 1;
+    string from_block_hash = 2;
+}
+
+message SyncStreamResponse {
+    string raw_block = 1;
+}
+
+message SubscribeInfo {
+    string topic = 1;
+    bool include_epoch_transitions = 2;
+}
+
+message SubscribeResponse {
+    string raw_block = 1;
+    string epoch_transitions = 2;
 }
 
 message GetBlockInfo {
