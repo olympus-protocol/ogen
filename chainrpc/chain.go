@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"reflect"
 
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
@@ -82,47 +83,43 @@ func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.GetBlockHashIn
 }
 
 func (s *chainServer) Sync(in *proto.SyncInfo, stream proto.Chain_SyncServer) error {
+	// Define starting point
 	blockRow := new(index.BlockRow)
-	if in.FullSync {
-		var exist bool
-		blockRow, exist = s.chain.State().Chain().GetNodeByHeight(0)
-		if !exist {
-			return errors.New("unable to get genesis block row")
-		}
+
+	// If user is on tip, silently close the channel
+	if reflect.DeepEqual(in.BlockHash, s.chain.State().Tip().Hash.String()) {
+		return nil
+	}
+
+	// If the user sends an empty blockhash sync is from Genesis we skip
+	if in.BlockHash == "" {
+		blockRow = s.chain.State().Chain().Genesis()
 	} else {
-		var exist bool
-		hash, err := chainhash.NewHashFromStr(in.FromBlockHash)
+		ok := true
+		hash, err := chainhash.NewHashFromStr(in.BlockHash)
 		if err != nil {
-			return errors.New("unable to decode block from hash")
+			return errors.New("unable to decode hash from string")
 		}
-		blockRow, exist = s.chain.State().GetRowByHash(*hash)
-		if !exist {
-			return errors.New("unable to get genesis block row")
+		blockRow, ok = s.chain.State().GetRowByHash(*hash)
+		if !ok {
+			return errors.New("block starting point doesnt exist")
 		}
 	}
-	if !in.FullSync {
-		firstRawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
-		if err != nil {
-			return errors.New("unable get first raw block")
-		}
-		firsBlock := &proto.SyncStreamResponse{
-			RawBlock: hex.EncodeToString(firstRawBlock),
-		}
-		stream.Send(firsBlock)
-	}
+	
 	for {
-		blockRow = blockRow.Parent
-		if blockRow == nil {
-			break
-		}
+		ok := true
 		rawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
 		if err != nil {
-			return errors.New("unable get first raw block")
+			return errors.New("unable get raw block")
 		}
 		response := &proto.SyncStreamResponse{
 			RawBlock: hex.EncodeToString(rawBlock),
 		}
 		stream.Send(response)
+		blockRow, ok = s.chain.State().Chain().Next(blockRow)
+		if blockRow == nil || !ok {
+			break
+		}
 	}
 	return nil
 }

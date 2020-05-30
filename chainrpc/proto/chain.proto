@@ -14,8 +14,7 @@ service Chain {
 }
 
 message SyncInfo {
-    bool full_sync = 1;
-    string from_block_hash = 2;
+    string block_hash = 1;
 }
 
 message SyncStreamResponse {
