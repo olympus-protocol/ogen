@@ -82,9 +82,9 @@ func (c *RPCClient) GetValidatorsList(args []string) (string, error) {
 		return "", fmt.Errorf("page %d is out of range (1 - %d)", page, len(res.Validators)/validatorsPerPage)
 	}
 
-	color.Magenta(" %-67s | %-20s | %-12s | %8s | %6s\n", "Public Key", "Balance", "Status", "Managed?", "Owned?")
+	color.Magenta(" %-67s | %-10s | %-12s \n", "Public Key", "Balance", "Status")
 	for _, v := range res.Validators[(page-1)*validatorsPerPage:] {
-		fmt.Printf(" %-67s | %-20f | %-12s | %-8t | %-6t\n", v.PublickKey, v.Balance, v.Status)
+		fmt.Printf(" %-67s | %-10s | %-12s \n", v.PublicKey, v.Balance, v.Status)
 		numVals++
 		if numVals == validatorsPerPage {
 			break
