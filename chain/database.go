@@ -138,7 +138,7 @@ func (s *StateService) loadStateMap(txn bdb.DBViewTransaction) error {
 
 		s.log.Debugf("calculating block state for %s with previous %s", node.Hash, node.Parent)
 
-		bl, err := txn.GetRawBlock(node.Hash)
+		bl, err := txn.GetBlock(node.Hash)
 		if err != nil {
 			return err
 		}

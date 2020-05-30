@@ -344,3 +344,12 @@ func (b *Block) Decode(r io.Reader) error {
 	b.RandaoSignature = randaoSig
 	return nil
 }
+
+// GetTxs returns
+func (b *Block) GetTxs() []string {
+	txs := make([]string, len(b.Txs))
+	for i, tx := range b.Txs {
+		txs[i] = tx.Hash().String()
+	}
+	return txs
+}

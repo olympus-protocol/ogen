@@ -52,6 +52,14 @@ func (ch *Blockchain) GenesisTime() time.Time {
 // GetBlock gets a block from the database.
 func (ch *Blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err error) {
 	return block, ch.db.View(func(txn bdb.DBViewTransaction) error {
+		block, err = txn.GetBlock(h)
+		return err
+	})
+}
+
+// GetBlock gets a block from the database.
+func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
+	return block, ch.db.View(func(txn bdb.DBViewTransaction) error {
 		block, err = txn.GetRawBlock(h)
 		return err
 	})

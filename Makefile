@@ -104,9 +104,12 @@ pack: build
 	tar -czvf ogen-$(OGEN_VERSION)-$(LOWECASE_OS).tar.gz ./$(FOLDER_NAME)
 	rm -r ./$(FOLDER_NAME)
 
-build:
+build: 
 	@echo Building $(BINARY_NAME) for $(OS)
 	$(GOBUILD) -o $(BINARY_NAME)
+
+build_proto:
+	protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative chainrpc/proto/*.proto
 
 clean:
 	@echo Cleaning...

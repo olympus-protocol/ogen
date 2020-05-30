@@ -14,7 +14,8 @@ func completer(d prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{
 		// Chain methods
 		{Text: "getchaininfo", Description: "Get the chain status"},
-		{Text: "getblock", Description: "Get the the block data"},
+		{Text: "getrawblock", Description: "Get the serialized block data"},
+		{Text: "getblock", Description: "Get the block data"},
 		{Text: "getblockhash", Description: "Get the block hash of specified height"},
 
 		// Wallet methods
@@ -67,26 +68,13 @@ func (c *CLI) Run() {
 		switch args[0] {
 		// Chain methods
 		case "getchaininfo":
-			out, err = c.GetChainInfo()
-		case "getblock":
-			out, err = c.GetBlock(args[1:])
+			out, err = c.rpcClient.GetChainInfo()
 		case "getblockhash":
-			out, err = c.GetBlockHash(args[1:])
-		// Wallet methods
-		case "getaddress":
-			out, err = c.GetAddress()
-		case "getbalance":
-			out, err = c.GetBalance(args[1:])
-		case "sendtoaddress":
-			out, err = c.SendToAddress(args[1:])
-		case "listvalidators":
-			out, err = c.ListValidators(args[1:])
-		case "startvalidator":
-			out, err = c.StartValidator(args[1:])
-		case "generatevalidatorkey":
-			out, err = c.GenerateValidatorKey()
-		case "exitvalidator":
-			out, err = c.ExitValidator(args[1:])
+			out, err = c.rpcClient.GetBlockHash(args[1:])
+		case "getrawblock":
+			out, err = c.rpcClient.GetRawBlock(args[1:])
+		case "getblock":
+			out, err = c.rpcClient.GetBlock(args[1:])
 		default:
 			err = fmt.Errorf("Unknown command: %s", args[0])
 		}

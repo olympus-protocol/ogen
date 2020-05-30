@@ -103,8 +103,8 @@ func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
 	})
 }
 
-// GetRawBlock gets a block from the database.
-func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) (*primitives.Block, error) {
+// GetBlock gets a block from the database.
+func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
 	blockBytes, err := getKey(brt, hash[:])
 	if err != nil {
 		return nil, err
@@ -113,6 +113,15 @@ func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) (*primitives
 	block := new(primitives.Block)
 	err = block.Decode(bytes.NewBuffer(blockBytes))
 	return block, err
+}
+
+// GetRawBlock gets a block serialized from the database.
+func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
+	blockBytes, err := getKey(brt, hash[:])
+	if err != nil {
+		return nil, err
+	}
+	return blockBytes, err
 }
 
 // AddRawBlock adds a raw block to the database.
@@ -307,7 +316,8 @@ type DB interface {
 
 // DBTransactionRead is a transaction to view the state of the database.
 type DBViewTransaction interface {
-	GetRawBlock(hash chainhash.Hash) (*primitives.Block, error)
+	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
+	GetRawBlock(hash chainhash.Hash) ([]byte, error)
 	GetTip() (chainhash.Hash, error)
 	GetFinalizedState() (*primitives.State, error)
 	GetJustifiedState() (*primitives.State, error)

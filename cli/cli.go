@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	cliCmd.Flags().String("rpc", "http://localhost:24127", "RPC address and port to connect to")
+	cliCmd.Flags().String("rpc", "127.0.0.1:24127", "RPC address and port to connect to")
 
 	rootCmd.AddCommand(cliCmd)
 }

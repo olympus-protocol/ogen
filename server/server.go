@@ -28,7 +28,7 @@ type Server struct {
 	HostNode *peers.HostNode
 	Wallet   *wallet.Wallet
 	Miner    *miner.Miner
-	RPC      *chainrpc.RPCServices
+	RPC      *chainrpc.RPCServer
 	Gui      bool
 }
 
@@ -45,18 +45,23 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start host node")
 	}
-	chainrpc.ServeRPC(s.RPC, loadRPCConfig(s.config, s.log))
 	if s.Miner != nil {
 		err = s.Miner.Start()
 		if err != nil {
 			log.Fatalln("unable to start miner thread")
 		}
 	}
+	go func() {
+		err := s.RPC.Start()
+		if err != nil {
+			log.Fatalln("unable to start rpc server")
+		}
+	}()
 }
 
 func (s *Server) Stop() error {
 	s.Chain.Stop()
-	// s.HostNode.Stop()
+	s.RPC.Stop()
 	err := s.Wallet.Stop()
 	if err != nil {
 		return err
@@ -98,10 +103,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc := &chainrpc.RPCServices{
-		Wallet: chainrpc.NewRPCWallet(w, ch),
-		Chain:  chainrpc.NewRPCChain(ch),
-	}
+	rpc := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch)
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {
