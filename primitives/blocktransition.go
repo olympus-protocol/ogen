@@ -436,10 +436,57 @@ func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	return nil
 }
 
+// GetProposerPublicKey gets the public key for the proposer of a block.
+func (s *State) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.PublicKey, error) {
+	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
+
+	proposerIndex := s.ProposerQueue[slotIndex]
+	proposer := s.ValidatorRegistry[proposerIndex]
+
+	return bls.PublicKeyFromBytes(proposer.PubKey)
+}
+
+// CheckBlockSignature checks the block signature.
+func (s *State) CheckBlockSignature(b *Block, p *params.ChainParams) error {
+	blockHash := b.Hash()
+	blockSig, err := bls.SignatureFromBytes(b.Signature)
+	if err != nil {
+		return err
+	}
+
+	validatorPub, err := s.GetProposerPublicKey(b, p)
+	if err != nil {
+		return err
+	}
+
+	randaoSig, err := bls.SignatureFromBytes(b.RandaoSignature)
+	if err != nil {
+		return err
+	}
+
+	valid := blockSig.Verify(blockHash[:], validatorPub)
+	if !valid {
+		return errors.New("error validating signature for block")
+	}
+
+	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", b.Header.Slot)))
+
+	valid = randaoSig.Verify(slotHash[:], validatorPub)
+	if !valid {
+		return errors.New("error validating RANDAO signature for block")
+	}
+
+	return nil
+}
+
 // ProcessBlock runs a block transition on the state and mutates state.
 func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	if b.Header.Slot != s.Slot {
 		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
+	}
+
+	if err := s.CheckBlockSignature(b, p); err != nil {
+		return err
 	}
 
 	voteMerkleRoot := b.VotesMerkleRoot()
@@ -506,17 +553,6 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
-	blockHash := b.Hash()
-	blockSig, err := bls.SignatureFromBytes(b.Signature)
-	if err != nil {
-		return err
-	}
-
-	randaoSig, err := bls.SignatureFromBytes(b.RandaoSignature)
-	if err != nil {
-		return err
-	}
-
 	for _, d := range b.Deposits {
 		if err := s.ApplyDeposit(&d, p); err != nil {
 			return err
@@ -541,24 +577,6 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
-	proposer := s.ValidatorRegistry[proposerIndex]
-
-	validatorPub, err := bls.PublicKeyFromBytes(proposer.PubKey)
-	if err != nil {
-		return err
-	}
-
-	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", b.Header.Slot)))
-
-	valid := blockSig.Verify(blockHash[:], validatorPub)
-	if !valid {
-		return errors.New("error validating signature for block")
-	}
-
-	valid = randaoSig.Verify(slotHash[:], validatorPub)
-	if !valid {
-		return errors.New("error validating RANDAO signature for block")
-	}
 
 	for _, v := range b.Votes {
 		if err := s.processVote(&v, p, proposerIndex); err != nil {

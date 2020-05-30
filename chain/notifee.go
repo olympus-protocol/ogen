@@ -9,6 +9,7 @@ import (
 // blockchain.
 type BlockchainNotifee interface {
 	NewTip(*index.BlockRow, *primitives.Block)
+	ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing)
 }
 
 // Notify registers a notifee to be notified.
