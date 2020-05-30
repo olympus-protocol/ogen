@@ -103,7 +103,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch)
+	rpc := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, w)
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {

@@ -18,14 +18,11 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "getblock", Description: "Get the block data"},
 		{Text: "getblockhash", Description: "Get the block hash of specified height"},
 
-		// Wallet methods
-		{Text: "getbalance", Description: "Get balance of wallet"},
-		{Text: "getaddress", Description: "Get current wallet addresses"},
-		{Text: "sendtoaddress", Description: "Send money to a user"},
+		// Validators methods
 		{Text: "listvalidators", Description: "List owned and managed validators"},
-		{Text: "startvalidator", Description: "Start a validator by submitting a deposit transaction"},
 		{Text: "generatevalidatorkey", Description: "Generates a validator key and allows managing it"},
 		{Text: "exitvalidator", Description: "Attempts to exit an owned validator"},
+		{Text: "startvalidator", Description: "Start a validator by submitting a deposit transaction"},
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
@@ -75,6 +72,17 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.GetRawBlock(args[1:])
 		case "getblock":
 			out, err = c.rpcClient.GetBlock(args[1:])
+
+		// Validator methods
+		//case "startvalidator":
+		//	out, err = c.rpcClient.StartValidator(args[1:])
+		//case "exitvalidator":
+		//	out, err = c.rpcClient.ExitValidator(args[1:])
+		case "listvalidators":
+			out, err = c.rpcClient.GetValidatorsList(args[1:])
+		case "generatevalidatorkey":
+			out, err = c.rpcClient.GenerateValidatorKey()
+
 		default:
 			err = fmt.Errorf("Unknown command: %s", args[0])
 		}

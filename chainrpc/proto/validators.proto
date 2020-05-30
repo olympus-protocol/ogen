@@ -1,0 +1,42 @@
+
+syntax = "proto3";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+
+import "chainrpc/proto/common.proto";
+
+service Validators {
+    rpc GetValidatorsList(Empty) returns (GetValidatorsListResponse) {}
+    rpc GenerateValidatorKey(Empty) returns (GenerateValidatorKeyResponse) {}
+    rpc ExitValidator(ExitValidatorInfo) returns (ExitValidatorResponse) {}
+    rpc StartValidator(StartValidatorInfo) returns (StartValidatorResponse) {}
+}
+
+message GetValidatorsListResponse {
+    repeated ValidatorInfo  Validators = 1;
+}
+
+message ValidatorInfo {
+    string publicKey = 1;
+    string balance = 2;
+    string status = 3;
+}
+
+message GenerateValidatorKeyResponse {
+    string key = 1;
+}
+
+message ExitValidatorInfo {
+    string publicKey = 1;
+}
+
+message ExitValidatorResponse {
+    bool success = 1;
+}
+
+message StartValidatorInfo {
+    string privateKey = 1;
+}
+
+message StartValidatorResponse {
+    string publicKey = 1;
+}

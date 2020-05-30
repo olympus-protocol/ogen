@@ -2,6 +2,8 @@
 syntax = "proto3";
 option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
+import "chainrpc/proto/common.proto";
+
 service Chain {
     rpc GetChainInfo (Empty) returns (ChainInfoResponse) {}
     rpc GetRawBlock(GetBlockInfo) returns (GetBlockRawResponse) {}
@@ -9,8 +11,6 @@ service Chain {
     rpc GetBlockHash(GetBlockHashInfo) returns (GetBlockHashResponse) {}
     
 }
-
-message Empty{}
 
 message GetBlockInfo {
     string block_hash = 1;

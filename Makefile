@@ -109,7 +109,7 @@ build:
 	$(GOBUILD) -o $(BINARY_NAME)
 
 build_proto:
-	protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative chainrpc/proto/*.proto
+	protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative chainrpc/proto/*.proto 
 
 clean:
 	@echo Cleaning...

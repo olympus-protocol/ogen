@@ -21,6 +21,7 @@ require (
 	github.com/olympus-protocol/bls-go v0.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
+	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
