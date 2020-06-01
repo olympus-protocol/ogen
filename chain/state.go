@@ -301,6 +301,21 @@ func (s *StateService) TipState() *primitives.State {
 	return s.stateMap[s.blockChain.Tip().Hash].firstSlotState
 }
 
+// TipStateAtSlot gets the tip state updated to a certain slot.
+func (s *StateService) TipStateAtSlot(slot uint64) (*primitives.State, error) {
+	tipHash := s.Tip().Hash
+	view, err := s.GetSubView(tipHash)
+	if err != nil {
+		return nil, err
+	}
+	state, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, &s.params)
+	if err != nil {
+		return nil, err
+	}
+
+	return state, nil
+}
+
 // NewStateService constructs a new state service.
 func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db bdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)

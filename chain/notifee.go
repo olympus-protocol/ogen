@@ -8,7 +8,8 @@ import (
 // BlockchainNotifee is a type that is notified when something changes with the
 // blockchain.
 type BlockchainNotifee interface {
-	NewTip(*index.BlockRow, *primitives.Block)
+	// NewTip notifies of a new tip added to the blockchain. Do not mutate state.
+	NewTip(*index.BlockRow, *primitives.Block, *primitives.State)
 	ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing)
 }
 

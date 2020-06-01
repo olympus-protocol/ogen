@@ -112,10 +112,10 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (m *Miner) NewTip(row *index.BlockRow, block *primitives.Block) {
+func (m *Miner) NewTip(_ *index.BlockRow, block *primitives.Block, newState *primitives.State) {
 	m.voteMempool.Remove(block)
 	m.coinsMempool.RemoveByBlock(block)
-	m.actionsMempool.RemoveByBlock(block)
+	m.actionsMempool.RemoveByBlock(block, newState)
 }
 
 func (m *Miner) getCurrentSlot() uint64 {
@@ -163,7 +163,7 @@ func (m *Miner) publishBlock(block *primitives.Block) {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (m *Miner) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
+func (m *Miner) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
 
 // Start runs the miner.
 func (m *Miner) Start() error {
@@ -192,19 +192,11 @@ func (m *Miner) Start() error {
 			select {
 			case <-voteTimer.C:
 				// check if we're an attester for this slot
-				tip := m.chain.State().Tip()
-				tipHash := tip.Hash
-
 				m.log.Infof("sending votes for slot %d", slotToVote)
 
 				s := m.chain.State()
 
-				view, err := s.GetSubView(tipHash)
-				if err != nil {
-					panic(err)
-				}
-
-				state, _, err := s.GetStateForHashAtSlot(tipHash, slotToVote, &view, &m.params)
+				state, err := s.TipStateAtSlot(slotToVote)
 				if err != nil {
 					panic(err)
 				}
@@ -250,31 +242,31 @@ func (m *Miner) Start() error {
 						go m.publishVote(&vote)
 
 						// DO NOT UNCOMMENT: slashing test
-						// if validatorIdx == 0 {
-						// 	data2 := primitives.VoteData{
-						// 		Slot:            slotToVote,
-						// 		FromEpoch:       state.JustifiedEpoch,
-						// 		FromHash:        state.JustifiedEpochHash,
-						// 		ToEpoch:         toEpoch,
-						// 		ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
-						// 		BeaconBlockHash: chainhash.HashH([]byte("lol")),
-						// 	}
+						if validatorIdx == 0 {
+							data2 := primitives.VoteData{
+								Slot:            slotToVote,
+								FromEpoch:       state.JustifiedEpoch,
+								FromHash:        state.JustifiedEpochHash,
+								ToEpoch:         toEpoch,
+								ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
+								BeaconBlockHash: chainhash.HashH([]byte("lol")),
+							}
 
-						// 	data2Hash := data2.Hash()
+							data2Hash := data2.Hash()
 
-						// 	sig2 := k.Sign(data2Hash[:])
+							sig2 := k.Sign(data2Hash[:])
 
-						// 	vote2 := primitives.SingleValidatorVote{
-						// 		Data:      data2,
-						// 		Signature: *sig2,
-						// 		Offset:    uint32(i),
-						// 		OutOf:     uint32(len(validators)),
-						// 	}
+							vote2 := primitives.SingleValidatorVote{
+								Data:      data2,
+								Signature: *sig2,
+								Offset:    uint32(i),
+								OutOf:     uint32(len(validators)),
+							}
 
-						// 	m.voteMempool.Add(&vote2)
+							m.voteMempool.Add(&vote2)
 
-						// 	go m.publishVote(&vote2)
-						// }
+							go m.publishVote(&vote2)
+						}
 					}
 				}
 
@@ -286,15 +278,7 @@ func (m *Miner) Start() error {
 				tip := m.chain.State().Tip()
 				tipHash := tip.Hash
 
-				s := m.chain.State()
-
-				view, err := s.GetSubView(tipHash)
-				if err != nil {
-					m.log.Error(err)
-					return
-				}
-
-				state, _, err := s.GetStateForHashAtSlot(tipHash, slotToPropose, &view, &m.params)
+				state,  err := m.chain.State().TipStateAtSlot(slotToPropose)
 				if err != nil {
 					m.log.Error(err)
 					return
@@ -324,6 +308,24 @@ func (m *Miner) Start() error {
 						return
 					}
 
+					randaoSlashings, err := m.actionsMempool.GetRANDAOSlashings(int(m.params.MaxRANDAOSlashingsPerBlock), state)
+					if err != nil {
+						m.log.Error(err)
+						return
+					}
+
+					voteSlashings, err := m.actionsMempool.GetVoteSlashings(int(m.params.MaxVoteSlashingsPerBlock), state)
+					if err != nil {
+						m.log.Error(err)
+						return
+					}
+
+					proposerSlashings, err := m.actionsMempool.GetProposerSlashings(int(m.params.MaxProposerSlashingsPerBlock), state)
+					if err != nil {
+						m.log.Error(err)
+						return
+					}
+
 					block := primitives.Block{
 						Header: primitives.BlockHeader{
 							Version:       0,
@@ -336,6 +338,9 @@ func (m *Miner) Start() error {
 						Txs:      coinTxs,
 						Deposits: depositTxs,
 						Exits:    exitTxs,
+						RANDAOSlashings: randaoSlashings,
+						VoteSlashings: voteSlashings,
+						ProposerSlashings: proposerSlashings,
 					}
 
 					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()

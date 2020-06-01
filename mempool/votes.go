@@ -174,17 +174,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	voteHash := vote.Data.Hash()
 
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
-	tipHash := m.blockchain.State().Tip().Hash
-	view, err := m.blockchain.State().GetSubView(tipHash)
-	if err != nil {
-		m.log.Warnf("could not get block view representing current tip: %s", err)
-		return
-	}
-	currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tipHash, firstSlotAllowedToInclude, &view, m.params)
-	if err != nil {
-		m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-		return
-	}
+	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
 
 	committee, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
 	if err != nil {
@@ -217,11 +207,17 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 				if !found {
 					return
 				}
+
+				voteMulti := vote.AsMulti()
+				conflictingMulti := conflicting.AsMulti()
 				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(vote.AsMulti(), conflicting.AsMulti())
+					n.NotifyIllegalVotes(primitives.VoteSlashing{
+						Vote1: *voteMulti,
+						Vote2: *conflictingMulti,
+					})
 				}
+				return
 			}
-			return
 		}
 	}
 
@@ -243,7 +239,7 @@ func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.Multi
 	votes := make([]primitives.MultiValidatorVote, 0)
 	for _, i := range m.poolOrder {
 		v := m.pool[i]
-		if v.voteData.Slot < slot-p.MinAttestationInclusionDelay && slot <= v.voteData.Slot+m.params.EpochLength-1 {
+		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
 			sigs := make([]*bls.Signature, 0)
 			for _, v := range m.pool[i].individualVotes {
 				sigs = append(sigs, &v.Signature)
@@ -290,7 +286,7 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 			m.removeFromOrder(voteHash)
 		}
 
-		if b.Header.Slot >= v.Data.Slot+m.params.EpochLength-1 {
+		if b.Header.Slot >= v.Data.LastSlotValid(m.params) {
 			delete(m.pool, voteHash)
 			m.removeFromOrder(voteHash)
 		}
@@ -372,5 +368,5 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 
 // VoteSlashingNotifee is notified when an illegal vote occurs.
 type VoteSlashingNotifee interface {
-	NotifyIllegalVotes(vote1 *primitives.MultiValidatorVote, vote2 *primitives.MultiValidatorVote)
+	NotifyIllegalVotes(slashing primitives.VoteSlashing)
 }

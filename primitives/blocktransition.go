@@ -63,7 +63,7 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
 
-	if !vs.Vote1.Data.IsDoubleVote(vs.Vote1.Data) && !vs.Vote1.Data.IsSurroundVote(vs.Vote2.Data) {
+	if !vs.Vote1.Data.IsDoubleVote(vs.Vote2.Data) && !vs.Vote1.Data.IsSurroundVote(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes do not violate slashing rule")
 	}
 

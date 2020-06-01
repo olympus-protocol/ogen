@@ -99,6 +99,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
+	voteMempool.Notify(actionsMempool)
 	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
