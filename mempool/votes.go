@@ -220,8 +220,8 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 				for _, n := range m.notifees {
 					n.NotifyIllegalVotes(vote.AsMulti(), conflicting.AsMulti())
 				}
+				return
 			}
-			return
 		}
 	}
 
@@ -243,7 +243,7 @@ func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.Multi
 	votes := make([]primitives.MultiValidatorVote, 0)
 	for _, i := range m.poolOrder {
 		v := m.pool[i]
-		if v.voteData.Slot < slot-p.MinAttestationInclusionDelay && slot <= v.voteData.Slot+m.params.EpochLength-1 {
+		if v.voteData.Slot <= slot-p.MinAttestationInclusionDelay && slot <= v.voteData.Slot+m.params.EpochLength-1 {
 			sigs := make([]*bls.Signature, 0)
 			for _, v := range m.pool[i].individualVotes {
 				sigs = append(sigs, &v.Signature)
