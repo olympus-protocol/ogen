@@ -3,6 +3,7 @@ package primitives
 import (
 	"bytes"
 	"fmt"
+	"github.com/olympus-protocol/ogen/params"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -87,6 +88,21 @@ type VoteData struct {
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash chainhash.Hash
 }
+
+func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
+	// vs <= ss-min
+	// vs + min <= ss
+	// state slot >= vote slot + min
+
+	return v.Slot + p.MinAttestationInclusionDelay
+}
+
+func (v *VoteData) LastSlotValid(p *params.ChainParams) uint64 {
+	// ss <= vs+epoch-1
+
+	return v.Slot + p.EpochLength - 1
+}
+
 
 func (v *VoteData) String() string {
 	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, v.BeaconBlockHash)
