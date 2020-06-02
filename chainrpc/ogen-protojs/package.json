@@ -1,0 +1,14 @@
+{
+  "name": "ogen-protojs",
+  "version": "1.0.0",
+  "description": "Olympus protobuf grpc-web definitions for typescript",
+  "repository": "https://github.com/olympus-protocol/ogen",
+  "author": "Enrique Berrueta",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "ts-protoc-gen": "0.12.0",
+    "@types/google-protobuf": "^3.2.7",
+    "google-protobuf": "^3.8.0-rc.1"
+  }
+}

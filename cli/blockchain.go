@@ -25,10 +25,6 @@ import (
 	mnet "github.com/multiformats/go-multiaddr-net"
 )
 
-const (
-	version = "0.1.0"
-)
-
 // loadOgen is the main function to run ogen.
 func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
 	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, log)

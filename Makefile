@@ -1,7 +1,10 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
-OGEN_VERSION=0.1.0
+OGEN_VERSION=1.0.0
+PROTOC_GEN_TS_PATH=$(OGEN_PROTO_JS_DIR)/node_modules/.bin/protoc-gen-ts
+OGEN_PROTO_JS_DIR=./chainrpc/ogen-protojs
+OGEN_PROTO_PY_DIR=./chainrpc/ogen-protopy
 
 ifeq ($(OS),Windows_NT)
     OS := Windows
@@ -111,6 +114,15 @@ build:
 build_proto:
 	protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative chainrpc/proto/*.proto 
 
+build_proto_js:
+	cd ${OGEN_PROTO_JS_DIR} && npm i
+	protoc --plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" --js_out="import_style=commonjs,binary:${OGEN_PROTO_JS_DIR}" --ts_out="service=grpc-web:${OGEN_PROTO_JS_DIR}" chainrpc/proto/*.proto 
+	cd ${OGEN_PROTO_JS_DIR} && mv chainrpc/proto/* ./ && rm -r chainrpc
+
+build_proto_py:
+	pip3 install protobuf-compiler
+	protobuf-compiler -d chainrpc/proto/ -p ogen-protopy -o ./ -v 1.0.0
+
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./
@@ -122,6 +134,8 @@ clean:
 	rm -rf *.tar.gz
 	rm -rf *.zip
 	rm -rf release/
+	rm -rf ogen-protopy*
+
 
 
 
