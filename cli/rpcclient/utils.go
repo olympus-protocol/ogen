@@ -34,9 +34,9 @@ func (c *RPCClient) genKeyPair(args []string, raw bool) (string, error) {
 		return "", errors.New("Usage: genkeypair || genrawkeypair")
 	}
 	blsKeyPair := bls.RandKey()
-	var res proto.KeyPair
+	var res bls.KeyPair
 	if raw {
-		res = proto.KeyPair{
+		res = bls.KeyPair{
 			Public:  hex.EncodeToString(blsKeyPair.PublicKey().Marshal()),
 			Private: hex.EncodeToString(blsKeyPair.Marshal()),
 		}
@@ -49,11 +49,12 @@ func (c *RPCClient) genKeyPair(args []string, raw bool) (string, error) {
 		if err != nil {
 			return "", errors.New("unable to encode private key to bech32")
 		}
-		res = proto.KeyPair{
+		res = bls.KeyPair{
 			Public:  addr,
 			Private: wif,
 		}
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err

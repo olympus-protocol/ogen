@@ -10,6 +10,12 @@ import (
 	"github.com/olympus-protocol/bls-go/bls"
 )
 
+// KeyPair is an interface struct to serve keypairs
+type KeyPair struct {
+	Public  string `json:"public"`
+	Private string `json:"private"`
+}
+
 func init() {
 	if err := bls.Init(bls.BLS12_381); err != nil {
 		panic(err)
