@@ -26,7 +26,7 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 	}, nil
 }
 
-func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.RawData, error) {
+func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.R
 	if err != nil {
 		return nil, err
 	}
-	return &proto.RawData{Data: hex.EncodeToString(block)}, nil
+	return &proto.Block{RawBlock: hex.EncodeToString(block)}, nil
 }
 
 func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
@@ -126,6 +126,6 @@ func (s *chainServer) SubscribeBlock(in *proto.BlockSubscribe, stream proto.Chai
 	return nil
 }
 
-func (s *chainServer) SubscribeAccount(in *proto.Account, stream proto.Chain_SubscribeAccountsServer) error {
+func (s *chainServer) SubscribeAccount(in *proto.Account, stream proto.Chain_SubscribeAccountServer) error {
 	return nil
 }

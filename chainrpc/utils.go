@@ -15,10 +15,12 @@ func (s *validatorsServer) GenValidatorKey(context.Context, *proto.Empty) (*prot
 }
 
 func (s *validatorsServer) GenKeyPair(context.Context, *proto.Empty) (*proto.KeyPair, error) {
+
 	return nil, nil
 }
 
 func (s *validatorsServer) GenRawKeyPair(context.Context, *proto.Empty) (*proto.KeyPair, error) {
+
 	return nil, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/olympus-protocol/bls-go/bls"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/pkg/errors"
 )
 
@@ -34,6 +35,11 @@ func SecretKeyFromBytes(priv []byte) (*SecretKey, error) {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into secret key")
 	}
 	return &SecretKey{p: secKey}, err
+}
+
+// ToWIF converts the private key to a Bech32 encoded string.
+func (s *SecretKey) ToWIF(privPrefix string) (string, error) {
+	return bech32.Encode(privPrefix, s.Marshal()), nil
 }
 
 // PublicKey obtains the public key corresponding to the BLS secret key.

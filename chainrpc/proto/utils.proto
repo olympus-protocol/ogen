@@ -15,22 +15,6 @@ service Utils {
     rpc GenValidatorKey(Empty) returns (KeyPair) {}
 
     /** 
-        Method: GenKeyPair 
-        Input: message Empty
-        Response: message KeyPair
-        Description: Returns a public and private keypair on bech32 format.
-    */
-    rpc GenKeyPair(Empty) returns (KeyPair) {}
-
-    /** 
-        Method: GenRawKeyPair 
-        Input: message Empty
-        Response: message KeyPair
-        Description: Returns a serialized bls keypair.
-    */
-    rpc GenRawKeyPair(Empty) returns (KeyPair) {}
-
-    /** 
         Method: SendRawTransaction 
         Input: message RawData
         Response: message Success

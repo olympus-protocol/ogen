@@ -294,31 +294,31 @@ var file_chainrpc_proto_chain_proto_rawDesc = []byte{
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65,
 	0x12, 0x14, 0x0a, 0x05, 0x6e, 0x6f, 0x6e, 0x63, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x05, 0x6e, 0x6f, 0x6e, 0x63, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x78, 0x73, 0x18, 0x04, 0x20,
-	0x03, 0x28, 0x09, 0x52, 0x03, 0x74, 0x78, 0x73, 0x32, 0xbd, 0x02, 0x0a, 0x05, 0x43, 0x68, 0x61,
+	0x03, 0x28, 0x09, 0x52, 0x03, 0x74, 0x78, 0x73, 0x32, 0xbe, 0x02, 0x0a, 0x05, 0x43, 0x68, 0x61,
 	0x69, 0x6e, 0x12, 0x24, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x6e,
 	0x66, 0x6f, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0a, 0x2e, 0x43, 0x68, 0x61,
-	0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x12, 0x20, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x52,
-	0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x1a, 0x08,
-	0x2e, 0x52, 0x61, 0x77, 0x44, 0x61, 0x74, 0x61, 0x22, 0x00, 0x12, 0x1b, 0x0a, 0x08, 0x47, 0x65,
-	0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x1a, 0x06, 0x2e,
-	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x22, 0x00, 0x12, 0x20, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42, 0x6c,
-	0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x07, 0x2e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
-	0x1a, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x22, 0x00, 0x12, 0x26, 0x0a, 0x0a, 0x47, 0x65, 0x74,
-	0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x08, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
-	0x74, 0x1a, 0x0c, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x22,
-	0x00, 0x12, 0x1b, 0x0a, 0x04, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68,
-	0x1a, 0x08, 0x2e, 0x52, 0x61, 0x77, 0x44, 0x61, 0x74, 0x61, 0x22, 0x00, 0x30, 0x01, 0x12, 0x37,
-	0x0a, 0x0f, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x73, 0x12, 0x0f, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69,
-	0x62, 0x65, 0x1a, 0x0f, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x57, 0x69, 0x74, 0x68, 0x45, 0x70,
-	0x6f, 0x63, 0x68, 0x22, 0x00, 0x30, 0x01, 0x12, 0x2f, 0x0a, 0x11, 0x53, 0x75, 0x62, 0x73, 0x63,
-	0x72, 0x69, 0x62, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x73, 0x12, 0x08, 0x2e, 0x41,
-	0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x1a, 0x0c, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
-	0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x30, 0x01, 0x42, 0x31, 0x5a, 0x2f, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x79, 0x6d, 0x70, 0x75, 0x73, 0x2d, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x63, 0x68, 0x61,
-	0x69, 0x6e, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x12, 0x1e, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x52,
+	0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x1a, 0x06,
+	0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x22, 0x00, 0x12, 0x1b, 0x0a, 0x08, 0x47, 0x65, 0x74, 0x42,
+	0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x1a, 0x06, 0x2e, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x22, 0x00, 0x12, 0x20, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63,
+	0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x07, 0x2e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x1a, 0x05,
+	0x2e, 0x48, 0x61, 0x73, 0x68, 0x22, 0x00, 0x12, 0x2a, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x41, 0x63,
+	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x08, 0x2e, 0x41, 0x63, 0x63, 0x6f,
+	0x75, 0x6e, 0x74, 0x1a, 0x0c, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66,
+	0x6f, 0x22, 0x00, 0x12, 0x1b, 0x0a, 0x04, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x05, 0x2e, 0x48, 0x61,
+	0x73, 0x68, 0x1a, 0x08, 0x2e, 0x52, 0x61, 0x77, 0x44, 0x61, 0x74, 0x61, 0x22, 0x00, 0x30, 0x01,
+	0x12, 0x37, 0x0a, 0x0f, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x42, 0x6c, 0x6f,
+	0x63, 0x6b, 0x73, 0x12, 0x0f, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x53, 0x75, 0x62, 0x73, 0x63,
+	0x72, 0x69, 0x62, 0x65, 0x1a, 0x0f, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x57, 0x69, 0x74, 0x68,
+	0x45, 0x70, 0x6f, 0x63, 0x68, 0x22, 0x00, 0x30, 0x01, 0x12, 0x2e, 0x0a, 0x10, 0x53, 0x75, 0x62,
+	0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x08, 0x2e,
+	0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x1a, 0x0c, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x30, 0x01, 0x42, 0x31, 0x5a, 0x2f, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x79, 0x6d, 0x70, 0x75, 0x73, 0x2d,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x63, 0x68,
+	0x61, 0x69, 0x6e, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -343,26 +343,26 @@ var file_chainrpc_proto_chain_proto_goTypes = []interface{}{
 	(*Hash)(nil),           // 5: Hash
 	(*Height)(nil),         // 6: Height
 	(*Account)(nil),        // 7: Account
-	(*RawData)(nil),        // 8: RawData
-	(*Block)(nil),          // 9: Block
+	(*Block)(nil),          // 8: Block
+	(*RawData)(nil),        // 9: RawData
 }
 var file_chainrpc_proto_chain_proto_depIdxs = []int32{
 	4, // 0: Chain.GetChainInfo:input_type -> Empty
 	5, // 1: Chain.GetRawBlock:input_type -> Hash
 	5, // 2: Chain.GetBlock:input_type -> Hash
 	6, // 3: Chain.GetBlockHash:input_type -> Height
-	7, // 4: Chain.GetAccount:input_type -> Account
+	7, // 4: Chain.GetAccountInfo:input_type -> Account
 	5, // 5: Chain.Sync:input_type -> Hash
 	1, // 6: Chain.SubscribeBlocks:input_type -> BlockSubscribe
-	7, // 7: Chain.SubscribeAccounts:input_type -> Account
+	7, // 7: Chain.SubscribeAccount:input_type -> Account
 	0, // 8: Chain.GetChainInfo:output_type -> ChainInfo
-	8, // 9: Chain.GetRawBlock:output_type -> RawData
-	9, // 10: Chain.GetBlock:output_type -> Block
+	8, // 9: Chain.GetRawBlock:output_type -> Block
+	8, // 10: Chain.GetBlock:output_type -> Block
 	5, // 11: Chain.GetBlockHash:output_type -> Hash
-	3, // 12: Chain.GetAccount:output_type -> AccountInfo
-	8, // 13: Chain.Sync:output_type -> RawData
+	3, // 12: Chain.GetAccountInfo:output_type -> AccountInfo
+	9, // 13: Chain.Sync:output_type -> RawData
 	2, // 14: Chain.SubscribeBlocks:output_type -> BlockWithEpoch
-	3, // 15: Chain.SubscribeAccounts:output_type -> AccountInfo
+	3, // 15: Chain.SubscribeAccount:output_type -> AccountInfo
 	8, // [8:16] is the sub-list for method output_type
 	0, // [0:8] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -459,13 +459,13 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ChainClient interface {
 	GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ChainInfo, error)
-	GetRawBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*RawData, error)
+	GetRawBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*Block, error)
 	GetBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*Block, error)
 	GetBlockHash(ctx context.Context, in *Height, opts ...grpc.CallOption) (*Hash, error)
-	GetAccount(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error)
+	GetAccountInfo(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error)
 	Sync(ctx context.Context, in *Hash, opts ...grpc.CallOption) (Chain_SyncClient, error)
 	SubscribeBlocks(ctx context.Context, in *BlockSubscribe, opts ...grpc.CallOption) (Chain_SubscribeBlocksClient, error)
-	SubscribeAccounts(ctx context.Context, in *Account, opts ...grpc.CallOption) (Chain_SubscribeAccountsClient, error)
+	SubscribeAccount(ctx context.Context, in *Account, opts ...grpc.CallOption) (Chain_SubscribeAccountClient, error)
 }
 
 type chainClient struct {
@@ -485,8 +485,8 @@ func (c *chainClient) GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.
 	return out, nil
 }
 
-func (c *chainClient) GetRawBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*RawData, error) {
-	out := new(RawData)
+func (c *chainClient) GetRawBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*Block, error) {
+	out := new(Block)
 	err := c.cc.Invoke(ctx, "/Chain/GetRawBlock", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -512,9 +512,9 @@ func (c *chainClient) GetBlockHash(ctx context.Context, in *Height, opts ...grpc
 	return out, nil
 }
 
-func (c *chainClient) GetAccount(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error) {
+func (c *chainClient) GetAccountInfo(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error) {
 	out := new(AccountInfo)
-	err := c.cc.Invoke(ctx, "/Chain/GetAccount", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Chain/GetAccountInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -585,12 +585,12 @@ func (x *chainSubscribeBlocksClient) Recv() (*BlockWithEpoch, error) {
 	return m, nil
 }
 
-func (c *chainClient) SubscribeAccounts(ctx context.Context, in *Account, opts ...grpc.CallOption) (Chain_SubscribeAccountsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[2], "/Chain/SubscribeAccounts", opts...)
+func (c *chainClient) SubscribeAccount(ctx context.Context, in *Account, opts ...grpc.CallOption) (Chain_SubscribeAccountClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[2], "/Chain/SubscribeAccount", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &chainSubscribeAccountsClient{stream}
+	x := &chainSubscribeAccountClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -600,16 +600,16 @@ func (c *chainClient) SubscribeAccounts(ctx context.Context, in *Account, opts .
 	return x, nil
 }
 
-type Chain_SubscribeAccountsClient interface {
+type Chain_SubscribeAccountClient interface {
 	Recv() (*AccountInfo, error)
 	grpc.ClientStream
 }
 
-type chainSubscribeAccountsClient struct {
+type chainSubscribeAccountClient struct {
 	grpc.ClientStream
 }
 
-func (x *chainSubscribeAccountsClient) Recv() (*AccountInfo, error) {
+func (x *chainSubscribeAccountClient) Recv() (*AccountInfo, error) {
 	m := new(AccountInfo)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -620,13 +620,13 @@ func (x *chainSubscribeAccountsClient) Recv() (*AccountInfo, error) {
 // ChainServer is the server API for Chain service.
 type ChainServer interface {
 	GetChainInfo(context.Context, *Empty) (*ChainInfo, error)
-	GetRawBlock(context.Context, *Hash) (*RawData, error)
+	GetRawBlock(context.Context, *Hash) (*Block, error)
 	GetBlock(context.Context, *Hash) (*Block, error)
 	GetBlockHash(context.Context, *Height) (*Hash, error)
-	GetAccount(context.Context, *Account) (*AccountInfo, error)
+	GetAccountInfo(context.Context, *Account) (*AccountInfo, error)
 	Sync(*Hash, Chain_SyncServer) error
 	SubscribeBlocks(*BlockSubscribe, Chain_SubscribeBlocksServer) error
-	SubscribeAccounts(*Account, Chain_SubscribeAccountsServer) error
+	SubscribeAccount(*Account, Chain_SubscribeAccountServer) error
 }
 
 // UnimplementedChainServer can be embedded to have forward compatible implementations.
@@ -636,7 +636,7 @@ type UnimplementedChainServer struct {
 func (*UnimplementedChainServer) GetChainInfo(context.Context, *Empty) (*ChainInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChainInfo not implemented")
 }
-func (*UnimplementedChainServer) GetRawBlock(context.Context, *Hash) (*RawData, error) {
+func (*UnimplementedChainServer) GetRawBlock(context.Context, *Hash) (*Block, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRawBlock not implemented")
 }
 func (*UnimplementedChainServer) GetBlock(context.Context, *Hash) (*Block, error) {
@@ -645,8 +645,8 @@ func (*UnimplementedChainServer) GetBlock(context.Context, *Hash) (*Block, error
 func (*UnimplementedChainServer) GetBlockHash(context.Context, *Height) (*Hash, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlockHash not implemented")
 }
-func (*UnimplementedChainServer) GetAccount(context.Context, *Account) (*AccountInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAccount not implemented")
+func (*UnimplementedChainServer) GetAccountInfo(context.Context, *Account) (*AccountInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccountInfo not implemented")
 }
 func (*UnimplementedChainServer) Sync(*Hash, Chain_SyncServer) error {
 	return status.Errorf(codes.Unimplemented, "method Sync not implemented")
@@ -654,8 +654,8 @@ func (*UnimplementedChainServer) Sync(*Hash, Chain_SyncServer) error {
 func (*UnimplementedChainServer) SubscribeBlocks(*BlockSubscribe, Chain_SubscribeBlocksServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeBlocks not implemented")
 }
-func (*UnimplementedChainServer) SubscribeAccounts(*Account, Chain_SubscribeAccountsServer) error {
-	return status.Errorf(codes.Unimplemented, "method SubscribeAccounts not implemented")
+func (*UnimplementedChainServer) SubscribeAccount(*Account, Chain_SubscribeAccountServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeAccount not implemented")
 }
 
 func RegisterChainServer(s *grpc.Server, srv ChainServer) {
@@ -734,20 +734,20 @@ func _Chain_GetBlockHash_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Chain_GetAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Chain_GetAccountInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Account)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChainServer).GetAccount(ctx, in)
+		return srv.(ChainServer).GetAccountInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Chain/GetAccount",
+		FullMethod: "/Chain/GetAccountInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChainServer).GetAccount(ctx, req.(*Account))
+		return srv.(ChainServer).GetAccountInfo(ctx, req.(*Account))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -794,24 +794,24 @@ func (x *chainSubscribeBlocksServer) Send(m *BlockWithEpoch) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Chain_SubscribeAccounts_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Chain_SubscribeAccount_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(Account)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ChainServer).SubscribeAccounts(m, &chainSubscribeAccountsServer{stream})
+	return srv.(ChainServer).SubscribeAccount(m, &chainSubscribeAccountServer{stream})
 }
 
-type Chain_SubscribeAccountsServer interface {
+type Chain_SubscribeAccountServer interface {
 	Send(*AccountInfo) error
 	grpc.ServerStream
 }
 
-type chainSubscribeAccountsServer struct {
+type chainSubscribeAccountServer struct {
 	grpc.ServerStream
 }
 
-func (x *chainSubscribeAccountsServer) Send(m *AccountInfo) error {
+func (x *chainSubscribeAccountServer) Send(m *AccountInfo) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -836,8 +836,8 @@ var _Chain_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Chain_GetBlockHash_Handler,
 		},
 		{
-			MethodName: "GetAccount",
-			Handler:    _Chain_GetAccount_Handler,
+			MethodName: "GetAccountInfo",
+			Handler:    _Chain_GetAccountInfo_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -852,8 +852,8 @@ var _Chain_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "SubscribeAccounts",
-			Handler:       _Chain_SubscribeAccounts_Handler,
+			StreamName:    "SubscribeAccount",
+			Handler:       _Chain_SubscribeAccount_Handler,
 			ServerStreams: true,
 		},
 	},

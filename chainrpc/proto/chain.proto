@@ -22,7 +22,7 @@ service Chain {
         Description: Returns the raw block from a block hash.
     */
 
-    rpc GetRawBlock(Hash) returns (RawData) {}
+    rpc GetRawBlock(Hash) returns (Block) {}
 
     /** 
         Method: GetBlock 
@@ -43,13 +43,13 @@ service Chain {
     rpc GetBlockHash(Height) returns (Hash) {}
 
      /** 
-        Method: GetAccount 
+        Method: GetAccountInfo 
         Input: message Account
         Response: message AccountInfo
         Description: Returns the current account information
     */
 
-    rpc GetAccount(Account) returns (AccountInfo) {}
+    rpc GetAccountInfo(Account) returns (AccountInfo) {}
 
     /** 
         Method: Sync 
@@ -70,13 +70,13 @@ service Chain {
     rpc SubscribeBlocks(BlockSubscribe) returns (stream BlockWithEpoch) {}
 
     /** 
-        Method: SubscribeAccounts 
-        Input: message AccountsSubscribe
-        Response: message Account
+        Method: SubscribeAccount 
+        Input: message Account
+        Response: message AccountInfo
         Description: Returns a stream notify when the specified account is modified
     */
 
-    rpc SubscribeAccounts(Account) returns (stream AccountInfo) {}
+    rpc SubscribeAccount(Account) returns (stream AccountInfo) {}
 
     
 }

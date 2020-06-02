@@ -7,13 +7,13 @@ import "chainrpc/proto/common.proto";
 service Validators {
 
     /** 
-        Method: ValidatorsList 
+        Method: GetValidatorList 
         Input: message Empty
-        Response: message GetBlockRawResponse
+        Response: message ValidatorsRegistry
         Description: Returns the raw block from a block hash.
     */
 
-    rpc ValidatorsList(Empty) returns (ValidatorsRegistry) {}
+    rpc GetValidatorsList(Empty) returns (ValidatorsRegistry) {}
 
     /** 
         Method: ExitValidator 
@@ -44,7 +44,7 @@ service Validators {
 }
 
 message ValidatorsRegistry {
-    repeated ValidatorRegistry Validators = 1;
+    repeated ValidatorRegistry validators = 1;
 }
 
 message ValidatorRegistry {
