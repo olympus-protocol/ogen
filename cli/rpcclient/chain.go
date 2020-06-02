@@ -30,14 +30,14 @@ func (c *RPCClient) GetBlockHash(args []string) (string, error) {
 	if err != nil {
 		return "", errors.New("unable to parse block height")
 	}
-	req := &proto.GetBlockHashInfo{
-		BlockHeigth: uint64(height),
+	req := &proto.Height{
+		Height: uint64(height),
 	}
 	res, err := c.chain.GetBlockHash(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Hash: %v", res.GetBlockHash()), nil
+	return fmt.Sprintf("Hash: %v", res.GetHash()), nil
 }
 
 func (c *RPCClient) GetRawBlock(args []string) (string, error) {
@@ -46,14 +46,14 @@ func (c *RPCClient) GetRawBlock(args []string) (string, error) {
 	if len(args) > 1 {
 		return "", errors.New("too many arguments")
 	}
-	req := &proto.GetBlockInfo{
-		BlockHash: args[0],
+	req := &proto.Hash{
+		Hash: args[0],
 	}
 	res, err := c.chain.GetRawBlock(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	return res.GetRawBlock(), nil
+	return res.GetData(), nil
 }
 
 func (c *RPCClient) GetBlock(args []string) (string, error) {
@@ -62,12 +62,12 @@ func (c *RPCClient) GetBlock(args []string) (string, error) {
 	if len(args) > 1 {
 		return "", errors.New("too many arguments")
 	}
-	req := &proto.GetBlockInfo{
-		BlockHash: args[0],
+	req := &proto.Hash{
+		Hash: args[0],
 	}
 	res, err := c.chain.GetRawBlock(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	return res.GetRawBlock(), nil
+	return res.GetData(), nil
 }

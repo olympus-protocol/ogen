@@ -25,11 +25,16 @@ type RPCServer struct {
 
 	chainServer      *chainServer
 	validatorsServer *validatorsServer
+	utilsServer      *utilsServer
+	networkServer    *networkServer
 }
 
 func (s *RPCServer) registerServices() {
 	proto.RegisterChainServer(s.rpc, s.chainServer)
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
+	proto.RegisterUtilsServer(s.rpc, s.utilsServer)
+	proto.RegisterNetworkServer(s.rpc, s.networkServer)
+
 }
 
 // Stop stops gRPC listener

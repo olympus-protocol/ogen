@@ -261,11 +261,11 @@ outer1:
 	newProposerSlashings := make([]primitives.ProposerSlashing, 0, len(am.proposerSlashings))
 	for _, ps := range am.proposerSlashings {
 		psHash := ps.Hash()
-		if b.Header.Slot >= ps.BlockHeader2.Slot + am.params.EpochLength - 1 {
+		if b.Header.Slot >= ps.BlockHeader2.Slot+am.params.EpochLength-1 {
 			continue
 		}
 
-		if b.Header.Slot >= ps.BlockHeader1.Slot + am.params.EpochLength - 1 {
+		if b.Header.Slot >= ps.BlockHeader1.Slot+am.params.EpochLength-1 {
 			continue
 		}
 

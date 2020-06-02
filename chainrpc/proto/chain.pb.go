@@ -29,16 +29,18 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-type SyncInfo struct {
+type ChainInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BlockHash string `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	BlockHash   string `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	BlockHeight uint64 `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	Validators  uint64 `protobuf:"varint,3,opt,name=validators,proto3" json:"validators,omitempty"`
 }
 
-func (x *SyncInfo) Reset() {
-	*x = SyncInfo{}
+func (x *ChainInfo) Reset() {
+	*x = ChainInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_chainrpc_proto_chain_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -46,13 +48,13 @@ func (x *SyncInfo) Reset() {
 	}
 }
 
-func (x *SyncInfo) String() string {
+func (x *ChainInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncInfo) ProtoMessage() {}
+func (*ChainInfo) ProtoMessage() {}
 
-func (x *SyncInfo) ProtoReflect() protoreflect.Message {
+func (x *ChainInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_chainrpc_proto_chain_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -64,28 +66,42 @@ func (x *SyncInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncInfo.ProtoReflect.Descriptor instead.
-func (*SyncInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChainInfo.ProtoReflect.Descriptor instead.
+func (*ChainInfo) Descriptor() ([]byte, []int) {
 	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SyncInfo) GetBlockHash() string {
+func (x *ChainInfo) GetBlockHash() string {
 	if x != nil {
 		return x.BlockHash
 	}
 	return ""
 }
 
-type SyncStreamResponse struct {
+func (x *ChainInfo) GetBlockHeight() uint64 {
+	if x != nil {
+		return x.BlockHeight
+	}
+	return 0
+}
+
+func (x *ChainInfo) GetValidators() uint64 {
+	if x != nil {
+		return x.Validators
+	}
+	return 0
+}
+
+type BlockSubscribe struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RawBlock string `protobuf:"bytes,1,opt,name=raw_block,json=rawBlock,proto3" json:"raw_block,omitempty"`
+	IncludeEpochs bool `protobuf:"varint,1,opt,name=include_epochs,json=includeEpochs,proto3" json:"include_epochs,omitempty"`
 }
 
-func (x *SyncStreamResponse) Reset() {
-	*x = SyncStreamResponse{}
+func (x *BlockSubscribe) Reset() {
+	*x = BlockSubscribe{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_chainrpc_proto_chain_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -93,13 +109,13 @@ func (x *SyncStreamResponse) Reset() {
 	}
 }
 
-func (x *SyncStreamResponse) String() string {
+func (x *BlockSubscribe) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncStreamResponse) ProtoMessage() {}
+func (*BlockSubscribe) ProtoMessage() {}
 
-func (x *SyncStreamResponse) ProtoReflect() protoreflect.Message {
+func (x *BlockSubscribe) ProtoReflect() protoreflect.Message {
 	mi := &file_chainrpc_proto_chain_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -111,29 +127,29 @@ func (x *SyncStreamResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncStreamResponse.ProtoReflect.Descriptor instead.
-func (*SyncStreamResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use BlockSubscribe.ProtoReflect.Descriptor instead.
+func (*BlockSubscribe) Descriptor() ([]byte, []int) {
 	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SyncStreamResponse) GetRawBlock() string {
+func (x *BlockSubscribe) GetIncludeEpochs() bool {
 	if x != nil {
-		return x.RawBlock
+		return x.IncludeEpochs
 	}
-	return ""
+	return false
 }
 
-type SubscribeInfo struct {
+type BlockWithEpoch struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Topic                   string `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
-	IncludeEpochTransitions bool   `protobuf:"varint,2,opt,name=include_epoch_transitions,json=includeEpochTransitions,proto3" json:"include_epoch_transitions,omitempty"`
+	RawBlock         string `protobuf:"bytes,1,opt,name=raw_block,json=rawBlock,proto3" json:"raw_block,omitempty"`
+	EpochTransitions string `protobuf:"bytes,2,opt,name=epoch_transitions,json=epochTransitions,proto3" json:"epoch_transitions,omitempty"`
 }
 
-func (x *SubscribeInfo) Reset() {
-	*x = SubscribeInfo{}
+func (x *BlockWithEpoch) Reset() {
+	*x = BlockWithEpoch{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_chainrpc_proto_chain_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -141,13 +157,13 @@ func (x *SubscribeInfo) Reset() {
 	}
 }
 
-func (x *SubscribeInfo) String() string {
+func (x *BlockWithEpoch) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SubscribeInfo) ProtoMessage() {}
+func (*BlockWithEpoch) ProtoMessage() {}
 
-func (x *SubscribeInfo) ProtoReflect() protoreflect.Message {
+func (x *BlockWithEpoch) ProtoReflect() protoreflect.Message {
 	mi := &file_chainrpc_proto_chain_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -159,36 +175,38 @@ func (x *SubscribeInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SubscribeInfo.ProtoReflect.Descriptor instead.
-func (*SubscribeInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use BlockWithEpoch.ProtoReflect.Descriptor instead.
+func (*BlockWithEpoch) Descriptor() ([]byte, []int) {
 	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *SubscribeInfo) GetTopic() string {
+func (x *BlockWithEpoch) GetRawBlock() string {
 	if x != nil {
-		return x.Topic
+		return x.RawBlock
 	}
 	return ""
 }
 
-func (x *SubscribeInfo) GetIncludeEpochTransitions() bool {
+func (x *BlockWithEpoch) GetEpochTransitions() string {
 	if x != nil {
-		return x.IncludeEpochTransitions
+		return x.EpochTransitions
 	}
-	return false
+	return ""
 }
 
-type SubscribeResponse struct {
+type AccountInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RawBlock         string `protobuf:"bytes,1,opt,name=raw_block,json=rawBlock,proto3" json:"raw_block,omitempty"`
-	EpochTransitions string `protobuf:"bytes,2,opt,name=epoch_transitions,json=epochTransitions,proto3" json:"epoch_transitions,omitempty"`
+	Account string   `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	Balance string   `protobuf:"bytes,2,opt,name=balance,proto3" json:"balance,omitempty"`
+	Nonce   string   `protobuf:"bytes,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Txs     []string `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs,omitempty"`
 }
 
-func (x *SubscribeResponse) Reset() {
-	*x = SubscribeResponse{}
+func (x *AccountInfo) Reset() {
+	*x = AccountInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_chainrpc_proto_chain_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -196,13 +214,13 @@ func (x *SubscribeResponse) Reset() {
 	}
 }
 
-func (x *SubscribeResponse) String() string {
+func (x *AccountInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SubscribeResponse) ProtoMessage() {}
+func (*AccountInfo) ProtoMessage() {}
 
-func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
+func (x *AccountInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_chainrpc_proto_chain_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -214,504 +232,37 @@ func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
-func (*SubscribeResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccountInfo.ProtoReflect.Descriptor instead.
+func (*AccountInfo) Descriptor() ([]byte, []int) {
 	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *SubscribeResponse) GetRawBlock() string {
+func (x *AccountInfo) GetAccount() string {
 	if x != nil {
-		return x.RawBlock
+		return x.Account
 	}
 	return ""
 }
 
-func (x *SubscribeResponse) GetEpochTransitions() string {
+func (x *AccountInfo) GetBalance() string {
 	if x != nil {
-		return x.EpochTransitions
+		return x.Balance
 	}
 	return ""
 }
 
-type GetBlockInfo struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	BlockHash string `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-}
-
-func (x *GetBlockInfo) Reset() {
-	*x = GetBlockInfo{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetBlockInfo) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetBlockInfo) ProtoMessage() {}
-
-func (x *GetBlockInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetBlockInfo.ProtoReflect.Descriptor instead.
-func (*GetBlockInfo) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *GetBlockInfo) GetBlockHash() string {
+func (x *AccountInfo) GetNonce() string {
 	if x != nil {
-		return x.BlockHash
+		return x.Nonce
 	}
 	return ""
 }
 
-type GetBlockHashInfo struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	BlockHeigth uint64 `protobuf:"varint,1,opt,name=block_heigth,json=blockHeigth,proto3" json:"block_heigth,omitempty"`
-}
-
-func (x *GetBlockHashInfo) Reset() {
-	*x = GetBlockHashInfo{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetBlockHashInfo) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetBlockHashInfo) ProtoMessage() {}
-
-func (x *GetBlockHashInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetBlockHashInfo.ProtoReflect.Descriptor instead.
-func (*GetBlockHashInfo) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *GetBlockHashInfo) GetBlockHeigth() uint64 {
-	if x != nil {
-		return x.BlockHeigth
-	}
-	return 0
-}
-
-type GetBlockResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Hash            string       `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	Header          *BlockHeader `protobuf:"bytes,2,opt,name=header,proto3" json:"header,omitempty"`
-	Txs             []string     `protobuf:"bytes,3,rep,name=txs,proto3" json:"txs,omitempty"`
-	Signature       string       `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
-	RandaoSignature string       `protobuf:"bytes,5,opt,name=randao_signature,json=randaoSignature,proto3" json:"randao_signature,omitempty"`
-}
-
-func (x *GetBlockResponse) Reset() {
-	*x = GetBlockResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[6]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetBlockResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetBlockResponse) ProtoMessage() {}
-
-func (x *GetBlockResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[6]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetBlockResponse.ProtoReflect.Descriptor instead.
-func (*GetBlockResponse) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *GetBlockResponse) GetHash() string {
-	if x != nil {
-		return x.Hash
-	}
-	return ""
-}
-
-func (x *GetBlockResponse) GetHeader() *BlockHeader {
-	if x != nil {
-		return x.Header
-	}
-	return nil
-}
-
-func (x *GetBlockResponse) GetTxs() []string {
+func (x *AccountInfo) GetTxs() []string {
 	if x != nil {
 		return x.Txs
 	}
 	return nil
-}
-
-func (x *GetBlockResponse) GetSignature() string {
-	if x != nil {
-		return x.Signature
-	}
-	return ""
-}
-
-func (x *GetBlockResponse) GetRandaoSignature() string {
-	if x != nil {
-		return x.RandaoSignature
-	}
-	return ""
-}
-
-type GetBlockRawResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	RawBlock string `protobuf:"bytes,1,opt,name=raw_block,json=rawBlock,proto3" json:"raw_block,omitempty"`
-}
-
-func (x *GetBlockRawResponse) Reset() {
-	*x = GetBlockRawResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[7]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetBlockRawResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetBlockRawResponse) ProtoMessage() {}
-
-func (x *GetBlockRawResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[7]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetBlockRawResponse.ProtoReflect.Descriptor instead.
-func (*GetBlockRawResponse) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *GetBlockRawResponse) GetRawBlock() string {
-	if x != nil {
-		return x.RawBlock
-	}
-	return ""
-}
-
-type GetBlockHashResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	BlockHash string `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-}
-
-func (x *GetBlockHashResponse) Reset() {
-	*x = GetBlockHashResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[8]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *GetBlockHashResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetBlockHashResponse) ProtoMessage() {}
-
-func (x *GetBlockHashResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[8]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetBlockHashResponse.ProtoReflect.Descriptor instead.
-func (*GetBlockHashResponse) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *GetBlockHashResponse) GetBlockHash() string {
-	if x != nil {
-		return x.BlockHash
-	}
-	return ""
-}
-
-type BlockHeader struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Version                    int32  `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	Nonce                      int32  `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	TxMerkleRoot               string `protobuf:"bytes,3,opt,name=tx_merkle_root,json=txMerkleRoot,proto3" json:"tx_merkle_root,omitempty"`
-	VoteMerkleRoot             string `protobuf:"bytes,4,opt,name=vote_merkle_root,json=voteMerkleRoot,proto3" json:"vote_merkle_root,omitempty"`
-	DepositMerkleRoot          string `protobuf:"bytes,5,opt,name=deposit_merkle_root,json=depositMerkleRoot,proto3" json:"deposit_merkle_root,omitempty"`
-	ExitMerkleRoot             string `protobuf:"bytes,6,opt,name=exit_merkle_root,json=exitMerkleRoot,proto3" json:"exit_merkle_root,omitempty"`
-	VoteSlashingMerkleRoot     string `protobuf:"bytes,7,opt,name=vote_slashing_merkle_root,json=voteSlashingMerkleRoot,proto3" json:"vote_slashing_merkle_root,omitempty"`
-	RandaoSlashingMerkleRoot   string `protobuf:"bytes,8,opt,name=randao_slashing_merkle_root,json=randaoSlashingMerkleRoot,proto3" json:"randao_slashing_merkle_root,omitempty"`
-	ProposerSlashingMerkleRoot string `protobuf:"bytes,9,opt,name=proposer_slashing_merkle_root,json=proposerSlashingMerkleRoot,proto3" json:"proposer_slashing_merkle_root,omitempty"`
-	PrevBlockHash              string `protobuf:"bytes,10,opt,name=prev_block_hash,json=prevBlockHash,proto3" json:"prev_block_hash,omitempty"`
-	Timestamp                  int64  `protobuf:"varint,11,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Slot                       uint64 `protobuf:"varint,12,opt,name=slot,proto3" json:"slot,omitempty"`
-	StateRoot                  string `protobuf:"bytes,13,opt,name=state_root,json=stateRoot,proto3" json:"state_root,omitempty"`
-	FeeAddress                 string `protobuf:"bytes,14,opt,name=fee_address,json=feeAddress,proto3" json:"fee_address,omitempty"`
-}
-
-func (x *BlockHeader) Reset() {
-	*x = BlockHeader{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[9]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BlockHeader) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BlockHeader) ProtoMessage() {}
-
-func (x *BlockHeader) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[9]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BlockHeader.ProtoReflect.Descriptor instead.
-func (*BlockHeader) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *BlockHeader) GetVersion() int32 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *BlockHeader) GetNonce() int32 {
-	if x != nil {
-		return x.Nonce
-	}
-	return 0
-}
-
-func (x *BlockHeader) GetTxMerkleRoot() string {
-	if x != nil {
-		return x.TxMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetVoteMerkleRoot() string {
-	if x != nil {
-		return x.VoteMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetDepositMerkleRoot() string {
-	if x != nil {
-		return x.DepositMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetExitMerkleRoot() string {
-	if x != nil {
-		return x.ExitMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetVoteSlashingMerkleRoot() string {
-	if x != nil {
-		return x.VoteSlashingMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetRandaoSlashingMerkleRoot() string {
-	if x != nil {
-		return x.RandaoSlashingMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetProposerSlashingMerkleRoot() string {
-	if x != nil {
-		return x.ProposerSlashingMerkleRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetPrevBlockHash() string {
-	if x != nil {
-		return x.PrevBlockHash
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
-	}
-	return 0
-}
-
-func (x *BlockHeader) GetSlot() uint64 {
-	if x != nil {
-		return x.Slot
-	}
-	return 0
-}
-
-func (x *BlockHeader) GetStateRoot() string {
-	if x != nil {
-		return x.StateRoot
-	}
-	return ""
-}
-
-func (x *BlockHeader) GetFeeAddress() string {
-	if x != nil {
-		return x.FeeAddress
-	}
-	return ""
-}
-
-type ChainInfoResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	BlockHash   string `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	BlockHeight uint64 `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	Validators  uint64 `protobuf:"varint,3,opt,name=validators,proto3" json:"validators,omitempty"`
-}
-
-func (x *ChainInfoResponse) Reset() {
-	*x = ChainInfoResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_chainrpc_proto_chain_proto_msgTypes[10]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ChainInfoResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChainInfoResponse) ProtoMessage() {}
-
-func (x *ChainInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chainrpc_proto_chain_proto_msgTypes[10]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChainInfoResponse.ProtoReflect.Descriptor instead.
-func (*ChainInfoResponse) Descriptor() ([]byte, []int) {
-	return file_chainrpc_proto_chain_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *ChainInfoResponse) GetBlockHash() string {
-	if x != nil {
-		return x.BlockHash
-	}
-	return ""
-}
-
-func (x *ChainInfoResponse) GetBlockHeight() uint64 {
-	if x != nil {
-		return x.BlockHeight
-	}
-	return 0
-}
-
-func (x *ChainInfoResponse) GetValidators() uint64 {
-	if x != nil {
-		return x.Validators
-	}
-	return 0
 }
 
 var File_chainrpc_proto_chain_proto protoreflect.FileDescriptor
@@ -720,116 +271,54 @@ var file_chainrpc_proto_chain_proto_rawDesc = []byte{
 	0x0a, 0x1a, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x2f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x63, 0x68,
 	0x61, 0x69, 0x6e, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x63, 0x6f, 0x6d,
-	0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x29, 0x0a, 0x08, 0x53, 0x79, 0x6e,
-	0x63, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68,
-	0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
-	0x48, 0x61, 0x73, 0x68, 0x22, 0x31, 0x0a, 0x12, 0x53, 0x79, 0x6e, 0x63, 0x53, 0x74, 0x72, 0x65,
-	0x61, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x72, 0x61,
-	0x77, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72,
-	0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x22, 0x61, 0x0a, 0x0d, 0x53, 0x75, 0x62, 0x73, 0x63,
-	0x72, 0x69, 0x62, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x6f, 0x70, 0x69,
-	0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f, 0x70, 0x69, 0x63, 0x12, 0x3a,
-	0x0a, 0x19, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f,
-	0x74, 0x72, 0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x17, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x54,
-	0x72, 0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x5d, 0x0a, 0x11, 0x53, 0x75,
-	0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x1b, 0x0a, 0x09, 0x72, 0x61, 0x77, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x08, 0x72, 0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x2b, 0x0a, 0x11,
-	0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x54, 0x72,
-	0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x2d, 0x0a, 0x0c, 0x47, 0x65, 0x74,
-	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c, 0x6f,
-	0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x62,
-	0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x22, 0x35, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x42,
-	0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x21, 0x0a, 0x0c,
-	0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x04, 0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x74, 0x68, 0x22,
-	0xa7, 0x01, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x04, 0x68, 0x61, 0x73, 0x68, 0x12, 0x24, 0x0a, 0x06, 0x68, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x10,
-	0x0a, 0x03, 0x74, 0x78, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x03, 0x74, 0x78, 0x73,
-	0x12, 0x1c, 0x0a, 0x09, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x29,
-	0x0a, 0x10, 0x72, 0x61, 0x6e, 0x64, 0x61, 0x6f, 0x5f, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75,
-	0x72, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x72, 0x61, 0x6e, 0x64, 0x61, 0x6f,
-	0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x22, 0x32, 0x0a, 0x13, 0x47, 0x65, 0x74,
-	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x61, 0x77, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x1b, 0x0a, 0x09, 0x72, 0x61, 0x77, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x22, 0x35, 0x0a,
-	0x14, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68,
-	0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
-	0x48, 0x61, 0x73, 0x68, 0x22, 0xbe, 0x04, 0x0a, 0x0b, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65,
-	0x61, 0x64, 0x65, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x14,
-	0x0a, 0x05, 0x6e, 0x6f, 0x6e, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6e,
-	0x6f, 0x6e, 0x63, 0x65, 0x12, 0x24, 0x0a, 0x0e, 0x74, 0x78, 0x5f, 0x6d, 0x65, 0x72, 0x6b, 0x6c,
-	0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x74, 0x78,
-	0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x28, 0x0a, 0x10, 0x76, 0x6f,
-	0x74, 0x65, 0x5f, 0x6d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x76, 0x6f, 0x74, 0x65, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65,
-	0x52, 0x6f, 0x6f, 0x74, 0x12, 0x2e, 0x0a, 0x13, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x5f,
-	0x6d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x11, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65,
-	0x52, 0x6f, 0x6f, 0x74, 0x12, 0x28, 0x0a, 0x10, 0x65, 0x78, 0x69, 0x74, 0x5f, 0x6d, 0x65, 0x72,
-	0x6b, 0x6c, 0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e,
-	0x65, 0x78, 0x69, 0x74, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x39,
-	0x0a, 0x19, 0x76, 0x6f, 0x74, 0x65, 0x5f, 0x73, 0x6c, 0x61, 0x73, 0x68, 0x69, 0x6e, 0x67, 0x5f,
-	0x6d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x16, 0x76, 0x6f, 0x74, 0x65, 0x53, 0x6c, 0x61, 0x73, 0x68, 0x69, 0x6e, 0x67, 0x4d,
-	0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x3d, 0x0a, 0x1b, 0x72, 0x61, 0x6e,
-	0x64, 0x61, 0x6f, 0x5f, 0x73, 0x6c, 0x61, 0x73, 0x68, 0x69, 0x6e, 0x67, 0x5f, 0x6d, 0x65, 0x72,
-	0x6b, 0x6c, 0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x18,
-	0x72, 0x61, 0x6e, 0x64, 0x61, 0x6f, 0x53, 0x6c, 0x61, 0x73, 0x68, 0x69, 0x6e, 0x67, 0x4d, 0x65,
-	0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x41, 0x0a, 0x1d, 0x70, 0x72, 0x6f, 0x70,
-	0x6f, 0x73, 0x65, 0x72, 0x5f, 0x73, 0x6c, 0x61, 0x73, 0x68, 0x69, 0x6e, 0x67, 0x5f, 0x6d, 0x65,
-	0x72, 0x6b, 0x6c, 0x65, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x09, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x1a, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x53, 0x6c, 0x61, 0x73, 0x68, 0x69, 0x6e,
-	0x67, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x26, 0x0a, 0x0f, 0x70,
-	0x72, 0x65, 0x76, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x0a,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x70, 0x72, 0x65, 0x76, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48,
-	0x61, 0x73, 0x68, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70,
-	0x18, 0x0b, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
-	0x70, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x04, 0x73, 0x6c, 0x6f, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x74, 0x61, 0x74, 0x65, 0x5f, 0x72,
-	0x6f, 0x6f, 0x74, 0x18, 0x0d, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x74, 0x61, 0x74, 0x65,
-	0x52, 0x6f, 0x6f, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x66, 0x65, 0x65, 0x5f, 0x61, 0x64, 0x64, 0x72,
-	0x65, 0x73, 0x73, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x66, 0x65, 0x65, 0x41, 0x64,
-	0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x75, 0x0a, 0x11, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x6e,
-	0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c,
-	0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09,
-	0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x21, 0x0a, 0x0c, 0x62, 0x6c, 0x6f,
-	0x63, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x1e, 0x0a, 0x0a,
-	0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04,
-	0x52, 0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x32, 0xb8, 0x02, 0x0a,
-	0x05, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x12, 0x2c, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61,
-	0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x12,
-	0x2e, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x00, 0x12, 0x34, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x52, 0x61, 0x77, 0x42, 0x6c,
-	0x6f, 0x63, 0x6b, 0x12, 0x0d, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e,
-	0x66, 0x6f, 0x1a, 0x14, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x61, 0x77,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x2e, 0x0a, 0x08, 0x47, 0x65,
-	0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x0d, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x11, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x3a, 0x0a, 0x0c, 0x47, 0x65,
-	0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x11, 0x2e, 0x47, 0x65, 0x74,
-	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x15, 0x2e,
-	0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x2a, 0x0a, 0x04, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x09,
-	0x2e, 0x53, 0x79, 0x6e, 0x63, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x13, 0x2e, 0x53, 0x79, 0x6e, 0x63,
-	0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
-	0x30, 0x01, 0x12, 0x33, 0x0a, 0x09, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x12,
-	0x0e, 0x2e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x1a,
-	0x12, 0x2e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x42, 0x31, 0x5a, 0x2f, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x79, 0x6d, 0x70, 0x75, 0x73, 0x2d, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x63, 0x68, 0x61, 0x69,
-	0x6e, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x6d, 0x0a, 0x09, 0x43, 0x68, 0x61,
+	0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f,
+	0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63,
+	0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x21, 0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x62, 0x6c, 0x6f,
+	0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x76, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x76, 0x61,
+	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x22, 0x37, 0x0a, 0x0e, 0x42, 0x6c, 0x6f, 0x63,
+	0x6b, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x12, 0x25, 0x0a, 0x0e, 0x69, 0x6e,
+	0x63, 0x6c, 0x75, 0x64, 0x65, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x73, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x0d, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x45, 0x70, 0x6f, 0x63, 0x68,
+	0x73, 0x22, 0x5a, 0x0a, 0x0e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x57, 0x69, 0x74, 0x68, 0x45, 0x70,
+	0x6f, 0x63, 0x68, 0x12, 0x1b, 0x0a, 0x09, 0x72, 0x61, 0x77, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x12, 0x2b, 0x0a, 0x11, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x65, 0x70, 0x6f,
+	0x63, 0x68, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x69, 0x0a,
+	0x0b, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x18, 0x0a, 0x07,
+	0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61,
+	0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65,
+	0x12, 0x14, 0x0a, 0x05, 0x6e, 0x6f, 0x6e, 0x63, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x6e, 0x6f, 0x6e, 0x63, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x78, 0x73, 0x18, 0x04, 0x20,
+	0x03, 0x28, 0x09, 0x52, 0x03, 0x74, 0x78, 0x73, 0x32, 0xbd, 0x02, 0x0a, 0x05, 0x43, 0x68, 0x61,
+	0x69, 0x6e, 0x12, 0x24, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x6e,
+	0x66, 0x6f, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0a, 0x2e, 0x43, 0x68, 0x61,
+	0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x12, 0x20, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x52,
+	0x61, 0x77, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x1a, 0x08,
+	0x2e, 0x52, 0x61, 0x77, 0x44, 0x61, 0x74, 0x61, 0x22, 0x00, 0x12, 0x1b, 0x0a, 0x08, 0x47, 0x65,
+	0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x1a, 0x06, 0x2e,
+	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x22, 0x00, 0x12, 0x20, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x07, 0x2e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x1a, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x22, 0x00, 0x12, 0x26, 0x0a, 0x0a, 0x47, 0x65, 0x74,
+	0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x08, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x1a, 0x0c, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x22,
+	0x00, 0x12, 0x1b, 0x0a, 0x04, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x05, 0x2e, 0x48, 0x61, 0x73, 0x68,
+	0x1a, 0x08, 0x2e, 0x52, 0x61, 0x77, 0x44, 0x61, 0x74, 0x61, 0x22, 0x00, 0x30, 0x01, 0x12, 0x37,
+	0x0a, 0x0f, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x73, 0x12, 0x0f, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69,
+	0x62, 0x65, 0x1a, 0x0f, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x57, 0x69, 0x74, 0x68, 0x45, 0x70,
+	0x6f, 0x63, 0x68, 0x22, 0x00, 0x30, 0x01, 0x12, 0x2f, 0x0a, 0x11, 0x53, 0x75, 0x62, 0x73, 0x63,
+	0x72, 0x69, 0x62, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x73, 0x12, 0x08, 0x2e, 0x41,
+	0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x1a, 0x0c, 0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
+	0x49, 0x6e, 0x66, 0x6f, 0x22, 0x00, 0x30, 0x01, 0x42, 0x31, 0x5a, 0x2f, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x79, 0x6d, 0x70, 0x75, 0x73, 0x2d, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x63, 0x68, 0x61,
+	0x69, 0x6e, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -844,40 +333,41 @@ func file_chainrpc_proto_chain_proto_rawDescGZIP() []byte {
 	return file_chainrpc_proto_chain_proto_rawDescData
 }
 
-var file_chainrpc_proto_chain_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_chainrpc_proto_chain_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_chainrpc_proto_chain_proto_goTypes = []interface{}{
-	(*SyncInfo)(nil),             // 0: SyncInfo
-	(*SyncStreamResponse)(nil),   // 1: SyncStreamResponse
-	(*SubscribeInfo)(nil),        // 2: SubscribeInfo
-	(*SubscribeResponse)(nil),    // 3: SubscribeResponse
-	(*GetBlockInfo)(nil),         // 4: GetBlockInfo
-	(*GetBlockHashInfo)(nil),     // 5: GetBlockHashInfo
-	(*GetBlockResponse)(nil),     // 6: GetBlockResponse
-	(*GetBlockRawResponse)(nil),  // 7: GetBlockRawResponse
-	(*GetBlockHashResponse)(nil), // 8: GetBlockHashResponse
-	(*BlockHeader)(nil),          // 9: BlockHeader
-	(*ChainInfoResponse)(nil),    // 10: ChainInfoResponse
-	(*Empty)(nil),                // 11: Empty
+	(*ChainInfo)(nil),      // 0: ChainInfo
+	(*BlockSubscribe)(nil), // 1: BlockSubscribe
+	(*BlockWithEpoch)(nil), // 2: BlockWithEpoch
+	(*AccountInfo)(nil),    // 3: AccountInfo
+	(*Empty)(nil),          // 4: Empty
+	(*Hash)(nil),           // 5: Hash
+	(*Height)(nil),         // 6: Height
+	(*Account)(nil),        // 7: Account
+	(*RawData)(nil),        // 8: RawData
+	(*Block)(nil),          // 9: Block
 }
 var file_chainrpc_proto_chain_proto_depIdxs = []int32{
-	9,  // 0: GetBlockResponse.header:type_name -> BlockHeader
-	11, // 1: Chain.GetChainInfo:input_type -> Empty
-	4,  // 2: Chain.GetRawBlock:input_type -> GetBlockInfo
-	4,  // 3: Chain.GetBlock:input_type -> GetBlockInfo
-	5,  // 4: Chain.GetBlockHash:input_type -> GetBlockHashInfo
-	0,  // 5: Chain.Sync:input_type -> SyncInfo
-	2,  // 6: Chain.Subscribe:input_type -> SubscribeInfo
-	10, // 7: Chain.GetChainInfo:output_type -> ChainInfoResponse
-	7,  // 8: Chain.GetRawBlock:output_type -> GetBlockRawResponse
-	6,  // 9: Chain.GetBlock:output_type -> GetBlockResponse
-	8,  // 10: Chain.GetBlockHash:output_type -> GetBlockHashResponse
-	1,  // 11: Chain.Sync:output_type -> SyncStreamResponse
-	3,  // 12: Chain.Subscribe:output_type -> SubscribeResponse
-	7,  // [7:13] is the sub-list for method output_type
-	1,  // [1:7] is the sub-list for method input_type
-	1,  // [1:1] is the sub-list for extension type_name
-	1,  // [1:1] is the sub-list for extension extendee
-	0,  // [0:1] is the sub-list for field type_name
+	4, // 0: Chain.GetChainInfo:input_type -> Empty
+	5, // 1: Chain.GetRawBlock:input_type -> Hash
+	5, // 2: Chain.GetBlock:input_type -> Hash
+	6, // 3: Chain.GetBlockHash:input_type -> Height
+	7, // 4: Chain.GetAccount:input_type -> Account
+	5, // 5: Chain.Sync:input_type -> Hash
+	1, // 6: Chain.SubscribeBlocks:input_type -> BlockSubscribe
+	7, // 7: Chain.SubscribeAccounts:input_type -> Account
+	0, // 8: Chain.GetChainInfo:output_type -> ChainInfo
+	8, // 9: Chain.GetRawBlock:output_type -> RawData
+	9, // 10: Chain.GetBlock:output_type -> Block
+	5, // 11: Chain.GetBlockHash:output_type -> Hash
+	3, // 12: Chain.GetAccount:output_type -> AccountInfo
+	8, // 13: Chain.Sync:output_type -> RawData
+	2, // 14: Chain.SubscribeBlocks:output_type -> BlockWithEpoch
+	3, // 15: Chain.SubscribeAccounts:output_type -> AccountInfo
+	8, // [8:16] is the sub-list for method output_type
+	0, // [0:8] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_chainrpc_proto_chain_proto_init() }
@@ -888,7 +378,7 @@ func file_chainrpc_proto_chain_proto_init() {
 	file_chainrpc_proto_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_chainrpc_proto_chain_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SyncInfo); i {
+			switch v := v.(*ChainInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -900,7 +390,7 @@ func file_chainrpc_proto_chain_proto_init() {
 			}
 		}
 		file_chainrpc_proto_chain_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SyncStreamResponse); i {
+			switch v := v.(*BlockSubscribe); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -912,7 +402,7 @@ func file_chainrpc_proto_chain_proto_init() {
 			}
 		}
 		file_chainrpc_proto_chain_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubscribeInfo); i {
+			switch v := v.(*BlockWithEpoch); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -924,91 +414,7 @@ func file_chainrpc_proto_chain_proto_init() {
 			}
 		}
 		file_chainrpc_proto_chain_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubscribeResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetBlockInfo); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetBlockHashInfo); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetBlockResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetBlockRawResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetBlockHashResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BlockHeader); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_chainrpc_proto_chain_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ChainInfoResponse); i {
+			switch v := v.(*AccountInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1026,7 +432,7 @@ func file_chainrpc_proto_chain_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_chainrpc_proto_chain_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -1052,12 +458,14 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ChainClient interface {
-	GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ChainInfoResponse, error)
-	GetRawBlock(ctx context.Context, in *GetBlockInfo, opts ...grpc.CallOption) (*GetBlockRawResponse, error)
-	GetBlock(ctx context.Context, in *GetBlockInfo, opts ...grpc.CallOption) (*GetBlockResponse, error)
-	GetBlockHash(ctx context.Context, in *GetBlockHashInfo, opts ...grpc.CallOption) (*GetBlockHashResponse, error)
-	Sync(ctx context.Context, in *SyncInfo, opts ...grpc.CallOption) (Chain_SyncClient, error)
-	Subscribe(ctx context.Context, in *SubscribeInfo, opts ...grpc.CallOption) (Chain_SubscribeClient, error)
+	GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ChainInfo, error)
+	GetRawBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*RawData, error)
+	GetBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*Block, error)
+	GetBlockHash(ctx context.Context, in *Height, opts ...grpc.CallOption) (*Hash, error)
+	GetAccount(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error)
+	Sync(ctx context.Context, in *Hash, opts ...grpc.CallOption) (Chain_SyncClient, error)
+	SubscribeBlocks(ctx context.Context, in *BlockSubscribe, opts ...grpc.CallOption) (Chain_SubscribeBlocksClient, error)
+	SubscribeAccounts(ctx context.Context, in *Account, opts ...grpc.CallOption) (Chain_SubscribeAccountsClient, error)
 }
 
 type chainClient struct {
@@ -1068,8 +476,8 @@ func NewChainClient(cc grpc.ClientConnInterface) ChainClient {
 	return &chainClient{cc}
 }
 
-func (c *chainClient) GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ChainInfoResponse, error) {
-	out := new(ChainInfoResponse)
+func (c *chainClient) GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ChainInfo, error) {
+	out := new(ChainInfo)
 	err := c.cc.Invoke(ctx, "/Chain/GetChainInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1077,8 +485,8 @@ func (c *chainClient) GetChainInfo(ctx context.Context, in *Empty, opts ...grpc.
 	return out, nil
 }
 
-func (c *chainClient) GetRawBlock(ctx context.Context, in *GetBlockInfo, opts ...grpc.CallOption) (*GetBlockRawResponse, error) {
-	out := new(GetBlockRawResponse)
+func (c *chainClient) GetRawBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*RawData, error) {
+	out := new(RawData)
 	err := c.cc.Invoke(ctx, "/Chain/GetRawBlock", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1086,8 +494,8 @@ func (c *chainClient) GetRawBlock(ctx context.Context, in *GetBlockInfo, opts ..
 	return out, nil
 }
 
-func (c *chainClient) GetBlock(ctx context.Context, in *GetBlockInfo, opts ...grpc.CallOption) (*GetBlockResponse, error) {
-	out := new(GetBlockResponse)
+func (c *chainClient) GetBlock(ctx context.Context, in *Hash, opts ...grpc.CallOption) (*Block, error) {
+	out := new(Block)
 	err := c.cc.Invoke(ctx, "/Chain/GetBlock", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1095,8 +503,8 @@ func (c *chainClient) GetBlock(ctx context.Context, in *GetBlockInfo, opts ...gr
 	return out, nil
 }
 
-func (c *chainClient) GetBlockHash(ctx context.Context, in *GetBlockHashInfo, opts ...grpc.CallOption) (*GetBlockHashResponse, error) {
-	out := new(GetBlockHashResponse)
+func (c *chainClient) GetBlockHash(ctx context.Context, in *Height, opts ...grpc.CallOption) (*Hash, error) {
+	out := new(Hash)
 	err := c.cc.Invoke(ctx, "/Chain/GetBlockHash", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1104,7 +512,16 @@ func (c *chainClient) GetBlockHash(ctx context.Context, in *GetBlockHashInfo, op
 	return out, nil
 }
 
-func (c *chainClient) Sync(ctx context.Context, in *SyncInfo, opts ...grpc.CallOption) (Chain_SyncClient, error) {
+func (c *chainClient) GetAccount(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error) {
+	out := new(AccountInfo)
+	err := c.cc.Invoke(ctx, "/Chain/GetAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chainClient) Sync(ctx context.Context, in *Hash, opts ...grpc.CallOption) (Chain_SyncClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[0], "/Chain/Sync", opts...)
 	if err != nil {
 		return nil, err
@@ -1120,7 +537,7 @@ func (c *chainClient) Sync(ctx context.Context, in *SyncInfo, opts ...grpc.CallO
 }
 
 type Chain_SyncClient interface {
-	Recv() (*SyncStreamResponse, error)
+	Recv() (*RawData, error)
 	grpc.ClientStream
 }
 
@@ -1128,20 +545,20 @@ type chainSyncClient struct {
 	grpc.ClientStream
 }
 
-func (x *chainSyncClient) Recv() (*SyncStreamResponse, error) {
-	m := new(SyncStreamResponse)
+func (x *chainSyncClient) Recv() (*RawData, error) {
+	m := new(RawData)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *chainClient) Subscribe(ctx context.Context, in *SubscribeInfo, opts ...grpc.CallOption) (Chain_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[1], "/Chain/Subscribe", opts...)
+func (c *chainClient) SubscribeBlocks(ctx context.Context, in *BlockSubscribe, opts ...grpc.CallOption) (Chain_SubscribeBlocksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[1], "/Chain/SubscribeBlocks", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &chainSubscribeClient{stream}
+	x := &chainSubscribeBlocksClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -1151,17 +568,49 @@ func (c *chainClient) Subscribe(ctx context.Context, in *SubscribeInfo, opts ...
 	return x, nil
 }
 
-type Chain_SubscribeClient interface {
-	Recv() (*SubscribeResponse, error)
+type Chain_SubscribeBlocksClient interface {
+	Recv() (*BlockWithEpoch, error)
 	grpc.ClientStream
 }
 
-type chainSubscribeClient struct {
+type chainSubscribeBlocksClient struct {
 	grpc.ClientStream
 }
 
-func (x *chainSubscribeClient) Recv() (*SubscribeResponse, error) {
-	m := new(SubscribeResponse)
+func (x *chainSubscribeBlocksClient) Recv() (*BlockWithEpoch, error) {
+	m := new(BlockWithEpoch)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *chainClient) SubscribeAccounts(ctx context.Context, in *Account, opts ...grpc.CallOption) (Chain_SubscribeAccountsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[2], "/Chain/SubscribeAccounts", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chainSubscribeAccountsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Chain_SubscribeAccountsClient interface {
+	Recv() (*AccountInfo, error)
+	grpc.ClientStream
+}
+
+type chainSubscribeAccountsClient struct {
+	grpc.ClientStream
+}
+
+func (x *chainSubscribeAccountsClient) Recv() (*AccountInfo, error) {
+	m := new(AccountInfo)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -1170,35 +619,43 @@ func (x *chainSubscribeClient) Recv() (*SubscribeResponse, error) {
 
 // ChainServer is the server API for Chain service.
 type ChainServer interface {
-	GetChainInfo(context.Context, *Empty) (*ChainInfoResponse, error)
-	GetRawBlock(context.Context, *GetBlockInfo) (*GetBlockRawResponse, error)
-	GetBlock(context.Context, *GetBlockInfo) (*GetBlockResponse, error)
-	GetBlockHash(context.Context, *GetBlockHashInfo) (*GetBlockHashResponse, error)
-	Sync(*SyncInfo, Chain_SyncServer) error
-	Subscribe(*SubscribeInfo, Chain_SubscribeServer) error
+	GetChainInfo(context.Context, *Empty) (*ChainInfo, error)
+	GetRawBlock(context.Context, *Hash) (*RawData, error)
+	GetBlock(context.Context, *Hash) (*Block, error)
+	GetBlockHash(context.Context, *Height) (*Hash, error)
+	GetAccount(context.Context, *Account) (*AccountInfo, error)
+	Sync(*Hash, Chain_SyncServer) error
+	SubscribeBlocks(*BlockSubscribe, Chain_SubscribeBlocksServer) error
+	SubscribeAccounts(*Account, Chain_SubscribeAccountsServer) error
 }
 
 // UnimplementedChainServer can be embedded to have forward compatible implementations.
 type UnimplementedChainServer struct {
 }
 
-func (*UnimplementedChainServer) GetChainInfo(context.Context, *Empty) (*ChainInfoResponse, error) {
+func (*UnimplementedChainServer) GetChainInfo(context.Context, *Empty) (*ChainInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChainInfo not implemented")
 }
-func (*UnimplementedChainServer) GetRawBlock(context.Context, *GetBlockInfo) (*GetBlockRawResponse, error) {
+func (*UnimplementedChainServer) GetRawBlock(context.Context, *Hash) (*RawData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRawBlock not implemented")
 }
-func (*UnimplementedChainServer) GetBlock(context.Context, *GetBlockInfo) (*GetBlockResponse, error) {
+func (*UnimplementedChainServer) GetBlock(context.Context, *Hash) (*Block, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlock not implemented")
 }
-func (*UnimplementedChainServer) GetBlockHash(context.Context, *GetBlockHashInfo) (*GetBlockHashResponse, error) {
+func (*UnimplementedChainServer) GetBlockHash(context.Context, *Height) (*Hash, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlockHash not implemented")
 }
-func (*UnimplementedChainServer) Sync(*SyncInfo, Chain_SyncServer) error {
+func (*UnimplementedChainServer) GetAccount(context.Context, *Account) (*AccountInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccount not implemented")
+}
+func (*UnimplementedChainServer) Sync(*Hash, Chain_SyncServer) error {
 	return status.Errorf(codes.Unimplemented, "method Sync not implemented")
 }
-func (*UnimplementedChainServer) Subscribe(*SubscribeInfo, Chain_SubscribeServer) error {
-	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+func (*UnimplementedChainServer) SubscribeBlocks(*BlockSubscribe, Chain_SubscribeBlocksServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeBlocks not implemented")
+}
+func (*UnimplementedChainServer) SubscribeAccounts(*Account, Chain_SubscribeAccountsServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeAccounts not implemented")
 }
 
 func RegisterChainServer(s *grpc.Server, srv ChainServer) {
@@ -1224,7 +681,7 @@ func _Chain_GetChainInfo_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _Chain_GetRawBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBlockInfo)
+	in := new(Hash)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1236,13 +693,13 @@ func _Chain_GetRawBlock_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/Chain/GetRawBlock",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChainServer).GetRawBlock(ctx, req.(*GetBlockInfo))
+		return srv.(ChainServer).GetRawBlock(ctx, req.(*Hash))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chain_GetBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBlockInfo)
+	in := new(Hash)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1254,13 +711,13 @@ func _Chain_GetBlock_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: "/Chain/GetBlock",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChainServer).GetBlock(ctx, req.(*GetBlockInfo))
+		return srv.(ChainServer).GetBlock(ctx, req.(*Hash))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chain_GetBlockHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBlockHashInfo)
+	in := new(Height)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1272,13 +729,31 @@ func _Chain_GetBlockHash_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/Chain/GetBlockHash",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChainServer).GetBlockHash(ctx, req.(*GetBlockHashInfo))
+		return srv.(ChainServer).GetBlockHash(ctx, req.(*Height))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Chain_GetAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Account)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChainServer).GetAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Chain/GetAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChainServer).GetAccount(ctx, req.(*Account))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chain_Sync_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SyncInfo)
+	m := new(Hash)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -1286,7 +761,7 @@ func _Chain_Sync_Handler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 type Chain_SyncServer interface {
-	Send(*SyncStreamResponse) error
+	Send(*RawData) error
 	grpc.ServerStream
 }
 
@@ -1294,28 +769,49 @@ type chainSyncServer struct {
 	grpc.ServerStream
 }
 
-func (x *chainSyncServer) Send(m *SyncStreamResponse) error {
+func (x *chainSyncServer) Send(m *RawData) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Chain_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SubscribeInfo)
+func _Chain_SubscribeBlocks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(BlockSubscribe)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ChainServer).Subscribe(m, &chainSubscribeServer{stream})
+	return srv.(ChainServer).SubscribeBlocks(m, &chainSubscribeBlocksServer{stream})
 }
 
-type Chain_SubscribeServer interface {
-	Send(*SubscribeResponse) error
+type Chain_SubscribeBlocksServer interface {
+	Send(*BlockWithEpoch) error
 	grpc.ServerStream
 }
 
-type chainSubscribeServer struct {
+type chainSubscribeBlocksServer struct {
 	grpc.ServerStream
 }
 
-func (x *chainSubscribeServer) Send(m *SubscribeResponse) error {
+func (x *chainSubscribeBlocksServer) Send(m *BlockWithEpoch) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Chain_SubscribeAccounts_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Account)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChainServer).SubscribeAccounts(m, &chainSubscribeAccountsServer{stream})
+}
+
+type Chain_SubscribeAccountsServer interface {
+	Send(*AccountInfo) error
+	grpc.ServerStream
+}
+
+type chainSubscribeAccountsServer struct {
+	grpc.ServerStream
+}
+
+func (x *chainSubscribeAccountsServer) Send(m *AccountInfo) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -1339,6 +835,10 @@ var _Chain_serviceDesc = grpc.ServiceDesc{
 			MethodName: "GetBlockHash",
 			Handler:    _Chain_GetBlockHash_Handler,
 		},
+		{
+			MethodName: "GetAccount",
+			Handler:    _Chain_GetAccount_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -1347,8 +847,13 @@ var _Chain_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "Subscribe",
-			Handler:       _Chain_Subscribe_Handler,
+			StreamName:    "SubscribeBlocks",
+			Handler:       _Chain_SubscribeBlocks_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "SubscribeAccounts",
+			Handler:       _Chain_SubscribeAccounts_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -2,3 +2,59 @@ syntax = "proto3";
 option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
 message Empty{}
+
+message Hash {
+    string hash = 1;
+}
+
+message Height {
+    uint64 height = 1;
+}
+
+message Success {
+    bool success = 1;
+    string error = 2;
+}
+
+message KeyPair {
+    string public = 1;
+    string private = 2;
+}
+
+message RawData {
+    string data = 1;
+}
+
+message BlockHeader {
+    int32 version = 1;
+    int32 nonce = 2;
+    string tx_merkle_root = 3;
+    string vote_merkle_root = 4;
+    string deposit_merkle_root = 5;
+    string exit_merkle_root = 6;
+    string vote_slashing_merkle_root = 7;
+    string randao_slashing_merkle_root = 8;
+    string proposer_slashing_merkle_root = 9;
+    string prev_block_hash = 10;
+    int64 timestamp = 11;
+    uint64 slot = 12;
+    string state_root = 13;
+    string fee_address = 14;
+}
+
+message Block {
+    string hash = 1;
+    BlockHeader header = 2;
+    repeated string txs = 3;
+    string signature = 4;
+    string randao_signature = 5;
+}
+
+message Account {
+    string account = 1;
+}
+
+// TODO
+message Tx {
+    uint32 type = 1;
+}

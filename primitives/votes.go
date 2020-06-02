@@ -103,7 +103,6 @@ func (v *VoteData) LastSlotValid(p *params.ChainParams) uint64 {
 	return v.Slot + p.EpochLength - 1
 }
 
-
 func (v *VoteData) String() string {
 	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, v.BeaconBlockHash)
 }

@@ -16,7 +16,7 @@ type validatorsServer struct {
 	proto.UnimplementedValidatorsServer
 }
 
-func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*proto.GetValidatorsListResponse, error) {
+func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*proto.ValidatorsRegistry, error) {
 	validators := s.chain.State().TipState().ValidatorRegistry
 	validatorsResponse := make([]*proto.ValidatorRegistry, len(validators))
 	for i, v := range validators {
@@ -29,21 +29,17 @@ func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*pr
 		}
 		validatorsResponse[i] = newValidator
 	}
-	return &proto.GetValidatorsListResponse{Validators: validatorsResponse}, nil
+	return &proto.ValidatorsRegistry{Validators: validatorsResponse}, nil
 }
 
-func (s *validatorsServer) GenerateValidatorKey(context.Context, *proto.Empty) (*proto.GenerateValidatorKeyResponse, error) {
-	key, err := s.wallet.GenerateNewValidatorKey()
-	if err != nil {
-		return nil, err
-	}
-	return &proto.GenerateValidatorKeyResponse{Key: hex.EncodeToString(key.Marshal())}, nil
-}
-
-func (s *validatorsServer) ExitValidator(context.Context, *proto.ExitValidatorInfo) (*proto.ExitValidatorResponse, error) {
+func (s *validatorsServer) ExitValidator(context.Context, *proto.ExitValidatorInfo) (*proto.Success, error) {
 	return nil, nil
 }
 
-func (s *validatorsServer) StartValidator(context.Context, *proto.StartValidatorInfo) (*proto.StartValidatorResponse, error) {
+func (s *validatorsServer) StartValidator(context.Context, *proto.StartValidatorInfo) (*proto.KeyPair, error) {
+	return nil, nil
+}
+
+func (s *validatorsServer) GetAccountValidators(context.Context, *proto.Account) (*proto.ValidatorsRegistry, error) {
 	return nil, nil
 }

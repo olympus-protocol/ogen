@@ -17,17 +17,17 @@ type chainServer struct {
 	proto.UnimplementedChainServer
 }
 
-func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfoResponse, error) {
+func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
 	state := s.chain.State()
-	return &proto.ChainInfoResponse{
+	return &proto.ChainInfo{
 		BlockHash:   state.Tip().Hash.String(),
 		BlockHeight: state.Height(),
 		Validators:  uint64(len(state.TipState().ValidatorRegistry)),
 	}, nil
 }
 
-func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.GetBlockInfo) (*proto.GetBlockRawResponse, error) {
-	hash, err := chainhash.NewHashFromStr(in.BlockHash)
+func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.RawData, error) {
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +35,11 @@ func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.GetBlockInfo) (
 	if err != nil {
 		return nil, err
 	}
-	return &proto.GetBlockRawResponse{RawBlock: hex.EncodeToString(block)}, nil
+	return &proto.RawData{Data: hex.EncodeToString(block)}, nil
 }
 
-func (s *chainServer) GetBlock(ctx context.Context, in *proto.GetBlockInfo) (*proto.GetBlockResponse, error) {
-	hash, err := chainhash.NewHashFromStr(in.BlockHash)
+func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.GetBlockInfo) (*pr
 	if err != nil {
 		return nil, err
 	}
-	blockParse := &proto.GetBlockResponse{
+	blockParse := &proto.Block{
 		Hash: block.Hash().String(),
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
@@ -72,27 +72,27 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.GetBlockInfo) (*pr
 	return blockParse, nil
 }
 
-func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.GetBlockHashInfo) (*proto.GetBlockHashResponse, error) {
-	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.BlockHeigth)
+func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Height) (*proto.Hash, error) {
+	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.Height)
 	if !exists {
 		return nil, errors.New("block not found")
 	}
-	return &proto.GetBlockHashResponse{
-		BlockHash: blockRow.Hash.String(),
+	return &proto.Hash{
+		Hash: blockRow.Hash.String(),
 	}, nil
 }
 
-func (s *chainServer) Sync(in *proto.SyncInfo, stream proto.Chain_SyncServer) error {
+func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error {
 	// Define starting point
 	blockRow := new(index.BlockRow)
 
 	// If user is on tip, silently close the channel
-	if reflect.DeepEqual(in.BlockHash, s.chain.State().Tip().Hash.String()) {
+	if reflect.DeepEqual(in.Hash, s.chain.State().Tip().Hash.String()) {
 		return nil
 	}
 
 	ok := true
-	hash, err := chainhash.NewHashFromStr(in.BlockHash)
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
@@ -110,8 +110,8 @@ func (s *chainServer) Sync(in *proto.SyncInfo, stream proto.Chain_SyncServer) er
 		if err != nil {
 			return errors.New("unable get raw block")
 		}
-		response := &proto.SyncStreamResponse{
-			RawBlock: hex.EncodeToString(rawBlock),
+		response := &proto.RawData{
+			Data: hex.EncodeToString(rawBlock),
 		}
 		stream.Send(response)
 		blockRow, ok = s.chain.State().Chain().Next(blockRow)
@@ -122,6 +122,10 @@ func (s *chainServer) Sync(in *proto.SyncInfo, stream proto.Chain_SyncServer) er
 	return nil
 }
 
-func (s *chainServer) Subscribe(in *proto.SubscribeInfo, stream proto.Chain_SubscribeServer) error {
+func (s *chainServer) SubscribeBlock(in *proto.BlockSubscribe, stream proto.Chain_SubscribeBlocksServer) error {
+	return nil
+}
+
+func (s *chainServer) SubscribeAccount(in *proto.Account, stream proto.Chain_SubscribeAccountsServer) error {
 	return nil
 }

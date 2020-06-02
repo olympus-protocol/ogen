@@ -5,76 +5,104 @@ option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 import "chainrpc/proto/common.proto";
 
 service Chain {
-    rpc GetChainInfo (Empty) returns (ChainInfoResponse) {}
-    rpc GetRawBlock(GetBlockInfo) returns (GetBlockRawResponse) {}
-    rpc GetBlock(GetBlockInfo) returns (GetBlockResponse) {}
-    rpc GetBlockHash(GetBlockHashInfo) returns (GetBlockHashResponse) {}
-    rpc Sync(SyncInfo) returns (stream SyncStreamResponse) {}
-    rpc Subscribe(SubscribeInfo) returns (stream SubscribeResponse) {}
+
+    /** 
+        Method: GetChainInfo 
+        Input: Empty
+        Response: message ChainInfoResponse
+        Description: Returns the current chain information.
+    */
+
+    rpc GetChainInfo(Empty) returns (ChainInfo) {}
+
+    /** 
+        Method: GetRawBlock 
+        Input: message BlockHash
+        Response: message GetBlockRawResponse
+        Description: Returns the raw block from a block hash.
+    */
+
+    rpc GetRawBlock(Hash) returns (RawData) {}
+
+    /** 
+        Method: GetBlock 
+        Input: message BlockHash
+        Response: message GetBlockResponse
+        Description: Returns the human readable block information from a block hash.
+    */
+
+    rpc GetBlock(Hash) returns (Block) {}
+
+    /** 
+        Method: GetBlockHash 
+        Input: message BlockHeight
+        Response: message GetBlockHashResponse
+        Description: Returns the hash string of the block at specified height
+    */
+
+    rpc GetBlockHash(Height) returns (Hash) {}
+
+     /** 
+        Method: GetAccount 
+        Input: message Account
+        Response: message AccountInfo
+        Description: Returns the current account information
+    */
+
+    rpc GetAccount(Account) returns (AccountInfo) {}
+
+    /** 
+        Method: Sync 
+        Input: message SyncInfo
+        Response: message SyncStreamResponse
+        Description: Returns a stream of raw blocks from the block hash specified
+    */
+
+    rpc Sync(Hash) returns (stream RawData) {}
+
+    /** 
+        Method: SubscribeBlocks 
+        Input: message BlockSubscribe
+        Response: message BlockWithEpoch
+        Description: Returns a stream to notify when new blocks arrive
+    */
+
+    rpc SubscribeBlocks(BlockSubscribe) returns (stream BlockWithEpoch) {}
+
+    /** 
+        Method: SubscribeAccounts 
+        Input: message AccountsSubscribe
+        Response: message Account
+        Description: Returns a stream notify when the specified account is modified
+    */
+
+    rpc SubscribeAccounts(Account) returns (stream AccountInfo) {}
+
+    
 }
 
-message SyncInfo {
+message ChainInfo {
     string block_hash = 1;
+    uint64 block_height = 2;
+    uint64 validators = 3;
 }
 
-message SyncStreamResponse {
-    string raw_block = 1;
+message BlockSubscribe {
+    bool include_epochs = 1;
 }
 
-message SubscribeInfo {
-    string topic = 1;
-    bool include_epoch_transitions = 2;
-}
-
-message SubscribeResponse {
+message BlockWithEpoch {
     string raw_block = 1;
     string epoch_transitions = 2;
 }
 
-message GetBlockInfo {
-    string block_hash = 1;
+message AccountInfo {
+    string account = 1;
+    string balance = 2;
+    string nonce = 3;
+    repeated string txs = 4;
 }
 
-message GetBlockHashInfo {
-    uint64 block_heigth = 1;
-}
 
-message GetBlockResponse {
-    string hash = 1;
-    BlockHeader header = 2;
-    repeated string txs = 3;
-    string signature = 4;
-    string randao_signature = 5;
-}
 
-message GetBlockRawResponse {
-    string raw_block = 1;
-}
 
-message GetBlockHashResponse {
-    string block_hash = 1;
-}
-
-message BlockHeader {
-    int32 version = 1;
-    int32 nonce = 2;
-    string tx_merkle_root = 3;
-    string vote_merkle_root = 4;
-    string deposit_merkle_root = 5;
-    string exit_merkle_root = 6;
-    string vote_slashing_merkle_root = 7;
-    string randao_slashing_merkle_root = 8;
-    string proposer_slashing_merkle_root = 9;
-    string prev_block_hash = 10;
-    int64 timestamp = 11;
-    uint64 slot = 12;
-    string state_root = 13;
-    string fee_address = 14;
-}
-
-message ChainInfoResponse {
-    string block_hash = 1;
-    uint64 block_height = 2;
-    uint64 validators = 3;
-
-}

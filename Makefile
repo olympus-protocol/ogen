@@ -114,6 +114,9 @@ build:
 build_proto:
 	protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative chainrpc/proto/*.proto 
 
+build_proto_doc:
+	protoc --doc_out=./doc chainrpc/proto/*.proto
+
 build_proto_js:
 	cd ${OGEN_PROTO_JS_DIR} && npm i
 	protoc --plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" --js_out="import_style=commonjs,binary:${OGEN_PROTO_JS_DIR}" --ts_out="service=grpc-web:${OGEN_PROTO_JS_DIR}" chainrpc/proto/*.proto 

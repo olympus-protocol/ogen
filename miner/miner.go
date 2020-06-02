@@ -278,7 +278,7 @@ func (m *Miner) Start() error {
 				tip := m.chain.State().Tip()
 				tipHash := tip.Hash
 
-				state,  err := m.chain.State().TipStateAtSlot(slotToPropose)
+				state, err := m.chain.State().TipStateAtSlot(slotToPropose)
 				if err != nil {
 					m.log.Error(err)
 					return
@@ -334,12 +334,12 @@ func (m *Miner) Start() error {
 							Timestamp:     time.Now(),
 							Slot:          slotToPropose,
 						},
-						Votes:    votes,
-						Txs:      coinTxs,
-						Deposits: depositTxs,
-						Exits:    exitTxs,
-						RANDAOSlashings: randaoSlashings,
-						VoteSlashings: voteSlashings,
+						Votes:             votes,
+						Txs:               coinTxs,
+						Deposits:          depositTxs,
+						Exits:             exitTxs,
+						RANDAOSlashings:   randaoSlashings,
+						VoteSlashings:     voteSlashings,
 						ProposerSlashings: proposerSlashings,
 					}
 
