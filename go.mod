@@ -3,6 +3,7 @@ module github.com/olympus-protocol/ogen
 go 1.13
 
 require (
+	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2

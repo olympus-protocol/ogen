@@ -36,3 +36,5 @@ release/
 
 db/blockdb/
 *.log
+
+**/*.b64
