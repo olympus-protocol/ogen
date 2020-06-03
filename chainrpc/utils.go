@@ -3,7 +3,7 @@ package chainrpc
 import (
 	"context"
 
-	"github.com/olympus-protocol/ogen/chainrpc/proto"
+	"github.com/olympus-protocol/ogen/proto"
 )
 
 type utilsServer struct {
