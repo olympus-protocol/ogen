@@ -4,7 +4,6 @@ GOCLEAN=$(GOCMD) clean
 OGEN_VERSION=1.0.0
 PROTOC_GEN_TS_PATH=$(OGEN_PROTO_JS_DIR)/node_modules/.bin/protoc-gen-ts
 OGEN_PROTO_JS_DIR=./chainrpc/ogen-protojs
-OGEN_PROTO_PY_DIR=./chainrpc/ogen-protopy
 
 ifeq ($(OS),Windows_NT)
     OS := Windows
@@ -27,16 +26,6 @@ run: build
 	@echo Running $(BINARY_NAME)
 	./$(BINARY_NAME)
 
-pack-windows-386: build-windows-386
-	mkdir $(FOLDER_NAME)
-	mv $(BINARY_NAME) ./$(FOLDER_NAME)
-	zip -r ogen-$(OGEN_VERSION)-windows-386.zip ./$(FOLDER_NAME)
-	rm -r ./$(FOLDER_NAME)
-
-build-windows-386:
-	@echo Building $(BINARY_NAME) for windows 386
-	env GOOS=windows GOARCH=386 $(GOBUILD) -o $(BINARY_NAME)		
-
 pack-windows-amd64: build-windows-amd64
 	mkdir $(FOLDER_NAME)
 	mv $(BINARY_NAME) ./$(FOLDER_NAME)
@@ -45,7 +34,7 @@ pack-windows-amd64: build-windows-amd64
 
 build-windows-amd64:
 	@echo Building $(BINARY_NAME) for windows amd64
-	env GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)	
+	env CGO_ENABLED=1 GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)	
 
 pack-linux-arm64: build-linux-arm64
 	mkdir $(FOLDER_NAME)
@@ -55,27 +44,7 @@ pack-linux-arm64: build-linux-arm64
 
 build-linux-arm64:
 	@echo Building $(BINARY_NAME) for linux arm64
-	env GOOS=linux GOARCH=arm64 $(GOBUILD) -o $(BINARY_NAME)
-
-pack-linux-arm: build-linux-arm
-	mkdir $(FOLDER_NAME)
-	mv $(BINARY_NAME) ./$(FOLDER_NAME)
-	tar -czvf ogen-$(OGEN_VERSION)-linux-arm.tar.gz ./$(FOLDER_NAME)
-	rm -r ./$(FOLDER_NAME)
-
-build-linux-arm:
-	@echo Building $(BINARY_NAME) for linux arm
-	env GOOS=linux GOARCH=arm $(GOBUILD) -o $(BINARY_NAME)	
-
-pack-linux-386: build-linux-386
-	mkdir $(FOLDER_NAME)
-	mv $(BINARY_NAME) ./$(FOLDER_NAME)
-	tar -czvf ogen-$(OGEN_VERSION)-linux-386.tar.gz ./$(FOLDER_NAME)
-	rm -r ./$(FOLDER_NAME)
-
-build-linux-386:
-	@echo Building $(BINARY_NAME) for linux 386
-	env GOOS=linux GOARCH=386 $(GOBUILD) -o $(BINARY_NAME)
+	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 $(GOBUILD) -o $(BINARY_NAME)
 
 pack-linux-amd64: build-linux-amd64
 	mkdir $(FOLDER_NAME)
@@ -85,7 +54,7 @@ pack-linux-amd64: build-linux-amd64
 
 build-linux-amd64:
 	@echo Building $(BINARY_NAME) for linux amd64
-	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
+	env CGO_ENABLED=1 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 
 pack-darwin: build-darwin
 	mkdir $(FOLDER_NAME)
@@ -95,9 +64,9 @@ pack-darwin: build-darwin
 
 build-darwin:
 	@echo Building $(BINARY_NAME) for darwin
-	env GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
+	env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 	
-release: clean pack-darwin pack-linux-amd64 pack-linux-386 pack-linux-arm64 pack-linux-arm pack-windows-amd64 pack-windows-386
+release: clean pack-darwin pack-linux-amd64 pack-linux-arm64 pack-windows-amd64
 	mkdir ./release
 	mv ogen-$(OGEN_VERSION)-* ./release
 
@@ -119,12 +88,12 @@ build_proto_doc:
 
 build_proto_js:
 	cd ${OGEN_PROTO_JS_DIR} && npm i
-	protoc --plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" --js_out="import_style=commonjs,binary:${OGEN_PROTO_JS_DIR}" --ts_out="service=grpc-web:${OGEN_PROTO_JS_DIR}" chainrpc/proto/*.proto 
+	protoc --plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" --js_out="import_style=commonjs,binary:./" --ts_out="service=grpc-web:./" chainrpc/proto/*.proto 
 	cd ${OGEN_PROTO_JS_DIR} && mv chainrpc/proto/* ./ && rm -r chainrpc
 
 build_proto_py:
 	pip3 install protobuf-compiler
-	protobuf-compiler -d chainrpc/proto/ -p ogen-protopy -o ./ -v 1.0.0
+	protobuf-compiler -d chainrpc/proto/ -p ogen-protopy -o ./ -v $(OGEN_VERSION)
 
 clean:
 	@echo Cleaning...

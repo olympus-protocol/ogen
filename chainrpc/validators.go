@@ -6,13 +6,13 @@ import (
 
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
-	"github.com/olympus-protocol/ogen/wallet"
+	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/shopspring/decimal"
 )
 
 type validatorsServer struct {
-	wallet *wallet.Wallet
-	chain  *chain.Blockchain
+	keystore *keystore.Keystore
+	chain    *chain.Blockchain
 	proto.UnimplementedValidatorsServer
 }
 

@@ -5,8 +5,9 @@ import (
 
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
+	"github.com/olympus-protocol/ogen/keystore"
+	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/olympus-protocol/ogen/wallet"
 	"google.golang.org/grpc"
 )
 
@@ -59,7 +60,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, wallet *wallet.Wallet) *RPCServer {
+func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, host *peers.HostNode) *RPCServer {
 	return &RPCServer{
 		rpc:    grpc.NewServer(),
 		config: config,
@@ -68,8 +69,11 @@ func NewRPCServer(config Config, chain *chain.Blockchain, wallet *wallet.Wallet)
 			chain: chain,
 		},
 		validatorsServer: &validatorsServer{
-			wallet: wallet,
-			chain:  chain,
+			keystore: keys,
+			chain:    chain,
+		},
+		networkServer: &networkServer{
+			host: host,
 		},
 	}
 }

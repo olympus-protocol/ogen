@@ -19,7 +19,6 @@
 
 # Production
 ogen
-ogen-cli
 ogen-darwin*
 ogen-windows*
 ogen-linux*

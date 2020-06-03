@@ -1,5 +1,5 @@
 {
-  "name": "ogen-protojs",
+  "name": "@olympus-protocol/ogen-protojs",
   "version": "1.0.0",
   "description": "Olympus protobuf grpc-web definitions for typescript",
   "repository": "https://github.com/olympus-protocol/ogen",

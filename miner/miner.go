@@ -3,6 +3,7 @@ package miner
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
@@ -22,11 +24,6 @@ import (
 // Config is a config for the miner.
 type Config struct {
 	Log *logger.Logger
-}
-
-// Keystore is an interface to access keys.
-type Keystore interface {
-	GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool)
 }
 
 // BasicKeystore is a basic key store.
@@ -63,9 +60,8 @@ type Miner struct {
 	config     Config
 	params     params.ChainParams
 	chain      *chain.Blockchain
-	walletsMan Keystore
+	keystore   *keystore.Keystore
 	mineActive bool
-	keystore   Keystore
 	context    context.Context
 	Stop       context.CancelFunc
 
@@ -78,7 +74,7 @@ type Miner struct {
 }
 
 // NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, miningWallet Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (miner *Miner, err error) {
+func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, keystore *keystore.Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (miner *Miner, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -95,9 +91,8 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 		config:         config,
 		params:         params,
 		chain:          chain,
-		walletsMan:     miningWallet,
 		mineActive:     true,
-		keystore:       miningWallet,
+		keystore:       keystore,
 		context:        ctx,
 		Stop:           cancel,
 		voteMempool:    voteMempool,
@@ -170,6 +165,7 @@ func (m *Miner) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range m.chain.State().TipState().ValidatorRegistry {
+		fmt.Println(base64.RawStdEncoding.EncodeToString(w.PubKey))
 		if _, ok := m.keystore.GetValidatorKey(w.PubKey); ok {
 			numOurs++
 		}

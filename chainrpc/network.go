@@ -4,9 +4,11 @@ import (
 	"context"
 
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
+	"github.com/olympus-protocol/ogen/peers"
 )
 
 type networkServer struct {
+	host *peers.HostNode
 	proto.UnimplementedNetworkServer
 }
 

@@ -1,16 +1,16 @@
 package cli
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path"
 	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/config"
+	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
 
@@ -32,16 +32,18 @@ func init() {
 
 var generateChainCmd = &cobra.Command{
 	Use:   "chain",
-	Short: "Generates chain file from the keys in your wallet",
-	Long:  `Generates chain file from keys in your wallet`,
+	Short: "Generates chain file from the keys in your keystore",
+	Long:  `Generates chain file from keys in your keystore`,
 	Run: func(cmd *cobra.Command, args []string) {
-		keystorePath := path.Join(DataFolder, "wallet")
-
-		walletDB, err := badger.Open(badger.DefaultOptions(keystorePath).WithLogger(nil))
+		fmt.Println(DataFolder)
+		keysDB, err := badger.Open(badger.DefaultOptions(DataFolder + "/keystore").WithLogger(nil))
 		if err != nil {
 			panic(err)
 		}
-		k := wallet.NewValidatorWallet(walletDB)
+		k, err := keystore.NewKeystore(keysDB, nil)
+		if err != nil {
+			panic(err)
+		}
 		defer k.Close()
 
 		keys, err := k.GetValidatorKeys()
@@ -55,9 +57,8 @@ var generateChainCmd = &cobra.Command{
 		validators := make([]primitives.ValidatorInitialization, len(keys))
 		for i := range validators {
 			pub := keys[i].PublicKey()
-			pubSer := pub.Marshal()
 			validators[i] = primitives.ValidatorInitialization{
-				PubKey:       pubSer,
+				PubKey:       hex.EncodeToString(pub.Marshal()),
 				PayeeAddress: withdrawAddress,
 			}
 		}

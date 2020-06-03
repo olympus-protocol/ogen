@@ -45,7 +45,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 // Empty is the empty request.
 type Empty struct{}
 
-// CLI is the module that allows validator and wallet operation.
+// CLI is the module that allows operations across multiple services.
 type CLI struct {
 	rpcClient *RPCClient
 }
@@ -59,7 +59,7 @@ var ctrlDKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
 	Fn:  func(*prompt.Buffer) { os.Exit(0) },
 })
 
-// Run runs the wallet CLI.
+// Run runs the CLI.
 func (c *CLI) Run() {
 	color.Green("Welcome to the Olympus CLI")
 	for {
