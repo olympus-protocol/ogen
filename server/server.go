@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc"
@@ -69,11 +68,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	keysDB, err := badger.Open(badger.DefaultOptions(configParams.DataFolder + "keystore").WithLogger(nil))
-	if err != nil {
-		return nil, err
-	}
-	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, keysDB)
+	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +85,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		return nil, err
 	}
 	voteMempool.Notify(actionsMempool)
-	k, err := keystore.NewKeystore(keysDB, logger)
+	k, err := keystore.NewKeystore(configParams.DataFolder, logger)
 	if err != nil {
 		return nil, err
 	}

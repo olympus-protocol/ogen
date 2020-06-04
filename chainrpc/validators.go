@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/keystore"
+	"github.com/olympus-protocol/ogen/proto"
 	"github.com/shopspring/decimal"
 )
 

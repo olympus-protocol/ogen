@@ -1,30 +1,31 @@
 package keystore
 
 import (
-	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bls"
+	"go.etcd.io/bbolt"
 )
+
+var keysBucket = []byte("keys")
 
 func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	secKeys := make([]*bls.SecretKey, 0)
-	err := k.db.View(func(txn *badger.Txn) error {
-		iter := txn.NewIterator(badger.DefaultIteratorOptions)
-		defer iter.Close()
-		for iter.Rewind(); iter.Valid(); iter.Next() {
-			i := iter.Item()
-			val, err := i.ValueCopy(nil)
+	err := k.db.Update(func(txn *bbolt.Tx) error {
+		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
+		if err != nil {
+			return err
+		}
+		err = bkt.ForEach(func(k, v []byte) error {
+			var valBytes [32]byte
+			copy(valBytes[:], v)
+			secretKey, err := bls.SecretKeyFromBytes(valBytes[:])
 			if err != nil {
 				return err
 			}
-			if len(val) == 32 {
-				var valBytes [32]byte
-				copy(valBytes[:], val)
-				secretKey, err := bls.SecretKeyFromBytes(valBytes[:])
-				if err != nil {
-					return err
-				}
-				secKeys = append(secKeys, secretKey)
-			}
+			secKeys = append(secKeys, secretKey)
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 		return nil
 	})
@@ -36,14 +37,13 @@ func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 
 func (k *Keystore) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool) {
 	var secretBytes []byte
-	err := k.db.View(func(txn *badger.Txn) error {
-		i, err := txn.Get(pubkey)
+	err := k.db.Update(func(txn *bbolt.Tx) error {
+		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
 		if err != nil {
 			return err
 		}
-
-		_, err = i.ValueCopy(secretBytes)
-		return err
+		secretBytes = bkt.Get(pubkey)
+		return nil
 	})
 	if err != nil {
 		return nil, false
@@ -56,15 +56,17 @@ func (k *Keystore) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool) {
 }
 
 func (k *Keystore) HasValidatorKey(pubBytes []byte) (result bool, err error) {
-	err = k.db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get(pubBytes[:])
-		if err == badger.ErrKeyNotFound {
-			result = false
-		}
+	err = k.db.View(func(txn *bbolt.Tx) error {
+		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
 		if err != nil {
 			return err
 		}
-		result = true
+		key := bkt.Get(pubBytes)
+		if key == nil {
+			result = false
+		} else {
+			result = true
+		}
 		return nil
 	})
 
@@ -76,8 +78,12 @@ func (k *Keystore) GenerateNewValidatorKey() (*bls.SecretKey, error) {
 	keyBytes := key.Marshal()
 	pub := key.PublicKey()
 	pubBytes := pub.Marshal()
-	err := k.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(pubBytes, keyBytes)
+	err := k.db.Update(func(txn *bbolt.Tx) error {
+		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
+		if err != nil {
+			return err
+		}
+		return bkt.Put(pubBytes, keyBytes)
 	})
 	return key, err
 }

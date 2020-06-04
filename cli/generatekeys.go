@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/dgraph-io/badger"
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/keystore"
@@ -32,11 +31,7 @@ var generateKeysCmd = &cobra.Command{
 				return
 			}
 		}
-		keysDB, err := badger.Open(badger.DefaultOptions(DataFolder + "/keystore").WithLogger(nil))
-		if err != nil {
-			panic(err)
-		}
-		k, err := keystore.NewKeystore(keysDB, nil)
+		k, err := keystore.NewKeystore(DataFolder, nil)
 		if err != nil {
 			panic(err)
 		}

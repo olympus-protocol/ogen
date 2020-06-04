@@ -1,17 +1,23 @@
 package keystore
 
 import (
-	"github.com/dgraph-io/badger"
+	"path"
+
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"go.etcd.io/bbolt"
 )
 
 type Keystore struct {
-	db  *badger.DB
+	db  *bbolt.DB
 	log *logger.Logger
 }
 
 // NewKeystore creates a new keystore.
-func NewKeystore(db *badger.DB, log *logger.Logger) (*Keystore, error) {
+func NewKeystore(pathStr string, log *logger.Logger) (*Keystore, error) {
+	db, err := bbolt.Open(path.Join(pathStr, "keystore.db"), 0600, nil)
+	if err != nil {
+		return nil, err
+	}
 	w := &Keystore{
 		db:  db,
 		log: log,

@@ -37,7 +37,7 @@ type BlockDBReadTransaction struct {
 
 // NewBlockDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
 func NewBlockDB(path string, params params.ChainParams, log *logger.Logger) (*BlockDB, error) {
-	badgerdb, err := badger.Open(badger.DefaultOptions(path + "/db").WithLogger(nil))
+	badgerdb, err := badger.Open(badger.DefaultOptions(path + "/chain").WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}

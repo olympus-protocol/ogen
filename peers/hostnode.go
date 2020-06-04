@@ -3,14 +3,15 @@ package peers
 import (
 	"context"
 	"crypto/rand"
+	"path"
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger"
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"go.etcd.io/bbolt"
 
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 
@@ -37,6 +38,11 @@ type Config struct {
 const timeoutInterval = 60 * time.Second
 const heartbeatInterval = 20 * time.Second
 
+var configBucketKey = []byte("config")
+var knownNodesBucketKey = []byte("peers")
+var banPeersBucketKey = []byte("bans")
+var privKeyDbKey = []byte("privkey")
+
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
 // The RPC communication is hanlded by App, not HostNode
@@ -62,39 +68,58 @@ type HostNode struct {
 
 	// syncProtocol handles peer syncing
 	syncProtocol *SyncProtocol
+
+	// database buckets
+	configBucket *bbolt.Bucket
+	peersBucket  *bbolt.Bucket
+	bansBucket   *bbolt.Bucket
 }
 
-var hostDBKey = []byte("host-key")
-
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain, db *badger.DB) (*HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain) (node *HostNode, err error) {
 	ps := pstoremem.NewPeerstore()
-
+	netDB, err := bbolt.Open(path.Join(config.Path, "net.db"), 0600, nil)
+	if err != nil {
+		return nil, err
+	}
 	var priv crypto.PrivKey
-	err := db.Update(func(tx *badger.Txn) error {
-		i, err := tx.Get(hostDBKey)
-		if err == badger.ErrKeyNotFound {
+	var configBucket *bbolt.Bucket
+	var peersBucket *bbolt.Bucket
+	var bansBucket *bbolt.Bucket
+	err = netDB.Update(func(tx *bbolt.Tx) error {
+		configBucket = tx.Bucket(configBucketKey)
+		// If the bucket doesn't exist, initialize the database
+		if configBucket == nil {
+			configBucket, err = tx.CreateBucketIfNotExists(configBucketKey)
+			if err != nil {
+				return err
+			}
+			peersBucket, err = tx.CreateBucketIfNotExists(knownNodesBucketKey)
+			if err != nil {
+				return err
+			}
+			bansBucket, err = tx.CreateBucketIfNotExists(banPeersBucketKey)
+			if err != nil {
+				return err
+			}
+		}
+		var keyBytes []byte
+		keyBytes = configBucket.Get(privKeyDbKey)
+		if keyBytes == nil {
 			priv, _, err = crypto.GenerateEd25519Key(rand.Reader)
 			if err != nil {
 				return err
 			}
-
 			privBytes, err := crypto.MarshalPrivateKey(priv)
 			if err != nil {
 				return err
 			}
-
-			tx.Set(hostDBKey, privBytes)
-			return nil
-		} else if err != nil {
-			return err
+			err = configBucket.Put(privKeyDbKey, privBytes)
+			if err != nil {
+				return err
+			}
+			keyBytes = privBytes
 		}
-
-		keyBytes, err := i.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-
 		key, err := crypto.UnmarshalPrivateKey(keyBytes)
 		if err != nil {
 			return err
@@ -146,6 +171,9 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		heartbeatInterval: heartbeatInterval,
 		log:               config.Log,
 		topics:            map[string]*pubsub.Topic{},
+		configBucket:      configBucket,
+		peersBucket:       peersBucket,
+		bansBucket:        bansBucket,
 	}
 
 	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)

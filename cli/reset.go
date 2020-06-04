@@ -16,7 +16,7 @@ var resetCmd = &cobra.Command{
 	Short: "Reset the chain of Olympus",
 	Long:  `Reset the chain of Olympus`,
 	Run: func(cmd *cobra.Command, args []string) {
-		bdb, err := badger.Open(badger.DefaultOptions(path.Join(DataFolder, "db")))
+		bdb, err := badger.Open(badger.DefaultOptions(path.Join(DataFolder, "chain")))
 		if err != nil {
 			panic(err)
 		}

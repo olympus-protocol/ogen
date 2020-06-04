@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -35,12 +34,7 @@ var generateChainCmd = &cobra.Command{
 	Short: "Generates chain file from the keys in your keystore",
 	Long:  `Generates chain file from keys in your keystore`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(DataFolder)
-		keysDB, err := badger.Open(badger.DefaultOptions(DataFolder + "/keystore").WithLogger(nil))
-		if err != nil {
-			panic(err)
-		}
-		k, err := keystore.NewKeystore(keysDB, nil)
+		k, err := keystore.NewKeystore(DataFolder, nil)
 		if err != nil {
 			panic(err)
 		}

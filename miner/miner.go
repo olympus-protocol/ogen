@@ -3,7 +3,6 @@ package miner
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -165,7 +164,6 @@ func (m *Miner) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range m.chain.State().TipState().ValidatorRegistry {
-		fmt.Println(base64.RawStdEncoding.EncodeToString(w.PubKey))
 		if _, ok := m.keystore.GetValidatorKey(w.PubKey); ok {
 			numOurs++
 		}
@@ -279,7 +277,6 @@ func (m *Miner) Start() error {
 					m.log.Error(err)
 					return
 				}
-
 
 				slotIndex := (slotToPropose + m.params.EpochLength - 1) % m.params.EpochLength
 

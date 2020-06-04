@@ -3,8 +3,8 @@ package chainrpc
 import (
 	"context"
 
-	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/proto"
 )
 
 type networkServer struct {
