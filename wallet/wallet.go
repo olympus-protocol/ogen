@@ -1,61 +1,177 @@
 package wallet
 
 import (
+	"context"
 	"errors"
+	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"go.etcd.io/bbolt"
 
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/mempool"
+	"github.com/olympus-protocol/ogen/peers"
+
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 var ErrorOpen = errors.New("please open a wallet first")
 
-type Config struct {
-	Log  *logger.Logger
-	Path string
-}
-
 type Wallet struct {
 	db            *bbolt.DB
-	config        Config
 	log           *logger.Logger
 	params        *params.ChainParams
+	chain         *chain.Blockchain
+	mempool       *mempool.CoinsMempool
+	actionMempool *mempool.ActionMempool
+
+	txTopic      *pubsub.Topic
+	depositTopic *pubsub.Topic
+	exitTopic    *pubsub.Topic
+
+	directory     string
+	name          string
 	open          bool
 	info          walletInfo
+	ctx           context.Context
 	lastNonceLock sync.Mutex
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(conf Config, params params.ChainParams) (*Wallet, error) {
-
-	w := &Wallet{
-		log:    conf.Log,
-		config: conf,
-		params: &params,
-		open:   false,
-	}
-
-	if err := w.load(); err != nil {
+func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, params *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (*Wallet, error) {
+	txTopic, err := hostnode.Topic("tx")
+	if err != nil {
 		return nil, err
 	}
 
+	depositTopic, err := hostnode.Topic("deposits")
+	if err != nil {
+		return nil, err
+	}
+
+	exitTopic, err := hostnode.Topic("exits")
+	if err != nil {
+		return nil, err
+	}
+
+	w := &Wallet{
+		log:           log,
+		directory:     walletsDir,
+		params:        params,
+		open:          false,
+		chain:         ch,
+		txTopic:       txTopic,
+		depositTopic:  depositTopic,
+		exitTopic:     exitTopic,
+		ctx:           ctx,
+		mempool:       mempool,
+		actionMempool: actionMempool,
+	}
 	return w, nil
 }
 
 func (w *Wallet) OpenWallet(name string) error {
-	db, err := bbolt.Open(path.Join(w.config.Path, name+".db"), 0600, nil)
+	if _, err := os.Stat(path.Join(w.directory, "wallets")); os.IsNotExist(err) {
+		os.Mkdir(path.Join(w.directory, "wallets"), 0700)
+	}
+	w.name = name
+	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
 	if err != nil {
+		//if err == bbolt.ErrInvalid {
+		//	return w.hardRecover()
+		//}
 		return err
 	}
 	w.db = db
+	err = w.load()
+	if err == errorNotInit {
+		err := w.initialize()
+		if err != nil {
+			return err
+		}
+		err = w.load()
+		if err != nil {
+			return err
+		}
+		w.open = true
+		return nil
+	}
+	if err == errorNoInfo {
+		err := w.recover()
+		//if err != nil {
+		//	return w.hardRecover()
+		//}
+		return err
+	}
+	//if err != nil {
+	//	return w.hardRecover()
+	//}
 	w.open = true
-	return w.initializeWallet()
+	return nil
 }
 
 func (w *Wallet) CloseWallet() error {
 	w.open = false
+	w.info = walletInfo{}
+	w.name = ""
 	return w.db.Close()
+}
+
+func (w *Wallet) HasWallet(name string) bool {
+	list, err := w.GetAvailableWallets()
+	if err != nil {
+		return false
+	}
+	if len(list) == 0 {
+		return false
+	}
+	_, ok := list[name]
+	return ok
+}
+
+func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
+	files := map[string]string{}
+	err := filepath.Walk(path.Join(w.directory, "wallets/"), func(path string, info os.FileInfo, err error) error {
+		if info != nil {
+			if !info.IsDir() {
+				name := strings.Split(info.Name(), ".db")
+				files[name[0]] = path + "/" + info.Name()
+			}
+			return nil
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+func (w *Wallet) GetAccount() (string, error) {
+	if !w.open {
+		return "", errorNotOpen
+	}
+	return w.info.account, nil
+}
+
+func (w *Wallet) GetAccountRaw() ([20]byte, error) {
+	if !w.open {
+		return [20]byte{}, errorNotOpen
+	}
+	_, pkh, err := bech32.Decode(w.info.account)
+	if err != nil {
+		return [20]byte{}, err
+	}
+	if len(pkh) != 20 {
+		return [20]byte{}, errors.New("expected address to be 20 bytes")
+	}
+	var pkhBytes [20]byte
+	copy(pkhBytes[:], pkh)
+	return pkhBytes, nil
 }

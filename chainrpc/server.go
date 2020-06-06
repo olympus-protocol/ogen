@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/olympus-protocol/ogen/wallet"
 	"google.golang.org/grpc"
 )
 
@@ -28,6 +29,7 @@ type RPCServer struct {
 	validatorsServer *validatorsServer
 	utilsServer      *utilsServer
 	networkServer    *networkServer
+	walletServer     *walletServer
 }
 
 func (s *RPCServer) registerServices() {
@@ -35,7 +37,7 @@ func (s *RPCServer) registerServices() {
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
 	proto.RegisterUtilsServer(s.rpc, s.utilsServer)
 	proto.RegisterNetworkServer(s.rpc, s.networkServer)
-
+	proto.RegisterWalletServer(s.rpc, s.walletServer)
 }
 
 // Stop stops gRPC listener
@@ -60,7 +62,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, host *peers.HostNode) *RPCServer {
+func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, host *peers.HostNode, wallet *wallet.Wallet) *RPCServer {
 	return &RPCServer{
 		rpc:    grpc.NewServer(),
 		config: config,
@@ -74,6 +76,9 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 		},
 		networkServer: &networkServer{
 			host: host,
+		},
+		walletServer: &walletServer{
+			wallet: wallet,
 		},
 	}
 }

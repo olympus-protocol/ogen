@@ -18,11 +18,10 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "getblock", Description: "Get the block data"},
 		{Text: "getblockhash", Description: "Get the block hash of specified height"},
 		{Text: "getaccountinfo", Description: "Get the specified account information"},
+		{Text: "gettransaction", Description: "Returns the transaction information"},
 
 		// Validators methods
 		{Text: "getvalidatorslist", Description: "Get the network validators list"},
-		{Text: "startvalidator", Description: "Starts a new validator on the network"},
-		{Text: "exitvalidator", Description: "Release a deposit from a validator"},
 		{Text: "getaccountvalidators", Description: "Get the validators with deposits from an account"},
 
 		// Network methods
@@ -38,6 +37,16 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
 		{Text: "decoderawtransaction", Description: "Returns a serialized transaction on human readable format"},
 		{Text: "decoderawblock", Description: "Returns a serialized block on human readable format"},
+
+		// Wallet methods
+		{Text: "listwallets", Description: "Returns a list of available wallets by name"},
+		{Text: "createwallet", Description: "Creates a new wallet and returns the public account"},
+		{Text: "closewallet", Description: "Closes current open wallet"},
+		{Text: "getbalance", Description: "Get the current open wallet balance"},
+		{Text: "getaccount", Description: "Returns the public account of the open wallet"},
+		{Text: "sendtransaction", Description: "Sends a transaction using the current open wallet"},
+		{Text: "startvalidator", Description: "Starts a validator using the current open wallet as the deposit holder"},
+		{Text: "exitvalidator", Description: "Exits a validator from the current open wallet"},
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
@@ -89,14 +98,12 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.getBlock(args[1:])
 		case "getaccountinfo":
 			out, err = c.rpcClient.getAccountInfo(args[1:])
+		case "gettransaction":
+			out, err = c.rpcClient.getTransaction(args[1:])
 
 		// Validator methods
 		case "getvalidatorslist":
 			out, err = c.rpcClient.getValidatorsList(args[1:])
-		case "startvalidator":
-			out, err = c.rpcClient.startValidator(args[1:])
-		case "exitvalidator":
-			out, err = c.rpcClient.exitValidator(args[1:])
 		case "getaccountvalidators":
 			out, err = c.rpcClient.getAccountValidators(args[1:])
 
@@ -124,6 +131,25 @@ func (c *CLI) Run() {
 		case "decoderawblock":
 			out, err = c.rpcClient.decodeRawBlock(args[1:])
 
+		// Wallet methods
+		case "listwallets":
+			out, err = c.rpcClient.listWallets(args[1:])
+		case "createwallet":
+			out, err = c.rpcClient.createWallet(args[1:])
+		case "openwallet":
+			out, err = c.rpcClient.openWallet(args[1:])
+		case "closewallet":
+			out, err = c.rpcClient.closeWallet(args[1:])
+		case "getbalance":
+			out, err = c.rpcClient.getBalance(args[1:])
+		case "getaccount":
+			out, err = c.rpcClient.getAccount(args[1:])
+		case "sendtransaction":
+			out, err = c.rpcClient.sendTransaction(args[1:])
+		case "startvalidator":
+			out, err = c.rpcClient.startValidator(args[1:])
+		case "exitvalidator":
+			out, err = c.rpcClient.exitValidator(args[1:])
 		default:
 			err = fmt.Errorf("Unknown command: %s", args[0])
 		}

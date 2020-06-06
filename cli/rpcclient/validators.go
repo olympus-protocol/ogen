@@ -26,14 +26,6 @@ func (c *RPCClient) getValidatorsList(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) startValidator(args []string) (string, error) {
-	return "", nil
-}
-
-func (c *RPCClient) exitValidator(args []string) (string, error) {
-	return "", nil
-}
-
 func (c *RPCClient) getAccountValidators(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

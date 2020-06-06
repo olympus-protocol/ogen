@@ -102,3 +102,20 @@ func (c *RPCClient) getAccountInfo(args []string) (string, error) {
 	}
 	return string(b), nil
 }
+
+func (c *RPCClient) getTransaction(args []string) (string, error) {
+	if len(args) > 1 || len(args) < 1 {
+		return "", errors.New("Usage: gettransaction <txid>")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.chain.GetTransaction(ctx, &proto.Hash{Hash: args[0]})
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}

@@ -44,7 +44,10 @@ service Network {
 }
 
 message NetworkInfo {
-
+    int32 peers = 1;
+    int32 protocol = 2;
+    string version = 3;
+    
 }
 
 message Peers {
@@ -52,7 +55,8 @@ message Peers {
 }
 
 message Peer {
-
+    string id = 1;
+    IP host = 2;
 }
 
 message IP {

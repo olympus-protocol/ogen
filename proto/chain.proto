@@ -52,6 +52,15 @@ service Chain {
     rpc GetAccountInfo(Account) returns (AccountInfo) {}
 
     /** 
+        Method: GetTransaction 
+        Input: message Account
+        Response: message AccountInfo
+        Description: Returns the current account information
+    */
+
+    rpc GetTransaction(Hash) returns (Tx) {}
+
+    /** 
         Method: Sync 
         Input: message SyncInfo
         Response: message SyncStreamResponse
@@ -61,24 +70,14 @@ service Chain {
     rpc Sync(Hash) returns (stream RawData) {}
 
     /** 
-        Method: SubscribeBlocks 
-        Input: message BlockSubscribe
+        Method: Subscribe 
+        Input: message SubscribeOptions
         Response: message BlockWithEpoch
         Description: Returns a stream to notify when new blocks arrive
     */
 
-    rpc SubscribeBlocks(BlockSubscribe) returns (stream BlockWithEpoch) {}
+    rpc Subscribe(SubscribeOptions) returns (stream SubscribeResponse) {}
 
-    /** 
-        Method: SubscribeAccount 
-        Input: message Account
-        Response: message AccountInfo
-        Description: Returns a stream notify when the specified account is modified
-    */
-
-    rpc SubscribeAccount(Account) returns (stream AccountInfo) {}
-
-    
 }
 
 message ChainInfo {
@@ -87,13 +86,15 @@ message ChainInfo {
     uint64 validators = 3;
 }
 
-message BlockSubscribe {
-    bool include_epochs = 1;
+message SubscribeOptions {
+    string topic = 1;
 }
 
-message BlockWithEpoch {
-    string raw_block = 1;
-    string epoch_transitions = 2;
+message SubscribeResponse {
+    Block block = 1;
+    string raw_block = 2;
+    string epochs = 3;
+    AccountInfo account_data = 4;
 }
 
 message AccountInfo {

@@ -32,14 +32,6 @@ func (s *validatorsServer) ValidatorsList(context.Context, *proto.Empty) (*proto
 	return &proto.ValidatorsRegistry{Validators: validatorsResponse}, nil
 }
 
-func (s *validatorsServer) ExitValidator(context.Context, *proto.ExitValidatorInfo) (*proto.Success, error) {
-	return nil, nil
-}
-
-func (s *validatorsServer) StartValidator(context.Context, *proto.StartValidatorInfo) (*proto.KeyPair, error) {
-	return nil, nil
-}
-
 func (s *validatorsServer) GetAccountValidators(context.Context, *proto.Account) (*proto.ValidatorsRegistry, error) {
 	return nil, nil
 }

@@ -16,24 +16,6 @@ service Validators {
     rpc GetValidatorsList(Empty) returns (ValidatorsRegistry) {}
 
     /** 
-        Method: ExitValidator 
-        Input: message ExitValidator
-        Response: message Success
-        Description: Removes the deposit of the provided validator.
-    */
-
-    rpc ExitValidator(ExitValidatorInfo) returns (Success) {}
-
-    /** 
-        Method: StartValidator 
-        Input: message StartValidator
-        Response: message KeyPair
-        Description: Adds a deposit of the provided validator info and returns the public key.
-    */
-
-    rpc StartValidator(StartValidatorInfo) returns (KeyPair) {}
-
-    /** 
         Method: GetAccountValidators 
         Input: message AccountInfo
         Response: message ValidatorsRegistry
@@ -56,11 +38,3 @@ message ValidatorRegistry {
     int64 last_active_epoch = 6;
 }
 
-
-message ExitValidatorInfo {
-    
-}
-
-message StartValidatorInfo {
-    
-}

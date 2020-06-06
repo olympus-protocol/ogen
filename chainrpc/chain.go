@@ -122,10 +122,13 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	return nil
 }
 
-func (s *chainServer) SubscribeBlock(in *proto.BlockSubscribe, stream proto.Chain_SubscribeBlocksServer) error {
+func (s *chainServer) Subscribe(in *proto.SubscribeOptions, stream proto.Chain_SubscribeServer) error {
 	return nil
 }
 
-func (s *chainServer) SubscribeAccount(in *proto.Account, stream proto.Chain_SubscribeAccountServer) error {
-	return nil
+func (s *chainServer) GetAccountInfo(context.Context, *proto.Account) (*proto.AccountInfo, error) {
+	return nil, nil
+}
+func (s *chainServer) GetTransaction(context.Context, *proto.Hash) (*proto.Tx, error) {
+	return nil, nil
 }

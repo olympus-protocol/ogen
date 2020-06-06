@@ -15,6 +15,7 @@ import (
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/olympus-protocol/ogen/wallet"
 )
 
 type Server struct {
@@ -89,7 +90,11 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode)
+	wallet, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
+	if err != nil {
+		return nil, err
+	}
+	rpc := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet)
 
 	var min *miner.Miner
 	if configParams.MiningEnabled {

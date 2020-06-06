@@ -14,6 +14,7 @@ type RPCClient struct {
 	validators proto.ValidatorsClient
 	utils      proto.UtilsClient
 	network    proto.NetworkClient
+	wallet     proto.WalletClient
 }
 
 // NewRPCClient creates a new RPC client.
@@ -28,6 +29,7 @@ func NewRPCClient(addr string) *RPCClient {
 		validators: proto.NewValidatorsClient(conn),
 		utils:      proto.NewUtilsClient(conn),
 		network:    proto.NewNetworkClient(conn),
+		wallet:     proto.NewWalletClient(conn),
 	}
 	return client
 }
