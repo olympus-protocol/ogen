@@ -15,13 +15,13 @@ service Utils {
     rpc GenValidatorKey(Empty) returns (KeyPair) {}
 
     /** 
-        Method: SendRawTransaction 
+        Method: SubmitRawData 
         Input: message RawData
         Response: message Success
-        Description: Broadcast a transaction to the network.
+        Description: Broadcast a raw elements of different transactions.
     */
-    rpc SendRawTransaction(RawData) returns (Success) {}
-
+    rpc SubmitRawData(RawData) returns (Success) {}
+   
     /** 
         Method: DecodeRawTransaction 
         Input: message RawData

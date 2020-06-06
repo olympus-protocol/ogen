@@ -14,6 +14,7 @@ message Height {
 message Success {
     bool success = 1;
     string error = 2;
+    string data = 3;
 }
 
 message KeyPair {
@@ -23,6 +24,7 @@ message KeyPair {
 
 message RawData {
     string data = 1;
+    string type = 2;
 }
 
 message Account {
@@ -31,7 +33,9 @@ message Account {
 
 // TODO
 message Tx {
-    uint32 type = 1;
+    string hash = 1;
+    int32 type = 2;
+    int32 version = 3;
 }
 
 

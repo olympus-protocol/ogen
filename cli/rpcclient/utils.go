@@ -17,8 +17,8 @@ func (c *RPCClient) sendRawTransaction(args []string) (string, error) {
 	if len(args) > 1 || len(args) < 1 {
 		return "", errors.New("Usage: sendrawtransaction <raw_transaction>")
 	}
-	req := &proto.RawData{Data: args[0]}
-	res, err := c.utils.SendRawTransaction(ctx, req)
+	req := &proto.RawData{Data: args[0], Type: "tx"}
+	res, err := c.utils.SubmitRawData(ctx, req)
 	if err != nil {
 		return "", err
 	}

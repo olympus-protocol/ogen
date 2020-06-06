@@ -45,7 +45,7 @@ func (s *walletServer) OpenWallet(ctx context.Context, name *proto.Name) (*proto
 	}
 	err := s.wallet.OpenWallet(name.Name)
 	if err != nil {
-		return &proto.Success{Success: false}, nil
+		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
 	return &proto.Success{Success: true}, nil
 }
@@ -53,7 +53,7 @@ func (s *walletServer) OpenWallet(ctx context.Context, name *proto.Name) (*proto
 func (s *walletServer) CloseWallet(context.Context, *proto.Empty) (*proto.Success, error) {
 	err := s.wallet.CloseWallet()
 	if err != nil {
-		return &proto.Success{Success: false}, nil
+		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
 	return &proto.Success{Success: true}, nil
 }
@@ -110,7 +110,7 @@ func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*
 	copy(pubKeyBytes[:], pubKeyDecode)
 	_, err = s.wallet.ExitValidator(pubKeyBytes)
 	if err != nil {
-		return &proto.Success{Success: false}, nil
+		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
 	return &proto.Success{Success: true}, nil
 }
