@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
 func (c *RPCClient) getNetworkInfo(args []string) (string, error) {
@@ -60,4 +60,3 @@ func (c *RPCClient) addPeer(args []string) (string, error) {
 	}
 	return string(b), nil
 }
-

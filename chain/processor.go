@@ -271,6 +271,8 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.FinalizedEpoch, newState.JustifiedEpoch)
 
+		// Once a block is acceped build tx index and account tx tracking
+
 		ch.notifeeLock.RLock()
 		stateCopy := newState.Copy()
 		for i := range ch.notifees {

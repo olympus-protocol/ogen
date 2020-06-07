@@ -1,6 +1,6 @@
 
 syntax = "proto3";
-option go_package = "github.com/olympus-protocol/ogen/proto";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
 import "common.proto";
 
@@ -62,8 +62,8 @@ service Chain {
 
     /** 
         Method: Sync 
-        Input: message SyncInfo
-        Response: message SyncStreamResponse
+        Input: message Hash
+        Response: message RawData
         Description: Returns a stream of raw blocks from the block hash specified
     */
 
@@ -99,8 +99,8 @@ message SubscribeResponse {
 
 message AccountInfo {
     string account = 1;
-    string balance = 2;
-    string nonce = 3;
+    uint64 balance = 2;
+    uint64 nonce = 3;
     repeated string txs = 4;
 }
 

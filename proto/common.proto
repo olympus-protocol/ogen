@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/olympus-protocol/ogen/proto";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
 message Empty{}
 
@@ -31,13 +31,30 @@ message Account {
     string account = 1;
 }
 
-// TODO
 message Tx {
     string hash = 1;
     int32 type = 2;
     int32 version = 3;
+    TransferSingle transfer_single_payload = 4;
+    TransferMulti transfer_multi_payload = 5;
 }
 
+message TransferSingle {
+    string to = 1;
+    string from_public_key = 2;
+    uint64 amount = 3;
+    uint64 nonce = 4;
+    uint64 fee = 5;
+    string signature = 6;
+}
+
+message TransferMulti {
+    string to = 1;
+    uint64 amount = 2;
+    uint64 nonce = 3;
+    uint64 fee = 4;
+    string signature = 5;
+}
 
 message BlockHeader {
     int32   version = 1;

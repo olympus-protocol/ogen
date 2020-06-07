@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
 func (c *RPCClient) getChainInfo(args []string) (string, error) {

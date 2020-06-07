@@ -301,6 +301,28 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 	return t, err
 }
 
+var accountPrefix = []byte("account-")
+
+func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) ([]string, error) {
+	var txs []string
+	return txs, nil
+}
+
+func (brt *BlockDBReadTransaction) SetAccountTx(acc [20]byte, hash chainhash.Hash) error {
+	return nil
+}
+
+var txLocatorPrefix = []byte("txlocator-")
+
+func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLocator, error) {
+	locator := new(primitives.TxLocator)
+	return locator, nil
+}
+
+func (brt *BlockDBReadTransaction) SetTx(locator primitives.TxLocator) error {
+	return nil
+}
+
 var _ DB = &BlockDB{}
 var _ DBUpdateTransaction = &BlockDBUpdateTransaction{}
 var _ DBViewTransaction = &BlockDBReadTransaction{}
@@ -323,6 +345,8 @@ type DBViewTransaction interface {
 	GetJustifiedHead() (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
 	GetGenesisTime() (time.Time, error)
+	GetAccountTxs([20]byte) ([]string, error)
+	GetTx(chainhash.Hash) (*primitives.TxLocator, error)
 }
 
 // DBTransaction is a transaction to update the state of the database.
@@ -335,5 +359,7 @@ type DBUpdateTransaction interface {
 	SetJustifiedHead(chainhash.Hash) error
 	SetFinalizedHead(chainhash.Hash) error
 	SetGenesisTime(time.Time) error
+	SetAccountTx([20]byte, chainhash.Hash) error
+	SetTx(primitives.TxLocator) error
 	DBViewTransaction
 }

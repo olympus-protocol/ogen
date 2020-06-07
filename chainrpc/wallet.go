@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/shopspring/decimal"
 )

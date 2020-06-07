@@ -8,7 +8,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/keystore"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/shopspring/decimal"
 )

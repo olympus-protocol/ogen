@@ -10,7 +10,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
 type utilsServer struct {

@@ -1,7 +1,7 @@
 package rpcclient
 
 import (
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"google.golang.org/grpc"
 )
 

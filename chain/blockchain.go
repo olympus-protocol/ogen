@@ -57,12 +57,41 @@ func (ch *Blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err e
 	})
 }
 
-// GetBlock gets a block from the database.
+// GetRawBlock gets the block bytes from the database.
 func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 	return block, ch.db.View(func(txn bdb.DBViewTransaction) error {
 		block, err = txn.GetRawBlock(h)
 		return err
 	})
+}
+
+// GetAccountTxs gets the txid from an account.
+func (ch *Blockchain) GetAccountTxs(acc [20]byte) (txs []string, err error) {
+	err = ch.db.View(func(txn bdb.DBViewTransaction) error {
+		txs, err = txn.GetAccountTxs(acc)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return
+}
+
+// GetTx gets the transaction from the database and block reference.
+func (ch *Blockchain) GetTx(h chainhash.Hash) (tx primitives.Tx, err error) {
+	err = ch.db.View(func(txn bdb.DBViewTransaction) error {
+		txLocator, err := txn.GetTx(h)
+		if err != nil {
+			return err
+		}
+		block, err := txn.GetBlock(txLocator.Block)
+		if err != nil {
+			return err
+		}
+		tx = block.Txs[txLocator.Index]
+		return err
+	})
+	return
 }
 
 // NewBlockchain constructs a new blockchain.

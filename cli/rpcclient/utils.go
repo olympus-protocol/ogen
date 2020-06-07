@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
 func (c *RPCClient) sendRawTransaction(args []string) (string, error) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -126,9 +126,46 @@ func (s *chainServer) Subscribe(in *proto.SubscribeOptions, stream proto.Chain_S
 	return nil
 }
 
-func (s *chainServer) GetAccountInfo(context.Context, *proto.Account) (*proto.AccountInfo, error) {
-	return nil, nil
+func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (*proto.AccountInfo, error) {
+	var account [20]byte
+	accBytes, err := hex.DecodeString(data.Account)
+	if err != nil {
+		return nil, err
+	}
+	copy(account[:], accBytes)
+	accInfo := &proto.AccountInfo{
+		Account: data.Account,
+		Txs:     []string{},
+	}
+	balance, ok := s.chain.State().TipState().CoinsState.Balances[account]
+	if !ok {
+		accInfo.Balance = 0
+	} else {
+		accInfo.Balance = balance
+	}
+
+	nonce, ok := s.chain.State().TipState().CoinsState.Nonces[account]
+	if !ok {
+		accInfo.Nonce = 0
+	} else {
+		accInfo.Nonce = nonce
+	}
+	return accInfo, nil
 }
-func (s *chainServer) GetTransaction(context.Context, *proto.Hash) (*proto.Tx, error) {
-	return nil, nil
+
+func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto.Tx, error) {
+	txid, err := chainhash.NewHashFromStr(h.Hash)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := s.chain.GetTx(*txid)
+	if err != nil {
+		return nil, err
+	}
+	txParse := &proto.Tx{
+		Hash:    tx.Hash().String(),
+		Version: tx.TxVersion,
+		Type:    tx.TxType,
+	}
+	return txParse, nil
 }
