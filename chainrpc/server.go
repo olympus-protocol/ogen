@@ -62,7 +62,22 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, host *peers.HostNode, wallet *wallet.Wallet) *RPCServer {
+func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, hostnode *peers.HostNode, wallet *wallet.Wallet) (*RPCServer, error) {
+	txTopic, err := hostnode.Topic("tx")
+	if err != nil {
+		return nil, err
+	}
+
+	depositTopic, err := hostnode.Topic("deposits")
+	if err != nil {
+		return nil, err
+	}
+
+	exitTopic, err := hostnode.Topic("exits")
+	if err != nil {
+		return nil, err
+	}
+
 	return &RPCServer{
 		rpc:    grpc.NewServer(),
 		config: config,
@@ -75,10 +90,16 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 			chain:    chain,
 		},
 		networkServer: &networkServer{
-			host: host,
+			hostnode: hostnode,
+		},
+		utilsServer: &utilsServer{
+			keystore:     keys,
+			txTopic:      txTopic,
+			depositTopic: depositTopic,
+			exitTopic:    exitTopic,
 		},
 		walletServer: &walletServer{
 			wallet: wallet,
 		},
-	}
+	}, nil
 }

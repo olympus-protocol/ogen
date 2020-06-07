@@ -28,7 +28,6 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "getnetworkinfo", Description: "Get current network information"},
 		{Text: "getpeersinfo", Description: "Get current connected peers"},
 		{Text: "addpeer", Description: "Add a new peer to the connections"},
-		{Text: "banpeer", Description: "Remove a connected peer and ban it from connecting again"},
 
 		// Utils methods
 		{Text: "sendrawtransaction", Description: "Broadcasts a serialized transaction to the network"},
@@ -114,8 +113,6 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.getPeersInfo(args[1:])
 		case "addpeer":
 			out, err = c.rpcClient.addPeer(args[1:])
-		case "banpeer":
-			out, err = c.rpcClient.banPeer(args[1:])
 
 		// Utils methods
 		case "sendrawtransaction":

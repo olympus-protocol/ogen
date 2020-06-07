@@ -32,15 +32,6 @@ service Network {
     */
 
     rpc AddPeer(IP) returns (Success) {}    
-
-    /** 
-        Method: BanPeer 
-        Input: message IP
-        Response: message Success
-        Description: Removes a peer from current connections and include it to never connect again.
-    */
-
-    rpc BanPeer(IP) returns (Success) {}  
 }
 
 message NetworkInfo {

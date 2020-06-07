@@ -7,3 +7,4 @@ build_proto_js:
 
 build_proto_py:
 	protoc --python_out=./ogen-protopy ./*.proto
+

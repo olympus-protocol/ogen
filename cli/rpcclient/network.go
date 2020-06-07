@@ -61,20 +61,3 @@ func (c *RPCClient) addPeer(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) banPeer(args []string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	if len(args) > 1 || len(args) < 1 {
-		return "", errors.New("Usage: banpeer <IP>")
-	}
-	req := &proto.IP{Host: args[0]}
-	res, err := c.network.BanPeer(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	b, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}

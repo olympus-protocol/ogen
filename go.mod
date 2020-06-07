@@ -10,11 +10,10 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
-	github.com/libp2p/go-libp2p v0.9.2
-	github.com/libp2p/go-libp2p-core v0.5.6
-	github.com/libp2p/go-libp2p-peerstore v0.2.4
-	github.com/libp2p/go-libp2p-pubsub v0.3.0
-	github.com/mattn/go-colorable v0.1.6 // indirect
+	github.com/libp2p/go-libp2p v0.9.5
+	github.com/libp2p/go-libp2p-core v0.5.7
+	github.com/libp2p/go-libp2p-peerstore v0.2.5
+	github.com/libp2p/go-libp2p-pubsub v0.3.2
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr v0.2.2
@@ -25,11 +24,9 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0
-	go.etcd.io/bbolt v1.3.2
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
-	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2
-	google.golang.org/genproto v0.0.0-20200602104108-2bb8d6132df6 // indirect
+	go.etcd.io/bbolt v1.3.4
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.24.0
-	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

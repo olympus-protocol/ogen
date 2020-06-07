@@ -94,8 +94,10 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet)
-
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet)
+	if err != nil {
+		return nil, err
+	}
 	var min *miner.Miner
 	if configParams.MiningEnabled {
 		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
