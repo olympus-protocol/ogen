@@ -130,6 +130,11 @@ func NewMultisig(multipub Multipub) *Multisig {
 	}
 }
 
+// GetPublicKey gets the public key included in the signature.
+func (m *Multisig) GetPublicKey() FunctionalPublicKey {
+	return &m.PublicKey
+}
+
 // Encode encodes the multisig to the given writer.
 func (m *Multisig) Encode(w io.Writer) error {
 	if err := m.PublicKey.Encode(w); err != nil {
@@ -251,3 +256,6 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	return aggSig.AggregateVerify(activePubs, msgs)
 }
+
+var _ FunctionalSignature = &Multisig{}
+var _ FunctionalPublicKey = &Multipub{}

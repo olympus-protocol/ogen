@@ -96,3 +96,5 @@ func (p *PublicKey) Hash() [20]byte {
 	copy(hBytes[:], h[:])
 	return hBytes
 }
+
+var _ FunctionalPublicKey = &PublicKey{}

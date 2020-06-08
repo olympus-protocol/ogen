@@ -4,6 +4,7 @@
 package bls
 
 import (
+	"io"
 	"math/big"
 
 	"github.com/dgraph-io/ristretto"
@@ -31,3 +32,19 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 
 // RFieldModulus for the bls-381 curve.
 var RFieldModulus, _ = new(big.Int).SetString("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10)
+
+// FunctionalPublicKey is either a multipub or a regular public key.
+type FunctionalPublicKey interface {
+	Encode(w io.Writer) error
+	Decode(r io.Reader) error
+}
+
+// FunctionalSignature is a signature that can be included in transactions
+// or votes.
+type FunctionalSignature interface {
+	Encode(w io.Writer) error
+	Decode(r io.Reader) error
+	Sign(secKey *SecretKey, msg []byte) error
+	Verify(msg []byte) bool
+	GetPublicKey() FunctionalPublicKey
+}
