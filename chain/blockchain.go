@@ -66,9 +66,9 @@ func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 }
 
 // GetAccountTxs gets the txid from an account.
-func (ch *Blockchain) GetAccountTxs(acc [20]byte) (txs []string, err error) {
+func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs *primitives.AccountTxs, err error) {
 	err = ch.db.View(func(txn bdb.DBViewTransaction) error {
-		txs, err = txn.GetAccountTxs(acc)
+		accTxs, err = txn.GetAccountTxs(acc)
 		if err != nil {
 			return err
 		}

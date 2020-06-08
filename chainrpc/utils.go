@@ -8,9 +8,9 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
 type utilsServer struct {

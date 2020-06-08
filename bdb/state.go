@@ -303,23 +303,81 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 
 var accountPrefix = []byte("account-")
 
-func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) ([]string, error) {
-	var txs []string
-	return txs, nil
+// GetAccountTxs returns accounts transactions.
+func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) (*primitives.AccountTxs, error) {
+	// TODO handle non existent accounts on index.
+	key := append(accountPrefix, acc[:]...)
+	accTxsBs, err := getKey(brt, key)
+	if err != nil {
+		return nil, err
+	}
+	accs := new(primitives.AccountTxs)
+	buf := bytes.NewBuffer(accTxsBs)
+	err = accs.Decode(buf)
+	if err != nil {
+		return nil, err
+	}
+	return accs, nil
 }
 
-func (brt *BlockDBReadTransaction) SetAccountTx(acc [20]byte, hash chainhash.Hash) error {
+// SetAccountTx adds a new tx hash to the account txs slice.
+func (but *BlockDBUpdateTransaction) SetAccountTx(acc [20]byte, hash chainhash.Hash) error {
+	// TODO handle non existent accounts on index.
+	key := append(accountPrefix, acc[:]...)
+	accTxsBs, err := getKey(&but.BlockDBReadTransaction, key)
+	if err != nil {
+		return err
+	}
+	accs := new(primitives.AccountTxs)
+	buf := bytes.NewBuffer(accTxsBs)
+	err = accs.Decode(buf)
+	if err != nil {
+		return err
+	}
+	accs.TxsAmount = +1
+	accs.Txs = append(accs.Txs, hash)
+	newBuf := bytes.NewBuffer([]byte{})
+	err = accs.Encode(newBuf)
+	if err != nil {
+		return err
+	}
+	err = setKey(but, key, newBuf.Bytes())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 var txLocatorPrefix = []byte("txlocator-")
 
+// GetTx returns a tx locator from a hash.
 func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLocator, error) {
+	key := append(txLocatorPrefix, hash[:]...)
 	locator := new(primitives.TxLocator)
+	lbs, err := getKey(brt, key)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(lbs)
+	err = locator.Decode(buf)
+	if err != nil {
+		return nil, err
+	}
 	return locator, nil
 }
 
-func (brt *BlockDBReadTransaction) SetTx(locator primitives.TxLocator) error {
+// SetTx stores a new locator for the specified hash.
+func (but *BlockDBUpdateTransaction) SetTx(locator primitives.TxLocator) error {
+	key := append(txLocatorPrefix, locator.TxHash[:]...)
+	buf := bytes.NewBuffer([]byte{})
+	err := locator.Encode(buf)
+	if err != nil {
+		return err
+	}
+	err = setKey(but, key, buf.Bytes())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -345,7 +403,7 @@ type DBViewTransaction interface {
 	GetJustifiedHead() (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
 	GetGenesisTime() (time.Time, error)
-	GetAccountTxs([20]byte) ([]string, error)
+	GetAccountTxs([20]byte) (*primitives.AccountTxs, error)
 	GetTx(chainhash.Hash) (*primitives.TxLocator, error)
 }
 

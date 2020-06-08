@@ -4,9 +4,9 @@ import (
 	"net"
 
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/peers"
-	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
 	"google.golang.org/grpc"

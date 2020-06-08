@@ -83,9 +83,10 @@ func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Height) (*prot
 }
 
 func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error {
+	_, cancel := context.WithCancel(stream.Context())
 	// Define starting point
 	blockRow := new(index.BlockRow)
-
+	defer cancel()
 	// If user is on tip, silently close the channel
 	if reflect.DeepEqual(in.Hash, s.chain.State().Tip().Hash.String()) {
 		return nil
@@ -123,6 +124,41 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 }
 
 func (s *chainServer) Subscribe(in *proto.SubscribeOptions, stream proto.Chain_SubscribeServer) error {
+	_, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	switch in.Topic {
+	case "blocks":
+		err := s.subscribeBlocks(&stream)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "account":
+		err := s.subscribeAccount(&stream, in.Account)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "block_with_epochs":
+		err := s.subscribeBlockWithEpochs(&stream)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (s *chainServer) subscribeBlocks(stream *proto.Chain_SubscribeServer) error {
+	return nil
+}
+
+func (s *chainServer) subscribeBlockWithEpochs(stream *proto.Chain_SubscribeServer) error {
+	return nil
+}
+
+func (s *chainServer) subscribeAccount(stream *proto.Chain_SubscribeServer, account string) error {
 	return nil
 }
 

@@ -88,6 +88,7 @@ message ChainInfo {
 
 message SubscribeOptions {
     string topic = 1;
+    string account = 2;
 }
 
 message SubscribeResponse {
