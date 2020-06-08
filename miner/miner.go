@@ -278,12 +278,11 @@ func (m *Miner) Start() error {
 				tip := m.chain.State().Tip()
 				tipHash := tip.Hash
 
-				state,  err := m.chain.State().TipStateAtSlot(slotToPropose)
+				state, err := m.chain.State().TipStateAtSlot(slotToPropose)
 				if err != nil {
 					m.log.Error(err)
 					return
 				}
-
 
 				slotIndex := (slotToPropose + m.params.EpochLength - 1) % m.params.EpochLength
 
@@ -335,12 +334,12 @@ func (m *Miner) Start() error {
 							Timestamp:     time.Now(),
 							Slot:          slotToPropose,
 						},
-						Votes:    votes,
-						Txs:      coinTxs,
-						Deposits: depositTxs,
-						Exits:    exitTxs,
-						RANDAOSlashings: randaoSlashings,
-						VoteSlashings: voteSlashings,
+						Votes:             votes,
+						Txs:               coinTxs,
+						Deposits:          depositTxs,
+						Exits:             exitTxs,
+						RANDAOSlashings:   randaoSlashings,
+						VoteSlashings:     voteSlashings,
 						ProposerSlashings: proposerSlashings,
 					}
 
@@ -351,6 +350,7 @@ func (m *Miner) Start() error {
 					block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
 					block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
 					block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
+					block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
 
 					blockHash := block.Hash()
 					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))

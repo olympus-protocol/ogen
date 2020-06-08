@@ -496,6 +496,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	voteSlashingMerkleRoot := b.VoteSlashingRoot()
 	proposerSlashingMerkleRoot := b.ProposerSlashingsRoot()
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
+	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 
 	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
@@ -523,6 +524,10 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	if !b.Header.RANDAOSlashingMerkleRoot.IsEqual(&randaoSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", randaoSlashingMerkleRoot, b.Header.RANDAOSlashingMerkleRoot)
+	}
+
+	if !b.Header.GovernanceVotesMerkleRoot.IsEqual(&governanceVoteMerkleRoot) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
 	}
 
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
