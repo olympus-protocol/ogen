@@ -28,6 +28,12 @@ build:
 	@echo Building $(BINARY_NAME) for $(OS)
 	$(GOBUILD) -o $(BINARY_NAME)
 
+pack: build
+	mkdir $(FOLDER_NAME)
+	mv $(BINARY_NAME) ./$(FOLDER_NAME)
+	tar -czvf ogen-$(OGEN_VERSION)-$(LOWECASE_OS).tar.gz ./$(FOLDER_NAME)
+	rm -r ./$(FOLDER_NAME)	
+
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./
