@@ -4,7 +4,7 @@ option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 message Empty{}
 
 message Hash {
-    string hash = 1;
+    bytes hash = 1;
 }
 
 message Height {

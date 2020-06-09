@@ -106,7 +106,7 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (m *Miner) NewTip(_ *index.BlockRow, block *primitives.Block, newState *primitives.State) {
+func (m *Miner) NewTip(_ *index.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
 	m.voteMempool.Remove(block)
 	m.coinsMempool.RemoveByBlock(block)
 	m.actionsMempool.RemoveByBlock(block, newState)

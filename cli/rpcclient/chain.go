@@ -2,6 +2,7 @@ package rpcclient
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -30,11 +31,15 @@ func (c *RPCClient) getChainInfo(args []string) (string, error) {
 func (c *RPCClient) getRawBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 {
+	if len(args) != 1 || len(args[0]) != 64 {
 		return "", errors.New("Usage: getrawblock <hash>")
 	}
+	h, err := hex.DecodeString(args[0])
+	if err != nil {
+		return "", err
+	}
 	req := &proto.Hash{
-		Hash: args[0],
+		Hash: h,
 	}
 	res, err := c.chain.GetRawBlock(ctx, req)
 	if err != nil {
@@ -46,7 +51,7 @@ func (c *RPCClient) getRawBlock(args []string) (string, error) {
 func (c *RPCClient) getBlockHash(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 {
+	if len(args) != 1 {
 		return "", errors.New("Usage: getblockhash <height>")
 	}
 	height, err := strconv.Atoi(args[0])
@@ -60,17 +65,21 @@ func (c *RPCClient) getBlockHash(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return res.GetHash(), nil
+	return hex.EncodeToString(res.GetHash()), nil
 }
 
 func (c *RPCClient) getBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 {
+	if len(args) != 1 || len(args[0]) != 64 {
 		return "", errors.New("Usage: getblock <hash>")
 	}
+	h, err := hex.DecodeString(args[0])
+	if err != nil {
+		return "", err
+	}
 	req := &proto.Hash{
-		Hash: args[0],
+		Hash: h,
 	}
 	res, err := c.chain.GetBlock(ctx, req)
 	if err != nil {
@@ -104,12 +113,16 @@ func (c *RPCClient) getAccountInfo(args []string) (string, error) {
 }
 
 func (c *RPCClient) getTransaction(args []string) (string, error) {
-	if len(args) > 1 || len(args) < 1 {
+	if len(args) != 1 || len(args[0]) != 64 {
 		return "", errors.New("Usage: gettransaction <txid>")
+	}
+	h, err := hex.DecodeString(args[0])
+	if err != nil {
+		return "", err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	res, err := c.chain.GetTransaction(ctx, &proto.Hash{Hash: args[0]})
+	res, err := c.chain.GetTransaction(ctx, &proto.Hash{Hash: h})
 	if err != nil {
 		return "", err
 	}

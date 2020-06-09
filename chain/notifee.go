@@ -9,7 +9,7 @@ import (
 // blockchain.
 type BlockchainNotifee interface {
 	// NewTip notifies of a new tip added to the blockchain. Do not mutate state.
-	NewTip(*index.BlockRow, *primitives.Block, *primitives.State)
+	NewTip(*index.BlockRow, *primitives.Block, *primitives.State, []*primitives.EpochReceipt)
 	ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing)
 }
 

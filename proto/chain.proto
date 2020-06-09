@@ -2,6 +2,7 @@
 syntax = "proto3";
 option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
+import "google/protobuf/empty.proto";
 import "common.proto";
 
 service Chain {
@@ -76,26 +77,27 @@ service Chain {
         Description: Returns a stream to notify when new blocks arrive
     */
 
-    rpc Subscribe(SubscribeOptions) returns (stream SubscribeResponse);
+    rpc SubscribeBlocks(google.protobuf.Empty) returns (stream SubscribeResponse);
+    rpc SubscribeTransactions(SubscribeAccountRequest) returns (stream SubscribeResponse);
+    rpc SubscribeValidatorTransactions(SubscribeValidatorRequest) returns (stream SubscribeResponse);
+}
 
+message SubscribeResponse {
+    bytes Data = 1;
+}
+
+message SubscribeAccountRequest {
+    repeated bytes publicKeyHash = 1;
+}
+
+message SubscribeValidatorRequest {
+    repeated bytes publicKey = 1;
 }
 
 message ChainInfo {
     string block_hash = 1;
     uint64 block_height = 2;
     uint64 validators = 3;
-}
-
-message SubscribeOptions {
-    string topic = 1;
-    string account = 2;
-}
-
-message SubscribeResponse {
-    Block block = 1;
-    string raw_block = 2;
-    string epochs = 3;
-    AccountInfo account_data = 4;
 }
 
 message AccountInfo {

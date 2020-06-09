@@ -3,8 +3,9 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"sync"
+
+	"github.com/olympus-protocol/ogen/chain/index"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/chain"
@@ -73,7 +74,8 @@ func (am *ActionMempool) NotifyIllegalVotes(slashing primitives.VoteSlashing) {
 	am.voteSlashings = append(am.voteSlashings, slashing)
 }
 
-func (am *ActionMempool) NewTip(_ *index.BlockRow, _ *primitives.Block, _ *primitives.State) {}
+func (am *ActionMempool) NewTip(_ *index.BlockRow, _ *primitives.Block, _ *primitives.State, _ []*primitives.EpochReceipt) {
+}
 
 func (am *ActionMempool) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {
 	slot1 := slashing.BlockHeader1.Slot

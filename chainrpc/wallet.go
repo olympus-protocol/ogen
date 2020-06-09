@@ -84,7 +84,7 @@ func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTran
 	if err != nil {
 		return nil, err
 	}
-	return &proto.Hash{Hash: hash.String()}, nil
+	return &proto.Hash{Hash: hash[:]}, nil
 }
 func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (*proto.KeyPair, error) {
 	var privKeyBytes [32]byte

@@ -1,15 +1,20 @@
 package chainrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"reflect"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 type chainServer struct {
@@ -27,7 +32,7 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 }
 
 func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
-	hash, err := chainhash.NewHashFromStr(in.Hash)
+	hash, err := chainhash.NewHash(in.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +44,7 @@ func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.B
 }
 
 func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
-	hash, err := chainhash.NewHashFromStr(in.Hash)
+	hash, err := chainhash.NewHash(in.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +83,7 @@ func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Height) (*prot
 		return nil, errors.New("block not found")
 	}
 	return &proto.Hash{
-		Hash: blockRow.Hash.String(),
+		Hash: blockRow.Hash[:],
 	}, nil
 }
 
@@ -93,7 +98,7 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	}
 
 	ok := true
-	hash, err := chainhash.NewHashFromStr(in.Hash)
+	hash, err := chainhash.NewHash(in.Hash)
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
@@ -123,43 +128,165 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	return nil
 }
 
-func (s *chainServer) Subscribe(in *proto.SubscribeOptions, stream proto.Chain_SubscribeServer) error {
-	_, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-	switch in.Topic {
-	case "blocks":
-		err := s.subscribeBlocks(&stream)
-		if err != nil {
-			return err
-		}
-		return nil
-	case "account":
-		err := s.subscribeAccount(&stream, in.Account)
-		if err != nil {
-			return err
-		}
-		return nil
-	case "block_with_epochs":
-		err := s.subscribeBlockWithEpochs(&stream)
-		if err != nil {
-			return err
-		}
-		return nil
+type blockNotifee struct {
+	blocks chan blockAndReceipts
+}
+
+type blockAndReceipts struct {
+	block    *primitives.Block
+	receipts []*primitives.EpochReceipt
+	state    *primitives.State
+}
+
+func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
+	bn := blockNotifee{
+		blocks: make(chan blockAndReceipts),
+	}
+
+	go func() {
+		chain.Notify(&bn)
+
+		<-ctx.Done()
+
+		chain.Unnotify(&bn)
+	}()
+
+	return bn
+}
+
+func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
+	select {
+	case bn.blocks <- toSend:
 	default:
-		return nil
 	}
 }
 
-func (s *chainServer) subscribeBlocks(stream *proto.Chain_SubscribeServer) error {
-	return nil
+func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
+
+func (s *chainServer) SubscribeBlocks(_ *empty.Empty, stream proto.Chain_SubscribeBlocksServer) error {
+	bn := newBlockNotifee(stream.Context(), s.chain)
+
+	for {
+		select {
+		case bl := <-bn.blocks:
+			buf := bytes.NewBuffer([]byte{})
+			if err := bl.block.Encode(buf); err != nil {
+				return err
+			}
+			err := stream.Send(&proto.SubscribeResponse{
+				Data: buf.Bytes(),
+			})
+			if err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
 }
 
-func (s *chainServer) subscribeBlockWithEpochs(stream *proto.Chain_SubscribeServer) error {
-	return nil
+func (s *chainServer) SubscribeTransactions(in *proto.SubscribeAccountRequest, stream proto.Chain_SubscribeTransactionsServer) error {
+	bn := newBlockNotifee(stream.Context(), s.chain)
+	accounts := make(map[[20]byte]struct{})
+	for _, a := range in.PublicKeyHash {
+		if len(a) != 20 {
+			return fmt.Errorf("expected public key hashes to be 20 bytes but got %d", len(a))
+		}
+
+		var acc [20]byte
+		copy(acc[:], a)
+
+		accounts[acc] = struct{}{}
+	}
+
+	for {
+		select {
+		case bl := <-bn.blocks:
+			transactions := make([]primitives.Tx, 0)
+			for _, tx := range bl.block.Txs {
+				pkh := tx.Payload.FromPubkeyHash()
+				if _, ok := accounts[pkh]; ok {
+					transactions = append(transactions, tx)
+				}
+			}
+			if len(transactions) == 0 {
+				continue
+			}
+			resp := bytes.NewBuffer([]byte{})
+			if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
+				return err
+			}
+			for _, tx := range transactions {
+				if err := tx.Encode(resp); err != nil {
+					return err
+				}
+			}
+
+			err := stream.Send(&proto.SubscribeResponse{
+				Data: resp.Bytes(),
+			})
+			if err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
 }
 
-func (s *chainServer) subscribeAccount(stream *proto.Chain_SubscribeServer, account string) error {
-	return nil
+func (s *chainServer) SubscribeValidatorTransaction(in *proto.SubscribeValidatorRequest, stream proto.Chain_SubscribeValidatorTransactionsServer) error {
+	bn := newBlockNotifee(stream.Context(), s.chain)
+	accounts := make(map[[96]byte]struct{})
+	for _, a := range in.PublicKey {
+		if len(a) != 96 {
+			return fmt.Errorf("expected public key hashes to be 20 bytes but got %d", len(a))
+		}
+
+		var acc [96]byte
+		copy(acc[:], a)
+
+		accounts[acc] = struct{}{}
+	}
+
+	for {
+		select {
+		case bl := <-bn.blocks:
+			transactions := make([]*primitives.EpochReceipt, 0)
+			for _, receipt := range bl.receipts {
+				validator := bl.state.ValidatorRegistry[receipt.Validator].PubKey
+				var validatorPubkey [96]byte
+
+				copy(validatorPubkey[:], validator)
+
+				if _, ok := accounts[validatorPubkey]; ok {
+					transactions = append(transactions, receipt)
+				}
+			}
+
+			if len(transactions) == 0 {
+				continue
+			}
+			resp := bytes.NewBuffer([]byte{})
+			if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
+				return err
+			}
+			for _, tx := range transactions {
+				if err := tx.Encode(resp); err != nil {
+					return err
+				}
+			}
+
+			err := stream.Send(&proto.SubscribeResponse{
+				Data: resp.Bytes(),
+			})
+			if err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
 }
 
 func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (*proto.AccountInfo, error) {
@@ -190,7 +317,7 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 }
 
 func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto.Tx, error) {
-	txid, err := chainhash.NewHashFromStr(h.Hash)
+	txid, err := chainhash.NewHash(h.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -205,3 +332,5 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 	}
 	return txParse, nil
 }
+
+var _ proto.ChainServer = &chainServer{}
