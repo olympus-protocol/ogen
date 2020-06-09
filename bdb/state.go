@@ -37,9 +37,7 @@ type BlockDBReadTransaction struct {
 
 // NewBlockDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
 func NewBlockDB(path string, params params.ChainParams, log *logger.Logger) (*BlockDB, error) {
-	dbOptions := badger.DefaultOptions(path + "/db")
-	dbOptions.Logger = nil
-	badgerdb, err := badger.Open(dbOptions)
+	badgerdb, err := badger.Open(badger.DefaultOptions(path + "/chain").WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +101,8 @@ func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
 	})
 }
 
-// GetRawBlock gets a block from the database.
-func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) (*primitives.Block, error) {
+// GetBlock gets a block from the database.
+func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
 	blockBytes, err := getKey(brt, hash[:])
 	if err != nil {
 		return nil, err
@@ -113,6 +111,15 @@ func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) (*primitives
 	block := new(primitives.Block)
 	err = block.Decode(bytes.NewBuffer(blockBytes))
 	return block, err
+}
+
+// GetRawBlock gets a block serialized from the database.
+func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
+	blockBytes, err := getKey(brt, hash[:])
+	if err != nil {
+		return nil, err
+	}
+	return blockBytes, err
 }
 
 // AddRawBlock adds a raw block to the database.
@@ -294,6 +301,86 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 	return t, err
 }
 
+var accountPrefix = []byte("account-")
+
+// GetAccountTxs returns accounts transactions.
+func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) (*primitives.AccountTxs, error) {
+	// TODO handle non existent accounts on index.
+	key := append(accountPrefix, acc[:]...)
+	accTxsBs, err := getKey(brt, key)
+	if err != nil {
+		return nil, err
+	}
+	accs := new(primitives.AccountTxs)
+	buf := bytes.NewBuffer(accTxsBs)
+	err = accs.Decode(buf)
+	if err != nil {
+		return nil, err
+	}
+	return accs, nil
+}
+
+// SetAccountTx adds a new tx hash to the account txs slice.
+func (but *BlockDBUpdateTransaction) SetAccountTx(acc [20]byte, hash chainhash.Hash) error {
+	// TODO handle non existent accounts on index.
+	key := append(accountPrefix, acc[:]...)
+	accTxsBs, err := getKey(&but.BlockDBReadTransaction, key)
+	if err != nil {
+		return err
+	}
+	accs := new(primitives.AccountTxs)
+	buf := bytes.NewBuffer(accTxsBs)
+	err = accs.Decode(buf)
+	if err != nil {
+		return err
+	}
+	accs.TxsAmount = +1
+	accs.Txs = append(accs.Txs, hash)
+	newBuf := bytes.NewBuffer([]byte{})
+	err = accs.Encode(newBuf)
+	if err != nil {
+		return err
+	}
+	err = setKey(but, key, newBuf.Bytes())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+var txLocatorPrefix = []byte("txlocator-")
+
+// GetTx returns a tx locator from a hash.
+func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLocator, error) {
+	key := append(txLocatorPrefix, hash[:]...)
+	locator := new(primitives.TxLocator)
+	lbs, err := getKey(brt, key)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(lbs)
+	err = locator.Decode(buf)
+	if err != nil {
+		return nil, err
+	}
+	return locator, nil
+}
+
+// SetTx stores a new locator for the specified hash.
+func (but *BlockDBUpdateTransaction) SetTx(locator primitives.TxLocator) error {
+	key := append(txLocatorPrefix, locator.TxHash[:]...)
+	buf := bytes.NewBuffer([]byte{})
+	err := locator.Encode(buf)
+	if err != nil {
+		return err
+	}
+	err = setKey(but, key, buf.Bytes())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 var _ DB = &BlockDB{}
 var _ DBUpdateTransaction = &BlockDBUpdateTransaction{}
 var _ DBViewTransaction = &BlockDBReadTransaction{}
@@ -307,7 +394,8 @@ type DB interface {
 
 // DBTransactionRead is a transaction to view the state of the database.
 type DBViewTransaction interface {
-	GetRawBlock(hash chainhash.Hash) (*primitives.Block, error)
+	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
+	GetRawBlock(hash chainhash.Hash) ([]byte, error)
 	GetTip() (chainhash.Hash, error)
 	GetFinalizedState() (*primitives.State, error)
 	GetJustifiedState() (*primitives.State, error)
@@ -315,6 +403,8 @@ type DBViewTransaction interface {
 	GetJustifiedHead() (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
 	GetGenesisTime() (time.Time, error)
+	GetAccountTxs([20]byte) (*primitives.AccountTxs, error)
+	GetTx(chainhash.Hash) (*primitives.TxLocator, error)
 }
 
 // DBTransaction is a transaction to update the state of the database.
@@ -327,5 +417,7 @@ type DBUpdateTransaction interface {
 	SetJustifiedHead(chainhash.Hash) error
 	SetFinalizedHead(chainhash.Hash) error
 	SetGenesisTime(time.Time) error
+	SetAccountTx([20]byte, chainhash.Hash) error
+	SetTx(primitives.TxLocator) error
 	DBViewTransaction
 }

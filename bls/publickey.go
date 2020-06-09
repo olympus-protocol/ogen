@@ -33,11 +33,6 @@ func (p *PublicKey) Decode(r io.Reader) error {
 	return p.p.Deserialize(pubBytes)
 }
 
-// ToWIF converts the private key to a Bech32 encoded string.
-func (p *PublicKey) ToWIF(privPrefix string) (string, error) {
-	return bech32.Encode(privPrefix, p.Marshal()), nil
-}
-
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
 func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 	if len(pub) != 48 {

@@ -1,43 +1,121 @@
 package rpcclient
 
 import (
-	"fmt"
+	"context"
+	"encoding/json"
+	"errors"
 	"strconv"
+	"time"
+
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
-// GetBlock returns block information
-func (c *CLI) GetChainInfo() (string, error) {
-	info, err := c.rpcClient.GetChainInfo()
+func (c *RPCClient) getChainInfo(args []string) (string, error) {
+	if len(args) > 0 {
+		return "", errors.New("Usage: getchaininfo")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.chain.GetChainInfo(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("Blocks: %v, LastBlockHash: %v. Validators: %v", info.Blocks, info.LastBlockHash, info.Validators), nil
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
-// GetBlock returns block information
-func (c *CLI) GetBlock(args []string) (string, error) {
-	if len(args) == 0 {
-		return "", fmt.Errorf("Usage: getblock <hash>")
+func (c *RPCClient) getRawBlock(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if len(args) > 1 {
+		return "", errors.New("Usage: getrawblock <hash>")
 	}
-	block, err := c.rpcClient.GetBlock(args[0])
+	req := &proto.Hash{
+		Hash: args[0],
+	}
+	res, err := c.chain.GetRawBlock(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	return block, nil
+	return res.GetRawBlock(), nil
 }
 
-// GetBlockHash returns the blockhash at specified height
-func (c *CLI) GetBlockHash(args []string) (string, error) {
-	if len(args) == 0 {
-		return "", fmt.Errorf("Usage: getblockhash <height>")
+func (c *RPCClient) getBlockHash(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if len(args) > 1 {
+		return "", errors.New("Usage: getblockhash <height>")
 	}
-	n, err := strconv.Atoi(args[0])
+	height, err := strconv.Atoi(args[0])
+	if err != nil {
+		return "", errors.New("unable to parse block height")
+	}
+	req := &proto.Height{
+		Height: uint64(height),
+	}
+	res, err := c.chain.GetBlockHash(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	blockHash, err := c.rpcClient.GetBlockHash(uint64(n))
+	return res.GetHash(), nil
+}
+
+func (c *RPCClient) getBlock(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if len(args) > 1 {
+		return "", errors.New("Usage: getblock <hash>")
+	}
+	req := &proto.Hash{
+		Hash: args[0],
+	}
+	res, err := c.chain.GetBlock(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	return blockHash.String(), nil
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (c *RPCClient) getAccountInfo(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if len(args) > 1 || len(args) < 1 {
+		return "", errors.New("Usage: getaccountinfo <account>")
+	}
+	req := &proto.Account{
+		Account: args[0],
+	}
+	res, err := c.chain.GetAccountInfo(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (c *RPCClient) getTransaction(args []string) (string, error) {
+	if len(args) > 1 || len(args) < 1 {
+		return "", errors.New("Usage: gettransaction <txid>")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.chain.GetTransaction(ctx, &proto.Hash{Hash: args[0]})
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }

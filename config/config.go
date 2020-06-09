@@ -15,7 +15,7 @@ var (
 
 const (
 	FileName = "config.toml"
-	version  = "0.1.0"
+	version  = "1.0.0"
 )
 
 type Config struct {

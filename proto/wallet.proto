@@ -1,0 +1,107 @@
+  
+  syntax = "proto3";
+  option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+  
+  import "common.proto";
+
+  service Wallet {
+
+    /** 
+        Method: ListWallets 
+        Input: message Empty
+        Response: message Wallets
+        Description: Returns a list of available wallets.
+    */
+
+    rpc ListWallets(Empty) returns (Wallets);
+
+    /** 
+        Method: CreateWallet 
+        Input: message Empty
+        Response: message KeyPair
+        Description: Creates a new wallet on the local datadir and returns the public key.
+    */
+
+    rpc CreateWallet(Name) returns (KeyPair);
+
+    /** 
+        Method: OpenWallet 
+        Input: message Name
+        Response: message Success
+        Description: Opens a wallet on the wallet manager.
+    */
+
+    rpc OpenWallet(Name) returns (Success);
+
+    /** 
+        Method: CloseWallet 
+        Input: message Empty
+        Response: message Success
+        Description: Closes current wallet.
+    */
+
+    rpc CloseWallet(Empty) returns (Success);
+
+    /** 
+        Method: GetBalance 
+        Input: message Empty
+        Response: message Balance
+        Description: Returns the balance of the current wallet.
+    */
+
+    rpc GetBalance(Empty) returns (Balance);
+
+    /** 
+        Method: GetAccount 
+        Input: message Empty
+        Response: message KeyPair
+        Description: Returns returns the public key of the wallet.
+    */
+
+    rpc GetAccount(Empty) returns (KeyPair);
+
+    /** 
+        Method: SendTransaction 
+        Input: message SendTransactionInfo
+        Response: message Hash
+        Description: Sends a transaction from the open wallet and returns the txid.
+    */
+
+    rpc SendTransaction(SendTransactionInfo) returns (Hash);
+
+    /** 
+        Method: StartValidator 
+        Input: message StartValidator
+        Response: message KeyPair
+        Description: Adds a deposit of the provided validator info and returns the public key.
+    */
+
+    rpc StartValidator(KeyPair) returns (KeyPair);
+
+    /** 
+        Method: ExitValidator 
+        Input: message ExitValidator
+        Response: message Success
+        Description: Removes the deposit of the provided validator.
+    */
+
+    rpc ExitValidator(KeyPair) returns (Success);
+}
+
+message SendTransactionInfo {
+    string account = 1;
+    string amount = 2;
+}
+
+message Balance {
+    uint64 confirmed = 1;
+    uint64 unconfirmed = 2;
+}
+
+message Wallets {
+    repeated string wallets = 1;
+}
+
+message Name {
+    string name = 1;
+}

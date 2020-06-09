@@ -1,0 +1,40 @@
+
+syntax = "proto3";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+
+import "common.proto";
+
+service Validators {
+
+    /** 
+        Method: GetValidatorList 
+        Input: message Empty
+        Response: message ValidatorsRegistry
+        Description: Returns the raw block from a block hash.
+    */
+
+    rpc GetValidatorsList(Empty) returns (ValidatorsRegistry);
+
+    /** 
+        Method: GetAccountValidators 
+        Input: message AccountInfo
+        Response: message ValidatorsRegistry
+        Description: Returns validators with deposits from the provided account.
+    */
+
+    rpc GetAccountValidators(Account) returns (ValidatorsRegistry);
+}
+
+message ValidatorsRegistry {
+    repeated ValidatorRegistry validators = 1;
+}
+
+message ValidatorRegistry {
+    string balance = 1;
+    string publicKey = 2;
+    string payee_address = 3;
+    string status = 4;
+    int64 first_active_epoch = 5;
+    int64 last_active_epoch = 6;
+}
+

@@ -1,15 +1,13 @@
 package cli
 
 import (
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
-	"path"
 	"strconv"
 
-	"github.com/dgraph-io/badger"
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/wallet"
+	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/spf13/cobra"
 )
 
@@ -33,14 +31,10 @@ var generateKeysCmd = &cobra.Command{
 				return
 			}
 		}
-		keystorePath := path.Join(DataFolder, "wallet")
-
-		walletDB, err := badger.Open(badger.DefaultOptions(keystorePath).WithLogger(nil))
+		k, err := keystore.NewKeystore(DataFolder, nil)
 		if err != nil {
 			panic(err)
 		}
-
-		k := wallet.NewValidatorWallet(walletDB)
 
 		keys := make([]*bls.SecretKey, numKeys)
 		for i := 0; i < numKeys; i++ {
@@ -54,7 +48,7 @@ var generateKeysCmd = &cobra.Command{
 
 		err = k.Close()
 		if err != nil {
-			fmt.Printf("error closing wallet: %s\n", err)
+			fmt.Printf("error closing keychain: %s\n", err)
 		}
 
 		colorHeader := color.New(color.FgCyan, color.Bold)
@@ -65,12 +59,12 @@ var generateKeysCmd = &cobra.Command{
 			colorHeader.Printf("Validator #%d\n", i)
 			kBytes := k.Marshal()
 			pkBytes := k.PublicKey().Marshal()
-			keyb64 := base64.StdEncoding.EncodeToString(kBytes[:])
-			pkb64 := base64.StdEncoding.EncodeToString(pkBytes[:])
+			keyb := hex.EncodeToString(kBytes[:])
+			pkb := hex.EncodeToString(pkBytes[:])
 			colorSecret.Printf("Secret Key: ")
-			fmt.Printf("%s\n", keyb64)
+			fmt.Printf("%s\n", keyb)
 			colorPubkey.Printf("Public Key: ")
-			fmt.Printf("%s\n", pkb64)
+			fmt.Printf("%s\n", pkb)
 		}
 	},
 }

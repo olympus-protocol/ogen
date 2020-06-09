@@ -343,3 +343,41 @@ func (s *State) Copy() State {
 
 	return s2
 }
+
+// AccountTxs is just a helper struct for database storage of account transactions.
+type AccountTxs struct {
+	TxsAmount uint64
+	Txs       []chainhash.Hash
+}
+
+// Encode serializes the data into a writer.
+func (atxs *AccountTxs) Encode(w io.Writer) error {
+	err := serializer.WriteVarInt(w, atxs.TxsAmount)
+	if err != nil {
+		return err
+	}
+	for _, tx := range atxs.Txs {
+		err := serializer.WriteElement(w, tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Decode deserializes the data into a reader.
+func (atxs *AccountTxs) Decode(r io.Reader) error {
+	txs, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	atxs.TxsAmount = txs
+	atxs.Txs = make([]chainhash.Hash, txs)
+	for i := range atxs.Txs {
+		err := serializer.ReadElement(r, &atxs.Txs[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

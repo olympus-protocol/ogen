@@ -3,13 +3,12 @@ package server
 import (
 	"context"
 	"log"
-	"path"
 
-	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
+	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/miner"
 	"github.com/olympus-protocol/ogen/params"
@@ -26,18 +25,14 @@ type Server struct {
 
 	Chain    *chain.Blockchain
 	HostNode *peers.HostNode
-	Wallet   *wallet.Wallet
+	Keystore *keystore.Keystore
 	Miner    *miner.Miner
-	RPC      *chainrpc.RPCServices
+	RPC      *chainrpc.RPCServer
 	Gui      bool
 }
 
 func (s *Server) Start() {
-	err := s.Wallet.Start()
-	if err != nil {
-		log.Fatalf("unable to start wallet manager: %s", err)
-	}
-	err = s.Chain.Start()
+	err := s.Chain.Start()
 	if err != nil {
 		log.Fatalln("unable to start chain instance")
 	}
@@ -45,22 +40,23 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start host node")
 	}
-	chainrpc.ServeRPC(s.RPC, loadRPCConfig(s.config, s.log))
 	if s.Miner != nil {
 		err = s.Miner.Start()
 		if err != nil {
 			log.Fatalln("unable to start miner thread")
 		}
 	}
+	go func() {
+		err := s.RPC.Start()
+		if err != nil {
+			log.Fatalln("unable to start rpc server")
+		}
+	}()
 }
 
 func (s *Server) Stop() error {
 	s.Chain.Stop()
-	// s.HostNode.Stop()
-	err := s.Wallet.Stop()
-	if err != nil {
-		return err
-	}
+	s.RPC.Stop()
 	if s.Miner != nil {
 		s.Miner.Stop()
 	}
@@ -73,12 +69,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	walletConf := loadWalletsManConfig(configParams, logger)
-	walletDB, err := badger.Open(badger.DefaultOptions(walletConf.Path).WithLogger(nil))
-	if err != nil {
-		return nil, err
-	}
-	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, walletDB)
+	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch)
 	if err != nil {
 		return nil, err
 	}
@@ -95,18 +86,21 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		return nil, err
 	}
 	voteMempool.Notify(actionsMempool)
-	w, err := wallet.NewWallet(ctx, walletConf, currParams, ch, hostnode, walletDB, coinsMempool, actionsMempool)
+	k, err := keystore.NewKeystore(configParams.DataFolder, logger)
 	if err != nil {
 		return nil, err
 	}
-	rpc := &chainrpc.RPCServices{
-		Wallet: chainrpc.NewRPCWallet(w, ch),
-		Chain:  chainrpc.NewRPCChain(ch),
+	wallet, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
+	if err != nil {
+		return nil, err
 	}
-
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet)
+	if err != nil {
+		return nil, err
+	}
 	var min *miner.Miner
 	if configParams.MiningEnabled {
-		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, w, hostnode, voteMempool, coinsMempool, actionsMempool)
+		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +111,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 
 		Chain:    ch,
 		HostNode: hostnode,
-		Wallet:   w,
+		Keystore: k,
 		Miner:    min,
 		Gui:      gui,
 		RPC:      rpc,
@@ -147,14 +141,6 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 		Port:     config.Port,
 		MaxPeers: config.MaxPeers,
 		Path:     config.DataFolder,
-	}
-	return cfg
-}
-
-func loadWalletsManConfig(config *config.Config, logger *logger.Logger) wallet.Config {
-	cfg := wallet.Config{
-		Log:  logger,
-		Path: path.Join(config.DataFolder, "wallet"),
 	}
 	return cfg
 }

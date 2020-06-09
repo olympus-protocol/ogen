@@ -10,6 +10,31 @@ import (
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
+// TxLocator is a simple struct to find a database referenced to a block without building a full index
+type TxLocator struct {
+	TxHash chainhash.Hash
+	Block  chainhash.Hash
+	Index  uint32
+}
+
+// Encode encodes the TxLocator into a writer
+func (txl *TxLocator) Encode(w io.Writer) error {
+	err := serializer.WriteElements(w, &txl.TxHash, &txl.Block, txl.Index)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Decode decodes a TxLocator from a reader
+func (txl *TxLocator) Decode(r io.Reader) error {
+	err := serializer.ReadElements(r, &txl.TxHash, &txl.Block, &txl.Index)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // TxType represents a type of transaction.
 type TxType = int32
 
@@ -49,7 +74,7 @@ func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte) {
 	return
 }
 
-// Encode enccodes the transaction to the writer.
+// Encode encodes the transaction to the writer.
 func (c *TransferSinglePayload) Encode(w io.Writer) error {
 	if err := serializer.WriteElements(w, c.To); err != nil {
 		return err

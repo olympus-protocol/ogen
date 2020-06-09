@@ -1,0 +1,40 @@
+
+syntax = "proto3";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+
+import "common.proto";
+
+service Utils {
+
+    /** 
+        Method: GenValidatorKey 
+        Input: message Empty
+        Response: message KeyPair
+        Description: Returns a validator public key and stores the private on the node keychain.
+    */
+    rpc GenValidatorKey(Empty) returns (KeyPair);
+
+    /** 
+        Method: SubmitRawData 
+        Input: message RawData
+        Response: message Success
+        Description: Broadcast a raw elements of different transactions.
+    */
+    rpc SubmitRawData(RawData) returns (Success);
+   
+    /** 
+        Method: DecodeRawTransaction 
+        Input: message RawData
+        Response: message Tx
+        Description: Returns a raw transaction on human readable format.
+    */
+    rpc DecodeRawTransaction(RawData) returns (Tx);
+
+    /** 
+        Method: DecodeRawBlock 
+        Input: message RawData
+        Response: message Block
+        Description: Returns a raw block on human readable format.
+    */
+    rpc DecodeRawBlock(RawData) returns (Block);
+}

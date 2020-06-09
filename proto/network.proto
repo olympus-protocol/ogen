@@ -1,0 +1,55 @@
+
+syntax = "proto3";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+
+import "common.proto";
+
+service Network {
+
+    /** 
+        Method: GetNetworkInfo 
+        Input: message Empty
+        Response: message NetworkInfo
+        Description: Returns current network status.
+    */
+
+    rpc GetNetworkInfo(Empty) returns (NetworkInfo);
+
+    /** 
+        Method: GetPeersInfo 
+        Input: message Empty
+        Response: message Peers
+        Description: Returns current connected peers.
+    */
+
+    rpc GetPeersInfo(Empty) returns (Peers);
+
+    /** 
+        Method: AddPeer 
+        Input: message IP
+        Response: message Success
+        Description: Adds a peer to connect and returns success if the peer was succesfully parsed ready to connect.
+    */
+
+    rpc AddPeer(IP) returns (Success);
+}
+
+message NetworkInfo {
+    int32 peers = 1;
+    int32 protocol = 2;
+    string version = 3;
+    
+}
+
+message Peers {
+    repeated Peer peers = 1;
+}
+
+message Peer {
+    string id = 1;
+    IP host = 2;
+}
+
+message IP {
+    string host = 1;
+}

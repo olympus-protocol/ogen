@@ -10,12 +10,11 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-// GetBalance gets the balance of an address or of the wallet address.
-func (b *Wallet) GetBalance(addr string) (uint64, error) {
-	if addr == "" {
-		addr = b.info.address
+func (w *Wallet) GetBalance() (uint64, error) {
+	if !w.open {
+		return 0, errorNotOpen
 	}
-	_, pkh, err := bech32.Decode(addr)
+	_, pkh, err := bech32.Decode(w.info.account)
 	if err != nil {
 		return 0, err
 	}
@@ -24,54 +23,16 @@ func (b *Wallet) GetBalance(addr string) (uint64, error) {
 	}
 	var pkhBytes [20]byte
 	copy(pkhBytes[:], pkh)
-	out, ok := b.chain.State().TipState().CoinsState.Balances[pkhBytes]
+	out, ok := w.chain.State().TipState().CoinsState.Balances[pkhBytes]
 	if !ok {
 		return 0, nil
 	}
 	return out, nil
 }
 
-// GetAddressRaw returns the pubkey hash of the wallet.
-func (b *Wallet) GetAddressRaw() ([20]byte, error) {
-	_, pkh, err := bech32.Decode(b.info.address)
-	if err != nil {
-		return [20]byte{}, err
-	}
-	if len(pkh) != 20 {
-		return [20]byte{}, fmt.Errorf("expecting address to be 20 bytes, but got %d bytes", len(pkh))
-	}
-	var pkhBytes [20]byte
-	copy(pkhBytes[:], pkh)
-	return pkhBytes, nil
-}
-
-func (b *Wallet) broadcastTx(payload *primitives.Tx) {
-	buf := bytes.NewBuffer([]byte{})
-	err := payload.Encode(buf)
-	if err != nil {
-		b.log.Errorf("error encoding transaction: %s", err)
-		return
-	}
-	if err := b.txTopic.Publish(b.ctx, buf.Bytes()); err != nil {
-		b.log.Errorf("error broadcasting transaction: %s", err)
-	}
-}
-
-func (b *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := deposit.Encode(buf)
-	if err != nil {
-		b.log.Errorf("error encoding transaction: %s", err)
-		return
-	}
-	if err := b.depositTopic.Publish(b.ctx, buf.Bytes()); err != nil {
-		b.log.Errorf("error broadcasting transaction: %s", err)
-	}
-}
-
 // StartValidator signs a validator deposit.
-func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
-	priv, err := b.unlockIfNeeded(authentication)
+func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
+	priv, err := w.GetSecret()
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +49,7 @@ func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]by
 
 	validatorProofOfPossession := validatorPriv.Sign(validatorPubHash[:])
 
-	addr, err := b.GetAddressRaw()
+	addr, err := w.GetAccountRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -115,32 +76,18 @@ func (b *Wallet) StartValidator(authentication []byte, validatorPrivBytes [32]by
 		Data:      *depositData,
 	}
 
-	currentState := b.chain.State().TipState()
+	currentState := w.chain.State().TipState()
 
-	if err := b.actionMempool.AddDeposit(deposit, currentState); err != nil {
+	if err := w.actionMempool.AddDeposit(deposit, currentState); err != nil {
 		return nil, err
 	}
-
-	b.broadcastDeposit(deposit)
-
+	w.broadcastDeposit(deposit)
 	return deposit, nil
 }
 
-func (b *Wallet) broadcastExit(exit *primitives.Exit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := exit.Encode(buf)
-	if err != nil {
-		b.log.Errorf("error encoding transaction: %s", err)
-		return
-	}
-	if err := b.exitTopic.Publish(b.ctx, buf.Bytes()); err != nil {
-		b.log.Errorf("error broadcasting transaction: %s", err)
-	}
-}
-
 // ExitValidator submits an exit transaction for a certain validator.
-func (w *Wallet) ExitValidator(authentication []byte, validatorPubKey [48]byte) (*primitives.Exit, error) {
-	priv, err := w.unlockIfNeeded(authentication)
+func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error) {
+	priv, err := w.GetSecret()
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +122,8 @@ func (w *Wallet) ExitValidator(authentication []byte, validatorPubKey [48]byte) 
 }
 
 // SendToAddress sends an amount to an address with the given password and parameters.
-func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) (*chainhash.Hash, error) {
-	priv, err := b.unlockIfNeeded(authentication)
+func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error) {
+	priv, err := w.GetSecret()
 	if err != nil {
 		return nil, err
 	}
@@ -196,10 +143,10 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 
 	pub := priv.PublicKey()
 
-	b.lastNonceLock.Lock()
-	b.info.lastNonce++
-	nonce := b.info.lastNonce
-	b.lastNonceLock.Unlock()
+	w.lastNonceLock.Lock()
+	w.info.lastNonce++
+	nonce := w.info.lastNonce
+	w.lastNonceLock.Unlock()
 
 	payload := &primitives.TransferSinglePayload{
 		To:            toPkh,
@@ -220,15 +167,51 @@ func (b *Wallet) SendToAddress(authentication []byte, to string, amount uint64) 
 		Payload:   payload,
 	}
 
-	currentState := b.chain.State().TipState()
+	currentState := w.chain.State().TipState()
 
-	if err := b.mempool.Add(*tx, &currentState.CoinsState); err != nil {
+	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {
 		return nil, err
 	}
 
-	b.broadcastTx(tx)
+	w.broadcastTx(tx)
 
 	txHash := tx.Hash()
 
 	return &txHash, nil
+}
+
+func (w *Wallet) broadcastTx(payload *primitives.Tx) {
+	buf := bytes.NewBuffer([]byte{})
+	err := payload.Encode(buf)
+	if err != nil {
+		w.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := w.txTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+		w.log.Errorf("error broadcasting transaction: %s", err)
+	}
+}
+
+func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
+	buf := bytes.NewBuffer([]byte{})
+	err := deposit.Encode(buf)
+	if err != nil {
+		w.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := w.depositTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+		w.log.Errorf("error broadcasting transaction: %s", err)
+	}
+}
+
+func (w *Wallet) broadcastExit(exit *primitives.Exit) {
+	buf := bytes.NewBuffer([]byte{})
+	err := exit.Encode(buf)
+	if err != nil {
+		w.log.Errorf("error encoding transaction: %s", err)
+		return
+	}
+	if err := w.exitTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+		w.log.Errorf("error broadcasting transaction: %s", err)
+	}
 }

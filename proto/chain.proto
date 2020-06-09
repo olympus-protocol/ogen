@@ -1,0 +1,110 @@
+
+syntax = "proto3";
+option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+
+import "common.proto";
+
+service Chain {
+
+    /** 
+        Method: GetChainInfo 
+        Input: Empty
+        Response: message ChainInfoResponse
+        Description: Returns the current chain information.
+    */
+
+    rpc GetChainInfo(Empty) returns (ChainInfo); 
+
+    /** 
+        Method: GetRawBlock 
+        Input: message BlockHash
+        Response: message GetBlockRawResponse
+        Description: Returns the raw block from a block hash.
+    */
+
+    rpc GetRawBlock(Hash) returns (Block); 
+
+    /** 
+        Method: GetBlock 
+        Input: message BlockHash
+        Response: message GetBlockResponse
+        Description: Returns the human readable block information from a block hash.
+    */
+
+    rpc GetBlock(Hash) returns (Block); 
+
+    /** 
+        Method: GetBlockHash 
+        Input: message BlockHeight
+        Response: message GetBlockHashResponse
+        Description: Returns the hash string of the block at specified height
+    */
+
+    rpc GetBlockHash(Height) returns (Hash); 
+
+     /** 
+        Method: GetAccountInfo 
+        Input: message Account
+        Response: message AccountInfo
+        Description: Returns the current account information
+    */
+
+    rpc GetAccountInfo(Account) returns (AccountInfo); 
+
+    /** 
+        Method: GetTransaction 
+        Input: message Account
+        Response: message AccountInfo
+        Description: Returns the current account information
+    */
+
+    rpc GetTransaction(Hash) returns (Tx); 
+
+    /** 
+        Method: Sync 
+        Input: message Hash
+        Response: message RawData
+        Description: Returns a stream of raw blocks from the block hash specified
+    */
+
+    rpc Sync(Hash) returns (stream RawData);
+
+    /** 
+        Method: Subscribe 
+        Input: message SubscribeOptions
+        Response: message BlockWithEpoch
+        Description: Returns a stream to notify when new blocks arrive
+    */
+
+    rpc Subscribe(SubscribeOptions) returns (stream SubscribeResponse);
+
+}
+
+message ChainInfo {
+    string block_hash = 1;
+    uint64 block_height = 2;
+    uint64 validators = 3;
+}
+
+message SubscribeOptions {
+    string topic = 1;
+    string account = 2;
+}
+
+message SubscribeResponse {
+    Block block = 1;
+    string raw_block = 2;
+    string epochs = 3;
+    AccountInfo account_data = 4;
+}
+
+message AccountInfo {
+    string account = 1;
+    uint64 balance = 2;
+    uint64 nonce = 3;
+    repeated string txs = 4;
+}
+
+
+
+

@@ -207,7 +207,6 @@ func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, gene
 		}
 		return nil
 	})
-	return nil
 }
 
 // GetStateForHash gets the state for a certain block hash.

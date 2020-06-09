@@ -9,4 +9,4 @@ Some of this libraries are a direct copy of an external repository.
 * `bip39`: An implementation of bip39 on golang.
 * `chainhash`: Hashing functions utility for Ogen.
 * `bip32`: A HD wallets implementation using bls key pairs.
-* `serializer`: A library to serialize common go objects based on [btcsuite](https://github.com/btcsuite) `wire` package. [Original Source](https://github.com/btcsuite/btcd/tree/master/wire) 
+* `serializer`: A library to serialize common go objects based on [btcsuite](https://github.com/btcsuite) `wire` package. [Original Source](https://github.com/btcsuite/btcd/tree/master/wire)

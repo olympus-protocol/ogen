@@ -19,7 +19,6 @@
 
 # Production
 ogen
-ogen-cli
 ogen-darwin*
 ogen-windows*
 ogen-linux*
@@ -36,5 +35,4 @@ release/
 
 db/blockdb/
 *.log
-
 **/*.b64

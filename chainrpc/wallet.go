@@ -1,184 +1,116 @@
 package chainrpc
 
 import (
-	"bytes"
-	"net/http"
+	"context"
+	"encoding/hex"
+	"errors"
 
-	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/wallet"
+	"github.com/shopspring/decimal"
 )
 
-// Wallet is the wallet RPC.
-type Wallet struct {
-	config *Config
-	log    *logger.Logger
-
+type walletServer struct {
 	wallet *wallet.Wallet
-	chain  *chain.Blockchain
+	proto.UnimplementedWalletServer
 }
 
-// NewRPCWallet constructs an RPC wallet.
-func NewRPCWallet(wallet *wallet.Wallet, ch *chain.Blockchain) *Wallet {
-	return &Wallet{
-		wallet: wallet,
-		chain:  ch,
-	}
-}
-
-// Empty is an RPC method that does not take arguments.
-type Empty struct{}
-
-// GetAddress gets the address of the wallet.
-func (w *Wallet) GetAddress(req *http.Request, args *interface{}, reply *string) error {
-	*reply = w.wallet.GetAddress()
-	return nil
-}
-
-// GetBalance gets the balance of the wallet or another address.
-func (w *Wallet) GetBalance(req *http.Request, args *string, reply *uint64) error {
-	bal, err := w.wallet.GetBalance(*args)
+func (s *walletServer) ListWallets(context.Context, *proto.Empty) (*proto.Wallets, error) {
+	files, err := s.wallet.GetAvailableWallets()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	*reply = bal
-	return nil
+	var walletFiles []string
+	for k := range files {
+		walletFiles = append(walletFiles, k)
+	}
+	return &proto.Wallets{Wallets: walletFiles}, nil
 }
-
-// SendToAddressRequest is the request to send money to someone.
-type SendToAddressRequest struct {
-	Password  []byte
-	ToAddress string
-	Amount    uint64
-}
-
-// SendToAddress sends money to an address.
-func (w *Wallet) SendToAddress(req *http.Request, args *SendToAddressRequest, reply *chainhash.Hash) error {
-	reply, err := w.wallet.SendToAddress(args.Password, args.ToAddress, args.Amount)
-	return err
-}
-
-// ValidatorResponse is the response the wallet sends for a validator.
-type ValidatorResponse struct {
-	Pubkey            [48]byte                   `json:"pubkey"`
-	Balance           uint64                     `json:"balance"`
-	Status            primitives.ValidatorStatus `json:"status"`
-	HavePrivateKey    bool                       `json:"have_private_key"`
-	HaveWithdrawalKey bool                       `json:"have_withdrawal_key"`
-}
-
-// ValidatorListReponse is the response the wallet sends for a list of validators.
-type ValidatorListReponse struct {
-	Validators []ValidatorResponse `json:"validators"`
-}
-
-// ListValidators lists all validators the user owns or controls.
-func (w *Wallet) ListValidators(req *http.Request, args *interface{}, reply *ValidatorListReponse) error {
-	currentState := w.chain.State().TipState()
-	walletAddress, err := w.wallet.GetAddressRaw()
+func (s *walletServer) CreateWallet(ctx context.Context, name *proto.Name) (*proto.KeyPair, error) {
+	err := s.wallet.OpenWallet(name.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	validators := make([]ValidatorResponse, 0)
-
-	for _, v := range currentState.ValidatorRegistry {
-		hasWithdrawalKey := false
-		if bytes.Equal(v.PayeeAddress[:], walletAddress[:]) {
-			hasWithdrawalKey = true
-		}
-		var pub [48]byte
-		copy(pub[:], v.PubKey)
-		ok, err := w.wallet.ValidatorWallet.HasValidatorKey(pub)
-		var hasPrivateKey bool
-		if err != nil {
-			hasPrivateKey = false
-		} else {
-			hasPrivateKey = ok
-		}
-
-		validators = append(validators, ValidatorResponse{
-			Pubkey:            pub,
-			Balance:           v.Balance,
-			Status:            v.Status,
-			HavePrivateKey:    hasPrivateKey,
-			HaveWithdrawalKey: hasWithdrawalKey,
-		})
-	}
-
-	*reply = ValidatorListReponse{
-		Validators: validators,
-	}
-
-	return nil
-}
-
-// ValidatorKeyResponse is the response to a generate key request.
-type ValidatorKeyResponse struct {
-	PrivateKey []byte
-}
-
-// GenerateValidatorKey generates a validator key and adds it to the wallet.
-func (w *Wallet) GenerateValidatorKey(req *http.Request, args *interface{}, reply *ValidatorKeyResponse) error {
-	secKey, err := w.wallet.GenerateNewValidatorKey()
+	pubKey, err := s.wallet.GetPublicKey()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return &proto.KeyPair{Public: pubKey}, nil
+}
 
-	*reply = ValidatorKeyResponse{
-		PrivateKey: secKey.Marshal(),
+func (s *walletServer) OpenWallet(ctx context.Context, name *proto.Name) (*proto.Success, error) {
+	ok := s.wallet.HasWallet(name.Name)
+	if !ok {
+		return nil, errors.New("the is no wallet with the current name specified")
 	}
-	return nil
-}
-
-// StartValidatorRequest is the request to start a validator.
-type StartValidatorRequest struct {
-	PrivateKey [32]byte
-	Password   []byte
-}
-
-// StartValidatorResponse is the response to starting a validator.
-type StartValidatorResponse struct {
-	PublicKey []byte
-}
-
-// StartValidator starts a validator.
-func (w *Wallet) StartValidator(req *http.Request, args *StartValidatorRequest, reply *StartValidatorResponse) error {
-	deposit, err := w.wallet.StartValidator(args.Password, args.PrivateKey)
+	err := s.wallet.OpenWallet(name.Name)
 	if err != nil {
-		return err
+		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
-
-	*reply = StartValidatorResponse{
-		PublicKey: deposit.Data.PublicKey.Marshal(),
-	}
-	return nil
+	return &proto.Success{Success: true}, nil
 }
 
-// ExitValidatorRequest is the request to exit a validator.
-type ExitValidatorRequest struct {
-	ValidatorPubKey [48]byte
-	Password        []byte
-}
-
-// ExitValidatorResponse is the response to exiting a validator.
-type ExitValidatorResponse struct {
-	Success bool
-}
-
-// ExitValidator exits the validator.
-func (w *Wallet) ExitValidator(req *http.Request, args *ExitValidatorRequest, reply *ExitValidatorResponse) error {
-	_, err := w.wallet.ExitValidator(args.Password, args.ValidatorPubKey)
+func (s *walletServer) CloseWallet(context.Context, *proto.Empty) (*proto.Success, error) {
+	err := s.wallet.CloseWallet()
 	if err != nil {
-		return err
+		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
+	return &proto.Success{Success: true}, nil
+}
 
-	*reply = ExitValidatorResponse{
-		Success: true,
+func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance, error) {
+	balance, err := s.wallet.GetBalance()
+	if err != nil {
+		return nil, err
 	}
+	return &proto.Balance{Confirmed: balance}, nil
+}
 
-	return nil
+func (s *walletServer) GetAccount(context.Context, *proto.Empty) (*proto.KeyPair, error) {
+	account, err := s.wallet.GetPublicKey()
+	if err != nil {
+		return nil, err
+	}
+	return &proto.KeyPair{Public: account}, nil
+}
+
+func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTransactionInfo) (*proto.Hash, error) {
+	amount, err := decimal.NewFromString(send.Amount)
+	if err != nil {
+		return nil, err
+	}
+	amountFixed := amount.Mul(decimal.NewFromInt(1e3)).Round(0)
+	hash, err := s.wallet.SendToAddress(send.Account, uint64(amountFixed.IntPart()))
+	if err != nil {
+		return nil, err
+	}
+	return &proto.Hash{Hash: hash.String()}, nil
+}
+func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (*proto.KeyPair, error) {
+	var privKeyBytes [32]byte
+	privKeyDecode, err := hex.DecodeString(key.Private)
+	if err != nil {
+		return nil, err
+	}
+	copy(privKeyBytes[:], privKeyDecode)
+	deposit, err := s.wallet.StartValidator(privKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	pubKeyStr := hex.EncodeToString(deposit.PublicKey.Marshal())
+	return &proto.KeyPair{Public: pubKeyStr}, nil
+}
+
+func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
+	var pubKeyBytes [48]byte
+	pubKeyDecode, err := hex.DecodeString(key.Private)
+	if err != nil {
+		return nil, err
+	}
+	copy(pubKeyBytes[:], pubKeyDecode)
+	_, err = s.wallet.ExitValidator(pubKeyBytes)
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
+	}
+	return &proto.Success{Success: true}, nil
 }

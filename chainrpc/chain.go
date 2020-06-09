@@ -1,70 +1,207 @@
 package chainrpc
 
 import (
-	"bytes"
+	"context"
 	"encoding/hex"
 	"errors"
-	"net/http"
+	"reflect"
 
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
-// Chain is the chain RPC.
-type Chain struct {
-	config *Config
-	log    *logger.Logger
-
+type chainServer struct {
 	chain *chain.Blockchain
+	proto.UnimplementedChainServer
 }
 
-// NewRPCChain constructs an RPC chain.
-func NewRPCChain(ch *chain.Blockchain) *Chain {
-	return &Chain{
-		chain: ch,
+func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
+	state := s.chain.State()
+	return &proto.ChainInfo{
+		BlockHash:   state.Tip().Hash.String(),
+		BlockHeight: state.Height(),
+		Validators:  uint64(len(state.TipState().ValidatorRegistry)),
+	}, nil
+}
+
+func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
+	hash, err := chainhash.NewHashFromStr(in.Hash)
+	if err != nil {
+		return nil, err
 	}
-}
-
-type ChainInfoResponse struct {
-	Blocks        uint64 `json:"blocks"`
-	LastBlockHash string `json:"last_block_hash"`
-	Validators    uint64 `json:"validators"`
-}
-
-// GetChainInfo sends money to an address.
-func (c *Chain) GetChainInfo(req *http.Request, args *interface{}, reply *ChainInfoResponse) error {
-	state := c.chain.State()
-	*reply = ChainInfoResponse{
-		Blocks:        state.Tip().Height,
-		LastBlockHash: state.Tip().Hash.String(),
-		Validators:    uint64(len(state.TipState().ValidatorRegistry)),
+	block, err := s.chain.GetRawBlock(*hash)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	return &proto.Block{RawBlock: hex.EncodeToString(block)}, nil
 }
 
-// GetBlockHash returns the hash of the specified block height.
-func (c *Chain) GetBlockHash(req *http.Request, args *uint64, reply *chainhash.Hash) error {
-	blockRow, exists := c.chain.State().Chain().GetNodeByHeight(*args)
+func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
+	hash, err := chainhash.NewHashFromStr(in.Hash)
+	if err != nil {
+		return nil, err
+	}
+	block, err := s.chain.GetBlock(*hash)
+	if err != nil {
+		return nil, err
+	}
+	blockParse := &proto.Block{
+		Hash: block.Hash().String(),
+		Header: &proto.BlockHeader{
+			Version:                    block.Header.Version,
+			Nonce:                      block.Header.Nonce,
+			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),
+			VoteMerkleRoot:             block.Header.VoteMerkleRoot.String(),
+			DepositMerkleRoot:          block.Header.DepositMerkleRoot.String(),
+			ExitMerkleRoot:             block.Header.ExitMerkleRoot.String(),
+			VoteSlashingMerkleRoot:     block.Header.VoteSlashingMerkleRoot.String(),
+			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRoot.String(),
+			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRoot.String(),
+			PrevBlockHash:              block.Header.PrevBlockHash.String(),
+			Timestamp:                  block.Header.Timestamp.Unix(),
+			Slot:                       block.Header.Slot,
+			StateRoot:                  block.Header.StateRoot.String(),
+			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
+		},
+		Txs:             block.GetTxs(),
+		Signature:       hex.EncodeToString(block.Signature),
+		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
+	}
+	return blockParse, nil
+}
+
+func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Height) (*proto.Hash, error) {
+	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.Height)
 	if !exists {
-		return errors.New("block not found")
+		return nil, errors.New("block not found")
 	}
-	*reply = blockRow.Hash
+	return &proto.Hash{
+		Hash: blockRow.Hash.String(),
+	}, nil
+}
+
+func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error {
+	_, cancel := context.WithCancel(stream.Context())
+	// Define starting point
+	blockRow := new(index.BlockRow)
+	defer cancel()
+	// If user is on tip, silently close the channel
+	if reflect.DeepEqual(in.Hash, s.chain.State().Tip().Hash.String()) {
+		return nil
+	}
+
+	ok := true
+	hash, err := chainhash.NewHashFromStr(in.Hash)
+	if err != nil {
+		return errors.New("unable to decode hash from string")
+	}
+	currBlockRow, ok := s.chain.State().GetRowByHash(*hash)
+	if !ok {
+		return errors.New("block starting point doesnt exist")
+	}
+	blockRow, ok = s.chain.State().Chain().Next(currBlockRow)
+	if !ok {
+		return errors.New("there is no next blockrow")
+	}
+	for {
+		ok := true
+		rawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
+		if err != nil {
+			return errors.New("unable get raw block")
+		}
+		response := &proto.RawData{
+			Data: hex.EncodeToString(rawBlock),
+		}
+		stream.Send(response)
+		blockRow, ok = s.chain.State().Chain().Next(blockRow)
+		if blockRow == nil || !ok {
+			break
+		}
+	}
 	return nil
 }
 
-// GetBlock returns the raw block for a specified hash.
-func (c *Chain) GetBlock(req *http.Request, args *string, reply *string) error {
-	hash, err := chainhash.NewHashFromStr(*args)
-	if err != nil {
-		return err
+func (s *chainServer) Subscribe(in *proto.SubscribeOptions, stream proto.Chain_SubscribeServer) error {
+	_, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	switch in.Topic {
+	case "blocks":
+		err := s.subscribeBlocks(&stream)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "account":
+		err := s.subscribeAccount(&stream, in.Account)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "block_with_epochs":
+		err := s.subscribeBlockWithEpochs(&stream)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return nil
 	}
-	block, err := c.chain.GetBlock(*hash)
+}
+
+func (s *chainServer) subscribeBlocks(stream *proto.Chain_SubscribeServer) error {
+	return nil
+}
+
+func (s *chainServer) subscribeBlockWithEpochs(stream *proto.Chain_SubscribeServer) error {
+	return nil
+}
+
+func (s *chainServer) subscribeAccount(stream *proto.Chain_SubscribeServer, account string) error {
+	return nil
+}
+
+func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (*proto.AccountInfo, error) {
+	var account [20]byte
+	accBytes, err := hex.DecodeString(data.Account)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	buf := bytes.NewBuffer([]byte{})
-	block.Encode(buf)
-	*reply = hex.EncodeToString(buf.Bytes())
-	return err
+	copy(account[:], accBytes)
+	accInfo := &proto.AccountInfo{
+		Account: data.Account,
+		Txs:     []string{},
+	}
+	balance, ok := s.chain.State().TipState().CoinsState.Balances[account]
+	if !ok {
+		accInfo.Balance = 0
+	} else {
+		accInfo.Balance = balance
+	}
+
+	nonce, ok := s.chain.State().TipState().CoinsState.Nonces[account]
+	if !ok {
+		accInfo.Nonce = 0
+	} else {
+		accInfo.Nonce = nonce
+	}
+	return accInfo, nil
+}
+
+func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto.Tx, error) {
+	txid, err := chainhash.NewHashFromStr(h.Hash)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := s.chain.GetTx(*txid)
+	if err != nil {
+		return nil, err
+	}
+	txParse := &proto.Tx{
+		Hash:    tx.Hash().String(),
+		Version: tx.TxVersion,
+		Type:    tx.TxType,
+	}
+	return txParse, nil
 }

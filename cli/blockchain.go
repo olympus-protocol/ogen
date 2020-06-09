@@ -25,10 +25,6 @@ import (
 	mnet "github.com/multiformats/go-multiaddr-net"
 )
 
-const (
-	version = "0.1.0"
-)
-
 // loadOgen is the main function to run ogen.
 func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
 	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, log)
@@ -157,7 +153,7 @@ Next generation blockchain secured by CASPER.`,
 				}
 				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
 				if err != nil {
-					log.Fatal("error parsing add node %s: %s", maddr, pinfo)
+					log.Fatalf("error parsing add node %s: %s", maddr, pinfo)
 				}
 
 				addNodes[i] = *pinfo
@@ -173,7 +169,7 @@ Next generation blockchain secured by CASPER.`,
 				Port:          int32(viper.GetUint("port")),
 				MaxPeers:      int32(viper.GetUint("maxpeers")),
 				MiningEnabled: viper.GetBool("enablemining"),
-				RPCAddress:    viper.GetString("rpclisten"),
+				RPCAddress:    viper.GetString("rpcaddress"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -209,7 +205,7 @@ func init() {
 	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
 	rootCmd.Flags().Bool("enablemining", true, "should mining be enabled")
 	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
-	rootCmd.Flags().String("rpclisten", ":24127", "RPC listen address")
+	rootCmd.Flags().String("rpcaddress", "127.0.0.1:24127", "RPC listen address")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
