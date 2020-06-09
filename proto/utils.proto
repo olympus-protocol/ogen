@@ -12,7 +12,7 @@ service Utils {
         Response: message KeyPair
         Description: Returns a validator public key and stores the private on the node keychain.
     */
-    rpc GenValidatorKey(Empty) returns (KeyPair) {}
+    rpc GenValidatorKey(Empty) returns (KeyPair);
 
     /** 
         Method: SubmitRawData 
@@ -20,7 +20,7 @@ service Utils {
         Response: message Success
         Description: Broadcast a raw elements of different transactions.
     */
-    rpc SubmitRawData(RawData) returns (Success) {}
+    rpc SubmitRawData(RawData) returns (Success);
    
     /** 
         Method: DecodeRawTransaction 
@@ -28,7 +28,7 @@ service Utils {
         Response: message Tx
         Description: Returns a raw transaction on human readable format.
     */
-    rpc DecodeRawTransaction(RawData) returns (Tx) {}
+    rpc DecodeRawTransaction(RawData) returns (Tx);
 
     /** 
         Method: DecodeRawBlock 
@@ -36,5 +36,5 @@ service Utils {
         Response: message Block
         Description: Returns a raw block on human readable format.
     */
-    rpc DecodeRawBlock(RawData) returns (Block) {}
+    rpc DecodeRawBlock(RawData) returns (Block);
 }

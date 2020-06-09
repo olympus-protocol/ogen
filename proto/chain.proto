@@ -13,7 +13,7 @@ service Chain {
         Description: Returns the current chain information.
     */
 
-    rpc GetChainInfo(Empty) returns (ChainInfo) {}
+    rpc GetChainInfo(Empty) returns (ChainInfo); 
 
     /** 
         Method: GetRawBlock 
@@ -22,7 +22,7 @@ service Chain {
         Description: Returns the raw block from a block hash.
     */
 
-    rpc GetRawBlock(Hash) returns (Block) {}
+    rpc GetRawBlock(Hash) returns (Block); 
 
     /** 
         Method: GetBlock 
@@ -31,7 +31,7 @@ service Chain {
         Description: Returns the human readable block information from a block hash.
     */
 
-    rpc GetBlock(Hash) returns (Block) {}
+    rpc GetBlock(Hash) returns (Block); 
 
     /** 
         Method: GetBlockHash 
@@ -40,7 +40,7 @@ service Chain {
         Description: Returns the hash string of the block at specified height
     */
 
-    rpc GetBlockHash(Height) returns (Hash) {}
+    rpc GetBlockHash(Height) returns (Hash); 
 
      /** 
         Method: GetAccountInfo 
@@ -49,7 +49,7 @@ service Chain {
         Description: Returns the current account information
     */
 
-    rpc GetAccountInfo(Account) returns (AccountInfo) {}
+    rpc GetAccountInfo(Account) returns (AccountInfo); 
 
     /** 
         Method: GetTransaction 
@@ -58,7 +58,7 @@ service Chain {
         Description: Returns the current account information
     */
 
-    rpc GetTransaction(Hash) returns (Tx) {}
+    rpc GetTransaction(Hash) returns (Tx); 
 
     /** 
         Method: Sync 
@@ -67,7 +67,7 @@ service Chain {
         Description: Returns a stream of raw blocks from the block hash specified
     */
 
-    rpc Sync(Hash) returns (stream RawData) {}
+    rpc Sync(Hash) returns (stream RawData);
 
     /** 
         Method: Subscribe 
@@ -76,7 +76,7 @@ service Chain {
         Description: Returns a stream to notify when new blocks arrive
     */
 
-    rpc Subscribe(SubscribeOptions) returns (stream SubscribeResponse) {}
+    rpc Subscribe(SubscribeOptions) returns (stream SubscribeResponse);
 
 }
 

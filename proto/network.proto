@@ -13,7 +13,7 @@ service Network {
         Description: Returns current network status.
     */
 
-    rpc GetNetworkInfo(Empty) returns (NetworkInfo) {}
+    rpc GetNetworkInfo(Empty) returns (NetworkInfo);
 
     /** 
         Method: GetPeersInfo 
@@ -22,7 +22,7 @@ service Network {
         Description: Returns current connected peers.
     */
 
-    rpc GetPeersInfo(Empty) returns (Peers) {}
+    rpc GetPeersInfo(Empty) returns (Peers);
 
     /** 
         Method: AddPeer 
@@ -31,7 +31,7 @@ service Network {
         Description: Adds a peer to connect and returns success if the peer was succesfully parsed ready to connect.
     */
 
-    rpc AddPeer(IP) returns (Success) {}    
+    rpc AddPeer(IP) returns (Success);
 }
 
 message NetworkInfo {

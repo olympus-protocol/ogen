@@ -13,7 +13,7 @@
         Description: Returns a list of available wallets.
     */
 
-    rpc ListWallets(Empty) returns (Wallets) {}
+    rpc ListWallets(Empty) returns (Wallets);
 
     /** 
         Method: CreateWallet 
@@ -22,7 +22,7 @@
         Description: Creates a new wallet on the local datadir and returns the public key.
     */
 
-    rpc CreateWallet(Name) returns (KeyPair) {}
+    rpc CreateWallet(Name) returns (KeyPair);
 
     /** 
         Method: OpenWallet 
@@ -31,7 +31,7 @@
         Description: Opens a wallet on the wallet manager.
     */
 
-    rpc OpenWallet(Name) returns (Success) {}
+    rpc OpenWallet(Name) returns (Success);
 
     /** 
         Method: CloseWallet 
@@ -40,7 +40,7 @@
         Description: Closes current wallet.
     */
 
-    rpc CloseWallet(Empty) returns (Success) {}
+    rpc CloseWallet(Empty) returns (Success);
 
     /** 
         Method: GetBalance 
@@ -49,7 +49,7 @@
         Description: Returns the balance of the current wallet.
     */
 
-    rpc GetBalance(Empty) returns (Balance) {}
+    rpc GetBalance(Empty) returns (Balance);
 
     /** 
         Method: GetAccount 
@@ -58,7 +58,7 @@
         Description: Returns returns the public key of the wallet.
     */
 
-    rpc GetAccount(Empty) returns (KeyPair) {}
+    rpc GetAccount(Empty) returns (KeyPair);
 
     /** 
         Method: SendTransaction 
@@ -67,7 +67,7 @@
         Description: Sends a transaction from the open wallet and returns the txid.
     */
 
-    rpc SendTransaction(SendTransactionInfo) returns (Hash) {}
+    rpc SendTransaction(SendTransactionInfo) returns (Hash);
 
     /** 
         Method: StartValidator 
@@ -76,7 +76,7 @@
         Description: Adds a deposit of the provided validator info and returns the public key.
     */
 
-    rpc StartValidator(KeyPair) returns (KeyPair) {}
+    rpc StartValidator(KeyPair) returns (KeyPair);
 
     /** 
         Method: ExitValidator 
@@ -85,7 +85,7 @@
         Description: Removes the deposit of the provided validator.
     */
 
-    rpc ExitValidator(KeyPair) returns (Success) {}   
+    rpc ExitValidator(KeyPair) returns (Success);
 }
 
 message SendTransactionInfo {
