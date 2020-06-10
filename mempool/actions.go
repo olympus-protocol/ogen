@@ -3,8 +3,9 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"github.com/olympus-protocol/ogen/chain/index"
 	"sync"
+
+	"github.com/olympus-protocol/ogen/chain/index"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/chain"
@@ -31,6 +32,9 @@ type ActionMempool struct {
 
 	randaoSlashingLock sync.Mutex
 	randaoSlashings    []primitives.RANDAOSlashing
+
+	governanceVoteLock sync.Mutex
+	governanceVotes    []primitives.GovernanceVote
 
 	params     *params.ChainParams
 	ctx        context.Context
@@ -131,6 +135,16 @@ func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainPa
 		return nil, err
 	}
 
+	governanceTopic, err := hostnode.Topic("governance")
+	if err != nil {
+		return nil, err
+	}
+
+	governanceTopicSub, err := governanceTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
 	am := &ActionMempool{
 		params:     p,
 		ctx:        ctx,
@@ -143,6 +157,7 @@ func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainPa
 
 	go am.handleDepositSub(depositTopicSub)
 	go am.handleExitSub(exitTopicSub)
+	go am.handleGovernanceSub(governanceTopicSub)
 
 	return am, nil
 }
@@ -261,11 +276,11 @@ outer1:
 	newProposerSlashings := make([]primitives.ProposerSlashing, 0, len(am.proposerSlashings))
 	for _, ps := range am.proposerSlashings {
 		psHash := ps.Hash()
-		if b.Header.Slot >= ps.BlockHeader2.Slot + am.params.EpochLength - 1 {
+		if b.Header.Slot >= ps.BlockHeader2.Slot+am.params.EpochLength-1 {
 			continue
 		}
 
-		if b.Header.Slot >= ps.BlockHeader1.Slot + am.params.EpochLength - 1 {
+		if b.Header.Slot >= ps.BlockHeader1.Slot+am.params.EpochLength-1 {
 			continue
 		}
 
@@ -336,6 +351,77 @@ outer1:
 	}
 	am.randaoSlashings = newRANDAOSlashings
 	am.randaoSlashingLock.Unlock()
+
+	am.governanceVoteLock.Lock()
+	newGovernanceVotes := make([]primitives.GovernanceVote, 0, len(am.governanceVotes))
+	for _, gv := range am.governanceVotes {
+		gvHash := gv.Hash()
+
+		for _, blockSlashing := range b.VoteSlashings {
+			blockSlashingHash := blockSlashing.Hash()
+
+			if blockSlashingHash.IsEqual(&gvHash) {
+				continue
+			}
+		}
+
+		if err := tipState.IsGovernanceVoteValid(&gv, am.params); err != nil {
+			continue
+		}
+
+		newGovernanceVotes = append(newGovernanceVotes, gv)
+	}
+	am.governanceVotes = newGovernanceVotes
+	am.governanceVoteLock.Unlock()
+}
+
+func (am *ActionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
+	for {
+		msg, err := sub.Next(am.ctx)
+		if err != nil {
+			am.log.Warnf("error getting next message in exits topic: %s", err)
+			return
+		}
+
+		txBuf := bytes.NewReader(msg.Data)
+		tx := new(primitives.GovernanceVote)
+
+		if err := tx.Decode(txBuf); err != nil {
+			// TODO: ban peer
+			am.log.Warnf("peer sent invalid governance vote: %s", err)
+			continue
+		}
+
+		currentState := am.blockchain.State().TipState()
+
+		err = am.AddGovernanceVote(tx, currentState)
+		if err != nil {
+			am.log.Warnf("error adding transaction to mempool: %s", err)
+		}
+	}
+}
+
+// AddGovernanceVote adds a governance vote to the mempool.
+func (am *ActionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, state *primitives.State) error {
+	if err := state.IsGovernanceVoteValid(vote, am.params); err != nil {
+		return err
+	}
+
+	am.governanceVoteLock.Lock()
+	defer am.governanceVoteLock.Unlock()
+
+	voteHash := vote.Hash()
+
+	for _, v := range am.governanceVotes {
+		vh := v.Hash()
+		if vh.IsEqual(&voteHash) {
+			return nil
+		}
+	}
+
+	am.governanceVotes = append(am.governanceVotes, *vote)
+
+	return nil
 }
 
 func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
@@ -351,7 +437,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 
 		if err := tx.Decode(txBuf); err != nil {
 			// TODO: ban peer
-			am.log.Warnf("peer sent invalid deposit: %s", err)
+			am.log.Warnf("peer sent invalid exit: %s", err)
 			continue
 		}
 
@@ -364,7 +450,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 	}
 }
 
-// AddExit adds a deposit to the mempool.
+// AddExit adds a exit to the mempool.
 func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State) error {
 	if err := state.IsExitValid(exit); err != nil {
 		return err
@@ -456,7 +542,7 @@ func (am *ActionMempool) GetVoteSlashings(num int, state *primitives.State) ([]p
 	return slashings, nil
 }
 
-// GetVoteSlashings gets vote slashings from the mempool. Mutates withState.
+// GetRANDAOSlashings gets RANDAO slashings from the mempool. Mutates withState.
 func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([]primitives.RANDAOSlashing, error) {
 	am.randaoSlashingLock.Lock()
 	defer am.randaoSlashingLock.Unlock()
@@ -478,6 +564,30 @@ func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([
 	am.randaoSlashings = newMempool
 
 	return slashings, nil
+}
+
+// GetGovernanceVotes gets governance votes from the mempool. Mutates state.
+func (am *ActionMempool) GetGovernanceVotes(num int, state *primitives.State) ([]primitives.GovernanceVote, error) {
+	am.governanceVoteLock.Lock()
+	defer am.governanceVoteLock.Unlock()
+	votes := make([]primitives.GovernanceVote, 0, num)
+	newMempool := make([]primitives.GovernanceVote, 0, len(am.governanceVotes))
+
+	for _, gv := range am.governanceVotes {
+		if err := state.ProcessGovernanceVote(&gv, am.params); err != nil {
+			continue
+		}
+		// if there is no error, it can be part of the new mempool
+		newMempool = append(newMempool, gv)
+
+		if len(votes) < num {
+			votes = append(votes, gv)
+		}
+	}
+
+	am.governanceVotes = newMempool
+
+	return votes, nil
 }
 
 var _ chain.BlockchainNotifee = &ActionMempool{}
