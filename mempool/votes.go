@@ -15,13 +15,14 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 type mempoolVote struct {
 	individualVotes         []*primitives.SingleValidatorVote
-	participationBitfield   bls.Bitfield
+	participationBitfield   bitfield.Bitfield
 	participatingValidators map[uint32]struct{}
 	voteData                *primitives.VoteData
 }

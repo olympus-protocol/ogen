@@ -10,6 +10,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -113,6 +114,13 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		PreviousJustifiedEpoch:        0,
 		PreviousJustifiedEpochHash:    genesisHash,
 		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
+		CurrentManagers:               p.InitialManagers,
+		ReplaceVotes:                  make(map[[20]byte]chainhash.Hash),
+		CommunityVotes:                make(map[chainhash.Hash]CommunityVoteData),
+		VoteEpoch:                     0,
+		VoteEpochStartSlot:            0,
+		VotingState:                   GovernanceStateActive,
+		LastPaidSlot:                  0,
 	}
 
 	activeValidators := s.GetValidatorIndicesActiveAt(0)
@@ -120,6 +128,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
 	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+	s.ManagerReplacement = bitfield.NewBitfield(uint(len(s.CurrentManagers)))
 
 	return s, nil
 }

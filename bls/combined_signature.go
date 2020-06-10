@@ -76,4 +76,21 @@ func (cs *CombinedSignature) Verify(msg []byte) bool {
 	return cs.sig.Verify(msg, &cs.pub)
 }
 
+// Type returns the signature type.
+func (cs *CombinedSignature) Type() FunctionalSignatureType {
+	return TypeSingle
+}
+
+// Copy copies the combined signature.
+func (cs *CombinedSignature) Copy() FunctionalSignature {
+	newCs := &CombinedSignature{}
+	s := cs.sig.Copy()
+	p := cs.pub.Copy()
+
+	newCs.sig = *s
+	newCs.pub = *p
+
+	return newCs
+}
+
 var _ FunctionalSignature = &CombinedSignature{}
