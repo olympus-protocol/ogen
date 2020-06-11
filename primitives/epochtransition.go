@@ -396,7 +396,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 
 	// process payouts if needed
 	epochsPerMonth := 30 * 24 * 60 * 60 / p.SlotDuration / p.EpochLength
-	if s.LastPaidSlot/p.EpochLength+epochsPerMonth <= s.Slot && s.VotingState == GovernanceStateActive {
+	if s.LastPaidSlot/p.EpochLength+epochsPerMonth <= s.Slot {
 		// 10% to 5/5 multisig
 		// 10% to each
 
