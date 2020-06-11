@@ -19,7 +19,7 @@ type validatorsServer struct {
 	proto.UnimplementedValidatorsServer
 }
 
-func (s *validatorsServer) ValidatorsList(context.Context, *proto.Empty) (*proto.ValidatorsRegistry, error) {
+func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*proto.ValidatorsRegistry, error) {
 	validators := s.chain.State().TipState().ValidatorRegistry
 	validatorsResponse := make([]*proto.ValidatorRegistry, len(validators))
 	for i, v := range validators {

@@ -145,6 +145,7 @@ Next generation blockchain secured by CASPER.`,
 			}
 
 			addNodesStrs := viper.GetStringSlice("add")
+			addNodesStrs = append(addNodesStrs, cf.InitialConnections...)
 			addNodes := make([]peer.AddrInfo, len(addNodesStrs))
 			for i := range addNodes {
 				maddr, err := multiaddr.NewMultiaddr(addNodesStrs[i])
@@ -158,7 +159,6 @@ Next generation blockchain secured by CASPER.`,
 
 				addNodes[i] = *pinfo
 			}
-
 			c := &config.Config{
 				DataFolder:    DataFolder,
 				InitConfig:    ip,
@@ -203,7 +203,7 @@ func init() {
 	rootCmd.Flags().StringSlice("connect", []string{}, "IP addresses of nodes to connect to initially")
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add")
 	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
-	rootCmd.Flags().Bool("enablemining", true, "should mining be enabled")
+	rootCmd.Flags().Bool("enablemining", false, "should mining be enabled")
 	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
 	rootCmd.Flags().String("rpcaddress", "127.0.0.1:24127", "RPC listen address")
 
