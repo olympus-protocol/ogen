@@ -44,6 +44,7 @@ clean:
 	rm -rf ogen-linux*
 	rm -rf *.tar.gz
 	rm -rf *.zip
+	rm -rf chain.json
 	rm -rf release/
 
 
