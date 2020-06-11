@@ -349,6 +349,9 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 
 		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
 			s.NextVoteEpoch(GovernanceStateVoting)
+			for i := range s.CurrentManagers {
+				s.ManagerReplacement.Set(uint(i))
+			}
 		}
 	case GovernanceStateVoting:
 		if s.VoteEpochStartSlot+p.VotingPeriodSlots <= s.Slot {
@@ -393,7 +396,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 
 	// process payouts if needed
 	epochsPerMonth := 30 * 24 * 60 * 60 / p.SlotDuration / p.EpochLength
-	if s.LastPaidSlot/p.EpochLength+epochsPerMonth <= s.Slot {
+	if s.LastPaidSlot/p.EpochLength+epochsPerMonth <= s.Slot && s.VotingState == GovernanceStateActive {
 		// 10% to 5/5 multisig
 		// 10% to each
 

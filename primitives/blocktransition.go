@@ -29,7 +29,7 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		}
 		pkh := vote.Signature.GetPublicKey().Hash()
 		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %f", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
+			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
 		if !vote.Valid() {
 			return fmt.Errorf("vote signature did not validate")
@@ -47,7 +47,7 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		}
 		pkh := vote.Signature.GetPublicKey().Hash()
 		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %f", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
+			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
 		if _, ok := s.ReplaceVotes[pkh]; ok {
 			return fmt.Errorf("found existing vote for same public key hash")
