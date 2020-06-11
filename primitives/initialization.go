@@ -65,7 +65,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	s := &State{
 		CoinsState: CoinsState{
 			Balances: map[[20]byte]uint64{
-				premineAddrArr: 1000 * 1000000, // 1 million coins
+				premineAddrArr: 400 * 1000000, // 400k coins
 			},
 			Nonces: make(map[[20]byte]uint64),
 		},
