@@ -105,6 +105,8 @@ func (s *StateService) setBlockState(hash chainhash.Hash, state *primitives.Stat
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	s.log.Debugf("setting block state for %s", hash)
+
 	s.stateMap[hash] = newStateDerivedFromBlock(state)
 }
 

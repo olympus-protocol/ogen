@@ -129,6 +129,6 @@ func NewBlockchain(config Config, params params.ChainParams, db bdb.DB, ip primi
 		genesisTime: genesisTime,
 	}
 	return ch, db.Update(func(txn bdb.DBUpdateTransaction) error {
-		return ch.UpdateChainHead(txn)
+		return ch.UpdateChainHead(txn, state.Tip().Hash)
 	})
 }

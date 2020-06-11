@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 type blockRowAndValidator struct {
@@ -17,7 +18,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction) error {
+func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(int64(justifiedState.EpochIndex))
@@ -56,7 +57,7 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction) error {
 
 	for {
 		children := head.Children
-		if len(children) == 0 {
+		if len(children) == 0 && head.Hash.IsEqual(&possible) {
 			ch.state.blockChain.SetTip(head)
 
 			ch.log.Infof("setting head to %s", head.Hash)
@@ -225,11 +226,8 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			ch.state.SetLatestVotesIfNeeded(validators, &a)
 		}
 
-		rowHash := row.Hash
-		ch.state.setBlockState(rowHash, newState)
-
 		// TODO: remove when we have fork choice
-		if err := ch.UpdateChainHead(txn); err != nil {
+		if err := ch.UpdateChainHead(txn, blockHash); err != nil {
 			return err
 		}
 
