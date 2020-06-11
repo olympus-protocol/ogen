@@ -45,8 +45,6 @@ clean:
 	rm -rf *.tar.gz
 	rm -rf *.zip
 	rm -rf release/
-	rm -rf ogen-protopy*
-
 
 
 

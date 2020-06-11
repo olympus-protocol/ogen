@@ -100,7 +100,7 @@ var testnetChainFileHash, _ = chainhash.NewHashFromStr("b2d8f4ed146850d3b086c4a9
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
 	Name:           "testnet",
-	DefaultP2PPort: "24126",
+	DefaultP2PPort: "25126",
 	AddrPrefix: AddrPrefixes{
 		Public:   "tlpub",
 		Private:  "tlprv",

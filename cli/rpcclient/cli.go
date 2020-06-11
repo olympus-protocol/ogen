@@ -30,7 +30,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "addpeer", Description: "Add a new peer to the connections"},
 
 		// Utils methods
-		{Text: "sendrawtransaction", Description: "Broadcasts a serialized transaction to the network"},
+		{Text: "submitrawdata", Description: "Broadcasts a serialized transaction to the network"},
 		{Text: "genkeypair", Description: "Get a key pair on bech32 encoded format"},
 		{Text: "genrawkeypair", Description: "Get a key pair on bls serialized format"},
 		{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
@@ -39,6 +39,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 
 		// Wallet methods
 		{Text: "listwallets", Description: "Returns a list of available wallets by name"},
+		{Text: "openwallet", Description: "Open a created wallet"},
 		{Text: "createwallet", Description: "Creates a new wallet and returns the public account"},
 		{Text: "closewallet", Description: "Closes current open wallet"},
 		{Text: "getbalance", Description: "Get the current open wallet balance"},
@@ -115,8 +116,8 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.addPeer(args[1:])
 
 		// Utils methods
-		case "sendrawtransaction":
-			out, err = c.rpcClient.sendRawTransaction(args[1:])
+		case "submitrawdata":
+			out, err = c.rpcClient.submitRawData(args[1:])
 		case "genkeypair":
 			out, err = c.rpcClient.genKeyPair(args[1:], false)
 		case "genrawkeypair":

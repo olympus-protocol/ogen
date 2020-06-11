@@ -11,13 +11,13 @@ import (
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
-func (c *RPCClient) sendRawTransaction(args []string) (string, error) {
+func (c *RPCClient) submitRawData(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) > 1 || len(args) < 1 {
-		return "", errors.New("Usage: sendrawtransaction <raw_transaction>")
+		return "", errors.New("Usage: submitrawdata <raw_data> <type>")
 	}
-	req := &proto.RawData{Data: args[0], Type: "tx"}
+	req := &proto.RawData{Data: args[0], Type: args[1]}
 	res, err := c.utils.SubmitRawData(ctx, req)
 	if err != nil {
 		return "", err

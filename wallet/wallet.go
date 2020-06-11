@@ -44,23 +44,27 @@ type Wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, params *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (*Wallet, error) {
-	txTopic, err := hostnode.Topic("tx")
-	if err != nil {
-		return nil, err
-	}
+func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, params *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (wallet *Wallet, err error) {
+	var txTopic *pubsub.Topic
+	var depositTopic *pubsub.Topic
+	var exitTopic *pubsub.Topic
+	if hostnode != nil {
+		txTopic, err = hostnode.Topic("tx")
+		if err != nil {
+			return nil, err
+		}
 
-	depositTopic, err := hostnode.Topic("deposits")
-	if err != nil {
-		return nil, err
-	}
+		depositTopic, err = hostnode.Topic("deposits")
+		if err != nil {
+			return nil, err
+		}
 
-	exitTopic, err := hostnode.Topic("exits")
-	if err != nil {
-		return nil, err
+		exitTopic, err = hostnode.Topic("exits")
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	w := &Wallet{
+	wallet = &Wallet{
 		log:           log,
 		directory:     walletsDir,
 		params:        params,
@@ -73,7 +77,7 @@ func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, param
 		mempool:       mempool,
 		actionMempool: actionMempool,
 	}
-	return w, nil
+	return wallet, nil
 }
 
 func (w *Wallet) OpenWallet(name string) error {
