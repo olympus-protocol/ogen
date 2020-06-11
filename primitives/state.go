@@ -4,12 +4,20 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // LastBlockHashesSize is the size of the last block hashes.
 const LastBlockHashesSize = 8
+
+type GovernanceState uint8
+
+const (
+	GovernanceStateActive GovernanceState = iota
+	GovernanceStateVoting
+)
 
 // State is the state of consensus in the blockchain.
 type State struct {
@@ -79,6 +87,29 @@ type State struct {
 
 	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
 	PreviousEpochVotes []AcceptedVoteInfo
+
+	// CurrentManagers are current managers of the governance funds.
+	CurrentManagers [][20]byte
+
+	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
+	ManagerReplacement bitfield.Bitfield
+
+	// ReplaceVotes are votes to start the community-override functionality. Each address
+	// in here must have at least 100 POLIS and once that accounts for >=30% of the supply,
+	// a community voting round starts.
+	// For a voting period, the hash is set to the proposed community vote.
+	// For a non-voting period, the hash is 0.
+	ReplaceVotes map[[20]byte]chainhash.Hash
+
+	// CommunityVotes is set during a voting period to keep track of the
+	// possible votes.
+	CommunityVotes map[chainhash.Hash]CommunityVoteData
+
+	VoteEpoch          uint64
+	VoteEpochStartSlot uint64
+	VotingState        GovernanceState
+
+	LastPaidSlot uint64
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
@@ -106,7 +137,12 @@ func (s *State) Serialize(w io.Writer) error {
 		s.PreviousJustifiedEpochHash,
 		s.LatestValidatorRegistryChange,
 		s.RANDAO,
-		s.NextRANDAO); err != nil {
+		s.NextRANDAO,
+		s.VoteEpoch,
+		s.VoteEpochStartSlot,
+		s.VotingState,
+		s.ManagerReplacement,
+		s.LastPaidSlot); err != nil {
 		return err
 	}
 	if err := s.CoinsState.Serialize(w); err != nil {
@@ -179,6 +215,38 @@ func (s *State) Serialize(w io.Writer) error {
 			return err
 		}
 	}
+	if err := serializer.WriteVarInt(w, uint64(len(s.CurrentManagers))); err != nil {
+		return err
+	}
+	for _, m := range s.CurrentManagers {
+		if err := serializer.WriteElement(w, m); err != nil {
+			return err
+		}
+	}
+	if err := serializer.WriteVarInt(w, uint64(len(s.ReplaceVotes))); err != nil {
+		return err
+	}
+
+	for i, v := range s.ReplaceVotes {
+		if err := serializer.WriteElements(w, i, v); err != nil {
+			return err
+		}
+	}
+
+	if err := serializer.WriteVarInt(w, uint64(len(s.CommunityVotes))); err != nil {
+		return err
+	}
+
+	for i, v := range s.CommunityVotes {
+		if err := serializer.WriteElement(w, i); err != nil {
+			return err
+		}
+
+		if err := v.Encode(w); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -195,7 +263,12 @@ func (s *State) Deserialize(r io.Reader) error {
 		&s.PreviousJustifiedEpochHash,
 		&s.LatestValidatorRegistryChange,
 		&s.RANDAO,
-		&s.NextRANDAO); err != nil {
+		&s.NextRANDAO,
+		&s.VoteEpoch,
+		&s.VoteEpochStartSlot,
+		&s.VotingState,
+		&s.ManagerReplacement,
+		&s.LastPaidSlot); err != nil {
 		return err
 	}
 	if err := s.CoinsState.Deserialize(r); err != nil {
@@ -284,6 +357,52 @@ func (s *State) Deserialize(r io.Reader) error {
 			return err
 		}
 	}
+
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	s.CurrentManagers = make([][20]byte, num)
+	for i := range s.CurrentManagers {
+		if err := serializer.ReadElement(r, &s.CurrentManagers[i]); err != nil {
+			return err
+		}
+	}
+
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	s.ReplaceVotes = make(map[[20]byte]chainhash.Hash)
+	for i := uint64(0); i < num; i++ {
+		var k [20]byte
+		var val chainhash.Hash
+		if err := serializer.ReadElements(r, &k, &val); err != nil {
+			return err
+		}
+
+		s.ReplaceVotes[k] = val
+	}
+
+	num, err = serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	s.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData)
+	for i := uint64(0); i < num; i++ {
+		var k chainhash.Hash
+		var val CommunityVoteData
+		if err := serializer.ReadElement(r, &k); err != nil {
+			return err
+		}
+
+		if err := val.Decode(r); err != nil {
+			return err
+		}
+
+		s.CommunityVotes[k] = val
+	}
+
 	return nil
 }
 
@@ -339,6 +458,22 @@ func (s *State) Copy() State {
 	s2.PreviousEpochVotes = make([]AcceptedVoteInfo, len(s.PreviousEpochVotes))
 	for i, c := range s.PreviousEpochVotes {
 		s2.PreviousEpochVotes[i] = c.Copy()
+	}
+
+	s2.CurrentManagers = make([][20]byte, len(s.CurrentManagers))
+	copy(s2.CurrentManagers, s.CurrentManagers)
+
+	s2.ManagerReplacement = s.ManagerReplacement.Copy()
+
+	s2.ReplaceVotes = make(map[[20]byte]chainhash.Hash, len(s.ReplaceVotes))
+	for i, k := range s.ReplaceVotes {
+		s2.ReplaceVotes[i] = k
+	}
+
+	s2.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData, len(s.CommunityVotes))
+	for i, k := range s.CommunityVotes {
+		val := k.Copy()
+		s2.CommunityVotes[i] = *val
 	}
 
 	return s2

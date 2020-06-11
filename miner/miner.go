@@ -344,6 +344,7 @@ func (m *Miner) Start() error {
 					block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
 					block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
 					block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
+					block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
 
 					blockHash := block.Hash()
 					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))

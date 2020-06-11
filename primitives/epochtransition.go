@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/big"
 
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
@@ -326,8 +327,109 @@ func (s *State) GetTotalBalances() uint64 {
 	return total
 }
 
+// NextVoteEpoch increments the voting epoch, resets votes,
+// and updates the state.
+func (s *State) NextVoteEpoch(newState GovernanceState) {
+	s.VoteEpoch++
+	s.VoteEpochStartSlot = s.Slot
+	s.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData)
+	s.ReplaceVotes = make(map[[20]byte]chainhash.Hash)
+	s.VotingState = newState
+}
+
+// CheckForVoteTransitions tallies up votes and checks for any governance
+// state transitions.
+func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
+	switch s.VotingState {
+	case GovernanceStateActive:
+		// if it's active, we should check if we've accumulated enough votes
+		// to start a community vote
+		totalBalance := s.GetTotalBalances()
+		votingBalance := uint64(0)
+		for i := range s.ReplaceVotes {
+			bal, ok := s.CoinsState.Balances[i]
+			if !ok {
+				continue
+			}
+			votingBalance += bal
+		}
+
+		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
+			s.NextVoteEpoch(GovernanceStateVoting)
+			for i := range s.CurrentManagers {
+				s.ManagerReplacement.Set(uint(i))
+			}
+		}
+	case GovernanceStateVoting:
+		if s.VoteEpochStartSlot+p.VotingPeriodSlots <= s.Slot {
+			// tally votes and choose next managers
+			managerVotes := make(map[chainhash.Hash]uint64)
+
+			for i, v := range s.ReplaceVotes {
+				bal, ok := s.CoinsState.Balances[i]
+				if !ok {
+					continue
+				}
+				if _, ok := managerVotes[v]; ok {
+					managerVotes[v] += bal
+				} else {
+					managerVotes[v] = bal
+				}
+			}
+
+			bestBalance := uint64(0)
+			bestManagers := s.CurrentManagers
+			for i, v := range managerVotes {
+				if v > bestBalance {
+					voteData := s.CommunityVotes[i]
+
+					newManagers := make([][20]byte, len(s.CurrentManagers))
+					copy(newManagers, s.CurrentManagers)
+
+					for i := range newManagers {
+						if s.ManagerReplacement.Get(uint(i)) {
+							copy(newManagers[i][:], voteData.ReplacementCandidates[i][:])
+						}
+					}
+
+					bestManagers = newManagers
+				}
+			}
+
+			s.CurrentManagers = bestManagers
+			s.NextVoteEpoch(GovernanceStateActive)
+		}
+	}
+
+	// process payouts if needed
+	epochsPerMonth := 30 * 24 * 60 * 60 / p.SlotDuration / p.EpochLength
+	if s.LastPaidSlot/p.EpochLength+epochsPerMonth <= s.Slot {
+		// 10% to 5/5 multisig
+		// 10% to each
+
+		totalBlockReward := p.BaseRewardPerBlock * 60 * 60 * 24 * 30 / p.SlotDuration
+		perGroup := totalBlockReward / 10
+
+		multipub := bls.PublicKeyHashesToMultisigHash(s.CurrentManagers, 5)
+		s.CoinsState.Balances[multipub] += perGroup
+
+		if len(s.CurrentManagers) != len(p.GovernancePercentages) {
+			return
+		}
+
+		for group, address := range s.CurrentManagers {
+			percent := p.GovernancePercentages[group]
+			s.CoinsState.Balances[address] += perGroup * uint64(percent) / 100
+		}
+
+		s.LastPaidSlot = s.Slot
+	}
+}
+
 // ProcessEpochTransition runs an epoch transition on the state.
 func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger) ([]*EpochReceipt, error) {
+	s.CheckForVoteTransitions(p)
+
 	totalBalance := s.getActiveBalance(p)
 
 	// These are voters who voted for a target of the previous epoch.

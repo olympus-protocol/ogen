@@ -21,6 +21,7 @@ type Block struct {
 	VoteSlashings     []VoteSlashing
 	RANDAOSlashings   []RANDAOSlashing
 	ProposerSlashings []ProposerSlashing
+	GovernanceVotes   []GovernanceVote
 	Signature         []byte
 	RandaoSignature   []byte
 }
@@ -28,6 +29,26 @@ type Block struct {
 // Hash calculates the hash of the block.
 func (b *Block) Hash() chainhash.Hash {
 	return b.Header.Hash()
+}
+
+func merkleRootGovernanceVotes(votes []GovernanceVote) chainhash.Hash {
+	if len(votes) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(votes) == 1 {
+		return votes[0].Hash()
+	}
+	mid := len(votes) / 2
+	h1 := merkleRootGovernanceVotes(votes[:mid])
+	h2 := merkleRootGovernanceVotes(votes[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// GovernanceVoteMerkleRoot calculates the merkle root of the governance votes in the
+// block.
+func (b *Block) GovernanceVoteMerkleRoot() chainhash.Hash {
+	return merkleRootGovernanceVotes(b.GovernanceVotes)
 }
 
 func merkleRootTxs(txs []Tx) chainhash.Hash {
@@ -240,6 +261,16 @@ func (b *Block) Encode(w io.Writer) error {
 			return err
 		}
 	}
+	err = serializer.WriteVarInt(w, uint64(len(b.GovernanceVotes)))
+	if err != nil {
+		return err
+	}
+	for _, vote := range b.GovernanceVotes {
+		err := vote.Encode(w)
+		if err != nil {
+			return err
+		}
+	}
 	if err := serializer.WriteVarBytes(w, b.Signature); err != nil {
 		return err
 	}
@@ -328,6 +359,17 @@ func (b *Block) Decode(r io.Reader) error {
 	b.RANDAOSlashings = make([]RANDAOSlashing, randaoSlashingCount)
 	for i := range b.RANDAOSlashings {
 		err := b.RANDAOSlashings[i].Decode(r)
+		if err != nil {
+			return err
+		}
+	}
+	governanceVoteCount, err := serializer.ReadVarInt(r)
+	if err != nil {
+		return err
+	}
+	b.GovernanceVotes = make([]GovernanceVote, governanceVoteCount)
+	for i := range b.GovernanceVotes {
+		err := b.GovernanceVotes[i].Decode(r)
 		if err != nil {
 			return err
 		}

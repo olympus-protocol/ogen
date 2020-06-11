@@ -8,6 +8,7 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/utils/logger"
 
@@ -57,6 +58,7 @@ func newCoinMempoolItem() *coinMempoolItem {
 // CoinsMempool represents a mempool for coin transactions.
 type CoinsMempool struct {
 	blockchain *chain.Blockchain
+	params     *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
 	log        *logger.Logger
@@ -132,11 +134,11 @@ outer:
 		for _, tx := range addr.transactions {
 			switch u := tx.Payload.(type) {
 			case *primitives.TransferSinglePayload:
-				if err := state.CoinsState.ApplyTransactionSingle(u, [20]byte{}); err != nil {
+				if err := state.ApplyTransactionSingle(u, [20]byte{}, cm.params); err != nil {
 					continue
 				}
 			case *primitives.TransferMultiPayload:
-				if err := state.CoinsState.ApplyTransactionMulti(u, [20]byte{}); err != nil {
+				if err := state.ApplyTransactionMulti(u, [20]byte{}, cm.params); err != nil {
 					continue
 				}
 			}
@@ -179,7 +181,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockchain, hostNode *peers.HostNode) (*CoinsMempool, error) {
+func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockchain, hostNode *peers.HostNode, params *params.ChainParams) (*CoinsMempool, error) {
 	topic, err := hostNode.Topic("tx")
 	if err != nil {
 		return nil, err
@@ -194,6 +196,7 @@ func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockcha
 		mempool:    make(map[[20]byte]*coinMempoolItem),
 		ctx:        ctx,
 		blockchain: ch,
+		params:     params,
 		topic:      topic,
 		log:        log,
 	}

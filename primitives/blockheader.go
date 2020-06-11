@@ -21,6 +21,7 @@ type BlockHeader struct {
 	VoteSlashingMerkleRoot     chainhash.Hash
 	RANDAOSlashingMerkleRoot   chainhash.Hash
 	ProposerSlashingMerkleRoot chainhash.Hash
+	GovernanceVotesMerkleRoot  chainhash.Hash
 	PrevBlockHash              chainhash.Hash
 	Timestamp                  time.Time
 	Slot                       uint64

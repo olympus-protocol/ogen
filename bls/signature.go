@@ -13,6 +13,14 @@ type Signature struct {
 	s *bls.Sign
 }
 
+// Copy returns a copy of the signature.
+func (s *Signature) Copy() *Signature {
+	sCopy := *s.s
+	return &Signature{
+		s: &sCopy,
+	}
+}
+
 // Encode encodes to the given writer.
 func (s *Signature) Encode(w io.Writer) error {
 	sigBytes := s.Marshal()

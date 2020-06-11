@@ -10,6 +10,207 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+// IsGovernanceVoteValid checks if a governance vote is valid.
+func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParams) error {
+	if vote.VoteEpoch != s.VoteEpoch {
+		return fmt.Errorf("vote not valid with vote epoch: %d (expected: %d)", vote.VoteEpoch, s.VoteEpoch)
+	}
+	switch vote.Type {
+	case EnterVotingPeriod:
+		// must be during active period
+		// must have >100 POLIS
+		// must have not already voted
+		// must be signed by the public key
+		if s.VotingState != GovernanceStateActive {
+			return fmt.Errorf("cannot vote for community vote during community vote period")
+		}
+		if len(vote.Data) != 0 {
+			return fmt.Errorf("expected EnterVotingPeriod vote to have no data")
+		}
+		pkh := vote.Signature.GetPublicKey().Hash()
+		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
+			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
+		}
+		if !vote.Valid() {
+			return fmt.Errorf("vote signature did not validate")
+		}
+	case VoteFor:
+		// must be during voting period
+		// must have >100 POLIS
+		// must have not already voted
+		// must be signed by the public key
+		if s.VotingState != GovernanceStateVoting {
+			return fmt.Errorf("cannot vote for community vote during community vote period")
+		}
+		if len(vote.Data) != len(p.GovernancePercentages)*20 {
+			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
+		}
+		pkh := vote.Signature.GetPublicKey().Hash()
+		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
+			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
+		}
+		if _, ok := s.ReplaceVotes[pkh]; ok {
+			return fmt.Errorf("found existing vote for same public key hash")
+		}
+		if !vote.Valid() {
+			return fmt.Errorf("vote signature did not validate")
+		}
+	case UpdateManagersInstantly:
+		// must be during active period
+		// must be signed by all managers
+		if s.VotingState != GovernanceStateActive {
+			return fmt.Errorf("cannot vote for community vote during community vote period")
+		}
+		if len(vote.Data) != len(p.GovernancePercentages)*20 {
+			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
+		}
+		pub := vote.Signature.GetPublicKey()
+		mp, ok := pub.(*bls.Multipub)
+		if !ok {
+			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
+		}
+		if mp.NumNeeded != 5 {
+			return fmt.Errorf("expected 5 signatures needed")
+		}
+		for i := range mp.PublicKeys {
+			ih := mp.PublicKeys[i].Hash()
+			if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
+				return fmt.Errorf("expected public keys to match managers")
+			}
+		}
+
+		if !vote.Valid() {
+			return fmt.Errorf("vote signature is not valid")
+		}
+	case UpdateManagersVote:
+		// must be during active period
+		// must be signed by 3/5 managers
+		if len(vote.Data) != (len(s.CurrentManagers)+7)/8 {
+			return fmt.Errorf("expected UpdateManagersVote vote to have no data")
+		}
+		if s.VotingState != GovernanceStateActive {
+			return fmt.Errorf("cannot vote for community vote during community vote period")
+		}
+		// must include multisig signed by 5/5 managers
+		pub := vote.Signature.GetPublicKey()
+		mp, ok := pub.(*bls.Multipub)
+		if !ok {
+			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
+		}
+		if mp.NumNeeded >= 3 {
+			return fmt.Errorf("expected 3 signatures needed")
+		}
+		for i := range mp.PublicKeys {
+			ih := mp.PublicKeys[i].Hash()
+			if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
+				return fmt.Errorf("expected public keys to match managers")
+			}
+		}
+
+		if !vote.Valid() {
+			return fmt.Errorf("vote signature is not valid")
+		}
+	default:
+		return fmt.Errorf("unknown vote type")
+	}
+
+	return nil
+}
+
+// ProcessGovernanceVote processes governance votes.
+func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParams) error {
+	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
+		return err
+	}
+
+	votePub := vote.Signature.GetPublicKey()
+
+	switch vote.Type {
+	case EnterVotingPeriod:
+		s.ReplaceVotes[votePub.Hash()] = chainhash.Hash{}
+		// we check if it's above the threshold every few epochs, but not here
+	case VoteFor:
+		voteData := CommunityVoteData{
+			ReplacementCandidates: make([][20]byte, len(p.GovernancePercentages)),
+		}
+
+		for i := range voteData.ReplacementCandidates {
+			copy(voteData.ReplacementCandidates[i][:], vote.Data[i*20:(i+1)*20])
+		}
+
+		voteHash := voteData.Hash()
+		s.CommunityVotes[voteHash] = voteData
+		s.ReplaceVotes[votePub.Hash()] = voteHash
+	case UpdateManagersInstantly:
+		for i := range s.CurrentManagers {
+			copy(s.CurrentManagers[i][:], vote.Data[i*20:(i+1)*20])
+		}
+		s.NextVoteEpoch(GovernanceStateActive)
+	case UpdateManagersVote:
+		s.NextVoteEpoch(GovernanceStateVoting)
+	default:
+		return fmt.Errorf("unknown vote type")
+	}
+
+	return nil
+}
+
+// ApplyTransactionSingle applies a transaction to the coin state.
+func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+	u := s.CoinsState
+	pkh := tx.FromPubkeyHash()
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+	}
+
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+	}
+
+	if err := tx.VerifySig(); err != nil {
+		return err
+	}
+
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
+
+	if _, ok := s.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		delete(s.ReplaceVotes, pkh)
+	}
+
+	return nil
+}
+
+// ApplyTransactionMulti applies a multisig transaction to the coin state.
+func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+	u := s.CoinsState
+	pkh := tx.FromPubkeyHash()
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+	}
+
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+	}
+
+	if err := tx.VerifySig(); err != nil {
+		return err
+	}
+
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
+
+	if _, ok := s.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		delete(s.ReplaceVotes, pkh)
+	}
+
+	return nil
+}
+
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
 func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 	h1 := ps.BlockHeader1.Hash()
@@ -496,6 +697,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	voteSlashingMerkleRoot := b.VoteSlashingRoot()
 	proposerSlashingMerkleRoot := b.ProposerSlashingsRoot()
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
+	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 
 	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
@@ -523,6 +725,10 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	if !b.Header.RANDAOSlashingMerkleRoot.IsEqual(&randaoSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", randaoSlashingMerkleRoot, b.Header.RANDAOSlashingMerkleRoot)
+	}
+
+	if !b.Header.GovernanceVotesMerkleRoot.IsEqual(&governanceVoteMerkleRoot) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
 	}
 
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
@@ -560,17 +766,23 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, tx := range b.Txs {
-		switch p := tx.Payload.(type) {
+		switch payload := tx.Payload.(type) {
 		case *TransferSinglePayload:
-			if err := s.CoinsState.ApplyTransactionSingle(p, b.Header.FeeAddress); err != nil {
+			if err := s.ApplyTransactionSingle(payload, b.Header.FeeAddress, p); err != nil {
 				return err
 			}
 		case *TransferMultiPayload:
-			if err := s.CoinsState.ApplyTransactionMulti(p, b.Header.FeeAddress); err != nil {
+			if err := s.ApplyTransactionMulti(payload, b.Header.FeeAddress, p); err != nil {
 				return err
 			}
 		default:
 			return fmt.Errorf("payload missing from transaction")
+		}
+	}
+
+	for _, vote := range b.GovernanceVotes {
+		if err := s.ProcessGovernanceVote(&vote, p); err != nil {
+			return err
 		}
 	}
 

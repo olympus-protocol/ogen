@@ -73,7 +73,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hostnode)
+	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hostnode, &currParams)
 	if err != nil {
 		return nil, err
 	}

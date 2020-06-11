@@ -199,9 +199,7 @@ func (c *TransferMultiPayload) Hash() chainhash.Hash {
 
 // FromPubkeyHash calculates the hash of the from public key.
 func (c *TransferMultiPayload) FromPubkeyHash() [20]byte {
-	var out [20]byte
-	copy(out[:], c.Signature.PublicKey.ToHash())
-	return out
+	return c.Signature.PublicKey.Hash()
 }
 
 // Encode enccodes the transaction to the writer.

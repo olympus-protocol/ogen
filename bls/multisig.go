@@ -7,32 +7,10 @@ import (
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
-
-// Bitfield is a bitfield of a certain length.
-type Bitfield []byte
-
-// NewBitfield constructs a new bitfield containing a certain length.
-func NewBitfield(l uint) Bitfield {
-	return make([]byte, (l+7)/8)
-}
-
-// Set sets bit i
-func (b Bitfield) Set(i uint) {
-	b[i/8] |= (1 << (i % 8))
-}
-
-// Get gets bit i
-func (b Bitfield) Get(i uint) bool {
-	return b[i/8]&(1<<(i%8)) != 0
-}
-
-// MaxLength is the maximum number of elements the bitfield can hold.
-func (b Bitfield) MaxLength() uint {
-	return uint(len(b)) * 8
-}
 
 // Multipub represents multiple public keys that can be signed by
 // some subset numNeeded.
@@ -47,6 +25,17 @@ func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
 		PublicKeys: pubs,
 		NumNeeded:  numNeeded,
 	}
+}
+
+// Copy returns a copy of the multipub.
+func (m *Multipub) Copy() *Multipub {
+	newM := *m
+	newM.PublicKeys = make([]*PublicKey, len(m.PublicKeys))
+	for i := range newM.PublicKeys {
+		newM.PublicKeys[i] = m.PublicKeys[i].Copy()
+	}
+
+	return &newM
 }
 
 // Encode encodes the public key to the given writer.
@@ -95,30 +84,51 @@ func (m *Multipub) Decode(r io.Reader) error {
 	return nil
 }
 
-// ToHash gets the hash of the multipub.
-func (m *Multipub) ToHash() []byte {
-	numNeeded := make([]byte, 2)
-	binary.BigEndian.PutUint16(numNeeded, m.NumNeeded)
-	out := make([]byte, 0, 2+48*len(m.PublicKeys))
-	out = append(out, numNeeded...)
-	for _, p := range m.PublicKeys {
-		out = append(out, p.Marshal()...)
+// Type returns the type of the multipub.
+func (m *Multipub) Type() FunctionalSignatureType {
+	return TypeMulti
+}
+
+func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byte {
+	out := make([]byte, 0, 2+20*len(pubkeys))
+
+	numNeededBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(numNeededBytes, numNeeded)
+
+	out = append(out, out...)
+	for _, p := range pubkeys {
+		out = append(out, p[:]...)
 	}
 
 	h := chainhash.HashH(out)
-	return h[:20]
+	var h20 [20]byte
+	copy(h20[:], h[:20])
+
+	return h20
+}
+
+// Hash gets the hash of the multipub.
+func (m *Multipub) Hash() [20]byte {
+	pubkeyHashes := make([][20]byte, 0, len(m.PublicKeys))
+
+	for i, p := range m.PublicKeys {
+		pubkeyHashes[i] = p.Hash()
+	}
+
+	return PublicKeyHashesToMultisigHash(pubkeyHashes, m.NumNeeded)
 }
 
 // ToBech32 returns the bech32 address.
 func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
-	return bech32.Encode(prefixes.Multisig, m.ToHash())
+	pkh := m.Hash()
+	return bech32.Encode(prefixes.Multisig, pkh[:])
 }
 
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  Multipub
 	Signatures []*Signature
-	KeysSigned Bitfield
+	KeysSigned bitfield.Bitfield
 }
 
 // NewMultisig creates a new blank multisig.
@@ -126,8 +136,13 @@ func NewMultisig(multipub Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: []*Signature{},
-		KeysSigned: NewBitfield(uint(len(multipub.PublicKeys))),
+		KeysSigned: bitfield.NewBitfield(uint(len(multipub.PublicKeys))),
 	}
+}
+
+// GetPublicKey gets the public key included in the signature.
+func (m *Multisig) GetPublicKey() FunctionalPublicKey {
+	return &m.PublicKey
 }
 
 // Encode encodes the multisig to the given writer.
@@ -251,3 +266,27 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	return aggSig.AggregateVerify(activePubs, msgs)
 }
+
+// Type returns the type of the multisig.
+func (m *Multisig) Type() FunctionalSignatureType {
+	return TypeMulti
+}
+
+// Copy copies the signature.
+func (m *Multisig) Copy() FunctionalSignature {
+	newMultisig := &Multisig{}
+	newMultisig.Signatures = make([]*Signature, len(m.Signatures))
+	for i := range newMultisig.Signatures {
+		newMultisig.Signatures[i] = m.Signatures[i].Copy()
+	}
+
+	pub := m.PublicKey.Copy()
+	newMultisig.PublicKey = *pub
+
+	newMultisig.KeysSigned = m.KeysSigned.Copy()
+
+	return newMultisig
+}
+
+var _ FunctionalSignature = &Multisig{}
+var _ FunctionalPublicKey = &Multipub{}
