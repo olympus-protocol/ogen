@@ -122,10 +122,10 @@ Next generation blockchain secured by CASPER.`,
 
 			var currParams params.ChainParams
 			switch networkName {
-			case "testnet":
-				currParams = params.TestNet
-			default:
+			case "mainnet":
 				currParams = params.Mainnet
+			default:
+				currParams = params.TestNet
 			}
 
 			cf, err := getChainFile(viper.GetString("chainfile"), currParams)
