@@ -139,10 +139,10 @@ var TestNet = ChainParams{
 	CommunityOverrideQuotient: 3,
 	VotingPeriodSlots:         20160, // minutes in a week
 	InitialManagers: [][20]byte{
-		{},
-		{},
-		{},
-		{},
-		{},
+		{248, 16, 57, 125, 50, 192, 139, 189, 85, 90, 234, 131, 70, 18, 1, 43, 169, 114, 118, 177},  // tlpub1lqgrjlfjcz9m6426a2p5vysp9w5hya4372zwfl
+		{13, 211, 240, 85, 95, 28, 4, 163, 48, 250, 130, 93, 18, 165, 63, 200, 2, 145, 174, 210},    // tlpub1phflq42lrsz2xv86sfw39ffleqpfrtkj6cykgs
+		{95, 113, 185, 142, 139, 25, 233, 68, 13, 73, 241, 67, 55, 90, 155, 74, 57, 60, 143, 108},   // tlpub1tacmnr5tr855gr2f79pnwk5mfgunermv0ac08x
+		{245, 18, 154, 38, 224, 21, 192, 106, 93, 106, 34, 1, 1, 110, 22, 227, 18, 117, 239, 38},    // tlpub175ff5fhqzhqx5ht2ygqszmskuvf8tmex84y5fl
+		{184, 245, 90, 21, 89, 48, 7, 42, 187, 125, 223, 117, 51, 231, 119, 110, 174, 102, 68, 228}, // tlpub1hr64592exqrj4wmama6n8emhd6hxv38yac2shc
 	},
 }
