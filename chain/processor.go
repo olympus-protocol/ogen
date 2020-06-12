@@ -57,20 +57,25 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chai
 
 	for {
 		children := head.Children
-		if len(children) == 0 && head.Hash.IsEqual(&possible) {
-			ch.state.blockChain.SetTip(head)
+		if len(children) == 0 {
+			if head.Hash.IsEqual(&possible) {
+				ch.state.blockChain.SetTip(head)
 
-			ch.log.Infof("setting head to %s", head.Hash)
+				ch.log.Infof("setting head to %s", head.Hash)
 
-			err := txn.SetTip(head.Hash)
-			if err != nil {
-				return err
+				err := txn.SetTip(head.Hash)
+				if err != nil {
+					return err
+				}
+
 			}
-
 			return nil
 		}
 		bestVoteCountChild := children[0]
-		bestVotes := getVoteCount(bestVoteCountChild)
+		bestVotes := uint64(0)
+		if len(children) > 1 {
+			bestVotes = getVoteCount(bestVoteCountChild)
+		}
 		for _, c := range children[1:] {
 			vc := getVoteCount(c)
 			if vc > bestVotes {
@@ -248,6 +253,9 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		if err := txn.SetFinalizedHead(finalizedHash); err != nil {
 			return err
 		}
+		if err := ch.state.setFinalizedHead(finalizedHash, *finalizedState); err != nil {
+			return err
+		}
 		if err := txn.SetFinalizedState(finalizedState); err != nil {
 			return err
 		}
@@ -259,6 +267,9 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
 		}
 		if err := txn.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
+			return err
+		}
+		if err := ch.state.setJustifiedHead(newState.JustifiedEpochHash, *justifiedState); err != nil {
 			return err
 		}
 		if err := txn.SetJustifiedState(justifiedState); err != nil {

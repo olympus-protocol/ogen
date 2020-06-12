@@ -600,7 +600,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *State) processVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint32) error {
+func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint32) error {
 	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
@@ -791,7 +791,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 
 	for _, v := range b.Votes {
-		if err := s.processVote(&v, p, proposerIndex); err != nil {
+		if err := s.ProcessVote(&v, p, proposerIndex); err != nil {
 			return err
 		}
 	}

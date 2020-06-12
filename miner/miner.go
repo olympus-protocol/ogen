@@ -159,6 +159,216 @@ func (m *Miner) publishBlock(block *primitives.Block) {
 // ProposerSlashingConditionViolated implements chain notifee.
 func (m *Miner) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
 
+func (m *Miner) ProposeBlocks() {
+	slotToPropose := m.getCurrentSlot() + 1
+
+	blockTimer := time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
+
+	for {
+		select {
+		case <-blockTimer.C:
+			// check if we're an attester for this slot
+			tip := m.chain.State().Tip()
+			tipHash := tip.Hash
+
+			state, err := m.chain.State().TipStateAtSlot(slotToPropose)
+			if err != nil {
+				m.log.Error(err)
+				return
+			}
+
+			slotIndex := (slotToPropose + m.params.EpochLength - 1) % m.params.EpochLength
+
+			proposerIndex := state.ProposerQueue[slotIndex]
+			proposer := state.ValidatorRegistry[proposerIndex]
+
+			if k, found := m.keystore.GetValidatorKey(proposer.PubKey); found {
+				m.log.Infof("proposing for slot %d", slotToPropose)
+
+				votes := m.voteMempool.Get(slotToPropose, state, &m.params, proposerIndex)
+
+				depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDepositsPerBlock), state)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
+
+				coinTxs, state := m.coinsMempool.Get(m.params.MaxTxsPerBlock, state)
+
+				exitTxs, err := m.actionsMempool.GetExits(int(m.params.MaxExitsPerBlock), state)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
+
+				randaoSlashings, err := m.actionsMempool.GetRANDAOSlashings(int(m.params.MaxRANDAOSlashingsPerBlock), state)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
+
+				voteSlashings, err := m.actionsMempool.GetVoteSlashings(int(m.params.MaxVoteSlashingsPerBlock), state)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
+
+				proposerSlashings, err := m.actionsMempool.GetProposerSlashings(int(m.params.MaxProposerSlashingsPerBlock), state)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
+
+				block := primitives.Block{
+					Header: primitives.BlockHeader{
+						Version:       0,
+						Nonce:         0,
+						PrevBlockHash: tipHash,
+						Timestamp:     time.Now(),
+						Slot:          slotToPropose,
+					},
+					Votes:             votes,
+					Txs:               coinTxs,
+					Deposits:          depositTxs,
+					Exits:             exitTxs,
+					RANDAOSlashings:   randaoSlashings,
+					VoteSlashings:     voteSlashings,
+					ProposerSlashings: proposerSlashings,
+				}
+
+				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
+				block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
+				block.Header.DepositMerkleRoot = block.DepositMerkleRoot()
+				block.Header.ExitMerkleRoot = block.ExitMerkleRoot()
+				block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
+				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
+				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
+				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
+
+				blockHash := block.Hash()
+				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
+
+				blockSig := k.Sign(blockHash[:])
+				randaoSig := k.Sign(randaoHash[:])
+
+				block.Signature = blockSig.Marshal()
+				block.RandaoSignature = randaoSig.Marshal()
+				if err := m.chain.ProcessBlock(&block); err != nil {
+					m.log.Error(err)
+					return
+				}
+
+				go m.publishBlock(&block)
+			}
+
+			slotToPropose++
+			blockTimer = time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
+		case <-m.context.Done():
+			m.log.Info("stopping miner")
+			return
+		}
+	}
+}
+
+func (m *Miner) VoteForBlocks() {
+	slotToVote := m.getCurrentSlot() + 1
+	if slotToVote <= 0 {
+		slotToVote = 1
+	}
+
+	voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
+
+	for {
+		select {
+		case <-voteTimer.C:
+			// check if we're an attester for this slot
+			m.log.Infof("sending votes for slot %d", slotToVote)
+
+			s := m.chain.State()
+
+			state, err := s.TipStateAtSlot(slotToVote)
+			if err != nil {
+				panic(err)
+			}
+
+			validators, err := state.GetVoteCommittee(slotToVote, &m.params)
+			if err != nil {
+				m.log.Errorf("error getting vote committee: %e", err)
+				continue
+			}
+			toEpoch := (slotToVote - 1) / m.params.EpochLength
+
+			beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
+			if !found {
+				panic("could not find block")
+			}
+
+			data := primitives.VoteData{
+				Slot:            slotToVote,
+				FromEpoch:       state.JustifiedEpoch,
+				FromHash:        state.JustifiedEpochHash,
+				ToEpoch:         toEpoch,
+				ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
+				BeaconBlockHash: beaconBlock.Hash,
+			}
+
+			dataHash := data.Hash()
+
+			for i, validatorIdx := range validators {
+				validator := state.ValidatorRegistry[validatorIdx]
+
+				if k, found := m.keystore.GetValidatorKey(validator.PubKey); found {
+					sig := k.Sign(dataHash[:])
+
+					vote := primitives.SingleValidatorVote{
+						Data:      data,
+						Signature: *sig,
+						Offset:    uint32(i),
+						OutOf:     uint32(len(validators)),
+					}
+
+					m.voteMempool.Add(&vote)
+
+					go m.publishVote(&vote)
+
+					// DO NOT UNCOMMENT: slashing test
+					//if validatorIdx == 0 {
+					//	data2 := primitives.VoteData{
+					//		Slot:            slotToVote,
+					//		FromEpoch:       state.JustifiedEpoch,
+					//		FromHash:        state.JustifiedEpochHash,
+					//		ToEpoch:         toEpoch,
+					//		ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
+					//		BeaconBlockHash: chainhash.HashH([]byte("lol")),
+					//	}
+					//
+					//	data2Hash := data2.Hash()
+					//
+					//	sig2 := k.Sign(data2Hash[:])
+					//
+					//	vote2 := primitives.SingleValidatorVote{
+					//		Data:      data2,
+					//		Signature: *sig2,
+					//		Offset:    uint32(i),
+					//		OutOf:     uint32(len(validators)),
+					//	}
+					//
+					//	m.voteMempool.Add(&vote2)
+					//
+					//	go m.publishVote(&vote2)
+					//}
+				}
+			}
+
+			slotToVote++
+			voteTimer = time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
+		case <-m.context.Done():
+			m.log.Info("stopping voter")
+			return
+		}
+	}
+}
+
 // Start runs the miner.
 func (m *Miner) Start() error {
 	numOurs := 0
@@ -172,203 +382,8 @@ func (m *Miner) Start() error {
 
 	m.log.Infof("starting miner with %d/%d active validators", numOurs, numTotal)
 
-	go func() {
-		slotToPropose := m.getCurrentSlot() + 1
-		slotToVote := slotToPropose
-		if slotToVote == 0 {
-			slotToVote = 1
-		}
-		blockTimer := time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
-		voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
+	go m.VoteForBlocks()
+	go m.ProposeBlocks()
 
-	outer:
-		for {
-			select {
-			case <-voteTimer.C:
-				// check if we're an attester for this slot
-				m.log.Infof("sending votes for slot %d", slotToVote)
-
-				s := m.chain.State()
-
-				state, err := s.TipStateAtSlot(slotToVote)
-				if err != nil {
-					panic(err)
-				}
-
-				validators, err := state.GetVoteCommittee(slotToVote, &m.params)
-				if err != nil {
-					m.log.Errorf("error getting vote committee: %e", err)
-					continue
-				}
-				toEpoch := (slotToVote - 1) / m.params.EpochLength
-
-				beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
-				if !found {
-					panic("could not find block")
-				}
-
-				data := primitives.VoteData{
-					Slot:            slotToVote,
-					FromEpoch:       state.JustifiedEpoch,
-					FromHash:        state.JustifiedEpochHash,
-					ToEpoch:         toEpoch,
-					ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
-					BeaconBlockHash: beaconBlock.Hash,
-				}
-
-				dataHash := data.Hash()
-
-				for i, validatorIdx := range validators {
-					validator := state.ValidatorRegistry[validatorIdx]
-
-					if k, found := m.keystore.GetValidatorKey(validator.PubKey); found {
-						sig := k.Sign(dataHash[:])
-
-						vote := primitives.SingleValidatorVote{
-							Data:      data,
-							Signature: *sig,
-							Offset:    uint32(i),
-							OutOf:     uint32(len(validators)),
-						}
-
-						m.voteMempool.Add(&vote)
-
-						go m.publishVote(&vote)
-
-						// DO NOT UNCOMMENT: slashing test
-						//if validatorIdx == 0 {
-						//	data2 := primitives.VoteData{
-						//		Slot:            slotToVote,
-						//		FromEpoch:       state.JustifiedEpoch,
-						//		FromHash:        state.JustifiedEpochHash,
-						//		ToEpoch:         toEpoch,
-						//		ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
-						//		BeaconBlockHash: chainhash.HashH([]byte("lol")),
-						//	}
-						//
-						//	data2Hash := data2.Hash()
-						//
-						//	sig2 := k.Sign(data2Hash[:])
-						//
-						//	vote2 := primitives.SingleValidatorVote{
-						//		Data:      data2,
-						//		Signature: *sig2,
-						//		Offset:    uint32(i),
-						//		OutOf:     uint32(len(validators)),
-						//	}
-						//
-						//	m.voteMempool.Add(&vote2)
-						//
-						//	go m.publishVote(&vote2)
-						//}
-					}
-				}
-
-				slotToVote++
-				voteTimer = time.NewTimer(time.Until(m.getNextVoteTime(slotToVote)))
-
-			case <-blockTimer.C:
-				// check if we're an attester for this slot
-				tip := m.chain.State().Tip()
-				tipHash := tip.Hash
-
-				state, err := m.chain.State().TipStateAtSlot(slotToPropose)
-				if err != nil {
-					m.log.Error(err)
-					return
-				}
-
-				slotIndex := (slotToPropose + m.params.EpochLength - 1) % m.params.EpochLength
-
-				proposerIndex := state.ProposerQueue[slotIndex]
-				proposer := state.ValidatorRegistry[proposerIndex]
-
-				if k, found := m.keystore.GetValidatorKey(proposer.PubKey); found {
-					m.log.Infof("proposing for slot %d", slotToPropose)
-
-					votes := m.voteMempool.Get(slotToPropose, &m.params)
-
-					depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDepositsPerBlock), state)
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
-
-					coinTxs, state := m.coinsMempool.Get(m.params.MaxTxsPerBlock, state)
-
-					exitTxs, err := m.actionsMempool.GetExits(int(m.params.MaxExitsPerBlock), state)
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
-
-					randaoSlashings, err := m.actionsMempool.GetRANDAOSlashings(int(m.params.MaxRANDAOSlashingsPerBlock), state)
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
-
-					voteSlashings, err := m.actionsMempool.GetVoteSlashings(int(m.params.MaxVoteSlashingsPerBlock), state)
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
-
-					proposerSlashings, err := m.actionsMempool.GetProposerSlashings(int(m.params.MaxProposerSlashingsPerBlock), state)
-					if err != nil {
-						m.log.Error(err)
-						return
-					}
-
-					block := primitives.Block{
-						Header: primitives.BlockHeader{
-							Version:       0,
-							Nonce:         0,
-							PrevBlockHash: tipHash,
-							Timestamp:     time.Now(),
-							Slot:          slotToPropose,
-						},
-						Votes:             votes,
-						Txs:               coinTxs,
-						Deposits:          depositTxs,
-						Exits:             exitTxs,
-						RANDAOSlashings:   randaoSlashings,
-						VoteSlashings:     voteSlashings,
-						ProposerSlashings: proposerSlashings,
-					}
-
-					block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
-					block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
-					block.Header.DepositMerkleRoot = block.DepositMerkleRoot()
-					block.Header.ExitMerkleRoot = block.ExitMerkleRoot()
-					block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
-					block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
-					block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
-					block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
-
-					blockHash := block.Hash()
-					randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
-
-					blockSig := k.Sign(blockHash[:])
-					randaoSig := k.Sign(randaoHash[:])
-
-					block.Signature = blockSig.Marshal()
-					block.RandaoSignature = randaoSig.Marshal()
-					if err := m.chain.ProcessBlock(&block); err != nil {
-						m.log.Error(err)
-						return
-					}
-
-					m.publishBlock(&block)
-				}
-
-				slotToPropose++
-				blockTimer = time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
-			case <-m.context.Done():
-				m.log.Info("stopping miner")
-				break outer
-			}
-		}
-	}()
 	return nil
 }

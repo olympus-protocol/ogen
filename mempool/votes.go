@@ -234,7 +234,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.MultiValidatorVote {
+func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint32) []primitives.MultiValidatorVote {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	votes := make([]primitives.MultiValidatorVote, 0)
@@ -250,6 +250,9 @@ func (m *VoteMempool) Get(slot uint64, p *params.ChainParams) []primitives.Multi
 				Data:                  *m.pool[i].voteData,
 				Signature:             *sig,
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
+			}
+			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {
+				continue
 			}
 			votes = append(votes, vote)
 		}
