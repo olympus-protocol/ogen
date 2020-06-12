@@ -70,9 +70,6 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 			},
 			Nonces: make(map[[20]byte]uint64),
 		},
-		UserState: UserState{
-			Users: make(map[chainhash.Hash]User),
-		},
 		ValidatorRegistry:             initialValidators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},

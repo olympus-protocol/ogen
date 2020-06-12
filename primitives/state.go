@@ -22,7 +22,6 @@ const (
 // State is the state of consensus in the blockchain.
 type State struct {
 	CoinsState CoinsState
-	UserState  UserState
 
 	// ValidatorRegistry keeps track of validators in the state.
 	ValidatorRegistry []Validator
@@ -141,14 +140,13 @@ func (s *State) Serialize(w io.Writer) error {
 		s.VoteEpoch,
 		s.VoteEpochStartSlot,
 		s.VotingState,
-		s.ManagerReplacement,
 		s.LastPaidSlot); err != nil {
 		return err
 	}
-	if err := s.CoinsState.Serialize(w); err != nil {
+	if err := serializer.WriteVarBytes(w, s.ManagerReplacement); err != nil {
 		return err
 	}
-	if err := s.UserState.Serialize(w); err != nil {
+	if err := s.CoinsState.Serialize(w); err != nil {
 		return err
 	}
 	if err := serializer.WriteVarInt(w, uint64(len(s.ValidatorRegistry))); err != nil {
@@ -267,14 +265,15 @@ func (s *State) Deserialize(r io.Reader) error {
 		&s.VoteEpoch,
 		&s.VoteEpochStartSlot,
 		&s.VotingState,
-		&s.ManagerReplacement,
 		&s.LastPaidSlot); err != nil {
 		return err
 	}
-	if err := s.CoinsState.Deserialize(r); err != nil {
+	mp, err := serializer.ReadVarBytes(r)
+	if err != nil {
 		return err
 	}
-	if err := s.UserState.Deserialize(r); err != nil {
+	s.ManagerReplacement = mp
+	if err := s.CoinsState.Deserialize(r); err != nil {
 		return err
 	}
 	num, err := serializer.ReadVarInt(r)
@@ -373,7 +372,7 @@ func (s *State) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	s.ReplaceVotes = make(map[[20]byte]chainhash.Hash)
+	s.ReplaceVotes = make(map[[20]byte]chainhash.Hash, num)
 	for i := uint64(0); i < num; i++ {
 		var k [20]byte
 		var val chainhash.Hash
@@ -418,7 +417,6 @@ func (s *State) Copy() State {
 	s2 := *s
 
 	s2.CoinsState = s.CoinsState.Copy()
-	s2.UserState = s.UserState.Copy()
 	s2.ValidatorRegistry = make([]Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {

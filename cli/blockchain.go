@@ -40,7 +40,7 @@ func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logg
 	db.Close()
 	err = s.Stop()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }

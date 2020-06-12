@@ -111,23 +111,23 @@ func (s *StateService) setBlockState(hash chainhash.Hash, state *primitives.Stat
 }
 
 func (s *StateService) loadStateMap(txn bdb.DBViewTransaction) error {
-	justifiedNode := s.justifiedHead.node
+	finalizedNode := s.finalizedHead.node
 
-	justifiedNodeWithChildren, err := txn.GetBlockRow(justifiedNode.Hash)
+	finalizedNodeWithChildren, err := txn.GetBlockRow(finalizedNode.Hash)
 	if err != nil {
 		return err
 	}
 
-	loadQueue := justifiedNodeWithChildren.Children
+	loadQueue := finalizedNodeWithChildren.Children
 
-	justifiedState, err := txn.GetJustifiedState()
+	justifiedState, err := txn.GetFinalizedState()
 	if err != nil {
 		return err
 	}
 
-	s.setBlockState(justifiedNode.Hash, justifiedState)
+	s.setBlockState(finalizedNode.Hash, justifiedState)
 
-	s.blockChain.SetTip(justifiedNode)
+	s.blockChain.SetTip(finalizedNode)
 
 	for len(loadQueue) > 0 {
 		toLoad := loadQueue[0]
