@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
 )
 
@@ -21,7 +22,7 @@ var errorNotOpen = errors.New("there is no wallet open, please open one first")
 type walletInfo struct {
 	nonce     []byte
 	lastNonce uint64
-	account   string
+	account   [20]byte
 }
 
 var walletInfoBucketKey = []byte("wallet_info")
@@ -38,10 +39,15 @@ func (w *Wallet) load() error {
 		if info == nil {
 			return errorNotInit
 		}
-		address := string(info.Get(walletAccountDbKey))
-		if address == "" {
+		var account [20]byte
+		stAcc := info.Get(walletAccountDbKey)
+		if stAcc == nil {
 			return errorNoInfo
 		}
+		if len(stAcc) < 20 {
+			return errorNoInfo
+		}
+		copy(account[:20], stAcc)
 		nonce := info.Get(walletNonceDbKey)
 		if nonce == nil {
 			return errorNoInfo
@@ -51,7 +57,7 @@ func (w *Wallet) load() error {
 			return errorNoInfo
 		}
 		loadInfo = walletInfo{
-			account:   address,
+			account:   account,
 			nonce:     nonce,
 			lastNonce: lastNonce,
 		}
@@ -64,16 +70,15 @@ func (w *Wallet) load() error {
 	return nil
 }
 
-func (w *Wallet) GetPublicKey() (string, error) {
+func (w *Wallet) GetPublicKey() ([20]byte, error) {
 	if !w.open {
-		return "", errorNotOpen
+		return [20]byte{}, errorNotOpen
 	}
 	return w.info.account, nil
 }
 
-func (w *Wallet) GetSecret() (*bls.SecretKey, error) {
-	var secret *bls.SecretKey
-	err := w.db.View(func(tx *bbolt.Tx) error {
+func (w *Wallet) GetSecret() (s *bls.SecretKey, err error) {
+	err = w.db.View(func(tx *bbolt.Tx) error {
 		keyBucket := tx.Bucket(walletKeyBucket)
 		if keyBucket == nil {
 			return errors.New("no key bucket available")
@@ -84,8 +89,8 @@ func (w *Wallet) GetSecret() (*bls.SecretKey, error) {
 		}
 		privKeyBytesSlice := bytes.Split(privKeyBytesSet, privKeyMagicBytes)
 		privKeyBytes := privKeyBytesSlice[1]
-		secret = bls.DeriveSecretKey(privKeyBytes)
-		if secret == nil {
+		s, err = bls.SecretKeyFromBytes(privKeyBytes)
+		if err != nil {
 			return errors.New("no private key found")
 		}
 		return nil
@@ -93,7 +98,7 @@ func (w *Wallet) GetSecret() (*bls.SecretKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return secret, nil
+	return s, nil
 }
 
 func (w *Wallet) recover() error {
@@ -113,7 +118,7 @@ func (w *Wallet) recover() error {
 		}
 		privKeyBytesSlice := bytes.Split(privKeyBytesSet, privKeyMagicBytes)
 		privKeyBytes := privKeyBytesSlice[1]
-		blsPrivKey := bls.DeriveSecretKey(privKeyBytes)
+		blsPrivKey, err := bls.SecretKeyFromBytes(privKeyBytes)
 		if blsPrivKey == nil {
 			return errors.New("no private key found")
 		}
@@ -172,7 +177,12 @@ func (w *Wallet) initialize() error {
 			return errors.New("error reading from random" + err.Error())
 		}
 		lastNonce := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-		account, err := privateKey.PublicKey().ToAddress(w.params.AddrPrefix.Public)
+		pubKey := privateKey.PublicKey()
+		pubKeyBytes := pubKey.Marshal()
+		var account [20]byte
+		h := chainhash.HashH(pubKeyBytes[:])
+		copy(account[:], h[:20])
+		err = infoBucket.Put(walletAccountDbKey, account[:])
 		if err != nil {
 			return err
 		}
@@ -181,10 +191,6 @@ func (w *Wallet) initialize() error {
 			return err
 		}
 		err = infoBucket.Put(walletLastNonceDbKey, lastNonce)
-		if err != nil {
-			return err
-		}
-		err = infoBucket.Put(walletAccountDbKey, []byte(account))
 		if err != nil {
 			return err
 		}

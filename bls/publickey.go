@@ -77,7 +77,7 @@ func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
 // ToAddress converts the public key to a Bech32 address.
 func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
 	out := make([]byte, 20)
-	pkS := p.p.Serialize()
+	pkS := p.Marshal()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return bech32.Encode(pubPrefix, out), nil

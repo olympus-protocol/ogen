@@ -14,16 +14,7 @@ func (w *Wallet) GetBalance() (uint64, error) {
 	if !w.open {
 		return 0, errorNotOpen
 	}
-	_, pkh, err := bech32.Decode(w.info.account)
-	if err != nil {
-		return 0, err
-	}
-	if len(pkh) != 20 {
-		return 0, fmt.Errorf("expecting address to be 20 bytes, but got %d bytes", len(pkh))
-	}
-	var pkhBytes [20]byte
-	copy(pkhBytes[:], pkh)
-	out, ok := w.chain.State().TipState().CoinsState.Balances[pkhBytes]
+	out, ok := w.chain.State().TipState().CoinsState.Balances[w.info.account]
 	if !ok {
 		return 0, nil
 	}
@@ -127,7 +118,6 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	if err != nil {
 		return nil, err
 	}
-
 	_, data, err := bech32.Decode(to)
 	if err != nil {
 		return nil, err
@@ -142,7 +132,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	copy(toPkh[:], data)
 
 	pub := priv.PublicKey()
-
+	
 	w.lastNonceLock.Lock()
 	w.info.lastNonce++
 	nonce := w.info.lastNonce

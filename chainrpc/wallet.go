@@ -31,7 +31,7 @@ func (s *walletServer) CreateWallet(ctx context.Context, name *proto.Name) (*pro
 	if err != nil {
 		return nil, err
 	}
-	pubKey, err := s.wallet.GetPublicKey()
+	pubKey, err := s.wallet.GetAccount()
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 }
 
 func (s *walletServer) GetAccount(context.Context, *proto.Empty) (*proto.KeyPair, error) {
-	account, err := s.wallet.GetPublicKey()
+	account, err := s.wallet.GetAccount()
 	if err != nil {
 		return nil, err
 	}

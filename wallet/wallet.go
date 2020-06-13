@@ -161,21 +161,15 @@ func (w *Wallet) GetAccount() (string, error) {
 	if !w.open {
 		return "", errorNotOpen
 	}
-	return w.info.account, nil
+	return bech32.Encode(w.params.AddrPrefix.Public, w.info.account[:]), nil
 }
 
 func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 	if !w.open {
 		return [20]byte{}, errorNotOpen
 	}
-	_, pkh, err := bech32.Decode(w.info.account)
-	if err != nil {
-		return [20]byte{}, err
-	}
-	if len(pkh) != 20 {
+	if len(w.info.account) != 20 {
 		return [20]byte{}, errors.New("expected address to be 20 bytes")
 	}
-	var pkhBytes [20]byte
-	copy(pkhBytes[:], pkh)
-	return pkhBytes, nil
+	return w.info.account, nil
 }
