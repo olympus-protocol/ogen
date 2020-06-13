@@ -132,7 +132,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	copy(toPkh[:], data)
 
 	pub := priv.PublicKey()
-	
+
 	w.lastNonceLock.Lock()
 	w.info.lastNonce++
 	nonce := w.info.lastNonce
