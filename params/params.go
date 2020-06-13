@@ -60,12 +60,12 @@ var Mainnet = ChainParams{
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              1000, // POLIS
+	EjectionBalance:              100, // POLIS
 	MaxBalanceChurnQuotient:      8,
 	MaxVotesPerBlock:             32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
-	DepositAmount:                10000,
+	DepositAmount:                100,
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 60,
@@ -110,7 +110,7 @@ var TestNet = ChainParams{
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              1000,
+	EjectionBalance:              100,
 	MaxBalanceChurnQuotient:      32,
 	MaxVotesPerBlock:             32,
 	LatestBlockRootsLength:       64,
