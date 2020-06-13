@@ -144,8 +144,10 @@ func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
 	err := filepath.Walk(path.Join(w.directory, "wallets/"), func(path string, info os.FileInfo, err error) error {
 		if info != nil {
 			if !info.IsDir() {
-				name := strings.Split(info.Name(), ".db")
-				files[name[0]] = path + "/" + info.Name()
+				if filepath.Ext(path) == ".db" {
+					name := strings.Split(info.Name(), ".db")
+					files[name[0]] = path + "/" + info.Name()
+				}
 			}
 			return nil
 		}
