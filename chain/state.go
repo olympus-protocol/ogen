@@ -222,6 +222,8 @@ func (s *StateService) GetStateForHash(hash chainhash.Hash) (*primitives.State, 
 	return derivedState.firstSlotState, true
 }
 
+var ErrTooFarInFuture = fmt.Errorf("tried to get block too far in future")
+
 // GetStateForHashAtSlot gets the state for a certain block hash at a certain slot.
 func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view primitives.BlockView, p *params.ChainParams) (*primitives.State, []*primitives.EpochReceipt, error) {
 	s.lock.RLock()
@@ -232,7 +234,7 @@ func (s *StateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 	}
 
 	if slot > derivedState.lastSlot+1000 {
-		return nil, nil, fmt.Errorf("tried to get block too far in future")
+		return nil, nil, ErrTooFarInFuture
 	}
 
 	return derivedState.deriveState(slot, view, p, s.log)

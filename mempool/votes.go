@@ -263,7 +263,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 
 // Assumes you already hold the poolLock mutex.
 func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
-	newOrder := make([]chainhash.Hash, 0, len(m.poolOrder)-1)
+	newOrder := make([]chainhash.Hash, 0, len(m.poolOrder))
 
 	for _, vh := range m.poolOrder {
 		if !vh.IsEqual(&h) {
@@ -319,13 +319,18 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 		}
 
 		firstSlotAllowedToInclude := tx.Data.Slot + m.params.MinAttestationInclusionDelay
-		tipHash := m.blockchain.State().Tip().Hash
-		view, err := m.blockchain.State().GetSubView(tipHash)
+		tip := m.blockchain.State().Tip()
+
+		if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
+			continue
+		}
+
+		view, err := m.blockchain.State().GetSubView(tip.Hash)
 		if err != nil {
 			m.log.Warnf("could not get block view representing current tip: %s", err)
 			continue
 		}
-		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tipHash, firstSlotAllowedToInclude, &view, m.params)
+		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
 		if err != nil {
 			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
 			continue

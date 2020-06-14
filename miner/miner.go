@@ -167,6 +167,14 @@ func (m *Miner) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
+			if m.chain.State().Tip().Slot+m.params.EpochLength < slotToPropose {
+				m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
+
+				// wait 10 seconds before starting the next vote
+				blockTimer = time.NewTimer(time.Second * 10)
+				continue
+			}
+
 			// check if we're an attester for this slot
 			tip := m.chain.State().Tip()
 			tipHash := tip.Hash
@@ -283,6 +291,14 @@ func (m *Miner) VoteForBlocks() {
 		case <-voteTimer.C:
 			// check if we're an attester for this slot
 			m.log.Infof("sending votes for slot %d", slotToVote)
+
+			if m.chain.State().Tip().Slot+m.params.EpochLength < slotToVote {
+				m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
+
+				// wait 10 seconds before starting the next vote
+				voteTimer = time.NewTimer(time.Second * 10)
+				continue
+			}
 
 			s := m.chain.State()
 
