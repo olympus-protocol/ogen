@@ -18,6 +18,16 @@ func NewKeystore(pathStr string, log *logger.Logger) (*Keystore, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = db.Update(func(tx *bbolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists(keysBucket); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	w := &Keystore{
 		db:  db,
 		log: log,

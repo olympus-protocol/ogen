@@ -7,14 +7,13 @@ import (
 
 var keysBucket = []byte("keys")
 
+// GetValidatorKeys gets all keys.
 func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	secKeys := make([]*bls.SecretKey, 0)
-	err := k.db.Update(func(txn *bbolt.Tx) error {
-		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
-		if err != nil {
-			return err
-		}
-		err = bkt.ForEach(func(k, v []byte) error {
+	err := k.db.View(func(txn *bbolt.Tx) error {
+		bkt := txn.Bucket(keysBucket)
+		bkt = txn.Bucket(keysBucket)
+		err := bkt.ForEach(func(k, v []byte) error {
 			var valBytes [32]byte
 			copy(valBytes[:], v)
 			secretKey, err := bls.SecretKeyFromBytes(valBytes[:])
@@ -35,13 +34,11 @@ func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	return secKeys, nil
 }
 
+// GetValidatorKey gets a validator key from the key store.
 func (k *Keystore) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool) {
 	var secretBytes []byte
-	err := k.db.Update(func(txn *bbolt.Tx) error {
-		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
-		if err != nil {
-			return err
-		}
+	err := k.db.View(func(txn *bbolt.Tx) error {
+		bkt := txn.Bucket(keysBucket)
 		secretBytes = bkt.Get(pubkey)
 		return nil
 	})
@@ -55,12 +52,10 @@ func (k *Keystore) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool) {
 	return secretKey, true
 }
 
+// HasValidatorKey checks if a validator key exists.
 func (k *Keystore) HasValidatorKey(pubBytes []byte) (result bool, err error) {
 	err = k.db.View(func(txn *bbolt.Tx) error {
-		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
-		if err != nil {
-			return err
-		}
+		bkt := txn.Bucket(keysBucket)
 		key := bkt.Get(pubBytes)
 		if key == nil {
 			result = false
@@ -73,16 +68,14 @@ func (k *Keystore) HasValidatorKey(pubBytes []byte) (result bool, err error) {
 	return result, err
 }
 
+// GenerateNewValidatorKey generates a new validator key.
 func (k *Keystore) GenerateNewValidatorKey() (*bls.SecretKey, error) {
 	key := bls.RandKey()
 	keyBytes := key.Marshal()
 	pub := key.PublicKey()
 	pubBytes := pub.Marshal()
 	err := k.db.Update(func(txn *bbolt.Tx) error {
-		bkt, err := txn.CreateBucketIfNotExists(keysBucket)
-		if err != nil {
-			return err
-		}
+		bkt := txn.Bucket(keysBucket)
 		return bkt.Put(pubBytes, keyBytes)
 	})
 	return key, err
