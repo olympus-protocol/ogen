@@ -39,8 +39,6 @@ const timeoutInterval = 60 * time.Second
 const heartbeatInterval = 20 * time.Second
 
 var configBucketKey = []byte("config")
-var knownNodesBucketKey = []byte("peers")
-var banPeersBucketKey = []byte("bans")
 var privKeyDbKey = []byte("privkey")
 
 // HostNode is the node for p2p host
@@ -71,8 +69,6 @@ type HostNode struct {
 
 	// database buckets
 	configBucket *bbolt.Bucket
-	peersBucket  *bbolt.Bucket
-	bansBucket   *bbolt.Bucket
 }
 
 // NewHostNode creates a host node
@@ -84,8 +80,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	}
 	var priv crypto.PrivKey
 	var configBucket *bbolt.Bucket
-	var peersBucket *bbolt.Bucket
-	var bansBucket *bbolt.Bucket
 	err = netDB.Update(func(tx *bbolt.Tx) error {
 		configBucket = tx.Bucket(configBucketKey)
 		// If the bucket doesn't exist, initialize the database
@@ -94,14 +88,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 			if err != nil {
 				return err
 			}
-			peersBucket, err = tx.CreateBucketIfNotExists(knownNodesBucketKey)
-			if err != nil {
-				return err
-			}
-			bansBucket, err = tx.CreateBucketIfNotExists(banPeersBucketKey)
-			if err != nil {
-				return err
-			}
+
 		}
 		var keyBytes []byte
 		keyBytes = configBucket.Get(privKeyDbKey)
@@ -172,8 +159,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		log:               config.Log,
 		topics:            map[string]*pubsub.Topic{},
 		configBucket:      configBucket,
-		peersBucket:       peersBucket,
-		bansBucket:        bansBucket,
 	}
 
 	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)
