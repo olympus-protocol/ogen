@@ -16,7 +16,6 @@ import (
 // Config config for the RPCServer
 type Config struct {
 	Network string
-	Address string
 	Log     *logger.Logger
 }
 
@@ -51,7 +50,7 @@ func (s *RPCServer) Stop() {
 func (s *RPCServer) Start() error {
 	s.registerServices()
 	s.log.Info("Starting gRPC Server")
-	lis, err := net.Listen("tcp", s.config.Address)
+	lis, err := net.Listen("tcp", "127.0.0.1:24127")
 	if err != nil {
 		return err
 	}
@@ -86,7 +85,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 			chain: chain,
 		},
 		validatorsServer: &validatorsServer{
-			params: params,
+			params:   params,
 			keystore: keys,
 			chain:    chain,
 		},

@@ -14,12 +14,11 @@ var (
 )
 
 const (
-	version  = "1.0.0"
+	version = "1.0.0"
 )
 
 type Config struct {
 	DataFolder    string
-	RPCAddress    string
 	Debug         bool
 	Listen        []multiaddr.Multiaddr
 	NetworkName   string

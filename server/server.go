@@ -148,7 +148,6 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
 		Log:     logger,
-		Address: config.RPCAddress,
 		Network: "tcp",
 	}
 }

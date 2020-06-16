@@ -16,7 +16,7 @@ import (
 
 type validatorsServer struct {
 	keystore *keystore.Keystore
-	params *params.ChainParams
+	params   *params.ChainParams
 	chain    *chain.Blockchain
 	proto.UnimplementedValidatorsServer
 }
