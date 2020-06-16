@@ -94,7 +94,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet, &currParams)
 	if err != nil {
 		return nil, err
 	}
