@@ -9,12 +9,14 @@ import (
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/keystore"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/shopspring/decimal"
 )
 
 type validatorsServer struct {
 	keystore *keystore.Keystore
+	params *params.ChainParams
 	chain    *chain.Blockchain
 	proto.UnimplementedValidatorsServer
 }
@@ -51,7 +53,7 @@ func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.
 			validator := &proto.ValidatorRegistry{
 				Balance:      decimal.NewFromInt(int64(v.Balance)).StringFixed(3),
 				PublicKey:    hex.EncodeToString(v.PubKey),
-				PayeeAddress: bech32.Encode("olpub", v.PayeeAddress[:]),
+				PayeeAddress: bech32.Encode(s.params.AddrPrefix.Public, v.PayeeAddress[:]),
 				Status:       v.Status.String(),
 			}
 			accountValidators = append(accountValidators, validator)

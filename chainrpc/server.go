@@ -6,6 +6,7 @@ import (
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/keystore"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
@@ -62,7 +63,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, hostnode *peers.HostNode, wallet *wallet.Wallet) (*RPCServer, error) {
+func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, hostnode *peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams) (*RPCServer, error) {
 	txTopic, err := hostnode.Topic("tx")
 	if err != nil {
 		return nil, err
@@ -77,7 +78,6 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 	if err != nil {
 		return nil, err
 	}
-
 	return &RPCServer{
 		rpc:    grpc.NewServer(),
 		config: config,
@@ -86,6 +86,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 			chain: chain,
 		},
 		validatorsServer: &validatorsServer{
+			params: params,
 			keystore: keys,
 			chain:    chain,
 		},

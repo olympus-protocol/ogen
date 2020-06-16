@@ -12,7 +12,6 @@ const (
 	MsgAddrCmd      = "addr"
 	MsgGetBlocksCmd = "getblocks"
 	MsgBlocksCmd    = "blocks"
-	MsgBlocksInvCmd = "blocksinv"
 	MsgTxCmd        = "tx"
 )
 

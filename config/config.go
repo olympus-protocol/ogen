@@ -14,7 +14,6 @@ var (
 )
 
 const (
-	FileName = "config.toml"
 	version  = "1.0.0"
 )
 
