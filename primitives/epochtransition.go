@@ -593,7 +593,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		}
 
 		for validator, amount := range proposerRewardInclusion {
-			rewardValidator(validator, amount/p.IncluderRewardQuotient, RewardIncludedVote)
+			rewardValidator(validator, amount, RewardIncludedVote)
 		}
 		for validator, amount := range proposerRewardDistance {
 			rewardValidator(validator, amount, RewardInclusionDistance)
