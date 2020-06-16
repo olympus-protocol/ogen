@@ -21,4 +21,4 @@ make build
 
 ## Documentation
 
-The complete documentation can be found on: <https://docs.oly.tech>
+The complete documentation can be found here: <https://docs.oly.tech>
