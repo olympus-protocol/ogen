@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
@@ -164,7 +163,7 @@ func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, new
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
 
-func (s *chainServer) SubscribeBlocks(_ *empty.Empty, stream proto.Chain_SubscribeBlocksServer) error {
+func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_SubscribeBlocksServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)
 
 	for {

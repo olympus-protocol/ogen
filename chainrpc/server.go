@@ -1,8 +1,11 @@
 package chainrpc
 
 import (
+	"context"
 	"net"
+	"net/http"
 
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/keystore"
@@ -21,10 +24,10 @@ type Config struct {
 
 // RPCServer struct model for the gRPC server
 type RPCServer struct {
-	log    *logger.Logger
-	config Config
-	rpc    *grpc.Server
-
+	log              *logger.Logger
+	config           Config
+	http             *runtime.ServeMux
+	rpc              *grpc.Server
 	chainServer      *chainServer
 	validatorsServer *validatorsServer
 	utilsServer      *utilsServer
@@ -40,6 +43,15 @@ func (s *RPCServer) registerServices() {
 	proto.RegisterWalletServer(s.rpc, s.walletServer)
 }
 
+func (s *RPCServer) registerServicesProxy(ctx context.Context) {
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	proto.RegisterChainHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	proto.RegisterValidatorsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	proto.RegisterUtilsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	proto.RegisterNetworkHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+}
+
 // Stop stops gRPC listener
 func (s *RPCServer) Stop() {
 	s.log.Info("stoping gRPC Server")
@@ -48,17 +60,23 @@ func (s *RPCServer) Stop() {
 
 // Start starts gRPC listener
 func (s *RPCServer) Start() error {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	s.registerServices()
+	s.registerServicesProxy(ctx)
 	s.log.Info("Starting gRPC Server")
-	lis, err := net.Listen("tcp", "127.0.0.1:24127")
-	if err != nil {
-		return err
-	}
-	err = s.rpc.Serve(lis)
-	if err != nil {
-		return err
-	}
-	return nil
+	go func() {
+		lis, err := net.Listen("tcp", "127.0.0.1:24127")
+		if err != nil {
+			s.log.Fatal(err)
+		}
+		err = s.rpc.Serve(lis)
+		if err != nil {
+			s.log.Fatal(err)
+		}
+	}()
+	return http.ListenAndServe(":8080", s.http)
 }
 
 // NewRPCServer Returns an RPC server instance
@@ -79,6 +97,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 	}
 	return &RPCServer{
 		rpc:    grpc.NewServer(),
+		http:   runtime.NewServeMux(),
 		config: config,
 		log:    config.Log,
 		chainServer: &chainServer{
