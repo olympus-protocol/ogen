@@ -169,6 +169,7 @@ Next generation blockchain secured by CASPER.`,
 				Port:          int32(viper.GetUint("port")),
 				MaxPeers:      int32(viper.GetUint("maxpeers")),
 				MiningEnabled: viper.GetBool("enablemining"),
+				Wallet:        viper.GetBool("enable_wallet_external_access"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -204,6 +205,7 @@ func init() {
 	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
 	rootCmd.Flags().Bool("enablemining", false, "should mining be enabled")
 	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
+	rootCmd.Flags().Bool("enable_wallet_external_access", false, "enable wallet access through rpc")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {

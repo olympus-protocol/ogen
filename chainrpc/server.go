@@ -19,6 +19,7 @@ import (
 // Config config for the RPCServer
 type Config struct {
 	Network string
+	Wallet  bool
 	Log     *logger.Logger
 }
 
@@ -40,7 +41,9 @@ func (s *RPCServer) registerServices() {
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
 	proto.RegisterUtilsServer(s.rpc, s.utilsServer)
 	proto.RegisterNetworkServer(s.rpc, s.networkServer)
-	proto.RegisterWalletServer(s.rpc, s.walletServer)
+	if s.config.Wallet {
+		proto.RegisterWalletServer(s.rpc, s.walletServer)
+	}
 }
 
 func (s *RPCServer) registerServicesProxy(ctx context.Context) {
@@ -49,7 +52,9 @@ func (s *RPCServer) registerServicesProxy(ctx context.Context) {
 	proto.RegisterValidatorsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	proto.RegisterUtilsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	proto.RegisterNetworkHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
-	proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	if s.config.Wallet {
+		proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	}
 }
 
 // Stop stops gRPC listener

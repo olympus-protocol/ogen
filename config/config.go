@@ -27,6 +27,7 @@ type Config struct {
 	MaxPeers      int32
 	MiningEnabled bool
 	InitConfig    primitives.InitializationParameters
+	Wallet        bool
 }
 
 func OgenVersion() string {
