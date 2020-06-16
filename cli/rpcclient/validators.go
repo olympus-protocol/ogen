@@ -9,12 +9,9 @@ import (
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
-func (c *RPCClient) getValidatorsList(args []string) (string, error) {
+func (c *RPCClient) getValidatorsList() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 0 {
-		return "", errors.New("Usage: getvalidatorslist")
-	}
 	res, err := c.validators.GetValidatorsList(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
@@ -29,7 +26,7 @@ func (c *RPCClient) getValidatorsList(args []string) (string, error) {
 func (c *RPCClient) getAccountValidators(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: getaccountvalidators <account>")
 	}
 	req := &proto.Account{Account: args[0]}

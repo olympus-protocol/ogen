@@ -89,7 +89,7 @@ func (c *CLI) Run() {
 		switch args[0] {
 		// Chain methods
 		case "getchaininfo":
-			out, err = c.rpcClient.getChainInfo(args[1:])
+			out, err = c.rpcClient.getChainInfo()
 		case "getrawblock":
 			out, err = c.rpcClient.getRawBlock(args[1:])
 		case "getblockhash":
@@ -103,15 +103,15 @@ func (c *CLI) Run() {
 
 		// Validator methods
 		case "getvalidatorslist":
-			out, err = c.rpcClient.getValidatorsList(args[1:])
+			out, err = c.rpcClient.getValidatorsList()
 		case "getaccountvalidators":
 			out, err = c.rpcClient.getAccountValidators(args[1:])
 
 		// Network methods
 		case "getnetworkinfo":
-			out, err = c.rpcClient.getNetworkInfo(args[1:])
+			out, err = c.rpcClient.getNetworkInfo()
 		case "getpeersinfo":
-			out, err = c.rpcClient.getPeersInfo(args[1:])
+			out, err = c.rpcClient.getPeersInfo()
 		case "addpeer":
 			out, err = c.rpcClient.addPeer(args[1:])
 
@@ -119,11 +119,11 @@ func (c *CLI) Run() {
 		case "submitrawdata":
 			out, err = c.rpcClient.submitRawData(args[1:])
 		case "genkeypair":
-			out, err = c.rpcClient.genKeyPair(args[1:], false)
+			out, err = c.rpcClient.genKeyPair(false)
 		case "genrawkeypair":
-			out, err = c.rpcClient.genKeyPair(args[1:], true)
+			out, err = c.rpcClient.genKeyPair(true)
 		case "genvalidatorkey":
-			out, err = c.rpcClient.genValidatorKey(args[1:])
+			out, err = c.rpcClient.genValidatorKey()
 		case "decoderawtransaction":
 			out, err = c.rpcClient.decodeRawTransaction(args[1:])
 		case "decoderawblock":
@@ -131,17 +131,17 @@ func (c *CLI) Run() {
 
 		// Wallet methods
 		case "listwallets":
-			out, err = c.rpcClient.listWallets(args[1:])
+			out, err = c.rpcClient.listWallets()
 		case "createwallet":
 			out, err = c.rpcClient.createWallet(args[1:])
 		case "openwallet":
 			out, err = c.rpcClient.openWallet(args[1:])
 		case "closewallet":
-			out, err = c.rpcClient.closeWallet(args[1:])
+			out, err = c.rpcClient.closeWallet()
 		case "getbalance":
-			out, err = c.rpcClient.getBalance(args[1:])
+			out, err = c.rpcClient.getBalance()
 		case "getaccount":
-			out, err = c.rpcClient.getAccount(args[1:])
+			out, err = c.rpcClient.getAccount()
 		case "sendtransaction":
 			out, err = c.rpcClient.sendTransaction(args[1:])
 		case "startvalidator":
@@ -153,7 +153,7 @@ func (c *CLI) Run() {
 		}
 
 		if err != nil {
-			color.Red("%s", err)
+			color.Red("%s", err.Error())
 		} else {
 			color.Green("%s", out)
 		}

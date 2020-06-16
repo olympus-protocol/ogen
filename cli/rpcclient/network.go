@@ -9,12 +9,9 @@ import (
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
-func (c *RPCClient) getNetworkInfo(args []string) (string, error) {
+func (c *RPCClient) getNetworkInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 0 {
-		return "", errors.New("Usage: getnetworkinfo")
-	}
 	res, err := c.network.GetNetworkInfo(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
@@ -26,12 +23,9 @@ func (c *RPCClient) getNetworkInfo(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getPeersInfo(args []string) (string, error) {
+func (c *RPCClient) getPeersInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 0 {
-		return "", errors.New("Usage: getpeersinfo")
-	}
 	res, err := c.network.GetPeersInfo(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
@@ -46,8 +40,8 @@ func (c *RPCClient) getPeersInfo(args []string) (string, error) {
 func (c *RPCClient) addPeer(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 || len(args) < 1 {
-		return "", errors.New("Usage: addpeer <IP>")
+	if len(args) < 1 {
+		return "", errors.New("Usage: addpeer <addr>")
 	}
 	req := &proto.IP{Host: args[0]}
 	res, err := c.network.AddPeer(ctx, req)

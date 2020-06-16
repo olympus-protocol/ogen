@@ -116,11 +116,11 @@ message SubscribeResponse {
 }
 
 message SubscribeAccountRequest {
-    repeated bytes publicKeyHash = 1;
+    repeated bytes public_key_hash = 1;
 }
 
 message SubscribeValidatorRequest {
-    repeated bytes publicKey = 1;
+    repeated bytes public_key = 1;
 }
 
 message ChainInfo {

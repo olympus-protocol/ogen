@@ -35,8 +35,8 @@ type SendTransactionInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
-	Amount  string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account"`
+	Amount  string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount"`
 }
 
 func (x *SendTransactionInfo) Reset() {
@@ -90,8 +90,8 @@ type Balance struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Confirmed   uint64 `protobuf:"varint,1,opt,name=confirmed,proto3" json:"confirmed,omitempty"`
-	Unconfirmed uint64 `protobuf:"varint,2,opt,name=unconfirmed,proto3" json:"unconfirmed,omitempty"`
+	Confirmed   uint64 `protobuf:"varint,1,opt,name=confirmed,proto3" json:"confirmed"`
+	Unconfirmed uint64 `protobuf:"varint,2,opt,name=unconfirmed,proto3" json:"unconfirmed"`
 }
 
 func (x *Balance) Reset() {
@@ -145,7 +145,7 @@ type Wallets struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Wallets []string `protobuf:"bytes,1,rep,name=wallets,proto3" json:"wallets,omitempty"`
+	Wallets []string `protobuf:"bytes,1,rep,name=wallets,proto3" json:"wallets"`
 }
 
 func (x *Wallets) Reset() {
@@ -192,7 +192,7 @@ type Name struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
 }
 
 func (x *Name) Reset() {

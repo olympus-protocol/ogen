@@ -35,7 +35,7 @@ type ValidatorsRegistry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Validators []*ValidatorRegistry `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
+	Validators []*ValidatorRegistry `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators"`
 }
 
 func (x *ValidatorsRegistry) Reset() {
@@ -82,12 +82,12 @@ type ValidatorRegistry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Balance          string `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance,omitempty"`
-	PublicKey        string `protobuf:"bytes,2,opt,name=publicKey,proto3" json:"publicKey,omitempty"`
-	PayeeAddress     string `protobuf:"bytes,3,opt,name=payee_address,json=payeeAddress,proto3" json:"payee_address,omitempty"`
-	Status           string `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	FirstActiveEpoch int64  `protobuf:"varint,5,opt,name=first_active_epoch,json=firstActiveEpoch,proto3" json:"first_active_epoch,omitempty"`
-	LastActiveEpoch  int64  `protobuf:"varint,6,opt,name=last_active_epoch,json=lastActiveEpoch,proto3" json:"last_active_epoch,omitempty"`
+	Balance          string `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance"`
+	PublicKey        string `protobuf:"bytes,2,opt,name=publicKey,proto3" json:"publicKey"`
+	PayeeAddress     string `protobuf:"bytes,3,opt,name=payee_address,json=payeeAddress,proto3" json:"payee_address"`
+	Status           string `protobuf:"bytes,4,opt,name=status,proto3" json:"status"`
+	FirstActiveEpoch int64  `protobuf:"varint,5,opt,name=first_active_epoch,json=firstActiveEpoch,proto3" json:"first_active_epoch"`
+	LastActiveEpoch  int64  `protobuf:"varint,6,opt,name=last_active_epoch,json=lastActiveEpoch,proto3" json:"last_active_epoch"`
 }
 
 func (x *ValidatorRegistry) Reset() {

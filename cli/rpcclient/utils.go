@@ -14,7 +14,7 @@ import (
 func (c *RPCClient) submitRawData(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 || len(args) < 1 {
+	if len(args) < 2 {
 		return "", errors.New("Usage: submitrawdata <raw_data> <type>")
 	}
 	req := &proto.RawData{Data: args[0], Type: args[1]}
@@ -29,10 +29,7 @@ func (c *RPCClient) submitRawData(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) genKeyPair(args []string, raw bool) (string, error) {
-	if len(args) > 0 {
-		return "", errors.New("Usage: genkeypair || genrawkeypair")
-	}
+func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 	blsKeyPair := bls.RandKey()
 	var res bls.KeyPair
 	if raw {
@@ -62,12 +59,9 @@ func (c *RPCClient) genKeyPair(args []string, raw bool) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) genValidatorKey(args []string) (string, error) {
+func (c *RPCClient) genValidatorKey() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 0 {
-		return "", errors.New("Usage: genvalidatorkey")
-	}
 	res, err := c.utils.GenValidatorKey(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
@@ -82,7 +76,7 @@ func (c *RPCClient) genValidatorKey(args []string) (string, error) {
 func (c *RPCClient) decodeRawTransaction(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 || len(args) < 1 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: decoderawtransaction <raw_transaction>")
 	}
 	req := &proto.RawData{Data: args[0]}
@@ -100,7 +94,7 @@ func (c *RPCClient) decodeRawTransaction(args []string) (string, error) {
 func (c *RPCClient) decodeRawBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 || len(args) < 1 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: decoderawblock <raw_block>")
 	}
 	req := &proto.RawData{Data: args[0]}

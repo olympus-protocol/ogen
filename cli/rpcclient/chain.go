@@ -11,10 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 )
 
-func (c *RPCClient) getChainInfo(args []string) (string, error) {
-	if len(args) > 0 {
-		return "", errors.New("Usage: getchaininfo")
-	}
+func (c *RPCClient) getChainInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.chain.GetChainInfo(ctx, &proto.Empty{})
@@ -31,7 +28,7 @@ func (c *RPCClient) getChainInfo(args []string) (string, error) {
 func (c *RPCClient) getRawBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) != 1 || len(args[0]) != 64 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: getrawblock <hash>")
 	}
 	h, err := hex.DecodeString(args[0])
@@ -51,7 +48,7 @@ func (c *RPCClient) getRawBlock(args []string) (string, error) {
 func (c *RPCClient) getBlockHash(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) != 1 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: getblockhash <height>")
 	}
 	height, err := strconv.Atoi(args[0])
@@ -71,7 +68,7 @@ func (c *RPCClient) getBlockHash(args []string) (string, error) {
 func (c *RPCClient) getBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) != 1 || len(args[0]) != 64 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: getblock <hash>")
 	}
 	h, err := hex.DecodeString(args[0])
@@ -95,7 +92,7 @@ func (c *RPCClient) getBlock(args []string) (string, error) {
 func (c *RPCClient) getAccountInfo(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) > 1 || len(args) < 1 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: getaccountinfo <account>")
 	}
 	req := &proto.Account{
@@ -113,7 +110,7 @@ func (c *RPCClient) getAccountInfo(args []string) (string, error) {
 }
 
 func (c *RPCClient) getTransaction(args []string) (string, error) {
-	if len(args) != 1 || len(args[0]) != 64 {
+	if len(args) < 1 {
 		return "", errors.New("Usage: gettransaction <txid>")
 	}
 	h, err := hex.DecodeString(args[0])
