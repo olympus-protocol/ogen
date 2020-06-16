@@ -28,6 +28,7 @@ type Config struct {
 	MiningEnabled bool
 	InitConfig    primitives.InitializationParameters
 	Wallet        bool
+	RpcProxy      bool
 }
 
 func OgenVersion() string {

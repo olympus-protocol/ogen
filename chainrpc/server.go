@@ -18,9 +18,10 @@ import (
 
 // Config config for the RPCServer
 type Config struct {
-	Network string
-	Wallet  bool
-	Log     *logger.Logger
+	Network  string
+	Wallet   bool
+	RpcProxy bool
+	Log      *logger.Logger
 }
 
 // RPCServer struct model for the gRPC server
@@ -65,23 +66,29 @@ func (s *RPCServer) Stop() {
 
 // Start starts gRPC listener
 func (s *RPCServer) Start() error {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	s.registerServices()
-	s.registerServicesProxy(ctx)
 	s.log.Info("Starting gRPC Server")
-	go func() {
-		lis, err := net.Listen("tcp", "127.0.0.1:24127")
-		if err != nil {
-			s.log.Fatal(err)
-		}
-		err = s.rpc.Serve(lis)
-		if err != nil {
-			s.log.Fatal(err)
-		}
-	}()
-	return http.ListenAndServe(":8080", s.http)
+	if s.config.RpcProxy {
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		s.registerServicesProxy(ctx)
+		go func() {
+			err := http.ListenAndServe(":8080", s.http)
+			if err != nil {
+				s.log.Fatal(err)
+			}
+		}()
+	}
+	lis, err := net.Listen("tcp", "127.0.0.1:24127")
+	if err != nil {
+		return err
+	}
+	err = s.rpc.Serve(lis)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // NewRPCServer Returns an RPC server instance
