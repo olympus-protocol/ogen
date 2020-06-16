@@ -2,6 +2,7 @@
   syntax = "proto3";
   option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
   
+  import "google/api/annotations.proto";
   import "common.proto";
 
   service Wallet {
@@ -13,7 +14,11 @@
         Description: Returns a list of available wallets.
     */
 
-    rpc ListWallets(Empty) returns (Wallets);
+    rpc ListWallets(Empty) returns (Wallets) {
+        option (google.api.http) = {
+            get: "/Wallet/ListWallets"
+        };
+    }
 
     /** 
         Method: CreateWallet 
@@ -22,7 +27,12 @@
         Description: Creates a new wallet on the local datadir and returns the public key.
     */
 
-    rpc CreateWallet(Name) returns (KeyPair);
+    rpc CreateWallet(Name) returns (KeyPair) {
+        option (google.api.http) = {
+            post: "/Wallet/CreateWallet"
+            body: "*"
+        };
+    }
 
     /** 
         Method: OpenWallet 
@@ -31,7 +41,12 @@
         Description: Opens a wallet on the wallet manager.
     */
 
-    rpc OpenWallet(Name) returns (Success);
+    rpc OpenWallet(Name) returns (Success) {
+        option (google.api.http) = {
+            post: "/Wallet/OpenWallet"
+            body: "*"
+        };
+    }
 
     /** 
         Method: CloseWallet 
@@ -40,7 +55,11 @@
         Description: Closes current wallet.
     */
 
-    rpc CloseWallet(Empty) returns (Success);
+    rpc CloseWallet(Empty) returns (Success) {
+        option (google.api.http) = {
+            get: "/Wallet/CloseWallet"
+        };
+    }
 
     /** 
         Method: GetBalance 
@@ -49,7 +68,11 @@
         Description: Returns the balance of the current wallet.
     */
 
-    rpc GetBalance(Empty) returns (Balance);
+    rpc GetBalance(Empty) returns (Balance) {
+        option (google.api.http) = {
+            get: "/Wallet/GetBalance"
+        };
+    }
 
     /** 
         Method: GetAccount 
@@ -58,7 +81,11 @@
         Description: Returns returns the public key of the wallet.
     */
 
-    rpc GetAccount(Empty) returns (KeyPair);
+    rpc GetAccount(Empty) returns (KeyPair) {
+        option (google.api.http) = {
+            get: "/Wallet/GetAccount"
+        };
+    }
 
     /** 
         Method: SendTransaction 
@@ -67,7 +94,12 @@
         Description: Sends a transaction from the open wallet and returns the txid.
     */
 
-    rpc SendTransaction(SendTransactionInfo) returns (Hash);
+    rpc SendTransaction(SendTransactionInfo) returns (Hash) {
+        option (google.api.http) = {
+            post: "/Wallet/SendTransaction"
+            body: "*"
+        };
+    }
 
     /** 
         Method: StartValidator 
@@ -76,7 +108,12 @@
         Description: Adds a deposit of the provided validator info and returns the public key.
     */
 
-    rpc StartValidator(KeyPair) returns (KeyPair);
+    rpc StartValidator(KeyPair) returns (KeyPair) {
+        option (google.api.http) = {
+            post: "/Wallet/StartValidator"
+            body: "*"
+        };
+    }
 
     /** 
         Method: ExitValidator 
@@ -85,7 +122,12 @@
         Description: Removes the deposit of the provided validator.
     */
 
-    rpc ExitValidator(KeyPair) returns (Success);
+    rpc ExitValidator(KeyPair) returns (Success) {
+        option (google.api.http) = {
+            post: "/Wallet/ExitValidator"
+            body: "*"
+        };
+    }
 }
 
 message SendTransactionInfo {

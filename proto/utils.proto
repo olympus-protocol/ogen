@@ -2,6 +2,7 @@
 syntax = "proto3";
 option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
+import "google/api/annotations.proto";
 import "common.proto";
 
 service Utils {
@@ -12,7 +13,11 @@ service Utils {
         Response: message KeyPair
         Description: Returns a validator public key and stores the private on the node keychain.
     */
-    rpc GenValidatorKey(Empty) returns (KeyPair);
+    rpc GenValidatorKey(Empty) returns (KeyPair) {
+        option (google.api.http) = {
+            get: "/Utils/GenValidatorKey"
+        };
+    }
 
     /** 
         Method: SubmitRawData 
@@ -20,7 +25,12 @@ service Utils {
         Response: message Success
         Description: Broadcast a raw elements of different transactions.
     */
-    rpc SubmitRawData(RawData) returns (Success);
+    rpc SubmitRawData(RawData) returns (Success) {
+        option (google.api.http) = {
+            post: "/Utils/SubmitRawData"
+            body: "*"
+        };
+    }
    
     /** 
         Method: DecodeRawTransaction 
@@ -28,7 +38,12 @@ service Utils {
         Response: message Tx
         Description: Returns a raw transaction on human readable format.
     */
-    rpc DecodeRawTransaction(RawData) returns (Tx);
+    rpc DecodeRawTransaction(RawData) returns (Tx) {
+        option (google.api.http) = {
+            post: "/Utils/DecodeRawTransaction"
+            body: "*"
+        };
+    }
 
     /** 
         Method: DecodeRawBlock 
@@ -36,5 +51,10 @@ service Utils {
         Response: message Block
         Description: Returns a raw block on human readable format.
     */
-    rpc DecodeRawBlock(RawData) returns (Block);
+    rpc DecodeRawBlock(RawData) returns (Block) {
+        option (google.api.http) = {
+            post: "/Utils/DecodeRawBlock"
+            body: "*"
+        };
+    }
 }

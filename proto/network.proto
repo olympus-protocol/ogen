@@ -2,6 +2,7 @@
 syntax = "proto3";
 option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
 
+import "google/api/annotations.proto";
 import "common.proto";
 
 service Network {
@@ -13,7 +14,11 @@ service Network {
         Description: Returns current network status.
     */
 
-    rpc GetNetworkInfo(Empty) returns (NetworkInfo);
+    rpc GetNetworkInfo(Empty) returns (NetworkInfo) {
+        option (google.api.http) = {
+            get: "/Network/GetNetworkInfo"
+        };
+    }
 
     /** 
         Method: GetPeersInfo 
@@ -22,7 +27,11 @@ service Network {
         Description: Returns current connected peers.
     */
 
-    rpc GetPeersInfo(Empty) returns (Peers);
+    rpc GetPeersInfo(Empty) returns (Peers) {
+        option (google.api.http) = {
+            get: "/Network/GetPeersInfo"
+        };
+    }
 
     /** 
         Method: AddPeer 
@@ -31,7 +40,12 @@ service Network {
         Description: Adds a peer to connect and returns success if the peer was succesfully parsed ready to connect.
     */
 
-    rpc AddPeer(IP) returns (Success);
+    rpc AddPeer(IP) returns (Success) {
+        option (google.api.http) = {
+            post: "/Network/AddPeer"
+            body: "*"
+        };
+    }
 }
 
 message NetworkInfo {
