@@ -82,7 +82,9 @@ func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, param
 }
 
 func (w *Wallet) OpenWallet(name string) error {
-	_ = w.CloseWallet()
+	if w.open {
+		w.CloseWallet()
+	}
 	if _, err := os.Stat(path.Join(w.directory, "wallets")); os.IsNotExist(err) {
 		os.Mkdir(path.Join(w.directory, "wallets"), 0700)
 	}
@@ -180,7 +182,9 @@ func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 }
 
 func (w *Wallet) NewWallet(name string, priv *bls.SecretKey) error {
-	_ = w.CloseWallet()
+	if w.open {
+		w.CloseWallet()
+	}
 	if priv == nil {
 		priv = bls.RandKey()
 	}

@@ -140,6 +140,10 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.openWallet(args[1:])
 		case "closewallet":
 			out, err = c.rpcClient.closeWallet()
+		case "importwallet":
+			out, err = c.rpcClient.importWallet(args[1:])
+		case "dumpwallet":
+			out, err = c.rpcClient.dumpWallet()
 		case "getbalance":
 			out, err = c.rpcClient.getBalance()
 		case "getaccount":

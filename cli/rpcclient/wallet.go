@@ -71,6 +71,37 @@ func (c *RPCClient) closeWallet() (string, error) {
 	return string(b), nil
 }
 
+func (c *RPCClient) importWallet(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if len(args) < 2 {
+		return "", errors.New("Usage: importwallet <name> <wif>")
+	}
+	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Key: &proto.KeyPair{Private: args[1]}})
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (c *RPCClient) dumpWallet() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.wallet.DumpWallet(ctx, &proto.Empty{})
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func (c *RPCClient) getBalance() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

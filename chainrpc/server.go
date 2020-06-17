@@ -132,6 +132,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 		},
 		walletServer: &walletServer{
 			wallet: wallet,
+			params: params,
 		},
 	}, nil
 }

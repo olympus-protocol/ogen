@@ -8,13 +8,14 @@ import (
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/shopspring/decimal"
 )
 
 type walletServer struct {
 	wallet *wallet.Wallet
-	params params.ChainParams
+	params *params.ChainParams
 	proto.UnimplementedWalletServer
 }
 
@@ -66,9 +67,12 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if name == "" {
 		return nil, errors.New("please specify a name for the wallet")
 	}
-	priv, err := hex.DecodeString(in.Key.Private)
+	prefix, priv, err := bech32.Decode(in.Key.Private)
 	if err != nil {
 		return nil, err
+	}
+	if prefix != s.params.AddrPrefix.Private {
+		return nil, errors.New("wrong wallet format for current network")
 	}
 	blsPriv, err := bls.SecretKeyFromBytes(priv)
 	if err != nil {
