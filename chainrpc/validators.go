@@ -51,7 +51,7 @@ func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.
 	for _, v := range validators {
 		if bytes.EqualFold(account, v.PayeeAddress[:]) {
 			validator := &proto.ValidatorRegistry{
-				Balance:      decimal.NewFromInt(int64(v.Balance)).StringFixed(3),
+				Balance:      decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
 				PublicKey:    hex.EncodeToString(v.PubKey),
 				PayeeAddress: bech32.Encode(s.params.AddrPrefix.Public, v.PayeeAddress[:]),
 				Status:       v.Status.String(),

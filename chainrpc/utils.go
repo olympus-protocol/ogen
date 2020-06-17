@@ -26,7 +26,7 @@ func (s *utilsServer) GenValidatorKey(context.Context, *proto.Empty) (*proto.Key
 	if err != nil {
 		return nil, err
 	}
-	return &proto.KeyPair{Public: hex.EncodeToString(key.Marshal())}, nil
+	return &proto.KeyPair{Private: hex.EncodeToString(key.Marshal())}, nil
 }
 
 func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {
