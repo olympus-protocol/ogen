@@ -18,17 +18,18 @@ const (
 )
 
 type Config struct {
-	DataFolder    string
-	Debug         bool
-	Listen        []multiaddr.Multiaddr
-	NetworkName   string
-	AddNodes      []peer.AddrInfo
-	Port          int32
-	MaxPeers      int32
-	MiningEnabled bool
-	InitConfig    primitives.InitializationParameters
-	Wallet        bool
-	RpcProxy      bool
+	DataFolder       string
+	Debug            bool
+	Listen           []multiaddr.Multiaddr
+	NetworkName      string
+	AddNodes         []peer.AddrInfo
+	Port             int32
+	MaxPeers         int32
+	MiningEnabled    bool
+	InitConfig       primitives.InitializationParameters
+	Wallet           bool
+	RPCProxy         bool
+	RPCListenAddress string
 }
 
 func OgenVersion() string {

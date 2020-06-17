@@ -147,9 +147,10 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 
 func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
-		Log:      logger,
-		Wallet:   config.Wallet,
-		RpcProxy: config.RpcProxy,
-		Network:  "tcp",
+		Log:              logger,
+		Wallet:           config.Wallet,
+		RPCProxy:         config.RPCProxy,
+		RPCListenAddress: config.RPCListenAddress,
+		Network:          "tcp",
 	}
 }

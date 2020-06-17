@@ -160,17 +160,18 @@ Next generation blockchain secured by CASPER.`,
 				addNodes[i] = *pinfo
 			}
 			c := &config.Config{
-				DataFolder:    DataFolder,
-				InitConfig:    ip,
-				Debug:         viper.GetBool("debug"),
-				Listen:        []multiaddr.Multiaddr{listenAddr},
-				NetworkName:   networkName,
-				AddNodes:      addNodes,
-				Port:          int32(viper.GetUint("port")),
-				MaxPeers:      int32(viper.GetUint("maxpeers")),
-				MiningEnabled: viper.GetBool("enablemining"),
-				Wallet:        viper.GetBool("enable_wallet_external_access"),
-				RpcProxy:      viper.GetBool("rpc_http_proxy"),
+				DataFolder:       DataFolder,
+				InitConfig:       ip,
+				Debug:            viper.GetBool("debug"),
+				Listen:           []multiaddr.Multiaddr{listenAddr},
+				NetworkName:      networkName,
+				AddNodes:         addNodes,
+				Port:             int32(viper.GetUint("port")),
+				MaxPeers:         int32(viper.GetUint("maxpeers")),
+				MiningEnabled:    viper.GetBool("enablemining"),
+				Wallet:           viper.GetBool("enable_wallet_external_access"),
+				RPCProxy:         viper.GetBool("rpc_http_proxy"),
+				RPCListenAddress: viper.GetString("rpc_listen_address"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -208,6 +209,7 @@ func init() {
 	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
 	rootCmd.Flags().Bool("enable_wallet_external_access", false, "enable wallet access through rpc")
 	rootCmd.Flags().Bool("rpc_http_proxy", false, "enable http proxy for rpc")
+	rootCmd.Flags().String("rpc_listen_address", "localhost:24127", "host/port to listen on for rpc")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {

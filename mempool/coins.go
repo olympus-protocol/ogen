@@ -175,7 +175,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 
 		err = cm.Add(*tx, &currentState)
 		if err != nil {
-			cm.log.Warnf("error adding transaction to mempool (might not be synced): %s", err)
+			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
 	}
 }

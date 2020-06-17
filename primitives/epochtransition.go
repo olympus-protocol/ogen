@@ -109,6 +109,9 @@ func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.Ch
 	validator := &s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
+	// fmt.Printf("exiting %d for %d\n", index, status)
+	// debug.PrintStack()
+
 	if prevStatus == StatusExitedWithPenalty {
 		return nil
 	}
