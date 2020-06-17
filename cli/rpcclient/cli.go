@@ -42,6 +42,8 @@ func completer(d prompt.Document) []prompt.Suggest {
 		{Text: "openwallet", Description: "Open a created wallet"},
 		{Text: "createwallet", Description: "Creates a new wallet and returns the public account"},
 		{Text: "closewallet", Description: "Closes current open wallet"},
+		{Text: "importwallet", Description: "Creates a new wallet based on the wif string private key"},
+		{Text: "dumpwallet", Description: "Exports the private key on wif format of the open wallet"},
 		{Text: "getbalance", Description: "Get the current open wallet balance"},
 		{Text: "getaccount", Description: "Returns the public account of the open wallet"},
 		{Text: "sendtransaction", Description: "Sends a transaction using the current open wallet"},
@@ -123,7 +125,7 @@ func (c *CLI) Run() {
 		case "genrawkeypair":
 			out, err = c.rpcClient.genKeyPair(true)
 		case "genvalidatorkey":
-			out, err = c.rpcClient.genValidatorKey()
+			out, err = c.rpcClient.genValidatorKey(args[1:])
 		case "decoderawtransaction":
 			out, err = c.rpcClient.decodeRawTransaction(args[1:])
 		case "decoderawblock":

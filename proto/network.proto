@@ -16,7 +16,7 @@ service Network {
 
     rpc GetNetworkInfo(Empty) returns (NetworkInfo) {
         option (google.api.http) = {
-            get: "/Network/GetNetworkInfo"
+            get: "/network/getnetworkinfo"
         };
     }
 
@@ -29,7 +29,7 @@ service Network {
 
     rpc GetPeersInfo(Empty) returns (Peers) {
         option (google.api.http) = {
-            get: "/Network/GetPeersInfo"
+            get: "/network/getpeersinfo"
         };
     }
 
@@ -42,7 +42,7 @@ service Network {
 
     rpc AddPeer(IP) returns (Success) {
         option (google.api.http) = {
-            post: "/Network/AddPeer"
+            post: "/network/addpeer"
             body: "*"
         };
     }

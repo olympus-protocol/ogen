@@ -16,7 +16,7 @@
 
     rpc ListWallets(Empty) returns (Wallets) {
         option (google.api.http) = {
-            get: "/Wallet/ListWallets"
+            get: "/wallet/listwallets"
         };
     }
 
@@ -29,7 +29,7 @@
 
     rpc CreateWallet(Name) returns (KeyPair) {
         option (google.api.http) = {
-            post: "/Wallet/CreateWallet"
+            post: "/wallet/createwallet"
             body: "*"
         };
     }
@@ -43,8 +43,34 @@
 
     rpc OpenWallet(Name) returns (Success) {
         option (google.api.http) = {
-            post: "/Wallet/OpenWallet"
+            post: "/wallet/openwallet"
             body: "*"
+        };
+    }
+
+    /** 
+        Method: ImportWallet 
+        Input: message KeyPair
+        Response: message KeyPair
+        Description: Create a new wallet from a private key on wif format and returns the account.
+    */
+
+    rpc ImportWallet(ImportWalletData) returns (KeyPair) {
+        option (google.api.http) = {
+            get: "/wallet/importwallet"
+        };
+    }
+
+    /** 
+        Method: DumpWallet 
+        Input: message Empty
+        Response: message KeyPair
+        Description: Returns the wallet private key on wif format.
+    */
+
+    rpc DumpWallet(Empty) returns (KeyPair) {
+        option (google.api.http) = {
+            get: "/wallet/dumpwallet"
         };
     }
 
@@ -57,7 +83,7 @@
 
     rpc CloseWallet(Empty) returns (Success) {
         option (google.api.http) = {
-            get: "/Wallet/CloseWallet"
+            get: "/wallet/closewallet"
         };
     }
 
@@ -70,7 +96,7 @@
 
     rpc GetBalance(Empty) returns (Balance) {
         option (google.api.http) = {
-            get: "/Wallet/GetBalance"
+            get: "/wallet/getbalance"
         };
     }
 
@@ -83,7 +109,7 @@
 
     rpc GetAccount(Empty) returns (KeyPair) {
         option (google.api.http) = {
-            get: "/Wallet/GetAccount"
+            get: "/wallet/getaccount"
         };
     }
 
@@ -96,7 +122,7 @@
 
     rpc SendTransaction(SendTransactionInfo) returns (Hash) {
         option (google.api.http) = {
-            post: "/Wallet/SendTransaction"
+            post: "/wallet/sendtransaction"
             body: "*"
         };
     }
@@ -110,7 +136,7 @@
 
     rpc StartValidator(KeyPair) returns (KeyPair) {
         option (google.api.http) = {
-            post: "/Wallet/StartValidator"
+            post: "/wallet/startvalidator"
             body: "*"
         };
     }
@@ -124,7 +150,7 @@
 
     rpc ExitValidator(KeyPair) returns (Success) {
         option (google.api.http) = {
-            post: "/Wallet/ExitValidator"
+            post: "/wallet/exitvalidator"
             body: "*"
         };
     }
@@ -146,4 +172,9 @@ message Wallets {
 
 message Name {
     string name = 1;
+}
+
+message ImportWalletData {
+    string name = 1;
+    KeyPair key = 2;
 }

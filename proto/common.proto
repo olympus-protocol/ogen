@@ -7,14 +7,18 @@ message Hash {
     bytes hash = 1;
 }
 
-message Height {
-    uint64 height = 1;
+message Number {
+    uint64 number = 1;
 }
 
 message Success {
     bool success = 1;
     string error = 2;
     string data = 3;
+}
+
+message KeyPairs {
+    repeated KeyPair keys = 1;
 }
 
 message KeyPair {

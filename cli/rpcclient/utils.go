@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -59,10 +60,22 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) genValidatorKey() (string, error) {
+func (c *RPCClient) genValidatorKey(args []string) (out string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	res, err := c.utils.GenValidatorKey(ctx, &proto.Empty{})
+	amount := 0
+	if len(args) < 1 {
+		amount = 0
+	} else {
+		amount, err = strconv.Atoi(args[0])
+		if err != nil {
+			return out, err
+		}
+	}
+	req := &proto.Number{
+		Number: uint64(amount),
+	}
+	res, err := c.utils.GenValidatorKey(ctx, req)
 	if err != nil {
 		return "", err
 	}

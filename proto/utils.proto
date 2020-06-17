@@ -9,13 +9,13 @@ service Utils {
 
     /** 
         Method: GenValidatorKey 
-        Input: message Empty
-        Response: message KeyPair
-        Description: Returns a validator public key and stores the private on the node keychain.
+        Input: message Number
+        Response: message KeyPairs
+        Description: Returns private keys generated for validators start.
     */
-    rpc GenValidatorKey(Empty) returns (KeyPair) {
+    rpc GenValidatorKey(Number) returns (KeyPairs) {
         option (google.api.http) = {
-            get: "/Utils/GenValidatorKey"
+            get: "/utils/genvalidatorkey"
         };
     }
 
@@ -27,7 +27,7 @@ service Utils {
     */
     rpc SubmitRawData(RawData) returns (Success) {
         option (google.api.http) = {
-            post: "/Utils/SubmitRawData"
+            post: "/utils/submitrawdata"
             body: "*"
         };
     }
@@ -40,7 +40,7 @@ service Utils {
     */
     rpc DecodeRawTransaction(RawData) returns (Tx) {
         option (google.api.http) = {
-            post: "/Utils/DecodeRawTransaction"
+            post: "/utils/decoderawtransaction"
             body: "*"
         };
     }
@@ -53,7 +53,7 @@ service Utils {
     */
     rpc DecodeRawBlock(RawData) returns (Block) {
         option (google.api.http) = {
-            post: "/Utils/DecodeRawBlock"
+            post: "/utils/decoderawblock"
             body: "*"
         };
     }

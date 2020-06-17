@@ -16,7 +16,7 @@ service Validators {
 
     rpc GetValidatorsList(Empty) returns (ValidatorsRegistry) {
         option (google.api.http) = {
-            get: "/Validators/GetValidatorsList"
+            get: "/validators/getvalidatorslist"
         };
     }
 
@@ -29,7 +29,7 @@ service Validators {
 
     rpc GetAccountValidators(Account) returns (ValidatorsRegistry) {
         option (google.api.http) = {
-            post: "/Validators/GetAccountValidators"
+            post: "/validators/getaccountvalidators"
             body: "*"
         };
     }

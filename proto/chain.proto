@@ -16,7 +16,7 @@ service Chain {
 
     rpc GetChainInfo(Empty) returns (ChainInfo) {
         option (google.api.http) = {
-            get: "/Chain/GetChainInfo"
+            get: "/chain/getchaininfo"
         };
     }
 
@@ -29,7 +29,7 @@ service Chain {
 
     rpc GetRawBlock(Hash) returns (Block) {
         option (google.api.http) = {
-            post: "/Chain/GetRawBlock"
+            post: "/chain/getrawblock"
             body: "*"
         };
     }
@@ -43,21 +43,21 @@ service Chain {
 
     rpc GetBlock(Hash) returns (Block) {
         option (google.api.http) = {
-            post: "/Chain/GetBlock"
+            post: "/chain/getblock"
             body: "*"
         };
     }
 
     /** 
         Method: GetBlockHash 
-        Input: message BlockHeight
+        Input: message Number
         Response: message GetBlockHashResponse
         Description: Returns the hash string of the block at specified height
     */
 
-    rpc GetBlockHash(Height) returns (Hash) {
+    rpc GetBlockHash(Number) returns (Hash) {
         option (google.api.http) = {
-            post: "/Chain/GetBlockHash"
+            post: "/chain/getblockhash"
             body: "*"
         };
     }
@@ -71,7 +71,7 @@ service Chain {
 
     rpc GetAccountInfo(Account) returns (AccountInfo) {
         option (google.api.http) = {
-            post: "/Chain/GetAccountInfo"
+            post: "/chain/getaccountinfo"
             body: "*"
         };
     }
@@ -85,7 +85,7 @@ service Chain {
 
     rpc GetTransaction(Hash) returns (Tx) {
         option (google.api.http) = {
-            post: "/Chain/GetTransaction"
+            post: "/chain/gettransaction"
             body: "*"
         };
     }
@@ -97,7 +97,12 @@ service Chain {
         Description: Returns a stream of raw blocks from the block hash specified
     */
 
-    rpc Sync(Hash) returns (stream RawData);
+    rpc Sync(Hash) returns (stream RawData) {
+        option (google.api.http) = {
+            post: "/chain/sync"
+            body: "*"
+        };
+    }
 
     /** 
         Method: Subscribe 
@@ -106,13 +111,43 @@ service Chain {
         Description: Returns a stream to notify when new blocks arrive
     */
 
-    rpc SubscribeBlocks(Empty) returns (stream SubscribeResponse);
-    rpc SubscribeTransactions(SubscribeAccountRequest) returns (stream SubscribeResponse);
-    rpc SubscribeValidatorTransactions(SubscribeValidatorRequest) returns (stream SubscribeResponse);
+    rpc SubscribeBlocks(Empty) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            get: "/chain/subscribeblocks"
+        };
+    }
+
+     /** 
+        Method: SubscribeTransactions 
+        Input: message SubscribeAccountRequest
+        Response: message SubscribeResponse
+        Description: Return a stream when an account is found on a transaction
+    */
+
+    rpc SubscribeTransactions(SubscribeAccountRequest) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            post: "/chain/subscribetransactions"
+            body: "*"
+        };
+    }
+
+    /** 
+        Method: SubscribeValidatorTransactions 
+        Input: message SubscribeValidatorRequest
+        Response: message SubscribeResponse
+        Description: Return a stream when validator pubkey is modified on the ValidatorRegistry
+    */
+
+    rpc SubscribeValidatorTransactions(SubscribeValidatorRequest) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            post: "/chain/subscribevalidatortransactions"
+            body: "*"
+        };
+    }
 }
 
 message SubscribeResponse {
-    bytes Data = 1;
+    bytes data = 1;
 }
 
 message SubscribeAccountRequest {

@@ -165,11 +165,11 @@ func RegisterNetworkHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Network_GetNetworkInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Network", "GetNetworkInfo"}, ""))
+	pattern_Network_GetNetworkInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"network", "getnetworkinfo"}, ""))
 
-	pattern_Network_GetPeersInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Network", "GetPeersInfo"}, ""))
+	pattern_Network_GetPeersInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"network", "getpeersinfo"}, ""))
 
-	pattern_Network_AddPeer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Network", "AddPeer"}, ""))
+	pattern_Network_AddPeer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"network", "addpeer"}, ""))
 )
 
 var (

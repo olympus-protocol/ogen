@@ -21,12 +21,18 @@ type utilsServer struct {
 	proto.UnimplementedUtilsServer
 }
 
-func (s *utilsServer) GenValidatorKey(context.Context, *proto.Empty) (*proto.KeyPair, error) {
-	key, err := s.keystore.GenerateNewValidatorKey()
+func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.Number) (*proto.KeyPairs, error) {
+	key, err := s.keystore.GenerateNewValidatorKey(in.Number)
 	if err != nil {
 		return nil, err
 	}
-	return &proto.KeyPair{Private: hex.EncodeToString(key.Marshal())}, nil
+	keys := make([]*proto.KeyPair, in.Number)
+	for i := range keys {
+		keys[i] = &proto.KeyPair{
+			Private: hex.EncodeToString(key[i].Marshal()),
+		}
+	}
+	return &proto.KeyPairs{Keys: keys}, nil
 }
 
 func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {

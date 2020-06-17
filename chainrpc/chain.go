@@ -76,8 +76,8 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 	return blockParse, nil
 }
 
-func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Height) (*proto.Hash, error) {
-	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.Height)
+func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Number) (*proto.Hash, error) {
+	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.Number)
 	if !exists {
 		return nil, errors.New("block not found")
 	}

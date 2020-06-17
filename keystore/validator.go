@@ -69,14 +69,21 @@ func (k *Keystore) HasValidatorKey(pubBytes []byte) (result bool, err error) {
 }
 
 // GenerateNewValidatorKey generates a new validator key.
-func (k *Keystore) GenerateNewValidatorKey() (*bls.SecretKey, error) {
-	key := bls.RandKey()
-	keyBytes := key.Marshal()
-	pub := key.PublicKey()
-	pubBytes := pub.Marshal()
-	err := k.db.Update(func(txn *bbolt.Tx) error {
-		bkt := txn.Bucket(keysBucket)
-		return bkt.Put(pubBytes, keyBytes)
-	})
-	return key, err
+func (k *Keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
+	keys := make([]*bls.SecretKey, amount)
+	for i := range keys {
+		key := bls.RandKey()
+		keyBytes := key.Marshal()
+		pub := key.PublicKey()
+		pubBytes := pub.Marshal()
+		err := k.db.Update(func(txn *bbolt.Tx) error {
+			bkt := txn.Bucket(keysBucket)
+			return bkt.Put(pubBytes, keyBytes)
+		})
+		if err != nil {
+			return nil, err
+		}
+		keys[i] = key
+	}
+	return keys, nil
 }

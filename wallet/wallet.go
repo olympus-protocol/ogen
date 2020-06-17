@@ -12,6 +12,7 @@ import (
 	"go.etcd.io/bbolt"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/peers"
@@ -21,7 +22,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
-var ErrorOpen = errors.New("please open a wallet first")
+var errorAlreadyExist = errors.New("the wallet you try to create already exists")
 
 type Wallet struct {
 	db            *bbolt.DB
@@ -81,6 +82,7 @@ func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, param
 }
 
 func (w *Wallet) OpenWallet(name string) error {
+	_ = w.CloseWallet()
 	if _, err := os.Stat(path.Join(w.directory, "wallets")); os.IsNotExist(err) {
 		os.Mkdir(path.Join(w.directory, "wallets"), 0700)
 	}
@@ -95,7 +97,8 @@ func (w *Wallet) OpenWallet(name string) error {
 	w.db = db
 	err = w.load()
 	if err == errorNotInit {
-		err := w.initialize()
+		prv := bls.RandKey()
+		err := w.initialize(prv)
 		if err != nil {
 			return err
 		}
@@ -174,4 +177,30 @@ func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 		return [20]byte{}, errors.New("expected address to be 20 bytes")
 	}
 	return w.info.account, nil
+}
+
+func (w *Wallet) NewWallet(name string, priv *bls.SecretKey) error {
+	_ = w.CloseWallet()
+	if priv == nil {
+		priv = bls.RandKey()
+	}
+	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
+	if err != nil {
+		return err
+	}
+	w.db = db
+	err = w.load()
+	if err == nil {
+		return errorAlreadyExist
+	}
+	err = w.initialize(priv)
+	if err != nil {
+		return err
+	}
+	err = w.load()
+	if err != nil {
+		return err
+	}
+	w.open = true
+	return nil
 }

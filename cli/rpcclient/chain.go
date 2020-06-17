@@ -55,8 +55,8 @@ func (c *RPCClient) getBlockHash(args []string) (string, error) {
 	if err != nil {
 		return "", errors.New("unable to parse block height")
 	}
-	req := &proto.Height{
-		Height: uint64(height),
+	req := &proto.Number{
+		Number: uint64(height),
 	}
 	res, err := c.chain.GetBlockHash(ctx, req)
 	if err != nil {

@@ -5,13 +5,16 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chainrpc/proto"
+	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/shopspring/decimal"
 )
 
 type walletServer struct {
 	wallet *wallet.Wallet
+	params params.ChainParams
 	proto.UnimplementedWalletServer
 }
 
@@ -56,6 +59,42 @@ func (s *walletServer) CloseWallet(context.Context, *proto.Empty) (*proto.Succes
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
 	return &proto.Success{Success: true}, nil
+}
+
+func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletData) (*proto.KeyPair, error) {
+	name := in.Name
+	if name == "" {
+		return nil, errors.New("please specify a name for the wallet")
+	}
+	priv, err := hex.DecodeString(in.Key.Private)
+	if err != nil {
+		return nil, err
+	}
+	blsPriv, err := bls.SecretKeyFromBytes(priv)
+	if err != nil {
+		return nil, err
+	}
+	err = s.wallet.NewWallet(name, blsPriv)
+	if err != nil {
+		return nil, err
+	}
+	acc, err := s.wallet.GetAccount()
+	if err != nil {
+		return nil, err
+	}
+	return &proto.KeyPair{Public: acc}, nil
+}
+
+func (s *walletServer) DumpWallet(context.Context, *proto.Empty) (*proto.KeyPair, error) {
+	priv, err := s.wallet.GetSecret()
+	if err != nil {
+		return nil, err
+	}
+	wif, err := priv.ToWIF(s.params.AddrPrefix.Private)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.KeyPair{Private: wif}, nil
 }
 
 func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance, error) {

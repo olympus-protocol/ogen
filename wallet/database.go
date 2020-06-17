@@ -78,6 +78,9 @@ func (w *Wallet) GetPublicKey() ([20]byte, error) {
 }
 
 func (w *Wallet) GetSecret() (s *bls.SecretKey, err error) {
+	if !w.open {
+		return nil, errorNotOpen
+	}
 	err = w.db.View(func(tx *bbolt.Tx) error {
 		keyBucket := tx.Bucket(walletKeyBucket)
 		if keyBucket == nil {
@@ -153,8 +156,7 @@ func (w *Wallet) recover() error {
 	return nil
 }
 
-func (w *Wallet) initialize() error {
-	privateKey := bls.RandKey()
+func (w *Wallet) initialize(prv *bls.SecretKey) error {
 	w.db.Update(func(tx *bbolt.Tx) error {
 		keyBucket, err := tx.CreateBucketIfNotExists(walletKeyBucket)
 		if err != nil {
@@ -162,7 +164,7 @@ func (w *Wallet) initialize() error {
 		}
 		var encapsulatedPrivKey []byte
 		encapsulatedPrivKey = append(encapsulatedPrivKey, privKeyMagicBytes...)
-		encapsulatedPrivKey = append(encapsulatedPrivKey, privateKey.Marshal()...)
+		encapsulatedPrivKey = append(encapsulatedPrivKey, prv.Marshal()...)
 		encapsulatedPrivKey = append(encapsulatedPrivKey, privKeyMagicBytes...)
 		err = keyBucket.Put(walletPrivKeyDbKey, encapsulatedPrivKey)
 		if err != nil {
@@ -177,7 +179,7 @@ func (w *Wallet) initialize() error {
 			return errors.New("error reading from random" + err.Error())
 		}
 		lastNonce := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-		pubKey := privateKey.PublicKey()
+		pubKey := prv.PublicKey()
 		pubKeyBytes := pubKey.Marshal()
 		var account [20]byte
 		h := chainhash.HashH(pubKeyBytes[:])

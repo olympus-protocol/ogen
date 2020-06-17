@@ -136,9 +136,9 @@ func RegisterValidatorsHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 }
 
 var (
-	pattern_Validators_GetValidatorsList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Validators", "GetValidatorsList"}, ""))
+	pattern_Validators_GetValidatorsList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"validators", "getvalidatorslist"}, ""))
 
-	pattern_Validators_GetAccountValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Validators", "GetAccountValidators"}, ""))
+	pattern_Validators_GetAccountValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"validators", "getaccountvalidators"}, ""))
 )
 
 var (

@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/fatih/color"
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/spf13/cobra"
 )
@@ -36,14 +35,10 @@ var generateKeysCmd = &cobra.Command{
 			panic(err)
 		}
 
-		keys := make([]*bls.SecretKey, numKeys)
-		for i := 0; i < numKeys; i++ {
-			key, err := k.GenerateNewValidatorKey()
-			if err != nil {
-				fmt.Printf("error generating key: %s\n", err)
-				return
-			}
-			keys[i] = key
+		keys, err := k.GenerateNewValidatorKey(uint64(numKeys))
+		if err != nil {
+			fmt.Printf("error generating key: %s\n", err)
+			return
 		}
 
 		err = k.Close()
