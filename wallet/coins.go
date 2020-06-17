@@ -23,6 +23,9 @@ func (w *Wallet) GetBalance() (uint64, error) {
 
 // StartValidator signs a validator deposit.
 func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
+	if !w.open {
+		return nil, errorNotOpen
+	}
 	priv, err := w.GetSecret()
 	if err != nil {
 		return nil, err
@@ -78,6 +81,9 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 
 // ExitValidator submits an exit transaction for a certain validator.
 func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error) {
+	if !w.open {
+		return nil, errorNotOpen
+	}
 	priv, err := w.GetSecret()
 	if err != nil {
 		return nil, err
@@ -114,6 +120,9 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 
 // SendToAddress sends an amount to an address with the given password and parameters.
 func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error) {
+	if !w.open {
+		return nil, errorNotOpen
+	}
 	priv, err := w.GetSecret()
 	if err != nil {
 		return nil, err
