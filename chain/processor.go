@@ -56,7 +56,7 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chai
 	}
 
 	for {
-		children := head.Children
+		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
 				ch.state.blockChain.SetTip(head)

@@ -184,7 +184,7 @@ func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 
 		err = am.AddDeposit(tx, currentState)
 		if err != nil {
-			am.log.Warnf("error adding transaction to mempool: %s", err)
+			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
 	}
 }
@@ -397,7 +397,7 @@ func (am *ActionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 
 		err = am.AddGovernanceVote(tx, currentState)
 		if err != nil {
-			am.log.Warnf("error adding transaction to mempool: %s", err)
+			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
 	}
 }
@@ -446,7 +446,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 
 		err = am.AddExit(tx, currentState)
 		if err != nil {
-			am.log.Warnf("error adding transaction to mempool: %s", err)
+			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
 	}
 }

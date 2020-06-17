@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -35,6 +36,14 @@ type SyncProtocol struct {
 
 	notifees     []SyncNotifee
 	notifeesLock sync.Mutex
+
+	// held while waiting on blocks request
+	syncMutex sync.Mutex
+	syncInfo  struct {
+		syncing     bool
+		withPeer    peer.ID
+		lastRequest time.Time
+	}
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -120,6 +129,9 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 	return nil
 }
 
+// StaleBlockRequestTimeout is the timeout for block requests.
+const StaleBlockRequestTimeout = time.Second * 10
+
 func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	bh := block.Hash()
 	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
@@ -127,14 +139,22 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		// TODO: better peer selection for syncing
 		peers := sp.host.GetPeerList()
 		if len(peers) > 0 {
-			err := sp.protocolHandler.SendMessage(peers[0], &p2p.MsgGetBlocks{
-				LocatorHashes: sp.chain.GetLocatorHashes(),
-				HashStop:      bh,
-			})
-			return err
-		} else {
-			return nil
+			sp.syncMutex.Lock()
+			if !sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout {
+				sp.syncInfo.lastRequest = time.Now()
+				sp.syncInfo.withPeer = peers[0]
+				sp.syncInfo.syncing = true
+				sp.syncMutex.Unlock()
+
+				err := sp.protocolHandler.SendMessage(peers[0], &p2p.MsgGetBlocks{
+					LocatorHashes: sp.chain.GetLocatorHashes(),
+					HashStop:      bh,
+				})
+				return err
+			}
+			sp.syncMutex.Unlock()
 		}
+		return nil
 	}
 
 	if sp.chain.State().Index().Have(bh) {
@@ -243,13 +263,21 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	}
 
 	if theirVersion.LastBlock > ourVersion.LastBlock {
-		err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-			HashStop:      chainhash.Hash{},
-			LocatorHashes: sp.chain.GetLocatorHashes(),
-		})
-		if err != nil {
+		sp.syncMutex.Lock()
+
+		if !sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout {
+			sp.syncInfo.lastRequest = time.Now()
+			sp.syncInfo.withPeer = id
+			sp.syncInfo.syncing = true
+			sp.syncMutex.Unlock()
+
+			err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+				LocatorHashes: sp.chain.GetLocatorHashes(),
+				HashStop:      chainhash.Hash{},
+			})
 			return err
 		}
+		sp.syncMutex.Unlock()
 	}
 
 	return nil

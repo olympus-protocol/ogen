@@ -338,7 +338,7 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 
 		err = m.AddValidate(tx, currentState)
 		if err != nil {
-			m.log.Warnf("error adding transaction to mempool: %s", err)
+			m.log.Warnf("error adding transaction to mempool (might not be synced): %s", err)
 		}
 	}
 }

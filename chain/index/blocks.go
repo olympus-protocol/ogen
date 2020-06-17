@@ -16,7 +16,32 @@ type BlockRow struct {
 	Slot      uint64
 	Hash      chainhash.Hash
 	Parent    *BlockRow
-	Children  []*BlockRow
+
+	children     []*BlockRow
+	childrenLock sync.RWMutex
+}
+
+// AddChild adds a child to the block row.
+func (br *BlockRow) AddChild(child *BlockRow) {
+	br.childrenLock.Lock()
+	defer br.childrenLock.Unlock()
+
+	for _, c := range br.children {
+		if c.Hash.IsEqual(&child.Hash) {
+			return
+		}
+	}
+
+	br.children = append(br.children, child)
+}
+
+// Children gets the children of the block row.
+func (br *BlockRow) Children() []*BlockRow {
+	childrenCopy := make([]*BlockRow, len(br.children))
+	br.childrenLock.RLock()
+	defer br.childrenLock.RUnlock()
+	copy(childrenCopy, br.children)
+	return childrenCopy
 }
 
 // GetAncestorAtSlot gets the block row ancestor at a certain slot.
@@ -73,13 +98,13 @@ func (i *BlockIndex) LoadBlockNode(row *bdb.BlockNodeDisk) (*BlockRow, error) {
 		Slot:      row.Slot,
 		StateRoot: row.StateRoot,
 		Parent:    parent,
-		Children:  make([]*BlockRow, 0),
+		children:  make([]*BlockRow, 0),
 	}
 
 	i.index[row.Hash] = newNode
 
 	if parent != nil {
-		parent.Children = append(parent.Children, newNode)
+		parent.children = append(parent.children, newNode)
 	}
 
 	return newNode, nil
@@ -127,10 +152,10 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 		Parent:    prev,
 		Hash:      block.Header.Hash(),
 		Slot:      block.Header.Slot,
-		Children:  make([]*BlockRow, 0),
+		children:  make([]*BlockRow, 0),
 	}
 
-	prev.Children = append(prev.Children, row)
+	prev.AddChild(row)
 
 	i.index[block.Header.PrevBlockHash] = prev
 
@@ -159,9 +184,10 @@ func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 // ToBlockNodeDisk converts an in-memory representation of a block row
 // to a serializable version.
 func (br *BlockRow) ToBlockNodeDisk() *bdb.BlockNodeDisk {
-	children := make([]chainhash.Hash, len(br.Children))
-	for i := range children {
-		children[i] = br.Children[i].Hash
+	childrenNodes := br.Children()
+	children := make([]chainhash.Hash, len(childrenNodes))
+	for i := range childrenNodes {
+		children[i] = childrenNodes[i].Hash
 	}
 
 	parent := chainhash.Hash{}
