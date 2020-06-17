@@ -28,7 +28,7 @@ func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*pr
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey),
 			Status:           v.Status.String(),
-			Balance:          decimal.NewFromInt(int64(v.Balance)).StringFixed(3),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
 		}
