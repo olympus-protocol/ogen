@@ -109,9 +109,6 @@ func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.Ch
 	validator := &s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
-	// fmt.Printf("exiting %d for %d\n", index, status)
-	// debug.PrintStack()
-
 	if prevStatus == StatusExitedWithPenalty {
 		return nil
 	}
@@ -529,6 +526,9 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	penalizeValidator := func(index uint32, penalty uint64, why ReceiptType) {
+		if s.ValidatorRegistry[index].FirstActiveEpoch+1 >= int64(s.EpochIndex) {
+			return
+		}
 		s.ValidatorRegistry[index].Balance -= penalty
 		receipts = append(receipts, &EpochReceipt{
 			Validator: index,
