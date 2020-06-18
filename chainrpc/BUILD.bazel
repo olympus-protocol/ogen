@@ -20,6 +20,7 @@ go_library(
         "//params:go_default_library",
         "//peers:go_default_library",
         "//primitives:go_default_library",
+        "//proto:go_default_library",
         "//utils/bech32:go_default_library",
         "//utils/chainhash:go_default_library",
         "//utils/logger:go_default_library",

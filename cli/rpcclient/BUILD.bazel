@@ -15,6 +15,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//bls:go_default_library",
+        "//proto:go_default_library",
         "@com_github_c_bata_go_prompt//:go_default_library",
         "@com_github_fatih_color//:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
