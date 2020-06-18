@@ -90,9 +90,9 @@ build:cgo_symbolizer --define=gotags=cgosymbolizer_enabled
 
 # multi-arch cross-compiling toolchain configs:
 -----------------------------------------------
-build:cross --crosstool_top=@prysm_toolchains//:multiarch_toolchain
+build:cross --crosstool_top=@ogen_toolchains//:multiarch_toolchain
 build:cross --host_platform=@io_bazel_rules_go//go/toolchain:linux_amd64
-build:cross --host_crosstool_top=@prysm_toolchains//:hostonly_toolchain
+build:cross --host_crosstool_top=@ogen_toolchains//:hostonly_toolchain
 
 # linux_amd64 config for cross compiler toolchain, not strictly necessary since host/exec env is amd64
 build:linux_amd64 --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64_cgo
@@ -158,7 +158,7 @@ build:docker-sandbox --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8
 build:docker-sandbox --extra_execution_platforms=@rbe_ubuntu_clang//config:platform 
 build:docker-sandbox --host_platform=@rbe_ubuntu_clang//config:platform 
 build:docker-sandbox --platforms=@rbe_ubuntu_clang//config:platform
-build:docker-sandbox --extra_toolchains=@prysm_toolchains//:cc-toolchain-multiarch
+build:docker-sandbox --extra_toolchains=@ogen_toolchains//:cc-toolchain-multiarch
 
 # windows_amd64 docker sandbox build config
 build:windows_amd64_docker --config=docker-sandbox --config=windows_amd64
