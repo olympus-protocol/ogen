@@ -526,7 +526,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	penalizeValidator := func(index uint32, penalty uint64, why ReceiptType) {
-		if s.ValidatorRegistry[index].FirstActiveEpoch+1 >= int64(s.EpochIndex) {
+		if s.ValidatorRegistry[index].FirstActiveEpoch+5 >= int64(s.EpochIndex) {
 			return
 		}
 		s.ValidatorRegistry[index].Balance -= penalty
