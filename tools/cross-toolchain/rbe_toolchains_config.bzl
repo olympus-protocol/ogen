@@ -1,5 +1,5 @@
 load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
-load("@prysm//tools/cross-toolchain:configs/versions.bzl", _generated_toolchain_config_suite_autogen_spec = "TOOLCHAIN_CONFIG_AUTOGEN_SPEC")
+load("@ogen//tools/cross-toolchain:configs/versions.bzl", _generated_toolchain_config_suite_autogen_spec = "TOOLCHAIN_CONFIG_AUTOGEN_SPEC")
 
 _PRYSM_BUILD_IMAGE_REGISTRY = "gcr.io"
 _PRYSM_BUILD_IMAGE_REPOSITORY = "prysmaticlabs/rbe-worker"

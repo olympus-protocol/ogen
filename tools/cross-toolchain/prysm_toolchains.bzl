@@ -20,21 +20,21 @@ prysm_toolchains = repository_rule(
     implementation = _pryms_toolchains_impl,
     attrs = {
         "_build_tpl": attr.label(
-            default = "@prysm//tools/cross-toolchain:cc_toolchain.BUILD.bazel.tpl",
+            default = "@ogen//tools/cross-toolchain:cc_toolchain.BUILD.bazel.tpl",
         ),
         "_cc_toolchain_config_linux_arm_tpl": attr.label(
-            default = "@prysm//tools/cross-toolchain:cc_toolchain_config_linux_arm64.bzl.tpl",
+            default = "@ogen//tools/cross-toolchain:cc_toolchain_config_linux_arm64.bzl.tpl",
         ),
         "_cc_toolchain_config_osx_tpl": attr.label(
-            default = "@prysm//tools/cross-toolchain:cc_toolchain_config_osx.bzl.tpl",
+            default = "@ogen//tools/cross-toolchain:cc_toolchain_config_osx.bzl.tpl",
         ),
         "_cc_toolchain_config_windows_tpl": attr.label(
-            default = "@prysm//tools/cross-toolchain:cc_toolchain_config_windows.bzl.tpl",
+            default = "@ogen//tools/cross-toolchain:cc_toolchain_config_windows.bzl.tpl",
         ),
     },
     doc = "Configures Prysm custom toolchains for cross compilation and remote build execution.",
 )
 
 def configure_prysm_toolchains():
-    prysm_toolchains(name = "prysm_toolchains")
-    native.register_toolchains("@prysm_toolchains//:cc-toolchain-multiarch")
+    prysm_toolchains(name = "ogen_toolchains")
+    native.register_toolchains("@ogen_toolchains//:cc-toolchain-multiarch")

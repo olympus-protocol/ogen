@@ -34,11 +34,11 @@ load("@llvm_toolchain//:toolchains.bzl", "llvm_register_toolchains")
 
 llvm_register_toolchains()
 
-load("@ogen//tools/cross-toolchain:toolchains.bzl", "configure_toolchains")
+load("@ogen//tools/cross-toolchain:prysm_toolchains.bzl", "configure_prysm_toolchains")
 
 configure_prysm_toolchains()
 
-load("@ogen//tools/cross-toolchain:toolchains_config.bzl", "toolchains_config")
+load("@ogen//tools/cross-toolchain:rbe_toolchains_config.bzl", "rbe_toolchains_config")
 
 rbe_toolchains_config()
 
