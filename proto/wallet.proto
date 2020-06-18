@@ -1,6 +1,6 @@
   
   syntax = "proto3";
-  option go_package = "github.com/olympus-protocol/ogen/chainrpc/proto";
+  option go_package = "github.com/olympus-protocol/ogen/proto";
   
   import "google/api/annotations.proto";
   import "common.proto";

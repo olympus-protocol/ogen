@@ -48,6 +48,6 @@ load("//:deps.bzl", "ogen_deps")
 # gazelle:repository_macro deps.bzl%ogen_deps
 ogen_deps()
 
-load("//:bls.bzl", "bls_deps")
+load("@ogen//tools/bls:bls.bzl", "bls_deps")
 
 bls_deps()

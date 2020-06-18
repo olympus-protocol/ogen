@@ -903,6 +903,7 @@ def ogen_deps():
     )
     go_repository(
         name = "com_github_libp2p_go_libp2p",
+        build_file_proto_mode = "disable_global",
         importpath = "github.com/libp2p/go-libp2p",
         sum = "h1:7ooOvK1wi8eLpyTppy8TeH43UHy5uI75GAHGJxenUi0=",
         version = "v0.10.0",
@@ -995,6 +996,7 @@ def ogen_deps():
     )
     go_repository(
         name = "com_github_libp2p_go_libp2p_pubsub",
+        build_file_proto_mode = "disable_global",
         importpath = "github.com/libp2p/go-libp2p-pubsub",
         sum = "h1:k3cJm5JW5mjaWZkobS50sJLJWaB2mBi0HW4eRlE8mSo=",
         version = "v0.3.2",
@@ -1007,6 +1009,7 @@ def ogen_deps():
     )
     go_repository(
         name = "com_github_libp2p_go_libp2p_secio",
+        build_file_proto_mode = "disable_global",
         importpath = "github.com/libp2p/go-libp2p-secio",
         sum = "h1:rLLPvShPQAcY6eNurKNZq3eZjPWfU9kXF2eI9jIYdrg=",
         version = "v0.2.2",
@@ -1026,6 +1029,10 @@ def ogen_deps():
     go_repository(
         name = "com_github_libp2p_go_libp2p_tls",
         importpath = "github.com/libp2p/go-libp2p-tls",
+        patch_args = ["-p1"],
+        patches = [
+            "@ogen//tools:libp2p_tls.patch",  # See: https://github.com/libp2p/go-libp2p-tls/issues/66
+        ],
         sum = "h1:twKMhMu44jQO+HgQK9X8NHO5HkeJu2QbhLzLJpa8oNM=",
         version = "v0.1.3",
     )

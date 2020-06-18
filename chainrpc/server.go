@@ -7,7 +7,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/chainrpc/proto"
+	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
