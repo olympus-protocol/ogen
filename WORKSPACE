@@ -1,3 +1,5 @@
+workspace(name = "ogen")
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
@@ -46,3 +48,6 @@ load("//:deps.bzl", "ogen_deps")
 # gazelle:repository_macro deps.bzl%ogen_deps
 ogen_deps()
 
+load("//:bls.bzl", "bls_deps")
+
+bls_deps()

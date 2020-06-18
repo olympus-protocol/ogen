@@ -933,12 +933,14 @@ def ogen_deps():
     )
     go_repository(
         name = "com_github_libp2p_go_libp2p_core",
+        build_file_proto_mode = "disable_global",
         importpath = "github.com/libp2p/go-libp2p-core",
         sum = "h1:u03qofNYTBN+yVg08PuAKylZogVf0xcTEeM8skGf+ak=",
         version = "v0.6.0",
     )
     go_repository(
         name = "com_github_libp2p_go_libp2p_crypto",
+        build_file_proto_mode = "disable_global",
         importpath = "github.com/libp2p/go-libp2p-crypto",
         sum = "h1:k9MFy+o2zGDNGsaoZl0MA3iZ75qXxr9OOoAZF+sD5OQ=",
         version = "v0.1.0",
@@ -1072,8 +1074,8 @@ def ogen_deps():
     go_repository(
         name = "com_github_libp2p_go_openssl",
         importpath = "github.com/libp2p/go-openssl",
-        sum = "h1:BFqTHVDt6V60Y7xU9f89FwljvFl/CEqZYO1vlfa2DCE=",
-        version = "v0.0.6",
+        sum = "h1:pQkejVhF0xp08D4CQUcw8t+BFJeXowja6RVcb5p++EA=",
+        version = "v0.0.5",
     )
     go_repository(
         name = "com_github_libp2p_go_reuseport",
@@ -1270,8 +1272,8 @@ def ogen_deps():
     go_repository(
         name = "com_github_mr_tron_base58",
         importpath = "github.com/mr-tron/base58",
-        sum = "h1:T/HDJBh4ZCPbU39/+c3rRvE0uKBQlU27+QI8LJ4t64o=",
-        version = "v1.2.0",
+        sum = "h1:v+sk57XuaCKGXpWtVBX8YJzO7hMGx4Aajh4TQbdEFdc=",
+        version = "v1.1.3",
     )
     go_repository(
         name = "com_github_multiformats_go_base32",
@@ -1366,8 +1368,8 @@ def ogen_deps():
     go_repository(
         name = "com_github_olympus_protocol_bls_go",
         importpath = "github.com/olympus-protocol/bls-go",
-        sum = "h1:wkkC+Wghg7CXOKwQFwu6qyCQDMbkRuT/gsI2vTDIvCk=",
-        version = "v0.1.0",
+        sum = "h1:o4DkfLCR9nl3iRucIPL1B4dXBu/6cribEbcEPGPR00o=",
+        version = "v0.1.1-0.20200618152056-7a5188ecaa2c",
     )
     go_repository(
         name = "com_github_oneofone_xxhash",
@@ -2020,8 +2022,8 @@ def ogen_deps():
     go_repository(
         name = "io_opencensus_go",
         importpath = "go.opencensus.io",
-        sum = "h1:LYy1Hy3MJdrCdMwwzxA/dRok4ejH+RwNGbuoD9fCjto=",
-        version = "v0.22.4",
+        sum = "h1:8sGtKOrtQqkN1bp2AtX+misvLIlOmsEsNd+9NIcPEm8=",
+        version = "v0.22.3",
     )
     go_repository(
         name = "io_rsc_binaryregexp",
