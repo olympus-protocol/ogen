@@ -160,18 +160,18 @@ Next generation blockchain secured by CASPER.`,
 				addNodes[i] = *pinfo
 			}
 			c := &config.Config{
-				DataFolder:       DataFolder,
-				InitConfig:       ip,
-				Debug:            viper.GetBool("debug"),
-				Listen:           []multiaddr.Multiaddr{listenAddr},
-				NetworkName:      networkName,
-				AddNodes:         addNodes,
-				Port:             int32(viper.GetUint("port")),
-				MaxPeers:         int32(viper.GetUint("maxpeers")),
-				MiningEnabled:    viper.GetBool("enablemining"),
-				Wallet:           viper.GetBool("enable_wallet_external_access"),
-				RPCProxy:         viper.GetBool("rpc_http_proxy"),
-				RPCListenAddress: viper.GetString("rpc_listen_address"),
+				DataFolder:    DataFolder,
+				InitConfig:    ip,
+				Debug:         viper.GetBool("debug"),
+				Listen:        []multiaddr.Multiaddr{listenAddr},
+				NetworkName:   networkName,
+				AddNodes:      addNodes,
+				Port:          int32(viper.GetUint("port")),
+				MaxPeers:      int32(viper.GetUint("maxpeers")),
+				MiningEnabled: viper.GetBool("enablemining"),
+				Wallet:        viper.GetBool("enable_wallet_external_access"),
+				RPCProxy:      viper.GetBool("rpc_http_proxy"),
+				RPCPort:       viper.GetString("rpc_port"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())

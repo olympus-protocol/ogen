@@ -18,11 +18,11 @@ import (
 
 // Config config for the RPCServer
 type Config struct {
-	Network          string
-	Wallet           bool
-	RPCProxy         bool
-	RPCListenAddress string
-	Log              *logger.Logger
+	Network  string
+	Wallet   bool
+	RPCProxy bool
+	RPCPort  string
+	Log      *logger.Logger
 }
 
 // RPCServer struct model for the gRPC server
@@ -81,7 +81,7 @@ func (s *RPCServer) Start() error {
 			}
 		}()
 	}
-	lis, err := net.Listen("tcp", s.config.RPCListenAddress)
+	lis, err := net.Listen("tcp", s.config.RPCPort)
 	if err != nil {
 		return err
 	}
