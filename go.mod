@@ -12,7 +12,6 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7-0.20200617094255-d8373dab3943
-	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 	github.com/libp2p/go-libp2p v0.9.5
 	github.com/libp2p/go-libp2p-core v0.5.7
 	github.com/libp2p/go-libp2p-peerstore v0.2.5
@@ -21,7 +20,7 @@ require (
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr v0.2.2
 	github.com/multiformats/go-multiaddr-net v0.1.5
-	github.com/olympus-protocol/bls-go v0.1.0
+	github.com/olympus-protocol/bls-go v0.1.1-0.20200617235254-f0738e7e0453
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/shopspring/decimal v1.2.0

@@ -279,8 +279,6 @@ github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kami-zh/go-capturer v0.0.0-20171211120116-e492ea43421d/go.mod h1:P2viExyCEfeWGU259JnaQ34Inuec4R38JCyBx2edgD0=
-github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 h1:AYzjK/SHz6m6mg5iuFwkrAhCc14jvCpW9d6frC9iDPE=
-github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7/go.mod h1:iYGcTYIPUvEWhFo6aKUuLchs+AV4ssYdyuBbQJZGcBk=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
@@ -564,8 +562,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/neelance/astrewrite v0.0.0-20160511093645-99348263ae86/go.mod h1:kHJEU3ofeGjhHklVoIGuVj85JJwZ6kWPaJwCIxgnFmo=
 github.com/neelance/sourcemap v0.0.0-20151028013722-8c68805598ab/go.mod h1:Qr6/a/Q4r9LP1IltGz7tA7iOK1WonHEYhu1HRBA7ZiM=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
-github.com/olympus-protocol/bls-go v0.1.0 h1:wkkC+Wghg7CXOKwQFwu6qyCQDMbkRuT/gsI2vTDIvCk=
-github.com/olympus-protocol/bls-go v0.1.0/go.mod h1:gOuTvuOsTGmji8RXGegB/5PVQGLS5XnGPbnV08A4OuI=
+github.com/olympus-protocol/bls-go v0.1.1-0.20200617235254-f0738e7e0453 h1:bPYLkZGfyPUXMWR48/20VS9RuwEqBYYerHuWxTatD5s=
+github.com/olympus-protocol/bls-go v0.1.1-0.20200617235254-f0738e7e0453/go.mod h1:gOuTvuOsTGmji8RXGegB/5PVQGLS5XnGPbnV08A4OuI=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.8.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
