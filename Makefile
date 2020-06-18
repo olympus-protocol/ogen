@@ -26,6 +26,10 @@ build:
 	@echo Building $(BINARY_NAME) for $(OS)
 	$(GOBUILD) -o $(BINARY_NAME)
 
+update_deps:
+	bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=deps.bzl%ogen_deps
+
+
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./
@@ -38,6 +42,7 @@ clean:
 	rm -rf *.zip
 	rm -rf chain.json
 	rm -rf release/
+	rm -rf bazel-*
 
 
 

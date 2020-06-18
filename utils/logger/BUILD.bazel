@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "buffer.go",
+        "colorful.go",
+        "log.go",
+    ],
+    importpath = "github.com/olympus-protocol/ogen/utils/logger",
+    visibility = ["//visibility:public"],
+)

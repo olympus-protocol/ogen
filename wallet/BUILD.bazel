@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "coins.go",
+        "database.go",
+        "wallet.go",
+    ],
+    importpath = "github.com/olympus-protocol/ogen/wallet",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bls:go_default_library",
+        "//chain:go_default_library",
+        "//mempool:go_default_library",
+        "//params:go_default_library",
+        "//peers:go_default_library",
+        "//primitives:go_default_library",
+        "//utils/bech32:go_default_library",
+        "//utils/chainhash:go_default_library",
+        "//utils/logger:go_default_library",
+        "@com_github_libp2p_go_libp2p_pubsub//:go_default_library",
+        "@io_etcd_go_bbolt//:go_default_library",
+    ],
+)

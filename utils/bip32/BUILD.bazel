@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["bip32.go"],
+    importpath = "github.com/olympus-protocol/ogen/utils/bip32",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bls:go_default_library",
+        "//utils/base58:go_default_library",
+        "//utils/chainhash:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "bip32_test.go",
+        "fixtures_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = ["//utils/chainhash:go_default_library"],
+)

@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "message.go",
+        "msg_addr.go",
+        "msg_block.go",
+        "msg_getaddr.go",
+        "msg_getblocks.go",
+        "msg_tx.go",
+        "msg_version.go",
+        "protocol.go",
+        "read-message.go",
+        "write-message.go",
+    ],
+    importpath = "github.com/olympus-protocol/ogen/p2p",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//primitives:go_default_library",
+        "//utils/chainhash:go_default_library",
+        "//utils/serializer:go_default_library",
+        "@com_github_libp2p_go_libp2p_core//peer:go_default_library",
+        "@com_github_multiformats_go_multiaddr//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "msg_block_test.go",
+        "msg_tx_test.go",
+    ],
+    embed = [":go_default_library"],
+)

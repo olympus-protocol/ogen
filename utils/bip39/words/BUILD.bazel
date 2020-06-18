@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "chinese_simplified.go",
+        "chinese_traditional.go",
+        "english.go",
+        "french.go",
+        "italian.go",
+        "japanese.go",
+        "korean.go",
+        "spanish.go",
+    ],
+    importpath = "github.com/olympus-protocol/ogen/utils/bip39/words",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["bitfield.go"],
+    importpath = "github.com/olympus-protocol/ogen/utils/bitfield",
+    visibility = ["//visibility:public"],
+    deps = ["//utils/serializer:go_default_library"],
+)

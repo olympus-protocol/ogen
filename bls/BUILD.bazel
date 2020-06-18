@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "combined_signature.go",
+        "interface.go",
+        "multisig.go",
+        "publickey.go",
+        "secretkey.go",
+        "signature.go",
+    ],
+    importpath = "github.com/olympus-protocol/ogen/bls",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//params:go_default_library",
+        "//utils/bech32:go_default_library",
+        "//utils/bitfield:go_default_library",
+        "//utils/chainhash:go_default_library",
+        "//utils/serializer:go_default_library",
+        "@com_github_dgraph_io_ristretto//:go_default_library",
+        "@com_github_olympus_protocol_bls_go//bls:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "interface_test.go",
+        "multisig_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//params:go_default_library",
+        "//utils/chainhash:go_default_library",
+    ],
+)
