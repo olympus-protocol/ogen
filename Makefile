@@ -39,7 +39,7 @@ pack_linux_amd64: build_linux_amd64
 	rm -r ./$(FOLDER_NAME)
 
 build_linux_amd64:
-	bazel build //:ogen --config=linux_amd64_docker
+	bazel-3.2.0 build //:ogen --config=linux_amd64_docker
 
 pack_linux_arm64: build_linux_arm64
 	mkdir $(FOLDER_NAME)
@@ -48,7 +48,7 @@ pack_linux_arm64: build_linux_arm64
 	rm -r ./$(FOLDER_NAME)
 
 build_linux_arm64:
-	bazel build //:ogen --config=linux_arm64_docker
+	bazel-3.2.0 build //:ogen --config=linux_arm64_docker
 
 pack_osx_amd64: build_osx_amd64
 	mkdir $(FOLDER_NAME)
@@ -57,7 +57,7 @@ pack_osx_amd64: build_osx_amd64
 	rm -r ./$(FOLDER_NAME)
 
 build_osx_amd64:
-	bazel build //:ogen --config=osx_amd64_docker
+	bazel-3.2.0 build //:ogen --config=osx_amd64_docker
 
 pack-windows-amd64: build-windows-amd64
 	mkdir $(FOLDER_NAME)
@@ -66,7 +66,7 @@ pack-windows-amd64: build-windows-amd64
 	rm -r ./$(FOLDER_NAME)
 
 build_windows_amd64:
-	bazel build //:ogen --config=windows_amd64_docker
+	bazel-3.2.0 build //:ogen --config=windows_amd64_docker
 
 clean:
 	@echo Cleaning...
