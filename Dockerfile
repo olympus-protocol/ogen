@@ -17,13 +17,16 @@ RUN apt-get update && \
         zip unzip libtinfo5 patch zlib1g-dev autoconf libtool \
         pkg-config make docker.io gnupg2 libgmp-dev python
 
-RUN ./ogen/tools/clang_cross.sh
-RUN ./ogen/tools/osxcross.sh
-
 RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     tar zxf ${GO} && rm ${GO} && \
     ln -s /opt/go/bin/go /usr/bin/ && \
     export GOPATH=/root/go
+
+COPY ./tools/clang_cross.sh ./
+COPY ./tools/osxcross.sh ./
+
+RUN ./clang_cross.sh
+RUN ./osxcross.sh
 
 ## osxcross path and lib symlink
 ENV PATH="/usr/x86_64-apple-darwin/osxcross/bin/:${PATH}"
