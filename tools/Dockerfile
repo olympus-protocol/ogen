@@ -42,7 +42,7 @@ RUN cd ogen && make pack_linux_amd64
 RUN cd ogen && make pack_linux_arm64
 
 ## Darwin amd64
-RUN cd ogen && make pack_darwin_amd64
+RUN cd ogen && make pack_osx_amd64
 
 ## Windows amd64
 RUN cd ogen && make pack_windows_amd64
