@@ -146,7 +146,7 @@ func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (
 
 func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
 	var pubKeyBytes [48]byte
-	pubKeyDecode, err := hex.DecodeString(key.Private)
+	pubKeyDecode, err := hex.DecodeString(key.Public)
 	if err != nil {
 		return nil, err
 	}
