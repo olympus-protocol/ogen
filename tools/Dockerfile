@@ -36,17 +36,17 @@ RUN cd ogen && go mod download
 ## Working
 
 ## Linux amd64
-RUN cd ogen && make pack_linux_amd64
+RUN cd ogen && make clean && make pack_linux_amd64
 
 ## Linux arm64
-RUN cd ogen && make pack_linux_arm64
+RUN cd ogen && make clean && make pack_linux_arm64
 
 ## Darwin amd64
-RUN cd ogen && make pack_osx_amd64
+RUN cd ogen && make clean && make pack_osx_amd64
 
 ## Windows amd64
-RUN cd ogen && make pack_windows_amd64
+RUN cd ogen && make clean && make pack_windows_amd64
 
-RUN ls 
-RUN ls *.tar.gz
-RUN ls *.zip
+RUN ls ogen/ 
+RUN ls ogen/*.tar.gz
+RUN ls ogen/*.zip
