@@ -29,7 +29,7 @@ build:
 	$(GOBUILD) -o $(BINARY_NAME)
 
 build_cross_docker:
-	DOCKER_BUILDKIT=1 docker build tools/Dockerfile
+	DOCKER_BUILDKIT=1 docker build --file=./tools/Dockerfile
 
 build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack_windows_amd64
 
