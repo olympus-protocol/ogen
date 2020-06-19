@@ -20,7 +20,7 @@ COPY osxcross.sh ./
 RUN ./osxcross.sh
 
 
-RUN git -b bazel_builds clone https://github.com/olympus-protocol/ogen
+RUN git clone https://github.com/olympus-protocol/ogen && cd ogen && git fetch origin && git checkout bazle_builds
 RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     tar zxf ${GO} && rm ${GO} && \
     ln -s /opt/go/bin/go /usr/bin/ && \
