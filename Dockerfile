@@ -39,15 +39,16 @@ COPY ./ /build/ogen
 RUN cd ogen && go mod download
 
 ## Linux amd64
-RUN cd ogen && make clean && make pack_linux_amd64
+##RUN cd ogen && make clean && make pack_linux_amd64
 
 ## Linux arm64
-RUN cd ogen && make clean && make pack_linux_arm64
+##RUN cd ogen && make clean && make pack_linux_arm64
 
 ## Darwin amd64
-RUN cd ogen && make clean && make pack_osx_amd64
+##RUN cd ogen && make clean && make pack_osx_amd64
 
 ## Windows amd64
+ENV CGO_LDFLAGS="-lstdc++"
 RUN cd ogen && make clean && make pack_windows_amd64
 
 RUN mkdir /release && mv ogen/*.tar.gz /release && mv ogen/*.zip /release
