@@ -8,7 +8,7 @@ build:
 	$(GOBUILD) 
 
 build_cross_docker:
-	DOCKER_BUILDKIT=1 docker build ./
+	DOCKER_BUILDKIT=1 docker build --file Dockerfile --output release .
 
 build_cross: pack_linux_amd64 pack_linux_arm64 pack_linux_arm pack_osx_amd64 pack_windows_amd64
 
