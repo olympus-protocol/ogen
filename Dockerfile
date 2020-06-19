@@ -1,9 +1,13 @@
 FROM ubuntu:latest as build
+
 ENV INSTALL_LLVM_VERSION=10.0.0-rc2
 ENV DOCKER_CLI_EXPERIMENTAL=enabled
 ENV GO=go1.14.4.linux-amd64.tar.gz
 ENV DEBIAN_FRONTEND="noninteractive"
+
 WORKDIR /build
+COPY ./ /build/ogen
+
 RUN apt-get update && \
     apt-get install -y \
         curl xz-utils \
@@ -13,11 +17,8 @@ RUN apt-get update && \
         zip unzip libtinfo5 patch zlib1g-dev autoconf libtool \
         pkg-config make docker.io gnupg2 libgmp-dev python
 
-COPY clang_cross.sh ./
-RUN ./clang_cross.sh
-RUN ls ./
-COPY osxcross.sh ./
-RUN ./osxcross.sh
+RUN ./ogen/tools/clang_cross.sh
+RUN ./ogen/tools/osxcross.sh
 
 RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     tar zxf ${GO} && rm ${GO} && \
