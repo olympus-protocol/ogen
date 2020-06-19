@@ -35,6 +35,9 @@ RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6.0.1 /usr/lib/libtap
 RUN cd ogen && go mod download
 ## Working
 
+## Temp
+RUN cd ogen && git pull
+
 ## Linux amd64
 RUN cd ogen && make clean && make pack_linux_amd64
 
