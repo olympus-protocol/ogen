@@ -4,21 +4,13 @@ GOCLEAN=$(GOCMD) clean
 FOLDER_NAME= ogen-$(OGEN_VERSION)
 OGEN_VERSION=0.0.1
 
-ifeq ($(OS),Windows_NT)
-    OS := Windows
-else
-    OS := $(shell uname)  # same as "uname -s"
-endif
-
-LOWECASE_OS = $(shell echo $(OS) | tr A-Z a-z)
-
 build: 
 	$(GOBUILD) 
 
 build_cross_docker:
 	DOCKER_BUILDKIT=1 docker build ./
 
-build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack_windows_amd64
+build_cross: pack_linux_amd64 pack_linux_arm64 pack_linux_arm pack_osx_amd64 pack_windows_amd64
 
 pack_linux_amd64: build_linux_amd64
 	mkdir $(FOLDER_NAME)
@@ -33,6 +25,15 @@ pack_linux_arm64: build_linux_arm64
 	mkdir $(FOLDER_NAME)
 	mv ogen ./$(FOLDER_NAME)
 	tar -czvf ogen-$(OGEN_VERSION)-linux-arm64.tar.gz ./$(FOLDER_NAME)
+	rm -r ./$(FOLDER_NAME)
+
+build_linux_arm:
+	CC=arm-linux-gnueabi-gcc CXX=arm-linux-gnueabi-g++ CGO_ENABLED=1 GOOS=linux GOARCH=arm $(GOBUILD)
+
+pack_linux_arm: build_linux_arm
+	mkdir $(FOLDER_NAME)
+	mv ogen ./$(FOLDER_NAME)
+	tar -czvf ogen-$(OGEN_VERSION)-linux-arm.tar.gz ./$(FOLDER_NAME)
 	rm -r ./$(FOLDER_NAME)
 
 build_linux_arm64:

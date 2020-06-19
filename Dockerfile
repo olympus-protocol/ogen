@@ -12,6 +12,7 @@ RUN apt-get update && \
     apt-get install -y \
         curl xz-utils \
         gcc g++ mingw-w64 \
+        gcc-arm-linux-gnueabi g++-arm-linux-gnueabi \
         gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
         cmake libssl-dev libxml2-dev vim apt-transport-https \
         zip unzip libtinfo5 patch zlib1g-dev autoconf libtool \
