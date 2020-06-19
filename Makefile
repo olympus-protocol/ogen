@@ -28,7 +28,10 @@ build:
 	@echo Building $(BINARY_NAME) for $(OS)
 	$(GOBUILD) -o $(BINARY_NAME)
 
-build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack-windows-amd64
+build_cross_docker:
+	docker build ./tools/Dockerfile
+
+build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack_windows_amd64
 
 pack_linux_amd64: build_linux_amd64
 	mkdir $(FOLDER_NAME)
@@ -57,7 +60,7 @@ pack_osx_amd64: build_osx_amd64
 build_osx_amd64:
 	CXX=x86_64-apple-darwin19-clang++ CC=x86_64-apple-darwin19-clang CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 
-pack_windows_amd64: build-windows-amd64
+pack_windows_amd64: build_windows_amd64
 	mkdir $(FOLDER_NAME)
 	mv $(BINARY_NAME) ./$(FOLDER_NAME)
 	zip -r ogen-$(OGEN_VERSION)-windows-amd64.zip ./$(FOLDER_NAME)
