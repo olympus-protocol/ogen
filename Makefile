@@ -71,15 +71,8 @@ build_windows_amd64:
 
 clean:
 	@echo Cleaning...
-	$(GOCLEAN) ./
+	$(GOCLEAN) ./...
 	rm -rf ./$(BINARY_NAME)
-	rm -rf ./builds
-	rm -rf ogen-darwin*
-	rm -rf ogen-windows*
-	rm -rf ogen-linux*
-	rm -rf *.tar.gz
-	rm -rf *.zip
 	rm -rf chain.json
-	rm -rf release/
 
 
