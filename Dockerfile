@@ -48,8 +48,7 @@ RUN cd ogen && make clean && make pack_linux_arm64
 RUN cd ogen && make clean && make pack_osx_amd64
 
 ## Windows amd64
-ENV CGO_CFLAGS="-static  -libstdc++"
-RUN cd ogen && make clean && make pack_windows_amd64
+RUN cd ogen && make clean && make pack_windows_amd64 -v
 
 RUN mkdir /release && mv ogen/*.tar.gz /release && mv ogen/*.zip /release
 

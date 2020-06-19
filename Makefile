@@ -46,7 +46,7 @@ pack_windows_amd64: build_windows_amd64
 	rm -r ./$(FOLDER_NAME)
 
 build_windows_amd64:
-	CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 $(GOBUILD)
+	CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 $(GOBUILD) -a -tags netgo -ldflags '"-static"'
 
 clean:
 	@echo Cleaning...
