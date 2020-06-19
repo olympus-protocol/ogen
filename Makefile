@@ -2,6 +2,7 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 FOLDER_NAME= $(BINARY_NAME)-$(OGEN_VERSION)
+OGEN_VERSION=0.0.1
 
 ifeq ($(OS),Windows_NT)
     OS := Windows
@@ -27,46 +28,43 @@ build:
 	@echo Building $(BINARY_NAME) for $(OS)
 	$(GOBUILD) -o $(BINARY_NAME)
 
-update_deps:
-	bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=deps.bzl%ogen_deps
-
 build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack-windows-amd64
 
 pack_linux_amd64: build_linux_amd64
 	mkdir $(FOLDER_NAME)
-	mv bazel_bin/_ogen/$(BINARY_NAME) ./$(FOLDER_NAME)
+	mv $(BINARY_NAME) ./$(FOLDER_NAME)
 	tar -czvf ogen-$(OGEN_VERSION)-linux-amd64.tar.gz ./$(FOLDER_NAME)
 	rm -r ./$(FOLDER_NAME)
 
 build_linux_amd64:
-	bazel-3.2.0 build //:ogen --config=linux_amd64_docker
+	CC=x86_64-linux-gnu-gcc CXX=x86_64-linux-gnu-g++  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 
 pack_linux_arm64: build_linux_arm64
 	mkdir $(FOLDER_NAME)
-	mv bazel_bin/_ogen/$(BINARY_NAME) ./$(FOLDER_NAME)
+	mv $(BINARY_NAME) ./$(FOLDER_NAME)
 	tar -czvf ogen-$(OGEN_VERSION)-linux-arm64.tar.gz ./$(FOLDER_NAME)
 	rm -r ./$(FOLDER_NAME)
 
 build_linux_arm64:
-	bazel-3.2.0 build //:ogen --config=linux_arm64_docker
+	CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ CGO_ENABLED=1 GOOS=linux GOARCH=arm64 $(GOBUILD) -o $(BINARY_NAME)
 
 pack_osx_amd64: build_osx_amd64
 	mkdir $(FOLDER_NAME)
-	mv bazel_bin/_ogen/$(BINARY_NAME) ./$(FOLDER_NAME)
+	mv $(BINARY_NAME) ./$(FOLDER_NAME)
 	tar -czvf ogen-$(OGEN_VERSION)-osx-amd64.tar.gz ./$(FOLDER_NAME)
 	rm -r ./$(FOLDER_NAME)
 
 build_osx_amd64:
-	bazel-3.2.0 build //:ogen --config=osx_amd64_docker
+	CXX=x86_64-apple-darwin19-clang++ CC=x86_64-apple-darwin19-clang CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 
 pack-windows-amd64: build-windows-amd64
 	mkdir $(FOLDER_NAME)
-	mv bazel_bin/_ogen/$(BINARY_NAME) ./$(FOLDER_NAME)
+	mv $(BINARY_NAME) ./$(FOLDER_NAME)
 	zip -r ogen-$(OGEN_VERSION)-windows-amd64.zip ./$(FOLDER_NAME)
 	rm -r ./$(FOLDER_NAME)
 
 build_windows_amd64:
-	bazel-3.2.0 build //:ogen --config=windows_amd64_docker
+	CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
 
 clean:
 	@echo Cleaning...
@@ -80,7 +78,5 @@ clean:
 	rm -rf *.zip
 	rm -rf chain.json
 	rm -rf release/
-	rm -rf bazel-*
-
 
 

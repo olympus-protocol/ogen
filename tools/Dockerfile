@@ -26,23 +26,27 @@ RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     ln -s /opt/go/bin/go /usr/bin/ && \
     export GOPATH=/root/go
 
+## osxcross path and lib symlink
+ENV PATH="/usr/x86_64-apple-darwin/osxcross/bin/:${PATH}"
+RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so /usr/lib/libtapi.so
+RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6 /usr/lib/libtapi.so.6
+RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6.0.1 /usr/lib/libtapi.so.6.0.1    
+
 RUN cd ogen && go mod download
 ## Working
 
 ## Linux amd64
-RUN cd ogen && CC=x86_64-linux-gnu-gcc CXX=x86_64-linux-gnu-g++  CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build && ls ./ogen
+RUN cd ogen && make pack_linux_amd64
 
 ## Linux arm64
-RUN cd ogen && CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build && ls ./ogen
+RUN cd ogen && make pack_linux_arm64
 
 ## Darwin amd64
-ENV PATH="/usr/x86_64-apple-darwin/osxcross/bin/:${PATH}"
-RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so /usr/lib/libtapi.so
-RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6 /usr/lib/libtapi.so.6
-RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6.0.1 /usr/lib/libtapi.so.6.0.1
-RUN cd ogen && CXX=x86_64-apple-darwin19-clang++ CC=x86_64-apple-darwin19-clang CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build && ls ./ogen
+RUN cd ogen && make pack_darwin_amd64
 
 ## Windows amd64
-RUN ls /usr/bin/
-RUN ls /usr/
-RUN cd ogen && CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64  go build && ls ./ogen.exe
+RUN cd ogen && make pack_windows_amd64
+
+RUN ls 
+RUN ls *.tar.gz
+RUN ls *.zip

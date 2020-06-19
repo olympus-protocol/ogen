@@ -17,7 +17,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-const DiscoveryProtocolID = protocol.ID("/ogen/discovery/1.0.0")
+const DiscoveryProtocolID = protocol.ID("/ogen/discovery/0.0.1")
 
 // DiscoveryProtocol is the service to discover other peers.
 type DiscoveryProtocol struct {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/proto"
 )
 
 type networkServer struct {
