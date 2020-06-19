@@ -81,7 +81,7 @@ func (s *RPCServer) Start() error {
 			}
 		}()
 	}
-	lis, err := net.Listen("tcp", s.config.RPCPort)
+	lis, err := net.Listen("tcp", "127.0.0.1:" + s.config.RPCPort)
 	if err != nil {
 		return err
 	}

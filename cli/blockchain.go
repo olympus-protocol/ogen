@@ -209,7 +209,7 @@ func init() {
 	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
 	rootCmd.Flags().Bool("enable_wallet_external_access", false, "enable wallet access through rpc")
 	rootCmd.Flags().Bool("rpc_http_proxy", false, "enable http proxy for rpc")
-	rootCmd.Flags().String("rpc_listen_address", "localhost:24127", "host/port to listen on for rpc")
+	rootCmd.Flags().String("rpc_port", "24127", "host/port to listen on for rpc")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
