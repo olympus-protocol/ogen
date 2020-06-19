@@ -49,7 +49,7 @@ RUN cd ogen && make clean && make pack_osx_amd64
 ## Windows amd64
 RUN cd ogen && make clean && make pack_windows_amd64
 
-RUN mkdir /out && mv ogen/*.tar.gz /out && mv ogen/*.zip /out
+RUN mkdir /release && mv ogen/*.tar.gz /release && mv ogen/*.zip /release
 
 FROM scratch as export
-COPY --from=build /out/ .
+COPY --from=build /release/* .
