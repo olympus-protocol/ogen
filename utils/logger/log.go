@@ -5,7 +5,6 @@ package logger
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"io"
 	"os"
 	"path/filepath"
@@ -92,7 +91,7 @@ var (
 // automatically detect terminal coloring support
 func New(out FdWriter) *Logger {
 	return &Logger{
-		color:     terminal.IsTerminal(int(out.Fd())),
+		color:     false,
 		out:       out,
 		timestamp: true,
 	}

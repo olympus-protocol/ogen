@@ -21,7 +21,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
-const syncProtocolID = protocol.ID("/ogen/sync/1.0.0")
+const syncProtocolID = protocol.ID("/ogen/sync/0.0.1")
 
 // SyncProtocol handles syncing for a blockchain.
 type SyncProtocol struct {
