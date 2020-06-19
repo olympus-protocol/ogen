@@ -29,7 +29,7 @@ build:
 	$(GOBUILD) -o $(BINARY_NAME)
 
 build_cross_docker:
-	docker build ./tools/Dockerfile
+	DOCKER_BUILDKIT=1 docker build ./tools/Dockerfile
 
 build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack_windows_amd64
 
@@ -72,7 +72,6 @@ build_windows_amd64:
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./...
-	rm -rf ./$(BINARY_NAME)
 	rm -rf chain.json
 
 

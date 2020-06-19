@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:latest as build
 ENV INSTALL_LLVM_VERSION=10.0.0-rc2
 ENV DOCKER_CLI_EXPERIMENTAL=enabled
 ENV GO=go1.14.4.linux-amd64.tar.gz
@@ -50,6 +50,7 @@ RUN cd ogen && make clean && make pack_osx_amd64
 ## Windows amd64
 RUN cd ogen && make clean && make pack_windows_amd64
 
-RUN ls ogen/ 
-RUN ls ogen/*.tar.gz
-RUN ls ogen/*.zip
+RUN mkdir /out && mv ogen/*.tar.gz /out && mv ogen/*.zip /out
+
+FROM scratch as export
+COPY --from=build /out/ .
