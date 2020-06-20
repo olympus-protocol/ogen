@@ -92,7 +92,7 @@ message ValidatorsRegistry {
 
 message ValidatorRegistry {
     string balance = 1;
-    string publicKey = 2;
+    string public_key = 2;
     string payee_address = 3;
     string status = 4;
     int64 first_active_epoch = 5;
