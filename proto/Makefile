@@ -8,8 +8,5 @@ build_proxy:
 
 build: clean build_files build_proxy	
 
-clean: 
-	rm -rf ../chainrpc/proto/*.proto
-
 build_doc:
 	protoc --doc_out=./ --doc_opt=markdown,rpc.md *.proto
