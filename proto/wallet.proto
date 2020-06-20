@@ -154,7 +154,7 @@
         };
     }
 
-       /** 
+    /** 
         Method: StartValidatorBulk 
         Input: message KeyPairs
         Response: message Success
@@ -178,6 +178,20 @@
     rpc ExitValidator(KeyPair) returns (Success) {
         option (google.api.http) = {
             post: "/wallet/exitvalidator"
+            body: "*"
+        };
+    }
+
+    /** 
+        Method: ExitValidatorBulk 
+        Input: message KeyPairs
+        Response: message Success
+        Description: Removes multiple deposits from public keys.
+    */
+
+    rpc ExitValidatorBulk(KeyPairs) returns (Success) {
+        option (google.api.http) = {
+            post: "/wallet/exitvalidatorbulk"
             body: "*"
         };
     }

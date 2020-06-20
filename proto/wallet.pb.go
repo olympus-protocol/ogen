@@ -322,7 +322,7 @@ var file_wallet_proto_rawDesc = []byte{
 	0x74, 0x57, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12,
 	0x1a, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x08, 0x2e, 0x4b,
-	0x65, 0x79, 0x50, 0x61, 0x69, 0x72, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x32, 0x86, 0x07, 0x0a, 0x06,
+	0x65, 0x79, 0x50, 0x61, 0x69, 0x72, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x32, 0xd6, 0x07, 0x0a, 0x06,
 	0x57, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x12, 0x3c, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x61,
 	0x6c, 0x6c, 0x65, 0x74, 0x73, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x08, 0x2e,
 	0x57, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x73, 0x22, 0x1b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12,
@@ -379,7 +379,12 @@ var file_wallet_proto_rawDesc = []byte{
 	0x2e, 0x4b, 0x65, 0x79, 0x50, 0x61, 0x69, 0x72, 0x1a, 0x08, 0x2e, 0x53, 0x75, 0x63, 0x63, 0x65,
 	0x73, 0x73, 0x22, 0x20, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1a, 0x22, 0x15, 0x2f, 0x77, 0x61, 0x6c,
 	0x6c, 0x65, 0x74, 0x2f, 0x65, 0x78, 0x69, 0x74, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
-	0x72, 0x3a, 0x01, 0x2a, 0x42, 0x28, 0x5a, 0x26, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x72, 0x3a, 0x01, 0x2a, 0x12, 0x4e, 0x0a, 0x11, 0x45, 0x78, 0x69, 0x74, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x42, 0x75, 0x6c, 0x6b, 0x12, 0x09, 0x2e, 0x4b, 0x65, 0x79, 0x50,
+	0x61, 0x69, 0x72, 0x73, 0x1a, 0x08, 0x2e, 0x53, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x22, 0x24,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1e, 0x22, 0x19, 0x2f, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x2f,
+	0x65, 0x78, 0x69, 0x74, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x62, 0x75, 0x6c,
+	0x6b, 0x3a, 0x01, 0x2a, 0x42, 0x28, 0x5a, 0x26, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
 	0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x79, 0x6d, 0x70, 0x75, 0x73, 0x2d, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x63, 0x6f, 0x6c, 0x2f, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
@@ -426,21 +431,23 @@ var file_wallet_proto_depIdxs = []int32{
 	5,  // 11: Wallet.StartValidator:input_type -> KeyPair
 	7,  // 12: Wallet.StartValidatorBulk:input_type -> KeyPairs
 	5,  // 13: Wallet.ExitValidator:input_type -> KeyPair
-	2,  // 14: Wallet.ListWallets:output_type -> Wallets
-	5,  // 15: Wallet.CreateWallet:output_type -> KeyPair
-	8,  // 16: Wallet.OpenWallet:output_type -> Success
-	5,  // 17: Wallet.ImportWallet:output_type -> KeyPair
-	5,  // 18: Wallet.DumpWallet:output_type -> KeyPair
-	8,  // 19: Wallet.CloseWallet:output_type -> Success
-	1,  // 20: Wallet.GetBalance:output_type -> Balance
-	9,  // 21: Wallet.GetValidators:output_type -> ValidatorsRegistry
-	5,  // 22: Wallet.GetAccount:output_type -> KeyPair
-	10, // 23: Wallet.SendTransaction:output_type -> Hash
-	8,  // 24: Wallet.StartValidator:output_type -> Success
-	8,  // 25: Wallet.StartValidatorBulk:output_type -> Success
-	8,  // 26: Wallet.ExitValidator:output_type -> Success
-	14, // [14:27] is the sub-list for method output_type
-	1,  // [1:14] is the sub-list for method input_type
+	7,  // 14: Wallet.ExitValidatorBulk:input_type -> KeyPairs
+	2,  // 15: Wallet.ListWallets:output_type -> Wallets
+	5,  // 16: Wallet.CreateWallet:output_type -> KeyPair
+	8,  // 17: Wallet.OpenWallet:output_type -> Success
+	5,  // 18: Wallet.ImportWallet:output_type -> KeyPair
+	5,  // 19: Wallet.DumpWallet:output_type -> KeyPair
+	8,  // 20: Wallet.CloseWallet:output_type -> Success
+	1,  // 21: Wallet.GetBalance:output_type -> Balance
+	9,  // 22: Wallet.GetValidators:output_type -> ValidatorsRegistry
+	5,  // 23: Wallet.GetAccount:output_type -> KeyPair
+	10, // 24: Wallet.SendTransaction:output_type -> Hash
+	8,  // 25: Wallet.StartValidator:output_type -> Success
+	8,  // 26: Wallet.StartValidatorBulk:output_type -> Success
+	8,  // 27: Wallet.ExitValidator:output_type -> Success
+	8,  // 28: Wallet.ExitValidatorBulk:output_type -> Success
+	15, // [15:29] is the sub-list for method output_type
+	1,  // [1:15] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -559,6 +566,7 @@ type WalletClient interface {
 	StartValidator(ctx context.Context, in *KeyPair, opts ...grpc.CallOption) (*Success, error)
 	StartValidatorBulk(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (*Success, error)
 	ExitValidator(ctx context.Context, in *KeyPair, opts ...grpc.CallOption) (*Success, error)
+	ExitValidatorBulk(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (*Success, error)
 }
 
 type walletClient struct {
@@ -686,6 +694,15 @@ func (c *walletClient) ExitValidator(ctx context.Context, in *KeyPair, opts ...g
 	return out, nil
 }
 
+func (c *walletClient) ExitValidatorBulk(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (*Success, error) {
+	out := new(Success)
+	err := c.cc.Invoke(ctx, "/Wallet/ExitValidatorBulk", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WalletServer is the server API for Wallet service.
 type WalletServer interface {
 	ListWallets(context.Context, *Empty) (*Wallets, error)
@@ -701,6 +718,7 @@ type WalletServer interface {
 	StartValidator(context.Context, *KeyPair) (*Success, error)
 	StartValidatorBulk(context.Context, *KeyPairs) (*Success, error)
 	ExitValidator(context.Context, *KeyPair) (*Success, error)
+	ExitValidatorBulk(context.Context, *KeyPairs) (*Success, error)
 }
 
 // UnimplementedWalletServer can be embedded to have forward compatible implementations.
@@ -745,6 +763,9 @@ func (*UnimplementedWalletServer) StartValidatorBulk(context.Context, *KeyPairs)
 }
 func (*UnimplementedWalletServer) ExitValidator(context.Context, *KeyPair) (*Success, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExitValidator not implemented")
+}
+func (*UnimplementedWalletServer) ExitValidatorBulk(context.Context, *KeyPairs) (*Success, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExitValidatorBulk not implemented")
 }
 
 func RegisterWalletServer(s *grpc.Server, srv WalletServer) {
@@ -985,6 +1006,24 @@ func _Wallet_ExitValidator_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Wallet_ExitValidatorBulk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KeyPairs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServer).ExitValidatorBulk(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Wallet/ExitValidatorBulk",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServer).ExitValidatorBulk(ctx, req.(*KeyPairs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Wallet_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "Wallet",
 	HandlerType: (*WalletServer)(nil),
@@ -1040,6 +1079,10 @@ var _Wallet_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExitValidator",
 			Handler:    _Wallet_ExitValidator_Handler,
+		},
+		{
+			MethodName: "ExitValidatorBulk",
+			Handler:    _Wallet_ExitValidatorBulk_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

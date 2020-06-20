@@ -215,3 +215,20 @@ func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*
 	}
 	return &proto.Success{Success: true}, nil
 }
+
+func (s *walletServer) ExitValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
+	for i := range keys.Keys {
+		var pubKeyBytes [48]byte
+		pubKeyDecode, err := hex.DecodeString(keys.Keys[i])
+		if err != nil {
+			return nil, err
+		}
+		copy(pubKeyBytes[:], pubKeyDecode)
+		_, err = s.wallet.ExitValidator(pubKeyBytes)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+		
+	}
+	return &proto.Success{Success: true}, nil
+}
