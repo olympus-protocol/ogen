@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
@@ -121,9 +122,8 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 		if err != nil {
 			return nil, err
 		}
-		lock.Add(b)
+		lock = lock.Add(b)
 	}
-	//lock, err := s.wallet.
 	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3)}, nil
 }
 
