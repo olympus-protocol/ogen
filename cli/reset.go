@@ -14,8 +14,8 @@ func init() {
 
 var resetCmd = &cobra.Command{
 	Use:   "reset",
-	Short: "Reset the chain of Olympus",
-	Long:  `Reset the chain of Olympus`,
+	Short: "Removes all chain data and chain.json",
+	Long:  `Removes all chain data and chain.json`,
 	Run: func(cmd *cobra.Command, args []string) {
 		bdb, err := badger.Open(badger.DefaultOptions(path.Join(DataFolder, "chain")))
 		if err != nil {

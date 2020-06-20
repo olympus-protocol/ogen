@@ -16,8 +16,8 @@ func init() {
 
 var generateWalletCmd = &cobra.Command{
 	Use:   "wallet <name> <network>",
-	Short: "Creates a new wallet db and shows you the public key",
-	Long:  `Creates a new wallet db and shows you the public key`,
+	Short: "Creates new wallets.",
+	Long:  `Creates new wallets.`,
 	Args:  cobra.MaximumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error

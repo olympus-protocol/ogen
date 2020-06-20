@@ -171,22 +171,22 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "data directory to store Ogen data")
+	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "Directory to store the chain data.")
 
-	rootCmd.Flags().String("network", "testnet", "network name to use (testnet or mainnet)")
-	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add")
-	rootCmd.Flags().Uint16("maxpeers", 9, "maximum peers to connect to or allow connections for")
-	rootCmd.Flags().String("port", "24126", "port to listen to p2p connections")
+	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
+	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
+	rootCmd.Flags().Uint16("maxpeers", 9, "Maximum number of peers to connect.")
+	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
 
-	rootCmd.Flags().Bool("enablemining", false, "should mining be enabled")
+	rootCmd.Flags().Bool("enablemining", false, "Starts the node mining with validator keys.")
 
-	rootCmd.Flags().Bool("rpc_proxy", false, "enable http proxy for rpc")
-	rootCmd.Flags().String("rpc_proxy_port", "8080", "port to listen for the http proxy")
-	rootCmd.Flags().String("rpc_port", "24127", "host/port to listen on for rpc")
-	rootCmd.Flags().Bool("rpc_wallet", false, "enable wallet access through rpc")
+	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
+	rootCmd.Flags().String("rpc_proxy_port", "8080", "Port for the http proxy.")
+	rootCmd.Flags().String("rpc_port", "24127", "RPC server port.")
+	rootCmd.Flags().Bool("rpc_wallet", false, "Enable wallet access through RPC.")
 
-	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
-	rootCmd.PersistentFlags().Bool("debug", false, "log debugging info")
+	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
+	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {

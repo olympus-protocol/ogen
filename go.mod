@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
+	github.com/go-playground/validator/v10 v10.3.0
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6

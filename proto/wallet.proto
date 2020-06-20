@@ -206,6 +206,7 @@ message Balance {
     string confirmed = 1;
     string unconfirmed = 2;
     string locked = 3;
+    string total = 4;
 }
 
 message Wallets {

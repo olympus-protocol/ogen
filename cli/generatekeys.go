@@ -16,8 +16,8 @@ func init() {
 
 var generateKeysCmd = &cobra.Command{
 	Use:   "generate <numkeys>",
-	Short: "Generates validator keys and saves them to your key store",
-	Long:  `Generates validator keys and saves them to your key store`,
+	Short: "Creates validator keys and stores into the keystore",
+	Long:  `Creates validator keys and stores into the keystore`,
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error

@@ -73,7 +73,7 @@ var ctrlDKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
 
 // Run runs the CLI.
 func (c *CLI) Run() {
-	color.Green("Welcome to the Olympus CLI")
+	color.Green("Welcome to the Ogen cli")
 	for {
 		t := prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "), ctrlCKeybind, ctrlDKeybind)
 
