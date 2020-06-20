@@ -228,7 +228,7 @@ func (s *walletServer) ExitValidatorBulk(ctx context.Context, keys *proto.KeyPai
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
-		
+
 	}
 	return &proto.Success{Success: true}, nil
 }

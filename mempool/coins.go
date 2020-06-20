@@ -63,8 +63,10 @@ type CoinsMempool struct {
 	ctx        context.Context
 	log        *logger.Logger
 
-	mempool map[[20]byte]*coinMempoolItem
-	lock    sync.RWMutex
+	mempool  map[[20]byte]*coinMempoolItem
+	balances map[[20]byte]uint64
+	lock     sync.RWMutex
+	baLock   sync.RWMutex
 }
 
 // func (cm *CoinsMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.CoinPayload {
@@ -154,6 +156,14 @@ outer:
 	return allTransactions, state
 }
 
+// func (cm *CoinsMempool) modifyBalance(tx primitives.Tx, add bool) error {
+// 	if add {
+// 		sendingAcc := tx.Payload.FromPubkeyHash()
+// 		receiving := tx.
+// 		b, exist := cm.balances[]
+// 	}
+// }
+
 func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(cm.ctx)
@@ -194,6 +204,7 @@ func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockcha
 
 	cm := &CoinsMempool{
 		mempool:    make(map[[20]byte]*coinMempoolItem),
+		balances:   make(map[[20]byte]uint64),
 		ctx:        ctx,
 		blockchain: ch,
 		params:     params,
