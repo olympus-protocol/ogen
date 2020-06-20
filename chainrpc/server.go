@@ -2,7 +2,6 @@ package chainrpc
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 
@@ -77,7 +76,6 @@ func (s *RPCServer) Start() error {
 		defer cancel()
 		s.registerServicesProxy(ctx)
 		go func() {
-			fmt.Println(s.config.RPCProxyPort)
 			err := http.ListenAndServe("localhost:"+s.config.RPCProxyPort, s.http)
 			if err != nil {
 				s.log.Fatal(err)

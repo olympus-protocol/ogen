@@ -91,9 +91,6 @@ func (w *Wallet) OpenWallet(name string) error {
 	w.name = name
 	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
 	if err != nil {
-		//if err == bbolt.ErrInvalid {
-		//	return w.hardRecover()
-		//}
 		return err
 	}
 	w.db = db
@@ -113,14 +110,11 @@ func (w *Wallet) OpenWallet(name string) error {
 	}
 	if err == errorNoInfo {
 		err := w.recover()
-		//if err != nil {
-		//	return w.hardRecover()
-		//}
 		return err
 	}
-	//if err != nil {
-	//	return w.hardRecover()
-	//}
+	if err != nil {
+		return err
+	}
 	w.open = true
 	return nil
 }
