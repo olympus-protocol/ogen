@@ -116,6 +116,20 @@ func (c *RPCClient) getBalance() (string, error) {
 	return string(b), nil
 }
 
+func (c *RPCClient) getValidators() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.wallet.GetValidators(ctx, &proto.Empty{})
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func (c *RPCClient) getAccount() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

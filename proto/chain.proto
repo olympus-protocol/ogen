@@ -161,7 +161,7 @@ message SubscribeValidatorRequest {
 message ChainInfo {
     string block_hash = 1;
     uint64 block_height = 2;
-    uint64 validators = 3;
+    ValidatorsInfo validators = 3;
 }
 
 message AccountInfo {

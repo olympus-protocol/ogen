@@ -18,11 +18,12 @@ import (
 
 // Config config for the RPCServer
 type Config struct {
-	Network  string
-	Wallet   bool
-	RPCProxy bool
-	RPCPort  string
-	Log      *logger.Logger
+	Network      string
+	RPCWallet    bool
+	RPCProxy     bool
+	RPCProxyPort string
+	RPCPort      string
+	Log          *logger.Logger
 }
 
 // RPCServer struct model for the gRPC server
@@ -43,7 +44,7 @@ func (s *RPCServer) registerServices() {
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
 	proto.RegisterUtilsServer(s.rpc, s.utilsServer)
 	proto.RegisterNetworkServer(s.rpc, s.networkServer)
-	if s.config.Wallet {
+	if s.config.RPCWallet {
 		proto.RegisterWalletServer(s.rpc, s.walletServer)
 	}
 }
@@ -54,7 +55,7 @@ func (s *RPCServer) registerServicesProxy(ctx context.Context) {
 	proto.RegisterValidatorsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	proto.RegisterUtilsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	proto.RegisterNetworkHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
-	if s.config.Wallet {
+	if s.config.RPCWallet {
 		proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	}
 }
@@ -75,13 +76,13 @@ func (s *RPCServer) Start() error {
 		defer cancel()
 		s.registerServicesProxy(ctx)
 		go func() {
-			err := http.ListenAndServe(":8080", s.http)
+			err := http.ListenAndServe("127.0.0.1:"+s.config.RPCProxyPort, s.http)
 			if err != nil {
 				s.log.Fatal(err)
 			}
 		}()
 	}
-	lis, err := net.Listen("tcp", "127.0.0.1:" + s.config.RPCPort)
+	lis, err := net.Listen("tcp", "127.0.0.1:"+s.config.RPCPort)
 	if err != nil {
 		return err
 	}
@@ -132,6 +133,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 		},
 		walletServer: &walletServer{
 			wallet: wallet,
+			chain:  chain,
 			params: params,
 		},
 	}, nil

@@ -3,6 +3,7 @@ package peers
 import (
 	"context"
 	"crypto/rand"
+	"net"
 	"path"
 	"sync"
 	"time"
@@ -22,13 +23,13 @@ import (
 	"github.com/libp2p/go-libp2p-core/protocol"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
+	mnet "github.com/multiformats/go-multiaddr-net"
 )
 
 type Config struct {
 	Log          *logger.Logger
-	Listen       []multiaddr.Multiaddr
+	Port         string
 	AddNodes     []peer.AddrInfo
-	Port         int32
 	MaxPeers     int32
 	Path         string
 	PrivateKey   crypto.PrivKey
@@ -118,10 +119,19 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	if err != nil {
 		return nil, err
 	}
+	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
+	if err != nil {
+		return nil, err
+	}
 
+	listen, err := mnet.FromNetAddr(netAddr)
+	if err != nil {
+		return nil, err
+	}
+	listenAddress := []multiaddr.Multiaddr{listen}
 	h, err := libp2p.New(
 		ctx,
-		libp2p.ListenAddrs(config.Listen...),
+		libp2p.ListenAddrs(listenAddress...),
 		libp2p.Identity(priv),
 		libp2p.EnableRelay(),
 		libp2p.Peerstore(ps),
@@ -133,7 +143,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 
 	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
 		ID:    h.ID(),
-		Addrs: config.Listen,
+		Addrs: listenAddress,
 	})
 	if err != nil {
 		return nil, err

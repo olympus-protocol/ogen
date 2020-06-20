@@ -23,15 +23,41 @@ type chainServer struct {
 
 func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
 	state := s.chain.State()
+	validators := state.TipState().ValidatorRegistry
+	active := int64(0)
+	pendingExit := int64(0)
+	penaltyExit := int64(0)
+	exited := int64(0)
+	starting := int64(0)
+	for _, v := range validators {
+		switch v.Status {
+		case primitives.StatusActive:
+			active++
+		case primitives.StatusActivePendingExit:
+			pendingExit++
+		case primitives.StatusExitedWithPenalty:
+			penaltyExit++
+		case primitives.StatusExitedWithoutPenalty:
+			exited++
+		case primitives.StatusStarting:
+			starting++
+		}
+	}
 	return &proto.ChainInfo{
 		BlockHash:   state.Tip().Hash.String(),
 		BlockHeight: state.Height(),
-		Validators:  uint64(len(state.TipState().ValidatorRegistry)),
+		Validators: &proto.ValidatorsInfo{
+			Active:      active,
+			PendingExit: pendingExit,
+			PenaltyExit: penaltyExit,
+			Exited:      exited,
+			Starting:    starting,
+		},
 	}, nil
 }
 
 func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
-	hash, err := chainhash.NewHash(in.Hash)
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +69,7 @@ func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.B
 }
 
 func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
-	hash, err := chainhash.NewHash(in.Hash)
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +108,7 @@ func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Number) (*prot
 		return nil, errors.New("block not found")
 	}
 	return &proto.Hash{
-		Hash: blockRow.Hash[:],
+		Hash: blockRow.Hash.String(),
 	}, nil
 }
 
@@ -97,7 +123,7 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	}
 
 	ok := true
-	hash, err := chainhash.NewHash(in.Hash)
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
@@ -316,7 +342,7 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 }
 
 func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto.Tx, error) {
-	txid, err := chainhash.NewHash(h.Hash)
+	txid, err := chainhash.NewHashFromStr(h.Hash)
 	if err != nil {
 		return nil, err
 	}

@@ -90,11 +90,11 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	wallet, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
+	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, wallet, &currParams)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, w, &currParams)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,6 @@ func loadMinerConfig(config *config.Config, logger *logger.Logger) miner.Config 
 func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
 	cfg := peers.Config{
 		Log:      logger,
-		Listen:   config.Listen,
 		AddNodes: config.AddNodes,
 		Port:     config.Port,
 		MaxPeers: config.MaxPeers,
@@ -147,10 +146,10 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 
 func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
-		Log:      logger,
-		Wallet:   config.Wallet,
-		RPCProxy: config.RPCProxy,
-		RPCPort:  config.RPCPort,
-		Network:  "tcp",
+		Log:       logger,
+		RPCWallet: config.RPCWallet,
+		RPCProxy:  config.RPCProxy,
+		RPCPort:   config.RPCPort,
+		Network:   "tcp",
 	}
 }

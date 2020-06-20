@@ -101,6 +101,19 @@
     }
 
     /** 
+        Method: GetValidators 
+        Input: message Empty
+        Response: message ValidatorsRegistry
+        Description: Returns validators from open wallet.
+    */
+
+    rpc GetValidators(Empty) returns (ValidatorsRegistry) {
+        option (google.api.http) = {
+            get: "/wallet/getvalidators"
+        };
+    }
+
+    /** 
         Method: GetAccount 
         Input: message Empty
         Response: message KeyPair
@@ -130,13 +143,27 @@
     /** 
         Method: StartValidator 
         Input: message StartValidator
-        Response: message KeyPair
-        Description: Adds a deposit of the provided validator info and returns the public key.
+        Response: message Success
+        Description: Adds a deposit of the provided validator private key.
     */
 
-    rpc StartValidator(KeyPair) returns (KeyPair) {
+    rpc StartValidator(KeyPair) returns (Success) {
         option (google.api.http) = {
             post: "/wallet/startvalidator"
+            body: "*"
+        };
+    }
+
+       /** 
+        Method: StartValidatorBulk 
+        Input: message KeyPairs
+        Response: message Success
+        Description: Adds a deposit for multiple validator private keys.
+    */
+
+    rpc StartValidatorBulk(KeyPairs) returns (Success) {
+        option (google.api.http) = {
+            post: "/wallet/startvalidatorbulk"
             body: "*"
         };
     }
@@ -162,8 +189,9 @@ message SendTransactionInfo {
 }
 
 message Balance {
-    uint64 confirmed = 1;
-    uint64 unconfirmed = 2;
+    string confirmed = 1;
+    string unconfirmed = 2;
+    string locked = 3;
 }
 
 message Wallets {

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"path"
 
 	"github.com/dgraph-io/badger"
@@ -25,5 +26,6 @@ var resetCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+		_ = os.Remove(path.Join(DataFolder, "chain.json"))
 	},
 }

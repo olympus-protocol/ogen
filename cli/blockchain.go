@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"path"
@@ -21,8 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
-
-	mnet "github.com/multiformats/go-multiaddr-net"
 )
 
 // loadOgen is the main function to run ogen.
@@ -82,28 +79,6 @@ func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile
 	return chainFile, nil
 }
 
-func tcpAddressStringToMultiaddr(addrString string) (multiaddr.Multiaddr, error) {
-	netAddr, err := net.ResolveTCPAddr("tcp", addrString)
-	if err != nil {
-		return nil, err
-	}
-
-	return mnet.FromNetAddr(netAddr)
-}
-
-func tcpAddressesStringToMultiaddr(addrStrings []string) ([]multiaddr.Multiaddr, error) {
-	out := make([]multiaddr.Multiaddr, len(addrStrings))
-	for i := range out {
-		o, err := tcpAddressStringToMultiaddr(addrStrings[i])
-		if err != nil {
-			return nil, err
-		}
-		out[i] = o
-	}
-
-	return out, nil
-}
-
 var (
 	DataFolder string
 
@@ -128,7 +103,7 @@ Next generation blockchain secured by CASPER.`,
 				currParams = params.TestNet
 			}
 
-			cf, err := getChainFile(viper.GetString("chainfile"), currParams)
+			cf, err := getChainFile(DataFolder+"/chain.json", currParams)
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
@@ -137,11 +112,6 @@ Next generation blockchain secured by CASPER.`,
 			genesisTime := viper.GetUint64("genesistime")
 			if genesisTime != 0 {
 				ip.GenesisTime = time.Unix(int64(genesisTime), 0)
-			}
-
-			listenAddr, err := tcpAddressStringToMultiaddr(viper.GetString("listen"))
-			if err != nil {
-				log.Fatalf("error parsing listen address: %s", err)
 			}
 
 			addNodesStrs := viper.GetStringSlice("add")
@@ -160,18 +130,23 @@ Next generation blockchain secured by CASPER.`,
 				addNodes[i] = *pinfo
 			}
 			c := &config.Config{
-				DataFolder:    DataFolder,
-				InitConfig:    ip,
-				Debug:         viper.GetBool("debug"),
-				Listen:        []multiaddr.Multiaddr{listenAddr},
-				NetworkName:   networkName,
-				AddNodes:      addNodes,
-				Port:          int32(viper.GetUint("port")),
-				MaxPeers:      int32(viper.GetUint("maxpeers")),
+				DataFolder: DataFolder,
+
+				NetworkName: networkName,
+				AddNodes:    addNodes,
+				MaxPeers:    int32(viper.GetUint("maxpeers")),
+				Port:        viper.GetString("port"),
+
 				MiningEnabled: viper.GetBool("enablemining"),
-				Wallet:        viper.GetBool("enable_wallet_external_access"),
-				RPCProxy:      viper.GetBool("rpc_http_proxy"),
-				RPCPort:       viper.GetString("rpc_port"),
+
+				InitConfig: ip,
+
+				RPCProxy:     viper.GetBool("rpc_proxy"),
+				RPCProxyPort: viper.GetString("rpc_proxy_port"),
+				RPCPort:      viper.GetString("rpc_port"),
+				RPCWallet:    viper.GetBool("rpc_wallet"),
+
+				Debug: viper.GetBool("debug"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -197,19 +172,21 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "data directory to store Ogen data")
-	rootCmd.PersistentFlags().Bool("debug", false, "log debugging info")
 
-	rootCmd.Flags().String("listen", "0.0.0.0:24126", "listen for new connections")
 	rootCmd.Flags().String("network", "testnet", "network name to use (testnet or mainnet)")
-	rootCmd.Flags().Uint16("maxpeers", 9, "maximum peers to connect to or allow connections for")
-	rootCmd.Flags().StringSlice("connect", []string{}, "IP addresses of nodes to connect to initially")
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add")
-	rootCmd.Flags().String("chainfile", "chain.json", "Chain file to use for blockchain initialization")
+	rootCmd.Flags().Uint16("maxpeers", 9, "maximum peers to connect to or allow connections for")
+	rootCmd.Flags().String("port", "24126", "port to listen to p2p connections")
+
 	rootCmd.Flags().Bool("enablemining", false, "should mining be enabled")
-	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
-	rootCmd.Flags().Bool("enable_wallet_external_access", false, "enable wallet access through rpc")
-	rootCmd.Flags().Bool("rpc_http_proxy", false, "enable http proxy for rpc")
+
+	rootCmd.Flags().Bool("rpc_proxy", false, "enable http proxy for rpc")
+	rootCmd.Flags().String("rpc_proxy_port", "8080", "port to listen for the http proxy")
 	rootCmd.Flags().String("rpc_port", "24127", "host/port to listen on for rpc")
+	rootCmd.Flags().Bool("rpc_wallet", false, "enable wallet access through rpc")
+
+	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
+	rootCmd.PersistentFlags().Bool("debug", false, "log debugging info")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {

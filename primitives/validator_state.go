@@ -12,17 +12,17 @@ type ValidatorStatus uint8
 func (w ValidatorStatus) String() string {
 	switch w {
 	case StatusActive:
-		return "active"
+		return "ACTIVE"
 	case StatusActivePendingExit:
-		return "pending exit"
+		return "PENDING_EXIT"
 	case StatusExitedWithPenalty:
-		return "penalty exit"
+		return "PENALTY_EXIT"
 	case StatusExitedWithoutPenalty:
-		return "exited"
+		return "EXITED"
 	case StatusStarting:
-		return "starting"
+		return "STARTING"
 	default:
-		return "unknown"
+		return "UNKNOWN"
 	}
 }
 

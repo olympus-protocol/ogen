@@ -1,16 +1,8 @@
 package config
 
 import (
-	"errors"
-
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/primitives"
-)
-
-var (
-	ErrorPathDontExist   = errors.New("the specified path for datadir doesn't exists")
-	ErrorConfigDontExist = errors.New("unable to load config.toml from datadir")
 )
 
 const (
@@ -18,18 +10,23 @@ const (
 )
 
 type Config struct {
-	DataFolder    string
-	Debug         bool
-	Listen        []multiaddr.Multiaddr
-	NetworkName   string
-	AddNodes      []peer.AddrInfo
-	Port          int32
-	MaxPeers      int32
+	DataFolder string
+
+	NetworkName string
+	AddNodes    []peer.AddrInfo
+	MaxPeers    int32
+	Port        string
+
 	MiningEnabled bool
-	InitConfig    primitives.InitializationParameters
-	Wallet        bool
-	RPCProxy      bool
-	RPCPort       string
+
+	InitConfig primitives.InitializationParameters
+
+	RPCProxy     bool
+	RPCProxyPort string
+	RPCPort      string
+	RPCWallet    bool
+
+	Debug bool
 }
 
 func OgenVersion() string {

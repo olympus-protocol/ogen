@@ -26,11 +26,9 @@ func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.Number) (*p
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]*proto.KeyPair, in.Number)
+	keys := make([]string, in.Number)
 	for i := range keys {
-		keys[i] = &proto.KeyPair{
-			Private: hex.EncodeToString(key[i].Marshal()),
-		}
+		keys[i] = hex.EncodeToString(key[i].Marshal())
 	}
 	return &proto.KeyPairs{Keys: keys}, nil
 }

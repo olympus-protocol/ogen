@@ -1,11 +1,13 @@
 package chainrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -15,6 +17,7 @@ import (
 
 type walletServer struct {
 	wallet *wallet.Wallet
+	chain  *chain.Blockchain
 	params *params.ChainParams
 	proto.UnimplementedWalletServer
 }
@@ -102,11 +105,52 @@ func (s *walletServer) DumpWallet(context.Context, *proto.Empty) (*proto.KeyPair
 }
 
 func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance, error) {
+	acc, err := s.wallet.GetAccountRaw()
+	if err != nil {
+		return nil, err
+	}
 	balance, err := s.wallet.GetBalance()
 	if err != nil {
 		return nil, err
 	}
-	return &proto.Balance{Confirmed: balance}, nil
+	balanceStr := decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e3), 3).String()
+	validators := s.getValidators(acc)
+	lock := decimal.NewFromInt(0)
+	for _, v := range validators.Validators {
+		b, err := decimal.NewFromString(v.Balance)
+		if err != nil {
+			return nil, err
+		}
+		lock.Add(b)
+	}
+	//lock, err := s.wallet.
+	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3)}, nil
+}
+
+func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
+	acc, err := s.wallet.GetAccountRaw()
+	if err != nil {
+		return nil, err
+	}
+	return s.getValidators(acc), nil
+}
+
+func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
+	var accountValidators []*proto.ValidatorRegistry
+	validators := s.chain.State().TipState().ValidatorRegistry
+	for _, v := range validators {
+		if bytes.EqualFold(acc[:], v.PayeeAddress[:]) {
+			validator := &proto.ValidatorRegistry{
+				PublicKey:        hex.EncodeToString(v.PubKey),
+				Status:           v.Status.String(),
+				Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
+				FirstActiveEpoch: v.FirstActiveEpoch,
+				LastActiveEpoch:  v.LastActiveEpoch,
+			}
+			accountValidators = append(accountValidators, validator)
+		}
+	}
+	return &proto.ValidatorsRegistry{Validators: accountValidators}
 }
 
 func (s *walletServer) GetAccount(context.Context, *proto.Empty) (*proto.KeyPair, error) {
@@ -127,21 +171,36 @@ func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTran
 	if err != nil {
 		return nil, err
 	}
-	return &proto.Hash{Hash: hash[:]}, nil
+	return &proto.Hash{Hash: hash.String()}, nil
 }
-func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (*proto.KeyPair, error) {
+func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
 	var privKeyBytes [32]byte
 	privKeyDecode, err := hex.DecodeString(key.Private)
 	if err != nil {
 		return nil, err
 	}
 	copy(privKeyBytes[:], privKeyDecode)
-	deposit, err := s.wallet.StartValidator(privKeyBytes)
+	_, err = s.wallet.StartValidator(privKeyBytes)
 	if err != nil {
 		return nil, err
 	}
-	pubKeyStr := hex.EncodeToString(deposit.PublicKey.Marshal())
-	return &proto.KeyPair{Public: pubKeyStr}, nil
+	return &proto.Success{Success: true}, nil
+}
+
+func (s *walletServer) StartValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
+	for i := range keys.Keys {
+		var privKeyBytes [32]byte
+		privKeyDecode, err := hex.DecodeString(keys.Keys[i])
+		if err != nil {
+			return nil, err
+		}
+		copy(privKeyBytes[:], privKeyDecode)
+		_, err = s.wallet.StartValidator(privKeyBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &proto.Success{Success: true}, nil
 }
 
 func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {

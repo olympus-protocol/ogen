@@ -4,7 +4,7 @@ option go_package = "github.com/olympus-protocol/ogen/proto";
 message Empty{}
 
 message Hash {
-    bytes hash = 1;
+    string hash = 1;
 }
 
 message Number {
@@ -18,7 +18,7 @@ message Success {
 }
 
 message KeyPairs {
-    repeated KeyPair keys = 1;
+    repeated string keys = 1;
 }
 
 message KeyPair {
@@ -84,4 +84,25 @@ message Block {
     repeated string txs = 4;
     string signature = 5;
     string randao_signature = 6;
+}
+
+message ValidatorsRegistry {
+    repeated ValidatorRegistry validators = 1;
+}
+
+message ValidatorRegistry {
+    string balance = 1;
+    string publicKey = 2;
+    string payee_address = 3;
+    string status = 4;
+    int64 first_active_epoch = 5;
+    int64 last_active_epoch = 6;
+}
+
+message ValidatorsInfo {
+    int64 active = 1;
+    int64 pending_exit = 2;
+    int64 penalty_exit = 3;
+    int64 exited = 4;
+    int64 starting = 5;
 }
