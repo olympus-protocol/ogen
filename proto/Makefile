@@ -6,7 +6,7 @@ build_files:
 build_proxy: 
 	protoc -I. --grpc-gateway_out=logtostderr=true,paths=source_relative:./ *.proto
 
-build: clean build_files build_proxy	
+build: build_files build_proxy	
 
 build_doc:
 	protoc --doc_out=./ --doc_opt=markdown,rpc.md *.proto
