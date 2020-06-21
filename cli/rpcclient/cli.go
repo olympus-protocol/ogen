@@ -176,11 +176,7 @@ func newCli(rpcClient *RPCClient) *CLI {
 }
 
 func Run(cmd *cobra.Command, args []string) {
-	rpc, err := cmd.Flags().GetString("rpc")
-	if err != nil {
-		panic(err)
-	}
-	rpcClient := NewRPCClient(rpc)
+	rpcClient := NewRPCClient("127.0.0.1:24127")
 	cli := newCli(rpcClient)
 	cli.Run()
 }
