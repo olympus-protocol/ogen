@@ -8,7 +8,6 @@ require (
 	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
-	github.com/go-playground/validator/v10 v10.3.0
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
@@ -20,7 +19,7 @@ require (
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr v0.2.2
 	github.com/multiformats/go-multiaddr-net v0.1.5
-	github.com/olympus-protocol/bls-go v0.1.1-0.20200618152056-7a5188ecaa2c
+	github.com/olympus-protocol/bls-go v0.1.1-0.20200621190852-b73b69ccd71e
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/shopspring/decimal v1.2.0
