@@ -27,6 +27,7 @@ type Config struct {
 	RPCWallet    bool
 
 	Debug bool
+	LogFile bool
 }
 
 func OgenVersion() string {

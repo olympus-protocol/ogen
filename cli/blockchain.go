@@ -88,7 +88,18 @@ var (
 		Long: `A Golang implementation of the Olympus protocol.
 Next generation blockchain secured by CASPER.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			log := logger.New(os.Stdin)
+			var log *logger.Logger
+
+			if viper.GetBool("log_file") {
+				logFile, err := os.OpenFile(path.Join(DataFolder,"logger.log"), os.O_CREATE|os.O_RDWR, 0755)
+				if err != nil {
+					panic(err)
+				}
+				log = logger.New(logFile)
+			} else {
+				log = logger.New(os.Stdin)
+			}
+
 			if viper.GetBool("debug") {
 				log = log.WithDebug()
 			}
@@ -103,7 +114,7 @@ Next generation blockchain secured by CASPER.`,
 				currParams = params.TestNet
 			}
 
-			cf, err := getChainFile(DataFolder+"/chain.json", currParams)
+			cf, err := getChainFile(path.Join(DataFolder,"chain.json"), currParams)
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
@@ -147,6 +158,8 @@ Next generation blockchain secured by CASPER.`,
 				RPCWallet:    viper.GetBool("rpc_wallet"),
 
 				Debug: viper.GetBool("debug"),
+
+				LogFile: viper.GetBool("log_file"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -187,6 +200,7 @@ func init() {
 
 	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
 	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
+	rootCmd.PersistentFlags().Bool("log_file", false, "Display log information to file.")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
