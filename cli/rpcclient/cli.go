@@ -10,48 +10,58 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var chainCmd = []prompt.Suggest{
+	{Text: "getchaininfo", Description: "Get the chain status"},
+	{Text: "getrawblock", Description: "Get the serialized block data"},
+	{Text: "getblock", Description: "Get the block data"},
+	{Text: "getblockhash", Description: "Get the block hash of specified height"},
+	{Text: "getaccountinfo", Description: "Get the specified account information"},
+	{Text: "gettransaction", Description: "Returns the transaction information"},
+}
+
+var validatorsCmd = []prompt.Suggest{
+	{Text: "getvalidatorslist", Description: "Get the network validators list"},
+	{Text: "getaccountvalidators", Description: "Get the validators with deposits from an account"},
+}
+
+var netCmd = []prompt.Suggest{
+	{Text: "getnetworkinfo", Description: "Get current network information"},
+	{Text: "getpeersinfo", Description: "Get current connected peers"},
+	{Text: "addpeer", Description: "Add a new peer to the connections"},
+}
+
+var utilsCmd = []prompt.Suggest{
+	{Text: "submitrawdata", Description: "Broadcasts a serialized transaction to the network"},
+	{Text: "genkeypair", Description: "Get a key pair on bech32 encoded format"},
+	{Text: "genrawkeypair", Description: "Get a key pair on bls serialized format"},
+	{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
+	{Text: "decoderawtransaction", Description: "Returns a serialized transaction on human readable format"},
+	{Text: "decoderawblock", Description: "Returns a serialized block on human readable format"},
+}
+
+var walletCmd = []prompt.Suggest{
+	{Text: "listwallets", Description: "Returns a list of available wallets by name"},
+	{Text: "openwallet", Description: "Open a created wallet"},
+	{Text: "createwallet", Description: "Creates a new wallet and returns the public account"},
+	{Text: "closewallet", Description: "Closes current open wallet"},
+	{Text: "importwallet", Description: "Creates a new wallet based on the wif string private key"},
+	{Text: "dumpwallet", Description: "Exports the private key on wif format of the open wallet"},
+	{Text: "getbalance", Description: "Get the current open wallet balance"},
+	{Text: "getvalidators", Description: "Get validator list for open wallet"},
+	{Text: "getaccount", Description: "Returns the public account of the open wallet"},
+	{Text: "sendtransaction", Description: "Sends a transaction using the current open wallet"},
+	{Text: "startvalidator", Description: "Starts a validator using the current open wallet as the deposit holder"},
+	{Text: "exitvalidator", Description: "Exits a validator from the current open wallet"},
+}
+
 func completer(d prompt.Document) []prompt.Suggest {
-	s := []prompt.Suggest{
-		// Chain methods
-		{Text: "getchaininfo", Description: "Get the chain status"},
-		{Text: "getrawblock", Description: "Get the serialized block data"},
-		{Text: "getblock", Description: "Get the block data"},
-		{Text: "getblockhash", Description: "Get the block hash of specified height"},
-		{Text: "getaccountinfo", Description: "Get the specified account information"},
-		{Text: "gettransaction", Description: "Returns the transaction information"},
-
-		// Validators methods
-		{Text: "getvalidatorslist", Description: "Get the network validators list"},
-		{Text: "getaccountvalidators", Description: "Get the validators with deposits from an account"},
-
-		// Network methods
-		{Text: "getnetworkinfo", Description: "Get current network information"},
-		{Text: "getpeersinfo", Description: "Get current connected peers"},
-		{Text: "addpeer", Description: "Add a new peer to the connections"},
-
-		// Utils methods
-		{Text: "submitrawdata", Description: "Broadcasts a serialized transaction to the network"},
-		{Text: "genkeypair", Description: "Get a key pair on bech32 encoded format"},
-		{Text: "genrawkeypair", Description: "Get a key pair on bls serialized format"},
-		{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
-		{Text: "decoderawtransaction", Description: "Returns a serialized transaction on human readable format"},
-		{Text: "decoderawblock", Description: "Returns a serialized block on human readable format"},
-
-		// Wallet methods
-		{Text: "listwallets", Description: "Returns a list of available wallets by name"},
-		{Text: "openwallet", Description: "Open a created wallet"},
-		{Text: "createwallet", Description: "Creates a new wallet and returns the public account"},
-		{Text: "closewallet", Description: "Closes current open wallet"},
-		{Text: "importwallet", Description: "Creates a new wallet based on the wif string private key"},
-		{Text: "dumpwallet", Description: "Exports the private key on wif format of the open wallet"},
-		{Text: "getbalance", Description: "Get the current open wallet balance"},
-		{Text: "getvalidators", Description: "Get validator list for open wallet"},
-		{Text: "getaccount", Description: "Returns the public account of the open wallet"},
-		{Text: "sendtransaction", Description: "Sends a transaction using the current open wallet"},
-		{Text: "startvalidator", Description: "Starts a validator using the current open wallet as the deposit holder"},
-		{Text: "exitvalidator", Description: "Exits a validator from the current open wallet"},
-	}
-	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
+	var commands []prompt.Suggest
+	commands = append(commands, chainCmd...)
+	commands = append(commands, validatorsCmd...)
+	commands = append(commands, netCmd...)
+	commands = append(commands, utilsCmd...)
+	commands = append(commands, walletCmd...)
+	return prompt.FilterHasPrefix(commands, d.GetWordBeforeCursor(), true)
 }
 
 // Empty is the empty request.
@@ -90,6 +100,38 @@ func (c *CLI) Run() {
 		var err error
 
 		switch args[0] {
+		case "help":
+			out = "Ogen CLI commands \n\n"
+
+			out += "Chain \n\n"
+			for _, c := range chainCmd {
+				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+			}
+			out += "\n"
+
+			out += "Validators\n\n"
+			for _, c := range validatorsCmd {
+				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+			}
+			out += "\n"
+
+			out += "Network\n\n"
+			for _, c := range netCmd {
+				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+			}
+			out += "\n"
+
+			out += "Utils\n\n"
+			for _, c := range utilsCmd {
+				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+			}
+			out += "\n"
+
+			out += "Wallet\n\n"
+			for _, c := range walletCmd {
+				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+			}
+			out += "\n"
 		// Chain methods
 		case "getchaininfo":
 			out, err = c.rpcClient.getChainInfo()
