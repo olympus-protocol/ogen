@@ -21,10 +21,10 @@ var (
 )
 
 func init() {
-	generateChainCmd.Flags().Int64Var(&genesisTimeString, "genesistime", 0, "sets a genesis time for the blockchain (defaults to now)")
-	generateChainCmd.Flags().StringSliceVar(&connect, "connect", []string{}, "IP addresses for initial connections for this blockchain")
-	generateChainCmd.Flags().StringVar(&withdrawAddress, "withdrawaddress", "tolpub1kehaj5wqe6f54phsef3pamzwlygt4ac4x3qw4h", "withdraw address for validators or unspendable address if not defined")
-	generateChainCmd.Flags().StringVar(&outFile, "out", "chain.json", "chain file to save")
+	generateChainCmd.Flags().Int64Var(&genesisTimeString, "genesistime", 0, "Sets a genesis time timestamp for the blockchain.")
+	generateChainCmd.Flags().StringSliceVar(&connect, "connect", []string{}, "IP addresses for initial connections.")
+	generateChainCmd.Flags().StringVar(&withdrawAddress, "withdrawaddress", "tolpub1kehaj5wqe6f54phsef3pamzwlygt4ac4x3qw4h", "Withdraw address for validators.")
+	generateChainCmd.Flags().StringVar(&outFile, "out", "chain.json", "Path and name to save the file.")
 
 	rootCmd.AddCommand(generateChainCmd)
 }
@@ -32,7 +32,7 @@ func init() {
 var generateChainCmd = &cobra.Command{
 	Use:   "chain",
 	Short: "Generates chain file from the keys in your keystore",
-	Long:  `Generates chain file from keys in your keystore`,
+	Long:  `Generates chain file from the keys in your keystore`,
 	Run: func(cmd *cobra.Command, args []string) {
 		k, err := keystore.NewKeystore(DataFolder, nil)
 		if err != nil {

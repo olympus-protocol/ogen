@@ -17,8 +17,8 @@ func init() {
 
 var combineChainCmd = &cobra.Command{
 	Use:   "combine",
-	Short: "Combines two chain files",
-	Long:  `Combines two chain files`,
+	Short: "Combines two chain files,",
+	Long:  `Combines two chain files.`,
 	Args:  cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		chainFilenames := args[:len(args)-1]

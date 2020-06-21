@@ -9,6 +9,16 @@ import (
 	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
+// StateValidatorsInfo returns the state validators information.
+type StateValidatorsInfo struct {
+	Validators  []Validator
+	Active      int64
+	PendingExit int64
+	PenaltyExit int64
+	Exited      int64
+	Starting    int64
+}
+
 // LastBlockHashesSize is the size of the last block hashes.
 const LastBlockHashesSize = 8
 
@@ -246,6 +256,65 @@ func (s *State) Serialize(w io.Writer) error {
 	}
 
 	return nil
+}
+
+// GetValidators returns the validator information at current state
+func (s *State) GetValidators() StateValidatorsInfo {
+	validators := StateValidatorsInfo{
+		Validators:  s.ValidatorRegistry,
+		Active:      int64(0),
+		PendingExit: int64(0),
+		PenaltyExit: int64(0),
+		Exited:      int64(0),
+		Starting:    int64(0),
+	}
+	for _, v := range s.ValidatorRegistry {
+		switch v.Status {
+		case StatusActive:
+			validators.Active++
+		case StatusActivePendingExit:
+			validators.PendingExit++
+		case StatusExitedWithPenalty:
+			validators.PenaltyExit++
+		case StatusExitedWithoutPenalty:
+			validators.Exited++
+		case StatusStarting:
+			validators.Starting++
+		}
+	}
+	return validators
+}
+
+// GetValidatorsForAccount returns the validator information at current state from a defined account
+func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
+	var account [20]byte
+	copy(account[:], acc)
+	validators := StateValidatorsInfo{
+		Validators:  []Validator{},
+		Active:      int64(0),
+		PendingExit: int64(0),
+		PenaltyExit: int64(0),
+		Exited:      int64(0),
+		Starting:    int64(0),
+	}
+	for _, v := range s.ValidatorRegistry {
+		if v.PayeeAddress == account {
+			validators.Validators = append(validators.Validators, v)
+			switch v.Status {
+			case StatusActive:
+				validators.Active++
+			case StatusActivePendingExit:
+				validators.PendingExit++
+			case StatusExitedWithPenalty:
+				validators.PenaltyExit++
+			case StatusExitedWithoutPenalty:
+				validators.Exited++
+			case StatusStarting:
+				validators.Starting++
+			}
+		}
+	}
+	return validators
 }
 
 // Deserialize deserializes state from the reader.

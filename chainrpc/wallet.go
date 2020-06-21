@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -123,7 +122,7 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 		}
 		lock = lock.Add(b)
 	}
-	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3)}, nil
+	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e3), 3).Add(lock).StringFixed(3)}, nil
 }
 
 func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
@@ -135,21 +134,25 @@ func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*prot
 }
 
 func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
-	var accountValidators []*proto.ValidatorRegistry
-	validators := s.chain.State().TipState().ValidatorRegistry
-	for _, v := range validators {
-		if bytes.EqualFold(acc[:], v.PayeeAddress[:]) {
-			validator := &proto.ValidatorRegistry{
-				PublicKey:        hex.EncodeToString(v.PubKey),
-				Status:           v.Status.String(),
-				Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
-				FirstActiveEpoch: v.FirstActiveEpoch,
-				LastActiveEpoch:  v.LastActiveEpoch,
-			}
-			accountValidators = append(accountValidators, validator)
+	validators := s.chain.State().TipState().GetValidatorsForAccount(acc[:])
+	parsedValidators := make([]*proto.ValidatorRegistry, len(validators.Validators))
+	for i, v := range validators.Validators {
+		newValidator := &proto.ValidatorRegistry{
+			PublicKey:        hex.EncodeToString(v.PubKey),
+			Status:           v.Status.String(),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
+			FirstActiveEpoch: v.FirstActiveEpoch,
+			LastActiveEpoch:  v.LastActiveEpoch,
 		}
+		parsedValidators[i] = newValidator
 	}
-	return &proto.ValidatorsRegistry{Validators: accountValidators}
+	return &proto.ValidatorsRegistry{Validators: parsedValidators, Info: &proto.ValidatorsInfo{
+		Active:      validators.Active,
+		PendingExit: validators.PendingExit,
+		PenaltyExit: validators.PenaltyExit,
+		Exited:      validators.Exited,
+		Starting:    validators.Starting,
+	}}
 }
 
 func (s *walletServer) GetAccount(context.Context, *proto.Empty) (*proto.KeyPair, error) {

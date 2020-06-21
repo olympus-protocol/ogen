@@ -563,8 +563,8 @@ github.com/neelance/sourcemap v0.0.0-20151028013722-8c68805598ab/go.mod h1:Qr6/a
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
-github.com/olympus-protocol/bls-go v0.1.1-0.20200618152056-7a5188ecaa2c h1:o4DkfLCR9nl3iRucIPL1B4dXBu/6cribEbcEPGPR00o=
-github.com/olympus-protocol/bls-go v0.1.1-0.20200618152056-7a5188ecaa2c/go.mod h1:gOuTvuOsTGmji8RXGegB/5PVQGLS5XnGPbnV08A4OuI=
+github.com/olympus-protocol/bls-go v0.1.1-0.20200621190852-b73b69ccd71e h1:uMU7vpBsL+Hpn3DnahSpJoqQcaYAIiBzg6omfr6UQmo=
+github.com/olympus-protocol/bls-go v0.1.1-0.20200621190852-b73b69ccd71e/go.mod h1:gOuTvuOsTGmji8RXGegB/5PVQGLS5XnGPbnV08A4OuI=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.8.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

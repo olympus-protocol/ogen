@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -22,9 +21,9 @@ type validatorsServer struct {
 }
 
 func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*proto.ValidatorsRegistry, error) {
-	validators := s.chain.State().TipState().ValidatorRegistry
-	validatorsResponse := make([]*proto.ValidatorRegistry, len(validators))
-	for i, v := range validators {
+	validators := s.chain.State().TipState().GetValidators()
+	parsedValidators := make([]*proto.ValidatorRegistry, len(validators.Validators))
+	for i, v := range validators.Validators {
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey),
 			Status:           v.Status.String(),
@@ -32,9 +31,15 @@ func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*pr
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
 		}
-		validatorsResponse[i] = newValidator
+		parsedValidators[i] = newValidator
 	}
-	return &proto.ValidatorsRegistry{Validators: validatorsResponse}, nil
+	return &proto.ValidatorsRegistry{Validators: parsedValidators, Info: &proto.ValidatorsInfo{
+		Active:      validators.Active,
+		PendingExit: validators.PendingExit,
+		PenaltyExit: validators.PenaltyExit,
+		Exited:      validators.Exited,
+		Starting:    validators.Starting,
+	}}, nil
 }
 
 func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.Account) (*proto.ValidatorsRegistry, error) {
@@ -46,19 +51,23 @@ func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.
 			return nil, errors.New("unable to decode account")
 		}
 	}
-	var accountValidators []*proto.ValidatorRegistry
-	validators := s.chain.State().TipState().ValidatorRegistry
-	for _, v := range validators {
-		if bytes.EqualFold(account, v.PayeeAddress[:]) {
-			validator := &proto.ValidatorRegistry{
-				PublicKey:        hex.EncodeToString(v.PubKey),
-				Status:           v.Status.String(),
-				Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
-				FirstActiveEpoch: v.FirstActiveEpoch,
-				LastActiveEpoch:  v.LastActiveEpoch,
-			}
-			accountValidators = append(accountValidators, validator)
+	validators := s.chain.State().TipState().GetValidatorsForAccount(account)
+	parsedValidators := make([]*proto.ValidatorRegistry, len(validators.Validators))
+	for i, v := range validators.Validators {
+		newValidator := &proto.ValidatorRegistry{
+			PublicKey:        hex.EncodeToString(v.PubKey),
+			Status:           v.Status.String(),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
+			FirstActiveEpoch: v.FirstActiveEpoch,
+			LastActiveEpoch:  v.LastActiveEpoch,
 		}
+		parsedValidators[i] = newValidator
 	}
-	return &proto.ValidatorsRegistry{Validators: accountValidators}, nil
+	return &proto.ValidatorsRegistry{Validators: parsedValidators, Info: &proto.ValidatorsInfo{
+		Active:      validators.Active,
+		PendingExit: validators.PendingExit,
+		PenaltyExit: validators.PenaltyExit,
+		Exited:      validators.Exited,
+		Starting:    validators.Starting,
+	}}, nil
 }

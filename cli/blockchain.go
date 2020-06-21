@@ -88,7 +88,18 @@ var (
 		Long: `A Golang implementation of the Olympus protocol.
 Next generation blockchain secured by CASPER.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			log := logger.New(os.Stdin)
+			var log *logger.Logger
+
+			if viper.GetBool("log_file") {
+				logFile, err := os.OpenFile(path.Join(DataFolder,"logger.log"), os.O_CREATE|os.O_RDWR, 0755)
+				if err != nil {
+					panic(err)
+				}
+				log = logger.New(logFile)
+			} else {
+				log = logger.New(os.Stdin)
+			}
+
 			if viper.GetBool("debug") {
 				log = log.WithDebug()
 			}
@@ -103,7 +114,7 @@ Next generation blockchain secured by CASPER.`,
 				currParams = params.TestNet
 			}
 
-			cf, err := getChainFile(DataFolder+"/chain.json", currParams)
+			cf, err := getChainFile(path.Join(DataFolder,"chain.json"), currParams)
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
@@ -147,6 +158,8 @@ Next generation blockchain secured by CASPER.`,
 				RPCWallet:    viper.GetBool("rpc_wallet"),
 
 				Debug: viper.GetBool("debug"),
+
+				LogFile: viper.GetBool("log_file"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -171,22 +184,23 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "data directory to store Ogen data")
+	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "Directory to store the chain data.")
 
-	rootCmd.Flags().String("network", "testnet", "network name to use (testnet or mainnet)")
-	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add")
-	rootCmd.Flags().Uint16("maxpeers", 9, "maximum peers to connect to or allow connections for")
-	rootCmd.Flags().String("port", "24126", "port to listen to p2p connections")
+	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
+	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
+	rootCmd.Flags().Uint16("maxpeers", 9, "Maximum number of peers to connect.")
+	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
 
-	rootCmd.Flags().Bool("enablemining", false, "should mining be enabled")
+	rootCmd.Flags().Bool("enablemining", false, "Starts the node mining with validator keys.")
 
-	rootCmd.Flags().Bool("rpc_proxy", false, "enable http proxy for rpc")
-	rootCmd.Flags().String("rpc_proxy_port", "8080", "port to listen for the http proxy")
-	rootCmd.Flags().String("rpc_port", "24127", "host/port to listen on for rpc")
-	rootCmd.Flags().Bool("rpc_wallet", false, "enable wallet access through rpc")
+	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
+	rootCmd.Flags().String("rpc_proxy_port", "8080", "Port for the http proxy.")
+	rootCmd.Flags().String("rpc_port", "24127", "RPC server port.")
+	rootCmd.Flags().Bool("rpc_wallet", false, "Enable wallet access through RPC.")
 
-	rootCmd.Flags().Uint64("genesistime", 0, "genesis time override")
-	rootCmd.PersistentFlags().Bool("debug", false, "log debugging info")
+	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
+	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
+	rootCmd.PersistentFlags().Bool("log_file", false, "Display log information to file.")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {

@@ -87,6 +87,7 @@ message Block {
 }
 
 message ValidatorsRegistry {
+    ValidatorsInfo info = 2;
     repeated ValidatorRegistry validators = 1;
 }
 
