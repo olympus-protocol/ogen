@@ -16,7 +16,7 @@
 
     rpc ListWallets(Empty) returns (Wallets) {
         option (google.api.http) = {
-            get: "/wallet/listwallets"
+            get: "/wallet/list"
         };
     }
 
@@ -29,8 +29,7 @@
 
     rpc CreateWallet(Name) returns (KeyPair) {
         option (google.api.http) = {
-            post: "/wallet/createwallet"
-            body: "*"
+            get: "/wallet/create/{name}"
         };
     }
 
@@ -43,8 +42,7 @@
 
     rpc OpenWallet(Name) returns (Success) {
         option (google.api.http) = {
-            post: "/wallet/openwallet"
-            body: "*"
+            get: "/wallet/open/{name}"
         };
     }
 
@@ -57,7 +55,8 @@
 
     rpc ImportWallet(ImportWalletData) returns (KeyPair) {
         option (google.api.http) = {
-            get: "/wallet/importwallet"
+            post: "/wallet/import"
+            body: "*"
         };
     }
 
@@ -70,7 +69,7 @@
 
     rpc DumpWallet(Empty) returns (KeyPair) {
         option (google.api.http) = {
-            get: "/wallet/dumpwallet"
+            get: "/wallet/dump"
         };
     }
 
@@ -83,7 +82,7 @@
 
     rpc CloseWallet(Empty) returns (Success) {
         option (google.api.http) = {
-            get: "/wallet/closewallet"
+            get: "/wallet/close"
         };
     }
 
@@ -96,7 +95,7 @@
 
     rpc GetBalance(Empty) returns (Balance) {
         option (google.api.http) = {
-            get: "/wallet/getbalance"
+            get: "/wallet/balance"
         };
     }
 
@@ -109,7 +108,7 @@
 
     rpc GetValidators(Empty) returns (ValidatorsRegistry) {
         option (google.api.http) = {
-            get: "/wallet/getvalidators"
+            get: "/wallet/validators"
         };
     }
 
@@ -122,7 +121,7 @@
 
     rpc GetAccount(Empty) returns (KeyPair) {
         option (google.api.http) = {
-            get: "/wallet/getaccount"
+            get: "/wallet/account"
         };
     }
 
@@ -149,8 +148,7 @@
 
     rpc StartValidator(KeyPair) returns (Success) {
         option (google.api.http) = {
-            post: "/wallet/startvalidator"
-            body: "*"
+            get: "/wallet/startvalidator/{private}"
         };
     }
 
@@ -177,8 +175,7 @@
 
     rpc ExitValidator(KeyPair) returns (Success) {
         option (google.api.http) = {
-            post: "/wallet/exitvalidator"
-            body: "*"
+            get: "/wallet/exitvalidator/{public}"
         };
     }
 

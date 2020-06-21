@@ -23,35 +23,16 @@ type chainServer struct {
 
 func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
 	state := s.chain.State()
-	validators := state.TipState().ValidatorRegistry
-	active := int64(0)
-	pendingExit := int64(0)
-	penaltyExit := int64(0)
-	exited := int64(0)
-	starting := int64(0)
-	for _, v := range validators {
-		switch v.Status {
-		case primitives.StatusActive:
-			active++
-		case primitives.StatusActivePendingExit:
-			pendingExit++
-		case primitives.StatusExitedWithPenalty:
-			penaltyExit++
-		case primitives.StatusExitedWithoutPenalty:
-			exited++
-		case primitives.StatusStarting:
-			starting++
-		}
-	}
+	validators := state.TipState().GetValidators()
 	return &proto.ChainInfo{
 		BlockHash:   state.Tip().Hash.String(),
 		BlockHeight: state.Height(),
 		Validators: &proto.ValidatorsInfo{
-			Active:      active,
-			PendingExit: pendingExit,
-			PenaltyExit: penaltyExit,
-			Exited:      exited,
-			Starting:    starting,
+			Active:      validators.Active,
+			PendingExit: validators.PendingExit,
+			PenaltyExit: validators.PenaltyExit,
+			Exited:      validators.Exited,
+			Starting:    validators.Starting,
 		},
 	}, nil
 }
@@ -199,8 +180,8 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 			if err := bl.block.Encode(buf); err != nil {
 				return err
 			}
-			err := stream.Send(&proto.SubscribeResponse{
-				Data: buf.Bytes(),
+			err := stream.Send(&proto.RawData{
+				Data: hex.EncodeToString(buf.Bytes()),
 			})
 			if err != nil {
 				return err
@@ -211,11 +192,15 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 	}
 }
 
-func (s *chainServer) SubscribeTransactions(in *proto.SubscribeAccountRequest, stream proto.Chain_SubscribeTransactionsServer) error {
+func (s *chainServer) SubscribeTransactions(in *proto.KeyPairs, stream proto.Chain_SubscribeTransactionsServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)
 	accounts := make(map[[20]byte]struct{})
-	for _, a := range in.PublicKeyHash {
-		if len(a) != 20 {
+	for _, a := range in.Keys {
+		account, err := hex.DecodeString(a)
+		if err != nil {
+			return err
+		}
+		if len(account) != 20 {
 			return fmt.Errorf("expected public key hashes to be 20 bytes but got %d", len(a))
 		}
 
@@ -248,8 +233,8 @@ func (s *chainServer) SubscribeTransactions(in *proto.SubscribeAccountRequest, s
 				}
 			}
 
-			err := stream.Send(&proto.SubscribeResponse{
-				Data: resp.Bytes(),
+			err := stream.Send(&proto.RawData{
+				Data: hex.EncodeToString(resp.Bytes()),
 			})
 			if err != nil {
 				return err
@@ -260,12 +245,16 @@ func (s *chainServer) SubscribeTransactions(in *proto.SubscribeAccountRequest, s
 	}
 }
 
-func (s *chainServer) SubscribeValidatorTransaction(in *proto.SubscribeValidatorRequest, stream proto.Chain_SubscribeValidatorTransactionsServer) error {
+func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream proto.Chain_SubscribeValidatorTransactionsServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)
 	accounts := make(map[[96]byte]struct{})
-	for _, a := range in.PublicKey {
-		if len(a) != 96 {
-			return fmt.Errorf("expected public key hashes to be 20 bytes but got %d", len(a))
+	for _, a := range in.Keys {
+		pubkey, err := hex.DecodeString(a)
+		if err != nil {
+			return err
+		}
+		if len(pubkey) != 96 {
+			return fmt.Errorf("expected public key to be 96 bytes but got %d", len(a))
 		}
 
 		var acc [96]byte
@@ -302,8 +291,8 @@ func (s *chainServer) SubscribeValidatorTransaction(in *proto.SubscribeValidator
 				}
 			}
 
-			err := stream.Send(&proto.SubscribeResponse{
-				Data: resp.Bytes(),
+			err := stream.Send(&proto.RawData{
+				Data: hex.EncodeToString(resp.Bytes()),
 			})
 			if err != nil {
 				return err

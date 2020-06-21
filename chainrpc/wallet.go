@@ -122,7 +122,7 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 		}
 		lock = lock.Add(b)
 	}
-	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).Add(lock).StringFixed(3)}, nil
+	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e3), 3).Add(lock).StringFixed(3)}, nil
 }
 
 func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {

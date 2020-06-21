@@ -15,7 +15,7 @@ service Utils {
     */
     rpc GenValidatorKey(Number) returns (KeyPairs) {
         option (google.api.http) = {
-            get: "/utils/genvalidatorkey"
+            get: "/utils/genvalidatorkey/{number}"
         };
     }
 
