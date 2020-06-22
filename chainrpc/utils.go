@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -38,11 +37,10 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(dataBytes)
 	switch data.Type {
 	case "tx":
 		tx := new(primitives.Tx)
-		err := tx.Decode(buf)
+		err := tx.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -50,10 +48,14 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		if err != nil {
 			return nil, err
 		}
-		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
+		hash, err := tx.Hash()
+		if err != nil {
+			return nil, err
+		}
+		return &proto.Success{Success: true, Data: hash.String()}, nil
 	case "deposit":
 		deposit := new(primitives.Deposit)
-		err := deposit.Unmarshal(dataBytes)
+		err := deposit.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -68,7 +70,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		return &proto.Success{Success: true, Data: hash.String()}, nil
 	case "exit":
 		exit := new(primitives.Exit)
-		err := exit.Unmarshal(dataBytes)
+		err := exit.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -91,14 +93,17 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(dataBytes)
 	tx := new(primitives.Tx)
-	err = tx.Decode(buf)
+	err = tx.UnmarshalSSZ(dataBytes)
 	if err != nil {
 		return nil, errors.New("unable to decode block raw data")
 	}
+	hash, err := tx.Hash()
+	if err != nil {
+		return nil, err
+	}
 	txParse := &proto.Tx{
-		Hash:    tx.Hash().String(),
+		Hash:    hash.String(),
 		Version: tx.TxVersion,
 		Type:    tx.TxType,
 	}
@@ -110,11 +115,15 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 		return nil, err
 	}
 	var block primitives.Block
-	err = block.Unmarshal(dataBytes)
+	err = block.UnmarshalSSZ(dataBytes)
 	if err != nil {
 		return nil, errors.New("unable to decode block raw data")
 	}
 	hash, err := block.Hash()
+	if err != nil {
+		return nil, err
+	}
+	txs, err := block.GetTxs()
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +144,7 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 			StateRoot:                  block.Header.StateRoot.String(),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
-		Txs:             block.GetTxs(),
+		Txs:             txs,
 		Signature:       hex.EncodeToString(block.Signature),
 		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
 	}

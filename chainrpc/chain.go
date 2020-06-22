@@ -60,6 +60,10 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 	if err != nil {
 		return nil, err
 	}
+	txs, err := block.GetTxs()
+	if err != nil {
+		return nil, err
+	}
 	blockParse := &proto.Block{
 		Hash: bhash.String(),
 		Header: &proto.BlockHeader{
@@ -77,7 +81,7 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 			StateRoot:                  block.Header.StateRoot.String(),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
-		Txs:             block.GetTxs(),
+		Txs:             txs,
 		Signature:       hex.EncodeToString(block.Signature),
 		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
 	}
@@ -177,7 +181,7 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 	for {
 		select {
 		case bl := <-bn.blocks:
-			block, err := bl.block.Marshal()
+			block, err := bl.block.MarshalSSZ()
 			if err != nil {
 				return err
 			}
@@ -342,8 +346,12 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 	if err != nil {
 		return nil, err
 	}
+	hash, err := tx.Hash()
+	if err != nil {
+		return nil, err
+	}
 	txParse := &proto.Tx{
-		Hash:    tx.Hash().String(),
+		Hash:    hash.String(),
 		Version: tx.TxVersion,
 		Type:    tx.TxType,
 	}

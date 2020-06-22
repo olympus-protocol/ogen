@@ -1,8 +1,7 @@
 package primitives
 
 import (
-	"bytes"
-
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -12,23 +11,28 @@ type GovernanceVoteType uint8
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
 type CommunityVoteData struct {
-	ReplacementCandidates [][20]byte
+	ReplacementCandidates [][]byte
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Copy copies the community vote data.
 func (c *CommunityVoteData) Copy() *CommunityVoteData {
 	newCommunityVoteData := *c
-	newCommunityVoteData.ReplacementCandidates = make([][20]byte, len(c.ReplacementCandidates))
+	newCommunityVoteData.ReplacementCandidates = make([][]byte, len(c.ReplacementCandidates))
 	copy(newCommunityVoteData.ReplacementCandidates, c.ReplacementCandidates)
 
 	return &newCommunityVoteData
 }
 
 // Hash calculates the hash of the vote data.
-func (c *CommunityVoteData) Hash() chainhash.Hash {
-	buf := new(bytes.Buffer)
-	c.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (c *CommunityVoteData) Hash() (chainhash.Hash, error) {
+	ser, err := c.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 const (
@@ -55,6 +59,9 @@ type GovernanceVote struct {
 	Data      []byte
 	Signature bls.FunctionalSignature
 	VoteEpoch uint64
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 func (gv *GovernanceVote) Valid() bool {
@@ -64,17 +71,20 @@ func (gv *GovernanceVote) Valid() bool {
 
 // SignatureHash gets the signed part of the hash.
 func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	serializer.WriteVarBytes(buf, gv.Data)
-	serializer.WriteElements(buf, gv.VoteEpoch, gv.Type)
-	return chainhash.HashH(buf.Bytes())
+	buf := []byte{}
+	// TODO
+	//serializer.WriteVarBytes(buf, gv.Data)
+	//serializer.WriteElements(buf, gv.VoteEpoch, gv.Type)
+	return chainhash.HashH(buf)
 }
 
 // Hash calculates the hash of the governance vote.
-func (gv *GovernanceVote) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = gv.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (gv *GovernanceVote) Hash() (chainhash.Hash, error) {
+	ser, err := gv.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 // Copy copies the governance vote.

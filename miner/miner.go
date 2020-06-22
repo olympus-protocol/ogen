@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -134,20 +133,19 @@ func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
-	buf := bytes.NewBuffer([]byte{})
-	err := vote.Encode(buf)
+	ser, err := vote.MarshalSSZ()
 	if err != nil {
 		m.log.Errorf("error encoding vote: %s", err)
 		return
 	}
 
-	if err := m.voteTopic.Publish(m.context, buf.Bytes()); err != nil {
+	if err := m.voteTopic.Publish(m.context, ser); err != nil {
 		m.log.Errorf("error publishing vote: %s", err)
 	}
 }
 
 func (m *Miner) publishBlock(block *primitives.Block) {
-	blockBytes, err := block.Marshal()
+	blockBytes, err := block.MarshalSSZ()
 	if err != nil {
 		m.log.Error(err)
 		return
@@ -245,8 +243,16 @@ func (m *Miner) ProposeBlocks() {
 					ProposerSlashings: proposerSlashings,
 				}
 
-				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
-				block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
+				block.Header.VoteMerkleRoot, err = block.VotesMerkleRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
+				block.Header.TxMerkleRoot, err = block.TransactionMerkleRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
 				block.Header.DepositMerkleRoot, err = block.DepositMerkleRoot()
 				if err != nil {
 					// TODO handle error
@@ -257,10 +263,26 @@ func (m *Miner) ProposeBlocks() {
 					// TODO handle error
 
 				}
-				block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
-				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
-				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
-				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
+				block.Header.ProposerSlashingMerkleRoot, err = block.ProposerSlashingsRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
+				block.Header.RANDAOSlashingMerkleRoot, err = block.RANDAOSlashingsRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
+				block.Header.VoteSlashingMerkleRoot, err = block.VoteSlashingRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
+				block.Header.GovernanceVotesMerkleRoot, err = block.GovernanceVoteMerkleRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
 
 				blockHash, err := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
@@ -337,8 +359,10 @@ func (m *Miner) VoteForBlocks() {
 				BeaconBlockHash: beaconBlock.Hash,
 			}
 
-			dataHash := data.Hash()
-
+			dataHash, err := data.Hash()
+			if err != nil {
+				panic(err)
+			}
 			for i, validatorIdx := range validators {
 				validator := state.ValidatorRegistry[validatorIdx]
 

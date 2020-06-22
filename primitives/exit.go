@@ -15,19 +15,9 @@ type Exit struct {
 	ssz.Unmarshaler
 }
 
-// Marshal serializes the struct to bytes
-func (e *Exit) Marshal() ([]byte, error) {
-	return e.MarshalSSZ()
-}
-
-// Unmarshal deserializes the struct from bytes
-func (e *Exit) Unmarshal(b []byte) error {
-	return e.UnmarshalSSZ(b)
-}
-
 // Hash calculates the hash of the exit.
 func (e *Exit) Hash() (chainhash.Hash, error) {
-	exBytes, err := e.Marshal()
+	exBytes, err := e.MarshalSSZ()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}

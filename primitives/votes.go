@@ -1,8 +1,9 @@
 package primitives
 
 import (
-	"bytes"
 	"fmt"
+
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/params"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -25,6 +26,9 @@ type AcceptedVoteInfo struct {
 	// InclusionDelay is the delay from the attestation slot to the slot
 	// included.
 	InclusionDelay uint64
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
@@ -40,7 +44,6 @@ func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 
 	return a2
 }
-
 
 // MaxVoteDataSize is the maximum size in bytes of vote data.
 const MaxVoteDataSize = 8 + 8 + 32 + 8 + 32 + 32
@@ -66,6 +69,9 @@ type VoteData struct {
 
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash chainhash.Hash
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
@@ -112,12 +118,13 @@ func (v *VoteData) Copy() VoteData {
 }
 
 // Hash calculates the hash of the vote data.
-func (v *VoteData) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = v.Serialize(buf)
-	return chainhash.HashH(buf.Bytes())
+func (v *VoteData) Hash() (chainhash.Hash, error) {
+	ser, err := v.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
-
 
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
@@ -125,6 +132,9 @@ type SingleValidatorVote struct {
 	Signature bls.Signature
 	Offset    uint32
 	OutOf     uint32
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // AsMulti returns the single validator vote as a multi validator vote.
@@ -138,23 +148,29 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 	}
 }
 
-func (v *SingleValidatorVote) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = v.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (v *SingleValidatorVote) Hash() (chainhash.Hash, error) {
+	ser, err := v.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
-
 
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
 	Data                  VoteData
 	Signature             bls.Signature
 	ParticipationBitfield []uint8
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Hash calculates the hash of the vote.
-func (v *MultiValidatorVote) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = v.Serialize(buf)
-	return chainhash.HashH(buf.Bytes())
+func (v *MultiValidatorVote) Hash() (chainhash.Hash, error) {
+	ser, err := v.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }

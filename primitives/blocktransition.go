@@ -131,14 +131,17 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
-			ReplacementCandidates: make([][20]byte, len(p.GovernancePercentages)),
+			ReplacementCandidates: make([][]byte, len(p.GovernancePercentages)),
 		}
 
 		for i := range voteData.ReplacementCandidates {
 			copy(voteData.ReplacementCandidates[i][:], vote.Data[i*20:(i+1)*20])
 		}
 
-		voteHash := voteData.Hash()
+		voteHash, err := voteData.Hash()
+		if err != nil {
+			return err
+		}
 		s.CommunityVotes[voteHash] = voteData
 		s.ReplaceVotes[votePub.Hash()] = voteHash
 	case UpdateManagersInstantly:
@@ -720,11 +723,22 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	if err != nil {
 		return err
 	}
-	voteSlashingMerkleRoot := b.VoteSlashingRoot()
-	proposerSlashingMerkleRoot := b.ProposerSlashingsRoot()
-	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
-	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
-
+	voteSlashingMerkleRoot, err := b.VoteSlashingRoot()
+	if err != nil {
+		return err
+	}
+	proposerSlashingMerkleRoot, err := b.ProposerSlashingsRoot()
+	if err != nil {
+		return err
+	}
+	randaoSlashingMerkleRoot, err := b.RANDAOSlashingsRoot()
+	if err != nil {
+		return err
+	}
+	governanceVoteMerkleRoot, err := b.GovernanceVoteMerkleRoot()
+	if err != nil {
+		return err
+	}
 	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
 	}

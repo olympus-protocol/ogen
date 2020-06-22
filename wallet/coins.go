@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -57,7 +56,7 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 		WithdrawalAddress: addr,
 	}
 
-	depositDataBytes, err := depositData.Marshal()
+	depositDataBytes, err := depositData.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -178,25 +177,26 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	w.broadcastTx(tx)
 
-	txHash := tx.Hash()
-
+	txHash, err := tx.Hash()
+	if err != nil {
+		return nil, err
+	}
 	return &txHash, nil
 }
 
 func (w *Wallet) broadcastTx(payload *primitives.Tx) {
-	buf := bytes.NewBuffer([]byte{})
-	err := payload.Encode(buf)
+	ser, err := payload.MarshalSSZ()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.txTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.txTopic.Publish(w.ctx, ser); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
 
 func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	db, err := deposit.Marshal()
+	db, err := deposit.MarshalSSZ()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
@@ -207,7 +207,7 @@ func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
 }
 
 func (w *Wallet) broadcastExit(exit *primitives.Exit) {
-	eb, err := exit.Marshal()
+	eb, err := exit.MarshalSSZ()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return

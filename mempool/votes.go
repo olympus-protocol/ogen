@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"math/rand"
 	"sort"
@@ -172,8 +171,11 @@ func (m *VoteMempool) sortMempool() {
 func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	voteHash := vote.Data.Hash()
-
+	voteHash, err := vote.Data.Hash()
+	if err != nil {
+		m.log.Error(err)
+		return
+	}
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
 
@@ -279,8 +281,11 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	for _, v := range b.Votes {
-		voteHash := v.Data.Hash()
-
+		voteHash, err := v.Data.Hash()
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
 		var shouldRemove bool
 		if vote, found := m.pool[voteHash]; found {
 			shouldRemove = vote.remove(v.ParticipationBitfield)
@@ -309,10 +314,9 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 			continue
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.SingleValidatorVote)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
 			// TODO: ban peer
 			m.log.Warnf("peer sent invalid vote: %s", err)
 			continue

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -14,8 +15,10 @@ type TxLocator struct {
 	TxHash chainhash.Hash
 	Block  chainhash.Hash
 	Index  uint32
-}
 
+	ssz.Marshaler
+	ssz.Unmarshaler
+}
 
 // TxType represents a type of transaction.
 type TxType = uint32
@@ -39,18 +42,23 @@ type TransferSinglePayload struct {
 	Nonce         uint64
 	Fee           uint64
 	Signature     bls.Signature
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Hash calculates the transaction ID of the payload.
-func (c *TransferSinglePayload) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = c.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (c *TransferSinglePayload) Hash() (chainhash.Hash, error) {
+	ser, err := c.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
 func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte) {
-	pkS := c.FromPublicKey.Marshal()
+	pkS := c.FromPublicKey()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return
@@ -59,7 +67,8 @@ func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte) {
 // SignatureMessage gets the message the needs to be signed.
 func (c *TransferSinglePayload) SignatureMessage() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
-	_ = serializer.WriteElements(buf, c.To, c.Nonce, c.FromPublicKey, c.Amount, c.Fee)
+	// TODO
+	//_ = serializer.WriteElements(buf, c.To, c.Nonce, c.FromPublicKey, c.Amount, c.Fee)
 	return chainhash.HashH(buf.Bytes())
 }
 
@@ -119,11 +128,10 @@ func (c *TransferMultiPayload) FromPubkeyHash() [20]byte {
 	return c.Signature.PublicKey.Hash()
 }
 
-
 // SignatureMessage gets the message the needs to be signed.
 func (c *TransferMultiPayload) SignatureMessage() chainhash.Hash {
 	buf := bytes.NewBuffer([]byte{})
-	_ = serializer.WriteElements(buf, c.To, c.Nonce, c.FromPubkeyHash(), c.Amount, c.Fee)
+	//_ = serializer.WriteElements(buf, c.To, c.Nonce, c.FromPubkeyHash(), c.Amount, c.Fee)
 	return chainhash.HashH(buf.Bytes())
 }
 
@@ -138,7 +146,6 @@ func (c *TransferMultiPayload) VerifySig() error {
 
 	return nil
 }
-
 
 // GetNonce gets the transaction nonce.
 func (c *TransferMultiPayload) GetNonce() uint64 {
@@ -168,12 +175,13 @@ func (g *GenesisPayload) Decode(r io.Reader) error { return nil }
 
 // TxPayload represents anything that can be used as a payload in a transaction.
 type TxPayload interface {
-	Encode(w io.Writer) error
-	Decode(r io.Reader) error
 	GetNonce() uint64
 	GetAmount() uint64
 	GetFee() uint64
 	FromPubkeyHash() [20]byte
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Tx represents a transaction on the blockchain.
@@ -181,12 +189,16 @@ type Tx struct {
 	TxVersion uint32
 	TxType    TxType
 	Payload   TxPayload
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
-
 // Hash calculates the transaction hash.
-func (t *Tx) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = t.Encode(buf)
-	return chainhash.DoubleHashH(buf.Bytes())
+func (t *Tx) Hash() (chainhash.Hash, error) {
+	ser, err := t.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.DoubleHashH(ser), nil
 }

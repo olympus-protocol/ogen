@@ -24,13 +24,3 @@ func (u *CoinsState) Copy() CoinsState {
 	}
 	return u2
 }
-
-// Marshal serializes the struct to bytes
-func (u *CoinsState) Marshal() ([]byte, error) {
-	return u.MarshalSSZ()
-}
-
-// Unmarshal deserializes the struct from bytes
-func (u *CoinsState) Unmarshal(b []byte) error {
-	return u.UnmarshalSSZ(b)
-}

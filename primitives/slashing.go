@@ -1,9 +1,7 @@
 package primitives
 
 import (
-	"bytes"
-	"io"
-
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -13,33 +11,18 @@ import (
 type VoteSlashing struct {
 	Vote1 MultiValidatorVote
 	Vote2 MultiValidatorVote
-}
 
-// Encode encodes the vote slashing to a writer.
-func (vs *VoteSlashing) Encode(w io.Writer) error {
-	if err := vs.Vote1.Serialize(w); err != nil {
-		return err
-	}
-	if err := vs.Vote2.Serialize(w); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Decode decodes the vote slashing to the given reader.
-func (vs *VoteSlashing) Decode(r io.Reader) error {
-	if err := vs.Vote1.Deserialize(r); err != nil {
-		return err
-	}
-	return vs.Vote2.Deserialize(r)
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Hash calculates the hash of the slashing.
-func (vs *VoteSlashing) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = vs.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (vs *VoteSlashing) Hash() (chainhash.Hash, error) {
+	ser, err := vs.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO
@@ -48,14 +31,18 @@ type RANDAOSlashing struct {
 	RandaoReveal    bls.Signature
 	Slot            uint64
 	ValidatorPubkey bls.PublicKey
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
-
 // Hash calculates the hash of the RANDAO slashing.
-func (rs *RANDAOSlashing) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = rs.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (rs *RANDAOSlashing) Hash() (chainhash.Hash, error) {
+	ser, err := rs.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 // ProposerSlashing is a slashing to a block proposer that proposed
@@ -66,11 +53,16 @@ type ProposerSlashing struct {
 	Signature1         bls.Signature
 	Signature2         bls.Signature
 	ValidatorPublicKey bls.PublicKey
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Hash calculates the hash of the proposer slashing.
-func (ps *ProposerSlashing) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = ps.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (ps *ProposerSlashing) Hash() (chainhash.Hash, error) {
+	ser, err := ps.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }

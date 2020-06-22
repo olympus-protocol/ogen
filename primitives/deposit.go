@@ -16,23 +16,14 @@ type Deposit struct {
 
 	// Data is the data that describes the new validator.
 	Data DepositData
+
 	ssz.Marshaler
 	ssz.Unmarshaler
 }
 
-// Marshal serializes the struct to bytes
-func (d *Deposit) Marshal() ([]byte, error) {
-	return d.MarshalSSZ()
-}
-
-// Unmarshal deserializes the struct from bytes
-func (d *Deposit) Unmarshal(b []byte) error {
-	return d.UnmarshalSSZ(b)
-}
-
 // Hash calculates the hash of the deposit
 func (d *Deposit) Hash() (chainhash.Hash, error) {
-	b, err := d.Marshal()
+	b, err := d.MarshalSSZ()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -53,14 +44,4 @@ type DepositData struct {
 
 	ssz.Marshaler
 	ssz.Unmarshaler
-}
-
-// Marshal serializes the struct to bytes
-func (d *DepositData) Marshal() ([]byte, error) {
-	return d.Marshal()
-}
-
-// Unmarshal deserializes the struct from bytes
-func (d *DepositData) Unmarshal(b []byte) error {
-	return d.Unmarshal(b)
 }

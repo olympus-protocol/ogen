@@ -66,9 +66,18 @@ func (am *ActionMempool) NotifyIllegalVotes(slashing primitives.VoteSlashing) {
 	am.voteSlashingLock.Lock()
 	defer am.voteSlashingLock.Unlock()
 
-	sh := slashing.Hash()
+	sh, err := slashing.Hash()
+	if err != nil {
+		am.log.Error(err)
+		return
+	}
 	for _, d := range am.voteSlashings {
-		dh := d.Hash()
+		dh, err := d.Hash()
+		if err != nil {
+			am.log.Error(err)
+			return
+		}
+
 		if dh.IsEqual(&sh) {
 			return
 		}
@@ -103,9 +112,17 @@ func (am *ActionMempool) ProposerSlashingConditionViolated(slashing primitives.P
 	am.proposerSlashingLock.Lock()
 	defer am.proposerSlashingLock.Unlock()
 
-	sh := slashing.Hash()
+	sh, err := slashing.Hash()
+	if err != nil {
+		am.log.Error(err)
+		return
+	}
 	for _, d := range am.proposerSlashings {
-		dh := d.Hash()
+		dh, err := d.Hash()
+		if err != nil {
+			am.log.Error(err)
+			return
+		}
 		if dh.IsEqual(&sh) {
 			return
 		}
@@ -173,7 +190,7 @@ func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 
 		tx := new(primitives.Deposit)
 
-		if err := tx.Unmarshal(msg.Data); err != nil {
+		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid deposit: %s", err)
 			continue
@@ -291,7 +308,11 @@ outer1:
 	am.proposerSlashingLock.Lock()
 	newProposerSlashings := make([]primitives.ProposerSlashing, 0, len(am.proposerSlashings))
 	for _, ps := range am.proposerSlashings {
-		psHash := ps.Hash()
+		psHash, err := ps.Hash()
+		if err != nil {
+			// TODO handle error
+
+		}
 		if b.Header.Slot >= ps.BlockHeader2.Slot+am.params.EpochLength-1 {
 			continue
 		}
@@ -301,8 +322,11 @@ outer1:
 		}
 
 		for _, blockSlashing := range b.ProposerSlashings {
-			blockSlashingHash := blockSlashing.Hash()
+			blockSlashingHash, err := blockSlashing.Hash()
+			if err != nil {
+				// TODO handle error
 
+			}
 			if blockSlashingHash.IsEqual(&psHash) {
 				continue
 			}
@@ -320,7 +344,11 @@ outer1:
 	am.voteSlashingLock.Lock()
 	newVoteSlashings := make([]primitives.VoteSlashing, 0, len(am.voteSlashings))
 	for _, vs := range am.voteSlashings {
-		vsHash := vs.Hash()
+		vsHash, err := vs.Hash()
+		if err != nil {
+			// TODO handle error
+
+		}
 		if b.Header.Slot >= vs.Vote1.Data.LastSlotValid(am.params) {
 			continue
 		}
@@ -330,8 +358,11 @@ outer1:
 		}
 
 		for _, voteSlashing := range b.VoteSlashings {
-			voteSlashingHash := voteSlashing.Hash()
+			voteSlashingHash, err := voteSlashing.Hash()
+			if err != nil {
+				// TODO handle error
 
+			}
 			if voteSlashingHash.IsEqual(&vsHash) {
 				continue
 			}
@@ -349,11 +380,17 @@ outer1:
 	am.randaoSlashingLock.Lock()
 	newRANDAOSlashings := make([]primitives.RANDAOSlashing, 0, len(am.randaoSlashings))
 	for _, rs := range am.randaoSlashings {
-		rsHash := rs.Hash()
+		rsHash, err := rs.Hash()
+		if err != nil {
+			// TODO handle error
 
+		}
 		for _, blockSlashing := range b.VoteSlashings {
-			blockSlashingHash := blockSlashing.Hash()
+			blockSlashingHash, err := blockSlashing.Hash()
+			if err != nil {
+				// TODO handle error
 
+			}
 			if blockSlashingHash.IsEqual(&rsHash) {
 				continue
 			}
@@ -371,11 +408,17 @@ outer1:
 	am.governanceVoteLock.Lock()
 	newGovernanceVotes := make([]primitives.GovernanceVote, 0, len(am.governanceVotes))
 	for _, gv := range am.governanceVotes {
-		gvHash := gv.Hash()
+		gvHash, err := gv.Hash()
+		if err != nil {
+			// TODO handle error
 
+		}
 		for _, blockSlashing := range b.VoteSlashings {
-			blockSlashingHash := blockSlashing.Hash()
+			blockSlashingHash, err := blockSlashing.Hash()
+			if err != nil {
+				// TODO handle error
 
+			}
 			if blockSlashingHash.IsEqual(&gvHash) {
 				continue
 			}
@@ -399,10 +442,9 @@ func (am *ActionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.GovernanceVote)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid governance vote: %s", err)
 			continue
@@ -426,10 +468,15 @@ func (am *ActionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 	am.governanceVoteLock.Lock()
 	defer am.governanceVoteLock.Unlock()
 
-	voteHash := vote.Hash()
-
+	voteHash, err := vote.Hash()
+	if err != nil {
+		return err
+	}
 	for _, v := range am.governanceVotes {
-		vh := v.Hash()
+		vh, err := v.Hash()
+		if err != nil {
+			return err
+		}
 		if vh.IsEqual(&voteHash) {
 			return nil
 		}
@@ -449,7 +496,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 		}
 
 		tx := new(primitives.Exit)
-		if err := tx.Unmarshal(msg.Data); err != nil {
+		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid exit: %s", err)
 			continue

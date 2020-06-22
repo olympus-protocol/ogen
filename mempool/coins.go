@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -172,10 +171,9 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.Tx)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
 			// TODO: ban peer
 			cm.log.Warnf("peer sent invalid transaction: %s", err)
 			continue

@@ -26,19 +26,9 @@ type BlockHeader struct {
 	ssz.Unmarshaler
 }
 
-// Marshal encodes the data to bytes.
-func (bh *BlockHeader) Marshal() ([]byte, error) {
-	return bh.MarshalSSZ()
-}
-
-// Unmarshal decodes the data from bytes.
-func (bh *BlockHeader) Unmarshal(b []byte) error {
-	return bh.Unmarshal(b)
-}
-
 // Hash calculates the hash of the block header.
 func (bh *BlockHeader) Hash() (chainhash.Hash, error) {
-	b, err := bh.Marshal()
+	b, err := bh.MarshalSSZ()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}

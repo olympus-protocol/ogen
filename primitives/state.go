@@ -1,9 +1,7 @@
 package primitives
 
 import (
-	"bytes"
-	"io"
-
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -118,6 +116,9 @@ type State struct {
 	VotingState        GovernanceState
 
 	LastPaidSlot uint64
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
@@ -131,7 +132,6 @@ func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint32 {
 
 	return vals
 }
-
 
 // GetValidators returns the validator information at current state
 func (s *State) GetValidators() StateValidatorsInfo {
@@ -193,10 +193,12 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 }
 
 // Hash calculates the hash of the state.
-func (s *State) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = s.Serialize(buf)
-	return chainhash.HashH(buf.Bytes())
+func (s *State) Hash() (chainhash.Hash, error) {
+	ser, err := s.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 // Copy returns a copy of the state.
@@ -268,4 +270,7 @@ func (s *State) Copy() State {
 type AccountTxs struct {
 	TxsAmount uint64
 	Txs       []chainhash.Hash
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }

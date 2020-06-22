@@ -113,7 +113,7 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 			return
 		}
 
-		if err := block.Unmarshal(data); err != nil {
+		if err := block.UnmarshalSSZ(data); err != nil {
 			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
 			return
 		}
