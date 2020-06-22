@@ -76,10 +76,7 @@ func TestMultisigDecodeEncode(t *testing.T) {
 		}
 	}
 
-	multiBytes, err := multisig.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	multiBytes := multisig.Marshal()
 
 	newMulti := new(bls.Multisig)
 	if err := newMulti.Unmarshal(multiBytes); err != nil {

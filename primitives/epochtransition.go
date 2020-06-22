@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -297,8 +296,6 @@ type EpochReceipt struct {
 	Type      ReceiptType
 	Amount    int64
 	Validator uint32
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes

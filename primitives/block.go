@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	"github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -18,9 +17,6 @@ type Block struct {
 	GovernanceVotes   []GovernanceVote
 	Signature         []byte
 	RandaoSignature   []byte
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Hash calculates the hash of the block.

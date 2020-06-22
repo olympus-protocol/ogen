@@ -34,12 +34,8 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 	blsKeyPair := bls.RandKey()
 	var res bls.KeyPair
 	if raw {
-		pubkkey, err := blsKeyPair.PublicKey().Marshal()
-		if err != nil {
-			return "", err
-		}
 		res = bls.KeyPair{
-			Public:  hex.EncodeToString(pubkkey),
+			Public:  hex.EncodeToString(blsKeyPair.PublicKey().Marshal()),
 			Private: hex.EncodeToString(blsKeyPair.Marshal()),
 		}
 	} else {

@@ -37,10 +37,7 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	}
 
 	validatorPub := validatorPriv.PublicKey()
-	validatorPubBytes, err := validatorPub.Marshal()
-	if err != nil {
-		return nil, err
-	}
+	validatorPubBytes := validatorPub.Marshal()
 	validatorPubHash := chainhash.HashH(validatorPubBytes[:])
 
 	validatorProofOfPossession := validatorPriv.Sign(validatorPubHash[:])
@@ -51,12 +48,12 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	}
 
 	depositData := &primitives.DepositData{
-		PublicKey:         *validatorPub,
-		ProofOfPossession: *validatorProofOfPossession,
+		PublicKey:         validatorPub.Marshal(),
+		ProofOfPossession: validatorProofOfPossession.Marshal(),
 		WithdrawalAddress: addr,
 	}
 
-	depositDataBytes, err := depositData.MarshalSSZ()
+	depositDataBytes, err := depositData.Marshal()
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +62,8 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	depositSig := priv.Sign(depositHash[:])
 
 	deposit := &primitives.Deposit{
-		PublicKey: *pub,
-		Signature: *depositSig,
+		PublicKey: pub.Marshal(),
+		Signature: depositSig.Marshal(),
 		Data:      *depositData,
 	}
 
@@ -97,19 +94,17 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 	currentState := w.chain.State().TipState()
 
 	pub := priv.PublicKey()
-	vpub, err := validatorPub.Marshal()
-	if err != nil {
-		return nil, err
-	}
+	vpub := validatorPub.Marshal()
+
 	msg := fmt.Sprintf("exit %x", vpub)
 	msgHash := chainhash.HashH([]byte(msg))
 
 	sig := priv.Sign(msgHash[:])
 
 	exit := &primitives.Exit{
-		ValidatorPubkey: *validatorPub,
-		WithdrawPubkey:  *pub,
-		Signature:       *sig,
+		ValidatorPubkey: validatorPub.Marshal(),
+		WithdrawPubkey:  pub.Marshal(),
+		Signature:       sig.Marshal(),
 	}
 
 	if err := w.actionMempool.AddExit(exit, currentState); err != nil {
@@ -152,7 +147,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	payload := &primitives.TransferSinglePayload{
 		To:            toPkh,
-		FromPublicKey: *pub,
+		FromPublicKey: pub.Marshal(),
 		Amount:        amount,
 		Nonce:         nonce,
 		Fee:           1,
@@ -161,12 +156,12 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	sigMsg := payload.SignatureMessage()
 	sig := priv.Sign(sigMsg[:])
 
-	payload.Signature = *sig
+	payload.Signature = sig.Marshal()
 
 	tx := &primitives.Tx{
-		TxType:    primitives.TxTransferSingle,
-		TxVersion: 0,
-		Payload:   payload,
+		Type:    primitives.TxTransferSingle,
+		Version: 0,
+		Payload: payload,
 	}
 
 	currentState := w.chain.State().TipState()
@@ -185,7 +180,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 }
 
 func (w *Wallet) broadcastTx(payload *primitives.Tx) {
-	ser, err := payload.MarshalSSZ()
+	ser, err := payload.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
@@ -196,7 +191,7 @@ func (w *Wallet) broadcastTx(payload *primitives.Tx) {
 }
 
 func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	db, err := deposit.MarshalSSZ()
+	db, err := deposit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
@@ -207,7 +202,7 @@ func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
 }
 
 func (w *Wallet) broadcastExit(exit *primitives.Exit) {
-	eb, err := exit.MarshalSSZ()
+	eb, err := exit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return

@@ -180,7 +180,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 
 		tx := new(primitives.Tx)
 
-		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			cm.log.Warnf("peer sent invalid transaction: %s", err)
 			continue

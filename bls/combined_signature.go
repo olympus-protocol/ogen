@@ -3,7 +3,7 @@ package bls
 import (
 	"fmt"
 
-	ssz "github.com/ferranbt/fastssz"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // CombinedSignature is a signature and a public key meant to match
@@ -11,19 +11,17 @@ import (
 type CombinedSignature struct {
 	sig Signature
 	pub PublicKey
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
-func (cs *CombinedSignature) Marshal() ([]byte, error) {
-	return cs.MarshalSSZ()
+func (cs *CombinedSignature) Marshal() []byte {
+	ser, _ := ssz.Marshal(cs)
+	return ser
 }
 
 // Unmarshal deserializes the struct from bytes
 func (cs *CombinedSignature) Unmarshal(b []byte) error {
-	return cs.UnmarshalSSZ(b)
+	return ssz.Unmarshal(b, cs)
 }
 
 // NewCombinedSignature creates a new combined signature
@@ -53,15 +51,7 @@ func (cs *CombinedSignature) GetPublicKey() FunctionalPublicKey {
 func (cs *CombinedSignature) Sign(sk *SecretKey, msg []byte) error {
 	expectedPub := sk.PublicKey()
 	if !expectedPub.Equals(&cs.pub) {
-		cb, err := cs.pub.Marshal()
-		if err != nil {
-			return err
-		}
-		eb, err := expectedPub.Marshal()
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("expected key for %x, but got %x", cb, eb)
+		return fmt.Errorf("expected key for %x, but got %x", cs.pub.Marshal(), expectedPub.Marshal())
 	}
 
 	sig := sk.Sign(msg)

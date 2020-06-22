@@ -34,8 +34,8 @@ func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 }
 
 // Marshal a public key into a LittleEndian byte slice.
-func (p *PublicKey) Marshal() ([]byte, error) {
-	return p.p.Serialize(), nil
+func (p *PublicKey) Marshal() []byte {
+	return p.p.Serialize()
 }
 
 func (p *PublicKey) Unmarshal(b []byte) (err error) {
@@ -66,10 +66,7 @@ func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
 // ToAddress converts the public key to a Bech32 address.
 func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
 	out := make([]byte, 20)
-	pkS, err := p.Marshal()
-	if err != nil {
-		return "", err
-	}
+	pkS := p.Marshal()
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return bech32.Encode(pubPrefix, out), nil

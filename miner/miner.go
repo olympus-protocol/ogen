@@ -41,10 +41,7 @@ func (b *BasicKeystore) GetKey(w *primitives.Validator) (*bls.SecretKey, bool) {
 func NewBasicKeystore(keys []bls.SecretKey) (*BasicKeystore, error) {
 	m := make(map[[48]byte]bls.SecretKey)
 	for _, k := range keys {
-		pubkey, err := k.PublicKey().Marshal()
-		if err != nil {
-			return nil, err
-		}
+		pubkey := k.PublicKey().Marshal()
 		var pub [48]byte
 		copy(pub[:], pubkey)
 		m[pub] = k
@@ -145,7 +142,7 @@ func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
 }
 
 func (m *Miner) publishBlock(block *primitives.Block) {
-	blockBytes, err := block.MarshalSSZ()
+	blockBytes, err := block.Marshal()
 	if err != nil {
 		m.log.Error(err)
 		return

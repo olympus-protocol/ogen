@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -21,15 +20,11 @@ type BlockHeader struct {
 	Slot                       uint64
 	StateRoot                  chainhash.Hash `ssz:"size=32"`
 	FeeAddress                 [20]byte       `ssz:"size=20"`
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
-
 
 // Hash calculates the hash of the block header.
 func (bh *BlockHeader) Hash() (chainhash.Hash, error) {
-	b, err := bh.MarshalSSZ()
+	b, err := bh.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}

@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // Multipub represents multiple public keys that can be signed by
@@ -16,19 +16,17 @@ import (
 type Multipub struct {
 	PublicKeys []*PublicKey
 	NumNeeded  uint16
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
-func (m *Multipub) Marshal() ([]byte, error) {
-	return m.MarshalSSZ()
+func (m *Multipub) Marshal() []byte {
+	ser, _ := ssz.Marshal(m)
+	return ser
 }
 
 // Unmarshal deserializes the struct from bytes
 func (m *Multipub) Unmarshal(b []byte) error {
-	return m.UnmarshalSSZ(b)
+	return ssz.Unmarshal(b, m)
 }
 
 // NewMultipub constructs a new multi-pubkey.
@@ -95,19 +93,18 @@ type Multisig struct {
 	PublicKey  Multipub
 	Signatures []*Signature
 	KeysSigned bitfield.Bitfield
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
-func (m *Multisig) Marshal() ([]byte, error) {
-	return m.MarshalSSZ()
+func (m *Multisig) Marshal() []byte {
+	// TODO find a way to manage the wrong marshal
+	ser, _ := ssz.Marshal(m)
+	return ser
 }
 
 // Unmarshal deserializes the struct from bytes
 func (m *Multisig) Unmarshal(b []byte) error {
-	return m.UnmarshalSSZ(b)
+	return ssz.Unmarshal(b, m)
 }
 
 // NewMultisig creates a new blank multisig.
@@ -134,18 +131,14 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 			idx = i
 		}
 	}
-	pubKeyB, err := pub.Marshal()
-	if err != nil {
-		return err
-	}
 	if idx == -1 {
-		return fmt.Errorf("could not find public key %x in multipub", pubKeyB)
+		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
 	if m.KeysSigned.Get(uint(idx)) {
 		return nil
 	}
-	msgI := chainhash.HashH(append(msg, pubKeyB...))
+	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
 
 	sig := secKey.Sign(msgI[:])
 
@@ -180,11 +173,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	msgs := make([][32]byte, len(m.Signatures))
 	for i := range msgs {
-		pub, err := activePubs[i].Marshal()
-		if err != nil {
-			return false
-		}
-		msgs[i] = chainhash.HashH(append(msg, pub...))
+		msgs[i] = chainhash.HashH(append(msg, activePubs[i].Marshal()...))
 	}
 
 	return aggSig.AggregateVerify(activePubs, msgs)

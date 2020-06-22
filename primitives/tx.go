@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // TxLocator is a simple struct to find a database referenced to a block without building a full index
@@ -15,18 +15,22 @@ type TxLocator struct {
 	TxHash chainhash.Hash
 	Block  chainhash.Hash
 	Index  uint32
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
-// TxType represents a type of transaction.
-type TxType = uint32
+// Marshal serializes the struct to bytes
+func (tl *TxLocator) Marshal() ([]byte, error) {
+	return ssz.Marshal(tl)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (tl *TxLocator) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, tl)
+}
 
 const (
 	// TxTransferSingle represents a transaction sending money from a single
 	// address to another address.
-	TxTransferSingle TxType = iota + 1
+	TxTransferSingle uint32 = iota + 1
 
 	// TxTransferMulti represents a transaction sending money from a multisig
 	// address to another address.
@@ -36,20 +40,27 @@ const (
 // TransferSinglePayload is a transaction payload for sending money from
 // a single address to another address.
 type TransferSinglePayload struct {
-	To            [20]byte
-	FromPublicKey bls.PublicKey
+	To            [20]byte `ssz:"size=20"`
+	FromPublicKey []byte   `ssz:"size=48"`
 	Amount        uint64
 	Nonce         uint64
 	Fee           uint64
-	Signature     bls.Signature
+	Signature     []byte `ssz:"size=96"`
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (c *TransferSinglePayload) Marshal() ([]byte, error) {
+	return ssz.Marshal(c)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (c *TransferSinglePayload) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, c)
 }
 
 // Hash calculates the transaction ID of the payload.
 func (c *TransferSinglePayload) Hash() (chainhash.Hash, error) {
-	ser, err := c.MarshalSSZ()
+	ser, err := c.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -58,11 +69,7 @@ func (c *TransferSinglePayload) Hash() (chainhash.Hash, error) {
 
 // FromPubkeyHash calculates the hash of the from public key.
 func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
-	pkS, err := c.FromPublicKey.Marshal()
-	if err != nil {
-		return [20]byte{}, err
-	}
-	h := chainhash.HashH(pkS[:])
+	h := chainhash.HashH(c.FromPublicKey[:])
 	copy(out[:], h[:20])
 	return
 }
@@ -78,12 +85,18 @@ func (c *TransferSinglePayload) SignatureMessage() chainhash.Hash {
 // VerifySig verifies the signatures is valid.
 func (c *TransferSinglePayload) VerifySig() error {
 	sigMsg := c.SignatureMessage()
-
-	valid := c.Signature.Verify(sigMsg[:], &c.FromPublicKey)
+	pubkey, err := bls.PublicKeyFromBytes(c.FromPublicKey)
+	if err != nil {
+		return err
+	}
+	sign, err := bls.SignatureFromBytes(c.Signature)
+	if err != nil {
+		return err
+	}
+	valid := sign.Verify(sigMsg[:], pubkey)
 	if !valid {
 		return fmt.Errorf("signature is not valid")
 	}
-
 	return nil
 }
 
@@ -112,19 +125,26 @@ var _ TxPayload = &TransferSinglePayload{}
 // TransferMultiPayload represents a transfer from a multisig to
 // another address.
 type TransferMultiPayload struct {
-	To        [20]byte
+	To        [20]byte `ssz:"size=20"`
 	Amount    uint64
 	Nonce     uint64
 	Fee       uint64
 	Signature bls.Multisig
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (c *TransferMultiPayload) Marshal() ([]byte, error) {
+	return ssz.Marshal(c)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (c *TransferMultiPayload) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, c)
 }
 
 // Hash calculates the transaction ID of the payload.
 func (c *TransferMultiPayload) Hash() (chainhash.Hash, error) {
-	ser, err := c.MarshalSSZ()
+	ser, err := c.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -188,24 +208,30 @@ type TxPayload interface {
 	GetAmount() uint64
 	GetFee() uint64
 	FromPubkeyHash() ([20]byte, error)
-
-	ssz.Marshaler
-	ssz.Unmarshaler
+	Marshal() ([]byte, error)
+	Unmarshal([]byte) error
 }
 
 // Tx represents a transaction on the blockchain.
 type Tx struct {
-	TxVersion uint32
-	TxType    TxType
-	Payload   TxPayload
+	Version uint32
+	Type    uint32
+	Payload TxPayload
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (t *Tx) Marshal() ([]byte, error) {
+	return ssz.Marshal(t)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (t *Tx) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, t)
 }
 
 // Hash calculates the transaction hash.
 func (t *Tx) Hash() (chainhash.Hash, error) {
-	ser, err := t.MarshalSSZ()
+	ser, err := t.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}

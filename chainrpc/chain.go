@@ -181,7 +181,7 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 	for {
 		select {
 		case bl := <-bn.blocks:
-			block, err := bl.block.MarshalSSZ()
+			block, err := bl.block.Marshal()
 			if err != nil {
 				return err
 			}
@@ -352,8 +352,8 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 	}
 	txParse := &proto.Tx{
 		Hash:    hash.String(),
-		Version: tx.TxVersion,
-		Type:    tx.TxType,
+		Version: tx.Version,
+		Type:    tx.Type,
 	}
 	return txParse, nil
 }

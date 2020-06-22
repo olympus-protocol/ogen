@@ -67,15 +67,8 @@ func TestExtendedPrivateKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedPub, err := priv.PublicKey().Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	childPubMarshal, err := childPub.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(expectedPub, childPubMarshal) {
+
+	if !bytes.Equal(priv.PublicKey().Marshal(), childPub.Marshal()) {
 		t.Fatalf("expected child priv key to match child pub key")
 	}
 }
@@ -116,15 +109,8 @@ func TestExtended(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedPub, err := priv.PublicKey().Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	childPubMarshal, err := childPub.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(expectedPub, childPubMarshal) {
+
+	if !bytes.Equal(priv.PublicKey().Marshal(), childPub.Marshal()) {
 		t.Fatalf("expected child priv key to match child pub key")
 	}
 }
@@ -252,15 +238,7 @@ func TestExtendedKeyToFromString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotPubBytes, err := gotPub.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectedPubBytes, err := expectedPub.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(gotPubBytes[:], expectedPubBytes[:]) {
+	if !bytes.Equal(gotPub.Marshal(), expectedPub.Marshal()) {
 		t.Fatal("expected extended keys to match after serializing/deserializing")
 	}
 

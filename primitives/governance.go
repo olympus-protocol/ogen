@@ -1,8 +1,6 @@
 package primitives
 
 import (
-	ssz "github.com/ferranbt/fastssz"
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -12,9 +10,6 @@ type GovernanceVoteType uint8
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
 type CommunityVoteData struct {
 	ReplacementCandidates [][]byte
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Copy copies the community vote data.
@@ -28,7 +23,7 @@ func (c *CommunityVoteData) Copy() *CommunityVoteData {
 
 // Hash calculates the hash of the vote data.
 func (c *CommunityVoteData) Hash() (chainhash.Hash, error) {
-	ser, err := c.MarshalSSZ()
+	ser, err := c.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -57,11 +52,8 @@ const (
 type GovernanceVote struct {
 	Type      GovernanceVoteType
 	Data      []byte
-	Signature bls.FunctionalSignature
+	Signature []byte
 	VoteEpoch uint64
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 func (gv *GovernanceVote) Valid() bool {
@@ -80,7 +72,7 @@ func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
 
 // Hash calculates the hash of the governance vote.
 func (gv *GovernanceVote) Hash() (chainhash.Hash, error) {
-	ser, err := gv.MarshalSSZ()
+	ser, err := gv.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}

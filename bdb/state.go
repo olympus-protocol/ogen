@@ -353,7 +353,7 @@ func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLoc
 	if err != nil {
 		return nil, err
 	}
-	err = locator.UnmarshalSSZ(lbs)
+	err = locator.Unmarshal(lbs)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLoc
 // SetTx stores a new locator for the specified hash.
 func (but *BlockDBUpdateTransaction) SetTx(locator primitives.TxLocator) error {
 	key := append(txLocatorPrefix, locator.TxHash[:]...)
-	ser, err := locator.MarshalSSZ()
+	ser, err := locator.Marshal()
 	if err != nil {
 		return err
 	}

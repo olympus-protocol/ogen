@@ -53,10 +53,7 @@ var generateKeysCmd = &cobra.Command{
 		for i, k := range keys {
 			colorHeader.Printf("Validator #%d\n", i)
 			kBytes := k.Marshal()
-			pkBytes, err := k.PublicKey().Marshal()
-			if err != nil {
-				panic(err)
-			}
+			pkBytes := k.PublicKey().Marshal()
 			keyb := hex.EncodeToString(kBytes[:])
 			pkb := hex.EncodeToString(pkBytes[:])
 			colorSecret.Printf("Secret Key: ")

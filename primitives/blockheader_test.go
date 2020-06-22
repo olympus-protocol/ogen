@@ -26,12 +26,12 @@ var blockHeader = primitives.BlockHeader{
 }
 
 func Test_Serialize(t *testing.T) {
-	ser, err := blockHeader.MarshalSSZ()
+	ser, err := blockHeader.Marshal()
 	if err != nil {
 		t.Error(err)
 	}
 	var header primitives.BlockHeader
-	err = header.UnmarshalSSZ(ser)
+	err = header.Unmarshal(ser)
 	if err != nil {
 		t.Error(err)
 	}
