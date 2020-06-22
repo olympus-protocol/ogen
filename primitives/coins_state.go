@@ -1,14 +1,21 @@
 package primitives
 
-import ssz "github.com/ferranbt/fastssz"
+import "github.com/prysmaticlabs/go-ssz"
 
 // CoinsState is the state that we
 type CoinsState struct {
 	Balances map[[20]byte]uint64
 	Nonces   map[[20]byte]uint64
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (u *CoinsState) Marshal() ([]byte, error) {
+	return ssz.Marshal(u)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (u *CoinsState) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, u)
 }
 
 // Copy copies CoinsState and returns a new one.

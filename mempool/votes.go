@@ -245,12 +245,16 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
 			sigs := make([]*bls.Signature, 0)
 			for _, v := range m.pool[i].individualVotes {
-				sigs = append(sigs, &v.Signature)
+				sign, err := bls.SignatureFromBytes(v.Signature)
+				if err != nil {
+					// TODO handle error
+				}
+				sigs = append(sigs, sign)
 			}
 			sig := bls.AggregateSignatures(sigs)
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
-				Signature:             *sig,
+				Signature:             sig.Marshal(),
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
 			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {
@@ -316,7 +320,7 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 
 		tx := new(primitives.SingleValidatorVote)
 
-		if err := tx.UnmarshalSSZ(msg.Data); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			m.log.Warnf("peer sent invalid vote: %s", err)
 			continue

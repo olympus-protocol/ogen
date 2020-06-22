@@ -11,6 +11,7 @@ type Exit struct {
 	ValidatorPubkey bls.PublicKey
 	WithdrawPubkey  bls.PublicKey
 	Signature       bls.Signature
+	
 	ssz.Marshaler
 	ssz.Unmarshaler
 }

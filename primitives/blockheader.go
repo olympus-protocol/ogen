@@ -1,7 +1,7 @@
 package primitives
 
 import (
-	"github.com/ferranbt/fastssz"
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -25,6 +25,7 @@ type BlockHeader struct {
 	ssz.Marshaler
 	ssz.Unmarshaler
 }
+
 
 // Hash calculates the hash of the block header.
 func (bh *BlockHeader) Hash() (chainhash.Hash, error) {

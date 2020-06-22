@@ -1,9 +1,9 @@
 package primitives
 
 import (
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // StateValidatorsInfo returns the state validators information.
@@ -116,9 +116,16 @@ type State struct {
 	VotingState        GovernanceState
 
 	LastPaidSlot uint64
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (s *State) Marshal() ([]byte, error) {
+	return ssz.Marshal(s)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (s *State) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, s)
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
@@ -194,7 +201,7 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 
 // Hash calculates the hash of the state.
 func (s *State) Hash() (chainhash.Hash, error) {
-	ser, err := s.MarshalSSZ()
+	ser, err := s.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -270,7 +277,14 @@ func (s *State) Copy() State {
 type AccountTxs struct {
 	TxsAmount uint64
 	Txs       []chainhash.Hash
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (acc *AccountTxs) Marshal() ([]byte, error) {
+	return ssz.Marshal(acc)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (acc *AccountTxs) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, acc)
 }

@@ -186,7 +186,7 @@ var finalizedStateKey = []byte("finalized-state")
 
 // SetFinalizedState sets the finalized state of the blockchain.
 func (but *BlockDBUpdateTransaction) SetFinalizedState(s *primitives.State) error {
-	ser, err := s.MarshalSSZ()
+	ser, err := s.Marshal()
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (brt *BlockDBReadTransaction) GetFinalizedState() (*primitives.State, error
 		return nil, err
 	}
 	state := new(primitives.State)
-	err = state.UnmarshalSSZ(stateBytes)
+	err = state.Unmarshal(stateBytes)
 	return state, err
 }
 
@@ -208,7 +208,7 @@ var justifiedStateKey = []byte("justified-state")
 
 // SetJustifiedState sets the justified state of the blockchain.
 func (but *BlockDBUpdateTransaction) SetJustifiedState(s *primitives.State) error {
-	ser, err := s.MarshalSSZ()
+	ser, err := s.Marshal()
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (*primitives.State, error
 		return nil, err
 	}
 	state := new(primitives.State)
-	err = state.UnmarshalSSZ(stateBytes)
+	err = state.Unmarshal(stateBytes)
 	return state, err
 }
 
@@ -310,7 +310,7 @@ func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) (*primitives.Acco
 		return nil, err
 	}
 	accs := new(primitives.AccountTxs)
-	err = accs.UnmarshalSSZ(accTxsBs)
+	err = accs.Unmarshal(accTxsBs)
 	if err != nil {
 		return nil, err
 	}
@@ -326,13 +326,13 @@ func (but *BlockDBUpdateTransaction) SetAccountTx(acc [20]byte, hash chainhash.H
 		return err
 	}
 	accs := new(primitives.AccountTxs)
-	err = accs.UnmarshalSSZ(accTxsBs)
+	err = accs.Unmarshal(accTxsBs)
 	if err != nil {
 		return err
 	}
 	accs.TxsAmount = +1
 	accs.Txs = append(accs.Txs, hash)
-	ser, err := accs.MarshalSSZ()
+	ser, err := accs.Marshal()
 	if err != nil {
 		return err
 	}

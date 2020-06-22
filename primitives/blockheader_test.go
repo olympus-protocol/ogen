@@ -37,6 +37,6 @@ func Test_Serialize(t *testing.T) {
 	}
 	equal := ssz.DeepEqual(blockHeader, header)
 	if !equal {
-		t.Error("masrhal/unmashal failed for block header")
+		t.Error("marshal/unmashal failed for block header")
 	}
 }

@@ -1,28 +1,18 @@
 package primitives
 
-// ValidatorStatus represents the status of a Validator.
-type ValidatorStatus uint8
+import "github.com/prysmaticlabs/go-ssz"
 
-func (w ValidatorStatus) String() string {
-	switch w {
-	case StatusActive:
-		return "ACTIVE"
-	case StatusActivePendingExit:
-		return "PENDING_EXIT"
-	case StatusExitedWithPenalty:
-		return "PENALTY_EXIT"
-	case StatusExitedWithoutPenalty:
-		return "EXITED"
-	case StatusStarting:
-		return "STARTING"
-	default:
-		return "UNKNOWN"
-	}
+var statusString = map[uint8]string{
+	StatusActive:               "ACTIVE",
+	StatusActivePendingExit:    "PENDING_EXIT",
+	StatusExitedWithPenalty:    "PENALTY_EXIT",
+	StatusExitedWithoutPenalty: "EXITED",
+	StatusStarting:             "STARTING",
 }
 
 const (
 	// StatusStarting is when the validator is waiting to join.
-	StatusStarting ValidatorStatus = iota
+	StatusStarting uint8 = iota
 
 	// StatusActive is when the validator is currently in the queue.
 	StatusActive
@@ -43,11 +33,15 @@ const (
 // Validator is a validator in the queue.
 type Validator struct {
 	Balance          uint64
-	PubKey           []byte
-	PayeeAddress     [20]byte
-	Status           ValidatorStatus
+	PubKey           []byte   `ssz:"size=48"`
+	PayeeAddress     [20]byte `ssz:"size=20"`
+	Status           uint8
 	FirstActiveEpoch uint64
 	LastActiveEpoch  uint64
+}
+
+func (wr *Validator) GetStatusString() string {
+	return statusString[wr.Status]
 }
 
 // IsActive checks if a validator is currently active.
@@ -65,4 +59,14 @@ func (wr *Validator) IsActiveAtEpoch(epoch uint64) bool {
 // Copy returns a copy of the validator.
 func (wr *Validator) Copy() Validator {
 	return *wr
+}
+
+// Marshal serializes the struct to bytes
+func (wr *Validator) Marshal() ([]byte, error) {
+	return ssz.Marshal(wr)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (wr *Validator) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, wr)
 }

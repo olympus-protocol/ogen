@@ -3,8 +3,8 @@ package primitives
 import (
 	"fmt"
 
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/prysmaticlabs/go-ssz"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -26,9 +26,16 @@ type AcceptedVoteInfo struct {
 	// InclusionDelay is the delay from the attestation slot to the slot
 	// included.
 	InclusionDelay uint64
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (v *AcceptedVoteInfo) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (v *AcceptedVoteInfo) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
@@ -58,20 +65,27 @@ type VoteData struct {
 	FromEpoch uint64
 
 	// FromHash is the block hash of the FromEpoch.
-	FromHash chainhash.Hash
+	FromHash chainhash.Hash `ssz:"size=32"`
 
 	// ToEpoch is the target epoch of the vote which should either be the
 	// current epoch or the previous epoch.
 	ToEpoch uint64
 
 	// ToHash is the block hash of the ToEpoch.
-	ToHash chainhash.Hash
+	ToHash chainhash.Hash `ssz:"size=32"`
 
 	// BeaconBlockHash is for the fork choice.
-	BeaconBlockHash chainhash.Hash
+	BeaconBlockHash chainhash.Hash `ssz:"size=32"`
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (v *VoteData) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (v *VoteData) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
@@ -119,7 +133,7 @@ func (v *VoteData) Copy() VoteData {
 
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() (chainhash.Hash, error) {
-	ser, err := v.MarshalSSZ()
+	ser, err := v.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -129,12 +143,23 @@ func (v *VoteData) Hash() (chainhash.Hash, error) {
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
 	Data      VoteData
-	Signature bls.Signature
+	Signature []byte `ssz:"size=96"`
 	Offset    uint32
 	OutOf     uint32
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (v *SingleValidatorVote) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (v *SingleValidatorVote) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
+}
+
+func (v *SingleValidatorVote) GetSignature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(v.Signature)
 }
 
 // AsMulti returns the single validator vote as a multi validator vote.
@@ -149,7 +174,7 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 }
 
 func (v *SingleValidatorVote) Hash() (chainhash.Hash, error) {
-	ser, err := v.MarshalSSZ()
+	ser, err := v.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
@@ -159,18 +184,29 @@ func (v *SingleValidatorVote) Hash() (chainhash.Hash, error) {
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
 	Data                  VoteData
-	Signature             bls.Signature
+	Signature             []byte `ssz:"size=96"`
 	ParticipationBitfield []uint8
+}
 
-	ssz.Marshaler
-	ssz.Unmarshaler
+// Marshal serializes the struct to bytes
+func (v *MultiValidatorVote) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal deserializes the struct from bytes
+func (v *MultiValidatorVote) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 // Hash calculates the hash of the vote.
 func (v *MultiValidatorVote) Hash() (chainhash.Hash, error) {
-	ser, err := v.MarshalSSZ()
+	ser, err := v.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
 	return chainhash.HashH(ser), nil
+}
+
+func (v *MultiValidatorVote) GetSignature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(v.Signature)
 }

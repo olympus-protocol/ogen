@@ -133,7 +133,7 @@ func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
-	ser, err := vote.MarshalSSZ()
+	ser, err := vote.Marshal()
 	if err != nil {
 		m.log.Errorf("error encoding vote: %s", err)
 		return
@@ -371,7 +371,7 @@ func (m *Miner) VoteForBlocks() {
 
 					vote := primitives.SingleValidatorVote{
 						Data:      data,
-						Signature: *sig,
+						Signature: sig.Marshal(),
 						Offset:    uint32(i),
 						OutOf:     uint32(len(validators)),
 					}

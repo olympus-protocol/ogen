@@ -26,7 +26,7 @@ func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*pr
 	for i, v := range validators.Validators {
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey),
-			Status:           v.Status.String(),
+			Status:           v.GetStatusString(),
 			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
@@ -56,7 +56,7 @@ func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.
 	for i, v := range validators.Validators {
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey),
-			Status:           v.Status.String(),
+			Status:           v.GetStatusString(),
 			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,

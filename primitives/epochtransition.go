@@ -104,7 +104,7 @@ func (s *State) InitiateValidatorExit(index uint32) error {
 }
 
 // ExitValidator handles state changes when a validator exits.
-func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.ChainParams) error {
+func (s *State) ExitValidator(index uint32, status uint8, p *params.ChainParams) error {
 	validator := &s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
@@ -134,7 +134,7 @@ func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.Ch
 }
 
 // UpdateValidatorStatus moves a validator to a specific status.
-func (s *State) UpdateValidatorStatus(index uint32, status ValidatorStatus, p *params.ChainParams) error {
+func (s *State) UpdateValidatorStatus(index uint32, status uint8, p *params.ChainParams) error {
 	if status == StatusActive {
 		err := s.ActivateValidator(index)
 		return err

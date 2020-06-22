@@ -330,7 +330,11 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	if err != nil {
 		return nil, err
 	}
-	if !vs.Vote1.Signature.FastAggregateVerify(aggPubs1, hash) {
+	v1Sign, err := vs.Vote1.GetSignature()
+	if err != nil {
+		return nil, err
+	}
+	if !v1Sign.FastAggregateVerify(aggPubs1, hash) {
 		return nil, fmt.Errorf("vote-slashing: vote 1 does not validate")
 	}
 
@@ -367,7 +371,11 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	if err != nil {
 		return nil, err
 	}
-	if !vs.Vote2.Signature.FastAggregateVerify(aggPubs2, v2Hash) {
+	v2Sign, err := vs.Vote2.GetSignature()
+	if err != nil {
+		return nil, err
+	}
+	if !v2Sign.FastAggregateVerify(aggPubs2, v2Hash) {
 		return nil, fmt.Errorf("vote-slashing: vote 2 does not validate")
 	}
 
@@ -627,7 +635,11 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	if err != nil {
 		return err
 	}
-	valid := v.Signature.FastAggregateVerify(aggPubs, h)
+	signature, err := v.GetSignature()
+	if err != nil {
+		return err
+	}
+	valid := signature.FastAggregateVerify(aggPubs, h)
 	if !valid {
 		return fmt.Errorf("aggregate signature did not validate")
 	}

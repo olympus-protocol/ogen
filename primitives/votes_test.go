@@ -1,102 +1,148 @@
-package primitives
+package primitives_test
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/go-test/deep"
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
-func TestMultiValidatorVoteSerializeDeserialize(t *testing.T) {
-	sig := bls.NewAggregateSignature()
-	bl := &MultiValidatorVote{
-		Data: VoteData{
-			Slot:      1,
-			FromEpoch: 2,
-			FromHash:  [32]byte{3},
-			ToEpoch:   4,
-			ToHash:    [32]byte{5},
-		},
-		Signature:             *sig,
-		ParticipationBitfield: []byte{1, 2, 3, 4},
-	}
+var voteData = primitives.VoteData{
+	Slot:      1,
+	FromEpoch: 2,
+	FromHash:  [32]byte{3},
+	ToEpoch:   4,
+	ToHash:    [32]byte{5},
+}
 
-	ser, err := bl.MarshalSSZ()
+var acceptedVoteInfo = primitives.AcceptedVoteInfo{
+	Data:                  voteData,
+	ParticipationBitfield: []uint8{6, 7},
+	Proposer:              8,
+	InclusionDelay:        9,
+}
+
+var singleValidatorVote = primitives.SingleValidatorVote{
+	Data:      voteData,
+	Signature: bls.NewAggregateSignature().Marshal(),
+	Offset:    10,
+	OutOf:     15,
+}
+
+var multiValidatorVote = primitives.MultiValidatorVote{
+	Data:                  voteData,
+	Signature:             bls.NewAggregateSignature().Marshal(),
+	ParticipationBitfield: []byte{1, 2, 3, 4},
+}
+
+func Test_VotesSerialize(t *testing.T) {
+	err := serVoteData()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-
-	av2 := &MultiValidatorVote{}
-	if err := av2.UnmarshalSSZ(ser); err != nil {
-		t.Fatal(err)
+	err = serAcceptedVoteInfo()
+	if err != nil {
+		t.Error(err)
 	}
-
-	if diff := deep.Equal(bl, av2); diff != nil {
-		t.Fatal(diff)
+	err = serSingleValidatorVote()
+	if err != nil {
+		t.Error(err)
+	}
+	err = serMultiValidatorVote()
+	if err != nil {
+		t.Error(err)
 	}
 }
 
-func TestAcceptedVoteInfoCopy(t *testing.T) {
-	av := &AcceptedVoteInfo{
-		Data: VoteData{
-			Slot:      1,
-			FromEpoch: 2,
-			FromHash:  [32]byte{3},
-			ToEpoch:   4,
-			ToHash:    [32]byte{5},
-		},
-		ParticipationBitfield: []uint8{6, 7},
-		Proposer:              8,
-		InclusionDelay:        9,
+func serVoteData() error {
+	ser, err := voteData.Marshal()
+	if err != nil {
+		return err
 	}
+	var desc primitives.VoteData
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		return err
+	}
+	equal := ssz.DeepEqual(desc, voteData)
+	if !equal {
+		return errors.New("marshal/unmarshal failed for VoteData")
+	}
+	return nil
+}
 
-	av2 := av.Copy()
-	av.Data.Slot = 2
+func serAcceptedVoteInfo() error {
+	ser, err := acceptedVoteInfo.Marshal()
+	if err != nil {
+		return err
+	}
+	var des primitives.AcceptedVoteInfo
+	err = des.Unmarshal(ser)
+	if err != nil {
+		return err
+	}
+	equal := ssz.DeepEqual(des, acceptedVoteInfo)
+	if !equal {
+		return errors.New("marshal/unmarshal failed for AcceptedVoteInfo")
+	}
+	return nil
+}
+
+func serSingleValidatorVote() error {
+	ser, err := singleValidatorVote.Marshal()
+	if err != nil {
+		return err
+	}
+	var des primitives.SingleValidatorVote
+	err = des.Unmarshal(ser)
+	if err != nil {
+		return err
+	}
+	equal := ssz.DeepEqual(des, singleValidatorVote)
+	if !equal {
+		return errors.New("marshal/unmarshal failed for SingleValidatorVote")
+	}
+	return nil
+}
+
+func serMultiValidatorVote() error {
+	ser, err := multiValidatorVote.Marshal()
+	if err != nil {
+		return err
+	}
+	var des primitives.MultiValidatorVote
+	err = des.Unmarshal(ser)
+	if err != nil {
+		return err
+	}
+	equal := ssz.DeepEqual(des, multiValidatorVote)
+	if !equal {
+		return errors.New("marshal/unmarshal failed for MultiValidatorVoteInfo")
+	}
+	return nil
+}
+
+func TestAcceptedVoteInfoCopy(t *testing.T) {
+	av2 := acceptedVoteInfo.Copy()
+	acceptedVoteInfo.Data.Slot = 2
 	if av2.Data.Slot == 2 {
 		t.Fatal("mutating data mutates copy")
 	}
 
-	av.ParticipationBitfield[0] = 7
+	acceptedVoteInfo.ParticipationBitfield[0] = 7
 	if av2.ParticipationBitfield[0] == 7 {
 		t.Fatal("mutating participation bitfield mutates copy")
 	}
 
-	av.Proposer = 7
+	acceptedVoteInfo.Proposer = 7
 	if av2.Proposer == 7 {
 		t.Fatal("mutating proposer mutates copy")
 	}
 
-	av.InclusionDelay = 7
+	acceptedVoteInfo.InclusionDelay = 7
 	if av2.InclusionDelay == 7 {
 		t.Fatal("mutating inclusion delay mutates copy")
-	}
-}
-
-func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
-	av := &AcceptedVoteInfo{
-		Data: VoteData{
-			Slot:      1,
-			FromEpoch: 2,
-			FromHash:  [32]byte{3},
-			ToEpoch:   4,
-			ToHash:    [32]byte{5},
-		},
-		ParticipationBitfield: []uint8{6, 7},
-		Proposer:              8,
-		InclusionDelay:        9,
-	}
-
-	ser, err := av.MarshalSSZ()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	av2 := &AcceptedVoteInfo{}
-	if err := av2.UnmarshalSSZ(ser); err != nil {
-		t.Fatal(err)
-	}
-
-	if diff := deep.Equal(av, av2); diff != nil {
-		t.Fatal(diff)
 	}
 }
