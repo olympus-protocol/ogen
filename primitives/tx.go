@@ -57,8 +57,11 @@ func (c *TransferSinglePayload) Hash() (chainhash.Hash, error) {
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte) {
-	pkS := c.FromPublicKey()
+func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
+	pkS, err := c.FromPublicKey.Marshal()
+	if err != nil {
+		return [20]byte{}, err
+	}
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return
@@ -100,7 +103,7 @@ func (c *TransferSinglePayload) GetFee() uint64 {
 }
 
 // GetFromAddress gets the from address.
-func (c *TransferSinglePayload) GetFromAddress() [20]byte {
+func (c *TransferSinglePayload) GetFromAddress() ([20]byte, error) {
 	return c.FromPubkeyHash()
 }
 
@@ -114,18 +117,24 @@ type TransferMultiPayload struct {
 	Nonce     uint64
 	Fee       uint64
 	Signature bls.Multisig
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 // Hash calculates the transaction ID of the payload.
-func (c *TransferMultiPayload) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = c.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (c *TransferMultiPayload) Hash() (chainhash.Hash, error) {
+	ser, err := c.MarshalSSZ()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(ser), nil
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferMultiPayload) FromPubkeyHash() [20]byte {
-	return c.Signature.PublicKey.Hash()
+func (c *TransferMultiPayload) FromPubkeyHash() ([20]byte, error) {
+	hash := c.Signature.PublicKey.Hash()
+	return hash, nil
 }
 
 // SignatureMessage gets the message the needs to be signed.
@@ -178,7 +187,7 @@ type TxPayload interface {
 	GetNonce() uint64
 	GetAmount() uint64
 	GetFee() uint64
-	FromPubkeyHash() [20]byte
+	FromPubkeyHash() ([20]byte, error)
 
 	ssz.Marshaler
 	ssz.Unmarshaler

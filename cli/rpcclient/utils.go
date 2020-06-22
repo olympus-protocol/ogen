@@ -34,7 +34,7 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 	blsKeyPair := bls.RandKey()
 	var res bls.KeyPair
 	if raw {
-		pubkkey, err := blsKeyPair.PublicKey().Ma()
+		pubkkey, err := blsKeyPair.PublicKey().Marshal()
 		if err != nil {
 			return "", err
 		}

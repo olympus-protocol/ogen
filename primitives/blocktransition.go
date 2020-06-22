@@ -161,7 +161,10 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 // ApplyTransactionSingle applies a transaction to the coin state.
 func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
-	pkh := tx.FromPubkeyHash()
+	pkh, err := tx.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
 	}
@@ -189,7 +192,10 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
 func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
-	pkh := tx.FromPubkeyHash()
+	pkh, err := tx.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
 	}
@@ -320,8 +326,11 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 			aggPubs1 = append(aggPubs1, pub)
 		}
 	}
-
-	if !vs.Vote1.Signature.FastAggregateVerify(aggPubs1, vs.Vote1.Data.Hash()) {
+	hash, err := vs.Vote1.Data.Hash()
+	if err != nil {
+		return nil, err
+	}
+	if !vs.Vote1.Signature.FastAggregateVerify(aggPubs1, hash) {
 		return nil, fmt.Errorf("vote-slashing: vote 1 does not validate")
 	}
 
@@ -354,8 +363,11 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	if len(common) == 0 {
 		return nil, fmt.Errorf("vote-slashing: votes do not contain any common validators")
 	}
-
-	if !vs.Vote2.Signature.FastAggregateVerify(aggPubs2, vs.Vote2.Data.Hash()) {
+	v2Hash, err := vs.Vote2.Data.Hash()
+	if err != nil {
+		return nil, err
+	}
+	if !vs.Vote2.Signature.FastAggregateVerify(aggPubs2, v2Hash) {
 		return nil, fmt.Errorf("vote-slashing: vote 2 does not validate")
 	}
 
@@ -611,7 +623,10 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		}
 	}
 
-	h := v.Data.Hash()
+	h, err := v.Data.Hash()
+	if err != nil {
+		return err
+	}
 	valid := v.Signature.FastAggregateVerify(aggPubs, h)
 	if !valid {
 		return fmt.Errorf("aggregate signature did not validate")
@@ -713,8 +728,14 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return err
 	}
 
-	voteMerkleRoot := b.VotesMerkleRoot()
-	transactionMerkleRoot := b.TransactionMerkleRoot()
+	voteMerkleRoot, err := b.VotesMerkleRoot()
+	if err != nil {
+		return err
+	}
+	transactionMerkleRoot, err := b.TransactionMerkleRoot()
+	if err != nil {
+		return err
+	}
 	depositMerkleRoot, err := b.DepositMerkleRoot()
 	if err != nil {
 		return err
