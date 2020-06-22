@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path"
 	"time"
@@ -24,6 +25,11 @@ import (
 
 // loadOgen is the main function to run ogen.
 func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
+	if configParams.Pprof {
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
 	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -160,6 +166,7 @@ Next generation blockchain secured by CASPER.`,
 				Debug: viper.GetBool("debug"),
 
 				LogFile: viper.GetBool("log_file"),
+				Pprof: viper.GetBool("pprof"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -201,7 +208,7 @@ func init() {
 	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
 	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
 	rootCmd.PersistentFlags().Bool("log_file", false, "Display log information to file.")
-
+	rootCmd.PersistentFlags().Bool("pprof", false, "Serve runtime profiling")
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
 		panic(err)
