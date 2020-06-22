@@ -1,7 +1,6 @@
 package peers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -18,7 +17,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 const syncProtocolID = protocol.ID("/ogen/sync/0.0.1")
@@ -109,14 +107,13 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 	}
 
 	go listenToTopic(sp.ctx, blockSub, func(data []byte, id peer.ID) {
-		buf := bytes.NewReader(data)
 		var block primitives.Block
 
 		if id == sp.host.GetHost().ID() {
 			return
 		}
 
-		if err := block.Decode(buf); err != nil {
+		if err := block.Unmarshal(data); err != nil {
 			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
 			return
 		}
@@ -133,7 +130,10 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 const StaleBlockRequestTimeout = time.Second * 10
 
 func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
-	bh := block.Hash()
+	bh, err := block.Hash()
+	if err != nil {
+		return err
+	}
 	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
 		sp.log.Debugf("don't have block %s, requesting", block.Header.PrevBlockHash)
 		// TODO: better peer selection for syncing
@@ -285,8 +285,7 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
 	lastBlockHeight := sp.chain.State().Tip().Height
-	nonce, _ := serializer.RandomUint64()
-	msg := p2p.NewMsgVersion(nonce, lastBlockHeight)
+	msg := p2p.NewMsgVersion(lastBlockHeight)
 	return msg
 }
 

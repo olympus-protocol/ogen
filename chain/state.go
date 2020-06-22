@@ -175,10 +175,13 @@ func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, gene
 	s.log.Info("loading chain state...")
 
 	genesisBlock := primitives.GetGenesisBlock(params)
-	genesisHash := genesisBlock.Header.Hash()
+	genesisHash, err := genesisBlock.Header.Hash()
+	if err != nil {
+		return err
+	}
 
 	// load chain state
-	err := s.db.Update(func(txn bdb.DBUpdateTransaction) error {
+	err = s.db.Update(func(txn bdb.DBUpdateTransaction) error {
 		return txn.AddRawBlock(&genesisBlock)
 	})
 	if err != nil {
@@ -261,7 +264,11 @@ func (s *StateService) Add(block *primitives.Block) (*primitives.State, []*primi
 		return nil, nil, err
 	}
 
-	s.setBlockState(block.Hash(), &newState)
+	hash, err := block.Hash()
+	if err != nil {
+		return nil, nil, err
+	}
+	s.setBlockState(hash, &newState)
 
 	return &newState, receipts, nil
 }
@@ -323,8 +330,10 @@ func (s *StateService) TipStateAtSlot(slot uint64) (*primitives.State, error) {
 // NewStateService constructs a new state service.
 func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db bdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)
-	genesisHash := genesisBlock.Hash()
-
+	genesisHash, err := genesisBlock.Hash()
+	if err != nil {
+		return nil, err
+	}
 	genesisState, err := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
 	if err != nil {
 		return nil, err

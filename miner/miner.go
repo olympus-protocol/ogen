@@ -39,10 +39,13 @@ func (b *BasicKeystore) GetKey(w *primitives.Validator) (*bls.SecretKey, bool) {
 }
 
 // NewBasicKeystore creates a key store from the following keys.
-func NewBasicKeystore(keys []bls.SecretKey) *BasicKeystore {
+func NewBasicKeystore(keys []bls.SecretKey) (*BasicKeystore, error) {
 	m := make(map[[48]byte]bls.SecretKey)
 	for _, k := range keys {
-		pubkey := k.PublicKey().Marshal()
+		pubkey, err := k.PublicKey().Marshal()
+		if err != nil {
+			return nil, err
+		}
 		var pub [48]byte
 		copy(pub[:], pubkey)
 		m[pub] = k
@@ -50,7 +53,7 @@ func NewBasicKeystore(keys []bls.SecretKey) *BasicKeystore {
 
 	return &BasicKeystore{
 		keys: m,
-	}
+	}, nil
 }
 
 // Miner manages mining for the blockchain.
@@ -144,14 +147,13 @@ func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
 }
 
 func (m *Miner) publishBlock(block *primitives.Block) {
-	buf := bytes.NewBuffer([]byte{})
-	err := block.Encode(buf)
+	blockBytes, err := block.Marshal()
 	if err != nil {
 		m.log.Error(err)
 		return
 	}
 
-	if err := m.blockTopic.Publish(m.context, buf.Bytes()); err != nil {
+	if err := m.blockTopic.Publish(m.context, blockBytes); err != nil {
 		m.log.Errorf("error publishing block: %s", err)
 	}
 }
@@ -245,14 +247,22 @@ func (m *Miner) ProposeBlocks() {
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
 				block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
-				block.Header.DepositMerkleRoot = block.DepositMerkleRoot()
-				block.Header.ExitMerkleRoot = block.ExitMerkleRoot()
+				block.Header.DepositMerkleRoot, err = block.DepositMerkleRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
+				block.Header.ExitMerkleRoot, err = block.ExitMerkleRoot()
+				if err != nil {
+					// TODO handle error
+
+				}
 				block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
 				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
 				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
 				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
 
-				blockHash := block.Hash()
+				blockHash, err := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
 
 				blockSig := k.Sign(blockHash[:])

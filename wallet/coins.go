@@ -38,7 +38,10 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	}
 
 	validatorPub := validatorPriv.PublicKey()
-	validatorPubBytes := validatorPub.Marshal()
+	validatorPubBytes, err := validatorPub.Marshal()
+	if err != nil {
+		return nil, err
+	}
 	validatorPubHash := chainhash.HashH(validatorPubBytes[:])
 
 	validatorProofOfPossession := validatorPriv.Sign(validatorPubHash[:])
@@ -54,13 +57,11 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 		WithdrawalAddress: addr,
 	}
 
-	buf := bytes.NewBuffer([]byte{})
-
-	if err := depositData.Encode(buf); err != nil {
+	depositDataBytes, err := depositData.Marshal()
+	if err != nil {
 		return nil, err
 	}
-
-	depositHash := chainhash.HashH(buf.Bytes())
+	depositHash := chainhash.HashH(depositDataBytes)
 
 	depositSig := priv.Sign(depositHash[:])
 
@@ -97,8 +98,11 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 	currentState := w.chain.State().TipState()
 
 	pub := priv.PublicKey()
-
-	msg := fmt.Sprintf("exit %x", validatorPub.Marshal())
+	vpub, err := validatorPub.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	msg := fmt.Sprintf("exit %x", vpub)
 	msgHash := chainhash.HashH([]byte(msg))
 
 	sig := priv.Sign(msgHash[:])
@@ -192,25 +196,23 @@ func (w *Wallet) broadcastTx(payload *primitives.Tx) {
 }
 
 func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := deposit.Encode(buf)
+	db, err := deposit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.depositTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.depositTopic.Publish(w.ctx, db); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
 
 func (w *Wallet) broadcastExit(exit *primitives.Exit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := exit.Encode(buf)
+	eb, err := exit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.exitTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.exitTopic.Publish(w.ctx, eb); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }

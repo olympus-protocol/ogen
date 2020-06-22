@@ -75,8 +75,11 @@ func (k *Keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, err
 		key := bls.RandKey()
 		keyBytes := key.Marshal()
 		pub := key.PublicKey()
-		pubBytes := pub.Marshal()
-		err := k.db.Update(func(txn *bbolt.Tx) error {
+		pubBytes, err := pub.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		err = k.db.Update(func(txn *bbolt.Tx) error {
 			bkt := txn.Bucket(keysBucket)
 			return bkt.Put(pubBytes, keyBytes)
 		})

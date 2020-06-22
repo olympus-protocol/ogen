@@ -1,9 +1,7 @@
 package primitives
 
 import (
-	"bytes"
-	"io"
-
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -18,56 +16,27 @@ type Deposit struct {
 
 	// Data is the data that describes the new validator.
 	Data DepositData
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
-// Encode encodes the deposit to the given writer.
-func (d *Deposit) Encode(w io.Writer) error {
-	sigBytes := d.Signature.Marshal()
-	pubBytes := d.PublicKey.Marshal()
-
-	if _, err := w.Write(pubBytes[:]); err != nil {
-		return err
-	}
-	if _, err := w.Write(sigBytes[:]); err != nil {
-		return err
-	}
-	if err := d.Data.Encode(w); err != nil {
-		return err
-	}
-	return d.Data.Encode(w)
+// Marshal serializes the struct to bytes
+func (d *Deposit) Marshal() ([]byte, error) {
+	return d.MarshalSSZ()
 }
 
-// Decode decodes the deposit to the given writer.
-func (d *Deposit) Decode(r io.Reader) error {
-	sigBytes := make([]byte, 96)
-	pubBytes := make([]byte, 48)
-	if _, err := io.ReadFull(r, pubBytes[:]); err != nil {
-		return err
-	}
-	if _, err := io.ReadFull(r, sigBytes[:]); err != nil {
-		return err
-	}
-	if err := d.Data.Decode(r); err != nil {
-		return err
-	}
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	if err != nil {
-		return err
-	}
-	d.Signature = *sig
-	d.PublicKey = *pub
-	return d.Data.Decode(r)
+// Unmarshal deserializes the struct from bytes
+func (d *Deposit) Unmarshal(b []byte) error {
+	return d.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the deposit
-func (d *Deposit) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = d.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+func (d *Deposit) Hash() (chainhash.Hash, error) {
+	b, err := d.Marshal()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(b), nil
 }
 
 // DepositData is the part of the deposit that is signed
@@ -81,53 +50,17 @@ type DepositData struct {
 
 	// WithdrawalAddress is the address to withdraw to.
 	WithdrawalAddress [20]byte
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
-// Encode encodes the deposit data to a writer.
-func (dd *DepositData) Encode(w io.Writer) error {
-	pubBytes := dd.PublicKey.Marshal()
-	proofOfPossessionBytes := dd.ProofOfPossession.Marshal()
-
-	if _, err := w.Write(pubBytes[:]); err != nil {
-		return err
-	}
-	if _, err := w.Write(proofOfPossessionBytes[:]); err != nil {
-		return err
-	}
-	if _, err := w.Write(dd.WithdrawalAddress[:]); err != nil {
-		return err
-	}
-
-	return nil
+// Marshal serializes the struct to bytes
+func (d *DepositData) Marshal() ([]byte, error) {
+	return d.Marshal()
 }
 
-// Decode decodes the deposit data from a reader.
-func (dd *DepositData) Decode(r io.Reader) error {
-	pubBytes := make([]byte, 48)
-	sigBytes := make([]byte, 96)
-	var withdrawalAddress [20]byte
-
-	if _, err := io.ReadFull(r, pubBytes[:]); err != nil {
-		return err
-	}
-	if _, err := io.ReadFull(r, sigBytes[:]); err != nil {
-		return err
-	}
-	if _, err := io.ReadFull(r, withdrawalAddress[:]); err != nil {
-		return err
-	}
-
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	if err != nil {
-		return err
-	}
-	dd.WithdrawalAddress = withdrawalAddress
-	dd.PublicKey = *pub
-	dd.ProofOfPossession = *sig
-
-	return nil
+// Unmarshal deserializes the struct from bytes
+func (d *DepositData) Unmarshal(b []byte) error {
+	return d.Unmarshal(b)
 }

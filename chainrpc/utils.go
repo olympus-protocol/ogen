@@ -53,7 +53,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
 	case "deposit":
 		deposit := new(primitives.Deposit)
-		err := deposit.Decode(buf)
+		err := deposit.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -61,10 +61,14 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		if err != nil {
 			return nil, err
 		}
-		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
+		hash, err := deposit.Hash()
+		if err != nil {
+			return nil, err
+		}
+		return &proto.Success{Success: true, Data: hash.String()}, nil
 	case "exit":
 		exit := new(primitives.Exit)
-		err := exit.Decode(buf)
+		err := exit.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -72,7 +76,11 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		if err != nil {
 			return nil, err
 		}
-		return &proto.Success{Success: true, Data: exit.Hash().String()}, nil
+		hash, err := exit.Hash()
+		if err != nil {
+			return nil, err
+		}
+		return &proto.Success{Success: true, Data: hash.String()}, nil
 	default:
 		return &proto.Success{Success: false, Error: "unknown raw data type"}, nil
 	}
@@ -101,14 +109,17 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(dataBytes)
-	block := new(primitives.Block)
-	err = block.Decode(buf)
+	var block primitives.Block
+	err = block.Unmarshal(dataBytes)
 	if err != nil {
 		return nil, errors.New("unable to decode block raw data")
 	}
+	hash, err := block.Hash()
+	if err != nil {
+		return nil, err
+	}
 	blockParse := &proto.Block{
-		Hash: block.Hash().String(),
+		Hash: hash.String(),
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
 			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),

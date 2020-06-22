@@ -109,7 +109,7 @@ func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Bl
 	}
 
 	block := new(primitives.Block)
-	err = block.Decode(bytes.NewBuffer(blockBytes))
+	err = block.Unmarshal(blockBytes)
 	return block, err
 }
 
@@ -124,13 +124,15 @@ func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, err
 
 // AddRawBlock adds a raw block to the database.
 func (but *BlockDBUpdateTransaction) AddRawBlock(block *primitives.Block) error {
-	blockHash := block.Hash()
-	blockBytes := bytes.NewBuffer([]byte{})
-	err := block.Encode(blockBytes)
+	blockHash, err := block.Hash()
 	if err != nil {
 		return err
 	}
-	return setKey(but, blockHash[:], blockBytes.Bytes())
+	blockBytes, err := block.Marshal()
+	if err != nil {
+		return err
+	}
+	return setKey(but, blockHash[:], blockBytes)
 }
 
 func getKeyHash(tx *BlockDBReadTransaction, key []byte) (chainhash.Hash, error) {
@@ -234,7 +236,7 @@ var blockRowPrefix = []byte("block-row")
 // SetBlockRow sets a block row on disk to store the block index.
 func (but *BlockDBUpdateTransaction) SetBlockRow(disk *BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
-	diskSer, err := disk.Serialize()
+	diskSer, err := disk.Marshal()
 	if err != nil {
 		return err
 	}
@@ -250,7 +252,7 @@ func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*BlockNodeDisk
 	}
 
 	d := new(BlockNodeDisk)
-	err = d.Deserialize(diskSer)
+	err = d.Unmarshal(diskSer)
 	return d, err
 }
 

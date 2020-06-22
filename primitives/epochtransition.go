@@ -3,14 +3,13 @@ package primitives
 import (
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
 
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -298,11 +297,18 @@ type EpochReceipt struct {
 	Type      ReceiptType
 	Amount    int64
 	Validator uint32
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
-// Encode encodes the receipt to the writer.
-func (e *EpochReceipt) Encode(w io.Writer) error {
-	return serializer.WriteElements(w, e.Type, e.Amount, e.Validator)
+// Marshal serializes the struct to bytes
+func (e *EpochReceipt) Marshal() ([]byte, error) {
+	return e.Marshal()
+}
+
+// Unmarshal deserializes the struct from bytes
+func (e *EpochReceipt) Unmarshal(b []byte) error {
+	return e.Unmarshal(b)
 }
 
 func (e *EpochReceipt) String() string {

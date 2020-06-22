@@ -145,12 +145,15 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	if !found {
 		return nil, fmt.Errorf("could not add block to index: could not find parent with hash %s", block.Header.PrevBlockHash)
 	}
-
+	hash, err := block.Header.Hash()
+	if err != nil {
+		return nil, err
+	}
 	row := &BlockRow{
 		StateRoot: block.Header.StateRoot,
 		Height:    prev.Height + 1,
 		Parent:    prev,
-		Hash:      block.Header.Hash(),
+		Hash:      hash,
 		Slot:      block.Header.Slot,
 		children:  make([]*BlockRow, 0),
 	}
@@ -159,7 +162,7 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 
 	i.index[block.Header.PrevBlockHash] = prev
 
-	err := i.add(row)
+	err = i.add(row)
 	if err != nil {
 		return nil, err
 	}
@@ -169,13 +172,16 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 
 // InitBlocksIndex creates a new block index.
 func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
-	headerHash := genesisBlock.Header.Hash()
+	headerHash, err := genesisBlock.Header.Hash()
+	if err != nil {
+		return nil, err
+	}
 	return &BlockIndex{
 		index: map[chainhash.Hash]*BlockRow{
 			headerHash: {
 				Height: 0,
 				Parent: nil,
-				Hash:   genesisBlock.Header.Hash(),
+				Hash:   headerHash,
 			},
 		},
 	}, nil

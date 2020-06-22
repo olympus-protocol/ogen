@@ -180,7 +180,10 @@ func (w *Wallet) initialize(prv *bls.SecretKey) error {
 		}
 		lastNonce := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 		pubKey := prv.PublicKey()
-		pubKeyBytes := pubKey.Marshal()
+		pubKeyBytes, err := pubKey.Marshal()
+		if err != nil {
+			return err
+		}
 		var account [20]byte
 		h := chainhash.HashH(pubKeyBytes[:])
 		copy(account[:], h[:20])

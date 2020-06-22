@@ -171,7 +171,10 @@ func (k *ExtendedKey) pubKeyBytes() ([]byte, error) {
 			return nil, err
 		}
 		public := secret.PublicKey()
-		k.pubKey = public.Marshal()
+		k.pubKey, err = public.Marshal()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return k.pubKey, nil
@@ -343,7 +346,10 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		//
 		// childKey = serP(point(parse256(Il)) + parentKey)
 		childPub := ilPub.Aggregate(parentPub)
-		childPubBytes := childPub.Marshal()
+		childPubBytes, err := childPub.Marshal()
+		if err != nil {
+			return nil, err
+		}
 		childKey = childPubBytes[:]
 	}
 

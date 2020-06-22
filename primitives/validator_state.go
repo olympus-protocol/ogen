@@ -1,11 +1,5 @@
 package primitives
 
-import (
-	"io"
-
-	"github.com/olympus-protocol/ogen/utils/serializer"
-)
-
 // ValidatorStatus represents the status of a Validator.
 type ValidatorStatus uint8
 
@@ -66,27 +60,6 @@ func (wr *Validator) IsActiveAtEpoch(epoch uint64) bool {
 	return wr.IsActive() &&
 		(wr.FirstActiveEpoch == 0 || wr.FirstActiveEpoch <= epoch) &&
 		(wr.LastActiveEpoch == 0 || epoch <= wr.LastActiveEpoch)
-}
-
-// Serialize serializes a validator row to the provided writer.
-func (wr *Validator) Serialize(w io.Writer) error {
-	if err := serializer.WriteElements(w, wr.Balance, wr.PayeeAddress, wr.Status, wr.FirstActiveEpoch, wr.LastActiveEpoch); err != nil {
-		return err
-	}
-	return serializer.WriteVarBytes(w, wr.PubKey)
-}
-
-// Deserialize deserializes a validator row from the provided reader.
-func (wr *Validator) Deserialize(r io.Reader) error {
-	if err := serializer.ReadElements(r, &wr.Balance, &wr.PayeeAddress, &wr.Status, &wr.FirstActiveEpoch, &wr.LastActiveEpoch); err != nil {
-		return err
-	}
-	pub, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	wr.PubKey = pub
-	return nil
 }
 
 // Copy returns a copy of the validator.

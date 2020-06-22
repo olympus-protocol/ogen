@@ -1,14 +1,8 @@
 package primitives
 
 import (
-	"io"
-
+	"github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
-)
-
-const (
-	maxBlockSize = 1024 * 512 // 512 kilobytes
 )
 
 // Block is a block in the blockchain.
@@ -24,10 +18,21 @@ type Block struct {
 	GovernanceVotes   []GovernanceVote
 	Signature         []byte
 	RandaoSignature   []byte
+
+	ssz.Marshaler
+	ssz.Unmarshaler
+}
+
+func (b *Block) Marshal() ([]byte, error) {
+	return b.MarshalSSZ()
+}
+
+func (b *Block) Unmarshal(bb []byte) error {
+	return b.Unmarshal(bb)
 }
 
 // Hash calculates the hash of the block.
-func (b *Block) Hash() chainhash.Hash {
+func (b *Block) Hash() (chainhash.Hash, error) {
 	return b.Header.Hash()
 }
 
@@ -45,8 +50,7 @@ func merkleRootGovernanceVotes(votes []GovernanceVote) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
-// GovernanceVoteMerkleRoot calculates the merkle root of the governance votes in the
-// block.
+// GovernanceVoteMerkleRoot calculates the merkle root of the governance votes in the block.
 func (b *Block) GovernanceVoteMerkleRoot() chainhash.Hash {
 	return merkleRootGovernanceVotes(b.GovernanceVotes)
 }
@@ -66,41 +70,51 @@ func merkleRootTxs(txs []Tx) chainhash.Hash {
 }
 
 // ExitMerkleRoot calculates the merkle root of the exits in the block.
-func (b *Block) ExitMerkleRoot() chainhash.Hash {
+func (b *Block) ExitMerkleRoot() (chainhash.Hash, error) {
 	return merkleRootDeposits(b.Deposits)
 }
 
-func merkleRootExits(exits []Exit) chainhash.Hash {
+func merkleRootExits(exits []Exit) (chainhash.Hash, error) {
 	if len(exits) == 0 {
-		return chainhash.Hash{}
+		return chainhash.Hash{}, nil
 	}
 	if len(exits) == 1 {
 		return exits[0].Hash()
 	}
 	mid := len(exits) / 2
-	h1 := merkleRootExits(exits[:mid])
-	h2 := merkleRootExits(exits[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	h1, err := merkleRootExits(exits[:mid])
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	h2, err := merkleRootExits(exits[mid:])
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(append(h1[:], h2[:]...)), nil
 }
 
 // DepositMerkleRoot calculates the merkle root of the deposits in the block.
-func (b *Block) DepositMerkleRoot() chainhash.Hash {
+func (b *Block) DepositMerkleRoot() (chainhash.Hash, error) {
 	return merkleRootDeposits(b.Deposits)
 }
 
-func merkleRootDeposits(deposits []Deposit) chainhash.Hash {
+func merkleRootDeposits(deposits []Deposit) (chainhash.Hash, error) {
 	if len(deposits) == 0 {
-		return chainhash.Hash{}
+		return chainhash.Hash{}, nil
 	}
 	if len(deposits) == 1 {
 		return deposits[0].Hash()
 	}
 	mid := len(deposits) / 2
-	h1 := merkleRootDeposits(deposits[:mid])
-	h2 := merkleRootDeposits(deposits[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	h1, err := merkleRootDeposits(deposits[:mid])
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	h2, err := merkleRootDeposits(deposits[mid:])
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.HashH(append(h1[:], h2[:]...)), nil
 }
 
 // TransactionMerkleRoot calculates the merkle root of the transactions in the block.
@@ -182,209 +196,6 @@ func merkleRootVoteSlashings(txs []VoteSlashing) chainhash.Hash {
 // VoteSlashingRoot calculates the merkle root of the vote slashings included in the block.
 func (b *Block) VoteSlashingRoot() chainhash.Hash {
 	return merkleRootVoteSlashings(b.VoteSlashings)
-}
-
-// Encode encodes the block to the given writer.
-func (b *Block) Encode(w io.Writer) error {
-	err := b.Header.Serialize(w)
-	if err != nil {
-		return err
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.Txs)))
-	if err != nil {
-		return err
-	}
-	for _, tx := range b.Txs {
-		err := tx.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.Votes)))
-	if err != nil {
-		return err
-	}
-	for _, vote := range b.Votes {
-		err := vote.Serialize(w)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = serializer.WriteVarInt(w, uint64(len(b.Deposits)))
-	if err != nil {
-		return err
-	}
-	for _, deposit := range b.Deposits {
-		err := deposit.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.Exits)))
-	if err != nil {
-		return err
-	}
-	for _, exit := range b.Exits {
-		err := exit.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.VoteSlashings)))
-	if err != nil {
-		return err
-	}
-	for _, slashing := range b.VoteSlashings {
-		err := slashing.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.ProposerSlashings)))
-	if err != nil {
-		return err
-	}
-	for _, slashing := range b.ProposerSlashings {
-		err := slashing.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.RANDAOSlashings)))
-	if err != nil {
-		return err
-	}
-	for _, slashing := range b.RANDAOSlashings {
-		err := slashing.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.GovernanceVotes)))
-	if err != nil {
-		return err
-	}
-	for _, vote := range b.GovernanceVotes {
-		err := vote.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	if err := serializer.WriteVarBytes(w, b.Signature); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarBytes(w, b.RandaoSignature); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Decode decodes the block from the given reader.
-func (b *Block) Decode(r io.Reader) error {
-	err := b.Header.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	txCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Txs = make([]Tx, txCount)
-	for i := uint64(0); i < txCount; i++ {
-		err := b.Txs[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	voteCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Votes = make([]MultiValidatorVote, voteCount)
-	for i := range b.Votes {
-		err := b.Votes[i].Deserialize(r)
-		if err != nil {
-			return err
-		}
-	}
-	depositCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Deposits = make([]Deposit, depositCount)
-	for i := range b.Deposits {
-		err := b.Deposits[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	exitCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Exits = make([]Exit, exitCount)
-	for i := range b.Exits {
-		err := b.Exits[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	voteSlashingCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.VoteSlashings = make([]VoteSlashing, voteSlashingCount)
-	for i := range b.VoteSlashings {
-		err := b.VoteSlashings[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	propopserSlashingCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.ProposerSlashings = make([]ProposerSlashing, propopserSlashingCount)
-	for i := range b.ProposerSlashings {
-		err := b.ProposerSlashings[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	randaoSlashingCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.RANDAOSlashings = make([]RANDAOSlashing, randaoSlashingCount)
-	for i := range b.RANDAOSlashings {
-		err := b.RANDAOSlashings[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	governanceVoteCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.GovernanceVotes = make([]GovernanceVote, governanceVoteCount)
-	for i := range b.GovernanceVotes {
-		err := b.GovernanceVotes[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	sig, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	randaoSig, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	b.Signature = sig
-	b.RandaoSignature = randaoSig
-	return nil
 }
 
 // GetTxs returns

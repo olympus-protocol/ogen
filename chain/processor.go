@@ -107,7 +107,10 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 	// b. get parent block
 	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
 
-	blockHash := block.Hash()
+	blockHash, err := block.Hash()
+	if err != nil {
+		return err
+	}
 
 	if other, found := ch.State().Chain().GetNodeBySlot(block.Header.Slot); found && other.Slot == block.Header.Slot {
 		if other.Hash.IsEqual(&blockHash) {

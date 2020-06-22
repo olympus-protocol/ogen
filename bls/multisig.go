@@ -3,13 +3,12 @@ package bls
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // Multipub represents multiple public keys that can be signed by
@@ -17,6 +16,19 @@ import (
 type Multipub struct {
 	PublicKeys []*PublicKey
 	NumNeeded  uint16
+
+	ssz.Marshaler
+	ssz.Unmarshaler
+}
+
+// Marshal serializes the struct to bytes
+func (m *Multipub) Marshal() ([]byte, error) {
+	return m.MarshalSSZ()
+}
+
+// Unmarshal deserializes the struct from bytes
+func (m *Multipub) Unmarshal(b []byte) error {
+	return m.UnmarshalSSZ(b)
 }
 
 // NewMultipub constructs a new multi-pubkey.
@@ -36,52 +48,6 @@ func (m *Multipub) Copy() *Multipub {
 	}
 
 	return &newM
-}
-
-// Encode encodes the public key to the given writer.
-func (m *Multipub) Encode(w io.Writer) error {
-	if err := serializer.WriteVarInt(w, uint64(len(m.PublicKeys))); err != nil {
-		return err
-	}
-
-	for _, p := range m.PublicKeys {
-		if _, err := w.Write(p.Marshal()); err != nil {
-			return err
-		}
-	}
-
-	if err := serializer.WriteElement(w, m.NumNeeded); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Decode decodes the multipub to bytes.
-func (m *Multipub) Decode(r io.Reader) error {
-	numPubkeys, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-
-	m.PublicKeys = make([]*PublicKey, numPubkeys)
-	for i := range m.PublicKeys {
-		pkb := make([]byte, 48)
-		if _, err := io.ReadFull(r, pkb); err != nil {
-			return err
-		}
-
-		m.PublicKeys[i], err = PublicKeyFromBytes(pkb)
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := serializer.ReadElement(r, &m.NumNeeded); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Type returns the type of the multipub.
@@ -129,6 +95,19 @@ type Multisig struct {
 	PublicKey  Multipub
 	Signatures []*Signature
 	KeysSigned bitfield.Bitfield
+
+	ssz.Marshaler
+	ssz.Unmarshaler
+}
+
+// Marshal serializes the struct to bytes
+func (m *Multisig) Marshal() ([]byte, error) {
+	return m.MarshalSSZ()
+}
+
+// Unmarshal deserializes the struct from bytes
+func (m *Multisig) Unmarshal(b []byte) error {
+	return m.UnmarshalSSZ(b)
 }
 
 // NewMultisig creates a new blank multisig.
@@ -145,68 +124,6 @@ func (m *Multisig) GetPublicKey() FunctionalPublicKey {
 	return &m.PublicKey
 }
 
-// Encode encodes the multisig to the given writer.
-func (m *Multisig) Encode(w io.Writer) error {
-	if err := m.PublicKey.Encode(w); err != nil {
-		return err
-	}
-
-	if err := serializer.WriteVarInt(w, uint64(len(m.Signatures))); err != nil {
-		return err
-	}
-
-	for _, s := range m.Signatures {
-		bs := s.Marshal()
-		if _, err := w.Write(bs); err != nil {
-			return err
-		}
-	}
-
-	if err := serializer.WriteVarBytes(w, m.KeysSigned); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Decode decodes the multisig from the given reader.
-func (m *Multisig) Decode(r io.Reader) error {
-	if err := m.PublicKey.Decode(r); err != nil {
-		return err
-	}
-
-	numSigs, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-
-	m.Signatures = make([]*Signature, numSigs)
-
-	for i := range m.Signatures {
-		sigBytes := make([]byte, 96)
-		_, err := io.ReadFull(r, sigBytes)
-		if err != nil {
-			return err
-		}
-
-		sig, err := SignatureFromBytes(sigBytes)
-		if err != nil {
-			return err
-		}
-
-		m.Signatures[i] = sig
-	}
-
-	bitfield, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-
-	m.KeysSigned = bitfield
-
-	return nil
-}
-
 // Sign signs a multisig through a secret key.
 func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	pub := secKey.PublicKey()
@@ -217,16 +134,18 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 			idx = i
 		}
 	}
-
+	pubKeyB, err := pub.Marshal()
+	if err != nil {
+		return err
+	}
 	if idx == -1 {
-		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
+		return fmt.Errorf("could not find public key %x in multipub", pubKeyB)
 	}
 
 	if m.KeysSigned.Get(uint(idx)) {
 		return nil
 	}
-
-	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
+	msgI := chainhash.HashH(append(msg, pubKeyB...))
 
 	sig := secKey.Sign(msgI[:])
 
@@ -261,7 +180,11 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	msgs := make([][32]byte, len(m.Signatures))
 	for i := range msgs {
-		msgs[i] = chainhash.HashH(append(msg, activePubs[i].Marshal()...))
+		pub, err := activePubs[i].Marshal()
+		if err != nil {
+			return false
+		}
+		msgs[i] = chainhash.HashH(append(msg, pub...))
 	}
 
 	return aggSig.AggregateVerify(activePubs, msgs)

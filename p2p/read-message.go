@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 func readMessageHeader(r io.Reader) (int, *messageHeader, error) {
@@ -17,12 +16,12 @@ func readMessageHeader(r io.Reader) (int, *messageHeader, error) {
 	if err != nil {
 		return n, nil, err
 	}
-	hr := bytes.NewReader(headerBytes[:])
-
 	hdr := messageHeader{}
-	var command [serializer.CommandSize]byte
-	serializer.ReadElements(hr, &hdr.magic, &command, &hdr.length, &hdr.checksum)
-
+	var command []byte
+	err = hdr.Unmarshal(headerBytes[:])
+	if err != nil {
+		return n, nil, err
+	}
 	hdr.command = string(bytes.TrimRight(command[:], string(0)))
 	return n, &hdr, nil
 }
@@ -79,15 +78,16 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 		return nil, fmt.Errorf("error creating new command %s: %s", command, err)
 	}
 
-	mpl := msg.MaxPayloadLength()
-	if hdr.length > mpl {
-		discardInput(r, hdr.length)
-		str := fmt.Sprintf("payload exceeds max length - header "+
-			"indicates %v bytes, but max payload size for "+
-			"messages of type [%v] is %v.", hdr.length, command, mpl)
-		err = errors.New(str)
-		return nil, err
-	}
+	// TODO
+	//mpl := msg.MaxPayloadLength()
+	//if hdr.length > mpl {
+	//	discardInput(r, hdr.length)
+	//	str := fmt.Sprintf("payload exceeds max length - header "+
+	//		"indicates %v bytes, but max payload size for "+
+	//		"messages of type [%v] is %v.", hdr.length, command, mpl)
+	//	err = errors.New(str)
+	//	return nil, err
+	//}
 
 	payload := make([]byte, hdr.length)
 	_, err = io.ReadFull(r, payload)
@@ -104,8 +104,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 		return nil, err
 	}
 
-	pr := bytes.NewBuffer(payload)
-	err = msg.Decode(pr)
+	err = msg.Unmarshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding payload of command %s: %s", command, err)
 	}

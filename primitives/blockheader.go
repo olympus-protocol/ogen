@@ -1,16 +1,11 @@
 package primitives
 
 import (
-	"bytes"
-	"io"
-
+	"github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
-var MaxBlockHeaderBytes = 76
-
+// BlockHeader is the primitive struct for a blockheader.
 type BlockHeader struct {
 	Version                    uint32
 	TxMerkleRoot               chainhash.Hash `ssz:"size=32"`
@@ -26,45 +21,26 @@ type BlockHeader struct {
 	Slot                       uint64
 	StateRoot                  chainhash.Hash `ssz:"size=32"`
 	FeeAddress                 [20]byte       `ssz:"size=20"`
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
+// Marshal encodes the data to bytes.
 func (bh *BlockHeader) Marshal() ([]byte, error) {
-	return ssz.Marshal(bh)
+	return bh.MarshalSSZ()
 }
 
+// Unmarshal decodes the data from bytes.
 func (bh *BlockHeader) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, bh)
-}
-
-// Serialize serializes the block header to the given writer.
-func (bh *BlockHeader) Serialize(w io.Writer) error {
-	err := serializer.WriteElements(w, bh.Version, bh.FeeAddress,
-		bh.TxMerkleRoot, bh.VoteMerkleRoot, bh.PrevBlockHash,
-		bh.Slot, bh.StateRoot, bh.Timestamp, bh.VoteSlashingMerkleRoot,
-		bh.RANDAOSlashingMerkleRoot, bh.ProposerSlashingMerkleRoot,
-		bh.DepositMerkleRoot, bh.ExitMerkleRoot)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Deserialize deserializes the block header from the given reader.
-func (bh *BlockHeader) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &bh.Version, &bh.FeeAddress,
-		&bh.TxMerkleRoot, &bh.VoteMerkleRoot, &bh.PrevBlockHash,
-		&bh.Slot, &bh.StateRoot, &bh.Timestamp, &bh.VoteSlashingMerkleRoot,
-		&bh.RANDAOSlashingMerkleRoot, &bh.ProposerSlashingMerkleRoot,
-		&bh.DepositMerkleRoot, &bh.ExitMerkleRoot)
-	if err != nil {
-		return err
-	}
-	return nil
+	return bh.Unmarshal(b)
 }
 
 // Hash calculates the hash of the block header.
-func (bh *BlockHeader) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = bh.Serialize(buf)
-	return chainhash.DoubleHashH(buf.Bytes())
+func (bh *BlockHeader) Hash() (chainhash.Hash, error) {
+	b, err := bh.Marshal()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	return chainhash.DoubleHashH(b), nil
 }

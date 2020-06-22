@@ -171,10 +171,9 @@ func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.Deposit)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid deposit: %s", err)
 			continue
@@ -199,7 +198,15 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 	defer am.depositsLock.Unlock()
 
 	for _, d := range am.deposits {
-		if bytes.Equal(d.Data.PublicKey.Marshal(), deposit.Data.PublicKey.Marshal()) {
+		dPubKey, err := d.Data.PublicKey.Marshal()
+		if err != nil {
+			return err
+		}
+		depositPubKey, err := deposit.Data.PublicKey.Marshal()
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(dPubKey, depositPubKey) {
 			return nil
 		}
 	}
@@ -239,8 +246,12 @@ func (am *ActionMempool) RemoveByBlock(b *primitives.Block, tipState *primitives
 	newDeposits := make([]primitives.Deposit, 0, len(am.deposits))
 outer:
 	for _, d1 := range am.deposits {
+		// TODO handle error
+		d1Pub, _ := d1.Data.PublicKey.Marshal()
 		for _, d2 := range b.Deposits {
-			if bytes.Equal(d1.Data.PublicKey.Marshal(), d2.Data.PublicKey.Marshal()) {
+			// TODO handle error
+			d2pub, _ := d2.Data.PublicKey.Marshal()
+			if bytes.Equal(d1Pub, d2pub) {
 				continue outer
 			}
 		}
@@ -258,8 +269,12 @@ outer:
 	newExits := make([]primitives.Exit, 0, len(am.exits))
 outer1:
 	for _, e1 := range am.exits {
+		// TODO handle error
+		e1Pub, _ := e1.ValidatorPubkey.Marshal()
 		for _, e2 := range b.Exits {
-			if bytes.Equal(e1.ValidatorPubkey.Marshal(), e2.ValidatorPubkey.Marshal()) {
+			// TODO handle error
+			e2Pub, _ := e2.ValidatorPubkey.Marshal()
+			if bytes.Equal(e1Pub, e2Pub) {
 				continue outer1
 			}
 		}
@@ -433,10 +448,8 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.Exit)
-
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid exit: %s", err)
 			continue
@@ -461,7 +474,15 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 	defer am.exitsLock.Unlock()
 
 	for _, e := range am.exits {
-		if bytes.Equal(e.ValidatorPubkey.Marshal(), e.ValidatorPubkey.Marshal()) {
+		exitPubKey, err := exit.ValidatorPubkey.Marshal()
+		if err != nil {
+			return err
+		}
+		ePubKey, err := e.ValidatorPubkey.Marshal()
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(exitPubKey, ePubKey) {
 			return nil
 		}
 	}

@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -13,7 +12,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 type chainServer struct {
@@ -58,8 +56,12 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 	if err != nil {
 		return nil, err
 	}
+	bhash, err := block.Hash()
+	if err != nil {
+		return nil, err
+	}
 	blockParse := &proto.Block{
-		Hash: block.Hash().String(),
+		Hash: bhash.String(),
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
 			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),
@@ -175,12 +177,12 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 	for {
 		select {
 		case bl := <-bn.blocks:
-			buf := bytes.NewBuffer([]byte{})
-			if err := bl.block.Encode(buf); err != nil {
+			block, err := bl.block.Marshal()
+			if err != nil {
 				return err
 			}
-			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(buf.Bytes()),
+			err = stream.Send(&proto.RawData{
+				Data: hex.EncodeToString(block),
 			})
 			if err != nil {
 				return err
@@ -211,29 +213,30 @@ func (s *chainServer) SubscribeTransactions(in *proto.KeyPairs, stream proto.Cha
 
 	for {
 		select {
-		case bl := <-bn.blocks:
-			transactions := make([]primitives.Tx, 0)
-			for _, tx := range bl.block.Txs {
-				pkh := tx.Payload.FromPubkeyHash()
-				if _, ok := accounts[pkh]; ok {
-					transactions = append(transactions, tx)
-				}
-			}
-			if len(transactions) == 0 {
-				continue
-			}
-			resp := bytes.NewBuffer([]byte{})
-			if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
-				return err
-			}
-			for _, tx := range transactions {
-				if err := tx.Encode(resp); err != nil {
-					return err
-				}
-			}
+		case _ = <-bn.blocks:
+			// TODO
+			// transactions := make([]primitives.Tx, 0)
+			// for _, tx := range bl.block.Txs {
+			// 	pkh := tx.Payload.FromPubkeyHash()
+			// 	if _, ok := accounts[pkh]; ok {
+			// 		transactions = append(transactions, tx)
+			// 	}
+			// }
+			// if len(transactions) == 0 {
+			// 	continue
+			// }
+			// resp := bytes.NewBuffer([]byte{})
+			// if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
+			// 	return err
+			// }
+			// for _, tx := range transactions {
+			// 	if err := tx.Encode(resp); err != nil {
+			// 		return err
+			// 	}
+			// }
 
 			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(resp.Bytes()),
+				Data: "",
 			})
 			if err != nil {
 				return err
@@ -264,34 +267,35 @@ func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream p
 
 	for {
 		select {
-		case bl := <-bn.blocks:
-			transactions := make([]*primitives.EpochReceipt, 0)
-			for _, receipt := range bl.receipts {
-				validator := bl.state.ValidatorRegistry[receipt.Validator].PubKey
-				var validatorPubkey [96]byte
+		case _ = <-bn.blocks:
+			// TODO
+			// transactions := make([]*primitives.EpochReceipt, 0)
+			// for _, receipt := range bl.receipts {
+			// 	validator := bl.state.ValidatorRegistry[receipt.Validator].PubKey
+			// 	var validatorPubkey [96]byte
 
-				copy(validatorPubkey[:], validator)
+			// 	copy(validatorPubkey[:], validator)
 
-				if _, ok := accounts[validatorPubkey]; ok {
-					transactions = append(transactions, receipt)
-				}
-			}
+			// 	if _, ok := accounts[validatorPubkey]; ok {
+			// 		transactions = append(transactions, receipt)
+			// 	}
+			// }
 
-			if len(transactions) == 0 {
-				continue
-			}
-			resp := bytes.NewBuffer([]byte{})
-			if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
-				return err
-			}
-			for _, tx := range transactions {
-				if err := tx.Encode(resp); err != nil {
-					return err
-				}
-			}
+			// if len(transactions) == 0 {
+			// 	continue
+			// }
+			// resp := bytes.NewBuffer([]byte{})
+			// if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
+			// 	return err
+			// }
+			// for _, tx := range transactions {
+			// 	if err := tx.Encode(resp); err != nil {
+			// 		return err
+			// 	}
+			// }
 
 			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(resp.Bytes()),
+				Data: "",
 			})
 			if err != nil {
 				return err

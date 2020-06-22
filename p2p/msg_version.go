@@ -1,10 +1,9 @@
 package p2p
 
 import (
-	"io"
 	"time"
 
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 type MsgVersion struct {
@@ -14,21 +13,14 @@ type MsgVersion struct {
 	Timestamp       int64  // 8 bytes
 }
 
-func (m *MsgVersion) Encode(w io.Writer) error {
-	err := serializer.WriteElements(w, m.ProtocolVersion, m.Timestamp, m.Nonce, m.LastBlock)
-	if err != nil {
-		return err
-	}
-	return nil
+// Marshal serializes the struct to bytes
+func (m *MsgVersion) Marshal() ([]byte, error) {
+	return ssz.Marshal(m)
 }
 
-func (m *MsgVersion) Decode(r io.Reader) error {
-	err := serializer.ReadElements(r, &m.ProtocolVersion,
-		(*int64)(&m.Timestamp), &m.Nonce, &m.LastBlock)
-	if err != nil {
-		return err
-	}
-	return nil
+// Unmarshal deserializes the struct from bytes
+func (m *MsgVersion) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, m)
 }
 
 func (m *MsgVersion) Command() string {
@@ -39,11 +31,10 @@ func (m *MsgVersion) MaxPayloadLength() uint32 {
 	return 36
 }
 
-func NewMsgVersion(nonce uint64, lastBlock uint64) *MsgVersion {
+func NewMsgVersion(lastBlock uint64) *MsgVersion {
 	return &MsgVersion{
 		ProtocolVersion: int32(ProtocolVersion),
 		Timestamp:       time.Unix(time.Now().Unix(), 0).Unix(),
-		Nonce:           nonce,
 		LastBlock:       lastBlock,
 	}
 }

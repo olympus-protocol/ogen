@@ -2,8 +2,9 @@ package p2p
 
 import (
 	"fmt"
-	"io"
 	"math"
+
+	ssz "github.com/ferranbt/fastssz"
 )
 
 const (
@@ -19,10 +20,9 @@ const MessageHeaderSize = 24
 const MaxMessagePayload = 1024 * 1024 * 32 // 32 MB
 
 type Message interface {
-	Decode(io.Reader) error
-	Encode(io.Writer) error
+	Marshal() ([]byte, error)
+	Unmarshal(d []byte) error
 	Command() string
-	MaxPayloadLength() uint32
 }
 
 type messageHeader struct {
@@ -30,6 +30,19 @@ type messageHeader struct {
 	command  string
 	length   uint32
 	checksum [4]byte
+
+	ssz.Marshaler
+	ssz.Unmarshaler
+}
+
+// Marshal serializes the struct to bytes
+func (mh *messageHeader) Marshal() ([]byte, error) {
+	return mh.MarshalSSZ()
+}
+
+// Unmarshal deserializes the struct from bytes
+func (mh *messageHeader) Unmarshal(b []byte) error {
+	return mh.UnmarshalSSZ(b)
 }
 
 func makeEmptyMessage(command string) (Message, error) {

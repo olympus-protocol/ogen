@@ -1,35 +1,26 @@
 package p2p
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, error) {
 
 	totalBytes := 0
 
-	var command [serializer.CommandSize]byte
+	var command []byte
 	cmd := msg.Command()
-	if len(cmd) > serializer.CommandSize {
-		str := fmt.Sprintf("command [%s] is too long [max %v]",
-			cmd, serializer.CommandSize)
-		err := errors.New(str)
-		return totalBytes, err
-	}
+
 	copy(command[:], []byte(cmd))
 
-	var bw bytes.Buffer
-	err := msg.Encode(&bw)
+	payload, err := msg.Marshal()
 	if err != nil {
 		return totalBytes, err
 	}
-	payload := bw.Bytes()
 	lenp := len(payload)
 
 	if lenp > MaxMessagePayload {
@@ -40,14 +31,14 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, err
 		return totalBytes, err
 	}
 
-	mpl := msg.MaxPayloadLength()
-	if uint32(lenp) > mpl {
-		str := fmt.Sprintf("message payload is too large - encoded "+
-			"%d bytes, but maximum message payload size for "+
-			"messages of type [%s] is %d.", lenp, cmd, mpl)
-		err := errors.New(str)
-		return totalBytes, err
-	}
+	//mpl := msg.MaxPayloadLength()
+	//if uint32(lenp) > mpl {
+	//	str := fmt.Sprintf("message payload is too large - encoded "+
+	//		"%d bytes, but maximum message payload size for "+
+	//		"messages of type [%s] is %d.", lenp, cmd, mpl)
+	//	err := errors.New(str)
+	//	return totalBytes, err
+	//}
 
 	hdr := messageHeader{}
 	hdr.magic = net
@@ -55,10 +46,11 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, err
 	hdr.length = uint32(lenp)
 	copy(hdr.checksum[:], chainhash.DoubleHashB(payload)[0:4])
 
-	hw := bytes.NewBuffer(make([]byte, 0, MessageHeaderSize))
-	_ = serializer.WriteElements(hw, hdr.magic, command, hdr.length, hdr.checksum)
-
-	n, err := w.Write(hw.Bytes())
+	hwBytes, err := hdr.Marshal()
+	if err != nil {
+		return totalBytes, err
+	}
+	n, err := w.Write(hwBytes)
 	totalBytes += n
 	if err != nil {
 		return totalBytes, err

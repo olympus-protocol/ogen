@@ -1,12 +1,9 @@
 package p2p
 
 import (
-	"bytes"
-	"io"
-
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 const (
@@ -15,45 +12,27 @@ const (
 
 type MsgTx struct {
 	Txs []primitives.TransferSinglePayload
+
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
-func (m *MsgTx) Encode(w io.Writer) error {
-	if err := serializer.WriteVarInt(w, uint64(len(m.Txs))); err != nil {
-		return err
-	}
-
-	for _, tx := range m.Txs {
-		if err := tx.Encode(w); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Marshal serializes the struct to bytes
+func (m *MsgTx) Marshal() ([]byte, error) {
+	return m.MarshalSSZ()
 }
 
-func (m *MsgTx) Decode(r io.Reader) error {
-	numTxs, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-
-	m.Txs = make([]primitives.TransferSinglePayload, numTxs)
-	for i := range m.Txs {
-		if err := m.Txs[i].Decode(r); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Unmarshal deserializes the struct from bytes
+func (m *MsgTx) Unmarshal(b []byte) error {
+	return m.UnmarshalSSZ(b)
 }
 
-func (m *MsgTx) TxHash() (chainhash.Hash, error) {
-	buf := bytes.NewBuffer([]byte{})
-	err := m.Encode(buf)
+func (m *MsgTx) Hash() (chainhash.Hash, error) {
+	ser, err := m.Marshal()
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
-	return chainhash.DoubleHashH(buf.Bytes()), nil
+	return chainhash.DoubleHashH(ser), nil
 }
 
 func (m *MsgTx) Command() string {

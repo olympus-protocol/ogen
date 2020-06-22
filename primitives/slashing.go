@@ -6,7 +6,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // VoteSlashing is a slashing where validators vote in the span of their
@@ -51,38 +50,6 @@ type RANDAOSlashing struct {
 	ValidatorPubkey bls.PublicKey
 }
 
-// Encode encodes the RANDAOSlashing to the given writer.
-func (rs *RANDAOSlashing) Encode(w io.Writer) error {
-	sigBytes := rs.RandaoReveal.Marshal()
-	pubkeyBytes := rs.ValidatorPubkey.Marshal()
-
-	return serializer.WriteElements(w, sigBytes, pubkeyBytes, rs.Slot)
-}
-
-// Decode decodes the RANDAOSlashing from the given reader.
-func (rs *RANDAOSlashing) Decode(r io.Reader) error {
-	sigBytes := make([]byte, 96)
-	pubBytes := make([]byte, 48)
-
-	if err := serializer.ReadElements(r, &sigBytes, &pubBytes, &rs.Slot); err != nil {
-		return err
-	}
-
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	if err != nil {
-		return err
-	}
-
-	rs.RandaoReveal = *sig
-	rs.ValidatorPubkey = *pub
-
-	return nil
-}
 
 // Hash calculates the hash of the RANDAO slashing.
 func (rs *RANDAOSlashing) Hash() chainhash.Hash {
@@ -99,40 +66,6 @@ type ProposerSlashing struct {
 	Signature1         bls.Signature
 	Signature2         bls.Signature
 	ValidatorPublicKey bls.PublicKey
-}
-
-// Encode encodes the proposer slashing to the given writer.
-func (ps *ProposerSlashing) Encode(w io.Writer) error {
-	if err := ps.BlockHeader1.Serialize(w); err != nil {
-		return err
-	}
-	if err := ps.BlockHeader2.Serialize(w); err != nil {
-		return err
-	}
-	if err := ps.Signature1.Encode(w); err != nil {
-		return err
-	}
-	if err := ps.Signature2.Encode(w); err != nil {
-		return err
-	}
-	return ps.ValidatorPublicKey.Encode(w)
-}
-
-// Decode decodes the proposer slashing from the given reader.
-func (ps *ProposerSlashing) Decode(r io.Reader) error {
-	if err := ps.BlockHeader1.Deserialize(r); err != nil {
-		return err
-	}
-	if err := ps.BlockHeader2.Deserialize(r); err != nil {
-		return err
-	}
-	if err := ps.Signature1.Decode(r); err != nil {
-		return err
-	}
-	if err := ps.Signature2.Decode(r); err != nil {
-		return err
-	}
-	return ps.ValidatorPublicKey.Decode(r)
 }
 
 // Hash calculates the hash of the proposer slashing.

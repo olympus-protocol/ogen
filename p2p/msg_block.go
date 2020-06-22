@@ -1,65 +1,36 @@
 package p2p
 
 import (
-	"errors"
-	"fmt"
-	"io"
-
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
-const MaxBlockSize = 1024 * 512 // 512 KB
-const MaxBlocksPerMsg = 500
+const MaxBlocksPerMsg = 2000
 
 type MsgBlocks struct {
 	Blocks []primitives.Block
+
+	ssz.Marshaler
+	ssz.Unmarshaler
+}
+
+// Marshal serializes the struct to bytes
+func (m *MsgBlocks) Marshal() ([]byte, error) {
+	return m.MarshalSSZ()
+}
+
+// Unmarshal deserializes the struct from bytes
+func (m *MsgBlocks) Unmarshal(b []byte) error {
+	return m.UnmarshalSSZ(b)
 }
 
 func (m *MsgBlocks) Command() string {
 	return MsgBlocksCmd
 }
 
-func (m *MsgBlocks) MaxPayloadLength() uint32 {
-	return MaxBlockSize * MaxBlocksPerMsg
-}
-
 func NewMsgBlocks(b []primitives.Block) *MsgBlocks {
-	m := &MsgBlocks{b}
+	m := &MsgBlocks{
+		Blocks: b,
+	}
 	return m
-}
-
-func (m *MsgBlocks) Encode(w io.Writer) error {
-	count := len(m.Blocks)
-	if count > 500 {
-		str := fmt.Sprintf("too many blocks for message "+
-			"[count %v, max %v]", count, 500)
-		return errors.New(str)
-	}
-	err := serializer.WriteVarInt(w, uint64(count))
-	if err != nil {
-		return err
-	}
-	for _, b := range m.Blocks {
-		err := b.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *MsgBlocks) Decode(r io.Reader) error {
-	count, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	m.Blocks = make([]primitives.Block, count)
-	for i := uint64(0); i < count; i++ {
-		err := m.Blocks[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

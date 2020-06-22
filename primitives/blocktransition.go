@@ -213,9 +213,14 @@ func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalA
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
 func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
-	h1 := ps.BlockHeader1.Hash()
-	h2 := ps.BlockHeader2.Hash()
-
+	h1, err := ps.BlockHeader1.Hash()
+	if err != nil {
+		return 0, err
+	}
+	h2, err := ps.BlockHeader2.Hash()
+	if err != nil {
+		return 0, err
+	}
 	if h1.IsEqual(&h2) {
 		return 0, fmt.Errorf("proposer-slashing: block headers are equal")
 	}
@@ -232,8 +237,10 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
 	}
 
-	pubkeyBytes := ps.ValidatorPublicKey.Marshal()
-
+	pubkeyBytes, err := ps.ValidatorPublicKey.Marshal()
+	if err != nil {
+		return 0, err
+	}
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey, pubkeyBytes) {
@@ -380,8 +387,10 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 		return 0, fmt.Errorf("randao-slashing: RANDAO reveal does not verify")
 	}
 
-	pubkeyBytes := rs.ValidatorPubkey.Marshal()
-
+	pubkeyBytes, err := rs.ValidatorPubkey.Marshal()
+	if err != nil {
+		return 0, err
+	}
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey, pubkeyBytes) {
@@ -430,7 +439,11 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint32, 
 
 // IsExitValid checks if an exit is valid.
 func (s *State) IsExitValid(exit *Exit) error {
-	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Marshal())
+	exitPub, err := exit.ValidatorPubkey.Marshal()
+	if err != nil {
+		return err
+	}
+	msg := fmt.Sprintf("exit %x", exitPub)
 	msgHash := chainhash.HashH([]byte(msg))
 
 	valid := exit.Signature.Verify(msgHash[:], &exit.WithdrawPubkey)
@@ -440,8 +453,10 @@ func (s *State) IsExitValid(exit *Exit) error {
 
 	pkh := exit.WithdrawPubkey.Hash()
 
-	pubkeySerialized := exit.ValidatorPubkey.Marshal()
-
+	pubkeySerialized, err := exit.ValidatorPubkey.Marshal()
+	if err != nil {
+		return err
+	}
 	foundActiveValidator := false
 	for _, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
@@ -466,8 +481,10 @@ func (s *State) ApplyExit(exit *Exit) error {
 		return err
 	}
 
-	pubkeySerialized := exit.ValidatorPubkey.Marshal()
-
+	pubkeySerialized, err := exit.ValidatorPubkey.Marshal()
+	if err != nil {
+		return err
+	}
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
 			s.ValidatorRegistry[i].Status = StatusActivePendingExit
@@ -485,22 +502,19 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
 	}
 
-	// first validate signature
-	buf := bytes.NewBuffer([]byte{})
-
-	if err := deposit.Data.Encode(buf); err != nil {
+	depositHash, err := deposit.Hash()
+	if err != nil {
 		return err
 	}
-
-	depositHash := chainhash.HashH(buf.Bytes())
-
 	valid := deposit.Signature.Verify(depositHash[:], &deposit.PublicKey)
 	if !valid {
 		return errors.New("deposit signature is not valid")
 	}
 
-	validatorPubkey := deposit.Data.PublicKey.Marshal()
-
+	validatorPubkey, err := deposit.Data.PublicKey.Marshal()
+	if err != nil {
+		return err
+	}
 	// now, ensure we don't already have this validator
 	for _, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], validatorPubkey[:]) {
@@ -526,13 +540,16 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	pkh := deposit.PublicKey.Hash()
 
 	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
-
+	pubKey, err := deposit.Data.PublicKey.Marshal()
+	if err != nil {
+		return err
+	}
 	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
-		PubKey:           deposit.Data.PublicKey.Marshal(),
+		PubKey:           pubKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
 		Status:           StatusStarting,
-		FirstActiveEpoch:(s.EpochIndex + 2),
+		FirstActiveEpoch: (s.EpochIndex + 2),
 		LastActiveEpoch:  0,
 	})
 
@@ -649,7 +666,10 @@ func (s *State) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.Publ
 
 // CheckBlockSignature checks the block signature.
 func (s *State) CheckBlockSignature(b *Block, p *params.ChainParams) error {
-	blockHash := b.Hash()
+	blockHash, err := b.Hash()
+	if err != nil {
+		return err
+	}
 	blockSig, err := bls.SignatureFromBytes(b.Signature)
 	if err != nil {
 		return err
@@ -692,8 +712,14 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	voteMerkleRoot := b.VotesMerkleRoot()
 	transactionMerkleRoot := b.TransactionMerkleRoot()
-	depositMerkleRoot := b.DepositMerkleRoot()
-	exitMerkleRoot := b.ExitMerkleRoot()
+	depositMerkleRoot, err := b.DepositMerkleRoot()
+	if err != nil {
+		return err
+	}
+	exitMerkleRoot, err := b.ExitMerkleRoot()
+	if err != nil {
+		return err
+	}
 	voteSlashingMerkleRoot := b.VoteSlashingRoot()
 	proposerSlashingMerkleRoot := b.ProposerSlashingsRoot()
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()

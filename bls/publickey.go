@@ -2,7 +2,6 @@ package bls
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -12,25 +11,7 @@ import (
 
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
-	p *bls.PublicKey
-}
-
-// Encode encodes to the given writer.
-func (p *PublicKey) Encode(w io.Writer) error {
-	pubBytes := p.Marshal()
-	_, err := w.Write(pubBytes)
-
-	return err
-}
-
-// Decode decodes from the given reader.
-func (p *PublicKey) Decode(r io.Reader) error {
-	pubBytes := make([]byte, 48)
-	if _, err := io.ReadFull(r, pubBytes); err != nil {
-		return err
-	}
-
-	return p.p.Deserialize(pubBytes)
+	p *bls.PublicKey `ssz:"size=48"`
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
@@ -53,8 +34,16 @@ func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 }
 
 // Marshal a public key into a LittleEndian byte slice.
-func (p *PublicKey) Marshal() []byte {
-	return p.p.Serialize()
+func (p *PublicKey) Marshal() ([]byte, error) {
+	return p.p.Serialize(), nil
+}
+
+func (p *PublicKey) Unmarshal(b []byte) (err error) {
+	p, err = PublicKeyFromBytes(b)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Equals checks if two public keys are equal.
@@ -77,7 +66,10 @@ func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
 // ToAddress converts the public key to a Bech32 address.
 func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
 	out := make([]byte, 20)
-	pkS := p.Marshal()
+	pkS, err := p.Marshal()
+	if err != nil {
+		return "", err
+	}
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return bech32.Encode(pubPrefix, out), nil

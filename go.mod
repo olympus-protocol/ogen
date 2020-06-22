@@ -8,7 +8,7 @@ require (
 	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
-	github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472 // indirect
+	github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
