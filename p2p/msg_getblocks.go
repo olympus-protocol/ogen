@@ -1,26 +1,22 @@
 package p2p
 
 import (
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 type MsgGetBlocks struct {
 	HashStop      chainhash.Hash
 	LocatorHashes []chainhash.Hash
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
 func (m *MsgGetBlocks) Marshal() ([]byte, error) {
-	return m.MarshalSSZ()
+	return m.Marshal()
 }
 
 // Unmarshal deserializes the struct from bytes
 func (m *MsgGetBlocks) Unmarshal(b []byte) error {
-	return m.UnmarshalSSZ(b)
+	return m.Unmarshal(b)
 }
 
 func (m *MsgGetBlocks) Command() string {

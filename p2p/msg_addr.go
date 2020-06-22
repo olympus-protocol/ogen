@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -10,19 +9,16 @@ const MaxAddrPerPeer = 2
 
 type MsgAddr struct {
 	AddrList []peer.AddrInfo
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
 func (m *MsgAddr) Marshal() ([]byte, error) {
-	return m.MarshalSSZ()
+	return m.Marshal()
 }
 
 // Unmarshal deserializes the struct from bytes
 func (m *MsgAddr) Unmarshal(b []byte) error {
-	return m.UnmarshalSSZ(b)
+	return m.Unmarshal(b)
 }
 
 func (m *MsgAddr) Command() string {

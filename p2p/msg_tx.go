@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -12,19 +11,16 @@ const (
 
 type MsgTx struct {
 	Txs []primitives.TransferSinglePayload
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
 func (m *MsgTx) Marshal() ([]byte, error) {
-	return m.MarshalSSZ()
+	return m.Marshal()
 }
 
 // Unmarshal deserializes the struct from bytes
 func (m *MsgTx) Unmarshal(b []byte) error {
-	return m.UnmarshalSSZ(b)
+	return m.Unmarshal(b)
 }
 
 func (m *MsgTx) Hash() (chainhash.Hash, error) {

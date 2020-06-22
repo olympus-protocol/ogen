@@ -1,7 +1,6 @@
 package bdb
 
 import (
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -13,9 +12,6 @@ type BlockNodeDisk struct {
 	Children  []chainhash.Hash
 	Hash      chainhash.Hash
 	Parent    chainhash.Hash
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes

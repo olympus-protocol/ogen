@@ -3,8 +3,6 @@ package p2p
 import (
 	"fmt"
 	"math"
-
-	ssz "github.com/ferranbt/fastssz"
 )
 
 const (
@@ -30,19 +28,16 @@ type messageHeader struct {
 	command  string
 	length   uint32
 	checksum [4]byte
-
-	ssz.Marshaler
-	ssz.Unmarshaler
 }
 
 // Marshal serializes the struct to bytes
 func (mh *messageHeader) Marshal() ([]byte, error) {
-	return mh.MarshalSSZ()
+	return mh.Marshal()
 }
 
 // Unmarshal deserializes the struct from bytes
 func (mh *messageHeader) Unmarshal(b []byte) error {
-	return mh.UnmarshalSSZ(b)
+	return mh.Unmarshal(b)
 }
 
 func makeEmptyMessage(command string) (Message, error) {
