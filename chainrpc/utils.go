@@ -111,7 +111,6 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 		Hash: block.Hash().String(),
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
-			Nonce:                      block.Header.Nonce,
 			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),
 			VoteMerkleRoot:             block.Header.VoteMerkleRoot.String(),
 			DepositMerkleRoot:          block.Header.DepositMerkleRoot.String(),
@@ -120,7 +119,7 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRoot.String(),
 			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRoot.String(),
 			PrevBlockHash:              block.Header.PrevBlockHash.String(),
-			Timestamp:                  block.Header.Timestamp.Unix(),
+			Timestamp:                  block.Header.Timestamp,
 			Slot:                       block.Header.Slot,
 			StateRoot:                  block.Header.StateRoot.String(),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),

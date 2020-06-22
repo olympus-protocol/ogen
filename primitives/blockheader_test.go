@@ -1,32 +1,46 @@
-package primitives
+package primitives_test
 
-// var (
-// 	merkleRootTest = chainhash.Hash([chainhash.HashSize]byte{
-// 		0xfc, 0x4b, 0x8c, 0xb9, 0x03, 0xae, 0xd5, 0x4e,
-// 		0x11, 0xe1, 0xae, 0x8a, 0x5b, 0x7a, 0xd0, 0x97,
-// 		0xad, 0xe3, 0x49, 0x88, 0xa8, 0x45, 0x00, 0xad,
-// 		0x2d, 0x80, 0xe4, 0xd1, 0xf5, 0xbc, 0xc9, 0x5d,
-// 	})
-// 	blockHeaderTest = BlockHeader{
-// 		Version:       1,
-// 		PrevBlockHash: chainhash.Hash{2},
-// 		MerkleRoot:    merkleRootTest,
-// 		Timestamp:     time.Unix(0x5A3BB72B, 0),
-// 	}
-// )
+import (
+	"testing"
 
-// func TestBlockHeader_Serialize(t *testing.T) {
-// 	buf := bytes.NewBuffer([]byte{})
-// 	err := blockHeaderTest.Serialize(buf)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	var blockHeader BlockHeader
-// 	err = blockHeader.Deserialize(buf)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if diff := deep.Equal(blockHeader, blockHeaderTest); diff != nil {
-// 		t.Fatal(diff)
-// 	}
-// }
+	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-ssz"
+)
+
+var blockHeader primitives.BlockHeader
+
+func init() {
+	blockHeader = primitives.BlockHeader{
+		Version:                    1,
+		TxMerkleRoot:               chainhash.Hash{},
+		VoteMerkleRoot:             chainhash.Hash{},
+		DepositMerkleRoot:          chainhash.Hash{},
+		ExitMerkleRoot:             chainhash.Hash{},
+		VoteSlashingMerkleRoot:     chainhash.Hash{},
+		RANDAOSlashingMerkleRoot:   chainhash.Hash{},
+		ProposerSlashingMerkleRoot: chainhash.Hash{},
+		GovernanceVotesMerkleRoot:  chainhash.Hash{},
+		PrevBlockHash:              chainhash.Hash{},
+		Timestamp:                  1592795022,
+		Slot:                       0,
+		StateRoot:                  chainhash.Hash{},
+		FeeAddress:                 [20]byte{},
+	}
+}
+
+func Test_Serialize(t *testing.T) {
+	ser, err := blockHeader.Marshal()
+	if err != nil {
+		t.Error(err)
+	}
+	header := new(primitives.BlockHeader)
+	err = header.Unmarshal(ser)
+	if err != nil {
+		t.Error(err)
+	}
+	equal := ssz.DeepEqual(blockHeader, header)
+	if !equal {
+		t.Error("masrhal/unmashal failed for blockheader")
+	}
+}

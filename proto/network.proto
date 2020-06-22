@@ -48,8 +48,8 @@ service Network {
 }
 
 message NetworkInfo {
-    int32 peers = 1;
-    int32 protocol = 2;
+    uint32 peers = 1;
+    uint32 protocol = 2;
     string version = 3;
     
 }

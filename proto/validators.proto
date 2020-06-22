@@ -11,7 +11,7 @@ service Validators {
         Method: GetValidatorList 
         Input: message Empty
         Response: message ValidatorsRegistry
-        Description: Returns the raw block from a block hash.
+        Description: Returns the current tip validator registry.
     */
 
     rpc GetValidatorsList(Empty) returns (ValidatorsRegistry) {

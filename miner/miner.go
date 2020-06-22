@@ -230,9 +230,8 @@ func (m *Miner) ProposeBlocks() {
 				block := primitives.Block{
 					Header: primitives.BlockHeader{
 						Version:       0,
-						Nonce:         0,
 						PrevBlockHash: tipHash,
-						Timestamp:     time.Now(),
+						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
 					},
 					Votes:             votes,

@@ -12,11 +12,11 @@ import (
 // StateValidatorsInfo returns the state validators information.
 type StateValidatorsInfo struct {
 	Validators  []Validator
-	Active      int64
-	PendingExit int64
-	PenaltyExit int64
-	Exited      int64
-	Starting    int64
+	Active      uint64
+	PendingExit uint64
+	PenaltyExit uint64
+	Exited      uint64
+	Starting    uint64
 }
 
 // LastBlockHashesSize is the size of the last block hashes.
@@ -122,7 +122,7 @@ type State struct {
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
-func (s *State) GetValidatorIndicesActiveAt(epoch int64) []uint32 {
+func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint32 {
 	vals := make([]uint32, 0, len(s.ValidatorRegistry))
 	for i, v := range s.ValidatorRegistry {
 		if v.IsActiveAtEpoch(epoch) {
@@ -262,11 +262,11 @@ func (s *State) Serialize(w io.Writer) error {
 func (s *State) GetValidators() StateValidatorsInfo {
 	validators := StateValidatorsInfo{
 		Validators:  s.ValidatorRegistry,
-		Active:      int64(0),
-		PendingExit: int64(0),
-		PenaltyExit: int64(0),
-		Exited:      int64(0),
-		Starting:    int64(0),
+		Active:      uint64(0),
+		PendingExit: uint64(0),
+		PenaltyExit: uint64(0),
+		Exited:      uint64(0),
+		Starting:    uint64(0),
 	}
 	for _, v := range s.ValidatorRegistry {
 		switch v.Status {
@@ -291,11 +291,11 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 	copy(account[:], acc)
 	validators := StateValidatorsInfo{
 		Validators:  []Validator{},
-		Active:      int64(0),
-		PendingExit: int64(0),
-		PenaltyExit: int64(0),
-		Exited:      int64(0),
-		Starting:    int64(0),
+		Active:      uint64(0),
+		PendingExit: uint64(0),
+		PenaltyExit: uint64(0),
+		Exited:      uint64(0),
+		Starting:    uint64(0),
 	}
 	for _, v := range s.ValidatorRegistry {
 		if v.PayeeAddress == account {

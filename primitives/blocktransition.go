@@ -471,7 +471,7 @@ func (s *State) ApplyExit(exit *Exit) error {
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
 			s.ValidatorRegistry[i].Status = StatusActivePendingExit
-			s.ValidatorRegistry[i].LastActiveEpoch = int64(s.EpochIndex) + 2
+			s.ValidatorRegistry[i].LastActiveEpoch = s.EpochIndex + 2
 		}
 	}
 
@@ -532,8 +532,8 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 		PubKey:           deposit.Data.PublicKey.Marshal(),
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
 		Status:           StatusStarting,
-		FirstActiveEpoch: int64(s.EpochIndex) + 2,
-		LastActiveEpoch:  -1,
+		FirstActiveEpoch:(s.EpochIndex + 2),
+		LastActiveEpoch:  0,
 	})
 
 	return nil

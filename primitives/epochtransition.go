@@ -161,7 +161,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 		index := uint32(idx)
 
 		// start validators if needed
-		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= int64(s.EpochIndex) {
+		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= s.EpochIndex {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
@@ -179,7 +179,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 	for idx, validator := range s.ValidatorRegistry {
 		index := uint32(idx)
 
-		if validator.Status == StatusActivePendingExit && validator.LastActiveEpoch <= int64(s.EpochIndex) {
+		if validator.Status == StatusActivePendingExit && validator.LastActiveEpoch <= s.EpochIndex {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
@@ -526,7 +526,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	penalizeValidator := func(index uint32, penalty uint64, why ReceiptType) {
-		if s.ValidatorRegistry[index].FirstActiveEpoch+5 >= int64(s.EpochIndex) {
+		if s.ValidatorRegistry[index].FirstActiveEpoch+5 >= s.EpochIndex {
 			return
 		}
 		s.ValidatorRegistry[index].Balance -= penalty
@@ -646,7 +646,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	s.ProposerQueue = s.NextProposerQueue
-	activeValidators := s.GetValidatorIndicesActiveAt(int64(s.EpochIndex + 1))
+	activeValidators := s.GetValidatorIndicesActiveAt(s.EpochIndex + 1)
 	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, activeValidators, p)
 
 	s.PreviousEpochVoteAssignments = s.CurrentEpochVoteAssignments

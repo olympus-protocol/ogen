@@ -52,8 +52,8 @@ type Validator struct {
 	PubKey           []byte
 	PayeeAddress     [20]byte
 	Status           ValidatorStatus
-	FirstActiveEpoch int64
-	LastActiveEpoch  int64
+	FirstActiveEpoch uint64
+	LastActiveEpoch  uint64
 }
 
 // IsActive checks if a validator is currently active.
@@ -62,10 +62,10 @@ func (wr *Validator) IsActive() bool {
 }
 
 // IsActiveAtEpoch checks if a validator is active at a slot.
-func (wr *Validator) IsActiveAtEpoch(epoch int64) bool {
+func (wr *Validator) IsActiveAtEpoch(epoch uint64) bool {
 	return wr.IsActive() &&
-		(wr.FirstActiveEpoch == -1 || wr.FirstActiveEpoch <= epoch) &&
-		(wr.LastActiveEpoch == -1 || epoch <= wr.LastActiveEpoch)
+		(wr.FirstActiveEpoch == 0 || wr.FirstActiveEpoch <= epoch) &&
+		(wr.LastActiveEpoch == 0 || epoch <= wr.LastActiveEpoch)
 }
 
 // Serialize serializes a validator row to the provided writer.

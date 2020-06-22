@@ -37,8 +37,8 @@ message Account {
 
 message Tx {
     string hash = 1;
-    int32 type = 2;
-    int32 version = 3;
+    uint32 type = 2;
+    uint32 version = 3;
     TransferSingle transfer_single_payload = 4;
     TransferMulti transfer_multi_payload = 5;
 }
@@ -61,20 +61,19 @@ message TransferMulti {
 }
 
 message BlockHeader {
-    int32   version = 1;
-    int32   nonce = 2;
-    string  tx_merkle_root = 3;
-    string  vote_merkle_root = 4;
-    string  deposit_merkle_root = 5;
-    string  exit_merkle_root = 6;
-    string  vote_slashing_merkle_root = 7;
-    string  randao_slashing_merkle_root = 8;
-    string  proposer_slashing_merkle_root = 9;
-    string  prev_block_hash = 10;
-    int64   timestamp = 11;
-    uint64  slot = 12;
-    string  state_root = 13;
-    string  fee_address = 14;
+    uint32   version = 1;
+    string  tx_merkle_root = 2;
+    string  vote_merkle_root = 3;
+    string  deposit_merkle_root = 4;
+    string  exit_merkle_root = 5;
+    string  vote_slashing_merkle_root = 6;
+    string  randao_slashing_merkle_root = 7;
+    string  proposer_slashing_merkle_root = 8;
+    string  prev_block_hash = 9;
+    uint64  timestamp = 10;
+    uint64  slot = 11;
+    string  state_root = 12;
+    string  fee_address = 13;
 }
 
 message Block {
@@ -96,14 +95,14 @@ message ValidatorRegistry {
     string public_key = 2;
     string payee_address = 3;
     string status = 4;
-    int64 first_active_epoch = 5;
-    int64 last_active_epoch = 6;
+    uint64 first_active_epoch = 5;
+    uint64 last_active_epoch = 6;
 }
 
 message ValidatorsInfo {
-    int64 active = 1;
-    int64 pending_exit = 2;
-    int64 penalty_exit = 3;
-    int64 exited = 4;
-    int64 starting = 5;
+    uint64 active = 1;
+    uint64 pending_exit = 2;
+    uint64 penalty_exit = 3;
+    uint64 exited = 4;
+    uint64 starting = 5;
 }

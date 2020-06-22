@@ -22,8 +22,8 @@ service Chain {
 
     /** 
         Method: GetRawBlock 
-        Input: message BlockHash
-        Response: message GetBlockRawResponse
+        Input: message Hash
+        Response: message Block
         Description: Returns the raw block from a block hash.
     */
 
@@ -49,7 +49,7 @@ service Chain {
     /** 
         Method: GetBlockHash 
         Input: message Number
-        Response: message GetBlockHashResponse
+        Response: message Hash
         Description: Returns the hash string of the block at specified height
     */
 
@@ -74,9 +74,9 @@ service Chain {
 
     /** 
         Method: GetTransaction 
-        Input: message Account
-        Response: message AccountInfo
-        Description: Returns the current account information
+        Input: message Hash
+        Response: message Tx
+        Description: Returns the current transaction information
     */
 
     rpc GetTransaction(Hash) returns (Tx) {
@@ -113,8 +113,8 @@ service Chain {
 
      /** 
         Method: SubscribeTransactions 
-        Input: message Account
-        Response: message SubscribeResponse
+        Input: message KeyPairs
+        Response: message RawData
         Description: Return a stream when an account is found on a transaction
     */
 
@@ -129,7 +129,7 @@ service Chain {
         Method: SubscribeValidatorTransactions 
         Input: message SubscribeValidatorRequest
         Response: message SubscribeResponse
-        Description: Return a stream when validator pubkey is modified on the ValidatorRegistry
+        Description: Return a stream when validator public key is modified on the ValidatorRegistry
     */
 
     rpc SubscribeValidatorTransactions(KeyPairs) returns (stream RawData) {

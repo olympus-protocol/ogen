@@ -36,7 +36,7 @@ func (txl *TxLocator) Decode(r io.Reader) error {
 }
 
 // TxType represents a type of transaction.
-type TxType = int32
+type TxType = uint32
 
 const (
 	// TxTransferSingle represents a transaction sending money from a single
@@ -303,7 +303,7 @@ type TxPayload interface {
 
 // Tx represents a transaction on the blockchain.
 type Tx struct {
-	TxVersion int32
+	TxVersion uint32
 	TxType    TxType
 	Payload   TxPayload
 }

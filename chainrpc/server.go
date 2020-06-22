@@ -63,7 +63,7 @@ func (s *RPCServer) registerServicesProxy(ctx context.Context) {
 // Stop stops gRPC listener
 func (s *RPCServer) Stop() {
 	s.log.Info("stoping gRPC Server")
-	s.rpc.GracefulStop()
+	s.rpc.Stop()
 }
 
 // Start starts gRPC listener
