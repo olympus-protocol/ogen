@@ -27,11 +27,11 @@ func (c *ChainView) SetTipSlot(slot uint64) {
 }
 
 // GetHashBySlot gets a hash of a block in a certain slot.
-func (c *ChainView) GetHashBySlot(slot uint64) (chainhash.Hash, error) {
+func (c *ChainView) GetHashBySlot(slot uint64) ([]byte, error) {
 	ancestor := c.tip.GetAncestorAtSlot(slot)
 	if ancestor == nil {
 		if slot > c.effectiveTipSlot {
-			return chainhash.Hash{}, errors.New("could not get block past tip")
+			return nil, errors.New("could not get block past tip")
 		}
 		ancestor = c.tip
 	}
@@ -39,12 +39,12 @@ func (c *ChainView) GetHashBySlot(slot uint64) (chainhash.Hash, error) {
 }
 
 // Tip gets the tip of the blockchain.
-func (c *ChainView) Tip() (chainhash.Hash, error) {
+func (c *ChainView) Tip() ([]byte, error) {
 	return c.tip.Hash, nil
 }
 
 // GetLastStateRoot gets the state root of the tip.
-func (c *ChainView) GetLastStateRoot() (chainhash.Hash, error) {
+func (c *ChainView) GetLastStateRoot() ([]byte, error) {
 	return c.tip.StateRoot, nil
 }
 

@@ -9,16 +9,16 @@ import (
 
 func TestCorrectnessMultisig(t *testing.T) {
 	secretKeys := make([]*bls.SecretKey, 20)
-	publicKeys := make([]*bls.PublicKey, 20)
+	publicKeys := make([][]byte, 20)
 
 	for i := range secretKeys {
 		secretKeys[i] = bls.RandKey()
-		publicKeys[i] = secretKeys[i].PublicKey()
+		publicKeys[i] = secretKeys[i].PublicKey().Marshal()
 	}
 
 	// create 10-of-20 multipub
 	multiPub := bls.NewMultipub(publicKeys, 10)
-	multisig := bls.NewMultisig(*multiPub)
+	multisig := bls.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 
@@ -57,16 +57,16 @@ func TestCorrectnessMultisig(t *testing.T) {
 
 func TestMultisigDecodeEncode(t *testing.T) {
 	secretKeys := make([]*bls.SecretKey, 20)
-	publicKeys := make([]*bls.PublicKey, 20)
+	publicKeys := make([][]byte, 20)
 
 	for i := range secretKeys {
 		secretKeys[i] = bls.RandKey()
-		publicKeys[i] = secretKeys[i].PublicKey()
+		publicKeys[i] = secretKeys[i].PublicKey().Marshal()
 	}
 
 	// create 10-of-20 multipub
 	multiPub := bls.NewMultipub(publicKeys, 10)
-	multisig := bls.NewMultisig(*multiPub)
+	multisig := bls.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 
@@ -76,10 +76,12 @@ func TestMultisigDecodeEncode(t *testing.T) {
 		}
 	}
 
-	multiBytes := multisig.Marshal()
-
+	multiBytes, err := multisig.MarshalSSZ()
+	if err != nil {
+		t.Fatal(err)
+	}
 	newMulti := new(bls.Multisig)
-	if err := newMulti.Unmarshal(multiBytes); err != nil {
+	if err := newMulti.UnmarshalSSZ(multiBytes); err != nil {
 		t.Fatal(err)
 	}
 

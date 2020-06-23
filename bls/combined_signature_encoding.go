@@ -28,6 +28,16 @@ func (c *CombinedSignature) MarshalSSZ() ([]byte, error) {
 func (c *CombinedSignature) MarshalSSZTo(dst []byte) ([]byte, error) {
 	var err error
 
+	// Field (0) 'Sig'
+	if dst, err = ssz.MarshalFixedBytes(dst, c.Sig, 96); err != nil {
+		return nil, errMarshalFixedBytes
+	}
+
+	// Field (1) 'Pub'
+	if dst, err = ssz.MarshalFixedBytes(dst, c.Pub, 48); err != nil {
+		return nil, errMarshalFixedBytes
+	}
+
 	return dst, err
 }
 
@@ -35,15 +45,21 @@ func (c *CombinedSignature) MarshalSSZTo(dst []byte) ([]byte, error) {
 func (c *CombinedSignature) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 0 {
+	if size != 144 {
 		return errSize
 	}
+
+	// Field (0) 'Sig'
+	c.Sig = append(c.Sig, buf[0:96]...)
+
+	// Field (1) 'Pub'
+	c.Pub = append(c.Pub, buf[96:144]...)
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the CombinedSignature object
 func (c *CombinedSignature) SizeSSZ() (size int) {
-	size = 0
+	size = 144
 	return
 }

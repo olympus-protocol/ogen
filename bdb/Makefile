@@ -2,4 +2,4 @@ clean:
 	rm -r *_encoding.go
 
 build:
-	sszgen -path ./
+	sszgen -path ./blocknode.go

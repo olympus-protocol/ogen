@@ -76,8 +76,8 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  *Multipub
-	Signatures [][]byte          `ssz-size:"?,32" ssz-max:"32"`
-	KeysSigned bitfield.Bitfield `ssz-max:"32"`
+	Signatures [][]byte           `ssz-size:"?,32" ssz-max:"32"`
+	KeysSigned *bitfield.Bitfield `ssz-max:"32"`
 }
 
 // NewMultisig creates a new blank multisig.
@@ -161,7 +161,7 @@ func (m *Multisig) Copy() *Multisig {
 	pub := m.PublicKey.Copy()
 	newMultisig.PublicKey = pub
 
-	newMultisig.KeysSigned = m.KeysSigned.Copy()
+	newMultisig.KeysSigned = m.KeysSigned
 
 	return newMultisig
 }

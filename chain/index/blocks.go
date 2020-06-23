@@ -11,10 +11,10 @@ import (
 
 // BlockRow represents a single row in the block index.
 type BlockRow struct {
-	StateRoot chainhash.Hash
+	StateRoot []byte
 	Height    uint64
 	Slot      uint64
-	Hash      chainhash.Hash
+	Hash      []byte
 	Parent    *BlockRow
 
 	children     []*BlockRow
@@ -145,15 +145,12 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	if !found {
 		return nil, fmt.Errorf("could not add block to index: could not find parent with hash %s", block.Header.PrevBlockHash)
 	}
-	hash, err := block.Header.Hash()
-	if err != nil {
-		return nil, err
-	}
+	hash := block.Header.Hash()
 	row := &BlockRow{
 		StateRoot: block.Header.StateRoot,
 		Height:    prev.Height + 1,
 		Parent:    prev,
-		Hash:      hash,
+		Hash:      hash.CloneBytes(),
 		Slot:      block.Header.Slot,
 		children:  make([]*BlockRow, 0),
 	}
@@ -172,16 +169,13 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 
 // InitBlocksIndex creates a new block index.
 func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
-	headerHash, err := genesisBlock.Header.Hash()
-	if err != nil {
-		return nil, err
-	}
+	headerHash := genesisBlock.Header.Hash()
 	return &BlockIndex{
 		index: map[chainhash.Hash]*BlockRow{
 			headerHash: {
 				Height: 0,
 				Parent: nil,
-				Hash:   headerHash,
+				Hash:   headerHash.CloneBytes(),
 			},
 		},
 	}, nil
@@ -191,12 +185,12 @@ func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 // to a serializable version.
 func (br *BlockRow) ToBlockNodeDisk() *bdb.BlockNodeDisk {
 	childrenNodes := br.Children()
-	children := make([]chainhash.Hash, len(childrenNodes))
+	children := make([][]byte, len(childrenNodes))
 	for i := range childrenNodes {
 		children[i] = childrenNodes[i].Hash
 	}
 
-	parent := chainhash.Hash{}
+	parent := []byte{}
 	if br.Parent != nil {
 		parent = br.Parent.Hash
 	}

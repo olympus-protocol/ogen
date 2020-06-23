@@ -1,4 +1,4 @@
-package db
+package bdb
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {

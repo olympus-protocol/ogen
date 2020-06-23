@@ -108,7 +108,7 @@ func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Bl
 	}
 
 	block := new(primitives.Block)
-	err = block.Unmarshal(blockBytes)
+	err = block.UnmarshalSSZ(blockBytes)
 	return block, err
 }
 
@@ -123,11 +123,8 @@ func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, err
 
 // AddRawBlock adds a raw block to the database.
 func (but *BlockDBUpdateTransaction) AddRawBlock(block *primitives.Block) error {
-	blockHash, err := block.Hash()
-	if err != nil {
-		return err
-	}
-	blockBytes, err := block.Marshal()
+	blockHash := block.Hash()
+	blockBytes, err := block.MarshalSSZ()
 	if err != nil {
 		return err
 	}
@@ -186,7 +183,7 @@ var finalizedStateKey = []byte("finalized-state")
 
 // SetFinalizedState sets the finalized state of the blockchain.
 func (but *BlockDBUpdateTransaction) SetFinalizedState(s *primitives.State) error {
-	ser, err := s.Marshal()
+	ser, err := s.MarshalSSZ()
 	if err != nil {
 		return err
 	}
@@ -200,7 +197,7 @@ func (brt *BlockDBReadTransaction) GetFinalizedState() (*primitives.State, error
 		return nil, err
 	}
 	state := new(primitives.State)
-	err = state.Unmarshal(stateBytes)
+	err = state.UnmarshalSSZ(stateBytes)
 	return state, err
 }
 
@@ -208,7 +205,7 @@ var justifiedStateKey = []byte("justified-state")
 
 // SetJustifiedState sets the justified state of the blockchain.
 func (but *BlockDBUpdateTransaction) SetJustifiedState(s *primitives.State) error {
-	ser, err := s.Marshal()
+	ser, err := s.MarshalSSZ()
 	if err != nil {
 		return err
 	}
@@ -223,7 +220,7 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (*primitives.State, error
 		return nil, err
 	}
 	state := new(primitives.State)
-	err = state.Unmarshal(stateBytes)
+	err = state.UnmarshalSSZ(stateBytes)
 	return state, err
 }
 
@@ -232,7 +229,7 @@ var blockRowPrefix = []byte("block-row")
 // SetBlockRow sets a block row on disk to store the block index.
 func (but *BlockDBUpdateTransaction) SetBlockRow(disk *BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
-	diskSer, err := disk.Marshal()
+	diskSer, err := disk.MarshalSSZ()
 	if err != nil {
 		return err
 	}
@@ -248,7 +245,7 @@ func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*BlockNodeDisk
 	}
 
 	d := new(BlockNodeDisk)
-	err = d.Unmarshal(diskSer)
+	err = d.UnmarshalSSZ(diskSer)
 	return d, err
 }
 
@@ -310,7 +307,7 @@ func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) (*primitives.Acco
 		return nil, err
 	}
 	accs := new(primitives.AccountTxs)
-	err = accs.Unmarshal(accTxsBs)
+	err = accs.UnmarshalSSZ(accTxsBs)
 	if err != nil {
 		return nil, err
 	}
@@ -326,13 +323,13 @@ func (but *BlockDBUpdateTransaction) SetAccountTx(acc [20]byte, hash chainhash.H
 		return err
 	}
 	accs := new(primitives.AccountTxs)
-	err = accs.Unmarshal(accTxsBs)
+	err = accs.UnmarshalSSZ(accTxsBs)
 	if err != nil {
 		return err
 	}
-	accs.TxsAmount = +1
-	accs.Txs = append(accs.Txs, hash)
-	ser, err := accs.Marshal()
+	accs.Amount = +1
+	accs.Txs = append(accs.Txs, hash.CloneBytes())
+	ser, err := accs.MarshalSSZ()
 	if err != nil {
 		return err
 	}
@@ -353,7 +350,7 @@ func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLoc
 	if err != nil {
 		return nil, err
 	}
-	err = locator.Unmarshal(lbs)
+	err = locator.UnmarshalSSZ(lbs)
 	if err != nil {
 		return nil, err
 	}
@@ -362,8 +359,8 @@ func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLoc
 
 // SetTx stores a new locator for the specified hash.
 func (but *BlockDBUpdateTransaction) SetTx(locator primitives.TxLocator) error {
-	key := append(txLocatorPrefix, locator.TxHash[:]...)
-	ser, err := locator.Marshal()
+	key := append(txLocatorPrefix, locator.Hash[:]...)
+	ser, err := locator.MarshalSSZ()
 	if err != nil {
 		return err
 	}

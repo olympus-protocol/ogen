@@ -177,7 +177,7 @@ func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
 
 	sp.log.Tracef("received blocks msg from peer %v", id)
 	for _, b := range msg.Blocks {
-		if err := sp.handleBlock(id, &b); err != nil {
+		if err := sp.handleBlock(id, b); err != nil {
 			return err
 		}
 	}
@@ -227,7 +227,7 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 
 		blocksToSend = append(blocksToSend, *block)
 
-		if firstCommon.Hash.IsEqual(&msg.HashStop) {
+		if firstCommon.Hash.IsEqual(msg.HashStop) {
 			break
 		}
 		var ok bool

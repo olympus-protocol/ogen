@@ -16,10 +16,10 @@ func (s *State) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.H
 
 // BlockView is the view of the blockchain at a certain tip.
 type BlockView interface {
-	GetHashBySlot(slot uint64) (chainhash.Hash, error)
+	GetHashBySlot(slot uint64) ([]byte, error)
 	Tip() (chainhash.Hash, error)
 	SetTipSlot(slot uint64)
-	GetLastStateRoot() (chainhash.Hash, error)
+	GetLastStateRoot() ([]byte, error)
 }
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested

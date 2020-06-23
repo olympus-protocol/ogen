@@ -50,10 +50,10 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	depositData := &primitives.DepositData{
 		PublicKey:         validatorPub.Marshal(),
 		ProofOfPossession: validatorProofOfPossession.Marshal(),
-		WithdrawalAddress: addr,
+		WithdrawalAddress: addr[:],
 	}
 
-	depositDataBytes, err := depositData.Marshal()
+	depositDataBytes, err := depositData.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	deposit := &primitives.Deposit{
 		PublicKey: pub.Marshal(),
 		Signature: depositSig.Marshal(),
-		Data:      *depositData,
+		Data:      depositData,
 	}
 
 	currentState := w.chain.State().TipState()
@@ -177,7 +177,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 }
 
 func (w *Wallet) broadcastTx(payload *primitives.Tx) {
-	ser, err := payload.Marshal()
+	ser, err := payload.MarshalSSZ()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
