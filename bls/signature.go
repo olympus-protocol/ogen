@@ -104,6 +104,21 @@ func NewAggregateSignature() *Signature {
 }
 
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.
+func AggregateSignaturesBytes(sigs [][]byte) *Signature {
+	if len(sigs) == 0 {
+		return nil
+	}
+	// Copy signature
+	sig1, _ := SignatureFromBytes(sigs[0])
+	signature := sig1.s
+	for i := 0; i < len(sigs); i++ {
+		sig, _ := SignatureFromBytes(sigs[i])
+		signature.Add(sig.s)
+	}
+	return &Signature{s: signature}
+}
+
+// AggregateSignatures converts a list of signatures into a single, aggregated sig.
 func AggregateSignatures(sigs []*Signature) *Signature {
 	if len(sigs) == 0 {
 		return nil

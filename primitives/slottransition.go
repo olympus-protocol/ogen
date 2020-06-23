@@ -11,7 +11,7 @@ func (s *State) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.H
 	// increase the slot number
 	s.Slot++
 
-	s.LatestBlockHashes[(s.Slot-1)%p.LatestBlockRootsLength] = previousBlockRoot
+	s.LatestBlockHashes[(s.Slot-1)%p.LatestBlockRootsLength] = previousBlockRoot.CloneBytes()
 }
 
 // BlockView is the view of the blockchain at a certain tip.

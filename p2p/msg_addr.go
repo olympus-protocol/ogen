@@ -1,4 +1,4 @@
-package msg
+package p2p
 
 const MaxAddrPerMsg = 32
 const MaxAddrPerPeer = 2

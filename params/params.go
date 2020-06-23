@@ -41,7 +41,7 @@ type ChainParams struct {
 	MinVotingBalance             uint64
 	CommunityOverrideQuotient    uint64
 	VotingPeriodSlots            uint64
-	InitialManagers              [][20]byte
+	InitialManagers              [][]byte
 
 	ChainFileHash chainhash.Hash
 	ChainFileURL  string
@@ -86,7 +86,7 @@ var Mainnet = ChainParams{
 	MinVotingBalance:          100,
 	CommunityOverrideQuotient: 3,
 	VotingPeriodSlots:         20160, // minutes in a week
-	InitialManagers: [][20]byte{
+	InitialManagers: [][]byte{
 		{},
 		{},
 		{},
@@ -138,7 +138,7 @@ var TestNet = ChainParams{
 	MinVotingBalance:          100,
 	CommunityOverrideQuotient: 3,
 	VotingPeriodSlots:         20160, // minutes in a week
-	InitialManagers: [][20]byte{
+	InitialManagers: [][]byte{
 		{252, 94, 117, 132, 63, 93, 202, 26, 36, 23, 195, 26, 169, 95, 74, 147, 72, 184, 66, 20},        // tlpub1l308tpplth9p5fqhcvd2jh62jdytsss54nt6d4
 		{192, 13, 158, 167, 115, 190, 56, 51, 43, 11, 156, 43, 27, 145, 143, 61, 40, 209, 114, 238},     // tlpub1cqxeafmnhcurx2ctns43hyv0855dzuhwnllx6w
 		{88, 192, 115, 125, 142, 126, 244, 13, 253, 225, 139, 36, 184, 34, 71, 31, 69, 205, 216, 125},   // tlpub1trq8xlvw0m6qml0p3vjtsgj8razumkrawvwzza

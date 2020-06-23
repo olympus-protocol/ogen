@@ -145,8 +145,8 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	nonce := w.info.lastNonce
 	w.lastNonceLock.Unlock()
 
-	payload := &primitives.TransferSinglePayload{
-		To:            toPkh,
+	payload := &primitives.Transfer{
+		To:            toPkh[:],
 		FromPublicKey: pub.Marshal(),
 		Amount:        amount,
 		Nonce:         nonce,
@@ -159,23 +159,20 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	payload.Signature = sig.Marshal()
 
 	tx := &primitives.Tx{
-		Type:    primitives.TxTransferSingle,
+		Type:    1,
 		Version: 0,
 		Payload: payload,
 	}
 
 	currentState := w.chain.State().TipState()
 
-	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {
+	if err := w.mempool.Add(*tx, currentState.CoinsState); err != nil {
 		return nil, err
 	}
 
 	w.broadcastTx(tx)
 
-	txHash, err := tx.Hash()
-	if err != nil {
-		return nil, err
-	}
+	txHash := tx.Hash()
 	return &txHash, nil
 }
 
@@ -191,7 +188,7 @@ func (w *Wallet) broadcastTx(payload *primitives.Tx) {
 }
 
 func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	db, err := deposit.Marshal()
+	db, err := deposit.MarshalSSZ()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
@@ -202,7 +199,7 @@ func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
 }
 
 func (w *Wallet) broadcastExit(exit *primitives.Exit) {
-	eb, err := exit.Marshal()
+	eb, err := exit.MarshalSSZ()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return

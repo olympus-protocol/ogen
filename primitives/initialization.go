@@ -27,7 +27,7 @@ type InitializationParameters struct {
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
 func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (*State, error) {
-	initialValidators := make([]Validator, len(ip.InitialValidators))
+	initialValidators := make([]*Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
 		_, pkh, err := bech32.Decode(v.PayeeAddress)
@@ -45,10 +45,10 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		if err != nil {
 			return nil, fmt.Errorf("unable to decode pubkey to bytes")
 		}
-		initialValidators[i] = Validator{
+		initialValidators[i] = &Validator{
 			Balance:          p.DepositAmount * p.UnitsPerCoin,
 			PubKey:           pubKeyBytes,
-			PayeeAddress:     pkhBytes,
+			PayeeAddress:     pkhBytes[:],
 			Status:           StatusActive,
 			FirstActiveEpoch: 0,
 			LastActiveEpoch:  0,
@@ -64,41 +64,41 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	copy(premineAddrArr[:], premineAddr)
 
 	s := &State{
-		CoinsState: CoinsState{
-			Balances: map[[20]byte]uint64{
-				premineAddrArr: 400 * 1000000, // 400k coins
-			},
-			Nonces: make(map[[20]byte]uint64),
-		},
+		//CoinsState: CoinsState{
+		//	Balances: map[[20]byte]uint64{
+		//		premineAddrArr: 400 * 1000000, // 400k coins
+		//	},
+		//	Nonces: make(map[[20]byte]uint64),
+		//},
 		ValidatorRegistry:             initialValidators,
 		LatestValidatorRegistryChange: 0,
-		RANDAO:                        chainhash.Hash{},
-		NextRANDAO:                    chainhash.Hash{},
+		RANDAO:                        []byte{},
+		NextRANDAO:                    []byte{},
 		Slot:                          0,
 		EpochIndex:                    0,
 		JustificationBitfield:         0,
 		JustifiedEpoch:                0,
 		FinalizedEpoch:                0,
-		LatestBlockHashes:             make([]chainhash.Hash, p.LatestBlockRootsLength),
-		JustifiedEpochHash:            genesisHash,
-		CurrentEpochVotes:             make([]AcceptedVoteInfo, 0),
+		LatestBlockHashes:             make([][]byte, p.LatestBlockRootsLength),
+		JustifiedEpochHash:            genesisHash.CloneBytes(),
+		CurrentEpochVotes:             make([]*AcceptedVoteInfo, 0),
 		PreviousJustifiedEpoch:        0,
-		PreviousJustifiedEpochHash:    genesisHash,
-		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
+		PreviousJustifiedEpochHash:    genesisHash.CloneBytes(),
+		PreviousEpochVotes:            make([]*AcceptedVoteInfo, 0),
 		CurrentManagers:               p.InitialManagers,
-		ReplaceVotes:                  make(map[[20]byte]chainhash.Hash),
-		CommunityVotes:                make(map[chainhash.Hash]CommunityVoteData),
-		VoteEpoch:                     0,
-		VoteEpochStartSlot:            0,
-		VotingState:                   GovernanceStateActive,
-		LastPaidSlot:                  0,
+		//ReplaceVotes:                  make(map[[20]byte]chainhash.Hash),
+		//CommunityVotes:                make(map[chainhash.Hash]CommunityVoteData),
+		VoteEpoch:          0,
+		VoteEpochStartSlot: 0,
+		VotingState:        GovernanceStateActive,
+		LastPaidSlot:       0,
 	}
 
 	activeValidators := s.GetValidatorIndicesActiveAt(0)
-	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
-	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
-	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+	s.ProposerQueue = DetermineNextProposers([]byte{}, activeValidators, p)
+	s.NextProposerQueue = DetermineNextProposers([]byte{}, activeValidators, p)
+	s.CurrentEpochVoteAssignments = Shuffle([]byte{}, activeValidators)
+	s.PreviousEpochVoteAssignments = Shuffle([]byte{}, activeValidators)
 	s.ManagerReplacement = bitfield.NewBitfield(uint(len(s.CurrentManagers)))
 
 	return s, nil

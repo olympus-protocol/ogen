@@ -1,4 +1,6 @@
-package state
+package primitives
+
+import "github.com/olympus-protocol/ogen/utils/chainhash"
 
 type BlockHeader struct {
 	Version                    uint32
@@ -15,4 +17,11 @@ type BlockHeader struct {
 	Slot                       uint64
 	StateRoot                  []byte `ssz-size:"32"`
 	FeeAddress                 []byte `ssz-size:"20"`
+}
+
+// Hash calculates the hash of the block header.
+func (bh *BlockHeader) Hash() chainhash.Hash {
+	// TODO handle error
+	b, _ := bh.MarshalSSZ()
+	return chainhash.DoubleHashH(b)
 }

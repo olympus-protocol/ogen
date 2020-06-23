@@ -3,6 +3,8 @@ package p2p
 import (
 	"fmt"
 	"math"
+
+	ssz "github.com/ferranbt/fastssz"
 )
 
 const (
@@ -18,16 +20,15 @@ const MessageHeaderSize = 24
 const MaxMessagePayload = 1024 * 1024 * 32 // 32 MB
 
 type Message interface {
-	Marshal() ([]byte, error)
-	Unmarshal(d []byte) error
-	Command() string
+	ssz.Marshaler
+	ssz.Unmarshaler
 }
 
 type messageHeader struct {
-	magic    NetMagic
+	magic    []byte
 	command  string
 	length   uint32
-	checksum [4]byte
+	checksum []byte
 }
 
 // Marshal serializes the struct to bytes

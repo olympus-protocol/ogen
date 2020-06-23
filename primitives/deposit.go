@@ -1,4 +1,6 @@
-package state
+package primitives
+
+import "github.com/olympus-protocol/ogen/utils/chainhash"
 
 // DepositData is the part of the deposit that is signed
 type DepositData struct {
@@ -23,4 +25,10 @@ type Deposit struct {
 
 	// Data is the data that describes the new validator.
 	Data *DepositData
+}
+
+// Hash calculates the hash of the deposit
+func (d *Deposit) Hash() chainhash.Hash {
+	b, _ := d.MarshalSSZ()
+	return chainhash.HashH(b)
 }

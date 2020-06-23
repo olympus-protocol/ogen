@@ -1,6 +1,8 @@
 package primitives
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
@@ -59,7 +61,7 @@ func (vg *voterGroup) add(id uint32, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []Validator, bitfield []uint8, validatorIndices []uint32) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, bitfield []uint8, validatorIndices []uint32) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
@@ -82,7 +84,7 @@ func newVoterGroup() voterGroup {
 
 // ActivateValidator activates a validator in the state at a certain index.
 func (s *State) ActivateValidator(index uint32) error {
-	validator := &s.ValidatorRegistry[index]
+	validator := s.ValidatorRegistry[index]
 	if validator.Status != StatusStarting {
 		return errors.New("validator is not pending activation")
 	}
@@ -93,7 +95,7 @@ func (s *State) ActivateValidator(index uint32) error {
 
 // InitiateValidatorExit moves a validator from active to pending exit.
 func (s *State) InitiateValidatorExit(index uint32) error {
-	validator := &s.ValidatorRegistry[index]
+	validator := s.ValidatorRegistry[index]
 	if validator.Status != StatusActive {
 		return errors.New("validator is not active")
 	}
@@ -104,7 +106,7 @@ func (s *State) InitiateValidatorExit(index uint32) error {
 
 // ExitValidator handles state changes when a validator exits.
 func (s *State) ExitValidator(index uint32, status uint8, p *params.ChainParams) error {
-	validator := &s.ValidatorRegistry[index]
+	validator := s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
 	if prevStatus == StatusExitedWithPenalty {
@@ -204,46 +206,48 @@ func generateRandNumber(from chainhash.Hash, max uint32) uint64 {
 }
 
 // Shuffle shuffles validator using a RANDAO.
-func Shuffle(randao chainhash.Hash, vals []uint32) []uint32 {
-	nextProposers := make([]uint32, len(vals))
+func Shuffle(randao []byte, vals [][]byte) [][]byte {
+	randaoHash := chainhash.HashH(randao)
+	nextProposers := make([][]byte, len(vals))
 	copy(nextProposers, vals)
 
 	for i := uint64(0); i < uint64(len(nextProposers)-1); i++ {
-		j := i + generateRandNumber(randao, uint32(len(nextProposers))-uint32(i)-1)
+		j := i + generateRandNumber(randaoHash, uint32(len(nextProposers))-uint32(i)-1)
 		nextProposers[i], nextProposers[j] = nextProposers[j], nextProposers[i]
-		randao = chainhash.HashH(randao[:])
+		randao = chainhash.HashB(randaoHash[:])
 	}
 
 	return nextProposers
 }
 
 // DetermineNextProposers gets the next shuffling.
-func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint32, p *params.ChainParams) []uint32 {
+func DetermineNextProposers(randao []byte, activeValidators [][]byte, p *params.ChainParams) [][]byte {
+	randaoHash := chainhash.HashH(randao)
 	validatorsChosen := make(map[uint64]struct{})
-	nextProposers := make([]uint32, p.EpochLength)
+	nextProposers := make([][]byte, p.EpochLength)
 
 	for i := range nextProposers {
 		found := true
 		var val uint64
 
 		for found {
-			val = generateRandNumber(randao, uint32(len(activeValidators)-1))
-			randao = chainhash.HashH(randao[:])
+			val = generateRandNumber(randaoHash, uint32(len(activeValidators)-1))
+			randao = chainhash.HashB(randaoHash[:])
 			_, found = validatorsChosen[val]
 		}
 
 		validatorsChosen[val] = struct{}{}
-		nextProposers[i] = uint32(val)
-		randao = chainhash.HashH(randao[:])
+		binary.LittleEndian.PutUint32(nextProposers[i], uint32(val))
+		randao = chainhash.HashB(randaoHash[:])
 	}
 
 	return nextProposers
 }
 
 // GetRecentBlockHash gets block hashes from the LatestBlockHashes array.
-func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chainhash.Hash {
+func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) []byte {
 	if s.Slot-slotToGet >= p.LatestBlockRootsLength {
-		return chainhash.Hash{}
+		return nil
 	}
 
 	return s.LatestBlockHashes[slotToGet%p.LatestBlockRootsLength]
@@ -332,7 +336,7 @@ func (s *State) GetTotalBalances() uint64 {
 
 // NextVoteEpoch increments the voting epoch, resets votes,
 // and updates the state.
-func (s *State) NextVoteEpoch(newState GovernanceState) {
+func (s *State) NextVoteEpoch(newState uint8) {
 	s.VoteEpoch++
 	s.VoteEpochStartSlot = s.Slot
 	s.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData)
@@ -386,7 +390,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 				if v > bestBalance {
 					voteData := s.CommunityVotes[i]
 
-					newManagers := make([][20]byte, len(s.CurrentManagers))
+					newManagers := make([][]byte, len(s.CurrentManagers))
 					copy(newManagers, s.CurrentManagers)
 
 					for i := range newManagers {
@@ -442,12 +446,12 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 	currentEpochVotersMatchingTarget := newVoterGroup()
 
-	previousEpochBoundaryHash := chainhash.Hash{}
+	previousEpochBoundaryHash := []byte{}
 	if s.Slot >= 2*p.EpochLength {
 		previousEpochBoundaryHash = s.GetRecentBlockHash(s.Slot-2*p.EpochLength-1, p)
 	}
 
-	epochBoundaryHash := chainhash.Hash{}
+	epochBoundaryHash := []byte{}
 	if s.Slot >= p.EpochLength {
 		epochBoundaryHash = s.GetRecentBlockHash(s.Slot-p.EpochLength-1, p)
 	}
@@ -462,14 +466,14 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
-		if v.Data.BeaconBlockHash.IsEqual(&actualBlockHash) {
+		if bytes.Equal(v.Data.BeaconBlockHash, actualBlockHash) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		if v.Data.ToHash.IsEqual(&previousEpochBoundaryHash) {
+		if bytes.Equal(v.Data.ToHash, previousEpochBoundaryHash) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
 		for _, validatorIdx := range validatorIndices {
-			previousEpochVotersMap[validatorIdx] = &v
+			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
 
@@ -479,7 +483,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 			return nil, err
 		}
 
-		if v.Data.ToHash.IsEqual(&epochBoundaryHash) {
+		if bytes.Equal(v.Data.ToHash, epochBoundaryHash) {
 			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validators)
 		}
 	}
@@ -611,7 +615,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		if finalityDelay > 4 {
 			for index := range s.ValidatorRegistry {
 				idx := uint32(index)
-				w := &s.ValidatorRegistry[idx]
+				w := s.ValidatorRegistry[idx]
 				if !w.IsActive() {
 					continue
 				}
@@ -658,7 +662,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	copy(s.RANDAO[:], s.NextRANDAO[:])
 
 	s.PreviousEpochVotes = s.CurrentEpochVotes
-	s.CurrentEpochVotes = make([]AcceptedVoteInfo, 0)
+	s.CurrentEpochVotes = make([]*AcceptedVoteInfo, 0)
 
 	return receipts, nil
 }

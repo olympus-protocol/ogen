@@ -1,4 +1,4 @@
-package msg
+package p2p
 
 type MsgGetBlocks struct {
 	HashStop      []byte   `ssz-size:"32"`

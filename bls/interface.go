@@ -37,34 +37,3 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 
 // RFieldModulus for the bls-381 curve.
 var RFieldModulus, _ = new(big.Int).SetString("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10)
-
-// FunctionalPublicKey is either a multipub or a regular public key.
-type FunctionalPublicKey interface {
-	Marshal() []byte
-	Unmarshal(b []byte) error
-	Hash() [20]byte
-	Type() FunctionalSignatureType
-}
-
-// FunctionalSignatureType is a functional signature type.
-type FunctionalSignatureType uint8
-
-const (
-	// TypeSingle is a single signature.
-	TypeSingle FunctionalSignatureType = iota
-
-	// TypeMulti is a multisignature.
-	TypeMulti
-)
-
-// FunctionalSignature is a signature that can be included in transactions
-// or votes.
-type FunctionalSignature interface {
-	Marshal() []byte
-	Unmarshal(b []byte) error
-	Sign(secKey *SecretKey, msg []byte) error
-	Verify(msg []byte) bool
-	GetPublicKey() FunctionalPublicKey
-	Type() FunctionalSignatureType
-	Copy() FunctionalSignature
-}

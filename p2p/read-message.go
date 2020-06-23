@@ -42,7 +42,7 @@ func discardInput(r io.Reader, n uint32) {
 	}
 }
 
-func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
+func ReadMessageWithEncodingN(r io.Reader, net []byte) (Message, error) {
 	_, hdr, err := readMessageHeader(r)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 
 	}
 
-	if hdr.magic != net {
+	if bytes.Equal(hdr.magic, net) {
 		discardInput(r, hdr.length)
 		str := fmt.Sprintf("message from other network [%v]", hdr.magic)
 		err = errors.New(str)
@@ -104,7 +104,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 		return nil, err
 	}
 
-	err = msg.Unmarshal(payload)
+	err = msg.UnmarshalSSZ(payload)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding payload of command %s: %s", command, err)
 	}

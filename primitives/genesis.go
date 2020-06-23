@@ -17,13 +17,13 @@ var genesisHash = chainhash.Hash([chainhash.HashSize]byte{
 // GetGenesisBlock gets the genesis block for a certain chain parameters.
 func GetGenesisBlock(params params.ChainParams) Block {
 	return Block{
-		Header: BlockHeader{
+		Header: &BlockHeader{
 			Version:        1,
-			PrevBlockHash:  chainhash.Hash{},
-			TxMerkleRoot:   chainhash.Hash{},
-			VoteMerkleRoot: chainhash.Hash{},
+			PrevBlockHash:  []byte{},
+			TxMerkleRoot:   []byte{},
+			VoteMerkleRoot: []byte{},
 			Timestamp:      uint64(time.Unix(0x0, 0).Unix()),
 		},
-		Txs: []Tx{},
+		Txs: []*Tx{},
 	}
 }

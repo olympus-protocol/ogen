@@ -2,33 +2,20 @@ package bls
 
 import (
 	"fmt"
-
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // CombinedSignature is a signature and a public key meant to match
 // the same interface as Multisig.
 type CombinedSignature struct {
-	sig Signature
-	pub PublicKey
-}
-
-// Marshal serializes the struct to bytes
-func (cs *CombinedSignature) Marshal() []byte {
-	ser, _ := ssz.Marshal(cs)
-	return ser
-}
-
-// Unmarshal deserializes the struct from bytes
-func (cs *CombinedSignature) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, cs)
+	sig []byte `ssz-size:"96"`
+	pub []byte `ssz-size:"48"`
 }
 
 // NewCombinedSignature creates a new combined signature
 func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
 	return &CombinedSignature{
-		pub: *pub,
-		sig: *sig,
+		pub: pub,
+		sig: sig,
 	}
 }
 
@@ -40,11 +27,6 @@ func (cs *CombinedSignature) ToSig() Signature {
 // ToPub outputs the bundled public key.
 func (cs *CombinedSignature) ToPub() PublicKey {
 	return cs.pub
-}
-
-// GetPublicKey gets the functional public key.
-func (cs *CombinedSignature) GetPublicKey() FunctionalPublicKey {
-	return &cs.pub
 }
 
 // Sign signs a message using the secret key.
@@ -64,13 +46,8 @@ func (cs *CombinedSignature) Verify(msg []byte) bool {
 	return cs.sig.Verify(msg, &cs.pub)
 }
 
-// Type returns the signature type.
-func (cs *CombinedSignature) Type() FunctionalSignatureType {
-	return TypeSingle
-}
-
 // Copy copies the combined signature.
-func (cs *CombinedSignature) Copy() FunctionalSignature {
+func (cs *CombinedSignature) Copy() *CombinedSignature {
 	newCs := &CombinedSignature{}
 	s := cs.sig.Copy()
 	p := cs.pub.Copy()
@@ -80,5 +57,3 @@ func (cs *CombinedSignature) Copy() FunctionalSignature {
 
 	return newCs
 }
-
-var _ FunctionalSignature = &CombinedSignature{}

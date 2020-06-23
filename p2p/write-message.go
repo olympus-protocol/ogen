@@ -8,16 +8,16 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, error) {
+func WriteMessageWithEncodingN(w io.Writer, msg Message, net []byte) (int, error) {
 
 	totalBytes := 0
 
-	var command []byte
-	cmd := msg.Command()
+	//var command []byte
+	//cmd := msg.Command()
 
-	copy(command[:], []byte(cmd))
+	//copy(command[:], []byte(cmd))
 
-	payload, err := msg.Marshal()
+	payload, err := msg.MarshalSSZ()
 	if err != nil {
 		return totalBytes, err
 	}
@@ -42,7 +42,7 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, err
 
 	hdr := messageHeader{}
 	hdr.magic = net
-	hdr.command = cmd
+	//hdr.command = cmd
 	hdr.length = uint32(lenp)
 	copy(hdr.checksum[:], chainhash.DoubleHashB(payload)[0:4])
 
@@ -61,11 +61,11 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, err
 	return totalBytes, err
 }
 
-func WriteMessageN(w io.Writer, msg Message, net NetMagic) (int, error) {
+func WriteMessageN(w io.Writer, msg Message, net []byte) (int, error) {
 	return WriteMessageWithEncodingN(w, msg, net)
 }
 
-func WriteMessage(w io.Writer, msg Message, net NetMagic) error {
+func WriteMessage(w io.Writer, msg Message, net []byte) error {
 	_, err := WriteMessageN(w, msg, net)
 	return err
 }

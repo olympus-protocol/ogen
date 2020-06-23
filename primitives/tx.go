@@ -1,4 +1,6 @@
-package state
+package primitives
+
+import "github.com/olympus-protocol/ogen/utils/chainhash"
 
 type TxLocator struct {
 	Hash  []byte `ssz-size:"32"`
@@ -15,8 +17,21 @@ type Transfer struct {
 	Signature     []byte `ssz-size:"96"`
 }
 
+func (c *Transfer) Hash() chainhash.Hash {
+	// TODO handle error
+	b, _ := c.MarshalSSZ()
+	return chainhash.HashH(b)
+}
+
 type Tx struct {
 	Version uint32
 	Type    uint32
 	Payload *Transfer
+}
+
+// Hash calculates the transaction hash.
+func (t *Tx) Hash() chainhash.Hash {
+	// TODO handle error
+	b, _ := t.MarshalSSZ()
+	return chainhash.DoubleHashH(b)
 }
