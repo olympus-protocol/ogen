@@ -11,7 +11,7 @@ import (
 
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
-	p *bls.PublicKey `ssz:"size=48"`
+	p *bls.PublicKey
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.

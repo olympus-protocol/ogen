@@ -108,7 +108,7 @@ func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Bl
 	}
 
 	block := new(primitives.Block)
-	err = block.UnmarshalSSZ(blockBytes)
+	err = block.Unmarshal(blockBytes)
 	return block, err
 }
 
@@ -127,7 +127,7 @@ func (but *BlockDBUpdateTransaction) AddRawBlock(block *primitives.Block) error 
 	if err != nil {
 		return err
 	}
-	blockBytes, err := block.MarshalSSZ()
+	blockBytes, err := block.Marshal()
 	if err != nil {
 		return err
 	}

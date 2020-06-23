@@ -37,7 +37,7 @@ service Network {
         Method: AddPeer 
         Input: message IP
         Response: message Success
-        Description: Adds a peer to connect and returns success if the peer was succesfully parsed ready to connect.
+        Description: Adds a peer to connect and returns success if the peer was successfully parsed ready to connect.
     */
 
     rpc AddPeer(IP) returns (Success) {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -24,17 +25,17 @@ import (
 )
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
+func loadOgen(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams) error {
 	if configParams.Pprof {
 		go func() {
 			log.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
-	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, log)
+	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, logger)
 	if err != nil {
 		return err
 	}
-	s, err := server.NewServer(ctx, configParams, log, currParams, db, false, configParams.InitConfig)
+	s, err := server.NewServer(ctx, configParams, logger, currParams, db, false, configParams.InitConfig)
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ Next generation blockchain secured by CASPER.`,
 				Debug: viper.GetBool("debug"),
 
 				LogFile: viper.GetBool("log_file"),
-				Pprof: viper.GetBool("pprof"),
+				Pprof:   viper.GetBool("pprof"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
