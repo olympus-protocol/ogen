@@ -24,12 +24,10 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, err
 	}
 	copy(command[:], []byte(cmd))
 
-	var bw bytes.Buffer
-	err := msg.Encode(&bw)
+	payload, err := msg.Marshal(&bw)
 	if err != nil {
 		return totalBytes, err
 	}
-	payload := bw.Bytes()
 	lenp := len(payload)
 
 	if lenp > MaxMessagePayload {

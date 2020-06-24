@@ -1,7 +1,6 @@
 package peers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -109,14 +108,13 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 	}
 
 	go listenToTopic(sp.ctx, blockSub, func(data []byte, id peer.ID) {
-		buf := bytes.NewReader(data)
 		var block primitives.Block
 
 		if id == sp.host.GetHost().ID() {
 			return
 		}
 
-		if err := block.Decode(buf); err != nil {
+		if err := block.Unmarshal(data); err != nil {
 			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
 			return
 		}

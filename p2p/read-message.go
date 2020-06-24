@@ -104,8 +104,7 @@ func ReadMessageWithEncodingN(r io.Reader, net NetMagic) (Message, error) {
 		return nil, err
 	}
 
-	pr := bytes.NewBuffer(payload)
-	err = msg.Decode(pr)
+	err = msg.Unmarshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding payload of command %s: %s", command, err)
 	}

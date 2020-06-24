@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"fmt"
-	"io"
 	"math"
 )
 
@@ -19,8 +18,8 @@ const MessageHeaderSize = 24
 const MaxMessagePayload = 1024 * 1024 * 32 // 32 MB
 
 type Message interface {
-	Decode(io.Reader) error
-	Encode(io.Writer) error
+	Marshal() ([]byte, error)
+	Unmarshal(b []byte) error
 	Command() string
 	MaxPayloadLength() uint32
 }

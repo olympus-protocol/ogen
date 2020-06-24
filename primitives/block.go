@@ -1,10 +1,9 @@
 package primitives
 
 import (
-	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 const (
@@ -184,207 +183,14 @@ func (b *Block) VoteSlashingRoot() chainhash.Hash {
 	return merkleRootVoteSlashings(b.VoteSlashings)
 }
 
-// Encode encodes the block to the given writer.
-func (b *Block) Encode(w io.Writer) error {
-	err := b.Header.Serialize(w)
-	if err != nil {
-		return err
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.Txs)))
-	if err != nil {
-		return err
-	}
-	for _, tx := range b.Txs {
-		err := tx.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.Votes)))
-	if err != nil {
-		return err
-	}
-	for _, vote := range b.Votes {
-		err := vote.Serialize(w)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = serializer.WriteVarInt(w, uint64(len(b.Deposits)))
-	if err != nil {
-		return err
-	}
-	for _, deposit := range b.Deposits {
-		err := deposit.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.Exits)))
-	if err != nil {
-		return err
-	}
-	for _, exit := range b.Exits {
-		err := exit.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.VoteSlashings)))
-	if err != nil {
-		return err
-	}
-	for _, slashing := range b.VoteSlashings {
-		err := slashing.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.ProposerSlashings)))
-	if err != nil {
-		return err
-	}
-	for _, slashing := range b.ProposerSlashings {
-		err := slashing.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.RANDAOSlashings)))
-	if err != nil {
-		return err
-	}
-	for _, slashing := range b.RANDAOSlashings {
-		err := slashing.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	err = serializer.WriteVarInt(w, uint64(len(b.GovernanceVotes)))
-	if err != nil {
-		return err
-	}
-	for _, vote := range b.GovernanceVotes {
-		err := vote.Encode(w)
-		if err != nil {
-			return err
-		}
-	}
-	if err := serializer.WriteVarBytes(w, b.Signature); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarBytes(w, b.RandaoSignature); err != nil {
-		return err
-	}
-	return nil
+// Marshal encodes the block.
+func (b *Block) Marshal() ([]byte, error) {
+	return ssz.Marshal(b)
 }
 
-// Decode decodes the block from the given reader.
-func (b *Block) Decode(r io.Reader) error {
-	err := b.Header.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	txCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Txs = make([]Tx, txCount)
-	for i := uint64(0); i < txCount; i++ {
-		err := b.Txs[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	voteCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Votes = make([]MultiValidatorVote, voteCount)
-	for i := range b.Votes {
-		err := b.Votes[i].Deserialize(r)
-		if err != nil {
-			return err
-		}
-	}
-	depositCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Deposits = make([]Deposit, depositCount)
-	for i := range b.Deposits {
-		err := b.Deposits[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	exitCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.Exits = make([]Exit, exitCount)
-	for i := range b.Exits {
-		err := b.Exits[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	voteSlashingCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.VoteSlashings = make([]VoteSlashing, voteSlashingCount)
-	for i := range b.VoteSlashings {
-		err := b.VoteSlashings[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	propopserSlashingCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.ProposerSlashings = make([]ProposerSlashing, propopserSlashingCount)
-	for i := range b.ProposerSlashings {
-		err := b.ProposerSlashings[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	randaoSlashingCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.RANDAOSlashings = make([]RANDAOSlashing, randaoSlashingCount)
-	for i := range b.RANDAOSlashings {
-		err := b.RANDAOSlashings[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	governanceVoteCount, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	b.GovernanceVotes = make([]GovernanceVote, governanceVoteCount)
-	for i := range b.GovernanceVotes {
-		err := b.GovernanceVotes[i].Decode(r)
-		if err != nil {
-			return err
-		}
-	}
-	sig, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	randaoSig, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	b.Signature = sig
-	b.RandaoSignature = randaoSig
-	return nil
+// Unmarshal decodes the block.
+func (b *Block) Unmarshal(by []byte) error {
+	return ssz.Unmarshal(by, b)
 }
 
 // GetTxs returns
