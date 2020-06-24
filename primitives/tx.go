@@ -1,38 +1,29 @@
 package primitives
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // TxLocator is a simple struct to find a database referenced to a block without building a full index
 type TxLocator struct {
-	TxHash chainhash.Hash
-	Block  chainhash.Hash
-	Index  uint32
+	Hash  chainhash.Hash
+	Block chainhash.Hash
+	Index uint32
 }
 
-// Encode encodes the TxLocator into a writer
-func (txl *TxLocator) Encode(w io.Writer) error {
-	err := serializer.WriteElements(w, &txl.TxHash, &txl.Block, txl.Index)
-	if err != nil {
-		return err
-	}
-	return nil
+// Marshal encodes the data.
+func (tl *TxLocator) Marshal() ([]byte, error) {
+	return ssz.Marshal(tl)
 }
 
-// Decode decodes a TxLocator from a reader
-func (txl *TxLocator) Decode(r io.Reader) error {
-	err := serializer.ReadElements(r, &txl.TxHash, &txl.Block, &txl.Index)
-	if err != nil {
-		return err
-	}
-	return nil
+// Unmarshal decodes the data.
+func (tl *TxLocator) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, tl)
 }
 
 // TxType represents a type of transaction.
@@ -61,9 +52,8 @@ type TransferSinglePayload struct {
 
 // Hash calculates the transaction ID of the payload.
 func (c *TransferSinglePayload) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = c.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -74,36 +64,22 @@ func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte) {
 	return
 }
 
-// Encode encodes the transaction to the writer.
-func (c *TransferSinglePayload) Encode(w io.Writer) error {
-	if err := serializer.WriteElements(w, c.To); err != nil {
-		return err
-	}
-	pubBytes := c.FromPublicKey.Marshal()
-	sigBytes := c.Signature.Marshal()
-	if _, err := w.Write(pubBytes[:]); err != nil {
-		return err
-	}
-	if _, err := w.Write(sigBytes[:]); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarInt(w, c.Amount); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarInt(w, c.Nonce); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarInt(w, c.Fee); err != nil {
-		return err
-	}
-	return nil
+// Marshal encodes the data.
+func (c *TransferSinglePayload) Marshal() ([]byte, error) {
+	return ssz.Marshal(c)
+}
+
+// Unmarshal decodes the data.
+func (c *TransferSinglePayload) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, c)
 }
 
 // SignatureMessage gets the message the needs to be signed.
 func (c *TransferSinglePayload) SignatureMessage() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = serializer.WriteElements(buf, c.To, c.Nonce, c.FromPublicKey, c.Amount, c.Fee)
-	return chainhash.HashH(buf.Bytes())
+	cp := *c
+	cp.Signature = bls.Signature{}
+	b, _ := cp.Marshal()
+	return chainhash.HashH(b)
 }
 
 // VerifySig verifies the signatures is valid.
@@ -138,46 +114,6 @@ func (c *TransferSinglePayload) GetFromAddress() [20]byte {
 	return c.FromPubkeyHash()
 }
 
-// Decode decodes the transaction payload from the given reader.
-func (c *TransferSinglePayload) Decode(r io.Reader) error {
-	if err := serializer.ReadElements(r, &c.To); err != nil {
-		return err
-	}
-	sigBytes := make([]byte, 96)
-	pubBytes := make([]byte, 48)
-	_, err := r.Read(pubBytes[:])
-	if err != nil {
-		return err
-	}
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	if err != nil {
-		return err
-	}
-	c.FromPublicKey = *pub
-	_, err = r.Read(sigBytes[:])
-	if err != nil {
-		return err
-	}
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-	c.Signature = *sig
-	c.Amount, err = serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	c.Nonce, err = serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	c.Fee, err = serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 var _ TxPayload = &TransferSinglePayload{}
 
 // TransferMultiPayload represents a transfer from a multisig to
@@ -190,11 +126,20 @@ type TransferMultiPayload struct {
 	Signature bls.Multisig
 }
 
+// Marshal encodes the data.
+func (c *TransferMultiPayload) Marshal() ([]byte, error) {
+	return ssz.Marshal(c)
+}
+
+// Unmarshal decodes the data.
+func (c *TransferMultiPayload) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, c)
+}
+
 // Hash calculates the transaction ID of the payload.
 func (c *TransferMultiPayload) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = c.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -202,31 +147,12 @@ func (c *TransferMultiPayload) FromPubkeyHash() [20]byte {
 	return c.Signature.PublicKey.Hash()
 }
 
-// Encode enccodes the transaction to the writer.
-func (c *TransferMultiPayload) Encode(w io.Writer) error {
-	if err := serializer.WriteElements(w, c.To); err != nil {
-		return err
-	}
-	if err := c.Signature.Encode(w); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarInt(w, c.Amount); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarInt(w, c.Nonce); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarInt(w, c.Fee); err != nil {
-		return err
-	}
-	return nil
-}
-
 // SignatureMessage gets the message the needs to be signed.
 func (c *TransferMultiPayload) SignatureMessage() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = serializer.WriteElements(buf, c.To, c.Nonce, c.FromPubkeyHash(), c.Amount, c.Fee)
-	return chainhash.HashH(buf.Bytes())
+	cp := *c
+	cp.Signature = bls.Multisig{}
+	b, _ := cp.Marshal()
+	return chainhash.HashH(b)
 }
 
 // VerifySig verifies the signatures is valid.
@@ -238,30 +164,6 @@ func (c *TransferMultiPayload) VerifySig() error {
 		return fmt.Errorf("signature is not valid")
 	}
 
-	return nil
-}
-
-// Decode decodes the transaction payload from the given reader.
-func (c *TransferMultiPayload) Decode(r io.Reader) error {
-	if err := serializer.ReadElements(r, &c.To); err != nil {
-		return err
-	}
-	if err := c.Signature.Decode(r); err != nil {
-		return err
-	}
-	var err error
-	c.Amount, err = serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	c.Nonce, err = serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	c.Fee, err = serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -293,8 +195,8 @@ func (g *GenesisPayload) Decode(r io.Reader) error { return nil }
 
 // TxPayload represents anything that can be used as a payload in a transaction.
 type TxPayload interface {
-	Encode(w io.Writer) error
-	Decode(r io.Reader) error
+	Marshal() ([]byte, error)
+	Unmarshal([]byte) error
 	GetNonce() uint64
 	GetAmount() uint64
 	GetFee() uint64
@@ -303,44 +205,23 @@ type TxPayload interface {
 
 // Tx represents a transaction on the blockchain.
 type Tx struct {
-	TxVersion int32
-	TxType    TxType
-	Payload   TxPayload
+	Version int32
+	Type    TxType
+	Payload TxPayload
 }
 
-// Encode encodes the transaction to the given writer.
-func (t *Tx) Encode(w io.Writer) error {
-	err := serializer.WriteElements(w, t.TxVersion, t.TxType)
-	if err != nil {
-		return err
-	}
-	if t.Payload == nil {
-		return fmt.Errorf("transaction missing payload")
-	}
-	return t.Payload.Encode(w)
+// Marshal encodes the data.
+func (t *Tx) Marshal() ([]byte, error) {
+	return ssz.Marshal(t)
 }
 
-// Decode decodes a transaction from the given reader.
-func (t *Tx) Decode(r io.Reader) error {
-	err := serializer.ReadElements(r, &t.TxVersion, &t.TxType)
-	if err != nil {
-		return err
-	}
-	switch t.TxType {
-	case TxTransferSingle:
-		t.Payload = &TransferSinglePayload{}
-		return t.Payload.Decode(r)
-	case TxTransferMulti:
-		t.Payload = &TransferMultiPayload{}
-		return t.Payload.Decode(r)
-	default:
-		return fmt.Errorf("could not decode transaction with type: %d", t.TxType)
-	}
+// Unmarshal decodes the data.
+func (t *Tx) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, t)
 }
 
 // Hash calculates the transaction hash.
 func (t *Tx) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = t.Encode(buf)
-	return chainhash.DoubleHashH(buf.Bytes())
+	b, _ := t.Marshal()
+	return chainhash.DoubleHashH(b)
 }

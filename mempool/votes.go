@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"math/rand"
 	"sort"
@@ -309,10 +308,9 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 			continue
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.SingleValidatorVote)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			m.log.Warnf("peer sent invalid vote: %s", err)
 			continue

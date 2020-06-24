@@ -1,7 +1,6 @@
 package primitives
 
 import (
-
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -23,6 +22,16 @@ type Block struct {
 	GovernanceVotes   []GovernanceVote
 	Signature         []byte
 	RandaoSignature   []byte
+}
+
+// Marshal encodes the block.
+func (b *Block) Marshal() ([]byte, error) {
+	return ssz.Marshal(b)
+}
+
+// Unmarshal decodes the block.
+func (b *Block) Unmarshal(by []byte) error {
+	return ssz.Unmarshal(by, b)
 }
 
 // Hash calculates the hash of the block.
@@ -183,21 +192,21 @@ func (b *Block) VoteSlashingRoot() chainhash.Hash {
 	return merkleRootVoteSlashings(b.VoteSlashings)
 }
 
-// Marshal encodes the block.
-func (b *Block) Marshal() ([]byte, error) {
-	return ssz.Marshal(b)
-}
-
-// Unmarshal decodes the block.
-func (b *Block) Unmarshal(by []byte) error {
-	return ssz.Unmarshal(by, b)
-}
-
-// GetTxs returns
+// GetTxs returns a slice with tx hashes
 func (b *Block) GetTxs() []string {
 	txs := make([]string, len(b.Txs))
 	for i, tx := range b.Txs {
 		txs[i] = tx.Hash().String()
 	}
 	return txs
+}
+
+// SerializedTx return a slice serialized transactions that include one of the passed accounts.
+func (b *Block) SerializedTx(accounts map[[20]byte]struct{}) []byte {
+	return []byte{}
+}
+
+// SerializedEpochs return a slice serialized epochs that include one of the passed public keys.
+func (b *Block) SerializedEpochs(accounts map[[48]byte]struct{}) []byte {
+	return []byte{}
 }

@@ -2,7 +2,6 @@ package bls
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -15,22 +14,14 @@ type PublicKey struct {
 	p *bls.PublicKey
 }
 
-// Encode encodes to the given writer.
-func (p *PublicKey) Encode(w io.Writer) error {
-	pubBytes := p.Marshal()
-	_, err := w.Write(pubBytes)
-
-	return err
+// Marshal encodes the data.
+func (p *PublicKey) Marshal() []byte {
+	return p.p.Serialize()
 }
 
-// Decode decodes from the given reader.
-func (p *PublicKey) Decode(r io.Reader) error {
-	pubBytes := make([]byte, 48)
-	if _, err := io.ReadFull(r, pubBytes); err != nil {
-		return err
-	}
-
-	return p.p.Deserialize(pubBytes)
+// Unmarshal decodes the data.
+func (p *PublicKey) Unmarshal(b []byte) error {
+	return p.p.Deserialize(b)
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
@@ -50,11 +41,6 @@ func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
 	copiedKey := pubKeyObj.Copy()
 	pubkeyCache.Set(string(pub), copiedKey, 48)
 	return pubKeyObj, nil
-}
-
-// Marshal a public key into a LittleEndian byte slice.
-func (p *PublicKey) Marshal() []byte {
-	return p.p.Serialize()
 }
 
 // Equals checks if two public keys are equal.

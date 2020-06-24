@@ -161,9 +161,9 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	payload.Signature = *sig
 
 	tx := &primitives.Tx{
-		TxType:    primitives.TxTransferSingle,
-		TxVersion: 0,
-		Payload:   payload,
+		Type:    primitives.TxTransferSingle,
+		Version: 0,
+		Payload: payload,
 	}
 
 	currentState := w.chain.State().TipState()
@@ -180,13 +180,12 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 }
 
 func (w *Wallet) broadcastTx(payload *primitives.Tx) {
-	buf := bytes.NewBuffer([]byte{})
-	err := payload.Encode(buf)
+	buf, err := payload.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.txTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.txTopic.Publish(w.ctx, buf); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
@@ -204,13 +203,12 @@ func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
 }
 
 func (w *Wallet) broadcastExit(exit *primitives.Exit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := exit.Encode(buf)
+	buf, err := exit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.exitTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.exitTopic.Publish(w.ctx, buf); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }

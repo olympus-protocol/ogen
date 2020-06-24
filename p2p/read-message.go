@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 func readMessageHeader(r io.Reader) (int, *messageHeader, error) {
@@ -17,11 +16,10 @@ func readMessageHeader(r io.Reader) (int, *messageHeader, error) {
 	if err != nil {
 		return n, nil, err
 	}
-	hr := bytes.NewReader(headerBytes[:])
+	//hr := bytes.NewReader(headerBytes[:])
 
 	hdr := messageHeader{}
-	var command [serializer.CommandSize]byte
-	serializer.ReadElements(hr, &hdr.magic, &command, &hdr.length, &hdr.checksum)
+	var command []byte
 
 	hdr.command = string(bytes.TrimRight(command[:], string(0)))
 	return n, &hdr, nil

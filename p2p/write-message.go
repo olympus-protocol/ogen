@@ -7,24 +7,16 @@ import (
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, error) {
 
 	totalBytes := 0
 
-	var command [serializer.CommandSize]byte
+	var command []byte
 	cmd := msg.Command()
-	if len(cmd) > serializer.CommandSize {
-		str := fmt.Sprintf("command [%s] is too long [max %v]",
-			cmd, serializer.CommandSize)
-		err := errors.New(str)
-		return totalBytes, err
-	}
 	copy(command[:], []byte(cmd))
-
-	payload, err := msg.Marshal(&bw)
+	payload, err := msg.Marshal()
 	if err != nil {
 		return totalBytes, err
 	}
@@ -54,7 +46,6 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, net NetMagic) (int, err
 	copy(hdr.checksum[:], chainhash.DoubleHashB(payload)[0:4])
 
 	hw := bytes.NewBuffer(make([]byte, 0, MessageHeaderSize))
-	_ = serializer.WriteElements(hw, hdr.magic, command, hdr.length, hdr.checksum)
 
 	n, err := w.Write(hw.Bytes())
 	totalBytes += n

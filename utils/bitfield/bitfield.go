@@ -1,10 +1,6 @@
 package bitfield
 
-import (
-	"io"
-
-	"github.com/olympus-protocol/ogen/utils/serializer"
-)
+import "github.com/prysmaticlabs/go-ssz"
 
 // Bitfield is a bitfield of a certain length.
 type Bitfield []byte
@@ -29,15 +25,14 @@ func (b Bitfield) MaxLength() uint {
 	return uint(len(b)) * 8
 }
 
-// Encode encodes the bitfield to the writer.
-func (b Bitfield) Encode(w io.Writer) error {
-	return serializer.WriteVarBytes(w, b)
+// Marshal encodes the data.
+func (b Bitfield) Marshal() ([]byte, error) {
+	return ssz.Marshal(b)
 }
 
-// Decode decodes the bitfield from a reader.
-func (b *Bitfield) Decode(r io.Reader) (err error) {
-	*b, err = serializer.ReadVarBytes(r)
-	return err
+// Unmarshal decodes the data.
+func (b Bitfield) Unmarshal(by []byte) error {
+	return ssz.Unmarshal(by, b)
 }
 
 // Copy returns a copy of the bitfield.

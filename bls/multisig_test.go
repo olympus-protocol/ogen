@@ -1,7 +1,6 @@
 package bls_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -77,13 +76,13 @@ func TestMultisigDecodeEncode(t *testing.T) {
 		}
 	}
 
-	multiBytes := bytes.NewBuffer([]byte{})
-	if err := multisig.Encode(multiBytes); err != nil {
+	multiBytes, err := multisig.Marshal()
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	newMulti := new(bls.Multisig)
-	if err := newMulti.Decode(multiBytes); err != nil {
+	if err := newMulti.Unmarshal(multiBytes); err != nil {
 		t.Fatal(err)
 	}
 

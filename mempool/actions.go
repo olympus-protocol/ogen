@@ -384,10 +384,9 @@ func (am *ActionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.GovernanceVote)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid governance vote: %s", err)
 			continue
@@ -433,10 +432,9 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.Exit)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid exit: %s", err)
 			continue

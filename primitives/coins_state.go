@@ -1,9 +1,7 @@
 package primitives
 
 import (
-	"io"
-
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // CoinsState is the state that we
@@ -26,83 +24,12 @@ func (u *CoinsState) Copy() CoinsState {
 	return u2
 }
 
-func (u *CoinsState) Serialize(w io.Writer) error {
-	if err := serializer.WriteVarInt(w, uint64(len(u.Balances))); err != nil {
-		return err
-	}
-
-	for h, b := range u.Balances {
-		if _, err := w.Write(h[:]); err != nil {
-			return err
-		}
-
-		if err := serializer.WriteElement(w, b); err != nil {
-			return err
-		}
-	}
-
-	if err := serializer.WriteVarInt(w, uint64(len(u.Nonces))); err != nil {
-		return err
-	}
-
-	for h, b := range u.Nonces {
-		if _, err := w.Write(h[:]); err != nil {
-			return err
-		}
-
-		if err := serializer.WriteElement(w, b); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Marshal encodes the data.
+func (u *CoinsState) Marshal() ([]byte, error) {
+	return ssz.Marshal(u)
 }
 
-func (u *CoinsState) Deserialize(r io.Reader) error {
-	if u.Balances == nil {
-		u.Balances = make(map[[20]byte]uint64)
-	}
-	if u.Nonces == nil {
-		u.Nonces = make(map[[20]byte]uint64)
-	}
-
-	numBalances, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-
-	for i := uint64(0); i < numBalances; i++ {
-		var hash [20]byte
-		if _, err := r.Read(hash[:]); err != nil {
-			return err
-		}
-
-		var balance uint64
-		if err := serializer.ReadElement(r, &balance); err != nil {
-			return err
-		}
-
-		u.Balances[hash] = balance
-	}
-
-	numNonces, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-
-	for i := uint64(0); i < numNonces; i++ {
-		var hash [20]byte
-		if _, err := r.Read(hash[:]); err != nil {
-			return err
-		}
-
-		var nonce uint64
-		if err := serializer.ReadElement(r, &nonce); err != nil {
-			return err
-		}
-
-		u.Nonces[hash] = nonce
-	}
-
-	return nil
+// Unmarshal decodes the data.
+func (u *CoinsState) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, u)
 }

@@ -1,12 +1,10 @@
 package primitives
 
 import (
-	"bytes"
-	"io"
 	"time"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 var MaxBlockHeaderBytes = 76
@@ -29,36 +27,18 @@ type BlockHeader struct {
 	FeeAddress                 [20]byte
 }
 
-// Serialize serializes the block header to the given writer.
-func (bh *BlockHeader) Serialize(w io.Writer) error {
-	sec := uint32(bh.Timestamp.Unix())
-	err := serializer.WriteElements(w, bh.Version, bh.FeeAddress, bh.Nonce,
-		bh.TxMerkleRoot, bh.VoteMerkleRoot, bh.PrevBlockHash,
-		bh.Slot, bh.StateRoot, sec, bh.VoteSlashingMerkleRoot,
-		bh.RANDAOSlashingMerkleRoot, bh.ProposerSlashingMerkleRoot,
-		bh.DepositMerkleRoot, bh.ExitMerkleRoot)
-	if err != nil {
-		return err
-	}
-	return nil
+// Marshal encodes the data.
+func (bh *BlockHeader) Marshal() ([]byte, error) {
+	return ssz.Marshal(bh)
 }
 
-// Deserialize deserializes the block header from the given reader.
-func (bh *BlockHeader) Deserialize(r io.Reader) error {
-	err := serializer.ReadElements(r, &bh.Version, &bh.FeeAddress, &bh.Nonce,
-		&bh.TxMerkleRoot, &bh.VoteMerkleRoot, &bh.PrevBlockHash,
-		&bh.Slot, &bh.StateRoot, (*serializer.Uint32Time)(&bh.Timestamp), &bh.VoteSlashingMerkleRoot,
-		&bh.RANDAOSlashingMerkleRoot, &bh.ProposerSlashingMerkleRoot,
-		&bh.DepositMerkleRoot, &bh.ExitMerkleRoot)
-	if err != nil {
-		return err
-	}
-	return nil
+// Unmarshal decodes the data.
+func (bh *BlockHeader) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, bh)
 }
 
 // Hash calculates the hash of the block header.
 func (bh *BlockHeader) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = bh.Serialize(buf)
-	return chainhash.DoubleHashH(buf.Bytes())
+	b, _ := bh.Marshal()
+	return chainhash.DoubleHashH(b)
 }

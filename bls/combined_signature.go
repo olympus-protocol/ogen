@@ -2,7 +2,8 @@ package bls
 
 import (
 	"fmt"
-	"io"
+
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // CombinedSignature is a signature and a public key meant to match
@@ -10,6 +11,16 @@ import (
 type CombinedSignature struct {
 	sig Signature
 	pub PublicKey
+}
+
+// Marshal encodes the data.
+func (cs *CombinedSignature) Marshal() ([]byte, error) {
+	return ssz.Marshal(cs)
+}
+
+// Unmarshal decodes the data.
+func (cs *CombinedSignature) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, cs)
 }
 
 // NewCombinedSignature creates a new combined signature
@@ -33,30 +44,6 @@ func (cs *CombinedSignature) ToPub() PublicKey {
 // GetPublicKey gets the functional public key.
 func (cs *CombinedSignature) GetPublicKey() FunctionalPublicKey {
 	return &cs.pub
-}
-
-// Encode encodes the combined signature to the writer.
-func (cs *CombinedSignature) Encode(w io.Writer) error {
-	if err := cs.pub.Encode(w); err != nil {
-		return err
-	}
-	if err := cs.sig.Encode(w); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Decode decodes the combined signature from the reader.
-func (cs *CombinedSignature) Decode(r io.Reader) error {
-	if err := cs.pub.Decode(r); err != nil {
-		return err
-	}
-	if err := cs.sig.Decode(r); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Sign signs a message using the secret key.

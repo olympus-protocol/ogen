@@ -1,9 +1,7 @@
 package primitives
 
 import (
-	"io"
-
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // ValidatorStatus represents the status of a Validator.
@@ -68,25 +66,14 @@ func (wr *Validator) IsActiveAtEpoch(epoch int64) bool {
 		(wr.LastActiveEpoch == -1 || epoch <= wr.LastActiveEpoch)
 }
 
-// Serialize serializes a validator row to the provided writer.
-func (wr *Validator) Serialize(w io.Writer) error {
-	if err := serializer.WriteElements(w, wr.Balance, wr.PayeeAddress, wr.Status, wr.FirstActiveEpoch, wr.LastActiveEpoch); err != nil {
-		return err
-	}
-	return serializer.WriteVarBytes(w, wr.PubKey)
+// Marshal encodes the data.
+func (v *Validator) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
 }
 
-// Deserialize deserializes a validator row from the provided reader.
-func (wr *Validator) Deserialize(r io.Reader) error {
-	if err := serializer.ReadElements(r, &wr.Balance, &wr.PayeeAddress, &wr.Status, &wr.FirstActiveEpoch, &wr.LastActiveEpoch); err != nil {
-		return err
-	}
-	pub, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	wr.PubKey = pub
-	return nil
+// Unmarshal decodes the data.
+func (v *Validator) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 // Copy returns a copy of the validator.

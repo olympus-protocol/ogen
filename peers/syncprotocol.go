@@ -2,8 +2,10 @@ package peers
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -17,7 +19,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 const syncProtocolID = protocol.ID("/ogen/sync/0.0.1")
@@ -283,8 +284,9 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
 	lastBlockHeight := sp.chain.State().Tip().Height
-	nonce, _ := serializer.RandomUint64()
-	msg := p2p.NewMsgVersion(nonce, lastBlockHeight)
+	buf := make([]byte, 8)
+	rand.Read(buf)
+	msg := p2p.NewMsgVersion(binary.LittleEndian.Uint64(buf), lastBlockHeight)
 	return msg
 }
 

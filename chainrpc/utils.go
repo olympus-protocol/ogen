@@ -42,7 +42,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 	switch data.Type {
 	case "tx":
 		tx := new(primitives.Tx)
-		err := tx.Decode(buf)
+		err := tx.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -64,7 +64,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
 	case "exit":
 		exit := new(primitives.Exit)
-		err := exit.Decode(buf)
+		err := exit.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
@@ -83,16 +83,15 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(dataBytes)
 	tx := new(primitives.Tx)
-	err = tx.Decode(buf)
+	err = tx.Unmarshal(dataBytes)
 	if err != nil {
 		return nil, errors.New("unable to decode block raw data")
 	}
 	txParse := &proto.Tx{
 		Hash:    tx.Hash().String(),
-		Version: tx.TxVersion,
-		Type:    tx.TxType,
+		Version: tx.Version,
+		Type:    tx.Type,
 	}
 	return txParse, nil
 }
@@ -101,9 +100,8 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(dataBytes)
 	block := new(primitives.Block)
-	err = block.Decode(buf)
+	err = block.Unmarshal(dataBytes)
 	if err != nil {
 		return nil, errors.New("unable to decode block raw data")
 	}

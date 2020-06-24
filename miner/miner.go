@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -131,27 +130,25 @@ func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
-	buf := bytes.NewBuffer([]byte{})
-	err := vote.Encode(buf)
+	buf, err := vote.Marshal()
 	if err != nil {
 		m.log.Errorf("error encoding vote: %s", err)
 		return
 	}
 
-	if err := m.voteTopic.Publish(m.context, buf.Bytes()); err != nil {
+	if err := m.voteTopic.Publish(m.context, buf); err != nil {
 		m.log.Errorf("error publishing vote: %s", err)
 	}
 }
 
 func (m *Miner) publishBlock(block *primitives.Block) {
-	buf := bytes.NewBuffer([]byte{})
-	err := block.Encode(buf)
+	buf, err := block.Marshal()
 	if err != nil {
 		m.log.Error(err)
 		return
 	}
 
-	if err := m.blockTopic.Publish(m.context, buf.Bytes()); err != nil {
+	if err := m.blockTopic.Publish(m.context, buf); err != nil {
 		m.log.Errorf("error publishing block: %s", err)
 	}
 }

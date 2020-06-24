@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -13,7 +12,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 type chainServer struct {
@@ -176,12 +174,12 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 	for {
 		select {
 		case bl := <-bn.blocks:
-			buf := bytes.NewBuffer([]byte{})
-			if err := bl.block.Encode(buf); err != nil {
+			buf, err := bl.block.Marshal()
+			if err != nil {
 				return err
 			}
-			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(buf.Bytes()),
+			err = stream.Send(&proto.RawData{
+				Data: hex.EncodeToString(buf),
 			})
 			if err != nil {
 				return err
@@ -213,28 +211,8 @@ func (s *chainServer) SubscribeTransactions(in *proto.KeyPairs, stream proto.Cha
 	for {
 		select {
 		case bl := <-bn.blocks:
-			transactions := make([]primitives.Tx, 0)
-			for _, tx := range bl.block.Txs {
-				pkh := tx.Payload.FromPubkeyHash()
-				if _, ok := accounts[pkh]; ok {
-					transactions = append(transactions, tx)
-				}
-			}
-			if len(transactions) == 0 {
-				continue
-			}
-			resp := bytes.NewBuffer([]byte{})
-			if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
-				return err
-			}
-			for _, tx := range transactions {
-				if err := tx.Encode(resp); err != nil {
-					return err
-				}
-			}
-
 			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(resp.Bytes()),
+				Data: hex.EncodeToString(bl.block.SerializedTx(accounts)),
 			})
 			if err != nil {
 				return err
@@ -247,17 +225,17 @@ func (s *chainServer) SubscribeTransactions(in *proto.KeyPairs, stream proto.Cha
 
 func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream proto.Chain_SubscribeValidatorTransactionsServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)
-	accounts := make(map[[96]byte]struct{})
+	accounts := make(map[[48]byte]struct{})
 	for _, a := range in.Keys {
 		pubkey, err := hex.DecodeString(a)
 		if err != nil {
 			return err
 		}
-		if len(pubkey) != 96 {
-			return fmt.Errorf("expected public key to be 96 bytes but got %d", len(a))
+		if len(pubkey) != 48 {
+			return fmt.Errorf("expected public key to be 48 bytes but got %d", len(a))
 		}
 
-		var acc [96]byte
+		var acc [48]byte
 		copy(acc[:], a)
 
 		accounts[acc] = struct{}{}
@@ -266,33 +244,8 @@ func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream p
 	for {
 		select {
 		case bl := <-bn.blocks:
-			transactions := make([]*primitives.EpochReceipt, 0)
-			for _, receipt := range bl.receipts {
-				validator := bl.state.ValidatorRegistry[receipt.Validator].PubKey
-				var validatorPubkey [96]byte
-
-				copy(validatorPubkey[:], validator)
-
-				if _, ok := accounts[validatorPubkey]; ok {
-					transactions = append(transactions, receipt)
-				}
-			}
-
-			if len(transactions) == 0 {
-				continue
-			}
-			resp := bytes.NewBuffer([]byte{})
-			if err := serializer.WriteVarInt(resp, uint64(len(transactions))); err != nil {
-				return err
-			}
-			for _, tx := range transactions {
-				if err := tx.Encode(resp); err != nil {
-					return err
-				}
-			}
-
 			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(resp.Bytes()),
+				Data: hex.EncodeToString(bl.block.SerializedEpochs(accounts)),
 			})
 			if err != nil {
 				return err
@@ -341,8 +294,8 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 	}
 	txParse := &proto.Tx{
 		Hash:    tx.Hash().String(),
-		Version: tx.TxVersion,
-		Type:    tx.TxType,
+		Version: tx.Version,
+		Type:    tx.Type,
 	}
 	return txParse, nil
 }
