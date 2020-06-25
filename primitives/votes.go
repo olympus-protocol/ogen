@@ -7,6 +7,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -18,7 +19,7 @@ type AcceptedVoteInfo struct {
 
 	// ParticipationBitfield is any validator that participated in the
 	// vote.
-	ParticipationBitfield []uint8
+	ParticipationBitfield bitfield.Bitfield
 
 	// Proposer is the proposer that included the attestation in a block.
 	Proposer uint32
@@ -140,7 +141,7 @@ func (v *VoteData) Hash() chainhash.Hash {
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
 	Data      VoteData
-	Signature bls.Signature
+	Signature bls.Signature `ssz:"size=96"`
 	Offset    uint32
 	OutOf     uint32
 }
@@ -175,7 +176,7 @@ func (v *SingleValidatorVote) Hash() chainhash.Hash {
 type MultiValidatorVote struct {
 	Data                  VoteData
 	Signature             bls.Signature
-	ParticipationBitfield []uint8
+	ParticipationBitfield bitfield.Bitfield
 }
 
 // Marshal encodes the data.

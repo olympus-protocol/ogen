@@ -2,7 +2,6 @@ package bls
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/pkg/errors"
@@ -10,7 +9,8 @@ import (
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
-	s *bls.Sign
+	SB []byte `ssz:"size=96"`
+	s  *bls.Sign
 }
 
 // Copy returns a copy of the signature.
@@ -19,24 +19,6 @@ func (s *Signature) Copy() *Signature {
 	return &Signature{
 		s: &sCopy,
 	}
-}
-
-// Encode encodes to the given writer.
-func (s *Signature) Encode(w io.Writer) error {
-	sigBytes := s.Marshal()
-	_, err := w.Write(sigBytes)
-
-	return err
-}
-
-// Decode decodes from the given reader.
-func (s *Signature) Decode(r io.Reader) error {
-	sigBytes := make([]byte, 96)
-	if _, err := io.ReadFull(r, sigBytes); err != nil {
-		return err
-	}
-
-	return s.s.Deserialize(sigBytes)
 }
 
 // SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
