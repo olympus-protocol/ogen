@@ -91,7 +91,7 @@ Next generation blockchain secured by CASPER.`,
 			var log *logger.Logger
 
 			if viper.GetBool("log_file") {
-				logFile, err := os.OpenFile(path.Join(DataFolder,"logger.log"), os.O_CREATE|os.O_RDWR, 0755)
+				logFile, err := os.OpenFile(path.Join(DataFolder, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
 				if err != nil {
 					panic(err)
 				}
@@ -114,7 +114,7 @@ Next generation blockchain secured by CASPER.`,
 				currParams = params.TestNet
 			}
 
-			cf, err := getChainFile(path.Join(DataFolder,"chain.json"), currParams)
+			cf, err := getChainFile(path.Join(DataFolder, "chain.json"), currParams)
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
