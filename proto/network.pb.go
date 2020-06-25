@@ -35,9 +35,9 @@ type NetworkInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Peers    int32  `protobuf:"varint,1,opt,name=peers,proto3" json:"peers"`
-	Protocol int32  `protobuf:"varint,2,opt,name=protocol,proto3" json:"protocol"`
-	Version  string `protobuf:"bytes,3,opt,name=version,proto3" json:"version"`
+	Peers    int32  `protobuf:"varint,1,opt,name=peers,proto3" json:"peers,omitempty"`
+	Protocol int32  `protobuf:"varint,2,opt,name=protocol,proto3" json:"protocol,omitempty"`
+	Version  string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 }
 
 func (x *NetworkInfo) Reset() {
@@ -98,7 +98,7 @@ type Peers struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Peers []*Peer `protobuf:"bytes,1,rep,name=peers,proto3" json:"peers"`
+	Peers []*Peer `protobuf:"bytes,1,rep,name=peers,proto3" json:"peers,omitempty"`
 }
 
 func (x *Peers) Reset() {
@@ -145,8 +145,8 @@ type Peer struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id"`
-	Host *IP    `protobuf:"bytes,2,opt,name=host,proto3" json:"host"`
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Host *IP    `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
 }
 
 func (x *Peer) Reset() {
@@ -200,7 +200,7 @@ type IP struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host"`
+	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
 }
 
 func (x *IP) Reset() {

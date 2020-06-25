@@ -69,7 +69,7 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRoot.String(),
 			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRoot.String(),
 			PrevBlockHash:              block.Header.PrevBlockHash.String(),
-			Timestamp:                  block.Header.Timestamp.Unix(),
+			Timestamp:                  block.Header.Timestamp,
 			Slot:                       block.Header.Slot,
 			StateRoot:                  block.Header.StateRoot.String(),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),

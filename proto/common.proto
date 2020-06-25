@@ -71,7 +71,7 @@ message BlockHeader {
     string  randao_slashing_merkle_root = 8;
     string  proposer_slashing_merkle_root = 9;
     string  prev_block_hash = 10;
-    int64   timestamp = 11;
+    uint64   timestamp = 11;
     uint64  slot = 12;
     string  state_root = 13;
     string  fee_address = 14;

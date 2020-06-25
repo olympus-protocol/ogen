@@ -35,8 +35,8 @@ type SendTransactionInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account"`
-	Amount  string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount"`
+	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	Amount  string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *SendTransactionInfo) Reset() {
@@ -90,10 +90,10 @@ type Balance struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Confirmed   string `protobuf:"bytes,1,opt,name=confirmed,proto3" json:"confirmed"`
-	Unconfirmed string `protobuf:"bytes,2,opt,name=unconfirmed,proto3" json:"unconfirmed"`
-	Locked      string `protobuf:"bytes,3,opt,name=locked,proto3" json:"locked"`
-	Total       string `protobuf:"bytes,4,opt,name=total,proto3" json:"total"`
+	Confirmed   string `protobuf:"bytes,1,opt,name=confirmed,proto3" json:"confirmed,omitempty"`
+	Unconfirmed string `protobuf:"bytes,2,opt,name=unconfirmed,proto3" json:"unconfirmed,omitempty"`
+	Locked      string `protobuf:"bytes,3,opt,name=locked,proto3" json:"locked,omitempty"`
+	Total       string `protobuf:"bytes,4,opt,name=total,proto3" json:"total,omitempty"`
 }
 
 func (x *Balance) Reset() {
@@ -161,7 +161,7 @@ type Wallets struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Wallets []string `protobuf:"bytes,1,rep,name=wallets,proto3" json:"wallets"`
+	Wallets []string `protobuf:"bytes,1,rep,name=wallets,proto3" json:"wallets,omitempty"`
 }
 
 func (x *Wallets) Reset() {
@@ -208,7 +208,7 @@ type Name struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
 func (x *Name) Reset() {
@@ -255,8 +255,8 @@ type ImportWalletData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
-	Key  *KeyPair `protobuf:"bytes,2,opt,name=key,proto3" json:"key"`
+	Name string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Key  *KeyPair `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 }
 
 func (x *ImportWalletData) Reset() {
