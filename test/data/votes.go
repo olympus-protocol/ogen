@@ -1,11 +1,8 @@
 package testdata
 
 import (
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/primitives"
 )
-
-var sig = bls.NewAggregateSignature()
 
 var VoteData = primitives.VoteData{
 	Slot:      1,

@@ -52,13 +52,13 @@ type TransferSinglePayload struct {
 }
 
 // Hash calculates the transaction ID of the payload.
-func (c *TransferSinglePayload) Hash() chainhash.Hash {
+func (c TransferSinglePayload) Hash() chainhash.Hash {
 	b, _ := c.Marshal()
 	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
+func (c TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
 	pkS := c.FromPublicKey
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
@@ -66,28 +66,28 @@ func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
 }
 
 // Marshal encodes the data.
-func (c *TransferSinglePayload) Marshal() ([]byte, error) {
+func (c TransferSinglePayload) Marshal() ([]byte, error) {
 	return ssz.Marshal(c)
 }
 
 // Unmarshal decodes the data.
-func (c *TransferSinglePayload) Unmarshal(b []byte) error {
+func (c TransferSinglePayload) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, c)
 }
 
 // SignatureMessage gets the message the needs to be signed.
-func (c *TransferSinglePayload) SignatureMessage() chainhash.Hash {
-	cp := *c
+func (c TransferSinglePayload) SignatureMessage() chainhash.Hash {
+	cp := c
 	cp.Signature = make([]byte, 96)
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
 
-func (c *TransferSinglePayload) GetSignature() (*bls.Signature, error) {
+func (c TransferSinglePayload) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(c.Signature)
 }
 
-func (c *TransferSinglePayload) GetPublic() (*bls.PublicKey, error) {
+func (c TransferSinglePayload) GetPublic() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(c.FromPublicKey)
 }
 
@@ -111,22 +111,22 @@ func (c *TransferSinglePayload) VerifySig() error {
 }
 
 // GetNonce gets the transaction nonce.
-func (c *TransferSinglePayload) GetNonce() uint64 {
+func (c TransferSinglePayload) GetNonce() uint64 {
 	return c.Nonce
 }
 
 // GetAmount gets the transaction amount to send.
-func (c *TransferSinglePayload) GetAmount() uint64 {
+func (c TransferSinglePayload) GetAmount() uint64 {
 	return c.Amount
 }
 
 // GetFee gets the transaction fee.
-func (c *TransferSinglePayload) GetFee() uint64 {
+func (c TransferSinglePayload) GetFee() uint64 {
 	return c.Fee
 }
 
 // GetFromAddress gets the from address.
-func (c *TransferSinglePayload) GetFromAddress() ([20]byte, error) {
+func (c TransferSinglePayload) GetFromAddress() ([20]byte, error) {
 	return c.FromPubkeyHash()
 }
 
@@ -143,23 +143,23 @@ type TransferMultiPayload struct {
 }
 
 // Marshal encodes the data.
-func (c *TransferMultiPayload) Marshal() ([]byte, error) {
+func (c TransferMultiPayload) Marshal() ([]byte, error) {
 	return ssz.Marshal(c)
 }
 
 // Unmarshal decodes the data.
-func (c *TransferMultiPayload) Unmarshal(b []byte) error {
+func (c TransferMultiPayload) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, c)
 }
 
 // Hash calculates the transaction ID of the payload.
-func (c *TransferMultiPayload) Hash() chainhash.Hash {
+func (c TransferMultiPayload) Hash() chainhash.Hash {
 	b, _ := c.Marshal()
 	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferMultiPayload) FromPubkeyHash() ([20]byte, error) {
+func (c TransferMultiPayload) FromPubkeyHash() ([20]byte, error) {
 	pub, err := c.GetPublic()
 	if err != nil {
 		return [20]byte{}, err
@@ -168,14 +168,14 @@ func (c *TransferMultiPayload) FromPubkeyHash() ([20]byte, error) {
 }
 
 // SignatureMessage gets the message the needs to be signed.
-func (c *TransferMultiPayload) SignatureMessage() chainhash.Hash {
-	cp := *c
+func (c TransferMultiPayload) SignatureMessage() chainhash.Hash {
+	cp := c
 	cp.MultiSig = []byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
 
-func (c *TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
+func (c TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 	sig, err := c.GetSignature()
 	if err != nil {
 		return nil, err
@@ -183,13 +183,13 @@ func (c *TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 	return sig.GetPublicKey()
 }
 
-func (c *TransferMultiPayload) GetSignature() (bls.FunctionalSignature, error) {
+func (c TransferMultiPayload) GetSignature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer(c.MultiSig)
 	return bls.ReadFunctionalSignature(buf)
 }
 
 // VerifySig verifies the signatures is valid.
-func (c *TransferMultiPayload) VerifySig() error {
+func (c TransferMultiPayload) VerifySig() error {
 	sigMsg := c.SignatureMessage()
 	sig, err := c.GetSignature()
 	if err != nil {
@@ -204,17 +204,17 @@ func (c *TransferMultiPayload) VerifySig() error {
 }
 
 // GetNonce gets the transaction nonce.
-func (c *TransferMultiPayload) GetNonce() uint64 {
+func (c TransferMultiPayload) GetNonce() uint64 {
 	return c.Nonce
 }
 
 // GetAmount gets the transaction amount to send.
-func (c *TransferMultiPayload) GetAmount() uint64 {
+func (c TransferMultiPayload) GetAmount() uint64 {
 	return c.Amount
 }
 
 // GetFee gets the transaction fee.
-func (c *TransferMultiPayload) GetFee() uint64 {
+func (c TransferMultiPayload) GetFee() uint64 {
 	return c.Fee
 }
 
@@ -243,7 +243,16 @@ type TxPayload interface {
 type Tx struct {
 	Version int32
 	Type    TxType
-	Payload TxPayload
+	Payload []byte
+}
+
+func (t *Tx) AppendPayload(p TxPayload) error {
+	buf, err := p.Marshal()
+	if err != nil {
+		return err
+	}
+	t.Payload = buf
+	return nil
 }
 
 // Marshal encodes the data.

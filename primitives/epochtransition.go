@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -265,8 +266,18 @@ const (
 // EpochReceipt is a balance change carried our by an epoch transition.
 type EpochReceipt struct {
 	Type      uint8
-	Amount    int64
+	Amount    uint64
 	Validator uint32
+}
+
+// Marshal encodes the data.
+func (d *EpochReceipt) Marshal() ([]byte, error) {
+	return ssz.Marshal(d)
+}
+
+// Unmarshal decodes the data.
+func (d *EpochReceipt) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, d)
 }
 
 func (e EpochReceipt) TypeString() string {
@@ -511,7 +522,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		s.ValidatorRegistry[index].Balance += reward
 		receipts = append(receipts, &EpochReceipt{
 			Validator: index,
-			Amount:    int64(reward),
+			Amount:    reward,
 			Type:      why,
 		})
 	}
@@ -523,7 +534,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		s.ValidatorRegistry[index].Balance -= penalty
 		receipts = append(receipts, &EpochReceipt{
 			Validator: index,
-			Amount:    -int64(penalty),
+			Amount:    -penalty,
 			Type:      why,
 		})
 	}

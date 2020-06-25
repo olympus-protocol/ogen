@@ -73,7 +73,19 @@ func Test_ExitSerialize(t *testing.T) {
 }
 
 func Test_EpochReceiptSerialize(t *testing.T) {
-
+	ser, err := testdata.EpochReceipt.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.EpochReceipt
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.EpochReceipt, desc)
+	if !equal {
+		t.Fatal("error: serialize Exit")
+	}
 }
 
 func Test_CommunityVoteDataSerialize(t *testing.T) {
@@ -108,8 +120,36 @@ func Test_TransferMultiPayloadSerialize(t *testing.T) {
 
 }
 
-func Test_TxSerialize(t *testing.T) {
+func Test_TxSingleSerialize(t *testing.T) {
+	ser, err := testdata.TxSingle.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.Tx
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.TxSingle, desc)
+	if !equal {
+		t.Fatal("error: serialize TxSingle")
+	}
+}
 
+func Test_TxMultiSerialize(t *testing.T) {
+	ser, err := testdata.TxMulti.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.Tx
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.TxMulti, desc)
+	if !equal {
+		t.Fatal("error: serialize TxMulti")
+	}
 }
 
 func Test_ValidatorSerialize(t *testing.T) {

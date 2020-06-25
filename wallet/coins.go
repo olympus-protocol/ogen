@@ -161,9 +161,12 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	tx := &primitives.Tx{
 		Type:    primitives.TxTransferSingle,
 		Version: 0,
-		Payload: payload,
 	}
 
+	err = tx.AppendPayload(payload)
+	if err != nil {
+		return nil, err
+	}
 	currentState := w.chain.State().TipState()
 
 	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {

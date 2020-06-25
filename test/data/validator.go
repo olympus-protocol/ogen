@@ -1,11 +1,9 @@
 package testdata
 
 import (
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
-var randKey = bls.RandKey().PublicKey()
 var Validator = primitives.Validator{
 	Balance:          100000,
 	PubKey:           randKey.Marshal(),

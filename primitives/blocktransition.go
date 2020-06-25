@@ -851,7 +851,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, tx := range b.Txs {
-		switch payload := tx.Payload.(type) {
+		pload := *new(TxPayload)
+		err := pload.Unmarshal(tx.Payload)
+		if err != nil {
+			return err
+		}
+		switch payload := pload.(type) {
 		case *TransferSinglePayload:
 			if err := s.ApplyTransactionSingle(payload, b.Header.FeeAddress, p); err != nil {
 				return err
