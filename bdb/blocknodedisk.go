@@ -15,10 +15,12 @@ type BlockNodeDisk struct {
 	Parent    chainhash.Hash
 }
 
+// Marshal encodes de data
 func (bnd *BlockNodeDisk) Marshal() ([]byte, error) {
 	return ssz.Marshal(bnd)
 }
 
+// Unmarshal decodes the data
 func (bnd *BlockNodeDisk) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, bnd)
 }
