@@ -80,7 +80,7 @@ func (p *ProtocolHandler) RegisterHandler(messageName string, handler MessageHan
 }
 
 // processMessages continuously reads from stream and handles any protobuf messages.
-func processMessages(ctx context.Context, net p2p.NetMagic, stream io.Reader, handler func(p2p.Message) error) error {
+func processMessages(ctx context.Context, net uint32, stream io.Reader, handler func(p2p.Message) error) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -88,7 +88,7 @@ func processMessages(ctx context.Context, net p2p.NetMagic, stream io.Reader, ha
 		default:
 			break
 		}
-		msg, err := p2p.ReadMessageWithEncodingN(stream, net)
+		msg, err := p2p.ReadMessage(stream, net)
 		if err != nil {
 			return err
 		}

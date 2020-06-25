@@ -22,7 +22,7 @@ func GetGenesisBlock(params params.ChainParams) Block {
 			PrevBlockHash:  chainhash.Hash{},
 			TxMerkleRoot:   chainhash.Hash{},
 			VoteMerkleRoot: chainhash.Hash{},
-			Timestamp:      time.Unix(0x0, 0),
+			Timestamp:      uint64(time.Unix(0x0, 0).Unix()),
 		},
 		Txs: []Tx{},
 	}

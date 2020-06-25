@@ -1,8 +1,6 @@
 package primitives
 
 import (
-	"time"
-
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -21,7 +19,7 @@ type BlockHeader struct {
 	ProposerSlashingMerkleRoot chainhash.Hash
 	GovernanceVotesMerkleRoot  chainhash.Hash
 	PrevBlockHash              chainhash.Hash
-	Timestamp                  time.Time
+	Timestamp                  uint64
 	Slot                       uint64
 	StateRoot                  chainhash.Hash
 	FeeAddress                 [20]byte

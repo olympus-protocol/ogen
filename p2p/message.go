@@ -1,22 +1,30 @@
 package p2p
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
-	"math"
+	"io"
+	"io/ioutil"
+
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 const (
-	MsgVersionCmd   = "version"
-	MsgGetAddrCmd   = "getaddr"
-	MsgAddrCmd      = "addr"
+	// MsgVersionCmd is for version handshake
+	MsgVersionCmd = "version"
+	// MsgGetAddrCmd ask node for address
+	MsgGetAddrCmd = "getaddr"
+	// MsgAddrCmd an slice of address
+	MsgAddrCmd = "addr"
+	// MsgGetBlocksCmd ask a node for blocks
 	MsgGetBlocksCmd = "getblocks"
-	MsgBlocksCmd    = "blocks"
-	MsgTxCmd        = "tx"
+	// MsgBlocksCmd slice with blocks
+	MsgBlocksCmd = "blocks"
 )
 
-const MessageHeaderSize = 24
-const MaxMessagePayload = 1024 * 1024 * 32 // 32 MB
-
+// Message interface for all the messages
 type Message interface {
 	Marshal() ([]byte, error)
 	Unmarshal(b []byte) error
@@ -24,11 +32,20 @@ type Message interface {
 	MaxPayloadLength() uint32
 }
 
-type messageHeader struct {
-	magic    NetMagic
-	command  string
-	length   uint32
-	checksum [4]byte
+// MessageHeader header of the message
+type MessageHeader struct {
+	Magic    uint32
+	Command  [40]byte
+	Length   uint32
+	Checksum [4]byte
+}
+
+func (h *MessageHeader) Marshal() ([]byte, error) {
+	return ssz.Marshal(h)
+}
+
+func (h *MessageHeader) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, h)
 }
 
 func makeEmptyMessage(command string) (Message, error) {
@@ -44,33 +61,98 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
-	case MsgTxCmd:
-		msg = &MsgTx{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}
 	return msg, nil
 }
 
-// VarIntSerializeSize returns the number of bytes it would take to serialize
-// val as a variable length integer.
-func VarIntSerializeSize(val uint64) int {
-	// The value is small enough to be represented by itself, so it's
-	// just 1 byte.
-	if val < 0xfd {
-		return 1
+// ReadMessage decodes the message from reader
+func ReadMessage(r io.Reader, net uint32) (Message, error) {
+	header, err := readHeader(r, net)
+	if err != nil {
+		return nil, err
 	}
-
-	// Discriminant 1 byte plus 2 bytes for the uint16.
-	if val <= math.MaxUint16 {
-		return 3
+	cmdB := bytes.Trim(header.Command[:], "\x00")
+	cmd := string(cmdB)
+	msg, err := makeEmptyMessage(cmd)
+	if err != nil {
+		return nil, err
 	}
-
-	// Discriminant 1 byte plus 4 bytes for the uint32.
-	if val <= math.MaxUint32 {
-		return 5
+	msgBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
 	}
+	var checksum [4]byte
+	copy(checksum[:], chainhash.DoubleHashB(msgBytes)[0:4])
+	if header.Checksum != checksum {
+		return nil, errors.New("checksum don't match")
+	}
+	if header.Length != uint32(len(msgBytes)) {
+		return nil, errors.New("wrong announced length")
+	}
+	err = msg.Unmarshal(msgBytes)
+	if err != nil {
+		return nil, err
+	}
+	if header.Length > msg.MaxPayloadLength() {
+		return nil, errors.New("message exceed max payload length")
+	}
+	return msg, nil
+}
 
-	// Discriminant 1 byte plus 8 bytes for the uint64.
-	return 9
+func readHeader(r io.Reader, net uint32) (MessageHeader, error) {
+	hdb := [52]byte{}
+	_, err := io.ReadFull(r, hdb[:])
+	if err != nil {
+		return MessageHeader{}, err
+	}
+	var header MessageHeader
+	err = header.Unmarshal(hdb[:])
+	if err != nil {
+		return MessageHeader{}, err
+	}
+	if header.Magic != net {
+		return MessageHeader{}, errors.New("wrong message network")
+	}
+	return header, nil
+}
+
+// WriteMessage writes the message to writer
+func WriteMessage(w io.Writer, msg Message, net uint32) error {
+	ser, err := msg.Marshal()
+	if err != nil {
+		return err
+	}
+	var checksum [4]byte
+	copy(checksum[:], chainhash.DoubleHashB(ser)[0:4])
+	err = writeHeader(w, msg, net, uint32(len(ser)), checksum)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(ser)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeHeader(w io.Writer, msg Message, net uint32, length uint32, checksum [4]byte) error {
+	cmd := [40]byte{}
+	copy(cmd[:], []byte(msg.Command()))
+	header := MessageHeader{
+		Magic:    net,
+		Command:  cmd,
+		Length:   length,
+		Checksum: checksum,
+	}
+	ser, err := header.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(ser)
+	if err != nil {
+		return err
+	}
+	return nil
 }

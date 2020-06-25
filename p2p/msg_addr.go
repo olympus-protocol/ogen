@@ -1,15 +1,14 @@
 package p2p
 
 import (
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-const MaxAddrPerMsg = 32
+const MaxAddrPerMsg = 500
 const MaxAddrPerPeer = 2
 
 type MsgAddr struct {
-	AddrList []peer.AddrInfo
+	Addr [][]byte
 }
 
 func (m *MsgAddr) Marshal() ([]byte, error) {
