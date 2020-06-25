@@ -156,9 +156,9 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			n.ProposerSlashingConditionViolated(primitives.ProposerSlashing{
 				BlockHeader1:       block.Header,
 				BlockHeader2:       otherBlock.Header,
-				Signature1:         *blockSig,
-				Signature2:         *otherSig,
-				ValidatorPublicKey: *proposerPub,
+				Signature1:         blockSig.Marshal(),
+				Signature2:         otherSig.Marshal(),
+				ValidatorPublicKey: proposerPub.Marshal(),
 			})
 		}
 		return nil

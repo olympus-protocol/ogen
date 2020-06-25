@@ -27,7 +27,11 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if len(vote.Data) != 0 {
 			return fmt.Errorf("expected EnterVotingPeriod vote to have no data")
 		}
-		pubKey, err := vote.Signature.GetPublicKey()
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
+		pubKey, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
@@ -52,7 +56,11 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
 		}
-		pubKey, err := vote.Signature.GetPublicKey()
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
+		pubKey, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
@@ -78,7 +86,11 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
 		}
-		pub, err := vote.Signature.GetPublicKey()
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
+		pub, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
@@ -115,8 +127,12 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
 		// must include multisig signed by 5/5 managers
-		pub, err := vote.Signature.GetPublicKey()
+		pub, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
@@ -156,8 +172,11 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
 		return err
 	}
-
-	votePub, err := vote.Signature.GetPublicKey()
+	sig, err := vote.Signature()
+	if err != nil {
+		return err
+	}
+	votePub, err := sig.GetPublicKey()
 	if err != nil {
 		return err
 	}
@@ -269,16 +288,27 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 	if ps.BlockHeader1.Slot != ps.BlockHeader2.Slot {
 		return 0, fmt.Errorf("proposer-slashing: block headers do not have the same slot")
 	}
-
-	if !ps.Signature1.Verify(h1[:], &ps.ValidatorPublicKey) {
+	pub, err := ps.GetValidatorPubkey()
+	if err != nil {
+		return 0, err
+	}
+	s1, err := ps.GetSignature1()
+	if err != nil {
+		return 0, err
+	}
+	s2, err := ps.GetSignature2()
+	if err != nil {
+		return 0, err
+	}
+	if !s1.Verify(h1[:], pub) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 1")
 	}
 
-	if !ps.Signature2.Verify(h2[:], &ps.ValidatorPublicKey) {
+	if !s2.Verify(h2[:], pub) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
 	}
 
-	pubkeyBytes := ps.ValidatorPublicKey.Marshal()
+	pubkeyBytes := ps.ValidatorPublicKey
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
@@ -428,12 +458,19 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 	}
 
 	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", rs.Slot)))
-
-	if !rs.RandaoReveal.Verify(slotHash[:], &rs.ValidatorPubkey) {
+	pub, err := rs.GetValidatorPubkey()
+	if err != nil {
+		return 0, err
+	}
+	sig, err := rs.GetRandaoReveal()
+	if err != nil {
+		return 0, err
+	}
+	if !sig.Verify(slotHash[:], pub) {
 		return 0, fmt.Errorf("randao-slashing: RANDAO reveal does not verify")
 	}
 
-	pubkeyBytes := rs.ValidatorPubkey.Marshal()
+	pubkeyBytes := rs.ValidatorPubkey
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {

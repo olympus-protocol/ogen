@@ -32,9 +32,17 @@ func (vs *VoteSlashing) Hash() chainhash.Hash {
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO
 // signature too early.
 type RANDAOSlashing struct {
-	RandaoReveal    bls.Signature
+	RandaoReveal    []byte
 	Slot            uint64
-	ValidatorPubkey bls.PublicKey
+	ValidatorPubkey []byte
+}
+
+func (rs *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(rs.ValidatorPubkey)
+}
+
+func (rs *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(rs.RandaoReveal)
 }
 
 // Marshal encodes the data.
@@ -58,9 +66,21 @@ func (rs *RANDAOSlashing) Hash() chainhash.Hash {
 type ProposerSlashing struct {
 	BlockHeader1       BlockHeader
 	BlockHeader2       BlockHeader
-	Signature1         bls.Signature
-	Signature2         bls.Signature
-	ValidatorPublicKey bls.PublicKey
+	Signature1         []byte
+	Signature2         []byte
+	ValidatorPublicKey []byte
+}
+
+func (ps *ProposerSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(ps.ValidatorPublicKey)
+}
+
+func (ps *ProposerSlashing) GetSignature1() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(ps.Signature1)
+}
+
+func (ps *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(ps.Signature2)
 }
 
 // Marshal encodes the data.

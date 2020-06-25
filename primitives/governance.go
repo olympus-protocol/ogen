@@ -1,13 +1,12 @@
 package primitives
 
 import (
+	"bytes"
+
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
-
-// GovernanceVoteType is the type of a governance vote.
-type GovernanceVoteType uint8
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
 type CommunityVoteData struct {
@@ -42,7 +41,7 @@ func (c *CommunityVoteData) Hash() chainhash.Hash {
 const (
 	// EnterVotingPeriod can be done by anyone on the network to signal that they
 	// want a voting period to start.
-	EnterVotingPeriod GovernanceVoteType = iota
+	EnterVotingPeriod uint8 = iota
 
 	// VoteFor can be done by anyone on the network during a voting period to vote
 	// for a specific assignment of managers.
@@ -59,10 +58,20 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type      GovernanceVoteType
-	Data      []byte
-	Signature bls.FunctionalSignature
-	VoteEpoch uint64
+	Type          uint8
+	Data          []byte
+	FunctionalSig []byte
+	VoteEpoch     uint64
+}
+
+func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
+	buf := bytes.NewBuffer([]byte{})
+	buf.Write(gv.FunctionalSig)
+	sig, err := bls.ReadFunctionalSignature(buf)
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
 }
 
 // Marshal encodes the data.
@@ -77,13 +86,17 @@ func (gv *GovernanceVote) Unmarshal(b []byte) error {
 
 func (gv *GovernanceVote) Valid() bool {
 	sigHash := gv.SignatureHash()
-	return gv.Signature.Verify(sigHash[:])
+	sig, err := gv.Signature()
+	if err != nil {
+		return false
+	}
+	return sig.Verify(sigHash[:])
 }
 
 // SignatureHash gets the signed part of the hash.
 func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := gv.Copy()
-	cp.Signature = nil
+	cp.FunctionalSig = []byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
@@ -99,6 +112,6 @@ func (gv *GovernanceVote) Copy() *GovernanceVote {
 	newGv := *gv
 	newGv.Data = make([]byte, len(gv.Data))
 	copy(newGv.Data, gv.Data)
-	newGv.Signature = gv.Signature.Copy()
+	newGv.FunctionalSig = gv.FunctionalSig
 	return &newGv
 }

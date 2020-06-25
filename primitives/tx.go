@@ -66,12 +66,12 @@ func (c TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
 }
 
 // Marshal encodes the data.
-func (c TransferSinglePayload) Marshal() ([]byte, error) {
+func (c *TransferSinglePayload) Marshal() ([]byte, error) {
 	return ssz.Marshal(c)
 }
 
 // Unmarshal decodes the data.
-func (c TransferSinglePayload) Unmarshal(b []byte) error {
+func (c *TransferSinglePayload) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, c)
 }
 
@@ -143,12 +143,12 @@ type TransferMultiPayload struct {
 }
 
 // Marshal encodes the data.
-func (c TransferMultiPayload) Marshal() ([]byte, error) {
+func (c *TransferMultiPayload) Marshal() ([]byte, error) {
 	return ssz.Marshal(c)
 }
 
 // Unmarshal decodes the data.
-func (c TransferMultiPayload) Unmarshal(b []byte) error {
+func (c *TransferMultiPayload) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, c)
 }
 
@@ -244,6 +244,15 @@ type Tx struct {
 	Version int32
 	Type    TxType
 	Payload []byte
+}
+
+func (t *Tx) GetPayload() (TxPayload, error) {
+	var pload TxPayload
+	err := pload.Unmarshal(t.Payload)
+	if err != nil {
+		return nil, err
+	}
+	return pload, nil
 }
 
 func (t *Tx) AppendPayload(p TxPayload) error {
