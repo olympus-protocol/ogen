@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -18,18 +17,17 @@ func TestMultiValidatorVoteSerializeDeserialize(t *testing.T) {
 			ToEpoch:   4,
 			ToHash:    [32]byte{5},
 		},
-		Signature:             *sig,
+		Sig:                   sig.Marshal(),
 		ParticipationBitfield: []byte{1, 2, 3, 4},
 	}
 
-	buf := bytes.NewBuffer([]byte{})
-
-	if err := bl.Serialize(buf); err != nil {
+	buf, err := bl.Marshal()
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	av2 := &MultiValidatorVote{}
-	if err := av2.Deserialize(buf); err != nil {
+	if err := av2.Unmarshal(buf); err != nil {
 		t.Fatal(err)
 	}
 
@@ -88,14 +86,13 @@ func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
 		InclusionDelay:        9,
 	}
 
-	buf := bytes.NewBuffer([]byte{})
-
-	if err := av.Serialize(buf); err != nil {
+	buf, err := av.Marshal()
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	av2 := &AcceptedVoteInfo{}
-	if err := av2.Deserialize(buf); err != nil {
+	if err := av2.Unmarshal(buf); err != nil {
 		t.Fatal(err)
 	}
 

@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -49,24 +48,23 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	}
 
 	depositData := &primitives.DepositData{
-		PublicKey:         *validatorPub,
-		ProofOfPossession: *validatorProofOfPossession,
+		PublicKey:         validatorPub.Marshal(),
+		ProofOfPossession: validatorProofOfPossession.Marshal(),
 		WithdrawalAddress: addr,
 	}
 
-	buf := bytes.NewBuffer([]byte{})
-
-	if err := depositData.Encode(buf); err != nil {
+	buf, err := depositData.Marshal()
+	if err != nil {
 		return nil, err
 	}
 
-	depositHash := chainhash.HashH(buf.Bytes())
+	depositHash := chainhash.HashH(buf)
 
 	depositSig := priv.Sign(depositHash[:])
 
 	deposit := &primitives.Deposit{
-		PublicKey: *pub,
-		Signature: *depositSig,
+		PublicKey: pub.Marshal(),
+		Signature: depositSig.Marshal(),
 		Data:      *depositData,
 	}
 
@@ -104,9 +102,9 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 	sig := priv.Sign(msgHash[:])
 
 	exit := &primitives.Exit{
-		ValidatorPubkey: *validatorPub,
-		WithdrawPubkey:  *pub,
-		Signature:       *sig,
+		ValidatorPubkey: validatorPub.Marshal(),
+		WithdrawPubkey:  pub.Marshal(),
+		Signature:       sig.Marshal(),
 	}
 
 	if err := w.actionMempool.AddExit(exit, currentState); err != nil {
@@ -149,7 +147,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	payload := &primitives.TransferSinglePayload{
 		To:            toPkh,
-		FromPublicKey: *pub,
+		FromPublicKey: pub.Marshal(),
 		Amount:        amount,
 		Nonce:         nonce,
 		Fee:           1,
@@ -158,14 +156,17 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	sigMsg := payload.SignatureMessage()
 	sig := priv.Sign(sigMsg[:])
 
-	payload.Signature = *sig
+	payload.Signature = sig.Marshal()
 
 	tx := &primitives.Tx{
-		TxType:    primitives.TxTransferSingle,
-		TxVersion: 0,
-		Payload:   payload,
+		Type:    primitives.TxTransferSingle,
+		Version: 0,
 	}
 
+	err = tx.AppendPayload(payload)
+	if err != nil {
+		return nil, err
+	}
 	currentState := w.chain.State().TipState()
 
 	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {
@@ -180,37 +181,34 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 }
 
 func (w *Wallet) broadcastTx(payload *primitives.Tx) {
-	buf := bytes.NewBuffer([]byte{})
-	err := payload.Encode(buf)
+	buf, err := payload.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.txTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.txTopic.Publish(w.ctx, buf); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
 
 func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := deposit.Encode(buf)
+	buf, err := deposit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.depositTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.depositTopic.Publish(w.ctx, buf); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
 
 func (w *Wallet) broadcastExit(exit *primitives.Exit) {
-	buf := bytes.NewBuffer([]byte{})
-	err := exit.Encode(buf)
+	buf, err := exit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return
 	}
-	if err := w.exitTopic.Publish(w.ctx, buf.Bytes()); err != nil {
+	if err := w.exitTopic.Publish(w.ctx, buf); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }

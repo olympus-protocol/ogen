@@ -135,7 +135,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 	// all 0's are not returned so we pad the beginning of the slice with empty
 	// bytes if necessary.
 	entropy := b.Bytes()
-	entropy = padByteSlice(entropy, len(mnemonicSlice)/3*4)
+	entropy = PadByteSlice(entropy, len(mnemonicSlice)/3*4)
 
 	// Generate the checksum and compare with the one we got from the mneomnic.
 	entropyChecksumBytes := computeChecksum(entropy)
@@ -190,7 +190,7 @@ func NewMnemonic(entropy []byte) (string, error) {
 		entropyInt.Div(entropyInt, shift11BitsMask)
 
 		// Get the bytes representing the 11 bits as a 2 byte slice.
-		wordBytes := padByteSlice(word.Bytes(), 2)
+		wordBytes := PadByteSlice(word.Bytes(), 2)
 
 		// Convert bytes to an index and add that word to the list.
 		words[i] = wordList[binary.BigEndian.Uint16(wordBytes)]
@@ -232,12 +232,12 @@ func MnemonicToByteArray(mnemonic string, raw ...bool) ([]byte, error) {
 	rawEntropy := big.NewInt(0).Div(checksummedEntropy, checksumModulo)
 
 	// Convert big.Ints to byte padded byte slices.
-	rawEntropyBytes := padByteSlice(rawEntropy.Bytes(), checksumByteSize)
-	checksummedEntropyBytes := padByteSlice(checksummedEntropy.Bytes(), fullByteSize)
+	rawEntropyBytes := PadByteSlice(rawEntropy.Bytes(), checksumByteSize)
+	checksummedEntropyBytes := PadByteSlice(checksummedEntropy.Bytes(), fullByteSize)
 
 	// Validate that the checksum is correct.
-	newChecksummedEntropyBytes := padByteSlice(addChecksum(rawEntropyBytes), fullByteSize)
-	if !compareByteSlices(checksummedEntropyBytes, newChecksummedEntropyBytes) {
+	newChecksummedEntropyBytes := PadByteSlice(addChecksum(rawEntropyBytes), fullByteSize)
+	if !CompareByteSlices(checksummedEntropyBytes, newChecksummedEntropyBytes) {
 		return nil, ErrChecksumIncorrect
 	}
 
@@ -316,7 +316,7 @@ func validateEntropyBitSize(bitSize int) error {
 
 // padByteSlice returns a byte slice of the given size with contents of the
 // given slice left padded and any empty spaces filled with 0's.
-func padByteSlice(slice []byte, length int) []byte {
+func PadByteSlice(slice []byte, length int) []byte {
 	offset := length - len(slice)
 	if offset <= 0 {
 		return slice
@@ -328,7 +328,7 @@ func padByteSlice(slice []byte, length int) []byte {
 
 // compareByteSlices returns true of the byte slices have equal contents and
 // returns false otherwise.
-func compareByteSlices(a, b []byte) bool {
+func CompareByteSlices(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}

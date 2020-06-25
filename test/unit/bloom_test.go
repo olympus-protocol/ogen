@@ -1,4 +1,4 @@
-package bloom_test
+package unit_test
 
 import (
 	"testing"

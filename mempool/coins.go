@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -21,9 +20,13 @@ type coinMempoolItem struct {
 }
 
 func (cmi *coinMempoolItem) add(item primitives.Tx, maxAmount uint64) error {
-	txNonce := item.Payload.GetNonce()
-	txAmount := item.Payload.GetAmount()
-	txFee := item.Payload.GetFee()
+	payload, err := item.GetPayload()
+	if err != nil {
+		return err
+	}
+	txNonce := payload.GetNonce()
+	txAmount := payload.GetAmount()
+	txFee := payload.GetFee()
 
 	if txAmount+txFee+cmi.balanceSpent >= maxAmount {
 		return fmt.Errorf("did not add transaction spending %d with balance of %d", txAmount+txFee+cmi.balanceSpent, maxAmount)
@@ -41,9 +44,13 @@ func (cmi *coinMempoolItem) add(item primitives.Tx, maxAmount uint64) error {
 }
 
 func (cmi *coinMempoolItem) removeBefore(nonce uint64) {
-	for i := range cmi.transactions {
+	for i, tx := range cmi.transactions {
+		payload, err := tx.GetPayload()
+		if err != nil {
+			continue
+		}
 		if i <= nonce {
-			cmi.balanceSpent -= cmi.transactions[i].Payload.GetFee() + cmi.transactions[i].Payload.GetAmount()
+			cmi.balanceSpent -= payload.GetFee() + payload.GetAmount()
 			delete(cmi.transactions, i)
 		}
 	}
@@ -69,29 +76,18 @@ type CoinsMempool struct {
 	baLock   sync.RWMutex
 }
 
-// func (cm *CoinsMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.CoinPayload {
-// 	cm.lock.RLock()
-// 	defer cm.lock.RUnlock()
-// 	txs := make([]primitives.CoinPayload, 0)
-// 	for _, item := range cm.mempool {
-// 		for _, tx := range item.transactions {
-// 			vh := tx.Hash()
-// 			if bloom.Has(vh) {
-// 				continue
-// 			}
-
-// 			txs = append(txs, tx)
-// 		}
-// 	}
-// 	return txs
-// }
-
 // Add adds an item to the coins mempool.
 func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
-
-	fpkh := item.Payload.FromPubkeyHash()
+	payload, err := item.GetPayload()
+	if err != nil {
+		return err
+	}
+	fpkh, err := payload.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
@@ -110,9 +106,16 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	for _, tx := range b.Txs {
-		switch p := tx.Payload.(type) {
+		payload, err := tx.GetPayload()
+		if err != nil {
+			continue
+		}
+		switch p := payload.(type) {
 		case *primitives.TransferSinglePayload:
-			fpkh := p.FromPubkeyHash()
+			fpkh, err := p.FromPubkeyHash()
+			if err != nil {
+				continue
+			}
 			mempoolItem, found := cm.mempool[fpkh]
 			if !found {
 				continue
@@ -134,7 +137,11 @@ func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			switch u := tx.Payload.(type) {
+			payload, err := tx.GetPayload()
+			if err != nil {
+				continue
+			}
+			switch u := payload.(type) {
 			case *primitives.TransferSinglePayload:
 				if err := state.ApplyTransactionSingle(u, [20]byte{}, cm.params); err != nil {
 					continue
@@ -172,10 +179,9 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.Tx)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			cm.log.Warnf("peer sent invalid transaction: %s", err)
 			continue

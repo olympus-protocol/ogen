@@ -1,14 +1,14 @@
 package primitives
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/olympus-protocol/ogen/params"
-	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/prysmaticlabs/go-ssz"
+
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
 )
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
@@ -19,7 +19,7 @@ type AcceptedVoteInfo struct {
 
 	// ParticipationBitfield is any validator that participated in the
 	// vote.
-	ParticipationBitfield []uint8
+	ParticipationBitfield bitfield.Bitfield
 
 	// Proposer is the proposer that included the attestation in a block.
 	Proposer uint32
@@ -27,6 +27,16 @@ type AcceptedVoteInfo struct {
 	// InclusionDelay is the delay from the attestation slot to the slot
 	// included.
 	InclusionDelay uint64
+}
+
+// Marshal encodes the data.
+func (av *AcceptedVoteInfo) Marshal() ([]byte, error) {
+	return ssz.Marshal(av)
+}
+
+// Unmarshal decodes the data.
+func (av *AcceptedVoteInfo) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, av)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
@@ -41,26 +51,6 @@ func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	a2.Data = a.Data.Copy()
 
 	return a2
-}
-
-// Serialize serializes the accepted vote info to a writer.
-func (a *AcceptedVoteInfo) Serialize(w io.Writer) error {
-	if err := a.Data.Serialize(w); err != nil {
-		return err
-	}
-	if err := serializer.WriteVarBytes(w, a.ParticipationBitfield); err != nil {
-		return err
-	}
-	return serializer.WriteElements(w, a.Proposer, a.InclusionDelay)
-}
-
-// Deserialize deserializes the accepted vote info from a reader.
-func (a *AcceptedVoteInfo) Deserialize(r io.Reader) (err error) {
-	if err := a.Data.Deserialize(r); err != nil {
-		return err
-	}
-	a.ParticipationBitfield, err = serializer.ReadVarBytes(r)
-	return serializer.ReadElements(r, &a.Proposer, &a.InclusionDelay)
 }
 
 // MaxVoteDataSize is the maximum size in bytes of vote data.
@@ -87,6 +77,16 @@ type VoteData struct {
 
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash chainhash.Hash
+}
+
+// Marshal encodes the data.
+func (v *VoteData) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal decodes the data.
+func (v *VoteData) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
@@ -134,27 +134,31 @@ func (v *VoteData) Copy() VoteData {
 
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = v.Serialize(buf)
-	return chainhash.HashH(buf.Bytes())
-}
-
-// Serialize serializes the vote data to a writer.
-func (v *VoteData) Serialize(w io.Writer) error {
-	return serializer.WriteElements(w, v.Slot, v.FromEpoch, v.FromHash, v.ToEpoch, v.ToHash, v.BeaconBlockHash)
-}
-
-// Deserialize deserializes the vote data from a reader.
-func (v *VoteData) Deserialize(r io.Reader) error {
-	return serializer.ReadElements(r, &v.Slot, &v.FromEpoch, &v.FromHash, &v.ToEpoch, &v.ToHash, &v.BeaconBlockHash)
+	hash, _ := ssz.HashTreeRoot(v)
+	return chainhash.Hash(hash)
 }
 
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
-	Data      VoteData
-	Signature bls.Signature
-	Offset    uint32
-	OutOf     uint32
+	Data   VoteData
+	Sig    []byte
+	Offset uint32
+	OutOf  uint32
+}
+
+// Signature returns the signature on BLS type
+func (v *SingleValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(v.Sig)
+}
+
+// Marshal encodes the data.
+func (v *SingleValidatorVote) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal decodes the data.
+func (v *SingleValidatorVote) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 // AsMulti returns the single validator vote as a multi validator vote.
@@ -163,87 +167,40 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 	participationBitfield[v.Offset/8] |= (1 << uint(v.Offset%8))
 	return &MultiValidatorVote{
 		Data:                  v.Data,
-		Signature:             v.Signature,
+		Sig:                   v.Sig,
 		ParticipationBitfield: participationBitfield,
 	}
 }
 
 func (v *SingleValidatorVote) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = v.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
-}
-
-// Serialize serializes a SingleValidatorVote to a writer.
-func (v *SingleValidatorVote) Encode(w io.Writer) error {
-	if err := v.Data.Serialize(w); err != nil {
-		return err
-	}
-	sig := v.Signature.Marshal()
-	if _, err := w.Write(sig[:]); err != nil {
-		return err
-	}
-	return serializer.WriteElements(w, v.Offset, v.OutOf)
-}
-
-// Deserialize deserializes a SingleValidatorVote from a reader.
-func (v *SingleValidatorVote) Decode(r io.Reader) error {
-	if err := v.Data.Deserialize(r); err != nil {
-		return err
-	}
-	sigBytes := make([]byte, 96)
-	if _, err := r.Read(sigBytes[:]); err != nil {
-		return err
-	}
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-	v.Signature = *sig
-	return serializer.ReadElements(r, &v.Offset, &v.OutOf)
+	hash, _ := ssz.HashTreeRoot(v)
+	return chainhash.Hash(hash)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
 	Data                  VoteData
-	Signature             bls.Signature
-	ParticipationBitfield []uint8
+	Sig                   []byte
+	ParticipationBitfield bitfield.Bitfield
+}
+
+// Signature returns the signature on BLS type
+func (v *MultiValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(v.Sig)
+}
+
+// Marshal encodes the data.
+func (v *MultiValidatorVote) Marshal() ([]byte, error) {
+	return ssz.Marshal(v)
+}
+
+// Unmarshal decodes the data.
+func (v *MultiValidatorVote) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, v)
 }
 
 // Hash calculates the hash of the vote.
 func (v *MultiValidatorVote) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = v.Serialize(buf)
-	return chainhash.HashH(buf.Bytes())
-}
-
-// Serialize serializes a MultiValidatorVote to a writer.
-func (v *MultiValidatorVote) Serialize(w io.Writer) error {
-	if err := v.Data.Serialize(w); err != nil {
-		return err
-	}
-	sig := v.Signature.Marshal()
-	if err := serializer.WriteElement(w, sig); err != nil {
-		return err
-	}
-	return serializer.WriteVarBytes(w, v.ParticipationBitfield)
-}
-
-// Deserialize deserializes a MultiValidatorVote from a reader.
-func (v *MultiValidatorVote) Deserialize(r io.Reader) (err error) {
-	if err := v.Data.Deserialize(r); err != nil {
-		return err
-	}
-	sigBytes := make([]byte, 96)
-	if err := serializer.ReadElement(r, sigBytes[:]); err != nil {
-		return err
-	}
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-
-	v.Signature = *sig
-	v.ParticipationBitfield, err = serializer.ReadVarBytes(r)
-	return
+	hash, _ := ssz.HashTreeRoot(v)
+	return chainhash.Hash(hash)
 }

@@ -2,50 +2,25 @@ package primitives
 
 import (
 	"bytes"
-	"io"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
-
-// GovernanceVoteType is the type of a governance vote.
-type GovernanceVoteType uint8
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
 type CommunityVoteData struct {
 	ReplacementCandidates [][20]byte
 }
 
-// Encode encodes the community vote data to the given writer.
-func (c *CommunityVoteData) Encode(w io.Writer) error {
-	if err := serializer.WriteVarInt(w, uint64(len(c.ReplacementCandidates))); err != nil {
-		return err
-	}
-
-	for _, ca := range c.ReplacementCandidates {
-		if err := serializer.WriteElement(w, ca); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Marshal encodes the data.
+func (c *CommunityVoteData) Marshal() ([]byte, error) {
+	return ssz.Marshal(c)
 }
 
-// Decode decodes the community vote data from the given reader.
-func (c *CommunityVoteData) Decode(r io.Reader) error {
-	numCandidates, err := serializer.ReadVarInt(r)
-	if err != nil {
-		return err
-	}
-	c.ReplacementCandidates = make([][20]byte, numCandidates)
-	for i := range c.ReplacementCandidates {
-		if err := serializer.ReadElement(r, &c.ReplacementCandidates[i]); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Unmarshal decodes the data.
+func (c *CommunityVoteData) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, c)
 }
 
 // Copy copies the community vote data.
@@ -59,15 +34,14 @@ func (c *CommunityVoteData) Copy() *CommunityVoteData {
 
 // Hash calculates the hash of the vote data.
 func (c *CommunityVoteData) Hash() chainhash.Hash {
-	buf := new(bytes.Buffer)
-	c.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	hash, _ := ssz.HashTreeRoot(c)
+	return chainhash.Hash(hash)
 }
 
 const (
 	// EnterVotingPeriod can be done by anyone on the network to signal that they
 	// want a voting period to start.
-	EnterVotingPeriod GovernanceVoteType = iota
+	EnterVotingPeriod uint8 = iota
 
 	// VoteFor can be done by anyone on the network during a voting period to vote
 	// for a specific assignment of managers.
@@ -84,62 +58,53 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type      GovernanceVoteType
-	Data      []byte
-	Signature bls.FunctionalSignature
-	VoteEpoch uint64
+	Type          uint8
+	Data          []byte
+	FunctionalSig []byte
+	VoteEpoch     uint64
 }
 
-// Encode encodes the governance vote to a writer.
-func (gv *GovernanceVote) Encode(w io.Writer) error {
-	if err := serializer.WriteElements(w, gv.Type, gv.VoteEpoch); err != nil {
-		return err
+func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
+	buf := bytes.NewBuffer([]byte{})
+	buf.Write(gv.FunctionalSig)
+	sig, err := bls.ReadFunctionalSignature(buf)
+	if err != nil {
+		return nil, err
 	}
-	if err := serializer.WriteVarBytes(w, gv.Data); err != nil {
-		return err
-	}
-	if err := bls.WriteFunctionalSignature(w, gv.Signature); err != nil {
-		return err
-	}
-	return nil
+	return sig, nil
 }
 
-// Decode decodes the governance vote from the reader.
-func (gv *GovernanceVote) Decode(r io.Reader) error {
-	if err := serializer.ReadElements(r, &gv.Type, &gv.VoteEpoch); err != nil {
-		return err
-	}
-	data, err := serializer.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	gv.Data = data
-	gv.Signature, err = bls.ReadFunctionalSignature(r)
-	if err != nil {
-		return err
-	}
+// Marshal encodes the data.
+func (gv *GovernanceVote) Marshal() ([]byte, error) {
+	return ssz.Marshal(gv)
+}
 
-	return nil
+// Unmarshal decodes the data.
+func (gv *GovernanceVote) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, gv)
 }
 
 func (gv *GovernanceVote) Valid() bool {
 	sigHash := gv.SignatureHash()
-	return gv.Signature.Verify(sigHash[:])
+	sig, err := gv.Signature()
+	if err != nil {
+		return false
+	}
+	return sig.Verify(sigHash[:])
 }
 
 // SignatureHash gets the signed part of the hash.
 func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	serializer.WriteVarBytes(buf, gv.Data)
-	serializer.WriteElements(buf, gv.VoteEpoch, gv.Type)
-	return chainhash.HashH(buf.Bytes())
+	cp := gv.Copy()
+	cp.FunctionalSig = []byte{}
+	b, _ := cp.Marshal()
+	return chainhash.HashH(b)
 }
 
 // Hash calculates the hash of the governance vote.
 func (gv *GovernanceVote) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = gv.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	hash, _ := ssz.HashTreeRoot(gv)
+	return chainhash.Hash(hash)
 }
 
 // Copy copies the governance vote.
@@ -147,7 +112,6 @@ func (gv *GovernanceVote) Copy() *GovernanceVote {
 	newGv := *gv
 	newGv.Data = make([]byte, len(gv.Data))
 	copy(newGv.Data, gv.Data)
-	newGv.Signature = gv.Signature.Copy()
-
+	newGv.FunctionalSig = gv.FunctionalSig
 	return &newGv
 }

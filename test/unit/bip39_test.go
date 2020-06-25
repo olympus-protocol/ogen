@@ -1,10 +1,12 @@
-package bip39
+package unit_test
 
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/olympus-protocol/ogen/utils/bip39/words"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/utils/bip39"
+	"github.com/olympus-protocol/ogen/utils/bip39/words"
 )
 
 type vector struct {
@@ -14,18 +16,18 @@ type vector struct {
 }
 
 func TestGetWordList(t *testing.T) {
-	assertEqualStringSlices(t, words.English, GetWordList())
+	assertEqualStringSlices(t, words.English, bip39.GetWordList())
 }
 
 func TestGetWordIndex(t *testing.T) {
-	for expectedIdx, word := range wordList {
-		actualIdx, ok := GetWordIndex(word)
+	for expectedIdx, word := range bip39.GetWordList() {
+		actualIdx, ok := bip39.GetWordIndex(word)
 		assertTrue(t, ok)
 		assertEqual(t, actualIdx, expectedIdx)
 	}
 
 	for _, word := range []string{"a", "set", "of", "invalid", "words"} {
-		actualIdx, ok := GetWordIndex(word)
+		actualIdx, ok := bip39.GetWordIndex(word)
 		assertFalse(t, ok)
 		assertEqual(t, actualIdx, 0)
 	}
@@ -36,61 +38,61 @@ func TestNewMnemonic(t *testing.T) {
 		entropy, err := hex.DecodeString(vector.entropy)
 		assertNil(t, err)
 
-		mnemonic, err := NewMnemonic(entropy)
+		mnemonic, err := bip39.NewMnemonic(entropy)
 		assertNil(t, err)
 		assertEqualString(t, vector.mnemonic, mnemonic)
 
-		_, err = NewSeedWithErrorChecking(mnemonic, "TREZOR")
+		_, err = bip39.NewSeedWithErrorChecking(mnemonic, "TREZOR")
 		assertNil(t, err)
 
-		seed := NewSeed(mnemonic, "TREZOR")
+		seed := bip39.NewSeed(mnemonic, "TREZOR")
 		assertEqualString(t, vector.seed, hex.EncodeToString(seed))
 	}
 }
 
 func TestNewMnemonicInvalidEntropy(t *testing.T) {
-	_, err := NewMnemonic([]byte{})
+	_, err := bip39.NewMnemonic([]byte{})
 	assertNotNil(t, err)
 }
 
 func TestNewSeedWithErrorCheckingInvalidMnemonics(t *testing.T) {
 	for _, vector := range badMnemonicSentences() {
-		_, err := NewSeedWithErrorChecking(vector.mnemonic, "TREZOR")
+		_, err := bip39.NewSeedWithErrorChecking(vector.mnemonic, "TREZOR")
 		assertNotNil(t, err)
 	}
 }
 
 func TestIsMnemonicValid(t *testing.T) {
 	for _, vector := range badMnemonicSentences() {
-		assertFalse(t, IsMnemonicValid(vector.mnemonic))
+		assertFalse(t, bip39.IsMnemonicValid(vector.mnemonic))
 	}
 
 	for _, vector := range testVectors() {
-		assertTrue(t, IsMnemonicValid(vector.mnemonic))
+		assertTrue(t, bip39.IsMnemonicValid(vector.mnemonic))
 	}
 }
 
 func TestMnemonicToByteArrayInvalidMnemonic(t *testing.T) {
 	for _, vector := range badMnemonicSentences() {
-		_, err := MnemonicToByteArray(vector.mnemonic)
+		_, err := bip39.MnemonicToByteArray(vector.mnemonic)
 		assertNotNil(t, err)
 	}
 
-	_, err := MnemonicToByteArray("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon yellow")
+	_, err := bip39.MnemonicToByteArray("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon yellow")
 	assertNotNil(t, err)
-	assertEqual(t, err, ErrInvalidMnemonic)
+	assertEqual(t, err, bip39.ErrInvalidMnemonic)
 }
 
 func TestNewEntropy(t *testing.T) {
 	// Good tests.
 	for i := 128; i <= 256; i += 32 {
-		_, err := NewEntropy(i)
+		_, err := bip39.NewEntropy(i)
 		assertNil(t, err)
 	}
 	// Bad Values
 	for i := 0; i <= 256; i++ {
 		if i%8 != 0 {
-			_, err := NewEntropy(i)
+			_, err := bip39.NewEntropy(i)
 			assertNotNil(t, err)
 		}
 	}
@@ -108,30 +110,30 @@ func TestMnemonicToByteArrayForDifferentArrayLangths(t *testing.T) {
 			t.Errorf("Wrong number of bytes read: %d", n)
 		}
 
-		mnemonic, err := NewMnemonic(seed)
+		mnemonic, err := bip39.NewMnemonic(seed)
 		if err != nil {
 			t.Errorf("%v", err)
 		}
 
-		_, err = MnemonicToByteArray(mnemonic)
+		_, err = bip39.MnemonicToByteArray(mnemonic)
 		if err != nil {
 			t.Errorf("Failed for %x - %v", seed, mnemonic)
 		}
 	}
 }
 func TestPadByteSlice(t *testing.T) {
-	assertEqualByteSlices(t, []byte{0}, padByteSlice([]byte{}, 1))
-	assertEqualByteSlices(t, []byte{0, 1}, padByteSlice([]byte{1}, 2))
-	assertEqualByteSlices(t, []byte{1, 1}, padByteSlice([]byte{1, 1}, 2))
-	assertEqualByteSlices(t, []byte{1, 1, 1}, padByteSlice([]byte{1, 1, 1}, 2))
+	assertEqualByteSlices(t, []byte{0}, bip39.PadByteSlice([]byte{}, 1))
+	assertEqualByteSlices(t, []byte{0, 1}, bip39.PadByteSlice([]byte{1}, 2))
+	assertEqualByteSlices(t, []byte{1, 1}, bip39.PadByteSlice([]byte{1, 1}, 2))
+	assertEqualByteSlices(t, []byte{1, 1, 1}, bip39.PadByteSlice([]byte{1, 1, 1}, 2))
 }
 
 func TestCompareByteSlices(t *testing.T) {
-	assertTrue(t, compareByteSlices([]byte{}, []byte{}))
-	assertTrue(t, compareByteSlices([]byte{1}, []byte{1}))
-	assertFalse(t, compareByteSlices([]byte{1}, []byte{0}))
-	assertFalse(t, compareByteSlices([]byte{1}, []byte{}))
-	assertFalse(t, compareByteSlices([]byte{1}, nil))
+	assertTrue(t, bip39.CompareByteSlices([]byte{}, []byte{}))
+	assertTrue(t, bip39.CompareByteSlices([]byte{1}, []byte{1}))
+	assertFalse(t, bip39.CompareByteSlices([]byte{1}, []byte{0}))
+	assertFalse(t, bip39.CompareByteSlices([]byte{1}, []byte{}))
+	assertFalse(t, bip39.CompareByteSlices([]byte{1}, nil))
 }
 
 func TestMnemonicToByteArrayForZeroLeadingSeeds(t *testing.T) {
@@ -217,12 +219,12 @@ func TestMnemonicToByteArrayForZeroLeadingSeeds(t *testing.T) {
 	for _, m := range ms {
 		seed, _ := hex.DecodeString(m)
 
-		mnemonic, err := NewMnemonic(seed)
+		mnemonic, err := bip39.NewMnemonic(seed)
 		if err != nil {
 			t.Errorf("%v", err)
 		}
 
-		_, err = MnemonicToByteArray(mnemonic)
+		_, err = bip39.MnemonicToByteArray(mnemonic)
 		if err != nil {
 			t.Errorf("Failed for %x - %v", seed, mnemonic)
 		}
@@ -249,8 +251,8 @@ func TestEntropyFromMnemonic256(t *testing.T) {
 }
 
 func TestEntropyFromMnemonicInvalidChecksum(t *testing.T) {
-	_, err := EntropyFromMnemonic("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon yellow")
-	assertEqual(t, ErrChecksumIncorrect, err)
+	_, err := bip39.EntropyFromMnemonic("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon yellow")
+	assertEqual(t, bip39.ErrChecksumIncorrect, err)
 }
 
 func TestEntropyFromMnemonicInvalidMnemonicSize(t *testing.T) {
@@ -259,22 +261,22 @@ func TestEntropyFromMnemonicInvalidMnemonicSize(t *testing.T) {
 		"a",                           // Too few
 		"a a a a a a a a a a a a a a", // Not multiple of 3
 	} {
-		_, err := EntropyFromMnemonic(mnemonic)
-		assertEqual(t, ErrInvalidMnemonic, err)
+		_, err := bip39.EntropyFromMnemonic(mnemonic)
+		assertEqual(t, bip39.ErrInvalidMnemonic, err)
 	}
 }
 
 func testEntropyFromMnemonic(t *testing.T, bitSize int) {
 	for i := 0; i < 512; i++ {
-		expectedEntropy, err := NewEntropy(bitSize)
+		expectedEntropy, err := bip39.NewEntropy(bitSize)
 		assertNil(t, err)
 		assertTrue(t, len(expectedEntropy) != 0)
 
-		mnemonic, err := NewMnemonic(expectedEntropy)
+		mnemonic, err := bip39.NewMnemonic(expectedEntropy)
 		assertNil(t, err)
 		assertTrue(t, len(mnemonic) != 0)
 
-		actualEntropy, err := EntropyFromMnemonic(mnemonic)
+		actualEntropy, err := bip39.EntropyFromMnemonic(mnemonic)
 		assertNil(t, err)
 		assertEqualByteSlices(t, expectedEntropy, actualEntropy)
 	}

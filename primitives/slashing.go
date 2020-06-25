@@ -1,12 +1,9 @@
 package primitives
 
 import (
-	"bytes"
-	"io"
-
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/serializer"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // VoteSlashing is a slashing where validators vote in the span of their
@@ -16,79 +13,52 @@ type VoteSlashing struct {
 	Vote2 MultiValidatorVote
 }
 
-// Encode encodes the vote slashing to a writer.
-func (vs *VoteSlashing) Encode(w io.Writer) error {
-	if err := vs.Vote1.Serialize(w); err != nil {
-		return err
-	}
-	if err := vs.Vote2.Serialize(w); err != nil {
-		return err
-	}
-
-	return nil
+// Marshal encodes the data.
+func (vs *VoteSlashing) Marshal() ([]byte, error) {
+	return ssz.Marshal(vs)
 }
 
-// Decode decodes the vote slashing to the given reader.
-func (vs *VoteSlashing) Decode(r io.Reader) error {
-	if err := vs.Vote1.Deserialize(r); err != nil {
-		return err
-	}
-	return vs.Vote2.Deserialize(r)
+// Unmarshal decodes the data.
+func (vs *VoteSlashing) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, vs)
 }
 
 // Hash calculates the hash of the slashing.
 func (vs *VoteSlashing) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = vs.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	hash, _ := ssz.HashTreeRoot(vs)
+	return chainhash.Hash(hash)
 }
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO
 // signature too early.
 type RANDAOSlashing struct {
-	RandaoReveal    bls.Signature
+	RandaoReveal    []byte
 	Slot            uint64
-	ValidatorPubkey bls.PublicKey
+	ValidatorPubkey []byte
 }
 
-// Encode encodes the RANDAOSlashing to the given writer.
-func (rs *RANDAOSlashing) Encode(w io.Writer) error {
-	sigBytes := rs.RandaoReveal.Marshal()
-	pubkeyBytes := rs.ValidatorPubkey.Marshal()
-
-	return serializer.WriteElements(w, sigBytes, pubkeyBytes, rs.Slot)
+func (rs *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(rs.ValidatorPubkey)
 }
 
-// Decode decodes the RANDAOSlashing from the given reader.
-func (rs *RANDAOSlashing) Decode(r io.Reader) error {
-	sigBytes := make([]byte, 96)
-	pubBytes := make([]byte, 48)
+func (rs *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(rs.RandaoReveal)
+}
 
-	if err := serializer.ReadElements(r, &sigBytes, &pubBytes, &rs.Slot); err != nil {
-		return err
-	}
+// Marshal encodes the data.
+func (rs *RANDAOSlashing) Marshal() ([]byte, error) {
+	return ssz.Marshal(rs)
+}
 
-	sig, err := bls.SignatureFromBytes(sigBytes)
-	if err != nil {
-		return err
-	}
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	if err != nil {
-		return err
-	}
-
-	rs.RandaoReveal = *sig
-	rs.ValidatorPubkey = *pub
-
-	return nil
+// Unmarshal decodes the data.
+func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, rs)
 }
 
 // Hash calculates the hash of the RANDAO slashing.
 func (rs *RANDAOSlashing) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = rs.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	hash, _ := ssz.HashTreeRoot(rs)
+	return chainhash.Hash(hash)
 }
 
 // ProposerSlashing is a slashing to a block proposer that proposed
@@ -96,48 +66,35 @@ func (rs *RANDAOSlashing) Hash() chainhash.Hash {
 type ProposerSlashing struct {
 	BlockHeader1       BlockHeader
 	BlockHeader2       BlockHeader
-	Signature1         bls.Signature
-	Signature2         bls.Signature
-	ValidatorPublicKey bls.PublicKey
+	Signature1         []byte
+	Signature2         []byte
+	ValidatorPublicKey []byte
 }
 
-// Encode encodes the proposer slashing to the given writer.
-func (ps *ProposerSlashing) Encode(w io.Writer) error {
-	if err := ps.BlockHeader1.Serialize(w); err != nil {
-		return err
-	}
-	if err := ps.BlockHeader2.Serialize(w); err != nil {
-		return err
-	}
-	if err := ps.Signature1.Encode(w); err != nil {
-		return err
-	}
-	if err := ps.Signature2.Encode(w); err != nil {
-		return err
-	}
-	return ps.ValidatorPublicKey.Encode(w)
+func (ps *ProposerSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(ps.ValidatorPublicKey)
 }
 
-// Decode decodes the proposer slashing from the given reader.
-func (ps *ProposerSlashing) Decode(r io.Reader) error {
-	if err := ps.BlockHeader1.Deserialize(r); err != nil {
-		return err
-	}
-	if err := ps.BlockHeader2.Deserialize(r); err != nil {
-		return err
-	}
-	if err := ps.Signature1.Decode(r); err != nil {
-		return err
-	}
-	if err := ps.Signature2.Decode(r); err != nil {
-		return err
-	}
-	return ps.ValidatorPublicKey.Decode(r)
+func (ps *ProposerSlashing) GetSignature1() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(ps.Signature1)
+}
+
+func (ps *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(ps.Signature2)
+}
+
+// Marshal encodes the data.
+func (ps *ProposerSlashing) Marshal() ([]byte, error) {
+	return ssz.Marshal(ps)
+}
+
+// Unmarshal decodes the data.
+func (ps *ProposerSlashing) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, ps)
 }
 
 // Hash calculates the hash of the proposer slashing.
 func (ps *ProposerSlashing) Hash() chainhash.Hash {
-	buf := bytes.NewBuffer([]byte{})
-	_ = ps.Encode(buf)
-	return chainhash.HashH(buf.Bytes())
+	hash, _ := ssz.HashTreeRoot(ps)
+	return chainhash.Hash(hash)
 }

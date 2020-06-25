@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -131,27 +130,25 @@ func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
-	buf := bytes.NewBuffer([]byte{})
-	err := vote.Encode(buf)
+	buf, err := vote.Marshal()
 	if err != nil {
 		m.log.Errorf("error encoding vote: %s", err)
 		return
 	}
 
-	if err := m.voteTopic.Publish(m.context, buf.Bytes()); err != nil {
+	if err := m.voteTopic.Publish(m.context, buf); err != nil {
 		m.log.Errorf("error publishing vote: %s", err)
 	}
 }
 
 func (m *Miner) publishBlock(block *primitives.Block) {
-	buf := bytes.NewBuffer([]byte{})
-	err := block.Encode(buf)
+	buf, err := block.Marshal()
 	if err != nil {
 		m.log.Error(err)
 		return
 	}
 
-	if err := m.blockTopic.Publish(m.context, buf.Bytes()); err != nil {
+	if err := m.blockTopic.Publish(m.context, buf); err != nil {
 		m.log.Errorf("error publishing block: %s", err)
 	}
 }
@@ -193,8 +190,11 @@ func (m *Miner) ProposeBlocks() {
 			if k, found := m.keystore.GetValidatorKey(proposer.PubKey); found {
 				m.log.Infof("proposing for slot %d", slotToPropose)
 
-				votes := m.voteMempool.Get(slotToPropose, state, &m.params, proposerIndex)
-
+				votes, err := m.voteMempool.Get(slotToPropose, state, &m.params, proposerIndex)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
 				depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDepositsPerBlock), state)
 				if err != nil {
 					m.log.Error(err)
@@ -232,7 +232,7 @@ func (m *Miner) ProposeBlocks() {
 						Version:       0,
 						Nonce:         0,
 						PrevBlockHash: tipHash,
-						Timestamp:     time.Now(),
+						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
 					},
 					Votes:             votes,
@@ -337,10 +337,10 @@ func (m *Miner) VoteForBlocks() {
 					sig := k.Sign(dataHash[:])
 
 					vote := primitives.SingleValidatorVote{
-						Data:      data,
-						Signature: *sig,
-						Offset:    uint32(i),
-						OutOf:     uint32(len(validators)),
+						Data:   data,
+						Sig:    sig.Marshal(),
+						Offset: uint32(i),
+						OutOf:  uint32(len(validators)),
 					}
 
 					m.voteMempool.Add(&vote)

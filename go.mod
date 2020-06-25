@@ -8,8 +8,10 @@ require (
 	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
+	github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472 // indirect
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
+	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/libp2p/go-libp2p v0.10.0
 	github.com/libp2p/go-libp2p-core v0.6.0
@@ -22,6 +24,9 @@ require (
 	github.com/olympus-protocol/bls-go v0.1.1-0.20200625152346-5101b95482ac
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
+	github.com/protolambda/zssz v0.1.5 // indirect
+	github.com/prysmaticlabs/go-bitfield v0.0.0-20200618145306-2ae0807bef65 // indirect
+	github.com/prysmaticlabs/go-ssz v0.0.0-20200612203617-6d5c9aa213ae
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0

@@ -1,16 +1,12 @@
 package p2p
 
-import (
-	"io"
-)
-
 type MsgGetAddr struct{}
 
-func (m *MsgGetAddr) Encode(w io.Writer) error {
-	return nil
+func (m *MsgGetAddr) Marshal() ([]byte, error) {
+	return []byte{}, nil
 }
 
-func (m *MsgGetAddr) Decode(r io.Reader) error {
+func (m *MsgGetAddr) Unmarshal([]byte) error {
 	return nil
 }
 

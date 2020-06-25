@@ -10,7 +10,6 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"go.etcd.io/bbolt"
 
@@ -58,7 +57,7 @@ type HostNode struct {
 	timeoutInterval   time.Duration
 	heartbeatInterval time.Duration
 
-	netMagic p2p.NetMagic
+	netMagic uint32
 
 	log *logger.Logger
 

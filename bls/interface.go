@@ -41,9 +41,9 @@ var RFieldModulus, _ = new(big.Int).SetString("524358751751261904794477405081859
 
 // FunctionalPublicKey is either a multipub or a regular public key.
 type FunctionalPublicKey interface {
-	Encode(w io.Writer) error
-	Decode(r io.Reader) error
-	Hash() [20]byte
+	Marshal() []byte
+	Unmarshal(b []byte) error
+	Hash() ([20]byte, error)
 	Type() FunctionalSignatureType
 }
 
@@ -58,14 +58,13 @@ const (
 	TypeMulti
 )
 
-// FunctionalSignature is a signature that can be included in transactions
-// or votes.
+// FunctionalSignature is a signature that can be included in transactions or votes.
 type FunctionalSignature interface {
-	Encode(w io.Writer) error
-	Decode(r io.Reader) error
+	Marshal() ([]byte, error)
+	Unmarshal(b []byte) error
 	Sign(secKey *SecretKey, msg []byte) error
 	Verify(msg []byte) bool
-	GetPublicKey() FunctionalPublicKey
+	GetPublicKey() (FunctionalPublicKey, error)
 	Type() FunctionalSignatureType
 	Copy() FunctionalSignature
 }
@@ -75,8 +74,15 @@ func WriteFunctionalSignature(w io.Writer, sig FunctionalSignature) error {
 	if _, err := w.Write([]byte{byte(sig.Type())}); err != nil {
 		return err
 	}
-
-	return sig.Encode(w)
+	sigBytes, err := sig.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(sigBytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // ReadFunctionalSignature reads any type of functional signature.
@@ -93,8 +99,12 @@ func ReadFunctionalSignature(r io.Reader) (FunctionalSignature, error) {
 	case TypeMulti:
 		out = new(Multisig)
 	}
-
-	if err := out.Decode(r); err != nil {
+	data := []byte{}
+	_, err := io.ReadFull(r, data)
+	if err != nil {
+		return nil, err
+	}
+	if err := out.Unmarshal(data); err != nil {
 		return nil, err
 	}
 

@@ -71,17 +71,25 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		return fmt.Errorf("message received is not addr")
 	}
 
-	peers := msgAddr.AddrList
+	peers := msgAddr.Addr
 
 	// let's set a very short timeout so we can connect faster
 	timeout := time.Second * 5
 
-	for _, p := range peers {
+	for _, pb := range peers {
+		pma, err := multiaddr.NewMultiaddrBytes(pb)
+		if err != nil {
+			continue
+		}
+		p, err := peer.AddrInfoFromP2pAddr(pma)
+		if err != nil {
+			continue
+		}
 		if p.ID == cm.host.host.ID() {
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		if err := cm.host.host.Connect(ctx, p); err != nil {
+		if err := cm.host.host.Connect(ctx, *p); err != nil {
 			cm.log.Tracef("error connecting to suggested peer %s: %s", p, err)
 			cancel()
 			continue
@@ -97,12 +105,12 @@ func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return fmt.Errorf("message received is not get addr")
 	}
+	peers := [][]byte{}
+	peersData := shufflePeers(cm.host.GetPeerInfos())
 
-	peers := shufflePeers(cm.host.GetPeerInfos())
-
-	for i := range peers {
-		if len(peers[i].Addrs) > p2p.MaxAddrPerPeer {
-			peers[i].Addrs = peers[i].Addrs[:p2p.MaxAddrPerPeer]
+	for _, p := range peersData {
+		if len(peers) < p2p.MaxAddrPerMsg {
+			peers = append(peers, p.Addrs[0].Bytes())
 		}
 	}
 
@@ -111,7 +119,7 @@ func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	}
 
 	return cm.protocolHandler.SendMessage(id, &p2p.MsgAddr{
-		AddrList: peers,
+		Addr: peers,
 	})
 }
 

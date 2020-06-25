@@ -2,78 +2,77 @@ package bls
 
 import (
 	"fmt"
-	"io"
+
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // CombinedSignature is a signature and a public key meant to match
 // the same interface as Multisig.
 type CombinedSignature struct {
-	sig Signature
-	pub PublicKey
+	S []byte
+	P []byte
+}
+
+// Marshal encodes the data.
+func (cs *CombinedSignature) Marshal() ([]byte, error) {
+	return ssz.Marshal(cs)
+}
+
+// Unmarshal decodes the data.
+func (cs *CombinedSignature) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, cs)
 }
 
 // NewCombinedSignature creates a new combined signature
 func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
 	return &CombinedSignature{
-		pub: *pub,
-		sig: *sig,
+		P: pub.Marshal(),
+		S: sig.Marshal(),
 	}
 }
 
 // ToSig outputs the bundled signature.
-func (cs *CombinedSignature) ToSig() Signature {
-	return cs.sig
+func (cs *CombinedSignature) Sig() (*Signature, error) {
+	return SignatureFromBytes(cs.S)
 }
 
 // ToPub outputs the bundled public key.
-func (cs *CombinedSignature) ToPub() PublicKey {
-	return cs.pub
+func (cs *CombinedSignature) Pub() (*PublicKey, error) {
+	return PublicKeyFromBytes(cs.P)
 }
 
 // GetPublicKey gets the functional public key.
-func (cs *CombinedSignature) GetPublicKey() FunctionalPublicKey {
-	return &cs.pub
-}
-
-// Encode encodes the combined signature to the writer.
-func (cs *CombinedSignature) Encode(w io.Writer) error {
-	if err := cs.pub.Encode(w); err != nil {
-		return err
-	}
-	if err := cs.sig.Encode(w); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Decode decodes the combined signature from the reader.
-func (cs *CombinedSignature) Decode(r io.Reader) error {
-	if err := cs.pub.Decode(r); err != nil {
-		return err
-	}
-	if err := cs.sig.Decode(r); err != nil {
-		return err
-	}
-
-	return nil
+func (cs *CombinedSignature) GetPublicKey() (FunctionalPublicKey, error) {
+	return PublicKeyFromBytes(cs.P)
 }
 
 // Sign signs a message using the secret key.
 func (cs *CombinedSignature) Sign(sk *SecretKey, msg []byte) error {
 	expectedPub := sk.PublicKey()
-	if !expectedPub.Equals(&cs.pub) {
-		return fmt.Errorf("expected key for %x, but got %x", cs.pub.Marshal(), expectedPub.Marshal())
+	pub, err := cs.Pub()
+	if err != nil {
+		return err
+	}
+	if !expectedPub.Equals(pub) {
+		return fmt.Errorf("expected key for %x, but got %x", cs.P, expectedPub.Marshal())
 	}
 
 	sig := sk.Sign(msg)
-	cs.sig = *sig
+	cs.S = sig.Marshal()
 	return nil
 }
 
 // Verify verified a message using the secret key.
 func (cs *CombinedSignature) Verify(msg []byte) bool {
-	return cs.sig.Verify(msg, &cs.pub)
+	sig, err := cs.Sig()
+	if err != nil {
+		return false
+	}
+	pub, err := cs.Pub()
+	if err != nil {
+		return false
+	}
+	return sig.Verify(msg, pub)
 }
 
 // Type returns the signature type.
@@ -84,11 +83,8 @@ func (cs *CombinedSignature) Type() FunctionalSignatureType {
 // Copy copies the combined signature.
 func (cs *CombinedSignature) Copy() FunctionalSignature {
 	newCs := &CombinedSignature{}
-	s := cs.sig.Copy()
-	p := cs.pub.Copy()
-
-	newCs.sig = *s
-	newCs.pub = *p
+	newCs.S = cs.S
+	newCs.P = cs.P
 
 	return newCs
 }

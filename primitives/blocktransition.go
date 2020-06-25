@@ -27,7 +27,18 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if len(vote.Data) != 0 {
 			return fmt.Errorf("expected EnterVotingPeriod vote to have no data")
 		}
-		pkh := vote.Signature.GetPublicKey().Hash()
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
+		pubKey, err := sig.GetPublicKey()
+		if err != nil {
+			return err
+		}
+		pkh, err := pubKey.Hash()
+		if err != nil {
+			return err
+		}
 		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
 			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
@@ -45,7 +56,18 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
 		}
-		pkh := vote.Signature.GetPublicKey().Hash()
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
+		pubKey, err := sig.GetPublicKey()
+		if err != nil {
+			return err
+		}
+		pkh, err := pubKey.Hash()
+		if err != nil {
+			return err
+		}
 		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
 			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
@@ -64,7 +86,14 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
 		}
-		pub := vote.Signature.GetPublicKey()
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
+		pub, err := sig.GetPublicKey()
+		if err != nil {
+			return err
+		}
 		mp, ok := pub.(*bls.Multipub)
 		if !ok {
 			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
@@ -73,7 +102,14 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 			return fmt.Errorf("expected 5 signatures needed")
 		}
 		for i := range mp.PublicKeys {
-			ih := mp.PublicKeys[i].Hash()
+			pub, err := bls.PublicKeyFromBytes(mp.PublicKeys[i])
+			if err != nil {
+				return err
+			}
+			ih, err := pub.Hash()
+			if err != nil {
+				return err
+			}
 			if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
 				return fmt.Errorf("expected public keys to match managers")
 			}
@@ -91,8 +127,15 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
+		sig, err := vote.Signature()
+		if err != nil {
+			return err
+		}
 		// must include multisig signed by 5/5 managers
-		pub := vote.Signature.GetPublicKey()
+		pub, err := sig.GetPublicKey()
+		if err != nil {
+			return err
+		}
 		mp, ok := pub.(*bls.Multipub)
 		if !ok {
 			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
@@ -101,7 +144,14 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 			return fmt.Errorf("expected 3 signatures needed")
 		}
 		for i := range mp.PublicKeys {
-			ih := mp.PublicKeys[i].Hash()
+			pub, err := bls.PublicKeyFromBytes(mp.PublicKeys[i])
+			if err != nil {
+				return err
+			}
+			ih, err := pub.Hash()
+			if err != nil {
+				return err
+			}
 			if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
 				return fmt.Errorf("expected public keys to match managers")
 			}
@@ -122,12 +172,21 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
 		return err
 	}
-
-	votePub := vote.Signature.GetPublicKey()
-
+	sig, err := vote.Signature()
+	if err != nil {
+		return err
+	}
+	votePub, err := sig.GetPublicKey()
+	if err != nil {
+		return err
+	}
+	hash, err := votePub.Hash()
+	if err != nil {
+		return err
+	}
 	switch vote.Type {
 	case EnterVotingPeriod:
-		s.ReplaceVotes[votePub.Hash()] = chainhash.Hash{}
+		s.ReplaceVotes[hash] = chainhash.Hash{}
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
@@ -140,7 +199,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 
 		voteHash := voteData.Hash()
 		s.CommunityVotes[voteHash] = voteData
-		s.ReplaceVotes[votePub.Hash()] = voteHash
+		s.ReplaceVotes[hash] = voteHash
 	case UpdateManagersInstantly:
 		for i := range s.CurrentManagers {
 			copy(s.CurrentManagers[i][:], vote.Data[i*20:(i+1)*20])
@@ -158,7 +217,10 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 // ApplyTransactionSingle applies a transaction to the coin state.
 func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
-	pkh := tx.FromPubkeyHash()
+	pkh, err := tx.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
 	}
@@ -186,7 +248,10 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
 func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
-	pkh := tx.FromPubkeyHash()
+	pkh, err := tx.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
 	if u.Balances[pkh] < tx.Amount+tx.Fee {
 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
 	}
@@ -223,16 +288,27 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 	if ps.BlockHeader1.Slot != ps.BlockHeader2.Slot {
 		return 0, fmt.Errorf("proposer-slashing: block headers do not have the same slot")
 	}
-
-	if !ps.Signature1.Verify(h1[:], &ps.ValidatorPublicKey) {
+	pub, err := ps.GetValidatorPubkey()
+	if err != nil {
+		return 0, err
+	}
+	s1, err := ps.GetSignature1()
+	if err != nil {
+		return 0, err
+	}
+	s2, err := ps.GetSignature2()
+	if err != nil {
+		return 0, err
+	}
+	if !s1.Verify(h1[:], pub) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 1")
 	}
 
-	if !ps.Signature2.Verify(h2[:], &ps.ValidatorPublicKey) {
+	if !s2.Verify(h2[:], pub) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
 	}
 
-	pubkeyBytes := ps.ValidatorPublicKey.Marshal()
+	pubkeyBytes := ps.ValidatorPublicKey
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
@@ -310,8 +386,11 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 			aggPubs1 = append(aggPubs1, pub)
 		}
 	}
-
-	if !vs.Vote1.Signature.FastAggregateVerify(aggPubs1, vs.Vote1.Data.Hash()) {
+	v1Sig, err := vs.Vote1.Signature()
+	if err != nil {
+		return nil, err
+	}
+	if !v1Sig.FastAggregateVerify(aggPubs1, vs.Vote1.Data.Hash()) {
 		return nil, fmt.Errorf("vote-slashing: vote 1 does not validate")
 	}
 
@@ -345,7 +424,11 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 		return nil, fmt.Errorf("vote-slashing: votes do not contain any common validators")
 	}
 
-	if !vs.Vote2.Signature.FastAggregateVerify(aggPubs2, vs.Vote2.Data.Hash()) {
+	v2Sig, err := vs.Vote2.Signature()
+	if err != nil {
+		return nil, err
+	}
+	if !v2Sig.FastAggregateVerify(aggPubs2, vs.Vote2.Data.Hash()) {
 		return nil, fmt.Errorf("vote-slashing: vote 2 does not validate")
 	}
 
@@ -375,12 +458,19 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 	}
 
 	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", rs.Slot)))
-
-	if !rs.RandaoReveal.Verify(slotHash[:], &rs.ValidatorPubkey) {
+	pub, err := rs.GetValidatorPubkey()
+	if err != nil {
+		return 0, err
+	}
+	sig, err := rs.GetRandaoReveal()
+	if err != nil {
+		return 0, err
+	}
+	if !sig.Verify(slotHash[:], pub) {
 		return 0, fmt.Errorf("randao-slashing: RANDAO reveal does not verify")
 	}
 
-	pubkeyBytes := rs.ValidatorPubkey.Marshal()
+	pubkeyBytes := rs.ValidatorPubkey
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
@@ -430,17 +520,26 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint32, 
 
 // IsExitValid checks if an exit is valid.
 func (s *State) IsExitValid(exit *Exit) error {
-	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey.Marshal())
+	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey)
 	msgHash := chainhash.HashH([]byte(msg))
-
-	valid := exit.Signature.Verify(msgHash[:], &exit.WithdrawPubkey)
+	wPubKey, err := exit.GetWithdrawPubKey()
+	if err != nil {
+		return err
+	}
+	sig, err := exit.GetSignature()
+	if err != nil {
+		return err
+	}
+	valid := sig.Verify(msgHash[:], wPubKey)
 	if !valid {
 		return fmt.Errorf("exit signature is not valid")
 	}
 
-	pkh := exit.WithdrawPubkey.Hash()
-
-	pubkeySerialized := exit.ValidatorPubkey.Marshal()
+	pkh, err := wPubKey.Hash()
+	if err != nil {
+		return err
+	}
+	pubkeySerialized := exit.ValidatorPubkey
 
 	foundActiveValidator := false
 	for _, v := range s.ValidatorRegistry {
@@ -466,12 +565,12 @@ func (s *State) ApplyExit(exit *Exit) error {
 		return err
 	}
 
-	pubkeySerialized := exit.ValidatorPubkey.Marshal()
+	pubkeySerialized := exit.ValidatorPubkey
 
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
 			s.ValidatorRegistry[i].Status = StatusActivePendingExit
-			s.ValidatorRegistry[i].LastActiveEpoch = int64(s.EpochIndex) + 2
+			s.ValidatorRegistry[i].LastActiveEpoch = s.EpochIndex + 2
 		}
 	}
 
@@ -480,26 +579,31 @@ func (s *State) ApplyExit(exit *Exit) error {
 
 // IsDepositValid validates signatures and ensures that a deposit is valid.
 func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
-	pkh := deposit.PublicKey.Hash()
+	dPub, err := deposit.GetPublicKey()
+	if err != nil {
+		return err
+	}
+	pkh, err := dPub.Hash()
+	if err != nil {
+		return err
+	}
 	if s.CoinsState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
 		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
 	}
 
-	// first validate signature
-	buf := bytes.NewBuffer([]byte{})
-
-	if err := deposit.Data.Encode(buf); err != nil {
+	buf, err := deposit.Data.Marshal()
+	if err != nil {
 		return err
 	}
 
-	depositHash := chainhash.HashH(buf.Bytes())
-
-	valid := deposit.Signature.Verify(depositHash[:], &deposit.PublicKey)
+	depositHash := chainhash.HashH(buf)
+	dSig, err := deposit.GetSignature()
+	valid := dSig.Verify(depositHash[:], dPub)
 	if !valid {
 		return errors.New("deposit signature is not valid")
 	}
 
-	validatorPubkey := deposit.Data.PublicKey.Marshal()
+	validatorPubkey := deposit.Data.PublicKey
 
 	// now, ensure we don't already have this validator
 	for _, v := range s.ValidatorRegistry {
@@ -509,7 +613,15 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 	}
 
 	pubkeyHash := chainhash.HashH(validatorPubkey[:])
-	valid = deposit.Data.ProofOfPossession.Verify(pubkeyHash[:], &deposit.Data.PublicKey)
+	dataSig, err := deposit.Data.GetSignature()
+	if err != nil {
+		return err
+	}
+	dataPub, err := deposit.Data.GetPublicKey()
+	if err != nil {
+		return err
+	}
+	valid = dataSig.Verify(pubkeyHash[:], dataPub)
 	if !valid {
 		return errors.New("proof-of-possession is not valid")
 	}
@@ -522,18 +634,24 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	if err := s.IsDepositValid(deposit, p); err != nil {
 		return err
 	}
-
-	pkh := deposit.PublicKey.Hash()
+	pub, err := deposit.GetPublicKey()
+	if err != nil {
+		return err
+	}
+	pkh, err := pub.Hash()
+	if err != nil {
+		return err
+	}
 
 	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
 	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
-		PubKey:           deposit.Data.PublicKey.Marshal(),
+		PubKey:           deposit.Data.PublicKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
 		Status:           StatusStarting,
-		FirstActiveEpoch: int64(s.EpochIndex) + 2,
-		LastActiveEpoch:  -1,
+		FirstActiveEpoch: s.EpochIndex + 2,
+		LastActiveEpoch:  0,
 	})
 
 	return nil
@@ -592,7 +710,11 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	}
 
 	h := v.Data.Hash()
-	valid := v.Signature.FastAggregateVerify(aggPubs, h)
+	vSig, err := v.Signature()
+	if err != nil {
+		return err
+	}
+	valid := vSig.FastAggregateVerify(aggPubs, h)
 	if !valid {
 		return fmt.Errorf("aggregate signature did not validate")
 	}
@@ -766,7 +888,12 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, tx := range b.Txs {
-		switch payload := tx.Payload.(type) {
+		pload := *new(TxPayload)
+		err := pload.Unmarshal(tx.Payload)
+		if err != nil {
+			return err
+		}
+		switch payload := pload.(type) {
 		case *TransferSinglePayload:
 			if err := s.ApplyTransactionSingle(payload, b.Header.FeeAddress, p); err != nil {
 				return err

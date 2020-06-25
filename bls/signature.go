@@ -2,7 +2,6 @@ package bls
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/pkg/errors"
@@ -19,24 +18,6 @@ func (s *Signature) Copy() *Signature {
 	return &Signature{
 		s: &sCopy,
 	}
-}
-
-// Encode encodes to the given writer.
-func (s *Signature) Encode(w io.Writer) error {
-	sigBytes := s.Marshal()
-	_, err := w.Write(sigBytes)
-
-	return err
-}
-
-// Decode decodes from the given reader.
-func (s *Signature) Decode(r io.Reader) error {
-	sigBytes := make([]byte, 96)
-	if _, err := io.ReadFull(r, sigBytes); err != nil {
-		return err
-	}
-
-	return s.s.Deserialize(sigBytes)
 }
 
 // SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
@@ -120,6 +101,27 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 // NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() *Signature {
 	return &Signature{s: bls.HashAndMapToSignature([]byte{'m', 'o', 'c', 'k'})}
+}
+
+// AggregateSignaturesBytes converts a list of marshaled signatures into a single, aggregated sig.
+func AggregateSignaturesBytes(sigs [][]byte) (*Signature, error) {
+	if len(sigs) == 0 {
+		return nil, nil
+	}
+
+	// Copy signature
+	signature, err := SignatureFromBytes(sigs[0])
+	if err != nil {
+		return nil, err
+	}
+	for i := 1; i < len(sigs); i++ {
+		sig, err := SignatureFromBytes(sigs[i])
+		if err != nil {
+			return nil, err
+		}
+		signature.s.Add(sig.s)
+	}
+	return &Signature{s: signature.s}, nil
 }
 
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.

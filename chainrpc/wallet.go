@@ -139,7 +139,7 @@ func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
 	for i, v := range validators.Validators {
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey),
-			Status:           v.Status.String(),
+			Status:           v.StatusString(),
 			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
