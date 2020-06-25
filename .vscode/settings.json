@@ -1,5 +1,0 @@
-{
-    "go.autocompleteUnimportedPackages": true,
-    "go.buildOnSave": "off",
-    "go.formatTool": "gofmt"
-}
