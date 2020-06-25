@@ -19,11 +19,11 @@ var CombinedSignature = bls.CombinedSignature{
 
 var Multipub = bls.Multipub{
 	PublicKeys: [][]byte{randKeyBytes, randKeyBytes, randKeyBytes, randKeyBytes, randKeyBytes},
-	NumNeeded: 5,
+	NumNeeded:  5,
 }
 
 var Multisig = bls.Multisig{
-	PublicKey: Multipub,
-	Signatures: [][]byte{sigBytes,sigBytes,sigBytes,sigBytes,sigBytes,sigBytes},
+	PublicKey:  Multipub,
+	Signatures: [][]byte{sigBytes, sigBytes, sigBytes, sigBytes, sigBytes, sigBytes},
 	KeysSigned: bitfield.NewBitfield(5),
 }

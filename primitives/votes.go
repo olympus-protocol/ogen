@@ -134,8 +134,8 @@ func (v *VoteData) Copy() VoteData {
 
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() chainhash.Hash {
-	b, _ := v.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(v)
+	return chainhash.Hash(hash)
 }
 
 // SingleValidatorVote is a signed vote from a validator.
@@ -173,8 +173,8 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 }
 
 func (v *SingleValidatorVote) Hash() chainhash.Hash {
-	b, _ := v.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(v)
+	return chainhash.Hash(hash)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.
@@ -201,6 +201,6 @@ func (v *MultiValidatorVote) Unmarshal(b []byte) error {
 
 // Hash calculates the hash of the vote.
 func (v *MultiValidatorVote) Hash() chainhash.Hash {
-	b, _ := v.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(v)
+	return chainhash.Hash(hash)
 }

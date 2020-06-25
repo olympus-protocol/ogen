@@ -10,15 +10,15 @@ var VoteSlashing = primitives.VoteSlashing{
 }
 
 var RANDAOSlashing = primitives.RANDAOSlashing{
-	RandaoReveal: sig.Marshal(),
-	Slot: 1000,
+	RandaoReveal:    sig.Marshal(),
+	Slot:            1000,
 	ValidatorPubkey: randKey.Marshal(),
 }
 
 var ProposerSlashing = primitives.ProposerSlashing{
-	BlockHeader1: BlockHeader,
-	BlockHeader2: BlockHeader,
-	Signature1: sig.Marshal(),
-	Signature2: sig.Marshal(),
+	BlockHeader1:       BlockHeader,
+	BlockHeader2:       BlockHeader,
+	Signature1:         sig.Marshal(),
+	Signature2:         sig.Marshal(),
 	ValidatorPublicKey: randKey.Marshal(),
 }

@@ -37,6 +37,6 @@ func (bh *BlockHeader) Unmarshal(b []byte) error {
 
 // Hash calculates the hash of the block header.
 func (bh *BlockHeader) Hash() chainhash.Hash {
-	b, _ := bh.Marshal()
-	return chainhash.DoubleHashH(b)
+	hash, _ := ssz.HashTreeRoot(bh)
+	return chainhash.Hash(hash)
 }

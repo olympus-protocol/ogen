@@ -37,6 +37,6 @@ func (e *Exit) Unmarshal(b []byte) error {
 
 // Hash calculates the hash of the exit.
 func (e *Exit) Hash() chainhash.Hash {
-	b, _ := e.Marshal()
-	return chainhash.DoubleHashH(b)
+	hash, _ := ssz.HashTreeRoot(e)
+	return chainhash.Hash(hash)
 }

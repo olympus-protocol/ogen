@@ -5,9 +5,6 @@ GOCLEAN=$(GOCMD) clean
 FOLDER_NAME= ogen-$(OGEN_VERSION)
 OGEN_VERSION=0.0.1
 
-test: 
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./test/*.go
-
 build: 
 	$(GOBUILD) 
 

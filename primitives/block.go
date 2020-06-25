@@ -39,157 +39,53 @@ func (b *Block) Hash() chainhash.Hash {
 	return b.Header.Hash()
 }
 
-func merkleRootGovernanceVotes(votes []GovernanceVote) chainhash.Hash {
-	if len(votes) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(votes) == 1 {
-		return votes[0].Hash()
-	}
-	mid := len(votes) / 2
-	h1 := merkleRootGovernanceVotes(votes[:mid])
-	h2 := merkleRootGovernanceVotes(votes[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
-}
-
 // GovernanceVoteMerkleRoot calculates the merkle root of the governance votes in the
 // block.
 func (b *Block) GovernanceVoteMerkleRoot() chainhash.Hash {
-	return merkleRootGovernanceVotes(b.GovernanceVotes)
-}
-
-func merkleRootTxs(txs []Tx) chainhash.Hash {
-	if len(txs) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(txs) == 1 {
-		return txs[0].Hash()
-	}
-	mid := len(txs) / 2
-	h1 := merkleRootTxs(txs[:mid])
-	h2 := merkleRootTxs(txs[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.GovernanceVotes)
+	return chainhash.Hash(hash)
 }
 
 // ExitMerkleRoot calculates the merkle root of the exits in the block.
 func (b *Block) ExitMerkleRoot() chainhash.Hash {
-	return merkleRootDeposits(b.Deposits)
-}
-
-func merkleRootExits(exits []Exit) chainhash.Hash {
-	if len(exits) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(exits) == 1 {
-		return exits[0].Hash()
-	}
-	mid := len(exits) / 2
-	h1 := merkleRootExits(exits[:mid])
-	h2 := merkleRootExits(exits[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.Exits)
+	return chainhash.Hash(hash)
 }
 
 // DepositMerkleRoot calculates the merkle root of the deposits in the block.
 func (b *Block) DepositMerkleRoot() chainhash.Hash {
-	return merkleRootDeposits(b.Deposits)
-}
-
-func merkleRootDeposits(deposits []Deposit) chainhash.Hash {
-	if len(deposits) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(deposits) == 1 {
-		return deposits[0].Hash()
-	}
-	mid := len(deposits) / 2
-	h1 := merkleRootDeposits(deposits[:mid])
-	h2 := merkleRootDeposits(deposits[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.DepositMerkleRoot)
+	return chainhash.Hash(hash)
 }
 
 // TransactionMerkleRoot calculates the merkle root of the transactions in the block.
 func (b *Block) TransactionMerkleRoot() chainhash.Hash {
-	return merkleRootTxs(b.Txs)
-}
-
-func merkleRootVotes(votes []MultiValidatorVote) chainhash.Hash {
-	if len(votes) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(votes) == 1 {
-		return votes[0].Hash()
-	}
-	mid := len(votes) / 2
-	h1 := merkleRootVotes(votes[:mid])
-	h2 := merkleRootVotes(votes[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.Txs)
+	return chainhash.Hash(hash)
 }
 
 // VotesMerkleRoot calculates the merkle root of the transactions in the block.
 func (b *Block) VotesMerkleRoot() chainhash.Hash {
-	return merkleRootVotes(b.Votes)
-}
-
-func merkleRootProposerSlashings(txs []ProposerSlashing) chainhash.Hash {
-	if len(txs) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(txs) == 1 {
-		return txs[0].Hash()
-	}
-	mid := len(txs) / 2
-	h1 := merkleRootProposerSlashings(txs[:mid])
-	h2 := merkleRootProposerSlashings(txs[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.Votes)
+	return chainhash.Hash(hash)
 }
 
 // ProposerSlashingsRoot calculates the hash of the proposer slashings included in the block.
 func (b *Block) ProposerSlashingsRoot() chainhash.Hash {
-	return merkleRootProposerSlashings(b.ProposerSlashings)
-}
-
-func merkleRootRANDAOSlashings(txs []RANDAOSlashing) chainhash.Hash {
-	if len(txs) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(txs) == 1 {
-		return txs[0].Hash()
-	}
-	mid := len(txs) / 2
-	h1 := merkleRootRANDAOSlashings(txs[:mid])
-	h2 := merkleRootRANDAOSlashings(txs[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.ProposerSlashings)
+	return chainhash.Hash(hash)
 }
 
 // RANDAOSlashingsRoot calculates the merkle root of the RANDAO slashings included in the block.
 func (b *Block) RANDAOSlashingsRoot() chainhash.Hash {
-	return merkleRootRANDAOSlashings(b.RANDAOSlashings)
-}
-
-func merkleRootVoteSlashings(txs []VoteSlashing) chainhash.Hash {
-	if len(txs) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(txs) == 1 {
-		return txs[0].Hash()
-	}
-	mid := len(txs) / 2
-	h1 := merkleRootVoteSlashings(txs[:mid])
-	h2 := merkleRootVoteSlashings(txs[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
+	hash, _ := ssz.HashTreeRoot(b.RANDAOSlashings)
+	return chainhash.Hash(hash)
 }
 
 // VoteSlashingRoot calculates the merkle root of the vote slashings included in the block.
 func (b *Block) VoteSlashingRoot() chainhash.Hash {
-	return merkleRootVoteSlashings(b.VoteSlashings)
+	hash, _ := ssz.HashTreeRoot(b.VoteSlashings)
+	return chainhash.Hash(hash)
 }
 
 // GetTxs returns a slice with tx hashes

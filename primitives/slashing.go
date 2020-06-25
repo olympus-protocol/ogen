@@ -25,8 +25,8 @@ func (vs *VoteSlashing) Unmarshal(b []byte) error {
 
 // Hash calculates the hash of the slashing.
 func (vs *VoteSlashing) Hash() chainhash.Hash {
-	b, _ := vs.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(vs)
+	return chainhash.Hash(hash)
 }
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO
@@ -57,8 +57,8 @@ func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
 
 // Hash calculates the hash of the RANDAO slashing.
 func (rs *RANDAOSlashing) Hash() chainhash.Hash {
-	b, _ := rs.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(rs)
+	return chainhash.Hash(hash)
 }
 
 // ProposerSlashing is a slashing to a block proposer that proposed
@@ -95,6 +95,6 @@ func (ps *ProposerSlashing) Unmarshal(b []byte) error {
 
 // Hash calculates the hash of the proposer slashing.
 func (ps *ProposerSlashing) Hash() chainhash.Hash {
-	b, _ := ps.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(ps)
+	return chainhash.Hash(hash)
 }

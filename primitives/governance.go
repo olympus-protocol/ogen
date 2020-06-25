@@ -34,8 +34,8 @@ func (c *CommunityVoteData) Copy() *CommunityVoteData {
 
 // Hash calculates the hash of the vote data.
 func (c *CommunityVoteData) Hash() chainhash.Hash {
-	b, _ := c.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(c)
+	return chainhash.Hash(hash)
 }
 
 const (
@@ -103,8 +103,8 @@ func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
 
 // Hash calculates the hash of the governance vote.
 func (gv *GovernanceVote) Hash() chainhash.Hash {
-	b, _ := gv.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(gv)
+	return chainhash.Hash(hash)
 }
 
 // Copy copies the governance vote.

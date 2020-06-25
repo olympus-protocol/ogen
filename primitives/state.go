@@ -201,8 +201,8 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 
 // Hash calculates the hash of the state.
 func (s *State) Hash() chainhash.Hash {
-	b, _ := s.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(s)
+	return chainhash.Hash(hash)
 }
 
 // Copy returns a copy of the state.

@@ -38,8 +38,8 @@ func (d *Deposit) GetSignature() (*bls.Signature, error) {
 
 // Hash calculates the hash of the deposit
 func (d *Deposit) Hash() chainhash.Hash {
-	b, _ := d.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(d)
+	return chainhash.Hash(hash)
 }
 
 // DepositData is the part of the deposit that is signed

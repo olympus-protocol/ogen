@@ -53,8 +53,8 @@ type TransferSinglePayload struct {
 
 // Hash calculates the transaction ID of the payload.
 func (c TransferSinglePayload) Hash() chainhash.Hash {
-	b, _ := c.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(c)
+	return chainhash.Hash(hash)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -154,8 +154,8 @@ func (c *TransferMultiPayload) Unmarshal(b []byte) error {
 
 // Hash calculates the transaction ID of the payload.
 func (c TransferMultiPayload) Hash() chainhash.Hash {
-	b, _ := c.Marshal()
-	return chainhash.HashH(b)
+	hash, _ := ssz.HashTreeRoot(c)
+	return chainhash.Hash(hash)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
