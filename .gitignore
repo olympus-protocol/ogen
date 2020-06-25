@@ -36,4 +36,5 @@ release/
 db/blockdb/
 *.log
 **/*.b64
+bazel*
 .vscode

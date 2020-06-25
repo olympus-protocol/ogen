@@ -38,6 +38,9 @@ COPY ./ /build/ogen
 
 RUN cd ogen && go mod download
 
+## Linux arm
+RUN cd ogen && make clean && make pack_linux_arm
+
 ## Linux amd64
 RUN cd ogen && make clean && make pack_linux_amd64
 
