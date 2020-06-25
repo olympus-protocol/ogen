@@ -41,11 +41,35 @@ func Test_BlockSerialize(t *testing.T) {
 }
 
 func Test_DepositSerialize(t *testing.T) {
-
+	ser, err := testdata.Deposit.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.Deposit
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.Deposit, desc)
+	if !equal {
+		t.Fatal("error: serialize Deposit")
+	}
 }
 
 func Test_ExitSerialize(t *testing.T) {
-
+	ser, err := testdata.Exit.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.Exit
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.Exit, desc)
+	if !equal {
+		t.Fatal("error: serialize Exit")
+	}
 }
 
 func Test_EpochReceiptSerialize(t *testing.T) {
