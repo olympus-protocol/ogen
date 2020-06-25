@@ -10,7 +10,7 @@ build:
 build_cross_docker:
 	DOCKER_BUILDKIT=1 docker build --file Dockerfile --output release .
 
-build_cross: pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack_windows_amd64
+build_cross: pack_linux_arm pack_linux_amd64 pack_linux_arm64 pack_osx_amd64 pack_windows_amd64
 
 pack_linux_amd64: build_linux_amd64
 	mkdir $(FOLDER_NAME)
@@ -37,7 +37,7 @@ pack_linux_arm: build_linux_arm
 	rm -r ./$(FOLDER_NAME)
 
 build_linux_arm:
-	CC=arm-linux-gnueabi-gcc CXX=arm-linux-gnueabi--g++ CGO_ENABLED=1 GOOS=linux GOARM=7 GOARCH=arm $(GOBUILD)
+	CC=arm-linux-gnueabi-gcc CXX=arm-linux-gnueabi-g++ CGO_ENABLED=1 GOOS=linux GOARM=7 GOARCH=arm $(GOBUILD)
 
 pack_osx_amd64: build_osx_amd64
 	mkdir $(FOLDER_NAME)
