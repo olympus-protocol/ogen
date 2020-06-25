@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -69,7 +70,15 @@ func makeEmptyMessage(command string) (Message, error) {
 
 // ReadMessage decodes the message from reader
 func ReadMessage(r io.Reader, net uint32) (Message, error) {
-	header, err := readHeader(r, net)
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	data, err := snappy.Decode(nil, b)
+	if err != nil {
+		return nil, err
+	}
+	header, err := readHeader(data[0:52], net)
 	if err != nil {
 		return nil, err
 	}
@@ -79,19 +88,15 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
 	var checksum [4]byte
-	copy(checksum[:], chainhash.DoubleHashB(msgBytes)[0:4])
+	copy(checksum[:], chainhash.DoubleHashB(data[52:])[0:4])
 	if header.Checksum != checksum {
 		return nil, errors.New("checksum don't match")
 	}
-	if header.Length != uint32(len(msgBytes)) {
+	if header.Length != uint32(len(data[52:])) {
 		return nil, errors.New("wrong announced length")
 	}
-	err = msg.Unmarshal(msgBytes)
+	err = msg.Unmarshal(data[52:])
 	if err != nil {
 		return nil, err
 	}
@@ -101,14 +106,9 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 	return msg, nil
 }
 
-func readHeader(r io.Reader, net uint32) (MessageHeader, error) {
-	hdb := [52]byte{}
-	_, err := io.ReadFull(r, hdb[:])
-	if err != nil {
-		return MessageHeader{}, err
-	}
+func readHeader(h []byte, net uint32) (MessageHeader, error) {
 	var header MessageHeader
-	err = header.Unmarshal(hdb[:])
+	err := header.Unmarshal(h)
 	if err != nil {
 		return MessageHeader{}, err
 	}
@@ -126,18 +126,22 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 	}
 	var checksum [4]byte
 	copy(checksum[:], chainhash.DoubleHashB(ser)[0:4])
-	err = writeHeader(w, msg, net, uint32(len(ser)), checksum)
+	hb, err := writeHeader(msg, net, uint32(len(ser)), checksum)
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(ser)
+	buf := []byte{}
+	buf = append(buf, hb...)
+	buf = append(buf, ser...)
+	compressed := snappy.Encode(nil, buf)
+	_, err = w.Write(compressed)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func writeHeader(w io.Writer, msg Message, net uint32, length uint32, checksum [4]byte) error {
+func writeHeader(msg Message, net uint32, length uint32, checksum [4]byte) ([]byte, error) {
 	cmd := [40]byte{}
 	copy(cmd[:], []byte(msg.Command()))
 	header := MessageHeader{
@@ -148,11 +152,7 @@ func writeHeader(w io.Writer, msg Message, net uint32, length uint32, checksum [
 	}
 	ser, err := header.Marshal()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = w.Write(ser)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ser, nil
 }
