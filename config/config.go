@@ -26,7 +26,7 @@ type Config struct {
 	RPCPort      string
 	RPCWallet    bool
 
-	Debug bool
+	Debug   bool
 	LogFile bool
 }
 
