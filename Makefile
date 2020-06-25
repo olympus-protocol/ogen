@@ -30,6 +30,15 @@ pack_linux_arm64: build_linux_arm64
 build_linux_arm64:
 	CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ CGO_ENABLED=1 GOOS=linux GOARCH=arm64 $(GOBUILD)
 
+pack_linux_arm: build_linux_arm
+	mkdir $(FOLDER_NAME)
+	mv ogen ./$(FOLDER_NAME)
+	tar -czvf ogen-$(OGEN_VERSION)-linux-arm.tar.gz ./$(FOLDER_NAME)
+	rm -r ./$(FOLDER_NAME)
+
+build_linux_arm:
+	CC=arm-linux-gnueabi-gcc CXX=arm-linux-gnueabi--g++ CGO_ENABLED=1 GOOS=linux GOARM=7 GOARCH=arm $(GOBUILD)
+
 pack_osx_amd64: build_osx_amd64
 	mkdir $(FOLDER_NAME)
 	mv ogen ./$(FOLDER_NAME)
@@ -38,6 +47,7 @@ pack_osx_amd64: build_osx_amd64
 
 build_osx_amd64:
 	CXX=x86_64-apple-darwin19-clang++ CC=x86_64-apple-darwin19-clang CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 $(GOBUILD)
+
 
 pack_windows_amd64: build_windows_amd64
 	mkdir $(FOLDER_NAME)
