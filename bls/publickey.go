@@ -70,12 +70,12 @@ func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
 }
 
 // Hash calculates the hash of the public key.
-func (p *PublicKey) Hash() [20]byte {
+func (p *PublicKey) Hash() ([20]byte, error) {
 	pkS := p.p.Serialize()
 	h := chainhash.HashH(pkS[:])
 	var hBytes [20]byte
 	copy(hBytes[:], h[:])
-	return hBytes
+	return hBytes, nil
 }
 
 // Type returns the type of the public key.

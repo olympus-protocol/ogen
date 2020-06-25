@@ -190,8 +190,11 @@ func (m *Miner) ProposeBlocks() {
 			if k, found := m.keystore.GetValidatorKey(proposer.PubKey); found {
 				m.log.Infof("proposing for slot %d", slotToPropose)
 
-				votes := m.voteMempool.Get(slotToPropose, state, &m.params, proposerIndex)
-
+				votes, err := m.voteMempool.Get(slotToPropose, state, &m.params, proposerIndex)
+				if err != nil {
+					m.log.Error(err)
+					return
+				}
 				depositTxs, state, err := m.actionsMempool.GetDeposits(int(m.params.MaxDepositsPerBlock), state)
 				if err != nil {
 					m.log.Error(err)
@@ -334,10 +337,10 @@ func (m *Miner) VoteForBlocks() {
 					sig := k.Sign(dataHash[:])
 
 					vote := primitives.SingleValidatorVote{
-						Data:      data,
-						Signature: *sig,
-						Offset:    uint32(i),
-						OutOf:     uint32(len(validators)),
+						Data:   data,
+						Sig:    sig.Marshal(),
+						Offset: uint32(i),
+						OutOf:  uint32(len(validators)),
 					}
 
 					m.voteMempool.Add(&vote)

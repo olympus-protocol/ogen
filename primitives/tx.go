@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 
@@ -43,11 +44,11 @@ const (
 // a single address to another address.
 type TransferSinglePayload struct {
 	To            [20]byte
-	FromPublicKey bls.PublicKey
+	FromPublicKey []byte
 	Amount        uint64
 	Nonce         uint64
 	Fee           uint64
-	Signature     bls.Signature
+	Signature     []byte
 }
 
 // Hash calculates the transaction ID of the payload.
@@ -57,8 +58,8 @@ func (c *TransferSinglePayload) Hash() chainhash.Hash {
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte) {
-	pkS := c.FromPublicKey.Marshal()
+func (c *TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
+	pkS := c.FromPublicKey
 	h := chainhash.HashH(pkS[:])
 	copy(out[:], h[:20])
 	return
@@ -77,16 +78,31 @@ func (c *TransferSinglePayload) Unmarshal(b []byte) error {
 // SignatureMessage gets the message the needs to be signed.
 func (c *TransferSinglePayload) SignatureMessage() chainhash.Hash {
 	cp := *c
-	cp.Signature = bls.Signature{}
+	cp.Signature = make([]byte, 96)
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
+}
+
+func (c *TransferSinglePayload) GetSignature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(c.Signature)
+}
+
+func (c *TransferSinglePayload) GetPublic() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(c.FromPublicKey)
 }
 
 // VerifySig verifies the signatures is valid.
 func (c *TransferSinglePayload) VerifySig() error {
 	sigMsg := c.SignatureMessage()
-
-	valid := c.Signature.Verify(sigMsg[:], &c.FromPublicKey)
+	sig, err := c.GetSignature()
+	if err != nil {
+		return err
+	}
+	pub, err := c.GetPublic()
+	if err != nil {
+		return err
+	}
+	valid := sig.Verify(sigMsg[:], pub)
 	if !valid {
 		return fmt.Errorf("signature is not valid")
 	}
@@ -110,7 +126,7 @@ func (c *TransferSinglePayload) GetFee() uint64 {
 }
 
 // GetFromAddress gets the from address.
-func (c *TransferSinglePayload) GetFromAddress() [20]byte {
+func (c *TransferSinglePayload) GetFromAddress() ([20]byte, error) {
 	return c.FromPubkeyHash()
 }
 
@@ -119,11 +135,11 @@ var _ TxPayload = &TransferSinglePayload{}
 // TransferMultiPayload represents a transfer from a multisig to
 // another address.
 type TransferMultiPayload struct {
-	To        [20]byte
-	Amount    uint64
-	Nonce     uint64
-	Fee       uint64
-	Signature bls.Multisig
+	To       [20]byte
+	Amount   uint64
+	Nonce    uint64
+	Fee      uint64
+	MultiSig []byte
 }
 
 // Marshal encodes the data.
@@ -143,23 +159,43 @@ func (c *TransferMultiPayload) Hash() chainhash.Hash {
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
-func (c *TransferMultiPayload) FromPubkeyHash() [20]byte {
-	return c.Signature.PublicKey.Hash()
+func (c *TransferMultiPayload) FromPubkeyHash() ([20]byte, error) {
+	pub, err := c.GetPublic()
+	if err != nil {
+		return [20]byte{}, err
+	}
+	return pub.Hash()
 }
 
 // SignatureMessage gets the message the needs to be signed.
 func (c *TransferMultiPayload) SignatureMessage() chainhash.Hash {
 	cp := *c
-	cp.Signature = bls.Multisig{}
+	cp.MultiSig = []byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
+}
+
+func (c *TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
+	sig, err := c.GetSignature()
+	if err != nil {
+		return nil, err
+	}
+	return sig.GetPublicKey()
+}
+
+func (c *TransferMultiPayload) GetSignature() (bls.FunctionalSignature, error) {
+	buf := bytes.NewBuffer(c.MultiSig)
+	return bls.ReadFunctionalSignature(buf)
 }
 
 // VerifySig verifies the signatures is valid.
 func (c *TransferMultiPayload) VerifySig() error {
 	sigMsg := c.SignatureMessage()
-
-	valid := c.Signature.Verify(sigMsg[:])
+	sig, err := c.GetSignature()
+	if err != nil {
+		return err
+	}
+	valid := sig.Verify(sigMsg[:])
 	if !valid {
 		return fmt.Errorf("signature is not valid")
 	}
@@ -200,7 +236,7 @@ type TxPayload interface {
 	GetNonce() uint64
 	GetAmount() uint64
 	GetFee() uint64
-	FromPubkeyHash() [20]byte
+	FromPubkeyHash() ([20]byte, error)
 }
 
 // Tx represents a transaction on the blockchain.

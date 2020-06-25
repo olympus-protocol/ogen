@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -38,7 +37,6 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(dataBytes)
 	switch data.Type {
 	case "tx":
 		tx := new(primitives.Tx)
@@ -53,7 +51,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
 	case "deposit":
 		deposit := new(primitives.Deposit)
-		err := deposit.Decode(buf)
+		err := deposit.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}

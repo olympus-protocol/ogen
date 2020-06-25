@@ -43,7 +43,7 @@ var RFieldModulus, _ = new(big.Int).SetString("524358751751261904794477405081859
 type FunctionalPublicKey interface {
 	Marshal() []byte
 	Unmarshal(b []byte) error
-	Hash() [20]byte
+	Hash() ([20]byte, error)
 	Type() FunctionalSignatureType
 }
 
@@ -58,14 +58,13 @@ const (
 	TypeMulti
 )
 
-// FunctionalSignature is a signature that can be included in transactions
-// or votes.
+// FunctionalSignature is a signature that can be included in transactions or votes.
 type FunctionalSignature interface {
 	Marshal() ([]byte, error)
 	Unmarshal(b []byte) error
 	Sign(secKey *SecretKey, msg []byte) error
 	Verify(msg []byte) bool
-	GetPublicKey() FunctionalPublicKey
+	GetPublicKey() (FunctionalPublicKey, error)
 	Type() FunctionalSignatureType
 	Copy() FunctionalSignature
 }

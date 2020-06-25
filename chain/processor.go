@@ -21,7 +21,7 @@ type blockRowAndValidator struct {
 func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
-	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(int64(justifiedState.EpochIndex))
+	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.EpochIndex)
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
 		bl, err := ch.getLatestAttestationTarget(i)
@@ -178,13 +178,13 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 	if len(receipts) > 0 {
 		msg := "\nEpoch Receipts\n----------\n"
-		receiptTypes := make(map[primitives.ReceiptType]int64)
+		receiptTypes := make(map[string]int64)
 
 		for _, r := range receipts {
-			if _, ok := receiptTypes[r.Type]; !ok {
-				receiptTypes[r.Type] = r.Amount
+			if _, ok := receiptTypes[r.TypeString()]; !ok {
+				receiptTypes[r.TypeString()] = r.Amount
 			} else {
-				receiptTypes[r.Type] += r.Amount
+				receiptTypes[r.TypeString()] += r.Amount
 			}
 		}
 

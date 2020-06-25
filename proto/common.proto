@@ -96,8 +96,8 @@ message ValidatorRegistry {
     string public_key = 2;
     string payee_address = 3;
     string status = 4;
-    int64 first_active_epoch = 5;
-    int64 last_active_epoch = 6;
+    uint64 first_active_epoch = 5;
+    uint64 last_active_epoch = 6;
 }
 
 message ValidatorsInfo {

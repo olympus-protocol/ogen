@@ -90,7 +90,10 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
-	fpkh := item.Payload.FromPubkeyHash()
+	fpkh, err := item.Payload.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
@@ -111,7 +114,10 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 	for _, tx := range b.Txs {
 		switch p := tx.Payload.(type) {
 		case *primitives.TransferSinglePayload:
-			fpkh := p.FromPubkeyHash()
+			fpkh, err := p.FromPubkeyHash()
+			if err != nil {
+				continue
+			}
 			mempoolItem, found := cm.mempool[fpkh]
 			if !found {
 				continue

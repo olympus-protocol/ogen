@@ -103,7 +103,7 @@ func (s *State) InitiateValidatorExit(index uint32) error {
 }
 
 // ExitValidator handles state changes when a validator exits.
-func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.ChainParams) error {
+func (s *State) ExitValidator(index uint32, status uint8, p *params.ChainParams) error {
 	validator := &s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
@@ -133,7 +133,7 @@ func (s *State) ExitValidator(index uint32, status ValidatorStatus, p *params.Ch
 }
 
 // UpdateValidatorStatus moves a validator to a specific status.
-func (s *State) UpdateValidatorStatus(index uint32, status ValidatorStatus, p *params.ChainParams) error {
+func (s *State) UpdateValidatorStatus(index uint32, status uint8, p *params.ChainParams) error {
 	if status == StatusActive {
 		err := s.ActivateValidator(index)
 		return err
@@ -159,7 +159,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 		index := uint32(idx)
 
 		// start validators if needed
-		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= int64(s.EpochIndex) {
+		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= s.EpochIndex {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
@@ -177,7 +177,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 	for idx, validator := range s.ValidatorRegistry {
 		index := uint32(idx)
 
-		if validator.Status == StatusActivePendingExit && validator.LastActiveEpoch <= int64(s.EpochIndex) {
+		if validator.Status == StatusActivePendingExit && validator.LastActiveEpoch <= s.EpochIndex {
 			balanceChurn += s.GetEffectiveBalance(index, p)
 
 			if balanceChurn > maxBalanceChurn {
@@ -249,10 +249,8 @@ func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chai
 	return s.LatestBlockHashes[slotToGet%p.LatestBlockRootsLength]
 }
 
-type ReceiptType uint8
-
 const (
-	RewardMatchedFromEpoch ReceiptType = iota
+	RewardMatchedFromEpoch uint8 = iota
 	PenaltyMissingFromEpoch
 	RewardMatchedToEpoch
 	PenaltyMissingToEpoch
@@ -264,8 +262,15 @@ const (
 	PenaltyInactivityLeakNoVote
 )
 
-func (r ReceiptType) String() string {
-	switch r {
+// EpochReceipt is a balance change carried our by an epoch transition.
+type EpochReceipt struct {
+	Type      uint8
+	Amount    int64
+	Validator uint32
+}
+
+func (e EpochReceipt) TypeString() string {
+	switch e.Type {
 	case RewardMatchedFromEpoch:
 		return "voted for correct from epoch"
 	case RewardMatchedToEpoch:
@@ -287,22 +292,15 @@ func (r ReceiptType) String() string {
 	case PenaltyMissingToEpoch:
 		return "voted for wrong to epoch"
 	default:
-		return fmt.Sprintf("invalid receipt type: %d", r)
+		return fmt.Sprintf("invalid receipt type: %d", e.Type)
 	}
-}
-
-// EpochReceipt is a balance change carried our by an epoch transition.
-type EpochReceipt struct {
-	Type      ReceiptType
-	Amount    int64
-	Validator uint32
 }
 
 func (e *EpochReceipt) String() string {
 	if e.Amount > 0 {
-		return fmt.Sprintf("Reward: Validator %d: %s for %f POLIS", e.Validator, e.Type, float64(e.Amount)/1000)
+		return fmt.Sprintf("Reward: Validator %d: %s for %f POLIS", e.Validator, e.TypeString(), float64(e.Amount)/1000)
 	} else {
-		return fmt.Sprintf("Penalty: Validator %d: %s for %f POLIS", e.Validator, e.Type, float64(e.Amount)/1000)
+		return fmt.Sprintf("Penalty: Validator %d: %s for %f POLIS", e.Validator,  e.TypeString(), float64(e.Amount)/1000)
 	}
 }
 
@@ -509,7 +507,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 	receipts := make([]*EpochReceipt, 0)
 
-	rewardValidator := func(index uint32, reward uint64, why ReceiptType) {
+	rewardValidator := func(index uint32, reward uint64, why uint8) {
 		s.ValidatorRegistry[index].Balance += reward
 		receipts = append(receipts, &EpochReceipt{
 			Validator: index,
@@ -518,8 +516,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		})
 	}
 
-	penalizeValidator := func(index uint32, penalty uint64, why ReceiptType) {
-		if s.ValidatorRegistry[index].FirstActiveEpoch+5 >= int64(s.EpochIndex) {
+	penalizeValidator := func(index uint32, penalty uint64, why uint8) {
+		if s.ValidatorRegistry[index].FirstActiveEpoch+5 >= s.EpochIndex {
 			return
 		}
 		s.ValidatorRegistry[index].Balance -= penalty
@@ -639,7 +637,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	s.ProposerQueue = s.NextProposerQueue
-	activeValidators := s.GetValidatorIndicesActiveAt(int64(s.EpochIndex + 1))
+	activeValidators := s.GetValidatorIndicesActiveAt(s.EpochIndex + 1)
 	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, activeValidators, p)
 
 	s.PreviousEpochVoteAssignments = s.CurrentEpochVoteAssignments

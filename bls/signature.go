@@ -9,8 +9,7 @@ import (
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
-	SB []byte `ssz:"size=96"`
-	s  *bls.Sign
+	s *bls.Sign
 }
 
 // Copy returns a copy of the signature.

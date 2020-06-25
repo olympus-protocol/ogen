@@ -23,14 +23,14 @@ var AcceptedVoteInfo = primitives.AcceptedVoteInfo{
 }
 
 var SingleValidatorVote = primitives.SingleValidatorVote{
-	Data:      VoteData,
-	Signature: *sig,
-	Offset:    333,
-	OutOf:     444,
+	Data:   VoteData,
+	Sig:    sig.Marshal(),
+	Offset: 333,
+	OutOf:  444,
 }
 
 var MultiValidatorVote = primitives.MultiValidatorVote{
 	Data:                  VoteData,
-	Signature:             *sig,
+	Sig:                   sig.Marshal(),
 	ParticipationBitfield: []byte{1, 2, 3, 4},
 }

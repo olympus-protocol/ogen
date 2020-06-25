@@ -1,6 +1,7 @@
 package bls
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 
@@ -14,7 +15,7 @@ import (
 // Multipub represents multiple public keys that can be signed by
 // some subset numNeeded.
 type Multipub struct {
-	PublicKeys []*PublicKey
+	PublicKeys [][]byte
 	NumNeeded  uint16
 }
 
@@ -31,8 +32,12 @@ func (m *Multipub) Unmarshal(b []byte) error {
 
 // NewMultipub constructs a new multi-pubkey.
 func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
+	pubsB := [][]byte{}
+	for _, p := range pubs {
+		pubsB = append(pubsB, p.Marshal())
+	}
 	return &Multipub{
-		PublicKeys: pubs,
+		PublicKeys: pubsB,
 		NumNeeded:  numNeeded,
 	}
 }
@@ -40,9 +45,9 @@ func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
 // Copy returns a copy of the multipub.
 func (m *Multipub) Copy() *Multipub {
 	newM := *m
-	newM.PublicKeys = make([]*PublicKey, len(m.PublicKeys))
+	newM.PublicKeys = make([][]byte, len(m.PublicKeys))
 	for i := range newM.PublicKeys {
-		newM.PublicKeys[i] = m.PublicKeys[i].Copy()
+		newM.PublicKeys[i] = m.PublicKeys[i]
 	}
 
 	return &newM
@@ -72,19 +77,26 @@ func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byt
 }
 
 // Hash gets the hash of the multipub.
-func (m *Multipub) Hash() [20]byte {
+func (m *Multipub) Hash() ([20]byte, error) {
 	pubkeyHashes := make([][20]byte, 0, len(m.PublicKeys))
 
 	for i, p := range m.PublicKeys {
-		pubkeyHashes[i] = p.Hash()
+		pub, err := PublicKeyFromBytes(p)
+		if err != nil {
+			return [20]byte{}, err
+		}
+		pubkeyHashes[i], err = pub.Hash()
+		if err != nil {
+			return [20]byte{}, err
+		}
 	}
 
-	return PublicKeyHashesToMultisigHash(pubkeyHashes, m.NumNeeded)
+	return PublicKeyHashesToMultisigHash(pubkeyHashes, m.NumNeeded), nil
 }
 
 // ToBech32 returns the bech32 address.
 func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
-	pkh := m.Hash()
+	pkh, _ := m.Hash()
 	return bech32.Encode(prefixes.Multisig, pkh[:])
 }
 
@@ -115,8 +127,8 @@ func NewMultisig(multipub Multipub) *Multisig {
 }
 
 // GetPublicKey gets the public key included in the signature.
-func (m *Multisig) GetPublicKey() FunctionalPublicKey {
-	return &m.PublicKey
+func (m *Multisig) GetPublicKey() (FunctionalPublicKey, error) {
+	return &m.PublicKey, nil
 }
 
 // Sign signs a multisig through a secret key.
@@ -125,7 +137,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 
 	idx := -1
 	for i := range m.PublicKey.PublicKeys {
-		if m.PublicKey.PublicKeys[i].Equals(pub) {
+		if bytes.Equal(m.PublicKey.PublicKeys[i], pub.Marshal()) {
 			idx = i
 		}
 	}
@@ -160,10 +172,16 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	aggSig := AggregateSignatures(m.Signatures)
 
-	activePubs := make([]*PublicKey, 0)
+	activePubs := make([][]byte, 0)
+	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
 		if m.KeysSigned.Get(uint(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
+			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
+			if err != nil {
+				return false
+			}
+			activePubsKeys = append(activePubsKeys, pub)
 		}
 	}
 
@@ -173,10 +191,10 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	msgs := make([][32]byte, len(m.Signatures))
 	for i := range msgs {
-		msgs[i] = chainhash.HashH(append(msg, activePubs[i].Marshal()...))
+		msgs[i] = chainhash.HashH(append(msg, activePubs[i]...))
 	}
 
-	return aggSig.AggregateVerify(activePubs, msgs)
+	return aggSig.AggregateVerify(activePubsKeys, msgs)
 }
 
 // Type returns the type of the multisig.

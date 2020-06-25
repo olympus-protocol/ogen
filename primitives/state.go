@@ -129,7 +129,7 @@ func (s *State) Unmarshal(b []byte) error {
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
-func (s *State) GetValidatorIndicesActiveAt(epoch int64) []uint32 {
+func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint32 {
 	vals := make([]uint32, 0, len(s.ValidatorRegistry))
 	for i, v := range s.ValidatorRegistry {
 		if v.IsActiveAtEpoch(epoch) {

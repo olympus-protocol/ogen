@@ -233,7 +233,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint32) []primitives.MultiValidatorVote {
+func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint32) ([]primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	votes := make([]primitives.MultiValidatorVote, 0)
@@ -242,12 +242,16 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
 			sigs := make([]*bls.Signature, 0)
 			for _, v := range m.pool[i].individualVotes {
-				sigs = append(sigs, &v.Signature)
+				sig, err := v.Signature()
+				if err != nil {
+					return nil, err
+				}
+				sigs = append(sigs, sig)
 			}
 			sig := bls.AggregateSignatures(sigs)
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
-				Signature:             *sig,
+				Sig:                   sig.Marshal(),
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
 			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {
@@ -257,7 +261,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 		}
 	}
 
-	return votes
+	return votes, nil
 }
 
 // Assumes you already hold the poolLock mutex.

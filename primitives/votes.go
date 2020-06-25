@@ -3,10 +3,10 @@ package primitives
 import (
 	"fmt"
 
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/prysmaticlabs/go-ssz"
 
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -140,10 +140,15 @@ func (v *VoteData) Hash() chainhash.Hash {
 
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
-	Data      VoteData
-	Signature bls.Signature `ssz:"size=96"`
-	Offset    uint32
-	OutOf     uint32
+	Data   VoteData
+	Sig    []byte
+	Offset uint32
+	OutOf  uint32
+}
+
+// Signature returns the signature on BLS type
+func (v *SingleValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(v.Sig)
 }
 
 // Marshal encodes the data.
@@ -162,7 +167,7 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 	participationBitfield[v.Offset/8] |= (1 << uint(v.Offset%8))
 	return &MultiValidatorVote{
 		Data:                  v.Data,
-		Signature:             v.Signature,
+		Sig:                   v.Sig,
 		ParticipationBitfield: participationBitfield,
 	}
 }
@@ -175,8 +180,13 @@ func (v *SingleValidatorVote) Hash() chainhash.Hash {
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
 	Data                  VoteData
-	Signature             bls.Signature
+	Sig                   []byte
 	ParticipationBitfield bitfield.Bitfield
+}
+
+// Signature returns the signature on BLS type
+func (v *MultiValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(v.Sig)
 }
 
 // Marshal encodes the data.

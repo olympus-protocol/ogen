@@ -89,7 +89,19 @@ func Test_TxSerialize(t *testing.T) {
 }
 
 func Test_ValidatorSerialize(t *testing.T) {
-
+	ser, err := testdata.Validator.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.Validator
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.Validator, desc)
+	if !equal {
+		t.Fatal("error: serialize Validator")
+	}
 }
 
 func Test_AcceptedVoteInfoSerialize(t *testing.T) {

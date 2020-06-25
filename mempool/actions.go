@@ -171,10 +171,9 @@ func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 			return
 		}
 
-		txBuf := bytes.NewReader(msg.Data)
 		tx := new(primitives.Deposit)
 
-		if err := tx.Decode(txBuf); err != nil {
+		if err := tx.Unmarshal(msg.Data); err != nil {
 			// TODO: ban peer
 			am.log.Warnf("peer sent invalid deposit: %s", err)
 			continue
@@ -199,7 +198,7 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 	defer am.depositsLock.Unlock()
 
 	for _, d := range am.deposits {
-		if bytes.Equal(d.Data.PublicKey.Marshal(), deposit.Data.PublicKey.Marshal()) {
+		if bytes.Equal(d.Data.PublicKey, deposit.Data.PublicKey) {
 			return nil
 		}
 	}
@@ -240,7 +239,7 @@ func (am *ActionMempool) RemoveByBlock(b *primitives.Block, tipState *primitives
 outer:
 	for _, d1 := range am.deposits {
 		for _, d2 := range b.Deposits {
-			if bytes.Equal(d1.Data.PublicKey.Marshal(), d2.Data.PublicKey.Marshal()) {
+			if bytes.Equal(d1.Data.PublicKey, d2.Data.PublicKey) {
 				continue outer
 			}
 		}
@@ -259,7 +258,7 @@ outer:
 outer1:
 	for _, e1 := range am.exits {
 		for _, e2 := range b.Exits {
-			if bytes.Equal(e1.ValidatorPubkey.Marshal(), e2.ValidatorPubkey.Marshal()) {
+			if bytes.Equal(e1.ValidatorPubkey, e2.ValidatorPubkey) {
 				continue outer1
 			}
 		}
@@ -459,7 +458,7 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 	defer am.exitsLock.Unlock()
 
 	for _, e := range am.exits {
-		if bytes.Equal(e.ValidatorPubkey.Marshal(), e.ValidatorPubkey.Marshal()) {
+		if bytes.Equal(e.ValidatorPubkey, e.ValidatorPubkey) {
 			return nil
 		}
 	}

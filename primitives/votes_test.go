@@ -17,7 +17,7 @@ func TestMultiValidatorVoteSerializeDeserialize(t *testing.T) {
 			ToEpoch:   4,
 			ToHash:    [32]byte{5},
 		},
-		Signature:             *sig,
+		Sig:                   sig.Marshal(),
 		ParticipationBitfield: []byte{1, 2, 3, 4},
 	}
 

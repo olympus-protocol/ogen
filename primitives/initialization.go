@@ -51,7 +51,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 			PayeeAddress:     pkhBytes,
 			Status:           StatusActive,
 			FirstActiveEpoch: 0,
-			LastActiveEpoch:  -1,
+			LastActiveEpoch:  0,
 		}
 	}
 
