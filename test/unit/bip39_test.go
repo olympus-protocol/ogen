@@ -1,4 +1,4 @@
-package bip39
+package unit_test
 
 import (
 	"crypto/rand"

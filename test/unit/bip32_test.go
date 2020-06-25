@@ -1,4 +1,4 @@
-package bip32_test
+package unit_test
 
 import (
 	"bytes"

@@ -1,8 +1,12 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
+GOTEST=$(GOCMD) test -v
 GOCLEAN=$(GOCMD) clean
 FOLDER_NAME= ogen-$(OGEN_VERSION)
 OGEN_VERSION=0.0.1
+
+test: 
+	$(GOTEST) test/...
 
 build: 
 	$(GOBUILD) 

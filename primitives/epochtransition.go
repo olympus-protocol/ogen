@@ -300,7 +300,7 @@ func (e *EpochReceipt) String() string {
 	if e.Amount > 0 {
 		return fmt.Sprintf("Reward: Validator %d: %s for %f POLIS", e.Validator, e.TypeString(), float64(e.Amount)/1000)
 	} else {
-		return fmt.Sprintf("Penalty: Validator %d: %s for %f POLIS", e.Validator,  e.TypeString(), float64(e.Amount)/1000)
+		return fmt.Sprintf("Penalty: Validator %d: %s for %f POLIS", e.Validator, e.TypeString(), float64(e.Amount)/1000)
 	}
 }
 
