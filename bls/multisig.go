@@ -103,7 +103,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  Multipub
-	Signatures []*Signature
+	Signatures [][]byte
 	KeysSigned bitfield.Bitfield
 }
 
@@ -121,7 +121,7 @@ func (m *Multisig) Unmarshal(b []byte) error {
 func NewMultisig(multipub Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
-		Signatures: []*Signature{},
+		Signatures: [][]byte{},
 		KeysSigned: bitfield.NewBitfield(uint(len(multipub.PublicKeys))),
 	}
 }
@@ -154,7 +154,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 
 	sig := secKey.Sign(msgI[:])
 
-	m.Signatures = append(m.Signatures, sig)
+	m.Signatures = append(m.Signatures, sig.Marshal())
 	m.KeysSigned.Set(uint(idx))
 
 	return nil
@@ -170,8 +170,10 @@ func (m *Multisig) Verify(msg []byte) bool {
 		return false
 	}
 
-	aggSig := AggregateSignatures(m.Signatures)
-
+	aggSig, err := AggregateSignaturesBytes(m.Signatures)
+	if err != nil {
+		return false
+	}
 	activePubs := make([][]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
@@ -205,9 +207,9 @@ func (m *Multisig) Type() FunctionalSignatureType {
 // Copy copies the signature.
 func (m *Multisig) Copy() FunctionalSignature {
 	newMultisig := &Multisig{}
-	newMultisig.Signatures = make([]*Signature, len(m.Signatures))
+	newMultisig.Signatures = make([][]byte, len(m.Signatures))
 	for i := range newMultisig.Signatures {
-		newMultisig.Signatures[i] = m.Signatures[i].Copy()
+		newMultisig.Signatures[i] = m.Signatures[i]
 	}
 
 	pub := m.PublicKey.Copy()

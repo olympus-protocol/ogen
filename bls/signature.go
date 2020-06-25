@@ -103,6 +103,27 @@ func NewAggregateSignature() *Signature {
 	return &Signature{s: bls.HashAndMapToSignature([]byte{'m', 'o', 'c', 'k'})}
 }
 
+// AggregateSignaturesBytes converts a list of marshaled signatures into a single, aggregated sig.
+func AggregateSignaturesBytes(sigs [][]byte) (*Signature, error) {
+	if len(sigs) == 0 {
+		return nil, nil
+	}
+
+	// Copy signature
+	signature, err := SignatureFromBytes(sigs[0])
+	if err != nil {
+		return nil, err
+	}
+	for i := 1; i < len(sigs); i++ {
+		sig, err := SignatureFromBytes(sigs[i])
+		if err != nil {
+			return nil, err
+		}
+		signature.s.Add(sig.s)
+	}
+	return &Signature{s: signature.s}, nil
+}
+
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.
 func AggregateSignatures(sigs []*Signature) *Signature {
 	if len(sigs) == 0 {
