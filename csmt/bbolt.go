@@ -9,8 +9,6 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-var errorNoData = errors.New("no data")
-
 // BoltTreeDB is a tree database implemented on top of bbolt.
 type BoltTreeDB struct {
 	db      *bbolt.DB
@@ -20,7 +18,7 @@ type BoltTreeDB struct {
 // Hash gets the hash of the root.
 func (b *BoltTreeDB) Hash() (*chainhash.Hash, error) {
 	out := primitives.EmptyTree
-	err := b.db.View(func(transaction TreeDatabaseTransaction) error {
+	err := b.View(func(transaction TreeDatabaseTransaction) error {
 		h, err := transaction.Hash()
 		if err != nil {
 			return err
@@ -33,6 +31,30 @@ func (b *BoltTreeDB) Hash() (*chainhash.Hash, error) {
 	}
 
 	return &out, nil
+}
+
+// Update updates the database.
+func (b *BoltTreeDB) Update(callback func(TreeDatabaseTransaction) error) error {
+	return b.db.Update(func(tx *bbolt.Tx) error {
+		bkt, err := tx.CreateBucketIfNotExists([]byte(b.bktname))
+		if err != nil {
+			return err
+		}
+		trtx := &BoltTreeTransaction{
+			bkt: bkt,
+		}
+		return callback(trtx)
+	})
+}
+
+// View creates a read-only transaction for the database.
+func (b *BoltTreeDB) View(callback func(TreeDatabaseTransaction) error) error {
+	return b.db.View(func(tx *bbolt.Tx) error {
+		trtx := &BoltTreeTransaction{
+			bkt: tx.Bucket([]byte(b.bktname)),
+		}
+		return callback(trtx)
+	})
 }
 
 var treeDBPrefix = []byte("tree-")
@@ -94,8 +116,8 @@ func (b *BoltTreeTransaction) GetNode(nodeHash chainhash.Hash) (*Node, error) {
 	nodeKey := getTreeKey(nodeHash[:])
 
 	nodeItem := b.bkt.Get(nodeKey)
-	if len(nodeItem) <= 0 {
-		return nil, errorNoData
+	if nodeItem == nil {
+		return nil, errors.New("Unabel to get node")
 	}
 
 	return DeserializeNode(nodeItem)
@@ -120,8 +142,8 @@ func (b *BoltTreeTransaction) Get(key chainhash.Hash) (*chainhash.Hash, error) {
 	var val chainhash.Hash
 
 	valItem := b.bkt.Get(getKVKey(key[:]))
-	if len(valItem) <= 0 {
-		return nil, errorNoData
+	if valItem == nil {
+		return nil, errors.New("Get Value")
 	}
 
 	copy(val[:], valItem)
@@ -136,17 +158,16 @@ func (b *BoltTreeTransaction) Set(key chainhash.Hash, value chainhash.Hash) erro
 // Root gets the root node.
 func (b *BoltTreeTransaction) Root() (*Node, error) {
 	i := b.bkt.Get([]byte("root"))
-	if len(i) <= 0 {
-		return nil, errorNoData
+	if i == nil {
+		return nil, errors.New("Unable to get Root")
 	}
-
 	if bytes.Equal(i, primitives.EmptyTree[:]) {
 		return nil, nil
 	}
 
 	nodeKey := b.bkt.Get(getTreeKey(i))
-	if len(nodeKey) <= 0 {
-		return nil, errorNoData
+	if nodeKey == nil {
+		return nil, errors.New("Unable to get Node Key")
 	}
 
 	return DeserializeNode(nodeKey)
@@ -160,40 +181,17 @@ type BoltTreeTransaction struct {
 // Hash gets the hash of the root.
 func (b *BoltTreeTransaction) Hash() (*chainhash.Hash, error) {
 	i := b.bkt.Get([]byte("root"))
-	if len(i) <= 0 {
-		return nil, errorNoData
+	if i == nil {
+		return &primitives.EmptyTree, nil
 	}
 	return chainhash.NewHash(i)
 }
 
-// Update updates the database.
-func (b *BoltTreeTransaction) Update(callback func(TreeDatabaseTransaction) error) error {
-	bkt := b.bkt.CreateBucketIfNotExists()
-
-	err := callback(&BoltTreeTransaction{badgerTx})
-	if err != nil {
-		badgerTx.Discard()
-		return err
-	}
-	return badgerTx.Commit()
-}
-
-// View creates a read-only transaction for the database.
-func (b *BoltTreeTransaction) View(callback func(TreeDatabaseTransaction) error) error {
-	badgerTx := b.db.NewTransaction(false)
-
-	err := callback(&BadgerTreeTransaction{badgerTx})
-	if err != nil {
-		badgerTx.Discard()
-		return err
-	}
-	return badgerTx.Commit()
-}
-
-// NewBoltTreeDB creates a new badger tree database from a badger database.
-func NewBoltTreeDB(db *bbolt.DB) *BoltTreeDB {
+// NewBoltTreeDB creates a new bbolt tree database from a bbolt database.
+func NewBoltTreeDB(db *bbolt.DB, bkt string) *BoltTreeDB {
 	return &BoltTreeDB{
-		db: db,
+		db:      db,
+		bktname: bkt,
 	}
 }
 

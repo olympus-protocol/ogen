@@ -1,33 +1,39 @@
-package csmt
+package csmt_test
 
 import (
 	"fmt"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"testing"
+
+	"github.com/olympus-protocol/ogen/csmt"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"go.etcd.io/bbolt"
 )
 
-func TestRandomWritesRollbackCommitBadger(t *testing.T) {
-	badgerdb, err := badger.Open(badger.DefaultOptions("./badger-test"))
+func ch(s string) chainhash.Hash {
+	return chainhash.HashH([]byte(s))
+}
+
+func TestRandomWritesRollbackCommitBolt(t *testing.T) {
+	bboltdb, err := bbolt.Open("db.db", 0600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	_ = bboltdb.Update(func(tx *bbolt.Tx) error {
+		return tx.DeleteBucket([]byte("test_bucket"))
+	})
 
-	err = badgerdb.DropAll()
-	if err != nil {
-		t.Fatal(err)
-	}
+	defer bboltdb.Close()
 
-	defer badgerdb.Close()
+	under := csmt.NewBoltTreeDB(bboltdb, "test_bucket")
 
-	under := NewBadgerTreeDB(badgerdb)
-
-	underlyingTree := NewTree(under)
+	underlyingTree := csmt.NewTree(under)
 
 	var treeRoot chainhash.Hash
 
-	err = underlyingTree.Update(func(tx TreeTransactionAccess) error {
+	err = underlyingTree.Update(func(tx csmt.TreeTransactionAccess) error {
 		for i := 0; i < 200; i++ {
 			err := tx.Set(ch(fmt.Sprintf("key%d", i)), ch(fmt.Sprintf("val%d", i)))
+			fmt.Println(err)
 			if err != nil {
 				return err
 			}
@@ -48,13 +54,13 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 	}
 
 	for i := 0; i < 100; i++ {
-		cachedTreeDB, err := NewTreeMemoryCache(under)
+		cachedTreeDB, err := csmt.NewTreeMemoryCache(under)
 		if err != nil {
 			t.Fatal(err)
 		}
-		cachedTree := NewTree(cachedTreeDB)
+		cachedTree := csmt.NewTree(cachedTreeDB)
 
-		err = cachedTree.Update(func(tx TreeTransactionAccess) error {
+		err = cachedTree.Update(func(tx csmt.TreeTransactionAccess) error {
 			for newVal := 198; newVal < 202; newVal++ {
 				err := tx.Set(ch(fmt.Sprintf("key%d", i)), ch(fmt.Sprintf("val2%d", newVal)))
 				if err != nil {
@@ -71,7 +77,7 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 
 	var underlyingHash chainhash.Hash
 
-	err = underlyingTree.View(func(tx TreeTransactionAccess) error {
+	err = underlyingTree.View(func(tx csmt.TreeTransactionAccess) error {
 		h, err := tx.Hash()
 		if err != nil {
 			return err
@@ -88,13 +94,13 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 		t.Fatal("expected uncommitted transaction not to affect underlying tree")
 	}
 
-	cachedTreeDB, err := NewTreeMemoryCache(under)
+	cachedTreeDB, err := csmt.NewTreeMemoryCache(under)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cachedTree := NewTree(cachedTreeDB)
+	cachedTree := csmt.NewTree(cachedTreeDB)
 
-	err = cachedTree.Update(func(tx TreeTransactionAccess) error {
+	err = cachedTree.Update(func(tx csmt.TreeTransactionAccess) error {
 		for i := 0; i < 100; i++ {
 			for newVal := 198; newVal < 202; newVal++ {
 				err := tx.Set(ch(fmt.Sprintf("key%d", i)), ch(fmt.Sprintf("val3%d", newVal)))
@@ -112,7 +118,7 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 
 	var cachedTreeHash chainhash.Hash
 
-	err = cachedTree.View(func(tx TreeTransactionAccess) error {
+	err = cachedTree.View(func(tx csmt.TreeTransactionAccess) error {
 		h, err := tx.Hash()
 		if err != nil {
 			return err
@@ -130,7 +136,7 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = underlyingTree.View(func(tx TreeTransactionAccess) error {
+	err = underlyingTree.View(func(tx csmt.TreeTransactionAccess) error {
 		h, err := tx.Hash()
 		if err != nil {
 			return err
