@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain"
@@ -32,6 +34,11 @@ type Server struct {
 }
 
 func (s *Server) Start() {
+	if s.config.Pprof {
+		go func ()  {
+			http.ListenAndServe("localhost:6060", nil)
+		}()
+	}
 	err := s.Chain.Start()
 	if err != nil {
 		log.Fatalln("unable to start chain instance")

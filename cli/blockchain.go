@@ -160,6 +160,7 @@ Next generation blockchain secured by CASPER.`,
 				Debug: viper.GetBool("debug"),
 
 				LogFile: viper.GetBool("log_file"),
+				Pprof: viper.GetBool("pprof"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())
@@ -201,6 +202,7 @@ func init() {
 	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
 	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
 	rootCmd.PersistentFlags().Bool("log_file", false, "Display log information to file.")
+	rootCmd.PersistentFlags().Bool("pprof", false, "Run ogen with a profiling server attached.")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
