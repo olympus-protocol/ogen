@@ -3,7 +3,6 @@ package csmt
 import (
 	"bytes"
 
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
@@ -17,7 +16,7 @@ type BoltTreeDB struct {
 
 // Hash gets the hash of the root.
 func (b *BoltTreeDB) Hash() (*chainhash.Hash, error) {
-	out := primitives.EmptyTree
+	out := EmptyTree
 	err := b.View(func(transaction TreeDatabaseTransaction) error {
 		h, err := transaction.Hash()
 		if err != nil {
@@ -161,7 +160,7 @@ func (b *BoltTreeTransaction) Root() (*Node, error) {
 	if i == nil {
 		return nil, nil
 	}
-	if bytes.Equal(i, primitives.EmptyTree[:]) {
+	if bytes.Equal(i, EmptyTree[:]) {
 		return nil, nil
 	}
 
@@ -182,7 +181,7 @@ type BoltTreeTransaction struct {
 func (b *BoltTreeTransaction) Hash() (*chainhash.Hash, error) {
 	i := b.bkt.Get([]byte("root"))
 	if i == nil {
-		return &primitives.EmptyTree, nil
+		return &EmptyTree, nil
 	}
 	return chainhash.NewHash(i)
 }

@@ -6,86 +6,6 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// CombineHashes combines two branches of the tree.
-func CombineHashes(left *chainhash.Hash, right *chainhash.Hash) chainhash.Hash {
-	return chainhash.HashH(append(left[:], right[:]...))
-}
-
-// EmptyTrees are empty trees for each level.
-var EmptyTrees [256]chainhash.Hash
-
-// EmptyTree is the hash of an empty tree.
-var EmptyTree = chainhash.Hash{}
-
-// UpdateWitness allows an executor to securely update the tree root so that only a single key is changed.
-type UpdateWitness struct {
-	Key             chainhash.Hash
-	OldValue        chainhash.Hash
-	NewValue        chainhash.Hash
-	WitnessBitfield chainhash.Hash
-	LastLevel       uint8
-	Witnesses       []chainhash.Hash
-}
-
-// Copy returns a copy of the update witness.
-func (uw *UpdateWitness) Copy() UpdateWitness {
-	newUw := *uw
-
-	newUw.Witnesses = make([]chainhash.Hash, len(uw.Witnesses))
-	for i := range newUw.Witnesses {
-		copy(newUw.Witnesses[i][:], uw.Witnesses[i][:])
-	}
-
-	return newUw
-}
-
-// VerificationWitness allows an executor to verify a specific node in the tree.
-type VerificationWitness struct {
-	Key             chainhash.Hash
-	Value           chainhash.Hash
-	WitnessBitfield chainhash.Hash
-	Witnesses       []chainhash.Hash
-	LastLevel       uint8
-}
-
-// Copy returns a copy of the update witness.
-func (vw *VerificationWitness) Copy() VerificationWitness {
-	newVw := *vw
-
-	newVw.Witnesses = make([]chainhash.Hash, len(vw.Witnesses))
-	for i := range newVw.Witnesses {
-		copy(newVw.Witnesses[i][:], vw.Witnesses[i][:])
-	}
-
-	return newVw
-}
-
-// TransactionPackage is a way to update the state root without having the entire state.
-type TransactionPackage struct {
-	StartRoot     chainhash.Hash
-	EndRoot       chainhash.Hash
-	Updates       []UpdateWitness
-	Verifications []VerificationWitness
-}
-
-// Copy copies the transaction package.
-func (tp *TransactionPackage) Copy() TransactionPackage {
-	newTp := *tp
-
-	newTp.Updates = make([]UpdateWitness, len(tp.Updates))
-	newTp.Verifications = make([]VerificationWitness, len(tp.Verifications))
-
-	for i := range newTp.Updates {
-		newTp.Updates[i] = tp.Updates[i].Copy()
-	}
-
-	for i := range newTp.Verifications {
-		newTp.Verifications[i] = tp.Verifications[i].Copy()
-	}
-
-	return newTp
-}
-
 // StateValidatorsInfo returns the state validators information.
 type StateValidatorsInfo struct {
 	Validators  []Validator
@@ -99,17 +19,13 @@ type StateValidatorsInfo struct {
 // LastBlockHashesSize is the size of the last block hashes.
 const LastBlockHashesSize = 8
 
-type GovernanceState uint8
-
 const (
-	GovernanceStateActive GovernanceState = iota
+	GovernanceStateActive uint8 = iota
 	GovernanceStateVoting
 )
 
 // State is the state of consensus in the blockchain.
 type State struct {
-	CoinsState CoinsState
-
 	// ValidatorRegistry keeps track of validators in the state.
 	ValidatorRegistry []Validator
 
@@ -193,7 +109,7 @@ type State struct {
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
-	VotingState        GovernanceState
+	VotingState        uint8
 
 	LastPaidSlot uint64
 }
@@ -289,7 +205,6 @@ func (s *State) Hash() chainhash.Hash {
 func (s *State) Copy() State {
 	s2 := *s
 
-	s2.CoinsState = s.CoinsState.Copy()
 	s2.ValidatorRegistry = make([]Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {

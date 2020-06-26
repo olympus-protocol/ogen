@@ -7,7 +7,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -31,7 +30,7 @@ func (t *InMemoryTreeDB) Hash() (*chainhash.Hash, error) {
 // NewInMemoryTreeDB creates a new in-memory tree database.
 func NewInMemoryTreeDB() *InMemoryTreeDB {
 	return &InMemoryTreeDB{
-		root:  primitives.EmptyTree,
+		root:  EmptyTree,
 		nodes: make(map[chainhash.Hash]Node),
 		store: make(map[chainhash.Hash]chainhash.Hash),
 

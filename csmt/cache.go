@@ -4,7 +4,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -38,7 +37,7 @@ func NewTreeMemoryCache(underlyingDatabase TreeDatabase) (*TreeMemoryCache, erro
 		}
 
 		if root == nil {
-			preRoot = primitives.EmptyTree
+			preRoot = EmptyTree
 			return nil
 		}
 
@@ -161,7 +160,7 @@ func (t *TreeMemoryCache) Flush() error {
 
 		root := t.root
 
-		if !root.IsEqual(&primitives.EmptyTree) {
+		if !root.IsEqual(&EmptyTree) {
 			rootNode, err := tx.GetNode(root)
 			if err != nil {
 				return err
@@ -203,7 +202,7 @@ func (t *TreeMemoryCacheTransaction) Hash() (*chainhash.Hash, error) {
 
 // Root gets the current root of the transaction.
 func (t *TreeMemoryCacheTransaction) Root() (*Node, error) {
-	if t.root.IsEqual(&primitives.EmptyTree) {
+	if t.root.IsEqual(&EmptyTree) {
 		return nil, nil
 	}
 

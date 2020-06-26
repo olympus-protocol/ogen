@@ -331,7 +331,7 @@ func (s *State) GetTotalBalances() uint64 {
 
 // NextVoteEpoch increments the voting epoch, resets votes,
 // and updates the state.
-func (s *State) NextVoteEpoch(newState GovernanceState) {
+func (s *State) NextVoteEpoch(newState uint8) {
 	s.VoteEpoch++
 	s.VoteEpochStartSlot = s.Slot
 	s.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData)

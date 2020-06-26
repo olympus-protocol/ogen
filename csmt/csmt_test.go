@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -68,8 +67,8 @@ func TestTree_SetZero(t *testing.T) {
 			return err
 		}
 
-		if !th.IsEqual(&primitives.EmptyTrees[255]) {
-			return fmt.Errorf("expected tree to match %s but got %s", primitives.EmptyTrees[255], th)
+		if !th.IsEqual(&EmptyTrees[255]) {
+			return fmt.Errorf("expected tree to match %s but got %s", EmptyTrees[255], th)
 		}
 
 		return nil
@@ -131,7 +130,7 @@ func Test_calculateSubtreeHashWithOneLeaf(t *testing.T) {
 				value:   emptyHash,
 				atLevel: 255,
 			},
-			want: primitives.EmptyTrees[255],
+			want: EmptyTrees[255],
 		},
 	}
 	for _, tt := range tests {
@@ -201,7 +200,7 @@ func TestGenerateUpdateWitnessEmptyTree(t *testing.T) {
 	treeDB := NewInMemoryTreeDB()
 	tree := NewTree(treeDB)
 
-	var uw *primitives.UpdateWitness
+	var uw *UpdateWitness
 	err := treeDB.View(func(tx TreeDatabaseTransaction) error {
 		w, err := GenerateUpdateWitness(tx, ch("asdf"), ch("1"))
 		uw = w
@@ -285,7 +284,7 @@ func TestGenerateUpdateWitnessUpdate(t *testing.T) {
 	for i := 0; i < 1; i++ {
 		setVal := fmt.Sprintf("%d", i)
 
-		var uw *primitives.UpdateWitness
+		var uw *UpdateWitness
 
 		err := treeDB.Update(func(tx TreeDatabaseTransaction) error {
 			w, err := GenerateUpdateWitness(tx, ch("asdf"), ch(setVal))
@@ -372,7 +371,7 @@ func TestChainedUpdates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	witnesses := make([]*primitives.UpdateWitness, 0)
+	witnesses := make([]*UpdateWitness, 0)
 
 	err = tree.Update(func(txA TreeTransactionAccess) error {
 		tx := txA.(*TreeTransaction)

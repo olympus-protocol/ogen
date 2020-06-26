@@ -1,7 +1,6 @@
 package csmt
 
 import (
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -75,7 +74,7 @@ func (t *Tree) View(cb func(access TreeTransactionAccess) error) error {
 
 // Hash gets the hash of the tree.
 func (t *Tree) Hash() (chainhash.Hash, error) {
-	out := primitives.EmptyTree
+	out := EmptyTree
 	err := t.View(func(tx TreeTransactionAccess) error {
 		h, err := tx.Hash()
 		if err != nil {
@@ -95,7 +94,7 @@ type TreeTransaction struct {
 
 // Hash get the root hash
 func (t *TreeTransaction) Hash() (*chainhash.Hash, error) {
-	treeHash := primitives.EmptyTree
+	treeHash := EmptyTree
 
 	r, err := t.tx.Root()
 	if err != nil {
@@ -134,7 +133,7 @@ func (t *TreeTransaction) Set(key chainhash.Hash, value chainhash.Hash) error {
 }
 
 // SetWithWitness returns an update witness and sets the value in the tree.
-func (t *TreeTransaction) SetWithWitness(key chainhash.Hash, value chainhash.Hash) (*primitives.UpdateWitness, error) {
+func (t *TreeTransaction) SetWithWitness(key chainhash.Hash, value chainhash.Hash) (*UpdateWitness, error) {
 	uw, err := GenerateUpdateWitness(t.tx, key, value)
 	if err != nil {
 		return nil, err
@@ -146,7 +145,7 @@ func (t *TreeTransaction) SetWithWitness(key chainhash.Hash, value chainhash.Has
 }
 
 // Prove proves a key in the tree.
-func (t *TreeTransaction) Prove(key chainhash.Hash) (*primitives.VerificationWitness, error) {
+func (t *TreeTransaction) Prove(key chainhash.Hash) (*VerificationWitness, error) {
 	vw, err := GenerateVerificationWitness(t.tx, key)
 	if err != nil {
 		return nil, err
