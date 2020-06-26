@@ -12,7 +12,7 @@ import (
 // BoltTreeDB is a tree database implemented on top of bbolt.
 type BoltTreeDB struct {
 	db      *bbolt.DB
-	bktname string
+	bktname []byte
 }
 
 // Hash gets the hash of the root.
@@ -159,7 +159,7 @@ func (b *BoltTreeTransaction) Set(key chainhash.Hash, value chainhash.Hash) erro
 func (b *BoltTreeTransaction) Root() (*Node, error) {
 	i := b.bkt.Get([]byte("root"))
 	if i == nil {
-		return nil, errors.New("Unable to get Root")
+		return nil, nil
 	}
 	if bytes.Equal(i, primitives.EmptyTree[:]) {
 		return nil, nil
@@ -188,7 +188,7 @@ func (b *BoltTreeTransaction) Hash() (*chainhash.Hash, error) {
 }
 
 // NewBoltTreeDB creates a new bbolt tree database from a bbolt database.
-func NewBoltTreeDB(db *bbolt.DB, bkt string) *BoltTreeDB {
+func NewBoltTreeDB(db *bbolt.DB, bkt []byte) *BoltTreeDB {
 	return &BoltTreeDB{
 		db:      db,
 		bktname: bkt,

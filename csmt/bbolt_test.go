@@ -14,7 +14,7 @@ func ch(s string) chainhash.Hash {
 }
 
 func TestRandomWritesRollbackCommitBolt(t *testing.T) {
-	bboltdb, err := bbolt.Open("db.db", 0600, nil)
+	bboltdb, err := bbolt.Open("test_db.db", 0600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestRandomWritesRollbackCommitBolt(t *testing.T) {
 
 	defer bboltdb.Close()
 
-	under := csmt.NewBoltTreeDB(bboltdb, "test_bucket")
+	under := csmt.NewBoltTreeDB(bboltdb, []byte("test_bucket"))
 
 	underlyingTree := csmt.NewTree(under)
 
