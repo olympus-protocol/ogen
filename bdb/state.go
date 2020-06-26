@@ -1,24 +1,27 @@
 package bdb
 
 import (
+	"errors"
 	"fmt"
+	"path"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/utils/logger"
-
-	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/olympus-protocol/ogen/utils/logger"
+	"go.etcd.io/bbolt"
 )
 
+var BlockDBBucketKey = []byte("blocksdb")
+
 type BlockDB struct {
-	log      *logger.Logger
-	badgerdb *badger.DB
-	params   params.ChainParams
-	lock     sync.RWMutex
+	log    *logger.Logger
+	db     *bbolt.DB
+	params params.ChainParams
+	lock   sync.RWMutex
 
 	requestedClose uint32
 	canClose       sync.WaitGroup
@@ -29,21 +32,21 @@ type BlockDBUpdateTransaction struct {
 }
 
 type BlockDBReadTransaction struct {
-	db          *BlockDB
-	log         *logger.Logger
-	transaction *badger.Txn
+	db  *BlockDB
+	log *logger.Logger
+	bkt *bbolt.Bucket
 }
 
-// NewBlockDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
-func NewBlockDB(path string, params params.ChainParams, log *logger.Logger) (*BlockDB, error) {
-	badgerdb, err := badger.Open(badger.DefaultOptions(path + "/chain").WithLogger(nil))
+// NewBlockDB returns a database instance with a rawBlockDatabase and BboltDB to use on the selected path.
+func NewBlockDB(pathDir string, params params.ChainParams, log *logger.Logger) (*BlockDB, error) {
+	db, err := bbolt.Open(path.Join(pathDir, "chain.db"), 0600, nil)
 	if err != nil {
 		return nil, err
 	}
 	blockdb := &BlockDB{
-		log:      log,
-		badgerdb: badgerdb,
-		params:   params,
+		log:    log,
+		db:     db,
+		params: params,
 	}
 	return blockdb, nil
 }
@@ -55,7 +58,7 @@ func (bdb *BlockDB) Close() {
 	}
 	atomic.StoreUint32(&bdb.requestedClose, 1)
 	bdb.canClose.Wait()
-	_ = bdb.badgerdb.Close()
+	_ = bdb.db.Close()
 }
 
 // Update gets a transaction for updating the database.
@@ -68,11 +71,16 @@ func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 
 	bdb.canClose.Add(1)
 	defer bdb.canClose.Done()
-	return bdb.badgerdb.Update(func(tx *badger.Txn) error {
+
+	return bdb.db.Update(func(tx *bbolt.Tx) error {
+		bkt, err := tx.CreateBucketIfNotExists(BlockDBBucketKey)
+		if err != nil {
+			return err
+		}
 		blockTxn := BlockDBReadTransaction{
-			db:          bdb,
-			log:         bdb.log,
-			transaction: tx,
+			db:  bdb,
+			log: bdb.log,
+			bkt: bkt,
 		}
 
 		return cb(&BlockDBUpdateTransaction{blockTxn})
@@ -89,11 +97,11 @@ func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
 
 	bdb.canClose.Add(1)
 	defer bdb.canClose.Done()
-	return bdb.badgerdb.Update(func(tx *badger.Txn) error {
+	return bdb.db.View(func(tx *bbolt.Tx) error {
 		blockTxn := &BlockDBReadTransaction{
-			db:          bdb,
-			log:         bdb.log,
-			transaction: tx,
+			db:  bdb,
+			log: bdb.log,
+			bkt: tx.Bucket(BlockDBBucketKey),
 		}
 
 		return cb(blockTxn)
@@ -133,36 +141,28 @@ func (but *BlockDBUpdateTransaction) AddRawBlock(block *primitives.Block) error 
 
 func getKeyHash(tx *BlockDBReadTransaction, key []byte) (chainhash.Hash, error) {
 	var out chainhash.Hash
-	i, err := tx.transaction.Get(key)
-	if err != nil {
-		return chainhash.Hash{}, err
+	i := tx.bkt.Get(key)
+	if len(i) <= 0 {
+		return chainhash.Hash{}, errors.New("no data")
 	}
-	_, err = i.ValueCopy(out[:])
-	if err != nil {
-		return out, err
-	}
+	copy(out[:], i)
 	return out, nil
 }
 
 func getKey(tx *BlockDBReadTransaction, key []byte) ([]byte, error) {
-	var out []byte
-	i, err := tx.transaction.Get(key)
-	if err != nil {
-		return nil, err
+	i := tx.bkt.Get(key)
+	if len(i) <= 0 {
+		return nil, errors.New("no data")
 	}
-	out, err = i.ValueCopy(out)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return i, nil
 }
 
 func setKeyHash(tx *BlockDBUpdateTransaction, key []byte, to chainhash.Hash) error {
-	return tx.transaction.Set(key, to[:])
+	return tx.bkt.Put(key, to[:])
 }
 
 func setKey(tx *BlockDBUpdateTransaction, key []byte, to []byte) error {
-	return tx.transaction.Set(key, to)
+	return tx.bkt.Put(key, to)
 }
 
 var latestVotePrefix = []byte("latest-vote")

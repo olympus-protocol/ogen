@@ -4,8 +4,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/dgraph-io/badger"
+	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/spf13/cobra"
+	"go.etcd.io/bbolt"
 )
 
 func init() {
@@ -17,12 +18,17 @@ var resetCmd = &cobra.Command{
 	Short: "Removes all chain data and chain.json",
 	Long:  `Removes all chain data and chain.json`,
 	Run: func(cmd *cobra.Command, args []string) {
-		bdb, err := badger.Open(badger.DefaultOptions(path.Join(DataFolder, "chain")))
+		db, err := bbolt.Open(path.Join(DataFolder, "chain.db"), 0600, nil)
 		if err != nil {
 			panic(err)
 		}
-
-		err = bdb.DropAll()
+		err = db.Update(func(tx *bbolt.Tx) error {
+			tx.DeleteBucket(bdb.BlockDBBucketKey)
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
 		if err != nil {
 			panic(err)
 		}
