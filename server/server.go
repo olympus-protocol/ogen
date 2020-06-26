@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/mempool"
-	"github.com/olympus-protocol/ogen/miner"
+	"github.com/olympus-protocol/ogen/proposer"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -28,7 +27,7 @@ type Server struct {
 	Chain    *chain.Blockchain
 	HostNode *peers.HostNode
 	Keystore *keystore.Keystore
-	Miner    *miner.Miner
+	Proposer    *proposer.Proposer
 	RPC      *chainrpc.RPCServer
 	Gui      bool
 }
@@ -47,10 +46,10 @@ func (s *Server) Start() {
 	if err != nil {
 		log.Fatalln("unable to start host node")
 	}
-	if s.Miner != nil {
-		err = s.Miner.Start()
+	if s.Proposer != nil {
+		err = s.Proposer.Start()
 		if err != nil {
-			log.Fatalln("unable to start miner thread")
+			log.Fatalln("unable to start proposer thread")
 		}
 	}
 	go func() {
@@ -64,8 +63,8 @@ func (s *Server) Start() {
 func (s *Server) Stop() error {
 	s.Chain.Stop()
 	s.RPC.Stop()
-	if s.Miner != nil {
-		s.Miner.Stop()
+	if s.Proposer != nil {
+		s.Proposer.Stop()
 	}
 	return nil
 }
@@ -105,9 +104,9 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	var min *miner.Miner
+	var prop *proposer.Proposer
 	if configParams.MiningEnabled {
-		min, err = miner.NewMiner(loadMinerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
+		prop, err = proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +118,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		Chain:    ch,
 		HostNode: hostnode,
 		Keystore: k,
-		Miner:    min,
+		Proposer:    prop,
 		Gui:      gui,
 		RPC:      rpc,
 	}
@@ -133,8 +132,8 @@ func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config 
 	return cfg
 }
 
-func loadMinerConfig(config *config.Config, logger *logger.Logger) miner.Config {
-	cfg := miner.Config{
+func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.Config {
+	cfg := proposer.Config{
 		Log: logger,
 	}
 	return cfg

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"time"
 
 	"github.com/olympus-protocol/ogen/config"
@@ -59,7 +60,7 @@ var generateChainCmd = &cobra.Command{
 
 		chainFile := config.ChainFile{
 			Validators:         validators,
-			GenesisTime:        genesisTime.Unix(),
+			GenesisTime:        uint64(genesisTime.Unix()),
 			InitialConnections: connect,
 			PremineAddress:     withdrawAddress,
 		}
@@ -70,7 +71,7 @@ var generateChainCmd = &cobra.Command{
 			return
 		}
 
-		if err := ioutil.WriteFile(outFile, chainFileBytes, 0644); err != nil {
+		if err := ioutil.WriteFile(path.Join(DataFolder, outFile), chainFileBytes, 0644); err != nil {
 			fmt.Printf("error writing json chain file: %s\n", err)
 			return
 		}

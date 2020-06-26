@@ -1,4 +1,4 @@
-package miner
+package proposer
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
-// Config is a config for the miner.
+// Config is a config for the proposer.
 type Config struct {
 	Log *logger.Logger
 }
@@ -52,8 +52,8 @@ func NewBasicKeystore(keys []bls.SecretKey) *BasicKeystore {
 	}
 }
 
-// Miner manages mining for the blockchain.
-type Miner struct {
+// Proposer manages mining for the blockchain.
+type Proposer struct {
 	log        *logger.Logger
 	config     Config
 	params     params.ChainParams
@@ -71,8 +71,8 @@ type Miner struct {
 	voteTopic  *pubsub.Topic
 }
 
-// NewMiner creates a new miner from the parameters.
-func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain, keystore *keystore.Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (miner *Miner, err error) {
+// NewProposer creates a new proposer from the parameters.
+func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, keystore *keystore.Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -84,7 +84,7 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 		cancel()
 		return nil, err
 	}
-	miner = &Miner{
+	proposer = &Proposer{
 		log:            config.Log,
 		config:         config,
 		params:         params,
@@ -100,19 +100,19 @@ func NewMiner(config Config, params params.ChainParams, chain *chain.Blockchain,
 		blockTopic: blockTopic,
 		voteTopic:  voteTopic,
 	}
-	chain.Notify(miner)
-	return miner, nil
+	chain.Notify(proposer)
+	return proposer, nil
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (m *Miner) NewTip(_ *index.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
+func (m *Proposer) NewTip(_ *index.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
 	m.voteMempool.Remove(block)
 	m.coinsMempool.RemoveByBlock(block)
 	m.actionsMempool.RemoveByBlock(block, newState)
 }
 
-func (m *Miner) getCurrentSlot() uint64 {
-	slot := int64(time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second))
+func (m *Proposer) getCurrentSlot() uint64 {
+	slot := time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second)
 	if slot < 0 {
 		return 0
 	}
@@ -120,16 +120,16 @@ func (m *Miner) getCurrentSlot() uint64 {
 }
 
 // getNextSlotTime gets the next slot time.
-func (m *Miner) getNextBlockTime(nextSlot uint64) time.Time {
+func (m *Proposer) getNextBlockTime(nextSlot uint64) time.Time {
 	return m.chain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second)
 }
 
 // getNextSlotTime gets the next slot time.
-func (m *Miner) getNextVoteTime(nextSlot uint64) time.Time {
+func (m *Proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return m.chain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(m.params.SlotDuration) / 2)
 }
 
-func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
+func (m *Proposer) publishVote(vote *primitives.SingleValidatorVote) {
 	buf, err := vote.Marshal()
 	if err != nil {
 		m.log.Errorf("error encoding vote: %s", err)
@@ -141,7 +141,7 @@ func (m *Miner) publishVote(vote *primitives.SingleValidatorVote) {
 	}
 }
 
-func (m *Miner) publishBlock(block *primitives.Block) {
+func (m *Proposer) publishBlock(block *primitives.Block) {
 	buf, err := block.Marshal()
 	if err != nil {
 		m.log.Error(err)
@@ -154,9 +154,9 @@ func (m *Miner) publishBlock(block *primitives.Block) {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (m *Miner) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
+func (m *Proposer) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
 
-func (m *Miner) ProposeBlocks() {
+func (m *Proposer) ProposeBlocks() {
 	slotToPropose := m.getCurrentSlot() + 1
 
 	blockTimer := time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
@@ -272,13 +272,13 @@ func (m *Miner) ProposeBlocks() {
 			slotToPropose++
 			blockTimer = time.NewTimer(time.Until(m.getNextBlockTime(slotToPropose)))
 		case <-m.context.Done():
-			m.log.Info("stopping miner")
+			m.log.Info("stopping proposer")
 			return
 		}
 	}
 }
 
-func (m *Miner) VoteForBlocks() {
+func (m *Proposer) VoteForBlocks() {
 	slotToVote := m.getCurrentSlot() + 1
 	if slotToVote <= 0 {
 		slotToVote = 1
@@ -385,8 +385,8 @@ func (m *Miner) VoteForBlocks() {
 	}
 }
 
-// Start runs the miner.
-func (m *Miner) Start() error {
+// Start runs the proposer.
+func (m *Proposer) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range m.chain.State().TipState().ValidatorRegistry {
@@ -396,7 +396,7 @@ func (m *Miner) Start() error {
 		numTotal++
 	}
 
-	m.log.Infof("starting miner with %d/%d active validators", numOurs, numTotal)
+	m.log.Infof("starting proposer with %d/%d active validators", numOurs, numTotal)
 
 	go m.VoteForBlocks()
 	go m.ProposeBlocks()
