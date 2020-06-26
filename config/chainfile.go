@@ -9,7 +9,7 @@ import (
 // ChainFile represents the on-disk chain file used to initialize the chain.
 type ChainFile struct {
 	Validators         []primitives.ValidatorInitialization `json:"validators"`
-	GenesisTime        uint64                                `json:"genesis_time"`
+	GenesisTime        uint64                               `json:"genesis_time"`
 	InitialConnections []string                             `json:"initial_connections"`
 	PremineAddress     string                               `json:"premine_address"`
 }

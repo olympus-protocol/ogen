@@ -11,10 +11,10 @@ import (
 	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/mempool"
-	"github.com/olympus-protocol/ogen/proposer"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/proposer"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
 )
@@ -27,14 +27,14 @@ type Server struct {
 	Chain    *chain.Blockchain
 	HostNode *peers.HostNode
 	Keystore *keystore.Keystore
-	Proposer    *proposer.Proposer
+	Proposer *proposer.Proposer
 	RPC      *chainrpc.RPCServer
 	Gui      bool
 }
 
 func (s *Server) Start() {
 	if s.config.Pprof {
-		go func ()  {
+		go func() {
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
@@ -118,7 +118,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		Chain:    ch,
 		HostNode: hostnode,
 		Keystore: k,
-		Proposer:    prop,
+		Proposer: prop,
 		Gui:      gui,
 		RPC:      rpc,
 	}

@@ -28,7 +28,7 @@ type Config struct {
 
 	Debug   bool
 	LogFile bool
-	Pprof bool
+	Pprof   bool
 }
 
 func OgenVersion() string {
