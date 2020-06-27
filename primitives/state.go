@@ -26,6 +26,8 @@ const (
 
 // State is the state of consensus in the blockchain.
 type State struct {
+	// CoinsState keeps if accounts balances and transactions.
+	CoinsState CoinsState
 	// ValidatorRegistry keeps track of validators in the state.
 	ValidatorRegistry []Validator
 
@@ -116,12 +118,13 @@ type State struct {
 
 // Marshal encodes the data.
 func (s *State) Marshal() ([]byte, error) {
-	return nil, nil
+	return ssz.Marshal(s)
 }
 
 // Unmarshal decodes the data.
 func (s *State) Unmarshal(b []byte) error {
-	return nil
+	return ssz.Unmarshal(b, s)
+
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
@@ -195,16 +198,11 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 	return validators
 }
 
-// Hash calculates the hash of the state.
-func (s *State) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(s)
-	return chainhash.Hash(hash)
-}
-
 // Copy returns a copy of the state.
 func (s *State) Copy() State {
 	s2 := *s
 
+	s2.CoinsState = s.CoinsState
 	s2.ValidatorRegistry = make([]Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {

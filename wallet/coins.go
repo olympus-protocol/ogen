@@ -13,10 +13,8 @@ func (w *Wallet) GetBalance() (uint64, error) {
 	if !w.open {
 		return 0, errorNotOpen
 	}
-	out, ok := w.chain.State().TipState().CoinsState.Balances[w.info.account]
-	if !ok {
-		return 0, nil
-	}
+	out := w.chain.State().TipState().CoinsState.Get(w.info.account)
+
 	return out, nil
 }
 

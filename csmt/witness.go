@@ -3,12 +3,11 @@ package csmt
 import (
 	"errors"
 
-	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 // GenerateUpdateWitness generates a witness that allows calculation of a new state root.
-func GenerateUpdateWitness(tree TreeDatabaseTransaction, key chainhash.Hash, value chainhash.Hash) (*primitives.UpdateWitness, error) {
+func GenerateUpdateWitness(tree TreeDatabaseTransaction, key chainhash.Hash, value chainhash.Hash) (*UpdateWitness, error) {
 	hk := chainhash.HashH(key[:])
 
 	oldValue, err := tree.Get(key)
@@ -20,7 +19,7 @@ func GenerateUpdateWitness(tree TreeDatabaseTransaction, key chainhash.Hash, val
 		oldValue = &chainhash.Hash{}
 	}
 
-	uw := &primitives.UpdateWitness{
+	uw := &UpdateWitness{
 		Key:      key,
 		OldValue: *oldValue,
 		NewValue: value,
@@ -110,7 +109,7 @@ func GenerateUpdateWitness(tree TreeDatabaseTransaction, key chainhash.Hash, val
 }
 
 // GenerateVerificationWitness generates a witness that allows verification of a key in the tree.
-func GenerateVerificationWitness(tree TreeDatabaseTransaction, key chainhash.Hash) (*primitives.VerificationWitness, error) {
+func GenerateVerificationWitness(tree TreeDatabaseTransaction, key chainhash.Hash) (*VerificationWitness, error) {
 	hk := chainhash.HashH(key[:])
 
 	val, err := tree.Get(key)
@@ -121,7 +120,7 @@ func GenerateVerificationWitness(tree TreeDatabaseTransaction, key chainhash.Has
 		val = &chainhash.Hash{}
 	}
 
-	vw := &primitives.VerificationWitness{
+	vw := &VerificationWitness{
 		Key:   key,
 		Value: *val,
 	}
@@ -220,7 +219,7 @@ func CalculateRoot(key chainhash.Hash, value chainhash.Hash, witnessBitfield cha
 	for i := uint16(lastLevel) + 1; i <= 255; i++ {
 		right := isRight(hk, uint8(i))
 
-		hashToAdd := primitives.EmptyTrees[i-1]
+		hashToAdd := EmptyTrees[i-1]
 		if witnessBitfield[i/8]&(1<<uint8(i%8)) != 0 {
 			if currentWitness >= len(witnesses) {
 				return nil, errors.New("not enough witnesses")
@@ -230,9 +229,9 @@ func CalculateRoot(key chainhash.Hash, value chainhash.Hash, witnessBitfield cha
 		}
 
 		if right {
-			h = primitives.CombineHashes(&hashToAdd, &h)
+			h = CombineHashes(&hashToAdd, &h)
 		} else {
-			h = primitives.CombineHashes(&h, &hashToAdd)
+			h = CombineHashes(&h, &hashToAdd)
 		}
 	}
 
@@ -240,7 +239,7 @@ func CalculateRoot(key chainhash.Hash, value chainhash.Hash, witnessBitfield cha
 }
 
 // ApplyWitness applies a witness to an old state root to generate a new state root.
-func ApplyWitness(uw primitives.UpdateWitness, oldStateRoot chainhash.Hash) (*chainhash.Hash, error) {
+func ApplyWitness(uw UpdateWitness, oldStateRoot chainhash.Hash) (*chainhash.Hash, error) {
 	// if this is an update, last level should be the same for the pre root, but if this is an insertion, last level should
 	// be one level higher
 
@@ -262,7 +261,7 @@ func ApplyWitness(uw primitives.UpdateWitness, oldStateRoot chainhash.Hash) (*ch
 }
 
 // CheckWitness ensures the state root matches.
-func CheckWitness(vw *primitives.VerificationWitness, oldStateRoot chainhash.Hash) bool {
+func CheckWitness(vw *VerificationWitness, oldStateRoot chainhash.Hash) bool {
 	preRoot, err := CalculateRoot(vw.Key, vw.Value, vw.WitnessBitfield, vw.Witnesses, vw.LastLevel)
 	if err != nil {
 		return false
