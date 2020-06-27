@@ -98,7 +98,8 @@ type State struct {
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
 	ManagerReplacement bitfield.Bitfield
 
-	Governance *GovernanceState
+	ReplacementVotes ReplacementVotes
+	CommunityVotes   CommunityVotes
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
@@ -240,8 +241,8 @@ func (s *State) Copy() State {
 
 	s2.ManagerReplacement = s.ManagerReplacement.Copy()
 
-	s2.Governance = s.Governance
-
+	s2.ReplacementVotes = s.ReplacementVotes
+	s2.CommunityVotes = s.CommunityVotes
 	return s2
 }
 

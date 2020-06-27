@@ -4,45 +4,26 @@ import (
 	"bytes"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/csmt"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-type GovernanceState struct {
-	// replaceVotes are votes to start the community-override functionality. Each address
-	// in here must have at least 100 POLIS and once that accounts for >=30% of the supply,
-	// a community voting round starts.
-	// For a voting period, the hash is set to the proposed community vote.
-	// For a non-voting period, the hash is 0.
-	replaceVotes   *csmt.Tree
-	communityVotes *csmt.Tree
-	// CommunityVotes is set during a voting period to keep track of the
-	// possible votes.
+type ReplacementVotes struct {
+	index map[[20]byte]int
+	Votes []chainhash.Hash
 }
 
-func (gs *GovernanceState) GetCommunityVote(hash chainhash.Hash) CommunityVoteData {
-	return CommunityVoteData{}
+func NewReplacementVotes() ReplacementVotes {
+	return ReplacementVotes{index: make(map[[20]byte]int), Votes: []chainhash.Hash{}}
 }
 
-func (gs *GovernanceState) SetCommunityVote(hash chainhash.Hash, vote CommunityVoteData) {
-	return
+type CommunityVotes struct {
+	index map[[20]byte]int
+	Votes []CommunityVoteData
 }
 
-func (gs *GovernanceState) SetReplaceVoteAccount(acc [20]byte, hash chainhash.Hash) {
-	return
-}
-
-func (gs *GovernanceState) GetReplaceVoteAccount(acc [20]byte) (chainhash.Hash, bool) {
-	return chainhash.Hash{}, false
-}
-
-func (gs *GovernanceState) GetReplaceVotes() map[[20]byte]chainhash.Hash {
-	return map[[20]byte]chainhash.Hash{}
-}
-
-func (gs *GovernanceState) DeleteReplaceVoteAccount(acc [20]byte) {
-	return
+func NewCommunityVotes() CommunityVotes {
+	return CommunityVotes{index: make(map[[20]byte]int), Votes: []CommunityVoteData{}}
 }
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.

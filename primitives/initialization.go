@@ -63,8 +63,10 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)
 
-	// TODO initialize merkle trees
 	s := &State{
+		CoinsState:                    NewCoinsBalances(),
+		CommunityVotes:                NewCommunityVotes(),
+		ReplacementVotes:              NewReplacementVotes(),
 		ValidatorRegistry:             initialValidators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},
@@ -86,7 +88,6 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		VotingState:                   GovernanceStateActive,
 		LastPaidSlot:                  0,
 	}
-	s.CoinsState.Increase(premineAddrArr, 400*1000000)
 
 	activeValidators := s.GetValidatorIndicesActiveAt(0)
 	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
