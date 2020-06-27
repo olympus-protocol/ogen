@@ -98,16 +98,7 @@ type State struct {
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
 	ManagerReplacement bitfield.Bitfield
 
-	// ReplaceVotes are votes to start the community-override functionality. Each address
-	// in here must have at least 100 POLIS and once that accounts for >=30% of the supply,
-	// a community voting round starts.
-	// For a voting period, the hash is set to the proposed community vote.
-	// For a non-voting period, the hash is 0.
-	ReplaceVotes map[[20]byte]chainhash.Hash
-
-	// CommunityVotes is set during a voting period to keep track of the
-	// possible votes.
-	CommunityVotes map[chainhash.Hash]CommunityVoteData
+	Governance *GovernanceState
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
@@ -249,16 +240,7 @@ func (s *State) Copy() State {
 
 	s2.ManagerReplacement = s.ManagerReplacement.Copy()
 
-	s2.ReplaceVotes = make(map[[20]byte]chainhash.Hash, len(s.ReplaceVotes))
-	for i, k := range s.ReplaceVotes {
-		s2.ReplaceVotes[i] = k
-	}
-
-	s2.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData, len(s.CommunityVotes))
-	for i, k := range s.CommunityVotes {
-		val := k.Copy()
-		s2.CommunityVotes[i] = *val
-	}
+	s2.Governance = s.Governance
 
 	return s2
 }

@@ -71,7 +71,7 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if s.CoinsState.Get(pkh) < p.MinVotingBalance*p.UnitsPerCoin {
 			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Get(pkh)/p.UnitsPerCoin)
 		}
-		if _, ok := s.ReplaceVotes[pkh]; ok {
+		if _, ok := s.Governance.GetReplaceVoteAccount(pkh); ok {
 			return fmt.Errorf("found existing vote for same public key hash")
 		}
 		if !vote.Valid() {
@@ -186,7 +186,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 	}
 	switch vote.Type {
 	case EnterVotingPeriod:
-		s.ReplaceVotes[hash] = chainhash.Hash{}
+		s.Governance.SetReplaceVoteAccount(hash, chainhash.Hash{})
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
@@ -198,8 +198,8 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		}
 
 		voteHash := voteData.Hash()
-		s.CommunityVotes[voteHash] = voteData
-		s.ReplaceVotes[hash] = voteHash
+		s.Governance.SetCommunityVote(voteHash, voteData)
+		s.Governance.SetReplaceVoteAccount(hash, voteHash)
 	case UpdateManagersInstantly:
 		for i := range s.CurrentManagers {
 			copy(s.CurrentManagers[i][:], vote.Data[i*20:(i+1)*20])
@@ -238,8 +238,8 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 	u.Increase(blockWithdrawalAddress, tx.Fee)
 	u.Increase(pkh, tx.Nonce)
 
-	if _, ok := s.ReplaceVotes[pkh]; u.Get(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		delete(s.ReplaceVotes, pkh)
+	if _, ok := s.Governance.GetReplaceVoteAccount(pkh); u.Get(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		s.Governance.DeleteReplaceVoteAccount(pkh)
 	}
 
 	return nil
@@ -268,8 +268,8 @@ func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalA
 	u.Increase(blockWithdrawalAddress, tx.Fee)
 	u.SetNonce(pkh, tx.Nonce)
 
-	if _, ok := s.ReplaceVotes[pkh]; u.Get(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		delete(s.ReplaceVotes, pkh)
+	if _, ok := s.Governance.GetReplaceVoteAccount(pkh); u.Get(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		s.Governance.DeleteReplaceVoteAccount(pkh)
 	}
 
 	return nil
