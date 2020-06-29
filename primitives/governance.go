@@ -9,13 +9,82 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+type CommunityVoteDataInfo struct {
+	Hash chainhash.Hash
+	Data CommunityVoteData
+}
+
+type ReplacementVotes struct {
+	Account [20]byte
+	Hash    chainhash.Hash
+}
+
 // Governance is a struct that contains CommunityVotes and ReplacementVotes indexes and slices.
 type Governance struct {
-	repalceVotesLock      sync.RWMutex
-	communityVotesLock    sync.RWMutex
+	repalceVotesLock      *sync.RWMutex
+	communityVotesLock    *sync.RWMutex
 	replacementVotesIndex map[[20]byte]int
-	ReplacementVotes      []chainhash.Hash
-	CommunityVotes        []CommunityVoteData
+	communityVotesIndex   map[chainhash.Hash]int
+	ReplacementVotes      []ReplacementVotes
+	CommunityVotes        []CommunityVoteDataInfo
+}
+
+// Load assumes the slices are filled and constuct the indexes.
+func (g *Governance) Load() {
+	for i, v := range g.ReplacementVotes {
+		g.repalceVotesLock.Lock()
+		g.replacementVotesIndex[v.Account] = i
+		g.repalceVotesLock.Unlock()
+	}
+	for i, v := range g.CommunityVotes {
+		g.communityVotesLock.Lock()
+		g.communityVotesIndex[v.Hash] = i
+		g.communityVotesLock.Unlock()
+	}
+}
+
+// GetAllReplacementVotes get all replacement votes on the state.
+func (g *Governance) GetAllReplacementVotes() []ReplacementVotes {
+	return g.ReplacementVotes
+}
+
+// GetReplacementVote returns a replacement vote.
+func (g *Governance) GetReplacementVote(acc [20]byte) (chainhash.Hash, bool) {
+	return chainhash.Hash{}, false
+}
+
+// SetReplacementVote sets a new replacement vote on the state
+func (g *Governance) SetReplacementVote(acc [20]byte, hash chainhash.Hash) {
+	return
+}
+
+// DeleteReplacementVote removes a vote on the slice and reconstruct index
+func (g *Governance) DeleteReplacementVote(acc [20]byte) {
+	return
+}
+
+// GetCommunityVote returns a vote on the community votes state.
+func (g *Governance) GetCommunityVote(hash chainhash.Hash) CommunityVoteData {
+	return CommunityVoteData{}
+}
+
+// SetCommunityVote stores a community vote on the state.
+func (g *Governance) SetCommunityVote(hash chainhash.Hash, data CommunityVoteData) {
+	return
+}
+
+func (g *Governance) getReplacementVoteIndex(acc [20]byte) (int, bool) {
+	g.repalceVotesLock.Lock()
+	defer g.repalceVotesLock.Unlock()
+	i, ok := g.replacementVotesIndex[acc]
+	return i, ok
+}
+
+func (g *Governance) getCommunityVoteIndex(hash chainhash.Hash) (int, bool) {
+	g.communityVotesLock.Lock()
+	defer g.communityVotesLock.Unlock()
+	i, ok := g.communityVotesIndex[hash]
+	return i, ok
 }
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.

@@ -10,8 +10,8 @@ type AccountInfo struct {
 
 // CoinsState is the serializable struct with the access indexes for fast fetch balances and nonces.
 type CoinsState struct {
-	balanceLock  sync.RWMutex
-	nonceLocks   sync.RWMutex
+	balanceLock  *sync.RWMutex
+	nonceLocks   *sync.RWMutex
 	balanceIndex map[[20]byte]int
 	nonceIndex   map[[20]byte]int
 	Balances     []AccountInfo
@@ -99,21 +99,13 @@ func (cs *CoinsState) IncreaseBalance(acc [20]byte, amount uint64) {
 func (cs *CoinsState) getBalanceIndex(acc [20]byte) (int, bool) {
 	cs.balanceLock.Lock()
 	defer cs.balanceLock.Unlock()
-	balanceIndex, ok := cs.balanceIndex[acc]
-	return balanceIndex, ok
-}
-
-func (cs *CoinsState) setBalanceIndex(acc [20]byte) {
-	cs.balanceLock.Lock()
-	defer cs.balanceLock.Unlock()
-	newIndex := len(cs.Balances)
-	cs.balanceIndex[acc] = newIndex
-	return
+	i, ok := cs.balanceIndex[acc]
+	return i, ok
 }
 
 func (cs *CoinsState) getNonceIndex(acc [20]byte) (int, bool) {
 	cs.nonceLocks.Lock()
 	defer cs.nonceLocks.Unlock()
-	nonceIndex, ok := cs.nonceIndex[acc]
-	return nonceIndex, ok
+	i, ok := cs.nonceIndex[acc]
+	return i, ok
 }

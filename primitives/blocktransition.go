@@ -71,7 +71,7 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if s.CoinsState.GetBalance(pkh) < p.MinVotingBalance*p.UnitsPerCoin {
 			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.GetBalance(pkh)/p.UnitsPerCoin)
 		}
-		if _, ok := s.ReplacementVotes.Get(pkh); ok {
+		if _, ok := s.Governance.GetReplacementVote(pkh); ok {
 			return fmt.Errorf("found existing vote for same public key hash")
 		}
 		if !vote.Valid() {
@@ -186,7 +186,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 	}
 	switch vote.Type {
 	case EnterVotingPeriod:
-		s.ReplacementVotes.Set(hash, chainhash.Hash{})
+		s.Governance.SetReplacementVote(hash, chainhash.Hash{})
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
@@ -198,8 +198,8 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		}
 
 		voteHash := voteData.Hash()
-		s.CommunityVotes.Set(voteHash, voteData)
-		s.ReplacementVotes.Set(hash, voteHash)
+		s.Governance.SetCommunityVote(voteHash, voteData)
+		s.Governance.SetReplacementVote(hash, voteHash)
 	case UpdateManagersInstantly:
 		for i := range s.CurrentManagers {
 			copy(s.CurrentManagers[i][:], vote.Data[i*20:(i+1)*20])
@@ -238,8 +238,8 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 	u.IncreaseBalance(blockWithdrawalAddress, tx.Fee)
 	u.IncreaseBalance(pkh, tx.Nonce)
 
-	if _, ok := s.ReplacementVotes.Get(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		s.ReplacementVotes.Delete(pkh)
+	if _, ok := s.Governance.GetReplacementVote(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		s.Governance.DeleteReplacementVote(pkh)
 	}
 
 	return nil
@@ -253,7 +253,7 @@ func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalA
 		return err
 	}
 	if u.GetBalance(pkh) < tx.Amount+tx.Fee {
-		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Get(pkh), tx.Amount)
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.GetBalance(pkh), tx.Amount)
 	}
 
 	if u.GetNonce(pkh) >= tx.Nonce {
@@ -268,8 +268,8 @@ func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalA
 	u.IncreaseBalance(blockWithdrawalAddress, tx.Fee)
 	u.SetNonce(pkh, tx.Nonce)
 
-	if _, ok := s.Governance.GetReplaceVoteAccount(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		s.Governance.DeleteReplaceVoteAccount(pkh)
+	if _, ok := s.Governance.GetReplacementVote(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		s.Governance.DeleteReplacementVote(pkh)
 	}
 
 	return nil

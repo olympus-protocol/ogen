@@ -345,8 +345,8 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		// to start a community vote
 		totalBalance := s.GetTotalBalances()
 		votingBalance := uint64(0)
-		for i := range s.ReplacementVotes.GetAll() {
-			bal := s.CoinsState.GetBalance(i)
+		for _, rpv := range s.Governance.GetAllReplacementVotes() {
+			bal := s.CoinsState.GetBalance(rpv.Account)
 			votingBalance += bal
 		}
 
@@ -361,12 +361,12 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 			// tally votes and choose next managers
 			managerVotes := make(map[chainhash.Hash]uint64)
 
-			for i, v := range s.ReplacementVotes.GetAll() {
-				bal := s.CoinsState.GetBalance(i)
-				if _, ok := managerVotes[v]; ok {
-					managerVotes[v] += bal
+			for _, rpv := range s.Governance.GetAllReplacementVotes() {
+				bal := s.CoinsState.GetBalance(rpv.Account)
+				if _, ok := managerVotes[rpv.Hash]; ok {
+					managerVotes[rpv.Hash] += bal
 				} else {
-					managerVotes[v] = bal
+					managerVotes[rpv.Hash] = bal
 				}
 			}
 
@@ -374,7 +374,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 			bestManagers := s.CurrentManagers
 			for i, v := range managerVotes {
 				if v > bestBalance {
-					voteData := s.CommunityVotes.Get(i)
+					voteData := s.Governance.GetCommunityVote(i)
 
 					newManagers := make([][20]byte, len(s.CurrentManagers))
 					copy(newManagers, s.CurrentManagers)
