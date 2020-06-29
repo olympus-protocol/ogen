@@ -1,10 +1,10 @@
-package serialization_test
+package primitives_test
 
 import (
 	"testing"
 
 	"github.com/olympus-protocol/ogen/primitives"
-	testdata "github.com/olympus-protocol/ogen/test/data"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
@@ -325,5 +325,21 @@ func Test_MultiValidatorVoteSerialize(t *testing.T) {
 	equal := ssz.DeepEqual(testdata.MultiValidatorVote, desc)
 	if !equal {
 		t.Fatal("error: serialize MultiValidatorVote")
+	}
+}
+
+func Test_StateSerialize(t *testing.T) {
+	ser, err := testdata.MockState.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.State
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.MockState, desc)
+	if !equal {
+		t.Fatal("error: serialize MockState")
 	}
 }

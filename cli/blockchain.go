@@ -160,7 +160,7 @@ Next generation blockchain secured by CASPER.`,
 				Debug: viper.GetBool("debug"),
 
 				LogFile: viper.GetBool("log_file"),
-				Pprof: viper.GetBool("pprof"),
+				Pprof:   viper.GetBool("pprof"),
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion())

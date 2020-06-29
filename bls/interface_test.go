@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Phore Project
 
-package unit_test
+package bls_test
 
 import (
 	"testing"

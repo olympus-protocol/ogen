@@ -19,17 +19,15 @@ type StateValidatorsInfo struct {
 // LastBlockHashesSize is the size of the last block hashes.
 const LastBlockHashesSize = 8
 
-type GovernanceState uint8
-
 const (
-	GovernanceStateActive GovernanceState = iota
+	GovernanceStateActive uint8 = iota
 	GovernanceStateVoting
 )
 
 // State is the state of consensus in the blockchain.
 type State struct {
+	// CoinsState keeps if accounts balances and transactions.
 	CoinsState CoinsState
-
 	// ValidatorRegistry keeps track of validators in the state.
 	ValidatorRegistry []Validator
 
@@ -100,20 +98,12 @@ type State struct {
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
 	ManagerReplacement bitfield.Bitfield
 
-	// ReplaceVotes are votes to start the community-override functionality. Each address
-	// in here must have at least 100 POLIS and once that accounts for >=30% of the supply,
-	// a community voting round starts.
-	// For a voting period, the hash is set to the proposed community vote.
-	// For a non-voting period, the hash is 0.
-	ReplaceVotes map[[20]byte]chainhash.Hash
-
-	// CommunityVotes is set during a voting period to keep track of the
-	// possible votes.
-	CommunityVotes map[chainhash.Hash]CommunityVoteData
+	// Governance represents current votes state
+	Governance Governance
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
-	VotingState        GovernanceState
+	VotingState        uint8
 
 	LastPaidSlot uint64
 }
@@ -126,6 +116,7 @@ func (s *State) Marshal() ([]byte, error) {
 // Unmarshal decodes the data.
 func (s *State) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, s)
+
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
@@ -199,17 +190,11 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 	return validators
 }
 
-// Hash calculates the hash of the state.
-func (s *State) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(s)
-	return chainhash.Hash(hash)
-}
-
 // Copy returns a copy of the state.
 func (s *State) Copy() State {
 	s2 := *s
 
-	s2.CoinsState = s.CoinsState.Copy()
+	s2.CoinsState = s.CoinsState
 	s2.ValidatorRegistry = make([]Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {
@@ -256,17 +241,7 @@ func (s *State) Copy() State {
 
 	s2.ManagerReplacement = s.ManagerReplacement.Copy()
 
-	s2.ReplaceVotes = make(map[[20]byte]chainhash.Hash, len(s.ReplaceVotes))
-	for i, k := range s.ReplaceVotes {
-		s2.ReplaceVotes[i] = k
-	}
-
-	s2.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData, len(s.CommunityVotes))
-	for i, k := range s.CommunityVotes {
-		val := k.Copy()
-		s2.CommunityVotes[i] = *val
-	}
-
+	s2.Governance = s.Governance
 	return s2
 }
 

@@ -1,4 +1,4 @@
-package unit_test
+package bls_test
 
 import (
 	"testing"

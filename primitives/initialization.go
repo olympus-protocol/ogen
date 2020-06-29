@@ -64,12 +64,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	copy(premineAddrArr[:], premineAddr)
 
 	s := &State{
-		CoinsState: CoinsState{
-			Balances: map[[20]byte]uint64{
-				premineAddrArr: 400 * 1000000, // 400k coins
-			},
-			Nonces: make(map[[20]byte]uint64),
-		},
+		CoinsState:                    NewCoinsStates(),
 		ValidatorRegistry:             initialValidators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},
@@ -86,8 +81,6 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		PreviousJustifiedEpochHash:    genesisHash,
 		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
 		CurrentManagers:               p.InitialManagers,
-		ReplaceVotes:                  make(map[[20]byte]chainhash.Hash),
-		CommunityVotes:                make(map[chainhash.Hash]CommunityVoteData),
 		VoteEpoch:                     0,
 		VoteEpochStartSlot:            0,
 		VotingState:                   GovernanceStateActive,
