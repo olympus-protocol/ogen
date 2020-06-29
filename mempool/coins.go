@@ -94,7 +94,7 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 		mpi = cm.mempool[fpkh]
 	}
 
-	if err := mpi.add(item, state.Get(fpkh)); err != nil {
+	if err := mpi.add(item, state.GetBalance(fpkh)); err != nil {
 		return err
 	}
 

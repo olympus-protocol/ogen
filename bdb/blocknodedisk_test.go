@@ -1,10 +1,10 @@
-package serialization_test
+package bdb_test
 
 import (
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/test/data"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/prysmaticlabs/go-ssz"
 )
 

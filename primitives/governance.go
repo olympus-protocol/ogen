@@ -2,28 +2,20 @@ package primitives
 
 import (
 	"bytes"
+	"sync"
 
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-type ReplacementVotes struct {
-	index map[[20]byte]int
-	Votes []chainhash.Hash
-}
-
-func NewReplacementVotes() ReplacementVotes {
-	return ReplacementVotes{index: make(map[[20]byte]int), Votes: []chainhash.Hash{}}
-}
-
-type CommunityVotes struct {
-	index map[[20]byte]int
-	Votes []CommunityVoteData
-}
-
-func NewCommunityVotes() CommunityVotes {
-	return CommunityVotes{index: make(map[[20]byte]int), Votes: []CommunityVoteData{}}
+// Governance is a struct that contains CommunityVotes and ReplacementVotes indexes and slices.
+type Governance struct {
+	repalceVotesLock      sync.RWMutex
+	communityVotesLock    sync.RWMutex
+	replacementVotesIndex map[[20]byte]int
+	ReplacementVotes      []chainhash.Hash
+	CommunityVotes        []CommunityVoteData
 }
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.

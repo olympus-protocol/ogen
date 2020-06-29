@@ -65,8 +65,6 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 
 	s := &State{
 		CoinsState:                    NewCoinsBalances(),
-		CommunityVotes:                NewCommunityVotes(),
-		ReplacementVotes:              NewReplacementVotes(),
 		ValidatorRegistry:             initialValidators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},

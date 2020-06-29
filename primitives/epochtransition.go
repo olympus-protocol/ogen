@@ -126,7 +126,7 @@ func (s *State) ExitValidator(index uint32, status uint8, p *params.ChainParams)
 
 		return nil
 	}
-	s.CoinsState.Increase(validator.PayeeAddress, validator.Balance)
+	s.CoinsState.IncreaseBalance(validator.PayeeAddress, validator.Balance)
 	validator.Balance = 0
 
 	return nil
@@ -346,7 +346,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		totalBalance := s.GetTotalBalances()
 		votingBalance := uint64(0)
 		for i := range s.ReplacementVotes.GetAll() {
-			bal := s.CoinsState.Get(i)
+			bal := s.CoinsState.GetBalance(i)
 			votingBalance += bal
 		}
 
@@ -362,7 +362,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 			managerVotes := make(map[chainhash.Hash]uint64)
 
 			for i, v := range s.ReplacementVotes.GetAll() {
-				bal := s.CoinsState.Get(i)
+				bal := s.CoinsState.GetBalance(i)
 				if _, ok := managerVotes[v]; ok {
 					managerVotes[v] += bal
 				} else {
@@ -404,14 +404,14 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		perGroup := totalBlockReward / 10
 
 		multipub := bls.PublicKeyHashesToMultisigHash(s.CurrentManagers, 5)
-		s.CoinsState.Increase(multipub, perGroup)
+		s.CoinsState.IncreaseBalance(multipub, perGroup)
 		if len(s.CurrentManagers) != len(p.GovernancePercentages) {
 			return
 		}
 
 		for group, address := range s.CurrentManagers {
 			percent := p.GovernancePercentages[group]
-			s.CoinsState.Increase(address, perGroup*uint64(percent)/100)
+			s.CoinsState.IncreaseBalance(address, perGroup*uint64(percent)/100)
 		}
 
 		s.LastPaidSlot = s.Slot

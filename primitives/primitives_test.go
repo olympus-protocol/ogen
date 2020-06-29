@@ -1,10 +1,10 @@
-package serialization_test
+package primitives_test
 
 import (
 	"testing"
 
 	"github.com/olympus-protocol/ogen/primitives"
-	testdata "github.com/olympus-protocol/ogen/test/data"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/prysmaticlabs/go-ssz"
 )
 

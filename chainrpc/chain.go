@@ -264,7 +264,7 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 	}
 	copy(account[:], accBytes)
 
-	balance := s.chain.State().TipState().CoinsState.Get(account)
+	balance := s.chain.State().TipState().CoinsState.GetBalance(account)
 	nonce := s.chain.State().TipState().CoinsState.GetNonce(account)
 
 	accInfo := &proto.AccountInfo{

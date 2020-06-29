@@ -1,4 +1,4 @@
-package unit_test
+package bip32_test
 
 import (
 	"bytes"
@@ -9,6 +9,26 @@ import (
 	"github.com/olympus-protocol/ogen/utils/bip32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
+
+type XORShift struct {
+	state uint64
+}
+
+func NewXORShift(state uint64) *XORShift {
+	return &XORShift{state}
+}
+
+func (xor *XORShift) Read(b []byte) (int, error) {
+	for i := range b {
+		x := xor.state
+		x ^= x << 13
+		x ^= x >> 7
+		x ^= x << 17
+		b[i] = uint8(x)
+		xor.state = x
+	}
+	return len(b), nil
+}
 
 func TestExtendedPrivateKey(t *testing.T) {
 	// Checks to make sure HD.child(10).toPub() == HD.toPub().child(10)

@@ -1,11 +1,11 @@
-package serialization_test
+package p2p_test
 
 import (
 	"bytes"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/p2p"
-	testdata "github.com/olympus-protocol/ogen/test/data"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
