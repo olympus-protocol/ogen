@@ -18,13 +18,16 @@ type ReplacementVotes struct {
 	Account [20]byte
 	Hash    chainhash.Hash
 }
-
-// Governance is a struct that contains CommunityVotes and ReplacementVotes indexes and slices.
-type Governance struct {
+var (
 	repalceVotesLock      *sync.RWMutex
 	communityVotesLock    *sync.RWMutex
 	replacementVotesIndex map[[20]byte]int
 	communityVotesIndex   map[chainhash.Hash]int
+)
+
+// Governance is a struct that contains CommunityVotes and ReplacementVotes indexes and slices.
+type Governance struct {
+	
 	ReplacementVotes      []ReplacementVotes
 	CommunityVotes        []CommunityVoteDataInfo
 }
@@ -32,14 +35,21 @@ type Governance struct {
 // Load assumes the slices are filled and constuct the indexes.
 func (g *Governance) Load() {
 	for i, v := range g.ReplacementVotes {
-		g.repalceVotesLock.Lock()
-		g.replacementVotesIndex[v.Account] = i
-		g.repalceVotesLock.Unlock()
+		repalceVotesLock.Lock()
+		replacementVotesIndex[v.Account] = i
+		repalceVotesLock.Unlock()
 	}
 	for i, v := range g.CommunityVotes {
-		g.communityVotesLock.Lock()
-		g.communityVotesIndex[v.Hash] = i
-		g.communityVotesLock.Unlock()
+		communityVotesLock.Lock()
+		communityVotesIndex[v.Hash] = i
+		communityVotesLock.Unlock()
+	}
+}
+
+func NewGovernanceState() Governance {
+	return Governance{
+		ReplacementVotes: []ReplacementVotes{},
+		CommunityVotes:   []CommunityVoteDataInfo{},
 	}
 }
 
@@ -74,16 +84,16 @@ func (g *Governance) SetCommunityVote(hash chainhash.Hash, data CommunityVoteDat
 }
 
 func (g *Governance) getReplacementVoteIndex(acc [20]byte) (int, bool) {
-	g.repalceVotesLock.Lock()
-	defer g.repalceVotesLock.Unlock()
-	i, ok := g.replacementVotesIndex[acc]
+	repalceVotesLock.Lock()
+	defer repalceVotesLock.Unlock()
+	i, ok := replacementVotesIndex[acc]
 	return i, ok
 }
 
 func (g *Governance) getCommunityVoteIndex(hash chainhash.Hash) (int, bool) {
-	g.communityVotesLock.Lock()
-	defer g.communityVotesLock.Unlock()
-	i, ok := g.communityVotesIndex[hash]
+	communityVotesLock.Lock()
+	defer communityVotesLock.Unlock()
+	i, ok := communityVotesIndex[hash]
 	return i, ok
 }
 

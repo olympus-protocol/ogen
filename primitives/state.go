@@ -98,8 +98,7 @@ type State struct {
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
 	ManagerReplacement bitfield.Bitfield
 
-	//ReplacementVotes ReplacementVotes
-	//CommunityVotes   CommunityVotes
+	// Governance represents current votes state
 	Governance Governance
 
 	VoteEpoch          uint64

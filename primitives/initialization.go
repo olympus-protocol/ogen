@@ -64,7 +64,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	copy(premineAddrArr[:], premineAddr)
 
 	s := &State{
-		CoinsState:                    NewCoinsBalances(),
+		CoinsState:                    NewCoinsStates(),
 		ValidatorRegistry:             initialValidators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},

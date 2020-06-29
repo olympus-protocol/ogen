@@ -8,12 +8,15 @@ type AccountInfo struct {
 	Info    uint64
 }
 
-// CoinsState is the serializable struct with the access indexes for fast fetch balances and nonces.
-type CoinsState struct {
+var (
 	balanceLock  *sync.RWMutex
 	nonceLocks   *sync.RWMutex
 	balanceIndex map[[20]byte]int
 	nonceIndex   map[[20]byte]int
+)
+
+// CoinsState is the serializable struct with the access indexes for fast fetch balances and nonces.
+type CoinsState struct {
 	Balances     []AccountInfo
 	Nonces       []AccountInfo
 }
@@ -21,20 +24,20 @@ type CoinsState struct {
 // Load is used when the Balances and Nonces slices are already filled. This constructs the index maps
 func (cs *CoinsState) Load() {
 	for i, v := range cs.Balances {
-		cs.balanceLock.Lock()
-		cs.balanceIndex[v.Account] = i
-		cs.balanceLock.Unlock()
+		balanceLock.Lock()
+		balanceIndex[v.Account] = i
+		balanceLock.Unlock()
 	}
 	for i, v := range cs.Nonces {
-		cs.nonceLocks.Lock()
-		cs.nonceIndex[v.Account] = i
-		cs.nonceLocks.Unlock()
+		nonceLocks.Lock()
+		nonceIndex[v.Account] = i
+		nonceLocks.Unlock()
 	}
 }
 
-// NewCoinsBalances is used only to initialize the coin state when chain is not synced.
-func NewCoinsBalances() CoinsState {
-	return CoinsState{nonceIndex: make(map[[20]byte]int), balanceIndex: make(map[[20]byte]int), Balances: []AccountInfo{}, Nonces: []AccountInfo{}}
+// NewCoinsStates is used only to initialize the coin state when chain is not synced.
+func NewCoinsStates() CoinsState {
+	return CoinsState{Balances: []AccountInfo{}, Nonces: []AccountInfo{}}
 }
 
 // GetTotal sums all the state balances.
@@ -59,7 +62,7 @@ func (cs *CoinsState) GetNonce(acc [20]byte) uint64 {
 func (cs *CoinsState) SetNonce(acc [20]byte, value uint64) {
 	i, ok := cs.getNonceIndex(acc)
 	if !ok {
-		// Reduce the balance of a non-existing account (this should never happen)
+		
 		return
 	}
 	cs.Nonces[i].Info = value
@@ -97,15 +100,15 @@ func (cs *CoinsState) IncreaseBalance(acc [20]byte, amount uint64) {
 }
 
 func (cs *CoinsState) getBalanceIndex(acc [20]byte) (int, bool) {
-	cs.balanceLock.Lock()
-	defer cs.balanceLock.Unlock()
-	i, ok := cs.balanceIndex[acc]
+	balanceLock.Lock()
+	defer balanceLock.Unlock()
+	i, ok := balanceIndex[acc]
 	return i, ok
 }
 
 func (cs *CoinsState) getNonceIndex(acc [20]byte) (int, bool) {
-	cs.nonceLocks.Lock()
-	defer cs.nonceLocks.Unlock()
-	i, ok := cs.nonceIndex[acc]
+	nonceLocks.Lock()
+	defer nonceLocks.Unlock()
+	i, ok := nonceIndex[acc]
 	return i, ok
 }

@@ -327,3 +327,19 @@ func Test_MultiValidatorVoteSerialize(t *testing.T) {
 		t.Fatal("error: serialize MultiValidatorVote")
 	}
 }
+
+func Test_StateSerialize(t *testing.T) {
+	ser, err := testdata.MockState.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.State
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := ssz.DeepEqual(testdata.MockState, desc)
+	if !equal {
+		t.Fatal("error: serialize MockState")
+	}
+}
