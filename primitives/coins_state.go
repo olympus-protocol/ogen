@@ -9,10 +9,10 @@ type AccountInfo struct {
 }
 
 var (
-	balanceLock  *sync.RWMutex
-	nonceLocks   *sync.RWMutex
-	balanceIndex map[[20]byte]int
-	nonceIndex   map[[20]byte]int
+	balanceLock  sync.RWMutex
+	nonceLocks   sync.RWMutex
+	balanceIndex = map[[20]byte]int{}
+	nonceIndex = map[[20]byte]int{}
 )
 
 // CoinsState is the serializable struct with the access indexes for fast fetch balances and nonces.

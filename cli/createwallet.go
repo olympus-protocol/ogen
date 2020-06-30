@@ -6,6 +6,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
@@ -49,6 +50,6 @@ var generateWalletCmd = &cobra.Command{
 		}
 		colorPubkey := color.New(color.FgGreen)
 		colorPubkey.Printf("Public Account: ")
-		fmt.Printf("%s\n", key)
+		fmt.Printf("%s\n", bech32.Encode(net.AddrPrefix.Public, key[:]))
 	},
 }

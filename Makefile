@@ -62,6 +62,5 @@ build_windows_amd64:
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./...
-	rm -rf chain.json
 
 

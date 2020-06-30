@@ -86,7 +86,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		VotingState:                   GovernanceStateActive,
 		LastPaidSlot:                  0,
 	}
-
+	s.CoinsState.IncreaseBalance(premineAddrArr, 400000000)
 	activeValidators := s.GetValidatorIndicesActiveAt(0)
 	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
 	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
