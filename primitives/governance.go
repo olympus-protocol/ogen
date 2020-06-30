@@ -18,6 +18,7 @@ type ReplacementVotes struct {
 	Account [20]byte
 	Hash    chainhash.Hash
 }
+
 var (
 	repalceVotesLock      *sync.RWMutex
 	communityVotesLock    *sync.RWMutex
@@ -27,9 +28,8 @@ var (
 
 // Governance is a struct that contains CommunityVotes and ReplacementVotes indexes and slices.
 type Governance struct {
-	
-	ReplacementVotes      []ReplacementVotes
-	CommunityVotes        []CommunityVoteDataInfo
+	ReplacementVotes []ReplacementVotes
+	CommunityVotes   []CommunityVoteDataInfo
 }
 
 // Load assumes the slices are filled and constuct the indexes.

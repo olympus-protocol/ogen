@@ -199,6 +199,9 @@ func (brt *BlockDBReadTransaction) GetFinalizedState() (*primitives.State, error
 	}
 	state := new(primitives.State)
 	err = state.Unmarshal(stateBytes)
+	// load state indexes.
+	state.CoinsState.Load()
+	state.Governance.Load()
 	return state, err
 }
 
@@ -222,6 +225,9 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (*primitives.State, error
 	}
 	state := new(primitives.State)
 	err = state.Unmarshal(stateBytes)
+	// load state indexes.
+	state.CoinsState.Load()
+	state.Governance.Load()
 	return state, err
 }
 
