@@ -236,7 +236,7 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 	u.ReduceBalance(pkh, tx.Amount+tx.Fee)
 	u.IncreaseBalance(tx.To, tx.Amount)
 	u.IncreaseBalance(blockWithdrawalAddress, tx.Fee)
-	u.IncreaseBalance(pkh, tx.Nonce)
+	u.SetNonce(pkh, tx.Nonce)
 
 	if _, ok := s.Governance.GetReplacementVote(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
 		s.Governance.DeleteReplacementVote(pkh)
@@ -887,8 +887,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, tx := range b.Txs {
-		pload := *new(TxPayload)
-		err := pload.Unmarshal(tx.Payload)
+		pload, err := tx.GetPayload()
 		if err != nil {
 			return err
 		}

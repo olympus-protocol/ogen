@@ -1,6 +1,8 @@
 package primitives
 
-import "sync"
+import (
+	"sync"
+)
 
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
 type AccountInfo struct {
@@ -12,7 +14,7 @@ var (
 	balanceLock  sync.RWMutex
 	nonceLocks   sync.RWMutex
 	balanceIndex = map[[20]byte]int{}
-	nonceIndex = map[[20]byte]int{}
+	nonceIndex   = map[[20]byte]int{}
 )
 
 // CoinsState is the serializable struct with the access indexes for fast fetch balances and nonces.
@@ -51,7 +53,7 @@ func (cs *CoinsState) GetTotal() uint64 {
 
 // GetNonce returns the account nonce.
 func (cs *CoinsState) GetNonce(acc [20]byte) uint64 {
-	i, ok := cs.getBalanceIndex(acc)
+	i, ok := cs.getNonceIndex(acc)
 	if !ok {
 		return 0
 	}

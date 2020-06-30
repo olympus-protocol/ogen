@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 
@@ -27,13 +28,10 @@ func (tl *TxLocator) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, tl)
 }
 
-// TxType represents a type of transaction.
-type TxType = int32
-
 const (
 	// TxTransferSingle represents a transaction sending money from a single
 	// address to another address.
-	TxTransferSingle TxType = iota + 1
+	TxTransferSingle uint32 = iota + 1
 
 	// TxTransferMulti represents a transaction sending money from a multisig
 	// address to another address.
@@ -241,18 +239,24 @@ type TxPayload interface {
 
 // Tx represents a transaction on the blockchain.
 type Tx struct {
-	Version int32
-	Type    TxType
+	Version uint32
+	Type    uint32
 	Payload []byte
 }
 
 func (t *Tx) GetPayload() (TxPayload, error) {
-	var pload TxPayload
-	err := pload.Unmarshal(t.Payload)
-	if err != nil {
-		return nil, err
+	switch t.Type {
+	case TxTransferMulti:
+		payload := new(TransferMultiPayload)
+		payload.Unmarshal(t.Payload)
+		return payload, nil
+	case TxTransferSingle:
+		payload := new(TransferSinglePayload)
+		payload.Unmarshal(t.Payload)
+		return payload, nil
+	default:
+		return nil, errors.New("unknown transaction type")
 	}
-	return pload, nil
 }
 
 func (t *Tx) AppendPayload(p TxPayload) error {
