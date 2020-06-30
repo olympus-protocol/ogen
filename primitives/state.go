@@ -27,7 +27,7 @@ const (
 // State is the state of consensus in the blockchain.
 type State struct {
 	// CoinsState keeps if accounts balances and transactions.
-	CoinsState CoinsState
+	CoinsState *CoinsState
 	// ValidatorRegistry keeps track of validators in the state.
 	ValidatorRegistry []Validator
 

@@ -6,8 +6,10 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+var coins = primitives.NewCoinsStates()
+
 var MockState = primitives.State{
-	CoinsState:                    primitives.NewCoinsStates(),
+	CoinsState:                    &coins,
 	Governance:                    primitives.NewGovernanceState(),
 	ValidatorRegistry:             []primitives.Validator{Validator, Validator, Validator, Validator},
 	LatestValidatorRegistryChange: 1000,

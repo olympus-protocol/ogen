@@ -66,7 +66,8 @@ index:
 	i, ok := cs.getNonceIndex(acc)
 	if !ok {
 		lastIndex := len(cs.Nonces)
-		cs.Nonces = append(cs.Nonces, AccountInfo{Account: acc, Info: value})
+		info := AccountInfo{Account: acc, Info: value}
+		cs.Nonces = append(cs.Nonces, info)
 		cs.setNonceIndex(acc, lastIndex)
 		goto index
 	}
@@ -101,7 +102,8 @@ index:
 	if !ok {
 		// Append to the slice and add to the map
 		lastIndex := len(cs.Balances)
-		cs.Balances = append(cs.Balances, AccountInfo{Account: acc, Info: amount})
+		info := AccountInfo{Account: acc, Info: amount}
+		cs.Balances = append(cs.Balances, info)
 		cs.setBalanceIndex(acc, lastIndex)
 		goto index
 	}
