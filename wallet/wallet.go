@@ -158,11 +158,25 @@ func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
 	return files, nil
 }
 
+func (w *Wallet) IncreaseNonce() error {
+	if !w.open {
+		return errorNotOpen
+	}
+	return nil
+}
+
 func (w *Wallet) GetAccount() (string, error) {
 	if !w.open {
 		return "", errorNotOpen
 	}
 	return bech32.Encode(w.params.AddrPrefix.Public, w.info.account[:]), nil
+}
+
+func (w *Wallet) GetPublicKey() ([20]byte, error) {
+	if !w.open {
+		return [20]byte{}, errorNotOpen
+	}
+	return w.info.account, nil
 }
 
 func (w *Wallet) GetAccountRaw() ([20]byte, error) {

@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -62,14 +63,14 @@ func (cs *CoinsState) GetNonce(acc [20]byte) uint64 {
 
 // SetNonce sets the nonce to a new value.
 func (cs *CoinsState) SetNonce(acc [20]byte, value uint64) {
-index:
 	i, ok := cs.getNonceIndex(acc)
+	fmt.Println(i, ok)
 	if !ok {
 		lastIndex := len(cs.Nonces)
 		info := AccountInfo{Account: acc, Info: value}
 		cs.Nonces = append(cs.Nonces, info)
 		cs.setNonceIndex(acc, lastIndex)
-		goto index
+		return
 	}
 	cs.Nonces[i].Info = value
 	return
@@ -97,7 +98,6 @@ func (cs *CoinsState) ReduceBalance(acc [20]byte, amount uint64) {
 
 // IncreaseBalance increases the account balance.
 func (cs *CoinsState) IncreaseBalance(acc [20]byte, amount uint64) {
-index:
 	i, ok := cs.getBalanceIndex(acc)
 	if !ok {
 		// Append to the slice and add to the map
@@ -105,7 +105,7 @@ index:
 		info := AccountInfo{Account: acc, Info: amount}
 		cs.Balances = append(cs.Balances, info)
 		cs.setBalanceIndex(acc, lastIndex)
-		goto index
+		return
 	}
 	cs.Balances[i].Info += amount
 	return

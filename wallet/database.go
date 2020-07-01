@@ -2,10 +2,8 @@ package wallet
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/binary"
 	"errors"
-	"io"
 	"path"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -20,7 +18,7 @@ var errorNoInfo = errors.New("wallet corruption, some elements are not found on 
 var errorNotOpen = errors.New("there is no wallet open, please open one first")
 
 type walletInfo struct {
-	nonce     []byte
+	nonce     uint64
 	lastNonce uint64
 	account   [20]byte
 }
@@ -28,7 +26,6 @@ type walletInfo struct {
 var walletInfoBucketKey = []byte("wallet_info")
 var walletAccountDbKey = []byte("address")
 var walletNonceDbKey = []byte("nonce")
-var walletLastNonceDbKey = []byte("last_nonce")
 var walletKeyBucket = []byte("keys")
 var walletPrivKeyDbKey = []byte("priv_key")
 
@@ -47,19 +44,18 @@ func (w *Wallet) load() error {
 		if len(stAcc) < 20 {
 			return errorNoInfo
 		}
-		copy(account[:20], stAcc)
+		copy(account[:], stAcc)
 		nonce := info.Get(walletNonceDbKey)
 		if nonce == nil {
 			return errorNoInfo
 		}
-		lastNonce := binary.LittleEndian.Uint64(info.Get(walletLastNonceDbKey))
+		lastNonce := binary.LittleEndian.Uint64(nonce)
 		if lastNonce < 0 {
 			return errorNoInfo
 		}
 		loadInfo = walletInfo{
 			account:   account,
-			nonce:     nonce,
-			lastNonce: lastNonce,
+			nonce:     lastNonce,
 		}
 		return nil
 	})
@@ -70,12 +66,13 @@ func (w *Wallet) load() error {
 	return nil
 }
 
-func (w *Wallet) GetPublicKey() ([20]byte, error) {
-	if !w.open {
-		return [20]byte{}, errorNotOpen
-	}
-	return w.info.account, nil
-}
+// func (w *Wallet) SetNonce(nonce uint64) error {
+// 	err = db.Update(func(tx *bbolt.Tx) error {
+
+// 		return nil
+// 	}
+// 	return err
+// }
 
 func (w *Wallet) GetSecret() (s *bls.SecretKey, err error) {
 	if !w.open {
@@ -130,20 +127,13 @@ func (w *Wallet) recover() error {
 		if err != nil {
 			return err
 		}
-		nonce := make([]byte, 12)
-		if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-			return errors.New("error reading from random" + err.Error())
-		}
-		lastNonce := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 		account, err := blsPrivKey.PublicKey().ToAddress(w.params.AddrPrefix.Public)
 		if err != nil {
 			return err
 		}
+		nonce := make([]byte, 8)
+		binary.LittleEndian.PutUint64(nonce, 0)
 		err = infoBucket.Put(walletNonceDbKey, nonce)
-		if err != nil {
-			return err
-		}
-		err = infoBucket.Put(walletLastNonceDbKey, lastNonce)
 		if err != nil {
 			return err
 		}
@@ -174,11 +164,6 @@ func (w *Wallet) initialize(prv *bls.SecretKey) error {
 		if err != nil {
 			return err
 		}
-		nonce := make([]byte, 12)
-		if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-			return errors.New("error reading from random" + err.Error())
-		}
-		lastNonce := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 		pubKey := prv.PublicKey()
 		pubKeyBytes := pubKey.Marshal()
 		var account [20]byte
@@ -188,11 +173,9 @@ func (w *Wallet) initialize(prv *bls.SecretKey) error {
 		if err != nil {
 			return err
 		}
+		nonce := make([]byte, 8)
+		binary.LittleEndian.PutUint64(nonce, 0)
 		err = infoBucket.Put(walletNonceDbKey, nonce)
-		if err != nil {
-			return err
-		}
-		err = infoBucket.Put(walletLastNonceDbKey, lastNonce)
 		if err != nil {
 			return err
 		}
