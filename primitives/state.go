@@ -24,6 +24,90 @@ const (
 	GovernanceStateVoting
 )
 
+// SerializableState is a serializable copy of the state
+type SerializableState struct {
+	// CoinsState keeps if accounts balances and transactions.
+	CoinsState CoinsStateSerializable
+	// ValidatorRegistry keeps track of validators in the state.
+	ValidatorRegistry []Validator
+
+	// LatestValidatorRegistryChange keeps track of the last time the validator
+	// registry was changed. We only want to update the registry if a block was
+	// finalized since the last time it was changed, so we keep track of that
+	// here.
+	LatestValidatorRegistryChange uint64
+
+	// RANDAO for figuring out the proposer queue. We don't want any one validator
+	// to have influence over the RANDAO, so we have each proposer contribute.
+	RANDAO chainhash.Hash
+
+	// NextRANDAO is the RANDAO currently being created. Every time a block is
+	// created, we XOR the 32 least-significant bytes of the RandaoReveal with this
+	// value to update it.
+	NextRANDAO chainhash.Hash
+
+	// Slot is the last slot ProcessSlot was called for.
+	Slot uint64
+
+	// EpochIndex is the last epoch ProcessEpoch was called for.
+	EpochIndex uint64
+
+	// ProposerQueue is the queue of validators scheduled to create a block.
+	ProposerQueue []uint32
+
+	PreviousEpochVoteAssignments []uint32
+	CurrentEpochVoteAssignments  []uint32
+
+	// NextProposerQueue is the queue of validators scheduled to create a block
+	// in the next epoch.
+	NextProposerQueue []uint32
+
+	// JustifiedBitfield is a bitfield where the nth least significant bit
+	// represents whether the nth last epoch was justified.
+	JustificationBitfield uint64
+
+	// FinalizedEpoch is the epoch that was finalized.
+	FinalizedEpoch uint64
+
+	// LastBlockHashes is the last LastBlockHashesSize block hashes.
+	LatestBlockHashes []chainhash.Hash
+
+	// JustifiedEpoch is the last epoch that >2/3 of validators voted for.
+	JustifiedEpoch uint64
+
+	// JustifiedEpochHash is the block hash of the last epoch that >2/3 of validators voted for.
+	JustifiedEpochHash chainhash.Hash
+
+	// CurrentEpochVotes are votes that are being submitted where
+	// the source epoch matches justified epoch.
+	CurrentEpochVotes []AcceptedVoteInfo
+
+	// PreviousJustifiedEpoch is the second-to-last epoch that >2/3 of validators
+	// voted for.
+	PreviousJustifiedEpoch uint64
+
+	// PreviousJustifiedEpochHash is the block hash of the last epoch that >2/3 of validators voted for.
+	PreviousJustifiedEpochHash chainhash.Hash
+
+	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
+	PreviousEpochVotes []AcceptedVoteInfo
+
+	// CurrentManagers are current managers of the governance funds.
+	CurrentManagers [][20]byte
+
+	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
+	ManagerReplacement bitfield.Bitfield
+
+	// Governance represents current votes state
+	Governance GovernanceSerializable
+
+	VoteEpoch          uint64
+	VoteEpochStartSlot uint64
+	VotingState        uint8
+
+	LastPaidSlot uint64
+}
+
 // State is the state of consensus in the blockchain.
 type State struct {
 	// CoinsState keeps if accounts balances and transactions.
@@ -108,14 +192,87 @@ type State struct {
 	LastPaidSlot uint64
 }
 
+// ToSerializable converts the struct to a serializable struct
+func (s *State) ToSerializable() SerializableState {
+	ser := SerializableState{
+		CoinsState:                    s.CoinsState.ToSerializable(),
+		ValidatorRegistry:             s.ValidatorRegistry,
+		LatestValidatorRegistryChange: s.LatestValidatorRegistryChange,
+		RANDAO:                        s.RANDAO,
+		NextRANDAO:                    s.NextRANDAO,
+		Slot:                          s.Slot,
+		EpochIndex:                    s.EpochIndex,
+		ProposerQueue:                 s.ProposerQueue,
+		PreviousEpochVoteAssignments:  s.PreviousEpochVoteAssignments,
+		CurrentEpochVoteAssignments:   s.CurrentEpochVoteAssignments,
+		NextProposerQueue:             s.NextProposerQueue,
+		JustificationBitfield:         s.JustificationBitfield,
+		FinalizedEpoch:                s.FinalizedEpoch,
+		LatestBlockHashes:             s.LatestBlockHashes,
+		JustifiedEpoch:                s.JustifiedEpoch,
+		JustifiedEpochHash:            s.JustifiedEpochHash,
+		CurrentEpochVotes:             s.CurrentEpochVotes,
+		PreviousJustifiedEpoch:        s.PreviousJustifiedEpoch,
+		PreviousJustifiedEpochHash:    s.PreviousJustifiedEpochHash,
+		PreviousEpochVotes:            s.PreviousEpochVotes,
+		CurrentManagers:               s.CurrentManagers,
+		ManagerReplacement:            s.ManagerReplacement,
+		Governance:                    s.Governance.ToSerializable(),
+		VoteEpoch:                     s.VoteEpoch,
+		VoteEpochStartSlot:            s.VoteEpochStartSlot,
+		VotingState:                   s.VotingState,
+		LastPaidSlot:                  s.LastPaidSlot,
+	}
+	return ser
+}
+
+// FromSerializable converts the struct to a serializable struct
+func (s *State) FromSerializable(ser *SerializableState) {
+	s.ValidatorRegistry = ser.ValidatorRegistry
+	s.LatestValidatorRegistryChange = ser.LatestValidatorRegistryChange
+	s.RANDAO = ser.RANDAO
+	s.NextRANDAO = ser.NextRANDAO
+	s.Slot = ser.Slot
+	s.EpochIndex = ser.EpochIndex
+	s.ProposerQueue = ser.ProposerQueue
+	s.PreviousEpochVoteAssignments = ser.PreviousEpochVoteAssignments
+	s.CurrentEpochVoteAssignments = ser.CurrentEpochVoteAssignments
+	s.NextProposerQueue = ser.NextProposerQueue
+	s.JustificationBitfield = ser.JustificationBitfield
+	s.FinalizedEpoch = ser.FinalizedEpoch
+	s.LatestBlockHashes = ser.LatestBlockHashes
+	s.JustifiedEpoch = ser.JustifiedEpoch
+	s.JustifiedEpochHash = ser.JustifiedEpochHash
+	s.CurrentEpochVotes = ser.CurrentEpochVotes
+	s.PreviousJustifiedEpoch = ser.PreviousJustifiedEpoch
+	s.PreviousJustifiedEpochHash = ser.PreviousJustifiedEpochHash
+	s.PreviousEpochVotes = ser.PreviousEpochVotes
+	s.CurrentManagers = ser.CurrentManagers
+	s.ManagerReplacement = ser.ManagerReplacement
+	s.VoteEpoch = ser.VoteEpoch
+	s.VoteEpochStartSlot = ser.VoteEpochStartSlot
+	s.VotingState = ser.VotingState
+	s.LastPaidSlot = ser.LastPaidSlot
+	s.CoinsState.FromSerializable(&ser.CoinsState)
+	s.Governance.FromSerializable(&ser.Governance)
+	return
+}
+
 // Marshal encodes the data.
 func (s *State) Marshal() ([]byte, error) {
-	return ssz.Marshal(s)
+	ser := s.ToSerializable()
+	return ssz.Marshal(ser)
 }
 
 // Unmarshal decodes the data.
 func (s *State) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, s)
+	serialized := new(SerializableState)
+	err := ssz.Unmarshal(b, serialized)
+	if err != nil {
+		return err
+	}
+	s.FromSerializable(serialized)
+	return nil
 
 }
 
