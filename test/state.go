@@ -6,11 +6,25 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var coins = primitives.NewCoinsStates()
+
+var MockGovernanceState = primitives.Governance{
+	ReplaceVotes: map[[20]byte]chainhash.Hash{
+		{0x1,0x2,0x3}: *Hash,
+	},
+	CommunityVotes: map[chainhash.Hash]primitives.CommunityVoteData{
+		*Hash: CommunityVoteData,
+	},
+}
+
+var MockCoinState = primitives.CoinsState{
+	Balances: map[[20]byte]uint64{
+		{0x0, 0x1, 0x2}: 400 * 1000000, // 400k coins
+	},
+	Nonces: make(map[[20]byte]uint64),
+}
 
 var MockState = primitives.State{
-	CoinsState:                    &coins,
-	Governance:                    primitives.NewGovernanceState(),
+	CoinsState: MockCoinState,
 	ValidatorRegistry:             []primitives.Validator{Validator, Validator, Validator, Validator},
 	LatestValidatorRegistryChange: 1000,
 	RANDAO:                        *Hash,

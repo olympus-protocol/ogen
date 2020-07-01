@@ -94,7 +94,7 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 		mpi = cm.mempool[fpkh]
 	}
 
-	if err := mpi.add(item, state.GetBalance(fpkh)); err != nil {
+	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err
 	}
 
@@ -189,7 +189,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 
 		currentState := cm.blockchain.State().TipState().CoinsState
 
-		err = cm.Add(*tx, currentState)
+		err = cm.Add(*tx, &currentState)
 		if err != nil {
 			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}

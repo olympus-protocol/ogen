@@ -27,7 +27,7 @@ const (
 // State is the state of consensus in the blockchain.
 type State struct {
 	// CoinsState keeps if accounts balances and transactions.
-	CoinsState *CoinsState
+	CoinsState CoinsState
 	// ValidatorRegistry keeps track of validators in the state.
 	ValidatorRegistry []Validator
 
@@ -194,7 +194,8 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 func (s *State) Copy() State {
 	s2 := *s
 
-	s2.CoinsState = s.CoinsState
+	s2.CoinsState = s.CoinsState.Copy()
+
 	s2.ValidatorRegistry = make([]Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {

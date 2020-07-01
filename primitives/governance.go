@@ -2,8 +2,8 @@ package primitives
 
 import (
 	"bytes"
-	"sync"
 
+	fastssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
@@ -19,82 +19,90 @@ type ReplacementVotes struct {
 	Hash    chainhash.Hash
 }
 
-var (
-	repalceVotesLock      *sync.RWMutex
-	communityVotesLock    *sync.RWMutex
-	replacementVotesIndex map[[20]byte]int
-	communityVotesIndex   map[chainhash.Hash]int
-)
+// GovernanceSerializable is a struct that contains the Governance state on a serializable struct.
+type GovernanceSerializable struct {
+	ReplaceVotes   []ReplacementVotes
+	CommunityVotes []CommunityVoteDataInfo
+}
 
 // Governance is a struct that contains CommunityVotes and ReplacementVotes indexes and slices.
 type Governance struct {
-	ReplacementVotes []ReplacementVotes
-	CommunityVotes   []CommunityVoteDataInfo
+	ReplaceVotes   map[[20]byte]chainhash.Hash
+	CommunityVotes map[chainhash.Hash]CommunityVoteData
+	fastssz.Marshaler
+	fastssz.Unmarshaler
 }
 
-// Load assumes the slices are filled and constuct the indexes.
-func (g *Governance) Load() {
-	for i, v := range g.ReplacementVotes {
-		repalceVotesLock.Lock()
-		replacementVotesIndex[v.Account] = i
-		repalceVotesLock.Unlock()
+// Marshal serializes the struct to bytes
+func (g *Governance) Marshal() ([]byte, error) {
+	return ssz.Marshal(g)
+}
+
+// Unmarshal deserialize the bytes to a struct
+func (g *Governance) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, g)
+}
+
+// MarshalSSZ overrides the ssz function using fastssz interface
+func (g *Governance) MarshalSSZ() ([]byte, error) {
+	b := []byte{}
+	return g.MarshalSSZTo(b)
+}
+
+// MarshalSSZTo utility function to override the ssz using the fastssz interface
+func (g *Governance) MarshalSSZTo(dst []byte) ([]byte, error) {
+	ser := g.ToSerializable()
+	mb, err := ssz.Marshal(ser)
+	if err != nil {
+		return nil, err
 	}
-	for i, v := range g.CommunityVotes {
-		communityVotesLock.Lock()
-		communityVotesIndex[v.Hash] = i
-		communityVotesLock.Unlock()
+	copy(dst, mb)
+	return mb, nil
+}
+
+// SizeSSZ utility function to override the ssz using the fastssz interface
+func (g *Governance) SizeSSZ() int {
+	total := 0
+	total += len(g.CommunityVotes) * 132
+	total += len(g.ReplaceVotes) * 52
+	return total
+}
+
+// UnmarshalSSZ overrides the ssz function using the fastssz interface
+func (g *Governance) UnmarshalSSZ(b []byte) error {
+	ser := new(GovernanceSerializable)
+	err := ssz.Unmarshal(b, ser)
+	if err != nil {
+		return err
 	}
+	g.FromSerializable(ser)
+	return nil
 }
 
-func NewGovernanceState() Governance {
-	return Governance{
-		ReplacementVotes: []ReplacementVotes{},
-		CommunityVotes:   []CommunityVoteDataInfo{},
+// ToSerializable creates a copy of the struct into a slices struct
+func (g *Governance) ToSerializable() GovernanceSerializable {
+	replaceVotes := []ReplacementVotes{}
+	communityVotes := []CommunityVoteDataInfo{}
+	for k, v := range g.ReplaceVotes {
+		replaceVotes = append(replaceVotes, ReplacementVotes{Account: k, Hash: v})
 	}
+	for k, v := range g.CommunityVotes {
+		communityVotes = append(communityVotes, CommunityVoteDataInfo{Hash: k, Data: v})
+	}
+	return GovernanceSerializable{ReplaceVotes: replaceVotes, CommunityVotes: communityVotes}
 }
 
-// GetAllReplacementVotes get all replacement votes on the state.
-func (g *Governance) GetAllReplacementVotes() []ReplacementVotes {
-	return g.ReplacementVotes
-}
-
-// GetReplacementVote returns a replacement vote.
-func (g *Governance) GetReplacementVote(acc [20]byte) (chainhash.Hash, bool) {
-	return chainhash.Hash{}, false
-}
-
-// SetReplacementVote sets a new replacement vote on the state
-func (g *Governance) SetReplacementVote(acc [20]byte, hash chainhash.Hash) {
+// FromSerializable creates the struct into a map based struct
+func (g *Governance) FromSerializable(s *GovernanceSerializable) {
+	g.ReplaceVotes = map[[20]byte]chainhash.Hash{}
+	g.CommunityVotes = map[chainhash.Hash]CommunityVoteData{}
+	for _, v := range s.ReplaceVotes {
+		g.ReplaceVotes[v.Account] = v.Hash
+	}
+	for _, v := range s.CommunityVotes {
+		g.CommunityVotes[v.Hash] = v.Data
+	}
 	return
-}
-
-// DeleteReplacementVote removes a vote on the slice and reconstruct index
-func (g *Governance) DeleteReplacementVote(acc [20]byte) {
-	return
-}
-
-// GetCommunityVote returns a vote on the community votes state.
-func (g *Governance) GetCommunityVote(hash chainhash.Hash) CommunityVoteData {
-	return CommunityVoteData{}
-}
-
-// SetCommunityVote stores a community vote on the state.
-func (g *Governance) SetCommunityVote(hash chainhash.Hash, data CommunityVoteData) {
-	return
-}
-
-func (g *Governance) getReplacementVoteIndex(acc [20]byte) (int, bool) {
-	repalceVotesLock.Lock()
-	defer repalceVotesLock.Unlock()
-	i, ok := replacementVotesIndex[acc]
-	return i, ok
-}
-
-func (g *Governance) getCommunityVoteIndex(hash chainhash.Hash) (int, bool) {
-	communityVotesLock.Lock()
-	defer communityVotesLock.Unlock()
-	i, ok := communityVotesIndex[hash]
-	return i, ok
 }
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.

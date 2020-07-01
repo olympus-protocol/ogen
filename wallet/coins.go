@@ -13,7 +13,7 @@ func (w *Wallet) GetBalance() (uint64, error) {
 	if !w.open {
 		return 0, errorNotOpen
 	}
-	out := w.chain.State().TipState().CoinsState.GetBalance(w.info.account)
+	out := w.chain.State().TipState().CoinsState.Balances[w.info.account]
 
 	return out, nil
 }
@@ -167,7 +167,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	}
 	currentState := w.chain.State().TipState()
 
-	if err := w.mempool.Add(*tx, currentState.CoinsState); err != nil {
+	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {
 		return nil, err
 	}
 

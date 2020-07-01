@@ -1,6 +1,7 @@
 package primitives_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/primitives"
@@ -325,6 +326,38 @@ func Test_MultiValidatorVoteSerialize(t *testing.T) {
 	equal := ssz.DeepEqual(testdata.MultiValidatorVote, desc)
 	if !equal {
 		t.Fatal("error: serialize MultiValidatorVote")
+	}
+}
+
+func Test_CoinStateSerialize(t *testing.T) {
+	ser, err := testdata.MockCoinState.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.CoinsState
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := reflect.DeepEqual(testdata.MockCoinState, desc)
+	if !equal {
+		t.Fatal("error: serialize MockCoinState")
+	}
+}
+
+func Test_GovernanceSerialize(t *testing.T) {
+	ser, err := testdata.MockGovernanceState.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var desc primitives.Governance
+	err = desc.Unmarshal(ser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal := reflect.DeepEqual(testdata.MockGovernanceState, desc)
+	if !equal {
+		t.Fatal("error: serialize MockGovernanceState")
 	}
 }
 

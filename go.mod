@@ -7,7 +7,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
-	github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472 // indirect
+	github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db

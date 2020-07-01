@@ -1,8 +1,8 @@
 package primitives
 
 import (
-	"fmt"
-	"sync"
+	fastssz "github.com/ferranbt/fastssz"
+	"github.com/prysmaticlabs/go-ssz"
 )
 
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
@@ -11,130 +11,111 @@ type AccountInfo struct {
 	Info    uint64
 }
 
-var (
-	balanceLock  sync.RWMutex
-	nonceLocks   sync.RWMutex
-	balanceIndex = map[[20]byte]int{}
-	nonceIndex   = map[[20]byte]int{}
-)
-
-// CoinsState is the serializable struct with the access indexes for fast fetch balances and nonces.
-type CoinsState struct {
+// CoinsStateSerializable is a struct to properly serialize the coinstate efficiently
+type CoinsStateSerializable struct {
 	Balances []AccountInfo
 	Nonces   []AccountInfo
 }
 
-// Load is used when the Balances and Nonces slices are already filled. This constructs the index maps
-func (cs *CoinsState) Load() {
-	for i, v := range cs.Balances {
-		balanceLock.Lock()
-		balanceIndex[v.Account] = i
-		balanceLock.Unlock()
-	}
-	for i, v := range cs.Nonces {
-		nonceLocks.Lock()
-		nonceIndex[v.Account] = i
-		nonceLocks.Unlock()
-	}
+// CoinsState is the state that we use to store accounts balances and Nonces
+type CoinsState struct {
+	Balances map[[20]byte]uint64
+	Nonces   map[[20]byte]uint64
+	fastssz.Marshaler
+	fastssz.Unmarshaler
 }
 
-// NewCoinsStates is used only to initialize the coin state when chain is not synced.
-func NewCoinsStates() CoinsState {
-	return CoinsState{Balances: []AccountInfo{}, Nonces: []AccountInfo{}}
+// Marshal serialize to bytes the struct
+func (u *CoinsState) Marshal() ([]byte, error) {
+	return ssz.Marshal(u)
 }
 
-// GetTotal sums all the state balances.
-func (cs *CoinsState) GetTotal() uint64 {
+// Unmarshal deserialize the bytes to struct
+func (u *CoinsState) Unmarshal(b []byte) error {
+	return ssz.Unmarshal(b, u)
+}
+
+// MarshalSSZ uses the fastssz interface to override the ssz Marshal function
+func (u *CoinsState) MarshalSSZ() ([]byte, error) {
+	b := []byte{}
+	return u.MarshalSSZTo(b)
+}
+
+// MarshalSSZTo utility function to match the fastssz interface
+func (u *CoinsState) MarshalSSZTo(dst []byte) ([]byte, error) {
+	state := u.ToSerializable()
+	mb, err := ssz.Marshal(state)
+	if err != nil {
+		return nil, err
+	}
+	copy(dst, mb)
+	return mb, nil
+}
+
+// SizeSSZ returns the Size of the struct
+func (u *CoinsState) SizeSSZ() int {
+	size := 0
+	size += len(u.Balances) * 28
+	size += len(u.Nonces) * 28
+	return size
+}
+
+// UnmarshalSSZ overrides the ssz unmarshal function using a different struct
+func (u *CoinsState) UnmarshalSSZ(b []byte) error {
+	serializable := new(CoinsStateSerializable)
+	err := ssz.Unmarshal(b, serializable)
+	if err != nil {
+		return err
+	}
+	u.FromSerializable(serializable)
+	return nil
+}
+
+// GetTotal returns the total supply on the state
+func (u *CoinsState) GetTotal() uint64 {
 	total := uint64(0)
-	for _, b := range cs.Balances {
-		total += b.Info
+	for _, a := range u.Balances {
+		total += a
 	}
 	return total
 }
 
-// GetNonce returns the account nonce.
-func (cs *CoinsState) GetNonce(acc [20]byte) uint64 {
-	i, ok := cs.getNonceIndex(acc)
-	if !ok {
-		return 0
+// Copy copies CoinsState and returns a new one.
+func (u *CoinsState) Copy() CoinsState {
+	u2 := *u
+	u2.Balances = make(map[[20]byte]uint64)
+	u2.Nonces = make(map[[20]byte]uint64)
+	for i, c := range u.Balances {
+		u2.Balances[i] = c
 	}
-	return cs.Nonces[i].Info
+	for i, c := range u.Nonces {
+		u2.Nonces[i] = c
+	}
+	return u2
 }
 
-// SetNonce sets the nonce to a new value.
-func (cs *CoinsState) SetNonce(acc [20]byte, value uint64) {
-	i, ok := cs.getNonceIndex(acc)
-	fmt.Println(i, ok)
-	if !ok {
-		lastIndex := len(cs.Nonces)
-		info := AccountInfo{Account: acc, Info: value}
-		cs.Nonces = append(cs.Nonces, info)
-		cs.setNonceIndex(acc, lastIndex)
-		return
+// FromSerializable creates a CoinsState
+func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
+	u.Balances = map[[20]byte]uint64{}
+	u.Nonces = map[[20]byte]uint64{}
+	for _, b := range ser.Balances {
+		u.Balances[b.Account] = b.Info
 	}
-	cs.Nonces[i].Info = value
+	for _, n := range ser.Nonces {
+		u.Nonces[n.Account] = n.Info
+	}
 	return
 }
 
-// GetBalance returns the account balance.
-func (cs *CoinsState) GetBalance(acc [20]byte) uint64 {
-	i, ok := cs.getBalanceIndex(acc)
-	if !ok {
-		return 0
+// ToSerializable converts the struct from maps to slices.
+func (u *CoinsState) ToSerializable() CoinsStateSerializable {
+	balances := []AccountInfo{}
+	nonces := []AccountInfo{}
+	for k, v := range u.Balances {
+		balances = append(balances, AccountInfo{Account: k, Info: v})
 	}
-	return cs.Balances[i].Info
-}
-
-// ReduceBalance reduces the account balance.
-func (cs *CoinsState) ReduceBalance(acc [20]byte, amount uint64) {
-	i, ok := cs.getBalanceIndex(acc)
-	if !ok {
-		// Reduce the balance of a non-existing account (this should never happen)
-		return
+	for k, v := range u.Nonces {
+		nonces = append(nonces, AccountInfo{Account: k, Info: v})
 	}
-	cs.Balances[i].Info -= amount
-	return
-}
-
-// IncreaseBalance increases the account balance.
-func (cs *CoinsState) IncreaseBalance(acc [20]byte, amount uint64) {
-	i, ok := cs.getBalanceIndex(acc)
-	if !ok {
-		// Append to the slice and add to the map
-		lastIndex := len(cs.Balances)
-		info := AccountInfo{Account: acc, Info: amount}
-		cs.Balances = append(cs.Balances, info)
-		cs.setBalanceIndex(acc, lastIndex)
-		return
-	}
-	cs.Balances[i].Info += amount
-	return
-}
-
-func (cs *CoinsState) setNonceIndex(acc [20]byte, index int) bool {
-	nonceLocks.Lock()
-	defer nonceLocks.Unlock()
-	nonceIndex[acc] = index
-	return true
-}
-
-func (cs *CoinsState) setBalanceIndex(acc [20]byte, index int) bool {
-	balanceLock.Lock()
-	defer balanceLock.Unlock()
-	balanceIndex[acc] = index
-	return true
-}
-
-func (cs *CoinsState) getBalanceIndex(acc [20]byte) (int, bool) {
-	balanceLock.Lock()
-	defer balanceLock.Unlock()
-	i, ok := balanceIndex[acc]
-	return i, ok
-}
-
-func (cs *CoinsState) getNonceIndex(acc [20]byte) (int, bool) {
-	nonceLocks.Lock()
-	defer nonceLocks.Unlock()
-	i, ok := nonceIndex[acc]
-	return i, ok
+	return CoinsStateSerializable{Balances: balances, Nonces: nonces}
 }

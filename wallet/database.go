@@ -54,8 +54,8 @@ func (w *Wallet) load() error {
 			return errorNoInfo
 		}
 		loadInfo = walletInfo{
-			account:   account,
-			nonce:     lastNonce,
+			account: account,
+			nonce:   lastNonce,
 		}
 		return nil
 	})

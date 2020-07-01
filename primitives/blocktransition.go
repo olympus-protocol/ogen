@@ -39,8 +39,8 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if err != nil {
 			return err
 		}
-		if s.CoinsState.GetBalance(pkh) < p.MinVotingBalance*p.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.GetBalance(pkh)/p.UnitsPerCoin)
+		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
+			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
 		if !vote.Valid() {
 			return fmt.Errorf("vote signature did not validate")
@@ -68,10 +68,10 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if err != nil {
 			return err
 		}
-		if s.CoinsState.GetBalance(pkh) < p.MinVotingBalance*p.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.GetBalance(pkh)/p.UnitsPerCoin)
+		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
+			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
-		if _, ok := s.Governance.GetReplacementVote(pkh); ok {
+		if _, ok := s.Governance.ReplaceVotes[pkh]; ok {
 			return fmt.Errorf("found existing vote for same public key hash")
 		}
 		if !vote.Valid() {
@@ -186,7 +186,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 	}
 	switch vote.Type {
 	case EnterVotingPeriod:
-		s.Governance.SetReplacementVote(hash, chainhash.Hash{})
+		s.Governance.ReplaceVotes[hash] = chainhash.Hash{}
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
@@ -198,8 +198,8 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		}
 
 		voteHash := voteData.Hash()
-		s.Governance.SetCommunityVote(voteHash, voteData)
-		s.Governance.SetReplacementVote(hash, voteHash)
+		s.Governance.CommunityVotes[voteHash] = voteData
+		s.Governance.ReplaceVotes[hash] = voteHash
 	case UpdateManagersInstantly:
 		for i := range s.CurrentManagers {
 			copy(s.CurrentManagers[i][:], vote.Data[i*20:(i+1)*20])
@@ -221,25 +221,25 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 	if err != nil {
 		return err
 	}
-	if u.GetBalance(pkh) < tx.Amount+tx.Fee {
-		return fmt.Errorf("insufficient balance of %d for %d transaction", u.GetBalance(pkh), tx.Amount)
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
 	}
 
-	if u.GetNonce(pkh) >= tx.Nonce {
-		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.GetNonce(pkh), tx.Nonce)
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
 	}
 
 	if err := tx.VerifySig(); err != nil {
 		return err
 	}
 
-	u.ReduceBalance(pkh, tx.Amount+tx.Fee)
-	u.IncreaseBalance(tx.To, tx.Amount)
-	u.IncreaseBalance(blockWithdrawalAddress, tx.Fee)
-	u.SetNonce(pkh, tx.Nonce)
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
 
-	if _, ok := s.Governance.GetReplacementVote(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		s.Governance.DeleteReplacementVote(pkh)
+	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		delete(s.Governance.ReplaceVotes, pkh)
 	}
 
 	return nil
@@ -252,24 +252,25 @@ func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalA
 	if err != nil {
 		return err
 	}
-	if u.GetBalance(pkh) < tx.Amount+tx.Fee {
-		return fmt.Errorf("insufficient balance of %d for %d transaction", u.GetBalance(pkh), tx.Amount)
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
 	}
 
-	if u.GetNonce(pkh) >= tx.Nonce {
-		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.GetNonce(pkh), tx.Nonce)
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
 	}
 
 	if err := tx.VerifySig(); err != nil {
 		return err
 	}
-	u.ReduceBalance(pkh, tx.Amount+tx.Fee)
-	u.IncreaseBalance(tx.To, tx.Amount)
-	u.IncreaseBalance(blockWithdrawalAddress, tx.Fee)
-	u.SetNonce(pkh, tx.Nonce)
 
-	if _, ok := s.Governance.GetReplacementVote(pkh); u.GetBalance(pkh) < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		s.Governance.DeleteReplacementVote(pkh)
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
+
+	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		delete(s.Governance.ReplaceVotes, pkh)
 	}
 
 	return nil
@@ -586,8 +587,8 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 	if err != nil {
 		return err
 	}
-	if s.CoinsState.GetBalance(pkh) < params.DepositAmount*params.UnitsPerCoin {
-		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.GetBalance(pkh), params.DepositAmount*params.UnitsPerCoin)
+	if s.CoinsState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
+		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
 	}
 
 	buf, err := deposit.Data.Marshal()
@@ -642,7 +643,7 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 		return err
 	}
 
-	s.CoinsState.ReduceBalance(pkh, p.DepositAmount*p.UnitsPerCoin)
+	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
 	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
