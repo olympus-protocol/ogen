@@ -15,6 +15,15 @@ var EmptyTrees [256]chainhash.Hash
 // EmptyTree is the hash of an empty tree.
 var EmptyTree = chainhash.Hash{}
 
+func init() {
+	EmptyTrees[0] = chainhash.Hash{}
+	for i := range EmptyTrees[1:] {
+		EmptyTrees[i+1] = CombineHashes(&EmptyTrees[i], &EmptyTrees[i])
+	}
+
+	EmptyTree = EmptyTrees[255]
+}
+
 // UpdateWitness allows an executor to securely update the tree root so that only a single key is changed.
 type UpdateWitness struct {
 	Key             chainhash.Hash
