@@ -33,7 +33,6 @@ func TestRandomWritesRollbackCommitBolt(t *testing.T) {
 	err = underlyingTree.Update(func(tx csmt.TreeTransactionAccess) error {
 		for i := 0; i < 200; i++ {
 			err := tx.Set(ch(fmt.Sprintf("key%d", i)), ch(fmt.Sprintf("val%d", i)))
-			fmt.Println(err)
 			if err != nil {
 				return err
 			}

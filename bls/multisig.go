@@ -78,7 +78,7 @@ func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byt
 
 // Hash gets the hash of the multipub.
 func (m *Multipub) Hash() ([20]byte, error) {
-	pubkeyHashes := make([][20]byte, 0, len(m.PublicKeys))
+	pubkeyHashes := make([][20]byte, len(m.PublicKeys))
 
 	for i, p := range m.PublicKeys {
 		pub, err := PublicKeyFromBytes(p)
