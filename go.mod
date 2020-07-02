@@ -10,7 +10,6 @@ require (
 	github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472
 	github.com/go-test/deep v1.0.6
 	github.com/golang/protobuf v1.4.2
-	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/libp2p/go-libp2p v0.10.0
 	github.com/libp2p/go-libp2p-core v0.6.0
