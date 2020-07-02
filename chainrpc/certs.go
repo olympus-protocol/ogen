@@ -25,7 +25,7 @@ var (
 var baseCA = &x509.Certificate{
 	SerialNumber: big.NewInt(2020),
 	Subject: pkix.Name{
-		Organization:  []string{"Ogen cert."},
+		Organization:  []string{"Ogen cert"},
 		Country:       []string{"Crypto"},
 		Province:      []string{""},
 		Locality:      []string{""},
