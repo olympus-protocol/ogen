@@ -42,3 +42,6 @@ bazel*
 # Integration
 data/
 data_*/
+
+# Certificates
+certs/

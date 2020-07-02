@@ -2,6 +2,7 @@ package chainrpc
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 
@@ -10,10 +11,12 @@ import (
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // Config config for the RPCServer
@@ -50,7 +53,15 @@ func (s *RPCServer) registerServices() {
 }
 
 func (s *RPCServer) registerServicesProxy(ctx context.Context) {
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	certPool, err := LoadCerts()
+	if err != nil {
+		s.log.Fatal(err)
+	}
+	creds := credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: false,
+		RootCAs:            certPool,
+	})
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
 	proto.RegisterChainHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	proto.RegisterValidatorsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 	proto.RegisterUtilsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
@@ -76,7 +87,7 @@ func (s *RPCServer) Start() error {
 		defer cancel()
 		s.registerServicesProxy(ctx)
 		go func() {
-			err := http.ListenAndServe("localhost:"+s.config.RPCProxyPort, s.http)
+			err := http.ListenAndServeTLS("localhost:"+s.config.RPCProxyPort, "./certs/cert.pem", "./certs/cert_key.pem", s.http)
 			if err != nil {
 				s.log.Fatal(err)
 			}
@@ -109,8 +120,16 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 	if err != nil {
 		return nil, err
 	}
+	_, err = LoadCerts()
+	if err != nil {
+		return nil, err
+	}
+	creds, err := credentials.NewServerTLSFromFile("./certs/cert.pem", "./certs/cert_key.pem")
+	if err != nil {
+		return nil, err
+	}
 	return &RPCServer{
-		rpc:    grpc.NewServer(),
+		rpc:    grpc.NewServer(grpc.Creds(creds)),
 		http:   runtime.NewServeMux(),
 		config: config,
 		log:    config.Log,

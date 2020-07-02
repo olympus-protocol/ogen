@@ -17,7 +17,7 @@ var errorNoInfo = errors.New("wallet corruption, some elements are not found on 
 var errorNotOpen = errors.New("there is no wallet open, please open one first")
 
 type walletInfo struct {
-	account   [20]byte
+	account [20]byte
 }
 
 var walletInfoBucketKey = []byte("wallet_info")
