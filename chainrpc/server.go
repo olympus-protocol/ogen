@@ -89,7 +89,7 @@ func (s *RPCServer) Start() error {
 		defer cancel()
 		s.registerServicesProxy(ctx)
 		go func() {
-			err := http.ListenAndServeTLS("localhost:"+s.config.RPCProxyPort, "./certs/cert.pem", "./certs/cert_key.pem", s.http)
+			err := http.ListenAndServeTLS("localhost:"+s.config.RPCProxyPort,path.Join(s.config.DataDir, "cert", "cert.pem"), path.Join(s.config.DataDir, "cert", "cert_key.pem"), s.http)
 			if err != nil {
 				s.log.Fatal(err)
 			}
