@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"path"
@@ -140,6 +141,14 @@ Next generation blockchain secured by CASPER.`,
 
 				addNodes[i] = *pinfo
 			}
+
+			rpcauth := ""
+			if viper.GetString("rpc_auth_token") != "" {
+				rpcauth = viper.GetString("rpc_auth_token")
+			} else {
+				rpcauth = randomAuthToken()
+			}
+
 			c := &config.Config{
 				DataFolder: DataFolder,
 
@@ -156,6 +165,7 @@ Next generation blockchain secured by CASPER.`,
 				RPCProxyPort: viper.GetString("rpc_proxy_port"),
 				RPCPort:      viper.GetString("rpc_port"),
 				RPCWallet:    viper.GetBool("rpc_wallet"),
+				RPCAuthToken: rpcauth,
 
 				Debug: viper.GetBool("debug"),
 
@@ -252,4 +262,24 @@ func initConfig() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func randomAuthToken() string {
+	rand.Seed(time.Now().UnixNano())
+	digits := "0123456789"
+	specials := "~=+%^*/()[]{}/!@#$?|"
+	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		digits + specials
+	length := 8
+	buf := make([]byte, length)
+	buf[0] = digits[rand.Intn(len(digits))]
+	buf[1] = specials[rand.Intn(len(specials))]
+	for i := 2; i < length; i++ {
+		buf[i] = all[rand.Intn(len(all))]
+	}
+	rand.Shuffle(len(buf), func(i, j int) {
+		buf[i], buf[j] = buf[j], buf[i]
+	})
+	return string(buf)
 }
