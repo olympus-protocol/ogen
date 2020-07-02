@@ -38,3 +38,7 @@ db/blockdb/
 **/*.b64
 bazel*
 .vscode
+
+# Integration
+data/
+data_*/

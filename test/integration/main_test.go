@@ -1,9 +1,12 @@
+// +build integration
+
 package main
 
 import (
 	"context"
 	"encoding/hex"
 	"os"
+	"testing"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -15,7 +18,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
 	"github.com/olympus-protocol/ogen/utils/logger"
-
 )
 
 var premineAddr = bls.RandKey()
@@ -93,7 +95,7 @@ var testParams = params.ChainParams{
 
 var initializationParams primitives.InitializationParameters
 
-func main() {
+func TestMain(m *testing.M) {
 	// Create datafolder
 	os.Mkdir(folder, 0777)
 	logfile, err := os.Create(folder + "/log.log")
