@@ -1,6 +1,6 @@
-// +build integration
+// +build ogen_test
 
-package main
+package ogen_test
 
 import (
 	"context"
