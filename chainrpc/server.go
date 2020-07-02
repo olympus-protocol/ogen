@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"path"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olympus-protocol/ogen/chain"
@@ -21,6 +22,7 @@ import (
 
 // Config config for the RPCServer
 type Config struct {
+	DataDir      string
 	Network      string
 	RPCWallet    bool
 	RPCProxy     bool
@@ -53,7 +55,7 @@ func (s *RPCServer) registerServices() {
 }
 
 func (s *RPCServer) registerServicesProxy(ctx context.Context) {
-	certPool, err := LoadCerts()
+	certPool, err := LoadCerts(s.config.DataDir)
 	if err != nil {
 		s.log.Fatal(err)
 	}
@@ -120,11 +122,11 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 	if err != nil {
 		return nil, err
 	}
-	_, err = LoadCerts()
+	_, err = LoadCerts(config.DataDir)
 	if err != nil {
 		return nil, err
 	}
-	creds, err := credentials.NewServerTLSFromFile("./certs/cert.pem", "./certs/cert_key.pem")
+	creds, err := credentials.NewServerTLSFromFile(path.Join(config.DataDir, "cert", "cert.pem"), path.Join(config.DataDir, "cert", "cert_key.pem"))
 	if err != nil {
 		return nil, err
 	}

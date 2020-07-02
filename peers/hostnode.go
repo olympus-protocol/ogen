@@ -204,6 +204,11 @@ func (node *HostNode) Topic(topic string) (*pubsub.Topic, error) {
 	return t, nil
 }
 
+// Syncing returns a boolean if the chain is on sync mode
+func (node *HostNode) Syncing() bool {
+	return node.syncProtocol.syncInfo.syncing
+}
+
 // GetContext returns the context
 func (node *HostNode) GetContext() context.Context {
 	return node.ctx

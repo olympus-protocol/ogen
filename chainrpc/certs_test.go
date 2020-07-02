@@ -7,14 +7,14 @@ import (
 )
 
 func Test_GenCertificates(t *testing.T) {
-	err := chainrpc.GenerateCerts()
+	err := chainrpc.GenerateCerts("./")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func Test_LoadCertificates(t *testing.T) {
-	_, err := chainrpc.LoadCerts()
+	_, err := chainrpc.LoadCerts("./")
 	if err != nil {
 		t.Fatal(err)
 	}

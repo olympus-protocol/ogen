@@ -8,6 +8,7 @@ import (
 	"github.com/c-bata/go-prompt"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var chainCmd = []prompt.Suggest{
@@ -218,7 +219,7 @@ func newCli(rpcClient *RPCClient) *CLI {
 }
 
 func Run(cmd *cobra.Command, args []string) {
-	rpcClient := NewRPCClient("127.0.0.1:24127")
+	rpcClient := NewRPCClient("127.0.0.1:24127", viper.GetString("datadir"))
 	cli := newCli(rpcClient)
 	cli.Run()
 }

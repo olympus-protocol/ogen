@@ -11,7 +11,15 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"path"
 	"time"
+)
+
+var (
+	CA      = "ca.pem"
+	CaKey   = "ca_key.pem"
+	Cert    = "cert.pem"
+	CertKey = "cert_key.pem"
 )
 
 var baseCA = &x509.Certificate{
@@ -33,14 +41,14 @@ var baseCA = &x509.Certificate{
 }
 
 // LoadCerts will attempt to load certificates previously generatet. If it fails it will generate them and load them again.
-func LoadCerts() (*x509.CertPool, error) {
+func LoadCerts(dataFolder string) (*x509.CertPool, error) {
 open:
-	ca, err := ioutil.ReadFile("./certs/ca.pem")
-	caKey, err := ioutil.ReadFile("./certs/ca_key.pem")
-	cert, err := ioutil.ReadFile("./certs/cert.pem")
-	certKey, err := ioutil.ReadFile("./certs/cert_key.pem")
+	ca, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CA))
+	caKey, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CaKey))
+	cert, err := ioutil.ReadFile(path.Join(dataFolder, "cert", Cert))
+	certKey, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CertKey))
 	if err != nil {
-		err := GenerateCerts()
+		err := GenerateCerts(dataFolder)
 		if err != nil {
 			return nil, err
 		}
@@ -64,8 +72,8 @@ open:
 }
 
 // GenerateCerts will generate a CA and a certificate for the gRPC tls transport and https.
-func GenerateCerts() error {
-	os.Mkdir("./certs", 0777)
+func GenerateCerts(dataFolder string) error {
+	os.Mkdir(path.Join(dataFolder, "cert"), 0777)
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return err
@@ -74,7 +82,7 @@ func GenerateCerts() error {
 	if err != nil {
 		return err
 	}
-	caFile, err := os.Create("./certs/ca.pem")
+	caFile, err := os.Create(path.Join(dataFolder, "cert", CA))
 	if err != nil {
 		return err
 	}
@@ -82,7 +90,7 @@ func GenerateCerts() error {
 		Type:  "CERTIFICATE",
 		Bytes: caBytes,
 	})
-	caPriv, err := os.Create("./certs/ca_key.pem")
+	caPriv, err := os.Create(path.Join(dataFolder, "cert", CaKey))
 	if err != nil {
 		return err
 	}
@@ -105,7 +113,7 @@ func GenerateCerts() error {
 		return err
 	}
 
-	certFile, err := os.Create("./certs/cert.pem")
+	certFile, err := os.Create(path.Join(dataFolder, "cert", Cert))
 	if err != nil {
 		return err
 	}
@@ -114,7 +122,7 @@ func GenerateCerts() error {
 		Bytes: certBytes,
 	})
 
-	certKey, err := os.Create("./certs/cert_key.pem")
+	certKey, err := os.Create(path.Join(dataFolder, "cert", CertKey))
 	if err != nil {
 		return err
 	}

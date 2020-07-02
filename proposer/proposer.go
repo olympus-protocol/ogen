@@ -66,7 +66,7 @@ type Proposer struct {
 	voteMempool    *mempool.VoteMempool
 	coinsMempool   *mempool.CoinsMempool
 	actionsMempool *mempool.ActionMempool
-
+	hostnode *peers.HostNode
 	blockTopic *pubsub.Topic
 	voteTopic  *pubsub.Topic
 }
@@ -96,7 +96,7 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		voteMempool:    voteMempool,
 		coinsMempool:   coinsMempool,
 		actionsMempool: actionsMempool,
-
+		hostnode: hostnode,
 		blockTopic: blockTopic,
 		voteTopic:  voteTopic,
 	}
@@ -164,7 +164,7 @@ func (m *Proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-			if m.chain.State().Tip().Slot+m.params.EpochLength < slotToPropose {
+			if m.hostnode.Syncing() {
 				m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
 				// wait 10 seconds before starting the next vote
@@ -292,7 +292,7 @@ func (m *Proposer) VoteForBlocks() {
 			// check if we're an attester for this slot
 			m.log.Infof("sending votes for slot %d", slotToVote)
 
-			if m.chain.State().Tip().Slot+m.params.EpochLength < slotToVote {
+			if m.hostnode.Syncing() {
 				m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
 				// wait 10 seconds before starting the next vote

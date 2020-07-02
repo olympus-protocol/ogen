@@ -22,8 +22,8 @@ type RPCClient struct {
 }
 
 // NewRPCClient creates a new RPC client.
-func NewRPCClient(addr string) *RPCClient {
-	certPool, err := chainrpc.LoadCerts()
+func NewRPCClient(addr string, datadir string) *RPCClient {
+	certPool, err := chainrpc.LoadCerts(datadir)
 	if err != nil {
 		return nil
 	}
