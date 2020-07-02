@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"path"
 
@@ -18,14 +17,11 @@ var errorNoInfo = errors.New("wallet corruption, some elements are not found on 
 var errorNotOpen = errors.New("there is no wallet open, please open one first")
 
 type walletInfo struct {
-	nonce     uint64
-	lastNonce uint64
 	account   [20]byte
 }
 
 var walletInfoBucketKey = []byte("wallet_info")
 var walletAccountDbKey = []byte("address")
-var walletNonceDbKey = []byte("nonce")
 var walletKeyBucket = []byte("keys")
 var walletPrivKeyDbKey = []byte("priv_key")
 
@@ -45,17 +41,8 @@ func (w *Wallet) load() error {
 			return errorNoInfo
 		}
 		copy(account[:], stAcc)
-		nonce := info.Get(walletNonceDbKey)
-		if nonce == nil {
-			return errorNoInfo
-		}
-		lastNonce := binary.LittleEndian.Uint64(nonce)
-		if lastNonce < 0 {
-			return errorNoInfo
-		}
 		loadInfo = walletInfo{
 			account: account,
-			nonce:   lastNonce,
 		}
 		return nil
 	})
@@ -65,14 +52,6 @@ func (w *Wallet) load() error {
 	w.info = loadInfo
 	return nil
 }
-
-// func (w *Wallet) SetNonce(nonce uint64) error {
-// 	err = db.Update(func(tx *bbolt.Tx) error {
-
-// 		return nil
-// 	}
-// 	return err
-// }
 
 func (w *Wallet) GetSecret() (s *bls.SecretKey, err error) {
 	if !w.open {
@@ -131,12 +110,7 @@ func (w *Wallet) recover() error {
 		if err != nil {
 			return err
 		}
-		nonce := make([]byte, 8)
-		binary.LittleEndian.PutUint64(nonce, 0)
-		err = infoBucket.Put(walletNonceDbKey, nonce)
-		if err != nil {
-			return err
-		}
+
 		err = infoBucket.Put(walletAccountDbKey, []byte(account))
 		if err != nil {
 			return err
@@ -170,12 +144,6 @@ func (w *Wallet) initialize(prv *bls.SecretKey) error {
 		h := chainhash.HashH(pubKeyBytes[:])
 		copy(account[:], h[:20])
 		err = infoBucket.Put(walletAccountDbKey, account[:])
-		if err != nil {
-			return err
-		}
-		nonce := make([]byte, 8)
-		binary.LittleEndian.PutUint64(nonce, 0)
-		err = infoBucket.Put(walletNonceDbKey, nonce)
 		if err != nil {
 			return err
 		}

@@ -138,10 +138,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	pub := priv.PublicKey()
 
-	w.lastNonceLock.Lock()
-	w.info.lastNonce++
-	nonce := w.info.lastNonce
-	w.lastNonceLock.Unlock()
+	nonce := w.chain.State().TipState().CoinsState.Nonces[w.info.account] + 1
 
 	payload := &primitives.TransferSinglePayload{
 		To:            toPkh,
