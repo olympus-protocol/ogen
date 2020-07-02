@@ -28,7 +28,7 @@ func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logg
 	if err != nil {
 		return err
 	}
-	s, err := server.NewServer(ctx, configParams, log, currParams, db, false, configParams.InitConfig)
+	s, err := server.NewServer(ctx, configParams, log, currParams, db, configParams.InitConfig)
 	if err != nil {
 		return err
 	}

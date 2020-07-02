@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -70,15 +68,12 @@ func makeEmptyMessage(command string) (Message, error) {
 
 // ReadMessage decodes the message from reader
 func ReadMessage(r io.Reader, net uint32) (Message, error) {
-	b, err := ioutil.ReadAll(r)
+	headerBuf := make([]byte, 52)
+	_, err := io.ReadFull(r, headerBuf)
 	if err != nil {
 		return nil, err
 	}
-	data, err := snappy.Decode(nil, b)
-	if err != nil {
-		return nil, err
-	}
-	header, err := readHeader(data[0:52], net)
+	header, err := readHeader(headerBuf, net)
 	if err != nil {
 		return nil, err
 	}
@@ -88,15 +83,20 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	msgB := make([]byte, header.Length)
+	_, err = io.ReadFull(r, msgB)
+	if err != nil {
+		return nil, err
+	}
 	var checksum [4]byte
-	copy(checksum[:], chainhash.DoubleHashB(data[52:])[0:4])
+	copy(checksum[:], chainhash.DoubleHashB(msgB)[0:4])
 	if header.Checksum != checksum {
 		return nil, errors.New("checksum don't match")
 	}
-	if header.Length != uint32(len(data[52:])) {
+	if header.Length != uint32(len(msgB)) {
 		return nil, errors.New("wrong announced length")
 	}
-	err = msg.Unmarshal(data[52:])
+	err = msg.Unmarshal(msgB)
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +133,7 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 	buf := []byte{}
 	buf = append(buf, hb...)
 	buf = append(buf, ser...)
-	compressed := snappy.Encode(nil, buf)
-	_, err = w.Write(compressed)
+	_, err = w.Write(buf)
 	if err != nil {
 		return err
 	}

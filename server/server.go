@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/olympus-protocol/ogen/bdb"
@@ -29,7 +28,6 @@ type Server struct {
 	Keystore *keystore.Keystore
 	Proposer *proposer.Proposer
 	RPC      *chainrpc.RPCServer
-	Gui      bool
 }
 
 func (s *Server) Start() {
@@ -40,22 +38,22 @@ func (s *Server) Start() {
 	}
 	err := s.Chain.Start()
 	if err != nil {
-		log.Fatalln("unable to start chain instance")
+		s.log.Fatal("unable to start chain instance")
 	}
 	err = s.HostNode.Start()
 	if err != nil {
-		log.Fatalln("unable to start host node")
+		s.log.Fatal("unable to start host node")
 	}
 	if s.Proposer != nil {
 		err = s.Proposer.Start()
 		if err != nil {
-			log.Fatalln("unable to start proposer thread")
+			s.log.Fatal("unable to start proposer thread")
 		}
 	}
 	go func() {
 		err := s.RPC.Start()
 		if err != nil {
-			log.Fatalln("unable to start rpc server")
+			s.log.Fatal("unable to start rpc server")
 		}
 	}()
 }
@@ -69,7 +67,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, gui bool, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", currParams.Name)
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {
@@ -119,7 +117,6 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		HostNode: hostnode,
 		Keystore: k,
 		Proposer: prop,
-		Gui:      gui,
 		RPC:      rpc,
 	}
 	return s, nil
