@@ -149,7 +149,7 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 
 func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
-		DataDir: config.DataFolder,
+		DataDir:      config.DataFolder,
 		Log:          logger,
 		RPCWallet:    config.RPCWallet,
 		RPCProxy:     config.RPCProxy,

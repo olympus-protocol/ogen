@@ -66,9 +66,9 @@ type Proposer struct {
 	voteMempool    *mempool.VoteMempool
 	coinsMempool   *mempool.CoinsMempool
 	actionsMempool *mempool.ActionMempool
-	hostnode *peers.HostNode
-	blockTopic *pubsub.Topic
-	voteTopic  *pubsub.Topic
+	hostnode       *peers.HostNode
+	blockTopic     *pubsub.Topic
+	voteTopic      *pubsub.Topic
 }
 
 // NewProposer creates a new proposer from the parameters.
@@ -96,9 +96,9 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		voteMempool:    voteMempool,
 		coinsMempool:   coinsMempool,
 		actionsMempool: actionsMempool,
-		hostnode: hostnode,
-		blockTopic: blockTopic,
-		voteTopic:  voteTopic,
+		hostnode:       hostnode,
+		blockTopic:     blockTopic,
+		voteTopic:      voteTopic,
 	}
 	chain.Notify(proposer)
 	return proposer, nil
@@ -167,7 +167,7 @@ func (m *Proposer) ProposeBlocks() {
 			//if m.hostnode.Syncing() {
 			//	m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
-				// wait 10 seconds before starting the next vote
+			// wait 10 seconds before starting the next vote
 			//	blockTimer = time.NewTimer(time.Second * 10)
 			//	continue
 			//}
@@ -295,7 +295,7 @@ func (m *Proposer) VoteForBlocks() {
 			//if m.hostnode.Syncing() {
 			//	m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
-				// wait 10 seconds before starting the next vote
+			// wait 10 seconds before starting the next vote
 			//	voteTimer = time.NewTimer(time.Second * 10)
 			//	continue
 			//}
