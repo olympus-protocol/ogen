@@ -8,8 +8,8 @@ import (
 var MaxBlockHeaderBytes = 76
 
 type BlockHeader struct {
-	Version                    int32
-	Nonce                      int32
+	Version                    uint32
+	Nonce                      uint32
 	TxMerkleRoot               chainhash.Hash
 	VoteMerkleRoot             chainhash.Hash
 	DepositMerkleRoot          chainhash.Hash
