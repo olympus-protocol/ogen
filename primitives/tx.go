@@ -123,6 +123,11 @@ func (c TransferSinglePayload) GetFee() uint64 {
 	return c.Fee
 }
 
+// GetToAccount gets the receiving acccount.
+func (c TransferSinglePayload) GetToAccount() [20]byte {
+	return c.To
+}
+
 // GetFromAddress gets the from address.
 func (c TransferSinglePayload) GetFromAddress() ([20]byte, error) {
 	return c.FromPubkeyHash()
@@ -216,6 +221,11 @@ func (c TransferMultiPayload) GetFee() uint64 {
 	return c.Fee
 }
 
+// GetToAccount gets the receiving acccount.
+func (c TransferMultiPayload) GetToAccount() [20]byte {
+	return c.To
+}
+
 var _ TxPayload = &TransferMultiPayload{}
 
 // GenesisPayload is the payload of the genesis transaction.
@@ -234,6 +244,7 @@ type TxPayload interface {
 	GetNonce() uint64
 	GetAmount() uint64
 	GetFee() uint64
+	GetToAccount() [20]byte
 	FromPubkeyHash() ([20]byte, error)
 }
 
