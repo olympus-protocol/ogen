@@ -33,15 +33,17 @@ __debug_bin
 release/
 *.tar.gz
 
-db/blockdb/
+# Testing
 *.log
 **/*.b64
-bazel*
 .vscode
 
 # Integration
 data/
 data_*/
+
+tx.db
+chain/index/tx.db
 
 # Certificates
 certs/

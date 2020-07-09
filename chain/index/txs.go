@@ -38,11 +38,11 @@ func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 		Txs:    []chainhash.Hash{},
 	}
 	err := i.db.View(func(tx *bbolt.Tx) error {
-		accBkt, err := tx.CreateBucketIfNotExists(append(accBucketPrefix, account[:]...))
-		if err != nil {
-			return err
+		accBkt := tx.Bucket(append(accBucketPrefix, account[:]...))
+		if accBkt == nil {
+			return nil
 		}
-		err = accBkt.ForEach(func(k, _ []byte) error {
+		err := accBkt.ForEach(func(k, _ []byte) error {
 			txs.Amount++
 			h, err := chainhash.NewHash(k)
 			if err != nil {
@@ -85,7 +85,10 @@ func (i *TxIndex) GetTx(hash chainhash.Hash) (TxLocator, error) {
 // SetTx stores a transaction locator and adds a reference to the account.
 func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 	err := i.db.Update(func(tx *bbolt.Tx) error {
-		txbkt := tx.Bucket(txBucketKey)
+		txbkt, err := tx.CreateBucketIfNotExists(txBucketKey)
+		if err != nil {
+			return err
+		}
 		locB, err := locator.Marshal()
 		if err != nil {
 			return err
