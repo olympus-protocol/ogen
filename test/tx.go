@@ -4,12 +4,6 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
-var TxLocator = primitives.TxLocator{
-	Hash:  *Hash,
-	Block: *Hash,
-	Index: 100,
-}
-
 var TransferSinglePayload = primitives.TransferSinglePayload{
 	To:            [20]byte{0x1, 0x2, 0x5, 0x10},
 	FromPublicKey: randKey.Marshal(),

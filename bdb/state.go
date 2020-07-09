@@ -299,79 +299,6 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 
 var accountPrefix = []byte("account-")
 
-// GetAccountTxs returns accounts transactions.
-func (brt *BlockDBReadTransaction) GetAccountTxs(acc [20]byte) (*primitives.AccountTxs, error) {
-	// TODO handle non existent accounts on index.
-	key := append(accountPrefix, acc[:]...)
-	accTxsBs, err := getKey(brt, key)
-	if err != nil {
-		return nil, err
-	}
-	accs := new(primitives.AccountTxs)
-	err = accs.Unmarshal(accTxsBs)
-	if err != nil {
-		return nil, err
-	}
-	return accs, nil
-}
-
-// SetAccountTx adds a new tx hash to the account txs slice.
-func (but *BlockDBUpdateTransaction) SetAccountTx(acc [20]byte, hash chainhash.Hash) error {
-	// TODO handle non existent accounts on index.
-	key := append(accountPrefix, acc[:]...)
-	accTxsBs, err := getKey(&but.BlockDBReadTransaction, key)
-	if err != nil {
-		return err
-	}
-	accs := new(primitives.AccountTxs)
-	err = accs.Unmarshal(accTxsBs)
-	if err != nil {
-		return err
-	}
-	accs.Amount = +1
-	accs.Txs = append(accs.Txs, hash)
-	newBuf, err := accs.Marshal()
-	if err != nil {
-		return err
-	}
-	err = setKey(but, key, newBuf)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-var txLocatorPrefix = []byte("txlocator-")
-
-// GetTx returns a tx locator from a hash.
-func (brt *BlockDBReadTransaction) GetTx(hash chainhash.Hash) (*primitives.TxLocator, error) {
-	key := append(txLocatorPrefix, hash[:]...)
-	locator := new(primitives.TxLocator)
-	lbs, err := getKey(brt, key)
-	if err != nil {
-		return nil, err
-	}
-	err = locator.Unmarshal(lbs)
-	if err != nil {
-		return nil, err
-	}
-	return locator, nil
-}
-
-// SetTx stores a new locator for the specified hash.
-func (but *BlockDBUpdateTransaction) SetTx(locator primitives.TxLocator) error {
-	key := append(txLocatorPrefix, locator.Hash[:]...)
-	buf, err := locator.Marshal()
-	if err != nil {
-		return err
-	}
-	err = setKey(but, key, buf)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 var _ DB = &BlockDB{}
 var _ DBUpdateTransaction = &BlockDBUpdateTransaction{}
 var _ DBViewTransaction = &BlockDBReadTransaction{}
@@ -394,8 +321,6 @@ type DBViewTransaction interface {
 	GetJustifiedHead() (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
 	GetGenesisTime() (time.Time, error)
-	GetAccountTxs([20]byte) (*primitives.AccountTxs, error)
-	GetTx(chainhash.Hash) (*primitives.TxLocator, error)
 }
 
 // DBTransaction is a transaction to update the state of the database.
@@ -408,7 +333,5 @@ type DBUpdateTransaction interface {
 	SetJustifiedHead(chainhash.Hash) error
 	SetFinalizedHead(chainhash.Hash) error
 	SetGenesisTime(time.Time) error
-	SetAccountTx([20]byte, chainhash.Hash) error
-	SetTx(primitives.TxLocator) error
 	DBViewTransaction
 }

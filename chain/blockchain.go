@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/bdb"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -12,7 +13,8 @@ import (
 )
 
 type Config struct {
-	Log *logger.Logger
+	Datadir string
+	Log     *logger.Logger
 }
 
 type Blockchain struct {
@@ -24,6 +26,9 @@ type Blockchain struct {
 
 	// DB
 	db bdb.DB
+
+	// Indexes
+	txidx *index.TxIndex
 
 	// StateService
 	state *StateService
@@ -66,31 +71,14 @@ func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 }
 
 // GetAccountTxs gets the txid from an account.
-func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs *primitives.AccountTxs, err error) {
-	err = ch.db.View(func(txn bdb.DBViewTransaction) error {
-		accTxs, err = txn.GetAccountTxs(acc)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs *index.AccountTxs, err error) {
+
 	return
 }
 
 // GetTx gets the transaction from the database and block reference.
 func (ch *Blockchain) GetTx(h chainhash.Hash) (tx primitives.Tx, err error) {
-	err = ch.db.View(func(txn bdb.DBViewTransaction) error {
-		txLocator, err := txn.GetTx(h)
-		if err != nil {
-			return err
-		}
-		block, err := txn.GetBlock(txLocator.Block)
-		if err != nil {
-			return err
-		}
-		tx = block.Txs[txLocator.Index]
-		return err
-	})
+
 	return
 }
 
@@ -118,11 +106,15 @@ func NewBlockchain(config Config, params params.ChainParams, db bdb.DB, ip primi
 	if err != nil {
 		return nil, err
 	}
-
+	txidx, err := index.NewTxIndex(config.Datadir)
+	if err != nil {
+		return nil, err
+	}
 	ch := &Blockchain{
 		log:         config.Log,
 		config:      config,
 		params:      params,
+		txidx:       txidx,
 		db:          db,
 		state:       state,
 		notifees:    make(map[BlockchainNotifee]struct{}),

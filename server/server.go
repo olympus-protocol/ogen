@@ -124,7 +124,8 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 
 func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config {
 	cfg := chain.Config{
-		Log: logger,
+		Log:     logger,
+		Datadir: config.DataFolder,
 	}
 	return cfg
 }
