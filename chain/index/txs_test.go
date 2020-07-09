@@ -94,4 +94,12 @@ func Test_IndexStoreAndFetch(t *testing.T) {
 	if !equal {
 		t.Fatal("error: error getting empty account information.")
 	}
+	loc, err := idx.GetTx(locators[0].Hash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	equal = ssz.DeepEqual(loc, locators[0])
+	if !equal {
+		t.Fatal("error: locators doesn't match")
+	}
 }

@@ -14,16 +14,6 @@ type AccountTxs struct {
 	Txs    []chainhash.Hash
 }
 
-// Marshal encodes the data.
-func (ac *AccountTxs) Marshal() ([]byte, error) {
-	return ssz.Marshal(ac)
-}
-
-// Unmarshal decodes the data.
-func (ac *AccountTxs) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, ac)
-}
-
 // TxIndex is a pseudo index that contains locators for account transactions.
 type TxIndex struct {
 	db *bbolt.DB
