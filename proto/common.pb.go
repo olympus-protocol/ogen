@@ -68,7 +68,7 @@ type Hash struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash"`
 }
 
 func (x *Hash) Reset() {
@@ -115,7 +115,7 @@ type Number struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Number uint64 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
+	Number uint64 `protobuf:"varint,1,opt,name=number,proto3" json:"number"`
 }
 
 func (x *Number) Reset() {
@@ -162,9 +162,9 @@ type Success struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Success bool   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Error   string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	Data    string `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Success bool   `protobuf:"varint,1,opt,name=success,proto3" json:"success"`
+	Error   string `protobuf:"bytes,2,opt,name=error,proto3" json:"error"`
+	Data    string `protobuf:"bytes,3,opt,name=data,proto3" json:"data"`
 }
 
 func (x *Success) Reset() {
@@ -225,7 +225,7 @@ type KeyPairs struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Keys []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	Keys []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys"`
 }
 
 func (x *KeyPairs) Reset() {
@@ -272,8 +272,8 @@ type KeyPair struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Public  string `protobuf:"bytes,1,opt,name=public,proto3" json:"public,omitempty"`
-	Private string `protobuf:"bytes,2,opt,name=private,proto3" json:"private,omitempty"`
+	Public  string `protobuf:"bytes,1,opt,name=public,proto3" json:"public"`
+	Private string `protobuf:"bytes,2,opt,name=private,proto3" json:"private"`
 }
 
 func (x *KeyPair) Reset() {
@@ -327,8 +327,8 @@ type RawData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Data string `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Data string `protobuf:"bytes,1,opt,name=data,proto3" json:"data"`
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type"`
 }
 
 func (x *RawData) Reset() {
@@ -382,7 +382,7 @@ type Account struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account"`
 }
 
 func (x *Account) Reset() {
@@ -429,11 +429,11 @@ type Tx struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Hash                  string          `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	Type                  uint32          `protobuf:"varint,2,opt,name=type,proto3" json:"type,omitempty"`
-	Version               uint32          `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
-	TransferSinglePayload *TransferSingle `protobuf:"bytes,4,opt,name=transfer_single_payload,json=transferSinglePayload,proto3" json:"transfer_single_payload,omitempty"`
-	TransferMultiPayload  *TransferMulti  `protobuf:"bytes,5,opt,name=transfer_multi_payload,json=transferMultiPayload,proto3" json:"transfer_multi_payload,omitempty"`
+	Hash                  string          `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash"`
+	Type                  uint32          `protobuf:"varint,2,opt,name=type,proto3" json:"type"`
+	Version               uint32          `protobuf:"varint,3,opt,name=version,proto3" json:"version"`
+	TransferSinglePayload *TransferSingle `protobuf:"bytes,4,opt,name=transfer_single_payload,json=transferSinglePayload,proto3" json:"transfer_single_payload"`
+	TransferMultiPayload  *TransferMulti  `protobuf:"bytes,5,opt,name=transfer_multi_payload,json=transferMultiPayload,proto3" json:"transfer_multi_payload"`
 }
 
 func (x *Tx) Reset() {
@@ -508,12 +508,12 @@ type TransferSingle struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	To            string `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`
-	FromPublicKey string `protobuf:"bytes,2,opt,name=from_public_key,json=fromPublicKey,proto3" json:"from_public_key,omitempty"`
-	Amount        uint64 `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
-	Nonce         uint64 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Fee           uint64 `protobuf:"varint,5,opt,name=fee,proto3" json:"fee,omitempty"`
-	Signature     string `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
+	To            string `protobuf:"bytes,1,opt,name=to,proto3" json:"to"`
+	FromPublicKey string `protobuf:"bytes,2,opt,name=from_public_key,json=fromPublicKey,proto3" json:"from_public_key"`
+	Amount        uint64 `protobuf:"varint,3,opt,name=amount,proto3" json:"amount"`
+	Nonce         uint64 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce"`
+	Fee           uint64 `protobuf:"varint,5,opt,name=fee,proto3" json:"fee"`
+	Signature     string `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature"`
 }
 
 func (x *TransferSingle) Reset() {
@@ -595,11 +595,11 @@ type TransferMulti struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	To        string `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`
-	Amount    uint64 `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
-	Nonce     uint64 `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Fee       uint64 `protobuf:"varint,4,opt,name=fee,proto3" json:"fee,omitempty"`
-	Signature string `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
+	To        string `protobuf:"bytes,1,opt,name=to,proto3" json:"to"`
+	Amount    uint64 `protobuf:"varint,2,opt,name=amount,proto3" json:"amount"`
+	Nonce     uint64 `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce"`
+	Fee       uint64 `protobuf:"varint,4,opt,name=fee,proto3" json:"fee"`
+	Signature string `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature"`
 }
 
 func (x *TransferMulti) Reset() {
@@ -674,20 +674,20 @@ type BlockHeader struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Version                    uint32 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	Nonce                      uint32 `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	TxMerkleRoot               string `protobuf:"bytes,3,opt,name=tx_merkle_root,json=txMerkleRoot,proto3" json:"tx_merkle_root,omitempty"`
-	VoteMerkleRoot             string `protobuf:"bytes,4,opt,name=vote_merkle_root,json=voteMerkleRoot,proto3" json:"vote_merkle_root,omitempty"`
-	DepositMerkleRoot          string `protobuf:"bytes,5,opt,name=deposit_merkle_root,json=depositMerkleRoot,proto3" json:"deposit_merkle_root,omitempty"`
-	ExitMerkleRoot             string `protobuf:"bytes,6,opt,name=exit_merkle_root,json=exitMerkleRoot,proto3" json:"exit_merkle_root,omitempty"`
-	VoteSlashingMerkleRoot     string `protobuf:"bytes,7,opt,name=vote_slashing_merkle_root,json=voteSlashingMerkleRoot,proto3" json:"vote_slashing_merkle_root,omitempty"`
-	RandaoSlashingMerkleRoot   string `protobuf:"bytes,8,opt,name=randao_slashing_merkle_root,json=randaoSlashingMerkleRoot,proto3" json:"randao_slashing_merkle_root,omitempty"`
-	ProposerSlashingMerkleRoot string `protobuf:"bytes,9,opt,name=proposer_slashing_merkle_root,json=proposerSlashingMerkleRoot,proto3" json:"proposer_slashing_merkle_root,omitempty"`
-	PrevBlockHash              string `protobuf:"bytes,10,opt,name=prev_block_hash,json=prevBlockHash,proto3" json:"prev_block_hash,omitempty"`
-	Timestamp                  uint64 `protobuf:"varint,11,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Slot                       uint64 `protobuf:"varint,12,opt,name=slot,proto3" json:"slot,omitempty"`
-	StateRoot                  string `protobuf:"bytes,13,opt,name=state_root,json=stateRoot,proto3" json:"state_root,omitempty"`
-	FeeAddress                 string `protobuf:"bytes,14,opt,name=fee_address,json=feeAddress,proto3" json:"fee_address,omitempty"`
+	Version                    uint32 `protobuf:"varint,1,opt,name=version,proto3" json:"version"`
+	Nonce                      uint32 `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce"`
+	TxMerkleRoot               string `protobuf:"bytes,3,opt,name=tx_merkle_root,json=txMerkleRoot,proto3" json:"tx_merkle_root"`
+	VoteMerkleRoot             string `protobuf:"bytes,4,opt,name=vote_merkle_root,json=voteMerkleRoot,proto3" json:"vote_merkle_root"`
+	DepositMerkleRoot          string `protobuf:"bytes,5,opt,name=deposit_merkle_root,json=depositMerkleRoot,proto3" json:"deposit_merkle_root"`
+	ExitMerkleRoot             string `protobuf:"bytes,6,opt,name=exit_merkle_root,json=exitMerkleRoot,proto3" json:"exit_merkle_root"`
+	VoteSlashingMerkleRoot     string `protobuf:"bytes,7,opt,name=vote_slashing_merkle_root,json=voteSlashingMerkleRoot,proto3" json:"vote_slashing_merkle_root"`
+	RandaoSlashingMerkleRoot   string `protobuf:"bytes,8,opt,name=randao_slashing_merkle_root,json=randaoSlashingMerkleRoot,proto3" json:"randao_slashing_merkle_root"`
+	ProposerSlashingMerkleRoot string `protobuf:"bytes,9,opt,name=proposer_slashing_merkle_root,json=proposerSlashingMerkleRoot,proto3" json:"proposer_slashing_merkle_root"`
+	PrevBlockHash              string `protobuf:"bytes,10,opt,name=prev_block_hash,json=prevBlockHash,proto3" json:"prev_block_hash"`
+	Timestamp                  uint64 `protobuf:"varint,11,opt,name=timestamp,proto3" json:"timestamp"`
+	Slot                       uint64 `protobuf:"varint,12,opt,name=slot,proto3" json:"slot"`
+	StateRoot                  string `protobuf:"bytes,13,opt,name=state_root,json=stateRoot,proto3" json:"state_root"`
+	FeeAddress                 string `protobuf:"bytes,14,opt,name=fee_address,json=feeAddress,proto3" json:"fee_address"`
 }
 
 func (x *BlockHeader) Reset() {
@@ -825,12 +825,12 @@ type Block struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Hash            string       `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	RawBlock        string       `protobuf:"bytes,2,opt,name=raw_block,json=rawBlock,proto3" json:"raw_block,omitempty"`
-	Header          *BlockHeader `protobuf:"bytes,3,opt,name=header,proto3" json:"header,omitempty"`
-	Txs             []string     `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs,omitempty"`
-	Signature       string       `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
-	RandaoSignature string       `protobuf:"bytes,6,opt,name=randao_signature,json=randaoSignature,proto3" json:"randao_signature,omitempty"`
+	Hash            string       `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash"`
+	RawBlock        string       `protobuf:"bytes,2,opt,name=raw_block,json=rawBlock,proto3" json:"raw_block"`
+	Header          *BlockHeader `protobuf:"bytes,3,opt,name=header,proto3" json:"header"`
+	Txs             []string     `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs"`
+	Signature       string       `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature"`
+	RandaoSignature string       `protobuf:"bytes,6,opt,name=randao_signature,json=randaoSignature,proto3" json:"randao_signature"`
 }
 
 func (x *Block) Reset() {
@@ -912,8 +912,8 @@ type ValidatorsRegistry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Info       *ValidatorsInfo      `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
-	Validators []*ValidatorRegistry `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
+	Info       *ValidatorsInfo      `protobuf:"bytes,2,opt,name=info,proto3" json:"info"`
+	Validators []*ValidatorRegistry `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators"`
 }
 
 func (x *ValidatorsRegistry) Reset() {
@@ -967,12 +967,12 @@ type ValidatorRegistry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Balance          string `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance,omitempty"`
-	PublicKey        string `protobuf:"bytes,2,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
-	PayeeAddress     string `protobuf:"bytes,3,opt,name=payee_address,json=payeeAddress,proto3" json:"payee_address,omitempty"`
-	Status           string `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	FirstActiveEpoch uint64 `protobuf:"varint,5,opt,name=first_active_epoch,json=firstActiveEpoch,proto3" json:"first_active_epoch,omitempty"`
-	LastActiveEpoch  uint64 `protobuf:"varint,6,opt,name=last_active_epoch,json=lastActiveEpoch,proto3" json:"last_active_epoch,omitempty"`
+	Balance          string `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance"`
+	PublicKey        string `protobuf:"bytes,2,opt,name=public_key,json=publicKey,proto3" json:"public_key"`
+	PayeeAddress     string `protobuf:"bytes,3,opt,name=payee_address,json=payeeAddress,proto3" json:"payee_address"`
+	Status           string `protobuf:"bytes,4,opt,name=status,proto3" json:"status"`
+	FirstActiveEpoch uint64 `protobuf:"varint,5,opt,name=first_active_epoch,json=firstActiveEpoch,proto3" json:"first_active_epoch"`
+	LastActiveEpoch  uint64 `protobuf:"varint,6,opt,name=last_active_epoch,json=lastActiveEpoch,proto3" json:"last_active_epoch"`
 }
 
 func (x *ValidatorRegistry) Reset() {
@@ -1054,11 +1054,11 @@ type ValidatorsInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Active      int64 `protobuf:"varint,1,opt,name=active,proto3" json:"active,omitempty"`
-	PendingExit int64 `protobuf:"varint,2,opt,name=pending_exit,json=pendingExit,proto3" json:"pending_exit,omitempty"`
-	PenaltyExit int64 `protobuf:"varint,3,opt,name=penalty_exit,json=penaltyExit,proto3" json:"penalty_exit,omitempty"`
-	Exited      int64 `protobuf:"varint,4,opt,name=exited,proto3" json:"exited,omitempty"`
-	Starting    int64 `protobuf:"varint,5,opt,name=starting,proto3" json:"starting,omitempty"`
+	Active      int64 `protobuf:"varint,1,opt,name=active,proto3" json:"active"`
+	PendingExit int64 `protobuf:"varint,2,opt,name=pending_exit,json=pendingExit,proto3" json:"pending_exit"`
+	PenaltyExit int64 `protobuf:"varint,3,opt,name=penalty_exit,json=penaltyExit,proto3" json:"penalty_exit"`
+	Exited      int64 `protobuf:"varint,4,opt,name=exited,proto3" json:"exited"`
+	Starting    int64 `protobuf:"varint,5,opt,name=starting,proto3" json:"starting"`
 }
 
 func (x *ValidatorsInfo) Reset() {

@@ -9,13 +9,14 @@ service Utils {
 
     /** 
         Method: GenValidatorKey 
-        Input: message Number
+        Input: message GenValidatorKeys
         Response: message KeyPairs
         Description: Returns private keys generated for validators start.
     */
-    rpc GenValidatorKey(Number) returns (KeyPairs) {
+    rpc GenValidatorKey(GenValidatorKeys) returns (KeyPairs) {
         option (google.api.http) = {
-            get: "/utils/genvalidatorkey/{number}"
+            post: "/utils/genvalidatorkey"
+            body: "*"
         };
     }
 
@@ -57,4 +58,9 @@ service Utils {
             body: "*"
         };
     }
+}
+
+message GenValidatorKeys {
+    string password = 1;
+    uint64 keys = 2;
 }

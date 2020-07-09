@@ -69,7 +69,7 @@ func (k *Keystore) HasValidatorKey(pubBytes []byte) (result bool, err error) {
 }
 
 // GenerateNewValidatorKey generates a new validator key.
-func (k *Keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
+func (k *Keystore) GenerateNewValidatorKey(amount uint64, password string) ([]*bls.SecretKey, error) {
 	keys := make([]*bls.SecretKey, amount)
 	for i := range keys {
 		key := bls.RandKey()

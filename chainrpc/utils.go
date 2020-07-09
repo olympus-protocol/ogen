@@ -20,12 +20,12 @@ type utilsServer struct {
 	proto.UnimplementedUtilsServer
 }
 
-func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.Number) (*proto.KeyPairs, error) {
-	key, err := s.keystore.GenerateNewValidatorKey(in.Number)
+func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
+	key, err := s.keystore.GenerateNewValidatorKey(in.Keys, in.Password)
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]string, in.Number)
+	keys := make([]string, in.Keys)
 	for i := range keys {
 		keys[i] = hex.EncodeToString(key[i].Marshal())
 	}

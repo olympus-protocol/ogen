@@ -15,27 +15,25 @@ func init() {
 }
 
 var generateKeysCmd = &cobra.Command{
-	Use:   "generate <numkeys>",
+	Use:   "generate <numkeys> <password>",
 	Short: "Creates validator keys and stores into the keystore",
 	Long:  `Creates validator keys and stores into the keystore`,
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.MaximumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
-
-		numKeys := 1
-		if len(args) > 0 {
-			numKeys, err = strconv.Atoi(args[0])
-			if err != nil {
-				fmt.Printf("invalid argument: %s\n", args[0])
-				return
-			}
+		if len(args) < 2 {
+			panic("please specificy a number of keys and a keystore password")
 		}
-		k, err := keystore.NewKeystore(DataFolder, nil)
+		numKeys, err := strconv.Atoi(args[0])
+		if err != nil {
+			panic("invalid argument: " + args[0] + "\n")
+		}
+		k, err := keystore.NewKeystore(DataFolder, nil, args[1])
 		if err != nil {
 			panic(err)
 		}
 
-		keys, err := k.GenerateNewValidatorKey(uint64(numKeys))
+		keys, err := k.GenerateNewValidatorKey(uint64(numKeys), args[1])
 		if err != nil {
 			fmt.Printf("error generating key: %s\n", err)
 			return

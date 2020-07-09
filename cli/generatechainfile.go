@@ -31,11 +31,15 @@ func init() {
 }
 
 var generateChainCmd = &cobra.Command{
-	Use:   "chain",
+	Use:   "chain <keystore_password>",
 	Short: "Generates chain file from the keys in your keystore",
 	Long:  `Generates chain file from the keys in your keystore`,
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		k, err := keystore.NewKeystore(DataFolder, nil)
+		if len(args) < 1 {
+			panic("please specify the keystore password")
+		}
+		k, err := keystore.NewKeystore(DataFolder, nil, args[0])
 		if err != nil {
 			panic(err)
 		}

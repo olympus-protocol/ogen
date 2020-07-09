@@ -22,14 +22,15 @@
 
     /** 
         Method: CreateWallet 
-        Input: message Empty
+        Input: message Name
         Response: message KeyPair
         Description: Creates a new wallet on the local datadir and returns the public key.
     */
 
-    rpc CreateWallet(Name) returns (KeyPair) {
+    rpc CreateWallet(WalletReference) returns (KeyPair) {
         option (google.api.http) = {
-            get: "/wallet/create/{name}"
+            post: "/wallet/create"
+            body: "*"
         };
     }
 
@@ -40,9 +41,10 @@
         Description: Opens a wallet on the wallet manager.
     */
 
-    rpc OpenWallet(Name) returns (Success) {
+    rpc OpenWallet(WalletReference) returns (Success) {
         option (google.api.http) = {
-            get: "/wallet/open/{name}"
+            post: "/wallet/open"
+            body: "*"
         };
     }
 
@@ -141,7 +143,7 @@
 
     /** 
         Method: StartValidator 
-        Input: message StartValidator
+        Input: message KeyPair
         Response: message Success
         Description: Adds a deposit of the provided validator private key.
     */
@@ -168,7 +170,7 @@
 
     /** 
         Method: ExitValidator 
-        Input: message ExitValidator
+        Input: message KeyPair
         Response: message Success
         Description: Removes the deposit of the provided validator.
     */
@@ -210,11 +212,13 @@ message Wallets {
     repeated string wallets = 1;
 }
 
-message Name {
+message WalletReference {
     string name = 1;
+    string password = 2;
 }
 
 message ImportWalletData {
     string name = 1;
     KeyPair key = 2;
+    string password = 3;
 }

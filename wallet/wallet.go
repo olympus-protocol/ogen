@@ -81,7 +81,7 @@ func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, param
 	return wallet, nil
 }
 
-func (w *Wallet) OpenWallet(name string) error {
+func (w *Wallet) OpenWallet(name string, password string) error {
 	if w.open {
 		w.CloseWallet()
 	}
@@ -189,7 +189,7 @@ func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 	return w.info.account, nil
 }
 
-func (w *Wallet) NewWallet(name string, priv *bls.SecretKey) error {
+func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
 	if w.open {
 		w.CloseWallet()
 	}

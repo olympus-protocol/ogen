@@ -27,9 +27,9 @@ func (c *RPCClient) createWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
-		return "", errors.New("Usage: createwallet <name>")
+		return "", errors.New("Usage: createwallet <name> <password>")
 	}
-	res, err := c.wallet.CreateWallet(ctx, &proto.Name{Name: args[0]})
+	res, err := c.wallet.CreateWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
 	if err != nil {
 		return "", err
 	}
@@ -43,10 +43,10 @@ func (c *RPCClient) createWallet(args []string) (string, error) {
 func (c *RPCClient) openWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) < 1 {
-		return "", errors.New("Usage: openwallet <name>")
+	if len(args) < 2 {
+		return "", errors.New("Usage: openwallet <name> <password>")
 	}
-	res, err := c.wallet.OpenWallet(ctx, &proto.Name{Name: args[0]})
+	res, err := c.wallet.OpenWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
 	if err != nil {
 		return "", err
 	}

@@ -64,16 +64,16 @@ func (c *RPCClient) genValidatorKey(args []string) (out string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	amount := 0
-	if len(args) < 1 {
-		amount = 0
-	} else {
-		amount, err = strconv.Atoi(args[0])
-		if err != nil {
-			return out, err
-		}
+	if len(args) < 2 {
+		return "", errors.New("Usage: genvalidatorkey <keys> <password>")
 	}
-	req := &proto.Number{
-		Number: uint64(amount),
+	amount, err = strconv.Atoi(args[0])
+	if err != nil {
+		return out, err
+	}
+	req := &proto.GenValidatorKeys{
+		Keys:     uint64(amount),
+		Password: args[1],
 	}
 	res, err := c.utils.GenValidatorKey(ctx, req)
 	if err != nil {
