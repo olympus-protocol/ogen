@@ -11,23 +11,6 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// TxLocator is a simple struct to find a database referenced to a block without building a full index
-type TxLocator struct {
-	Hash  chainhash.Hash
-	Block chainhash.Hash
-	Index uint32
-}
-
-// Marshal encodes the data.
-func (tl *TxLocator) Marshal() ([]byte, error) {
-	return ssz.Marshal(tl)
-}
-
-// Unmarshal decodes the data.
-func (tl *TxLocator) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, tl)
-}
-
 const (
 	// TxTransferSingle represents a transaction sending money from a single
 	// address to another address.

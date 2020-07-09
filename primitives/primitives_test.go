@@ -169,22 +169,6 @@ func Test_ProposerSlashingSerialize(t *testing.T) {
 	}
 }
 
-func Test_TxLocatorSerialize(t *testing.T) {
-	ser, err := testdata.TxLocator.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var desc primitives.TxLocator
-	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.TxLocator, desc)
-	if !equal {
-		t.Fatal("error: serialize TxLocator")
-	}
-}
-
 func Test_TransferSinglePayloadSerialize(t *testing.T) {
 	ser, err := testdata.TransferSinglePayload.Marshal()
 	if err != nil {

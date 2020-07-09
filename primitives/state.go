@@ -402,19 +402,3 @@ func (s *State) Copy() State {
 	s2.Governance = s.Governance
 	return s2
 }
-
-// AccountTxs is just a helper struct for database storage of account transactions.
-type AccountTxs struct {
-	Amount uint64
-	Txs    []chainhash.Hash
-}
-
-// Marshal encodes the data.
-func (ac *AccountTxs) Marshal() ([]byte, error) {
-	return ssz.Marshal(ac)
-}
-
-// Unmarshal decodes the data.
-func (ac *AccountTxs) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, ac)
-}
