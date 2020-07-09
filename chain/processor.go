@@ -282,6 +282,32 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// Once a block is acceped build tx index and account tx tracking
 
+		for i, tx := range block.Txs {
+			locator := index.TxLocator{
+				Hash:  tx.Hash(),
+				Block: block.Hash(),
+				Index: uint32(i),
+			}
+			payload, err := tx.GetPayload()
+			if err != nil {
+				return err
+			}
+			from, err := payload.FromPubkeyHash()
+			if err != nil {
+				return err
+			}
+			to := payload.GetToAccount()
+			// Add index to senders
+			err = ch.txidx.SetTx(locator, from)
+			if err != nil {
+				return err
+			}
+			// Add index to receivers
+			err = ch.txidx.SetTx(locator, to)
+			if err != nil {
+				return err
+			}
+		}
 		ch.notifeeLock.RLock()
 		stateCopy := newState.Copy()
 		for i := range ch.notifees {

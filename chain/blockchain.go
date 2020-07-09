@@ -13,7 +13,8 @@ import (
 )
 
 type Config struct {
-	Log *logger.Logger
+	Datadir string
+	Log     *logger.Logger
 }
 
 type Blockchain struct {
@@ -25,6 +26,9 @@ type Blockchain struct {
 
 	// DB
 	db bdb.DB
+
+	// Indexes
+	txidx *index.TxIndex
 
 	// StateService
 	state *StateService
@@ -102,11 +106,15 @@ func NewBlockchain(config Config, params params.ChainParams, db bdb.DB, ip primi
 	if err != nil {
 		return nil, err
 	}
-
+	txidx, err := index.NewTxIndex(config.Datadir)
+	if err != nil {
+		return nil, err
+	}
 	ch := &Blockchain{
 		log:         config.Log,
 		config:      config,
 		params:      params,
+		txidx:       txidx,
 		db:          db,
 		state:       state,
 		notifees:    make(map[BlockchainNotifee]struct{}),
