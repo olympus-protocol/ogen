@@ -266,10 +266,14 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 
 	balance := s.chain.State().TipState().CoinsState.Balances[account]
 	nonce := s.chain.State().TipState().CoinsState.Nonces[account]
+	txs, err := s.chain.GetAccountTxs(account)
+	if err != nil {
+		return nil, err
+	}
 
 	accInfo := &proto.AccountInfo{
 		Account: data.Account,
-		Txs:     []string{},
+		Txs:     txs.Strings(),
 		Balance: balance,
 		Nonce:   nonce,
 	}

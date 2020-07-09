@@ -71,15 +71,21 @@ func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 }
 
 // GetAccountTxs gets the txid from an account.
-func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs *index.AccountTxs, err error) {
-
-	return
+func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs index.AccountTxs, err error) {
+	return ch.txidx.GetAccountTxs(acc)
 }
 
 // GetTx gets the transaction from the database and block reference.
 func (ch *Blockchain) GetTx(h chainhash.Hash) (tx primitives.Tx, err error) {
-
-	return
+	loc, err := ch.txidx.GetTx(h)
+	if err != nil {
+		return primitives.Tx{}, err
+	}
+	block, err := ch.GetBlock(loc.Block)
+	if err != nil {
+		return primitives.Tx{}, err
+	}
+	return block.Txs[loc.Index], nil
 }
 
 // NewBlockchain constructs a new blockchain.

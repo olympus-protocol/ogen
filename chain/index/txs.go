@@ -14,6 +14,15 @@ type AccountTxs struct {
 	Txs    []chainhash.Hash
 }
 
+// Strings returns the array of hashes on string format
+func (txs *AccountTxs) Strings() []string {
+	str := make([]string, txs.Amount)
+	for i, h := range txs.Txs {
+		str[i] = h.String()
+	}
+	return str
+}
+
 // TxIndex is a pseudo index that contains locators for account transactions.
 type TxIndex struct {
 	db *bbolt.DB
