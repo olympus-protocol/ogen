@@ -157,8 +157,6 @@ Next generation blockchain secured by CASPER.`,
 				MaxPeers:    int32(viper.GetUint("maxpeers")),
 				Port:        viper.GetString("port"),
 
-				MiningEnabled: viper.GetBool("enablemining"),
-
 				InitConfig: ip,
 
 				RPCProxy:     viper.GetBool("rpc_proxy"),
@@ -201,8 +199,6 @@ func init() {
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
 	rootCmd.Flags().Uint16("maxpeers", 9, "Maximum number of peers to connect.")
 	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
-
-	rootCmd.Flags().Bool("enablemining", false, "Starts the node mining with validator keys.")
 
 	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
 	rootCmd.Flags().String("rpc_proxy_port", "8080", "Port for the http proxy.")

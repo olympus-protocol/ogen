@@ -102,12 +102,9 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	var prop *proposer.Proposer
-	if configParams.MiningEnabled {
-		prop, err = proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
-		if err != nil {
-			return nil, err
-		}
+	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
+	if err != nil {
+		return nil, err
 	}
 	s := &Server{
 		config: configParams,
