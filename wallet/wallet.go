@@ -107,6 +107,7 @@ func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	w.db = db
 	w.name = name
 	w.priv = secret
+	w.open = true
 	w.pub = secret.PublicKey()
 	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
 	if err != nil {
@@ -120,7 +121,7 @@ func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	if err != nil {
 		return err
 	}
-	return w.initialize(nonce, salt[:], cipher, passhash)
+	return w.initialize(cipher, salt, nonce, passhash)
 }
 
 // OpenWallet opens an already created wallet database.
@@ -148,6 +149,7 @@ func (w *Wallet) OpenWallet(name string, password string) error {
 	if err != nil {
 		return err
 	}
+	w.open = true
 	return nil
 }
 

@@ -17,7 +17,7 @@ func Test_EncryptDecrypt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	key, err := blsaes.Decrypt(cipher, nonce, encKey, salt[:])
+	key, err := blsaes.Decrypt(cipher, nonce, encKey, salt)
 	if err != nil {
 		t.Fatal(err)
 	}

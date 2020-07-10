@@ -25,7 +25,7 @@ var walletPassHashDbKey = []byte("passhash")
 var walletSaltDbKey = []byte("salt")
 var walletNonceDbKey = []byte("nonce")
 
-func (w *Wallet) initialize(cipher []byte, salt []byte, nonce []byte, passhash chainhash.Hash) error {
+func (w *Wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhash chainhash.Hash) error {
 	return w.db.Update(func(tx *bbolt.Tx) error {
 		keybkt, err := tx.CreateBucket(walletKeyBucket)
 		if err != nil {
@@ -43,11 +43,11 @@ func (w *Wallet) initialize(cipher []byte, salt []byte, nonce []byte, passhash c
 		if err != nil {
 			return err
 		}
-		err = infobkt.Put(walletSaltDbKey, salt)
+		err = infobkt.Put(walletSaltDbKey, salt[:])
 		if err != nil {
 			return err
 		}
-		err = infobkt.Put(walletNonceDbKey, nonce)
+		err = infobkt.Put(walletNonceDbKey, nonce[:])
 		if err != nil {
 			return err
 		}
@@ -68,8 +68,12 @@ func (w *Wallet) getSecret(password string) (key *bls.SecretKey, err error) {
 		if !equal {
 			return errors.New("password don't match")
 		}
-		salt := infobkt.Get(walletSaltDbKey)
-		nonce := infobkt.Get(walletNonceDbKey)
+		var salt [8]byte
+		var nonce [12]byte
+		saltB := infobkt.Get(walletSaltDbKey)
+		nonceB := infobkt.Get(walletNonceDbKey)
+		copy(salt[:], saltB)
+		copy(nonce[:], nonceB)
 		keybkt := tx.Bucket(walletKeyBucket)
 		cipherBytesSet := keybkt.Get(walletPrivKeyDbKey)
 		if cipherBytesSet == nil {
