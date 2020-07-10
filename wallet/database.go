@@ -3,9 +3,10 @@ package wallet
 import (
 	"bytes"
 	"errors"
-	"path"
+	"reflect"
 
 	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/utils/blsaes"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
 )
@@ -16,138 +17,74 @@ var errorNotInit = errors.New("the wallet is not initialized")
 var errorNoInfo = errors.New("wallet corruption, some elements are not found on the wallet")
 var errorNotOpen = errors.New("there is no wallet open, please open one first")
 
-type walletInfo struct {
-	account [20]byte
-}
-
-var walletInfoBucketKey = []byte("wallet_info")
-var walletAccountDbKey = []byte("address")
 var walletKeyBucket = []byte("keys")
-var walletPrivKeyDbKey = []byte("priv_key")
+var walletPrivKeyDbKey = []byte("private")
 
-func (w *Wallet) load() error {
-	var loadInfo walletInfo
-	err := w.db.View(func(txn *bbolt.Tx) error {
-		info := txn.Bucket(walletInfoBucketKey)
-		if info == nil {
-			return errorNotInit
+var walletInfoBucket = []byte("info")
+var walletPassHashDbKey = []byte("passhash")
+var walletSaltDbKey = []byte("salt")
+var walletNonceDbKey = []byte("nonce")
+
+func (w *Wallet) initialize(cipher []byte, salt []byte, nonce []byte, passhash chainhash.Hash) error {
+	return w.db.Update(func(tx *bbolt.Tx) error {
+		keybkt, err := tx.CreateBucket(walletKeyBucket)
+		if err != nil {
+			return err
 		}
-		var account [20]byte
-		stAcc := info.Get(walletAccountDbKey)
-		if stAcc == nil {
-			return errorNoInfo
+		var encKeyCipher []byte
+		encKeyCipher = append(encKeyCipher, privKeyMagicBytes...)
+		encKeyCipher = append(encKeyCipher, cipher...)
+		encKeyCipher = append(encKeyCipher, privKeyMagicBytes...)
+		err = keybkt.Put(walletPrivKeyDbKey, encKeyCipher)
+		if err != nil {
+			return err
 		}
-		if len(stAcc) < 20 {
-			return errorNoInfo
+		infobkt, err := tx.CreateBucket(walletInfoBucket)
+		if err != nil {
+			return err
 		}
-		copy(account[:], stAcc)
-		loadInfo = walletInfo{
-			account: account,
+		err = infobkt.Put(walletSaltDbKey, salt)
+		if err != nil {
+			return err
+		}
+		err = infobkt.Put(walletNonceDbKey, nonce)
+		if err != nil {
+			return err
+		}
+		err = infobkt.Put(walletPassHashDbKey, passhash[:])
+		if err != nil {
+			return err
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	w.info = loadInfo
-	return nil
 }
 
-func (w *Wallet) GetSecret() (s *bls.SecretKey, err error) {
-	if !w.open {
-		return nil, errorNotOpen
-	}
+func (w *Wallet) getSecret(password string) (key *bls.SecretKey, err error) {
 	err = w.db.View(func(tx *bbolt.Tx) error {
-		keyBucket := tx.Bucket(walletKeyBucket)
-		if keyBucket == nil {
-			return errors.New("no key bucket available")
+		infobkt := tx.Bucket(walletInfoBucket)
+		currPassHash := chainhash.HashB([]byte(password))
+		passhash := infobkt.Get(walletPassHashDbKey)
+		equal := reflect.DeepEqual(currPassHash, passhash)
+		if !equal {
+			return errors.New("password don't match")
 		}
-		privKeyBytesSet := keyBucket.Get(walletPrivKeyDbKey)
-		if privKeyBytesSet == nil {
+		salt := infobkt.Get(walletSaltDbKey)
+		nonce := infobkt.Get(walletNonceDbKey)
+		keybkt := tx.Bucket(walletKeyBucket)
+		cipherBytesSet := keybkt.Get(walletPrivKeyDbKey)
+		if cipherBytesSet == nil {
 			return errors.New("no private key value available")
 		}
-		privKeyBytesSlice := bytes.Split(privKeyBytesSet, privKeyMagicBytes)
-		privKeyBytes := privKeyBytesSlice[1]
-		s, err = bls.SecretKeyFromBytes(privKeyBytes)
+		cipherBytesSlice := bytes.Split(cipherBytesSet, privKeyMagicBytes)
+		cipherBytes := cipherBytesSlice[1]
+		key, err = blsaes.Decrypt(cipherBytes, nonce, []byte(password), salt)
 		if err != nil {
-			return errors.New("no private key found")
+			return err
 		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return s, nil
-}
-
-func (w *Wallet) recover() error {
-	db, err := bbolt.Open(path.Join(w.directory, "wallets", w.name+".db"), 0600, nil)
-	if err != nil {
-		return err
-	}
-	db.Update(func(tx *bbolt.Tx) error {
-		// Get the private Key to ensure it is there
-		keyBucket := tx.Bucket(walletKeyBucket)
-		if keyBucket == nil {
-			return errors.New("no key bucket available")
-		}
-		privKeyBytesSet := keyBucket.Get(walletPrivKeyDbKey)
-		if privKeyBytesSet == nil {
-			return errors.New("no private key value available")
-		}
-		privKeyBytesSlice := bytes.Split(privKeyBytesSet, privKeyMagicBytes)
-		privKeyBytes := privKeyBytesSlice[1]
-		blsPrivKey, err := bls.SecretKeyFromBytes(privKeyBytes)
-		if blsPrivKey == nil {
-			return errors.New("no private key found")
-		}
-		// If the private key is available, just reinitialize the info bucket
-		infoBucket, err := tx.CreateBucketIfNotExists(walletInfoBucketKey)
-		if err != nil {
-			return err
-		}
-		account, err := blsPrivKey.PublicKey().ToAddress(w.params.AddrPrefix.Public)
-		if err != nil {
-			return err
-		}
-
-		err = infoBucket.Put(walletAccountDbKey, []byte(account))
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	return nil
-}
-
-func (w *Wallet) initialize(prv *bls.SecretKey) error {
-	w.db.Update(func(tx *bbolt.Tx) error {
-		keyBucket, err := tx.CreateBucketIfNotExists(walletKeyBucket)
-		if err != nil {
-			return err
-		}
-		var encapsulatedPrivKey []byte
-		encapsulatedPrivKey = append(encapsulatedPrivKey, privKeyMagicBytes...)
-		encapsulatedPrivKey = append(encapsulatedPrivKey, prv.Marshal()...)
-		encapsulatedPrivKey = append(encapsulatedPrivKey, privKeyMagicBytes...)
-		err = keyBucket.Put(walletPrivKeyDbKey, encapsulatedPrivKey)
-		if err != nil {
-			return err
-		}
-		infoBucket, err := tx.CreateBucketIfNotExists(walletInfoBucketKey)
-		if err != nil {
-			return err
-		}
-		pubKey := prv.PublicKey()
-		pubKeyBytes := pubKey.Marshal()
-		var account [20]byte
-		h := chainhash.HashH(pubKeyBytes[:])
-		copy(account[:], h[:20])
-		err = infoBucket.Put(walletAccountDbKey, account[:])
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	return nil
+	return key, nil
 }

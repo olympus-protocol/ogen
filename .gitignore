@@ -43,6 +43,7 @@ release/
 tx.db
 chain/index/tx.db
 chainrpc/cert/
+wallet/wallets/
 # Integration
 data/
 data_*/

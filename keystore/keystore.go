@@ -26,7 +26,6 @@ func NewKeystore(pathStr string, log *logger.Logger) (*Keystore, error) {
 		if _, err := tx.CreateBucketIfNotExists(keysBucket); err != nil {
 			return err
 		}
-
 		return nil
 	})
 	if err != nil {
