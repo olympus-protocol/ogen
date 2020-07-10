@@ -1,4 +1,4 @@
-package aes
+package blsaes
 
 import (
 	"crypto/aes"
