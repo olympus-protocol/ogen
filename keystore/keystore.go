@@ -2,44 +2,80 @@ package keystore
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"reflect"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/utils/blsaes"
+	"github.com/olympus-protocol/ogen/utils/aesbls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"go.etcd.io/bbolt"
 )
 
 var (
+	errorNotInitialized = errors.New("not initialized")
+
 	passHashKey = []byte("passhash")
-	saltKey = []byte("salt")
-	nonceKey = []byte("nonce")
-	infoBucket = []byte("info")
-	keysBucket = []byte("keys")
+	saltKey     = []byte("salt")
+	nonceKey    = []byte("nonce")
+	infoBucket  = []byte("info")
+	keysBucket  = []byte("keys")
 )
 
 // Keystore is a wrapper for the keystore database
 type Keystore struct {
-	db  *bbolt.DB
-	log *logger.Logger
-	open bool
-	keys map[chainhash.Hash]*bls.SecretKey
+	db       *bbolt.DB
+	log      *logger.Logger
+	open     bool
+	keys     map[chainhash.Hash]*bls.SecretKey
 	keysLock sync.RWMutex
 }
 
-// AddKey is a public function to add a new key to the map and to the database.
-func (k *Keystore) AddKey(hash chainhash.Hash, key *bls.SecretKey) {
+func (k *Keystore) addKey(priv *bls.SecretKey, password string) error {
+	if !k.open {
+		return errors.New("keystore not open, please open it first")
+	}
+	nonce, salt, err := k.getEncryptionData()
+	if err != nil {
+		return err
+	}
+	encryptedKey, err := aesbls.SimpleEncrypt(priv.Marshal(), []byte(password), nonce, salt)
+	if err != nil {
+		return err
+	}
+	err = k.addKeyDB(encryptedKey, priv.PublicKey().Marshal())
+	if err != nil {
+		return err
+	}
+
+	err = k.addKeyMap(chainhash.HashH(priv.PublicKey().Marshal()), priv)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k *Keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
+	if !k.open {
+		return errors.New("keystore not open, please open it first")
+	}
 	k.keysLock.Lock()
 	k.keys[hash] = key
 	k.keysLock.Unlock()
-	return
+	return nil
 }
 
-func (k *Keystore) addKeyDB() {
-	// TODO
+func (k *Keystore) addKeyDB(encryptedKey []byte, pubkey []byte) error {
+	return k.db.Update(func(tx *bbolt.Tx) error {
+		keysbkt := tx.Bucket(keysBucket)
+		err := keysbkt.Put(pubkey, encryptedKey)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // NewKeystore opens a keystore or creates a new one if doesn't exist.
@@ -50,53 +86,58 @@ func NewKeystore(pathStr string, log *logger.Logger, password string) (*Keystore
 		return nil, err
 	}
 	w := &Keystore{
-		db:  db,
-		log: log,
+		db:   db,
+		log:  log,
 		open: true,
 	}
 	// Open the keystore and check password hashes.
+load:
 	err = w.load(password)
 	if err != nil {
-		err = w.initialize(password)
-		if err != nil {
-			return nil, err
+		if err == errorNotInitialized {
+			err = w.initialize(password)
+			if err != nil {
+				return nil, err
+			}
+			goto load
 		}
+		return nil, err
 	}
-	
+
 	return w, nil
 }
 
 func (k *Keystore) load(password string) error {
-	err := k.db.View(func( tx *bbolt.Tx) error {
-		infobkt := tx.Bucket(infoBucket)
-		if infobkt == nil {
-			return errors.New("not initialized")
-		}
-		currPassHash := chainhash.HashB([]byte(password))
-		passhash := infobkt.Get(passHashKey)
-		if equal := reflect.DeepEqual(passhash, currPassHash); !equal {
-			return errors.New("password don't match")
-		}
-		var salt [8]byte
-		var nonce [12]byte
-		saltB := infobkt.Get(saltKey)
-		nonceB := infobkt.Get(nonceKey)
-		copy(salt[:], saltB)
-		copy(nonce[:], nonceB)
+	valid, err := k.checkPassword(password)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("invalid password")
+	}
+	nonce, salt, err := k.getEncryptionData()
+	if err != nil {
+		return err
+	}
+	fmt.Println(nonce, salt, err)
+	err = k.db.View(func(tx *bbolt.Tx) error {
 		keysbkt := tx.Bucket(keysBucket)
 		if keysbkt == nil {
-			return errors.New("not initialized")
+			return errorNotInitialized
 		}
 		k.keys = make(map[chainhash.Hash]*bls.SecretKey)
-		keysbkt.ForEach(func(key, v []byte) error {
+		err = keysbkt.ForEach(func(key, v []byte) error {
 			pubHash := chainhash.HashH(key)
-			priv, err := blsaes.Decrypt(v, nonce, []byte(password), salt)
+			priv, err := aesbls.Decrypt(v, nonce, []byte(password), salt)
 			if err != nil {
 				return err
 			}
-			k.AddKey(pubHash, priv)
+			k.addKeyMap(pubHash, priv)
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
@@ -106,7 +147,78 @@ func (k *Keystore) load(password string) error {
 }
 
 func (k *Keystore) initialize(password string) error {
-	return nil
+	salt, err := aesbls.RandSalt()
+	if err != nil {
+		return err
+	}
+	nonce, err := aesbls.RandNonce()
+	if err != nil {
+		return err
+	}
+	passhash := chainhash.HashB([]byte(password))
+	return k.db.Update(func(tx *bbolt.Tx) error {
+		infobkt, err := tx.CreateBucket(infoBucket)
+		if err != nil {
+			return err
+		}
+		err = infobkt.Put(saltKey, salt[:])
+		if err != nil {
+			return err
+		}
+		err = infobkt.Put(nonceKey, nonce[:])
+		if err != nil {
+			return err
+		}
+		err = infobkt.Put(passHashKey, passhash[:])
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucket(keysBucket)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (k *Keystore) getEncryptionData() (nonce [12]byte, salt [8]byte, err error) {
+	err = k.db.View(func(tx *bbolt.Tx) error {
+		infobkt := tx.Bucket(infoBucket)
+		if infobkt == nil {
+			return errorNotInitialized
+		}
+		saltB := infobkt.Get(saltKey)
+		nonceB := infobkt.Get(nonceKey)
+		copy(salt[:], saltB)
+		copy(nonce[:], nonceB)
+		return nil
+	})
+	if err != nil {
+		return [12]byte{}, [8]byte{}, err
+	}
+	return nonce, salt, nil
+}
+
+func (k *Keystore) checkPassword(password string) (bool, error) {
+	if !k.open {
+		return false, nil
+	}
+	err := k.db.View(func(tx *bbolt.Tx) error {
+		infobkt := tx.Bucket(infoBucket)
+		if infobkt == nil {
+			return errorNotInitialized
+		}
+		currPassHash := chainhash.HashB([]byte(password))
+		passhash := infobkt.Get(passHashKey)
+		if equal := reflect.DeepEqual(passhash, currPassHash); !equal {
+			return errors.New("password don't match")
+		}
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Close closes the keystore database
@@ -119,9 +231,11 @@ func (k *Keystore) Close() error {
 // GetValidatorKeys gets all keys.
 func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	keys := []*bls.SecretKey{}
-	for _, k := range keys {
+	k.keysLock.Lock()
+	for _, k := range k.keys {
 		keys = append(keys, k)
 	}
+	k.keysLock.Unlock()
 	return keys, nil
 }
 
@@ -143,21 +257,13 @@ func (k *Keystore) HasValidatorKey(pubkey []byte) bool {
 	return ok
 }
 
-// GenerateNewValidatorKey generates a new validator key.
+// GenerateNewValidatorKey generates new validator keys and adds it to the map and database.
 func (k *Keystore) GenerateNewValidatorKey(amount uint64, password string) ([]*bls.SecretKey, error) {
 	keys := make([]*bls.SecretKey, amount)
 	for i := range keys {
+		// Generate a new key
 		key := bls.RandKey()
-		keyBytes := key.Marshal()
-		pub := key.PublicKey()
-		pubBytes := pub.Marshal()
-		err := k.db.Update(func(txn *bbolt.Tx) error {
-			bkt := txn.Bucket(keysBucket)
-			return bkt.Put(pubBytes, keyBytes)
-		})
-		if err != nil {
-			return nil, err
-		}
+		k.addKey(key, password)
 		keys[i] = key
 	}
 	return keys, nil

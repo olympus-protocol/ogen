@@ -61,9 +61,6 @@ func (s *Server) Start() {
 func (s *Server) Stop() error {
 	s.Chain.Stop()
 	s.RPC.Stop()
-	if s.Proposer != nil {
-		s.Proposer.Stop()
-	}
 	return nil
 }
 

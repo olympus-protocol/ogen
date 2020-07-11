@@ -138,8 +138,8 @@ func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNo
 			chain: chain,
 		},
 		validatorsServer: &validatorsServer{
-			params:   params,
-			chain:    chain,
+			params: params,
+			chain:  chain,
 		},
 		networkServer: &networkServer{
 			hostnode: hostnode,
