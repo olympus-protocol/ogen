@@ -32,8 +32,8 @@ func (s *walletServer) ListWallets(context.Context, *proto.Empty) (*proto.Wallet
 	}
 	return &proto.Wallets{Wallets: walletFiles}, nil
 }
-func (s *walletServer) CreateWallet(ctx context.Context, name *proto.Name) (*proto.KeyPair, error) {
-	err := s.wallet.OpenWallet(name.Name)
+func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.KeyPair, error) {
+	err := s.wallet.OpenWallet(ref.Name, ref.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +44,12 @@ func (s *walletServer) CreateWallet(ctx context.Context, name *proto.Name) (*pro
 	return &proto.KeyPair{Public: pubKey}, nil
 }
 
-func (s *walletServer) OpenWallet(ctx context.Context, name *proto.Name) (*proto.Success, error) {
-	ok := s.wallet.HasWallet(name.Name)
+func (s *walletServer) OpenWallet(ctx context.Context, ref *proto.WalletReference) (*proto.Success, error) {
+	ok := s.wallet.HasWallet(ref.Name)
 	if !ok {
 		return nil, errors.New("the is no wallet with the current name specified")
 	}
-	err := s.wallet.OpenWallet(name.Name)
+	err := s.wallet.OpenWallet(ref.Name, ref.Password)
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
@@ -80,7 +80,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if err != nil {
 		return nil, err
 	}
-	err = s.wallet.NewWallet(name, blsPriv)
+	err = s.wallet.NewWallet(name, blsPriv, in.Password)
 	if err != nil {
 		return nil, err
 	}

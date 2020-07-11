@@ -17,8 +17,6 @@ type Config struct {
 	MaxPeers    int32
 	Port        string
 
-	MiningEnabled bool
-
 	InitConfig primitives.InitializationParameters
 
 	RPCProxy     bool

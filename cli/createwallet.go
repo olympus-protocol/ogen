@@ -6,7 +6,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/wallet"
 	"github.com/spf13/cobra"
 )
@@ -16,16 +15,14 @@ func init() {
 }
 
 var generateWalletCmd = &cobra.Command{
-	Use:   "wallet <name> <network>",
+	Use:   "wallet <name> <network> <password>",
 	Short: "Creates new wallets.",
 	Long:  `Creates new wallets.`,
-	Args:  cobra.MaximumNArgs(2),
+	Args:  cobra.MaximumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
-
-		if len(args) < 2 {
-			fmt.Print("Invalid arguments. Please specify wallet name and network: wallet <name> <network>")
-			return
+		if len(args) < 3 {
+			panic("please specify wallet name, network and password")
 		}
 		var net *params.ChainParams
 		switch args[1] {
@@ -40,16 +37,16 @@ var generateWalletCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = w.OpenWallet(args[0])
+		err = w.OpenWallet(args[0], args[0])
 		if err != nil {
 			panic(err)
 		}
-		key, err := w.GetPublicKey()
+		key, err := w.GetAccount()
 		if err != nil {
 			panic(err)
 		}
 		colorPubkey := color.New(color.FgGreen)
 		colorPubkey.Printf("Public Account: ")
-		fmt.Printf("%s\n", bech32.Encode(net.AddrPrefix.Public, key[:]))
+		fmt.Printf("%s\n", key)
 	},
 }

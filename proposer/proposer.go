@@ -72,7 +72,7 @@ type Proposer struct {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, keystore *keystore.Keystore, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -90,7 +90,6 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		params:         params,
 		chain:          chain,
 		mineActive:     true,
-		keystore:       keystore,
 		context:        ctx,
 		Stop:           cancel,
 		voteMempool:    voteMempool,
@@ -164,13 +163,13 @@ func (m *Proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-			//if m.hostnode.Syncing() {
-			//	m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
+			if m.chain.State().Tip().Slot+m.params.EpochLength < slotToPropose {
+				m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
-			// wait 10 seconds before starting the next vote
-			//	blockTimer = time.NewTimer(time.Second * 10)
-			//	continue
-			//}
+				// wait 10 seconds before starting the next vote
+				blockTimer = time.NewTimer(time.Second * 10)
+				continue
+			}
 
 			// check if we're an attester for this slot
 			tip := m.chain.State().Tip()
@@ -292,13 +291,13 @@ func (m *Proposer) VoteForBlocks() {
 			// check if we're an attester for this slot
 			m.log.Infof("sending votes for slot %d", slotToVote)
 
-			//if m.hostnode.Syncing() {
-			//	m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
+			if m.chain.State().Tip().Slot+m.params.EpochLength < slotToVote {
+				m.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
-			// wait 10 seconds before starting the next vote
-			//	voteTimer = time.NewTimer(time.Second * 10)
-			//	continue
-			//}
+				// wait 10 seconds before starting the next vote
+				voteTimer = time.NewTimer(time.Second * 10)
+				continue
+			}
 
 			s := m.chain.State()
 

@@ -28,7 +28,6 @@ var conf = config.Config{
 	AddNodes: []peer.AddrInfo{},
 	MaxPeers: 10,
 	Port: "24126",
-	MiningEnabled: true,
 	RPCProxy: false,
 	RPCProxyPort: "8080",
 	RPCPort: "24130",
@@ -108,11 +107,11 @@ func TestMain(m *testing.M) {
 
 	// Create a keystore
 	log.Info("Creating keystore")
-	keystore, err := keystore.NewKeystore(folder, log)
+	keystore, err := keystore.NewKeystore(folder, log, "test")
 	if err != nil {
 		log.Fatal(err)
 	}
-	validatorKeys, err := keystore.GenerateNewValidatorKey(128)
+	validatorKeys, err := keystore.GenerateNewValidatorKey(128, "test")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -191,7 +190,6 @@ func runSecondNode() {
 		AddNodes: []peer.AddrInfo{hostMultiAddr},
 		MaxPeers: 10,
 		Port: "24000",
-		MiningEnabled: false,
 		RPCProxy: false,
 		RPCProxyPort: "8080",
 		RPCPort: "24001",
@@ -235,7 +233,6 @@ func runThirdNode() {
 		AddNodes: []peer.AddrInfo{hostMultiAddr},
 		MaxPeers: 10,
 		Port: "25000",
-		MiningEnabled: false,
 		RPCProxy: false,
 		RPCProxyPort: "8080",
 		RPCPort: "25001",

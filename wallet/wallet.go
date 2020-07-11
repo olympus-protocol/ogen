@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"go.etcd.io/bbolt"
 
@@ -18,30 +17,35 @@ import (
 	"github.com/olympus-protocol/ogen/peers"
 
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/utils/bech32"
+	"github.com/olympus-protocol/ogen/utils/aesbls"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 var errorAlreadyExist = errors.New("the wallet you try to create already exists")
 
+// Wallet is the structure of the wallet manager.
 type Wallet struct {
-	db            *bbolt.DB
-	log           *logger.Logger
+	// Wallet manager properties
 	params        *params.ChainParams
+	log           *logger.Logger
 	chain         *chain.Blockchain
+	txTopic       *pubsub.Topic
 	mempool       *mempool.CoinsMempool
 	actionMempool *mempool.ActionMempool
-
-	txTopic      *pubsub.Topic
-	depositTopic *pubsub.Topic
-	exitTopic    *pubsub.Topic
-
+	depositTopic  *pubsub.Topic
+	exitTopic     *pubsub.Topic
 	directory     string
-	name          string
-	open          bool
-	info          walletInfo
 	ctx           context.Context
-	lastNonceLock sync.Mutex
+
+	// Open wallet information
+	db         *bbolt.DB
+	name       string
+	open       bool
+	priv       *bls.SecretKey
+	pub        *bls.PublicKey
+	accountRaw [20]byte
+	account    string
 }
 
 // NewWallet creates a new wallet.
@@ -74,44 +78,74 @@ func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, param
 		txTopic:       txTopic,
 		depositTopic:  depositTopic,
 		exitTopic:     exitTopic,
-		ctx:           ctx,
 		mempool:       mempool,
+		ctx:           ctx,
 		actionMempool: actionMempool,
 	}
 	return wallet, nil
 }
 
-func (w *Wallet) OpenWallet(name string) error {
+// NewWallet creates a new wallet database.
+func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
 	if w.open {
 		w.CloseWallet()
+	}
+	passhash := chainhash.HashH([]byte(password))
+	var secret *bls.SecretKey
+	if priv == nil {
+		secret = bls.RandKey()
+	} else {
+		secret = priv
 	}
 	if _, err := os.Stat(path.Join(w.directory, "wallets")); os.IsNotExist(err) {
 		os.Mkdir(path.Join(w.directory, "wallets"), 0700)
 	}
-	w.name = name
 	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
 	if err != nil {
 		return err
 	}
 	w.db = db
-	err = w.load()
-	if err == errorNotInit {
-		prv := bls.RandKey()
-		err := w.initialize(prv)
-		if err != nil {
-			return err
-		}
-		err = w.load()
-		if err != nil {
-			return err
-		}
-		w.open = true
-		return nil
-	}
-	if err == errorNoInfo {
-		err := w.recover()
+	w.name = name
+	w.priv = secret
+	w.open = true
+	w.pub = secret.PublicKey()
+	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
+	if err != nil {
 		return err
 	}
+	w.accountRaw, err = w.pub.Hash()
+	if err != nil {
+		return err
+	}
+	nonce, salt, cipher, err := aesbls.Encrypt(secret.Marshal(), []byte(password))
+	if err != nil {
+		return err
+	}
+	return w.initialize(cipher, salt, nonce, passhash)
+}
+
+// OpenWallet opens an already created wallet database.
+func (w *Wallet) OpenWallet(name string, password string) error {
+	if w.open {
+		w.CloseWallet()
+	}
+	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
+	if err != nil {
+		return err
+	}
+	w.db = db
+	w.name = name
+	secret, err := w.getSecret(password)
+	if err != nil {
+		return err
+	}
+	w.priv = secret
+	w.pub = secret.PublicKey()
+	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
+	if err != nil {
+		return err
+	}
+	w.accountRaw, err = w.pub.Hash()
 	if err != nil {
 		return err
 	}
@@ -119,13 +153,18 @@ func (w *Wallet) OpenWallet(name string) error {
 	return nil
 }
 
+// CloseWallet closes the current opened wallet.
 func (w *Wallet) CloseWallet() error {
 	w.open = false
-	w.info = walletInfo{}
 	w.name = ""
+	w.priv = nil
+	w.pub = nil
+	w.account = ""
+	w.accountRaw = [20]byte{}
 	return w.db.Close()
 }
 
+// HasWallet checks if the name matches to an existing wallet database.
 func (w *Wallet) HasWallet(name string) bool {
 	list, err := w.GetAvailableWallets()
 	if err != nil {
@@ -138,6 +177,7 @@ func (w *Wallet) HasWallet(name string) bool {
 	return ok
 }
 
+// GetAvailableWallets returns a map of available wallets.
 func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
 	files := map[string]string{}
 	err := filepath.Walk(path.Join(w.directory, "wallets/"), func(path string, info os.FileInfo, err error) error {
@@ -158,61 +198,37 @@ func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
 	return files, nil
 }
 
-func (w *Wallet) IncreaseNonce() error {
-	if !w.open {
-		return errorNotOpen
-	}
-	return nil
-}
-
+// GetAccount returns the current wallet account on bech32 format.
 func (w *Wallet) GetAccount() (string, error) {
 	if !w.open {
 		return "", errorNotOpen
 	}
-	return bech32.Encode(w.params.AddrPrefix.Public, w.info.account[:]), nil
+	return w.account, nil
 }
 
-func (w *Wallet) GetPublicKey() ([20]byte, error) {
+// GetSecret returns the secret key of the current wallet.
+func (w *Wallet) GetSecret() (*bls.SecretKey, error) {
 	if !w.open {
-		return [20]byte{}, errorNotOpen
+		return nil, errorNotOpen
 	}
-	return w.info.account, nil
+	return w.priv, nil
 }
 
+// GetPublic returns the public key of the current wallet.
+func (w *Wallet) GetPublic() (*bls.PublicKey, error) {
+	if !w.open {
+		return nil, errorNotOpen
+	}
+	return w.pub, nil
+}
+
+// GetAccountRaw returns the current wallet account on a bytes slice.
 func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 	if !w.open {
 		return [20]byte{}, errorNotOpen
 	}
-	if len(w.info.account) != 20 {
+	if len(w.accountRaw) != 20 {
 		return [20]byte{}, errors.New("expected address to be 20 bytes")
 	}
-	return w.info.account, nil
-}
-
-func (w *Wallet) NewWallet(name string, priv *bls.SecretKey) error {
-	if w.open {
-		w.CloseWallet()
-	}
-	if priv == nil {
-		priv = bls.RandKey()
-	}
-	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
-	if err != nil {
-		return err
-	}
-	w.db = db
-	err = w.load()
-	if err == nil {
-		return errorAlreadyExist
-	}
-	err = w.initialize(priv)
-	if err != nil {
-		return err
-	}
-	err = w.load()
-	if err != nil {
-		return err
-	}
-	w.open = true
-	return nil
+	return w.accountRaw, nil
 }

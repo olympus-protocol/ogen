@@ -9,7 +9,6 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 
@@ -107,7 +106,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystore, hostnode *peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams) (*RPCServer, error) {
+func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams) (*RPCServer, error) {
 	txTopic, err := hostnode.Topic("tx")
 	if err != nil {
 		return nil, err
@@ -139,15 +138,13 @@ func NewRPCServer(config Config, chain *chain.Blockchain, keys *keystore.Keystor
 			chain: chain,
 		},
 		validatorsServer: &validatorsServer{
-			params:   params,
-			keystore: keys,
-			chain:    chain,
+			params: params,
+			chain:  chain,
 		},
 		networkServer: &networkServer{
 			hostnode: hostnode,
 		},
 		utilsServer: &utilsServer{
-			keystore:     keys,
 			txTopic:      txTopic,
 			depositTopic: depositTopic,
 			exitTopic:    exitTopic,

@@ -9,16 +9,21 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+// GetBalance returns the balance of the current open wallet.
 func (w *Wallet) GetBalance() (uint64, error) {
 	if !w.open {
 		return 0, errorNotOpen
 	}
-	out := w.chain.State().TipState().CoinsState.Balances[w.info.account]
+	acc, err := w.GetAccountRaw()
+	if err != nil {
+		return 0, err
+	}
+	out := w.chain.State().TipState().CoinsState.Balances[acc]
 
 	return out, nil
 }
 
-// StartValidator signs a validator deposit.
+// StartValidator signs a validator deposit with the current open wallet private key.
 func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
 	if !w.open {
 		return nil, errorNotOpen
@@ -75,7 +80,7 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	return deposit, nil
 }
 
-// ExitValidator submits an exit transaction for a certain validator.
+// ExitValidator submits an exit transaction for a certain validator with the current wallet private key.
 func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error) {
 	if !w.open {
 		return nil, errorNotOpen
@@ -114,7 +119,7 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 	return exit, nil
 }
 
-// SendToAddress sends an amount to an address with the given password and parameters.
+// SendToAddress sends an amount to an account using the current open wallet private key.
 func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error) {
 	if !w.open {
 		return nil, errorNotOpen
@@ -138,7 +143,12 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	pub := priv.PublicKey()
 
-	nonce := w.chain.State().TipState().CoinsState.Nonces[w.info.account] + 1
+	acc, err := w.GetAccountRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := w.chain.State().TipState().CoinsState.Nonces[acc] + 1
 
 	payload := &primitives.TransferSinglePayload{
 		To:            toPkh,

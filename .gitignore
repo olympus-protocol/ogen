@@ -41,8 +41,11 @@ release/
 *.log
 **/*.b64
 tx.db
-chain/index/tx.db
+chain/index/*.db
 chainrpc/cert/
+wallet/wallets/
+keystore/*.db
+
 # Integration
 data/
 data_*/

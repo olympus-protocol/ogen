@@ -18,6 +18,7 @@ import (
 	"github.com/olympus-protocol/ogen/wallet"
 )
 
+// Server is the main struct that contains ogen services
 type Server struct {
 	log    *logger.Logger
 	config *config.Config
@@ -26,10 +27,11 @@ type Server struct {
 	Chain    *chain.Blockchain
 	HostNode *peers.HostNode
 	Keystore *keystore.Keystore
-	Proposer *proposer.Proposer
 	RPC      *chainrpc.RPCServer
+	Proposer *proposer.Proposer
 }
 
+// Start starts running the multiple ogen services.
 func (s *Server) Start() {
 	if s.config.Pprof {
 		go func() {
@@ -44,12 +46,6 @@ func (s *Server) Start() {
 	if err != nil {
 		s.log.Fatal("unable to start host node")
 	}
-	if s.Proposer != nil {
-		err = s.Proposer.Start()
-		if err != nil {
-			s.log.Fatal("unable to start proposer thread")
-		}
-	}
 	go func() {
 		err := s.RPC.Start()
 		if err != nil {
@@ -58,15 +54,14 @@ func (s *Server) Start() {
 	}()
 }
 
+// Stop closes the ogen services.
 func (s *Server) Stop() error {
 	s.Chain.Stop()
 	s.RPC.Stop()
-	if s.Proposer != nil {
-		s.Proposer.Stop()
-	}
 	return nil
 }
 
+// NewServer creates a server instance and initializes the ogen services.
 func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 	logger.Tracef("loading network parameters for '%v'", currParams.Name)
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
@@ -90,24 +85,17 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		return nil, err
 	}
 	voteMempool.Notify(actionsMempool)
-	k, err := keystore.NewKeystore(configParams.DataFolder, logger)
-	if err != nil {
-		return nil, err
-	}
 	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, w, &currParams)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hostnode, w, &currParams)
 	if err != nil {
 		return nil, err
 	}
-	var prop *proposer.Proposer
-	if configParams.MiningEnabled {
-		prop, err = proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
-		if err != nil {
-			return nil, err
-		}
+	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool)
+	if err != nil {
+		return nil, err
 	}
 	s := &Server{
 		config: configParams,
@@ -115,9 +103,8 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 
 		Chain:    ch,
 		HostNode: hostnode,
-		Keystore: k,
-		Proposer: prop,
 		RPC:      rpc,
+		Proposer: prop,
 	}
 	return s, nil
 }

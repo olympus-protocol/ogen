@@ -35,7 +35,7 @@ type SubscribeValidatorRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	PublicKey [][]byte `protobuf:"bytes,1,rep,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	PublicKey [][]byte `protobuf:"bytes,1,rep,name=public_key,json=publicKey,proto3" json:"public_key"`
 }
 
 func (x *SubscribeValidatorRequest) Reset() {
@@ -82,9 +82,9 @@ type ChainInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BlockHash   string          `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	BlockHeight uint64          `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	Validators  *ValidatorsInfo `protobuf:"bytes,3,opt,name=validators,proto3" json:"validators,omitempty"`
+	BlockHash   string          `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash"`
+	BlockHeight uint64          `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height"`
+	Validators  *ValidatorsInfo `protobuf:"bytes,3,opt,name=validators,proto3" json:"validators"`
 }
 
 func (x *ChainInfo) Reset() {
@@ -145,10 +145,10 @@ type AccountInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Account string   `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
-	Balance uint64   `protobuf:"varint,2,opt,name=balance,proto3" json:"balance,omitempty"`
-	Nonce   uint64   `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Txs     []string `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs,omitempty"`
+	Account string   `protobuf:"bytes,1,opt,name=account,proto3" json:"account"`
+	Balance uint64   `protobuf:"varint,2,opt,name=balance,proto3" json:"balance"`
+	Nonce   uint64   `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce"`
+	Txs     []string `protobuf:"bytes,4,rep,name=txs,proto3" json:"txs"`
 }
 
 func (x *AccountInfo) Reset() {
