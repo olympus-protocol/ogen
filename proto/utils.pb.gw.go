@@ -28,6 +28,23 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
+func request_Utils_StartProposer_0(ctx context.Context, marshaler runtime.Marshaler, client UtilsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Password
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.StartProposer(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
 func request_Utils_GenValidatorKey_0(ctx context.Context, marshaler runtime.Marshaler, client UtilsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GenValidatorKeys
 	var metadata runtime.ServerMetadata
@@ -134,6 +151,26 @@ func RegisterUtilsHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc
 // "UtilsClient" to call the correct interceptors.
 func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, client UtilsClient) error {
 
+	mux.Handle("POST", pattern_Utils_StartProposer_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Utils_StartProposer_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Utils_StartProposer_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("POST", pattern_Utils_GenValidatorKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -218,6 +255,8 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
+	pattern_Utils_StartProposer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "startproposer"}, ""))
+
 	pattern_Utils_GenValidatorKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "genvalidatorkey"}, ""))
 
 	pattern_Utils_SubmitRawData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "submitrawdata"}, ""))
@@ -228,6 +267,8 @@ var (
 )
 
 var (
+	forward_Utils_StartProposer_0 = runtime.ForwardResponseMessage
+
 	forward_Utils_GenValidatorKey_0 = runtime.ForwardResponseMessage
 
 	forward_Utils_SubmitRawData_0 = runtime.ForwardResponseMessage

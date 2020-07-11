@@ -8,6 +8,18 @@ import "common.proto";
 service Utils {
 
     /** 
+        Method: StartProposer 
+        Input: message Password
+        Response: message Success
+        Description: Decrypts the Keystore and starts voting/proposing.
+    */
+    rpc StartProposer(Password) returns (Success) {
+        option (google.api.http) = {
+            post: "/utils/startproposer"
+            body: "*"
+        };
+    }
+    /** 
         Method: GenValidatorKey 
         Input: message GenValidatorKeys
         Response: message KeyPairs
@@ -58,6 +70,10 @@ service Utils {
             body: "*"
         };
     }
+}
+
+message Password {
+    string password = 1;
 }
 
 message GenValidatorKeys {
