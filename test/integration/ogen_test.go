@@ -107,11 +107,11 @@ func TestMain(m *testing.M) {
 
 	// Create a keystore
 	log.Info("Creating keystore")
-	keystore, err := keystore.NewKeystore(folder, log)
+	keystore, err := keystore.NewKeystore(folder, log, "test")
 	if err != nil {
 		log.Fatal(err)
 	}
-	validatorKeys, err := keystore.GenerateNewValidatorKey(128)
+	validatorKeys, err := keystore.GenerateNewValidatorKey(128, "test")
 	if err != nil {
 		log.Fatal(err)
 	}

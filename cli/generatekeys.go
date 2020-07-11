@@ -28,7 +28,7 @@ var generateKeysCmd = &cobra.Command{
 		if err != nil {
 			panic("invalid argument: " + args[0] + "\n")
 		}
-		k, err := keystore.NewKeystore(DataFolder, nil)
+		k, err := keystore.NewKeystore(DataFolder, nil, args[1])
 		if err != nil {
 			panic(err)
 		}

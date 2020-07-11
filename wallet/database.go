@@ -11,19 +11,21 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-var privKeyMagicBytes = []byte{0x53, 0xB3, 0x31, 0x0F}
+var (
+	errorNotInit = errors.New("the wallet is not initialized")
+	errorNoInfo  = errors.New("wallet corruption, some elements are not found on the wallet")
+	errorNotOpen = errors.New("there is no wallet open, please open one first")
 
-var errorNotInit = errors.New("the wallet is not initialized")
-var errorNoInfo = errors.New("wallet corruption, some elements are not found on the wallet")
-var errorNotOpen = errors.New("there is no wallet open, please open one first")
+	privKeyMagicBytes = []byte{0x53, 0xB3, 0x31, 0x0F}
 
-var walletKeyBucket = []byte("keys")
-var walletPrivKeyDbKey = []byte("private")
+	walletKeyBucket  = []byte("keys")
+	walletInfoBucket = []byte("info")
 
-var walletInfoBucket = []byte("info")
-var walletPassHashDbKey = []byte("passhash")
-var walletSaltDbKey = []byte("salt")
-var walletNonceDbKey = []byte("nonce")
+	walletPrivKeyDbKey  = []byte("private")
+	walletPassHashDbKey = []byte("passhash")
+	walletSaltDbKey     = []byte("salt")
+	walletNonceDbKey    = []byte("nonce")
+)
 
 func (w *Wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhash chainhash.Hash) error {
 	return w.db.Update(func(tx *bbolt.Tx) error {

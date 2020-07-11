@@ -90,19 +90,15 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		return nil, err
 	}
 	voteMempool.Notify(actionsMempool)
-	k, err := keystore.NewKeystore(configParams.DataFolder, logger)
-	if err != nil {
-		return nil, err
-	}
 	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, k, hostnode, w, &currParams)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hostnode, w, &currParams)
 	if err != nil {
 		return nil, err
 	}
-	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, k, hostnode, voteMempool, coinsMempool, actionsMempool)
+	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +108,6 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 
 		Chain:    ch,
 		HostNode: hostnode,
-		Keystore: k,
 		Proposer: prop,
 		RPC:      rpc,
 	}
