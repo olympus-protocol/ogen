@@ -1,4 +1,4 @@
-package blsaes
+package aesbls
 
 import (
 	"crypto/aes"
@@ -38,14 +38,33 @@ func Decrypt(encryptedKey []byte, nonce [12]byte, key []byte, salt [8]byte) (*bl
 	return secKey, nil
 }
 
+// SimpleEncrypt encrypts a bls private key with a known nonce and salt.
+func SimpleEncrypt(secret []byte, key []byte, nonce [12]byte, salt [8]byte) (encryptedKey []byte, err error) {
+	encKey := pbkdf2.Key(key, salt[:], 20000, 32, sha512.New)
+
+	block, err := aes.NewCipher(encKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating cipher")
+	}
+
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+		return nil, errors.Wrap(err, "error reading from random")
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating GCM")
+	}
+
+	return aesgcm.Seal(nil, nonce[:], secret, nil), nil
+}
+
 // Encrypt encrypts a bls private key and returns a random nonce and a salt.
 func Encrypt(secret []byte, key []byte) (nonce [12]byte, salt [8]byte, encryptedKey []byte, err error) {
-	// Generate a random salt
 	_, err = rand.Reader.Read(salt[:])
 	if err != nil {
 		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error reading from random")
 	}
-	// Generate a random nonce
 	encKey := pbkdf2.Key(key, salt[:], 20000, 32, sha512.New)
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
@@ -58,6 +77,5 @@ func Encrypt(secret []byte, key []byte) (nonce [12]byte, salt [8]byte, encrypted
 	if err != nil {
 		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error creating GCM")
 	}
-	ciphertext := aesgcm.Seal(nil, nonce[:], secret, nil)
-	return nonce, salt, ciphertext, nil
+	return nonce, salt, aesgcm.Seal(nil, nonce[:], secret, nil), nil
 }

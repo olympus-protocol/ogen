@@ -17,7 +17,7 @@ import (
 	"github.com/olympus-protocol/ogen/peers"
 
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/utils/blsaes"
+	"github.com/olympus-protocol/ogen/utils/aesbls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
@@ -117,7 +117,7 @@ func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	if err != nil {
 		return err
 	}
-	nonce, salt, cipher, err := blsaes.Encrypt(secret.Marshal(), []byte(password))
+	nonce, salt, cipher, err := aesbls.Encrypt(secret.Marshal(), []byte(password))
 	if err != nil {
 		return err
 	}

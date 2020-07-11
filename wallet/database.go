@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/utils/blsaes"
+	"github.com/olympus-protocol/ogen/utils/aesbls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
 )
@@ -83,7 +83,7 @@ func (w *Wallet) getSecret(password string) (key *bls.SecretKey, err error) {
 		}
 		cipherBytesSlice := bytes.Split(cipherBytesSet, privKeyMagicBytes)
 		cipherBytes := cipherBytesSlice[1]
-		key, err = blsaes.Decrypt(cipherBytes, nonce, []byte(password), salt)
+		key, err = aesbls.Decrypt(cipherBytes, nonce, []byte(password), salt)
 		if err != nil {
 			return err
 		}
