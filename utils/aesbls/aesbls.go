@@ -61,14 +61,18 @@ func SimpleEncrypt(secret []byte, key []byte, nonce [12]byte, salt [8]byte) (enc
 
 // Encrypt encrypts a bls private key and returns a random nonce and a salt.
 func Encrypt(secret []byte, key []byte) (nonce [12]byte, salt [8]byte, encryptedKey []byte, err error) {
-	_, err = rand.Reader.Read(salt[:])
+	salt, err = RandSalt()
 	if err != nil {
-		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error reading from random")
+		return [12]byte{}, [8]byte{}, nil, err
 	}
 	encKey := pbkdf2.Key(key, salt[:], 20000, 32, sha512.New)
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
 		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error creating cipher")
+	}
+	nonce, err = RandNonce()
+	if err != nil {
+		return [12]byte{}, [8]byte{}, nil, err
 	}
 	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
 		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error reading from random")
@@ -78,4 +82,24 @@ func Encrypt(secret []byte, key []byte) (nonce [12]byte, salt [8]byte, encrypted
 		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error creating GCM")
 	}
 	return nonce, salt, aesgcm.Seal(nil, nonce[:], secret, nil), nil
+}
+
+// RandSalt generates a random salt from random reader.
+func RandSalt() ([8]byte, error) {
+	var salt [8]byte
+	_, err := rand.Read(salt[:])
+	if err != nil {
+		return [8]byte{}, err
+	}
+	return salt, nil
+}
+
+// RandNonce generates a random nonce from random reader.
+func RandNonce() ([12]byte, error) {
+	var nonce [12]byte
+	_, err := rand.Read(nonce[:])
+	if err != nil {
+		return [12]byte{}, err
+	}
+	return nonce, nil
 }
