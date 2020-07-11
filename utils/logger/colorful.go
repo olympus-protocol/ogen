@@ -8,7 +8,7 @@ type ColorBuffer struct {
 	Buffer
 }
 
-// color pallete map
+// color palette map
 var (
 	colorOff    = []byte("\033[0m")
 	colorRed    = []byte("\033[0;31m")

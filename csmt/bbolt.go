@@ -116,7 +116,7 @@ func (b *BoltTreeTransaction) GetNode(nodeHash chainhash.Hash) (*Node, error) {
 
 	nodeItem := b.bkt.Get(nodeKey)
 	if nodeItem == nil {
-		return nil, errors.New("Unabel to get node")
+		return nil, errors.New("Unable to get node")
 	}
 
 	return DeserializeNode(nodeItem)
