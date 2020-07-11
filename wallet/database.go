@@ -83,7 +83,7 @@ func (w *Wallet) getSecret(password string) (key *bls.SecretKey, err error) {
 		}
 		cipherBytesSlice := bytes.Split(cipherBytesSet, privKeyMagicBytes)
 		cipherBytes := cipherBytesSlice[1]
-		key, err = aesbls.Decrypt(cipherBytes, nonce, []byte(password), salt)
+		key, err = aesbls.Decrypt(nonce, salt, cipherBytes, []byte(password))
 		if err != nil {
 			return err
 		}

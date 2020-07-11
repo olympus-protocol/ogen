@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"errors"
-	"fmt"
 	"path"
 	"reflect"
 	"sync"
@@ -119,16 +118,15 @@ func (k *Keystore) load(password string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(nonce, salt, err)
 	err = k.db.View(func(tx *bbolt.Tx) error {
 		keysbkt := tx.Bucket(keysBucket)
 		if keysbkt == nil {
 			return errorNotInitialized
 		}
 		k.keys = make(map[chainhash.Hash]*bls.SecretKey)
-		err = keysbkt.ForEach(func(key, v []byte) error {
-			pubHash := chainhash.HashH(key)
-			priv, err := aesbls.Decrypt(v, nonce, []byte(password), salt)
+		err = keysbkt.ForEach(func(keypub, keyprv []byte) error {
+			pubHash := chainhash.HashH(keypub)
+			priv, err := aesbls.Decrypt(nonce, salt, keyprv, []byte(password))
 			if err != nil {
 				return err
 			}

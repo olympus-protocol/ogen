@@ -13,7 +13,7 @@ import (
 )
 
 // Decrypt uses aes decryption to decrypt an encrypted bls private key using a nonce and a salt.
-func Decrypt(encryptedKey []byte, nonce [12]byte, key []byte, salt [8]byte) (*bls.SecretKey, error) {
+func Decrypt(nonce [12]byte, salt [8]byte, encryptedKey []byte, key []byte) (*bls.SecretKey, error) {
 	encryptionKey := pbkdf2.Key(key, salt[:], 20000, 32, sha512.New)
 
 	block, err := aes.NewCipher(encryptionKey)
@@ -45,10 +45,6 @@ func SimpleEncrypt(secret []byte, key []byte, nonce [12]byte, salt [8]byte) (enc
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating cipher")
-	}
-
-	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
-		return nil, errors.Wrap(err, "error reading from random")
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
