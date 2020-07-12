@@ -37,7 +37,7 @@ var generateWalletCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = w.OpenWallet(args[0], args[0])
+		err = w.NewWallet(args[0], nil, args[2])
 		if err != nil {
 			panic(err)
 		}
