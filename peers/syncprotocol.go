@@ -68,7 +68,6 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 		protocolHandler: ph,
 		chain:           chain,
 	}
-
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
@@ -135,7 +134,7 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	bh := block.Hash()
 	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
 		sp.log.Debugf("don't have block %s, requesting", block.Header.PrevBlockHash)
-		// TODO: better peer selection for syncing
+	// TODO: better peer selection for syncing
 		peers := sp.host.GetPeerList()
 		if len(peers) > 0 {
 			sp.syncMutex.Lock()
@@ -169,17 +168,25 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 }
 
 func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
+	// This should only be sent on a response of getblocks.
+	if !sp.syncInfo.syncing {
+		return errors.New("received non-request blocks message")
+	}
+	if id != sp.syncInfo.withPeer {
+		return errors.New("received block message from non-requested peer")
+	}
 	msg, ok := rawMsg.(*p2p.MsgBlocks)
 	if !ok {
 		return errors.New("did not receive blocks message")
 	}
-
 	sp.log.Tracef("received blocks msg from peer %v", id)
+	sp.syncMutex.Lock()
 	for _, b := range msg.Blocks {
 		if err := sp.handleBlock(id, &b); err != nil {
 			return err
 		}
 	}
+	sp.syncMutex.Unlock()
 	return nil
 }
 
@@ -260,25 +267,29 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 			return err
 		}
 	}
-
-	if theirVersion.LastBlock > ourVersion.LastBlock {
-		sp.syncMutex.Lock()
-
-		if !sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout {
-			sp.syncInfo.lastRequest = time.Now()
-			sp.syncInfo.withPeer = id
-			sp.syncInfo.syncing = true
+	// If we detect the other node has more blocks than us, we should ask for blocks recursively until fully synced.
+	for {
+		ourVersion := sp.versionMsg()
+		if theirVersion.LastBlock > ourVersion.LastBlock {
+			sp.syncMutex.Lock()
+			if !sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout {
+				sp.syncInfo.lastRequest = time.Now()
+				sp.syncInfo.withPeer = id
+				sp.syncInfo.syncing = true
+				sp.syncMutex.Unlock()
+				err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+					LocatorHashes: sp.chain.GetLocatorHashes(),
+					HashStop:      chainhash.Hash{},
+				})
+				return err
+			}
 			sp.syncMutex.Unlock()
-
-			err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-				LocatorHashes: sp.chain.GetLocatorHashes(),
-				HashStop:      chainhash.Hash{},
-			})
-			return err
+		} else {
+			sp.syncInfo.withPeer = peer.ID("")
+			sp.syncInfo.syncing = false
+			break
 		}
-		sp.syncMutex.Unlock()
 	}
-
 	return nil
 }
 
