@@ -12,6 +12,38 @@ import (
 	"github.com/olympus-protocol/ogen/proto"
 )
 
+func (c *RPCClient) stopProposer(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.utils.StopProposer(ctx, &proto.Empty{})
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (c *RPCClient) startProposer(args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if len(args) < 1 {
+		return "", errors.New("Usage: startproposer <keystore_password>")
+	}
+	req := &proto.Password{Password: args[0]}
+	res, err := c.utils.StartProposer(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func (c *RPCClient) submitRawData(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

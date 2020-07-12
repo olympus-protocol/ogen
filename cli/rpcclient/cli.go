@@ -32,6 +32,8 @@ var netCmd = []prompt.Suggest{
 }
 
 var utilsCmd = []prompt.Suggest{
+	{Text: "startproposer", Description: "Unlocks the keystore and starts the proposer service."},
+	{Text: "stopproposer", Description: "Locks the keystore and stops the proposer service."},
 	{Text: "submitrawdata", Description: "Broadcasts a serialized transaction to the network"},
 	{Text: "genkeypair", Description: "Get a key pair on bech32 encoded format"},
 	{Text: "genrawkeypair", Description: "Get a key pair on bls serialized format"},
@@ -162,6 +164,10 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.addPeer(args[1:])
 
 		// Utils methods
+		case "startproposer":
+			out, err = c.rpcClient.submitRawData(args[1:])
+		case "stopproposer":
+			out, err = c.rpcClient.submitRawData(args[1:])
 		case "submitrawdata":
 			out, err = c.rpcClient.submitRawData(args[1:])
 		case "genkeypair":

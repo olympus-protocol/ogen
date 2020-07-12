@@ -89,11 +89,11 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hostnode, w, &currParams)
+	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
-	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hostnode, w, &currParams, prop)
 	if err != nil {
 		return nil, err
 	}

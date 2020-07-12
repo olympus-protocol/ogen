@@ -7,21 +7,41 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
-	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/proposer"
 	"github.com/olympus-protocol/ogen/proto"
 )
 
 type utilsServer struct {
-	keystore     *keystore.Keystore
+	proposer     *proposer.Proposer
 	txTopic      *pubsub.Topic
 	depositTopic *pubsub.Topic
 	exitTopic    *pubsub.Topic
 	proto.UnimplementedUtilsServer
 }
 
+func (s *utilsServer) StartProposer(ctx context.Context, in *proto.Password) (*proto.Success, error) {
+	err := s.proposer.OpenKeystore(in.Password)
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
+	}
+	err = s.proposer.Start()
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
+	}
+	return nil, nil
+}
+func (s *utilsServer) StopProposer(ctx context.Context, _ *proto.Empty) (*proto.Success, error) {
+	s.proposer.Stop()
+	err := s.proposer.Keystore.Close()
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
+	}
+	return &proto.Success{Success: true}, nil
+}
+
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
-	key, err := s.keystore.GenerateNewValidatorKey(in.Keys, in.Password)
+	key, err := s.proposer.Keystore.GenerateNewValidatorKey(in.Keys, in.Password)
 	if err != nil {
 		return nil, err
 	}

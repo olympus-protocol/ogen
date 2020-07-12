@@ -11,6 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/proposer"
 
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/logger"
@@ -106,7 +107,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams) (*RPCServer, error) {
+func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams, p *proposer.Proposer) (*RPCServer, error) {
 	txTopic, err := hostnode.Topic("tx")
 	if err != nil {
 		return nil, err
@@ -148,6 +149,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNo
 			txTopic:      txTopic,
 			depositTopic: depositTopic,
 			exitTopic:    exitTopic,
+			proposer:     p,
 		},
 		walletServer: &walletServer{
 			wallet: wallet,
