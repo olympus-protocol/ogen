@@ -130,7 +130,7 @@ func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNo
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &RPCServer{
 		rpc:    grpc.NewServer(grpc.Creds(creds)),
 		http:   runtime.NewServeMux(),
