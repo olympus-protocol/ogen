@@ -143,6 +143,7 @@ func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config
 		RPCWallet:    config.RPCWallet,
 		RPCProxy:     config.RPCProxy,
 		RPCProxyPort: config.RPCProxyPort,
+		RPCProxyAddr: config.RPCProxyAddr,
 		RPCPort:      config.RPCPort,
 		Network:      "tcp",
 	}

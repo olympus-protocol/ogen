@@ -21,6 +21,7 @@ type Config struct {
 
 	RPCProxy     bool
 	RPCProxyPort string
+	RPCProxyAddr string
 	RPCPort      string
 	RPCWallet    bool
 	RPCAuthToken string

@@ -161,6 +161,7 @@ Next generation blockchain secured by CASPER.`,
 
 				RPCProxy:     viper.GetBool("rpc_proxy"),
 				RPCProxyPort: viper.GetString("rpc_proxy_port"),
+				RPCProxyAddr: viper.GetString("rpc_proxy_addr"),
 				RPCPort:      viper.GetString("rpc_port"),
 				RPCWallet:    viper.GetBool("rpc_wallet"),
 				RPCAuthToken: rpcauth,
@@ -203,6 +204,7 @@ func init() {
 	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
 	rootCmd.Flags().String("rpc_proxy_port", "8080", "Port for the http proxy.")
 	rootCmd.Flags().String("rpc_port", "24127", "RPC server port.")
+	rootCmd.Flags().String("rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
 	rootCmd.Flags().Bool("rpc_wallet", false, "Enable wallet access through RPC.")
 
 	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
