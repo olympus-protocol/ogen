@@ -16,6 +16,7 @@ import (
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/olympus-protocol/ogen/wallet"
+	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -96,7 +97,8 @@ func (s *RPCServer) Start() error {
 			} else {
 				addr = "localhost"
 			}
-			err := http.ListenAndServeTLS(addr+":"+s.config.RPCProxyPort, path.Join(s.config.DataDir, "cert", "cert.pem"), path.Join(s.config.DataDir, "cert", "cert_key.pem"), s.http)
+			handler := cors.Default().Handler(s.http)
+			err := http.ListenAndServeTLS(addr+":"+s.config.RPCProxyPort, path.Join(s.config.DataDir, "cert", "cert.pem"), path.Join(s.config.DataDir, "cert", "cert_key.pem"), handler)
 			if err != nil {
 				s.log.Fatal(err)
 			}

@@ -23,6 +23,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/prysmaticlabs/go-ssz v0.0.0-20200612203617-6d5c9aa213ae
+	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0
