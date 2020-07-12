@@ -1,4 +1,4 @@
-package primitives 
+package primitives
 
 import (
 	"errors"
@@ -345,7 +345,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		// to start a community vote
 		totalBalance := s.GetTotalBalances()
 		votingBalance := uint64(0)
-		for acc, _ := range s.Governance.ReplaceVotes {
+		for acc := range s.Governance.ReplaceVotes {
 			bal := s.CoinsState.Balances[acc]
 			votingBalance += bal
 		}

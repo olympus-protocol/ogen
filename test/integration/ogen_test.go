@@ -23,18 +23,18 @@ import (
 var premineAddr = bls.RandKey()
 
 var conf = config.Config{
-	DataFolder: folder,
-	NetworkName: "integration tests net",
-	AddNodes: []peer.AddrInfo{},
-	MaxPeers: 10,
-	Port: "24126",
-	RPCProxy: false,
+	DataFolder:   folder,
+	NetworkName:  "integration tests net",
+	AddNodes:     []peer.AddrInfo{},
+	MaxPeers:     10,
+	Port:         "24126",
+	RPCProxy:     false,
 	RPCProxyPort: "8080",
-	RPCPort: "24130",
-	RPCWallet: false,
-	Debug: true,
-	LogFile: false,
-	Pprof: true,
+	RPCPort:      "24130",
+	RPCWallet:    false,
+	Debug:        true,
+	LogFile:      false,
+	Pprof:        true,
 }
 
 var folder = "./data"
@@ -124,15 +124,15 @@ func TestMain(m *testing.M) {
 	validators := []primitives.ValidatorInitialization{}
 	for _, vk := range validatorKeys {
 		val := primitives.ValidatorInitialization{
-			PubKey: hex.EncodeToString(vk.PublicKey().Marshal()),
+			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
 		}
 		validators = append(validators, val)
 	}
 	// Create the initialization parameters
 	initializationParams = primitives.InitializationParameters{
-		GenesisTime: time.Now(),
-		PremineAddress: addr,
+		GenesisTime:       time.Now(),
+		PremineAddress:    addr,
 		InitialValidators: validators,
 	}
 	// Load the block database
@@ -149,7 +149,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	// Generate the chain up to 50 blocks
 	go testServer.Start()
 	hostMultiAddr.Addrs = testServer.HostNode.GetHost().Addrs()
@@ -166,7 +166,6 @@ func TestMain(m *testing.M) {
 	}
 	os.RemoveAll(folder)
 }
-
 
 // The second node is in charge of testing a "good" peer behaviour.
 func runSecondNode() {
@@ -185,18 +184,18 @@ func runSecondNode() {
 		log.Fatal(err)
 	}
 	secondNodeConf := &config.Config{
-		DataFolder: secondaryNodeFolder,
-		NetworkName: "integration tests net",
-		AddNodes: []peer.AddrInfo{hostMultiAddr},
-		MaxPeers: 10,
-		Port: "24000",
-		RPCProxy: false,
+		DataFolder:   secondaryNodeFolder,
+		NetworkName:  "integration tests net",
+		AddNodes:     []peer.AddrInfo{hostMultiAddr},
+		MaxPeers:     10,
+		Port:         "24000",
+		RPCProxy:     false,
 		RPCProxyPort: "8080",
-		RPCPort: "24001",
-		RPCWallet: false,
-		Debug: false,
-		LogFile: false,
-		Pprof: false,
+		RPCPort:      "24001",
+		RPCWallet:    false,
+		Debug:        false,
+		LogFile:      false,
+		Pprof:        false,
 	}
 	testServer, err := server.NewServer(ctx, secondNodeConf, log, testParams, bdb, initializationParams)
 	if err != nil {
@@ -228,18 +227,18 @@ func runThirdNode() {
 		log.Fatal(err)
 	}
 	conf := config.Config{
-		DataFolder: thirdNodeFolder,
-		NetworkName: "integration tests net",
-		AddNodes: []peer.AddrInfo{hostMultiAddr},
-		MaxPeers: 10,
-		Port: "25000",
-		RPCProxy: false,
+		DataFolder:   thirdNodeFolder,
+		NetworkName:  "integration tests net",
+		AddNodes:     []peer.AddrInfo{hostMultiAddr},
+		MaxPeers:     10,
+		Port:         "25000",
+		RPCProxy:     false,
 		RPCProxyPort: "8080",
-		RPCPort: "25001",
-		RPCWallet: false,
-		Debug: false,
-		LogFile: false,
-		Pprof: false,
+		RPCPort:      "25001",
+		RPCWallet:    false,
+		Debug:        false,
+		LogFile:      false,
+		Pprof:        false,
 	}
 	testServer, err := server.NewServer(ctx, &conf, log, testParams, bdb, initializationParams)
 	if err != nil {
