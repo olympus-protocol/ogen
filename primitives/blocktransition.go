@@ -598,6 +598,9 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 
 	depositHash := chainhash.HashH(buf)
 	dSig, err := deposit.GetSignature()
+	if err != nil {
+		return err
+	}
 	valid := dSig.Verify(depositHash[:], dPub)
 	if !valid {
 		return errors.New("deposit signature is not valid")

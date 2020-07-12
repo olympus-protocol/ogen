@@ -175,7 +175,10 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
-
+	if err != nil {
+		m.log.Error(err)
+		return
+	}
 	committee, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
 	if err != nil {
 		m.log.Error(err)
