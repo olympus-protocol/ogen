@@ -11,7 +11,9 @@ import (
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/shopspring/decimal"
 )
 
 type chainServer struct {
@@ -258,22 +260,37 @@ func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream p
 
 func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (*proto.AccountInfo, error) {
 	var account [20]byte
-	accBytes, err := hex.DecodeString(data.Account)
+	_, decoded, err := bech32.Decode(data.Account)
 	if err != nil {
 		return nil, err
 	}
-	copy(account[:], accBytes)
-
-	balance := s.chain.State().TipState().CoinsState.Balances[account]
+	copy(account[:], decoded)
 	nonce := s.chain.State().TipState().CoinsState.Nonces[account]
 	txs, err := s.chain.GetAccountTxs(account)
 	if err != nil {
 		return nil, err
 	}
-
+	var transactions []string
+	if len(txs.Txs) > 0 {
+		transactions = txs.Strings()
+	} else {
+		transactions = []string{}
+	}
+	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().CoinsState.Balances[account])).DivRound(decimal.NewFromInt(1e3), 3)
+	lock := decimal.NewFromInt(0)
+	for _, v := range s.chain.State().TipState().ValidatorRegistry {
+		if v.PayeeAddress == account {
+			lock = lock.Add(decimal.NewFromInt(int64(v.Balance)))
+		}
+	}
+	balance := &proto.Balance{
+		Confirmed: confirmed.String(),
+		Locked:    lock.String(),
+		Total:     decimal.Zero.Add(confirmed).Add(lock).String(),
+	}
 	accInfo := &proto.AccountInfo{
 		Account: data.Account,
-		Txs:     txs.Strings(),
+		Txs:     transactions,
 		Balance: balance,
 		Nonce:   nonce,
 	}

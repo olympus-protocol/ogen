@@ -97,7 +97,11 @@ func (s *RPCServer) Start() error {
 			} else {
 				addr = "localhost"
 			}
-			handler := cors.Default().Handler(s.http)
+			c := cors.New(cors.Options{
+				AllowedOrigins: []string{"*"},
+				AllowedMethods: []string{http.MethodGet, http.MethodPost},
+			})
+			handler := c.Handler(s.http)
 			err := http.ListenAndServeTLS(addr+":"+s.config.RPCProxyPort, path.Join(s.config.DataDir, "cert", "cert.pem"), path.Join(s.config.DataDir, "cert", "cert_key.pem"), handler)
 			if err != nil {
 				s.log.Fatal(err)

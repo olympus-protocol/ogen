@@ -152,7 +152,7 @@ message ChainInfo {
 
 message AccountInfo {
     string account = 1;
-    uint64 balance = 2;
+    Balance balance = 2;
     uint64 nonce = 3;
     repeated string txs = 4;
 }
