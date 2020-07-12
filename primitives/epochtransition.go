@@ -1,4 +1,4 @@
-package primitives
+package primitives 
 
 import (
 	"errors"

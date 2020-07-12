@@ -1,4 +1,4 @@
-// +build ogen_test
+//+build ogen_test
 
 package ogen_test
 
