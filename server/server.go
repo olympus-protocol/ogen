@@ -119,7 +119,8 @@ func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config 
 
 func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.Config {
 	cfg := proposer.Config{
-		Log: logger,
+		Datadir: config.DataFolder,
+		Log:     logger,
 	}
 	return cfg
 }

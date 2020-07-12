@@ -165,9 +165,9 @@ func (c *CLI) Run() {
 
 		// Utils methods
 		case "startproposer":
-			out, err = c.rpcClient.submitRawData(args[1:])
+			out, err = c.rpcClient.startProposer(args[1:])
 		case "stopproposer":
-			out, err = c.rpcClient.submitRawData(args[1:])
+			out, err = c.rpcClient.stopProposer(args[1:])
 		case "submitrawdata":
 			out, err = c.rpcClient.submitRawData(args[1:])
 		case "genkeypair":

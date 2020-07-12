@@ -29,7 +29,7 @@ func (s *utilsServer) StartProposer(ctx context.Context, in *proto.Password) (*p
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
-	return nil, nil
+	return &proto.Success{Success: true}, nil
 }
 func (s *utilsServer) StopProposer(ctx context.Context, _ *proto.Empty) (*proto.Success, error) {
 	s.proposer.Stop()

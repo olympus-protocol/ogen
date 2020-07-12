@@ -39,7 +39,7 @@ var generateChainCmd = &cobra.Command{
 		if len(args) < 1 {
 			panic("please specify the keystore password")
 		}
-		k, err := keystore.NewKeystore(DataFolder, nil, args[1])
+		k, err := keystore.NewKeystore(DataFolder, nil, args[0])
 		if err != nil {
 			panic(err)
 		}
