@@ -151,12 +151,12 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 
 func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
 	// This should only be sent on a response of getblocks.
-	//if !sp.syncInfo.syncing {
-	//	return errors.New("received non-request blocks message")
-	//}
-	//if id != sp.syncInfo.withPeer {
-	//	return errors.New("received block message from non-requested peer")
-	//}
+	if !sp.syncInfo.syncing {
+		return errors.New("received non-request blocks message")
+	}
+	if id != sp.syncInfo.withPeer {
+		return errors.New("received block message from non-requested peer")
+	}
 	msg, ok := rawMsg.(*p2p.MsgBlocks)
 	if !ok {
 		return errors.New("did not receive blocks message")
@@ -251,14 +251,14 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	// If the node has more blocks, start the syncing process.
 	// The syncing process must ensure no unnecesary blocks are requested and we don't start a sync routine with other peer.
 	// We also need to check if this peer stops sending block msg.
-	if theirVersion.LastBlock > ourVersion.LastBlock {
+	if theirVersion.LastBlock > ourVersion.LastBlock && !sp.syncInfo.syncing {
 		sp.syncInfo.lastRequest = time.Now()
 		sp.syncInfo.withPeer = id
 		sp.syncInfo.syncing = true
 		go func(their *p2p.MsgVersion, ours *p2p.MsgVersion) {
 			for {
-				sp.syncMutex.Lock()
 				ours = sp.versionMsg()
+				sp.syncMutex.Lock()
 				err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
 					LocatorHashes: sp.chain.GetLocatorHashes(),
 					HashStop:      chainhash.Hash{},
@@ -266,17 +266,19 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 				if err != nil {
 					return
 				}
-				// When we finished the sync send a last message to fetch blocks produced during sync.
-				if their.LastBlock <= ours.LastBlock {
-					err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-						LocatorHashes: sp.chain.GetLocatorHashes(),
-						HashStop:      chainhash.Hash{},
-					})
-					if err != nil {
-						return
-					}
-					break
-				}
+				//if their.LastBlock <= ours.LastBlock {
+				//	// When we finished the sync send a last message to fetch blocks produced during sync.
+				//	sp.syncMutex.Lock()
+				//	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+				//		LocatorHashes: sp.chain.GetLocatorHashes(),
+				//		HashStop:      chainhash.Hash{},
+				//	})
+				//	if err != nil {
+				//		return
+				//	}
+				//	break
+				//}
+
 			}
 		}(theirVersion, ourVersion)
 	}
