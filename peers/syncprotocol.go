@@ -300,21 +300,8 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 			//		return err
 			//	}
 			//}
-		} else {
-			sp.syncInfo.withPeer = peer.ID("")
-			sp.syncInfo.syncing = false
-			break
-		}
+		} 
 	}
-	// Once we break the loop, send another message to the same peer to sync blocks generated during the sync period.
-	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-		LocatorHashes: sp.chain.GetLocatorHashes(),
-		HashStop:      chainhash.Hash{},
-	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
