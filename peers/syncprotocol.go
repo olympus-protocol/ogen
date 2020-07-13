@@ -266,20 +266,17 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 				if err != nil {
 					return
 				}
-				//if their.LastBlock <= ours.LastBlock {
-				//	// When we finished the sync send a last message to fetch blocks produced during sync.
-				//	sp.syncMutex.Lock()
-				//	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-				//		LocatorHashes: sp.chain.GetLocatorHashes(),
-				//		HashStop:      chainhash.Hash{},
-				//	})
-				//	if err != nil {
-				//		return
-				//	}
-				//	break
-				//}
-
+				if their.LastBlock <= ours.LastBlock {
+					// When we finished the sync send a last message to fetch blocks produced during sync.
+					break
+				}
+				sp.syncMutex.Lock()
+				sp.syncInfo.lastRequest = time.Now()
+				sp.syncInfo.withPeer = ""
+				sp.syncInfo.syncing = false
+				sp.syncMutex.Unlock()
 			}
+			
 		}(theirVersion, ourVersion)
 	}
 	return nil
