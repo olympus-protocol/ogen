@@ -6,7 +6,7 @@ import (
 )
 
 const MaxBlockSize = 1024 * 1024 * 5 // 5 MB
-const MaxBlocksPerMsg = 100
+const MaxBlocksPerMsg = 500
 
 type MsgBlocks struct {
 	Blocks []primitives.Block
