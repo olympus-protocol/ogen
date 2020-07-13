@@ -136,30 +136,6 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		sp.log.Infof("received block with unknown parent, ignoring.")
 		return nil
 	}
-	// TODO
-	// this should never happend, we should ignore blocks until we are completely synced.
-	//if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
-	//	sp.log.Debugf("don't have block %s, requesting", block.Header.PrevBlockHash)
-	// TODO: better peer selection for syncing
-	//	peers := sp.host.GetPeerList()
-	//	if len(peers) > 0 {
-	//		sp.syncMutex.Lock()
-	//		if !sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout {
-	//			sp.syncInfo.lastRequest = time.Now()
-	//			sp.syncInfo.withPeer = peers[0]
-	//			sp.syncInfo.syncing = true
-	//			sp.syncMutex.Unlock()
-
-	//			err := sp.protocolHandler.SendMessage(peers[0], &p2p.MsgGetBlocks{
-	//				LocatorHashes: sp.chain.GetLocatorHashes(),
-	//				HashStop:      bh,
-	//			})
-	//			return err
-	//		}
-	//		sp.syncMutex.Unlock()
-	//	}
-	//	return nil
-	//}
 
 	if sp.chain.State().Index().Have(bh) {
 		return nil
@@ -272,14 +248,16 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 			return err
 		}
 	}
-	// If we detect the other node has more blocks than us, we should ask for blocks recursively until fully synced.
-	for {
-		sp.syncMutex.Lock()
-		ourVersion := sp.versionMsg()
-		if theirVersion.LastBlock > ourVersion.LastBlock {
-			sp.syncInfo.syncing = true
-			sp.syncInfo.withPeer = id
-			sp.syncInfo.lastRequest = time.Now()
+	// If the node has more blocks, start the syncing process.
+	// The syncing process must ensure no unnecesary blocks are requested and we don't start a sync routine with other peer.
+	// We also need to check if this peer stops sending block msg.
+	if theirVersion.LastBlock > ourVersion.LastBlock {
+		sp.syncInfo.lastRequest = time.Now()
+		sp.syncInfo.withPeer = id
+		sp.syncInfo.syncing = true
+		for {
+			sp.syncMutex.Lock()
+			ourVersion = sp.versionMsg()
 			err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
 				LocatorHashes: sp.chain.GetLocatorHashes(),
 				HashStop:      chainhash.Hash{},
@@ -287,21 +265,20 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 			if err != nil {
 				return err
 			}
-			//fmt.Println(!sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout)
-			//if !sp.syncInfo.syncing || time.Since(sp.syncInfo.lastRequest) > StaleBlockRequestTimeout {
-			//	sp.syncInfo.lastRequest = time.Now()
-			//	sp.syncInfo.withPeer = id
-			//	sp.syncInfo.syncing = true
-			//	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-			//		LocatorHashes: sp.chain.GetLocatorHashes(),
-			//		HashStop:      chainhash.Hash{},
-			//	})
-			//	if err != nil {
-			//		return err
-			//	}
-			//}
-		} 
+			// When we finished the sync send a last message to fetch blocks produced during sync.
+			if theirVersion.LastBlock <= ourVersion.LastBlock {
+				err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+					LocatorHashes: sp.chain.GetLocatorHashes(),
+					HashStop:      chainhash.Hash{},
+				})
+				if err != nil {
+					return err
+				}
+				break
+			}
+		}
 	}
+	return nil
 }
 
 func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
