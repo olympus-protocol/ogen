@@ -5,17 +5,19 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-const MaxBlockSize = 1024 * 512 // 512 KB
-const MaxBlocksPerMsg = 2500
+const MaxBlockSize = 1024 * 1024 * 5 // 5 MB
+const MaxBlocksPerMsg = 500
 
 type MsgBlocks struct {
 	Blocks []primitives.Block
 }
 
+// Marshal serializes the data to bytes
 func (m *MsgBlocks) Marshal() ([]byte, error) {
 	return ssz.Marshal(m)
 }
 
+// Unmarshal deserializes the data
 func (m *MsgBlocks) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, m)
 }

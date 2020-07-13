@@ -39,10 +39,12 @@ type MessageHeader struct {
 	Checksum [4]byte
 }
 
+// Marshal serializes the data to bytes
 func (h *MessageHeader) Marshal() ([]byte, error) {
 	return ssz.Marshal(h)
 }
 
+// Unmarshal deserializes the data
 func (h *MessageHeader) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, h)
 }
