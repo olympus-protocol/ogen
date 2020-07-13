@@ -10,10 +10,12 @@ type MsgGetBlocks struct {
 	LocatorHashes []chainhash.Hash
 }
 
+// Marshal serializes the data to bytes
 func (m *MsgGetBlocks) Marshal() ([]byte, error) {
 	return ssz.Marshal(m)
 }
 
+// Unmarshal deserializes the data
 func (m *MsgGetBlocks) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, m)
 }

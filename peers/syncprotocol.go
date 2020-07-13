@@ -151,12 +151,12 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 
 func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
 	// This should only be sent on a response of getblocks.
-	if !sp.syncInfo.syncing {
-		return errors.New("received non-request blocks message")
-	}
-	if id != sp.syncInfo.withPeer {
-		return errors.New("received block message from non-requested peer")
-	}
+	//if !sp.syncInfo.syncing {
+	//	return errors.New("received non-request blocks message")
+	//}
+	//if id != sp.syncInfo.withPeer {
+	//	return errors.New("received block message from non-requested peer")
+	//}
 	msg, ok := rawMsg.(*p2p.MsgBlocks)
 	if !ok {
 		return errors.New("did not receive blocks message")
@@ -255,28 +255,30 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		sp.syncInfo.lastRequest = time.Now()
 		sp.syncInfo.withPeer = id
 		sp.syncInfo.syncing = true
-		for {
-			sp.syncMutex.Lock()
-			ourVersion = sp.versionMsg()
-			err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-				LocatorHashes: sp.chain.GetLocatorHashes(),
-				HashStop:      chainhash.Hash{},
-			})
-			if err != nil {
-				return err
-			}
-			// When we finished the sync send a last message to fetch blocks produced during sync.
-			if theirVersion.LastBlock <= ourVersion.LastBlock {
+		go func(their *p2p.MsgVersion, ours *p2p.MsgVersion) {
+			for {
+				sp.syncMutex.Lock()
+				ours = sp.versionMsg()
 				err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
 					LocatorHashes: sp.chain.GetLocatorHashes(),
 					HashStop:      chainhash.Hash{},
 				})
 				if err != nil {
-					return err
+					return
 				}
-				break
+				// When we finished the sync send a last message to fetch blocks produced during sync.
+				if their.LastBlock <= ours.LastBlock {
+					err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+						LocatorHashes: sp.chain.GetLocatorHashes(),
+						HashStop:      chainhash.Hash{},
+					})
+					if err != nil {
+						return
+					}
+					break
+				}
 			}
-		}
+		}(theirVersion, ourVersion)
 	}
 	return nil
 }

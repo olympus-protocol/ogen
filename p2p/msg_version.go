@@ -12,10 +12,12 @@ type MsgVersion struct {
 	Timestamp uint64 // 8 bytes
 }
 
+// Marshal serializes the data to bytes
 func (m *MsgVersion) Marshal() ([]byte, error) {
 	return ssz.Marshal(m)
 }
 
+// Unmarshal deserializes the data
 func (m *MsgVersion) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, m)
 }

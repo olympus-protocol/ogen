@@ -11,10 +11,12 @@ type MsgAddr struct {
 	Addr [][]byte
 }
 
+// Marshal serializes the data to bytes
 func (m *MsgAddr) Marshal() ([]byte, error) {
 	return ssz.Marshal(m)
 }
 
+// Unmarshal deserializes the data
 func (m *MsgAddr) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(b, m)
 }
