@@ -50,7 +50,6 @@ func NewDiscoveryProtocol(ctx context.Context, host *HostNode, config Config) (*
 		return nil, err
 	}
 	host.Notify(dp)
-
 	return dp, nil
 }
 
@@ -92,6 +91,12 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		if err := cm.host.host.Connect(ctx, *p); err != nil {
 			cm.log.Tracef("error connecting to suggested peer %s: %s", p, err)
 			cancel()
+			continue
+		}
+		//save connected peer
+		err = cm.host.SavePeer(pma)
+		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 		cancel()

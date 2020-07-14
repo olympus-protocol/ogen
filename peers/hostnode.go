@@ -3,6 +3,8 @@ package peers
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
+	"fmt"
 	"net"
 	"path"
 	"sync"
@@ -40,6 +42,8 @@ const heartbeatInterval = 20 * time.Second
 
 var configBucketKey = []byte("config")
 var privKeyDbKey = []byte("privkey")
+var peersDbKey = []byte("peers")
+var dbpath string
 
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
@@ -107,6 +111,9 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 			}
 			keyBytes = privBytes
 		}
+
+		dbpath = config.Path
+
 		key, err := crypto.UnmarshalPrivateKey(keyBytes)
 		if err != nil {
 			return err
@@ -115,19 +122,52 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		priv = key
 		return nil
 	})
+	//retrieve the saved addresses
+	fmt.Println("Retrieve addressses")
+	fmt.Println(err.Error())
+	var savedAddresses []multiaddr.Multiaddr
+	_ = netDB.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
+		if b == nil {
+			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
+			if err != nil {
+				return nil
+			}
+		}
+		_ = b.ForEach(func(k, v []byte) error {
+			addr, _ := multiaddr.NewMultiaddrBytes(k)
+			savedAddresses = append(savedAddresses, addr)
+			return nil
+		})
+		return nil
+	})
+	fmt.Println("Retrieved addressses")
+	s, _ := json.MarshalIndent(savedAddresses, "", "\t")
+	fmt.Println(string(s))
 	if err != nil {
+		fmt.Println("XI")
 		return nil, err
 	}
 	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
 	if err != nil {
+		fmt.Println("X2")
 		return nil, err
 	}
 
 	listen, err := mnet.FromNetAddr(netAddr)
 	if err != nil {
+		fmt.Println("X3")
 		return nil, err
 	}
 	listenAddress := []multiaddr.Multiaddr{listen}
+	fmt.Println("Prev")
+	s, _ = json.MarshalIndent(listenAddress, "", "\t")
+	fmt.Println(string(s))
+
+	listenAddress = append(listenAddress, savedAddresses...)
+	s, _ = json.MarshalIndent(listenAddress, "", "\t")
+	fmt.Println(string(s))
+	fmt.Println("sur")
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs(listenAddress...),
@@ -327,4 +367,25 @@ func (node *HostNode) Start() error {
 	}
 
 	return nil
+}
+
+func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
+	fmt.Println("Saving peer " + pma.String())
+	netDB, err := bbolt.Open(path.Join(dbpath, "net.db"), 0600, nil)
+	if err != nil {
+		return err
+	}
+	err = netDB.Update(func(tx *bbolt.Tx) error {
+		b := node.configBucket.Bucket(peersDbKey)
+		// If the nested bucket doesn't exist, create one
+		if b == nil {
+			b, err = node.configBucket.CreateBucketIfNotExists(peersDbKey)
+			if err != nil {
+				return err
+			}
+		}
+		err = b.Put(pma.Bytes(), nil)
+		return nil
+	})
+	return err
 }
