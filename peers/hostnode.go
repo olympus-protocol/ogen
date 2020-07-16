@@ -3,8 +3,6 @@ package peers
 import (
 	"context"
 	"crypto/rand"
-	"encoding/json"
-	"fmt"
 	"net"
 	"path"
 	"sync"
@@ -120,18 +118,21 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		}
 
 		priv = key
+
 		return nil
 	})
+	if err != nil {
+		return nil, err
+
+	}
 	//retrieve the saved addresses
-	fmt.Println("Retrieve addressses")
-	fmt.Println(err.Error())
 	var savedAddresses []multiaddr.Multiaddr
-	_ = netDB.View(func(tx *bbolt.Tx) error {
+	err = netDB.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
 		if b == nil {
 			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
 			if err != nil {
-				return nil
+				return err
 			}
 		}
 		_ = b.ForEach(func(k, v []byte) error {
@@ -141,33 +142,26 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		})
 		return nil
 	})
-	fmt.Println("Retrieved addressses")
-	s, _ := json.MarshalIndent(savedAddresses, "", "\t")
-	fmt.Println(string(s))
+	defer netDB.Close()
 	if err != nil {
-		fmt.Println("XI")
 		return nil, err
+
 	}
+
 	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
 	if err != nil {
-		fmt.Println("X2")
 		return nil, err
 	}
 
 	listen, err := mnet.FromNetAddr(netAddr)
 	if err != nil {
-		fmt.Println("X3")
 		return nil, err
 	}
 	listenAddress := []multiaddr.Multiaddr{listen}
-	fmt.Println("Prev")
-	s, _ = json.MarshalIndent(listenAddress, "", "\t")
-	fmt.Println(string(s))
 
+	//append saved addresses
 	listenAddress = append(listenAddress, savedAddresses...)
-	s, _ = json.MarshalIndent(listenAddress, "", "\t")
-	fmt.Println(string(s))
-	fmt.Println("sur")
+
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs(listenAddress...),
@@ -370,22 +364,21 @@ func (node *HostNode) Start() error {
 }
 
 func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
-	fmt.Println("Saving peer " + pma.String())
 	netDB, err := bbolt.Open(path.Join(dbpath, "net.db"), 0600, nil)
 	if err != nil {
 		return err
 	}
 	err = netDB.Update(func(tx *bbolt.Tx) error {
-		b := node.configBucket.Bucket(peersDbKey)
-		// If the nested bucket doesn't exist, create one
+		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
 		if b == nil {
-			b, err = node.configBucket.CreateBucketIfNotExists(peersDbKey)
+			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
 			if err != nil {
 				return err
 			}
 		}
 		err = b.Put(pma.Bytes(), nil)
-		return nil
+		return err
 	})
+	defer netDB.Close()
 	return err
 }

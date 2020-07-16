@@ -35,5 +35,6 @@ func TestReadSavedPeers(t *testing.T) {
 		})
 		return nil
 	})
+	defer netDB.Close()
 
 }
