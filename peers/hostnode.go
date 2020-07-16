@@ -3,6 +3,7 @@ package peers
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"net"
 	"path"
 	"sync"
@@ -41,7 +42,6 @@ const heartbeatInterval = 20 * time.Second
 var configBucketKey = []byte("config")
 var privKeyDbKey = []byte("privkey")
 var peersDbKey = []byte("peers")
-var dbpath string
 
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
@@ -71,6 +71,9 @@ type HostNode struct {
 
 	// database buckets
 	configBucket *bbolt.Bucket
+
+	// database reference
+	configDb *bbolt.DB
 }
 
 // NewHostNode creates a host node
@@ -110,8 +113,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 			keyBytes = privBytes
 		}
 
-		dbpath = config.Path
-
 		key, err := crypto.UnmarshalPrivateKey(keyBytes)
 		if err != nil {
 			return err
@@ -142,7 +143,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		})
 		return nil
 	})
-	defer netDB.Close()
 	if err != nil {
 		return nil, err
 
@@ -202,6 +202,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		log:               config.Log,
 		topics:            map[string]*pubsub.Topic{},
 		configBucket:      configBucket,
+		configDb:          netDB,
 	}
 
 	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)
@@ -364,11 +365,11 @@ func (node *HostNode) Start() error {
 }
 
 func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
-	netDB, err := bbolt.Open(path.Join(dbpath, "net.db"), 0600, nil)
-	if err != nil {
-		return err
+	if node.configDb == nil {
+		return errors.New("no saved db")
 	}
-	err = netDB.Update(func(tx *bbolt.Tx) error {
+	err := node.configDb.Update(func(tx *bbolt.Tx) error {
+		var err error
 		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
 		if b == nil {
 			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
@@ -379,6 +380,5 @@ func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
 		err = b.Put(pma.Bytes(), nil)
 		return err
 	})
-	defer netDB.Close()
 	return err
 }

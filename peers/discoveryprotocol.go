@@ -84,7 +84,6 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 			continue
 		}
 		if p.ID == cm.host.host.ID() {
-			fmt.Println("repeated peer")
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)

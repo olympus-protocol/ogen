@@ -13,9 +13,10 @@ func TestReadSavedPeers(t *testing.T) {
 
 	var configBucketKey = []byte("config")
 	var peersDbKey = []byte("peers")
-	netDB, err := bbolt.Open(path.Join("/home/waychin/.config/ogen", "net.db"), 0600, nil)
+	netDB, err := bbolt.Open(path.Join("", "net.db"), 0600, nil)
 	if err != nil {
-		t.Error("could not open db")
+		fmt.Println("add a valid path")
+		return
 	}
 	//retrieve the saved addresses
 	_ = netDB.View(func(tx *bbolt.Tx) error {
