@@ -2,6 +2,7 @@ package peers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -63,6 +64,9 @@ func newProtocolHandler(ctx context.Context, id protocol.ID, host *HostNode, con
 
 	host.setStreamHandler(id, ph.handleStream)
 	host.Notify(ph)
+
+	s, _ := json.MarshalIndent(ph.messageHandlers, "", "\t")
+	fmt.Print(string(s))
 
 	return ph
 }

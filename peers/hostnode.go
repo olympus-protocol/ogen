@@ -2,7 +2,6 @@ package peers
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"net"
 	"path"
@@ -38,10 +37,12 @@ type Config struct {
 
 const timeoutInterval = 60 * time.Second
 const heartbeatInterval = 20 * time.Second
+const initialBanScore = 5
 
 var configBucketKey = []byte("config")
 var privKeyDbKey = []byte("privkey")
 var peersDbKey = []byte("peers")
+var bansDbKey = []byte("bans")
 
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
@@ -83,66 +84,14 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	if err != nil {
 		return nil, err
 	}
-	var priv crypto.PrivKey
-	var configBucket *bbolt.Bucket
-	err = netDB.Update(func(tx *bbolt.Tx) error {
-		configBucket = tx.Bucket(configBucketKey)
-		// If the bucket doesn't exist, initialize the database
-		if configBucket == nil {
-			configBucket, err = tx.CreateBucketIfNotExists(configBucketKey)
-			if err != nil {
-				return err
-			}
-
-		}
-		var keyBytes []byte
-		keyBytes = configBucket.Get(privKeyDbKey)
-		if keyBytes == nil {
-			priv, _, err = crypto.GenerateEd25519Key(rand.Reader)
-			if err != nil {
-				return err
-			}
-			privBytes, err := crypto.MarshalPrivateKey(priv)
-			if err != nil {
-				return err
-			}
-			err = configBucket.Put(privKeyDbKey, privBytes)
-			if err != nil {
-				return err
-			}
-			keyBytes = privBytes
-		}
-
-		key, err := crypto.UnmarshalPrivateKey(keyBytes)
-		if err != nil {
-			return err
-		}
-
-		priv = key
-
-		return nil
-	})
+	priv, configBucket, err := GetPrivKey(netDB)
 	if err != nil {
 		return nil, err
 
 	}
-	//retrieve the saved addresses
-	var savedAddresses []multiaddr.Multiaddr
-	err = netDB.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
-		if b == nil {
-			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		_ = b.ForEach(func(k, v []byte) error {
-			addr, _ := multiaddr.NewMultiaddrBytes(k)
-			savedAddresses = append(savedAddresses, addr)
-			return nil
-		})
-		return nil
-	})
+
+	// get saved peers
+	savedAddresses, err := GetSavedPeers(netDB)
 	if err != nil {
 		return nil, err
 
@@ -364,21 +313,31 @@ func (node *HostNode) Start() error {
 	return nil
 }
 
+// Database - hostNode Functions
+
 func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
 	if node.configDb == nil {
 		return errors.New("no saved db")
 	}
-	err := node.configDb.Update(func(tx *bbolt.Tx) error {
-		var err error
-		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
-		if b == nil {
-			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		err = b.Put(pma.Bytes(), nil)
-		return err
-	})
+	return SavePeer(node.configDb, pma)
+}
+
+func (node *HostNode) BanScorePeer(id peer.ID) error {
+	if node.configDb == nil {
+		return errors.New("no saved db")
+	}
+	err := BanscorePeer(node.configDb, id)
+	if err == nil {
+		node.log.Errorf("banned peer: %s", id.String())
+		// disconnect
+		_ = node.DisconnectPeer(id)
+	}
 	return err
+}
+
+func (node *HostNode) IsPeerBanned(id peer.ID) bool {
+	if node.configDb == nil {
+		return false
+	}
+	return IsPeerBanned(node.configDb, id)
 }
