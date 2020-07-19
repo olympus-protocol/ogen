@@ -1,10 +1,11 @@
 //+build ogen_test
 
-package ogen_test
+package integration_test
 
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -57,7 +58,7 @@ var testParams = params.ChainParams{
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              80,
+	EjectionBalance:              95,
 	MaxBalanceChurnQuotient:      32,
 	MaxVotesPerBlock:             32,
 	LatestBlockRootsLength:       64,
@@ -149,22 +150,58 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	testServer.Proposer.OpenKeystore("test")
+	testServer.Proposer.Start()
 	// Generate the chain up to 50 blocks
 	go testServer.Start()
+	go printNodesState(1, testServer)
 	hostMultiAddr.Addrs = testServer.HostNode.GetHost().Addrs()
 	hostMultiAddr.ID = testServer.HostNode.GetHost().ID()
-	// Run test frameworks
-	go runSecondNode()
-	go runThirdNode()
 
+	// Run test frameworks
+	go func(s *server.Server) {
+		// Once the main server has 25 blocks, start the second node to test sync.
+		for {
+			time.Sleep(time.Second)
+			if s.Chain.State().Tip().Height >= 25 {
+				go runSecondNode()
+				break
+			}
+		}
+		return
+	}(testServer)
+
+	go func(s *server.Server) {
+		// Once the main server has 50 blocks, start the third node to test sync.
+		for {
+			time.Sleep(time.Second)
+			if s.Chain.State().Tip().Height >= 50 {
+				go runThirdNode()
+				break
+			}
+		}
+		return
+	}(testServer)
+
+	go func(s *server.Server) {
+		// Stop proposing at block 100 and check validators balances
+		for {
+			time.Sleep(time.Second)
+			if s.Chain.State().Tip().Height == 1000 {
+				s.Proposer.Stop()
+				s.Keystore.Close()
+				break
+			}
+		}
+		return
+	}(testServer)
 	<-ctx.Done()
 	bdb.Close()
 	err = testServer.Stop()
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.RemoveAll(folder)
+	//os.RemoveAll(folder)
 }
 
 // The second node is in charge of testing a "good" peer behaviour.
@@ -202,6 +239,7 @@ func runSecondNode() {
 		log.Fatal(err)
 	}
 	go testServer.Start()
+	go printNodesState(2, testServer)
 	<-ctx.Done()
 	bdb.Close()
 	err = testServer.Stop()
@@ -245,6 +283,7 @@ func runThirdNode() {
 		log.Fatal(err)
 	}
 	go testServer.Start()
+	go printNodesState(3, testServer)
 	<-ctx.Done()
 	bdb.Close()
 	err = testServer.Stop()
@@ -252,4 +291,11 @@ func runThirdNode() {
 		log.Fatal(err)
 	}
 	os.RemoveAll(thirdNodeFolder)
+}
+
+func printNodesState(num int, s *server.Server) {
+	for {
+		time.Sleep(time.Second)
+		fmt.Printf("Node: %v - Hash: %v Height: %v \n", num, s.Chain.State().Tip().Hash, s.Chain.State().Tip().Height)
+	}
 }
