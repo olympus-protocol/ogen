@@ -25,7 +25,11 @@ func (vs *VoteSlashing) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (vs *VoteSlashing) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, vs)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, vs)
 }
 
 // Hash calculates the hash of the slashing.
@@ -61,7 +65,11 @@ func (rs *RANDAOSlashing) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, rs)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, rs)
 }
 
 // Hash calculates the hash of the RANDAO slashing.
@@ -103,7 +111,11 @@ func (ps *ProposerSlashing) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (ps *ProposerSlashing) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, ps)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, ps)
 }
 
 // Hash calculates the hash of the proposer slashing.

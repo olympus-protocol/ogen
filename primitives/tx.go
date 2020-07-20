@@ -147,7 +147,11 @@ func (c *TransferMultiPayload) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (c *TransferMultiPayload) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, c)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, c)
 }
 
 // Hash calculates the transaction ID of the payload.

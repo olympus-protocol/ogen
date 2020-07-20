@@ -130,7 +130,11 @@ func (c *CommunityVoteData) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (c *CommunityVoteData) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, c)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, c)
 }
 
 // Copy copies the community vote data.
@@ -195,7 +199,11 @@ func (gv *GovernanceVote) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (gv *GovernanceVote) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, gv)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, gv)
 }
 
 func (gv *GovernanceVote) Valid() bool {

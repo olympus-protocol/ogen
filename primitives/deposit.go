@@ -66,7 +66,11 @@ type DepositData struct {
 
 // Marshal encodes the data.
 func (d *DepositData) Marshal() ([]byte, error) {
-	return ssz.Marshal(d)
+	b, err := ssz.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
