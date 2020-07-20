@@ -5,6 +5,7 @@ package sync_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -18,12 +19,9 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
-
-var hostMultiAddr peer.AddrInfo
-
-var initializationParams primitives.InitializationParameters
 
 // Sync test.
 // 1. The initial node will load pre-built chain containing 1000 blocks at a certain genesis time.
@@ -35,7 +33,11 @@ func TestMain(m *testing.M) {
 	os.Mkdir(testdata.Node1Folder, 0777)
 
 	// Create logger
-	log := logger.New(os.Stdin)
+	logfile, err := os.Create(testdata.Node1Folder + "/log.log")
+	if err != nil {
+		panic(err)
+	}
+	log := logger.New(logfile)
 	log.WithDebug()
 
 	// Copy files from data folder
@@ -55,6 +57,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	// Create a keystore
 	log.Info("Opening keystore")
 	keystore, err := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
@@ -66,23 +69,20 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 	keystore.Close()
-	addr, err := testdata.PremineAddr.PublicKey().ToAddress(testdata.IntTestParams.AddrPrefix.Public)
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	validators := []primitives.ValidatorInitialization{}
 	for _, vk := range validatorKeys {
 		val := primitives.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
-			PayeeAddress: addr,
+			PayeeAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, []byte{163, 15, 14, 86, 107, 205, 124, 126, 243, 101, 198, 2, 95, 29, 158, 221, 60, 108, 201, 78}),
 		}
 		validators = append(validators, val)
 	}
-	
+
 	// Create the initialization parameters
-	initializationParams = primitives.InitializationParameters{
+	ip := primitives.InitializationParameters{
 		GenesisTime:       time.Unix(1595126983, 0),
-		PremineAddress:    addr,
+		PremineAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, []byte{163, 15, 14, 86, 107, 205, 124, 126, 243, 101, 198, 2, 95, 29, 158, 221, 60, 108, 201, 78}),
 		InitialValidators: validators,
 	}
 	// Load the block database
@@ -96,17 +96,20 @@ func TestMain(m *testing.M) {
 	config.InterruptListener(log, cancel)
 	c := testdata.Conf
 	c.DataFolder = testdata.Node1Folder
-	s, err := server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, initializationParams)
+	s, err := server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	hostMultiAddr.Addrs = s.HostNode.GetHost().Addrs()
-	hostMultiAddr.ID = s.HostNode.GetHost().ID()
-
 	go s.Start()
-	go runSecondNode()
-
+	var initialValidators []primitives.ValidatorInitialization
+	for _, sv := range s.Chain.State().TipState().ValidatorRegistry {
+		initialValidators = append(initialValidators, primitives.ValidatorInitialization{
+			PubKey:       hex.EncodeToString(sv.PubKey),
+			PayeeAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, sv.PayeeAddress[:]),
+		})
+	}
+	ip.InitialValidators = initialValidators
+	go runSecondNode(s, ip)
 	<-ctx.Done()
 	bdb.Close()
 	err = s.Stop()
@@ -116,7 +119,7 @@ func TestMain(m *testing.M) {
 	os.RemoveAll(testdata.Node1Folder)
 }
 
-func runSecondNode() {
+func runSecondNode(ps *server.Server, ip primitives.InitializationParameters) {
 	os.Mkdir(testdata.Node2Folder, 0777)
 	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
 	if err != nil {
@@ -131,20 +134,42 @@ func runSecondNode() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	psAddr := peer.AddrInfo{
+		ID:    ps.HostNode.GetHost().ID(),
+		Addrs: ps.HostNode.GetHost().Network().ListenAddresses(),
+	}
 	c := testdata.Conf
 	c.DataFolder = testdata.Node2Folder
-	c.AddNodes = []peer.AddrInfo{hostMultiAddr}
+	c.AddNodes = []peer.AddrInfo{psAddr}
 	c.RPCPort = "24000"
-	testServer, err := server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, initializationParams)
+	s, err := server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go testServer.Start()
+	go s.Start()
+	stall := 0
+	go func(ps *server.Server, s *server.Server, stall int) {
+		height := s.Chain.State().Height()
+		for {	
+			if ps.Chain.State().Tip().Hash.IsEqual(&s.Chain.State().Tip().Hash) {
+				os.Exit(0)
+			}		
+			time.Sleep(time.Second)
+			if s.Chain.State().Height() == height {
+				stall++
+			} else {
+				height = s.Chain.State().Height()
+			}
+			if stall >= 30 {
+				fmt.Println("test failed - stall time exceed")
+				os.Exit(0)
+			}
+		}
+	}(ps, s, stall)
 
 	<-ctx.Done()
 	bdb.Close()
-	err = testServer.Stop()
+	err = s.Stop()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 const MaxBlockSize = 1024 * 1024 * 5 // 5 MB
-const MaxBlocksPerMsg = 5
+const MaxBlocksPerMsg = 500
 
 // MsgBlocks is the struct of the message the is transmited upon the network.
 type MsgBlocks struct {
