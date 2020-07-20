@@ -7,6 +7,9 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// MaxDepositLength is the maximum amount of bytes a deposit can contain.
+const MaxDepositLength = 96 + 48 + MaxDepositDataSize
+
 // Deposit is a deposit a user can submit to queue as a validator.
 type Deposit struct {
 	// PublicKey is the public key of the address that is depositing.
@@ -37,10 +40,12 @@ func (d *Deposit) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(de, d)
 }
 
+// GetPublicKey returns the bls public key of the deposit.
 func (d *Deposit) GetPublicKey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(d.PublicKey)
 }
 
+// GetSignature returns the bls signature of the deposit.
 func (d *Deposit) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(d.Signature)
 }
@@ -51,13 +56,15 @@ func (d *Deposit) Hash() chainhash.Hash {
 	return chainhash.Hash(hash)
 }
 
+// MaxDepositDataSize is the maximum amount of bytes the deposit data can contain.
+const MaxDepositDataSize = 164
+
 // DepositData is the part of the deposit that is signed
 type DepositData struct {
 	// PublicKey is the key used for the validator.
 	PublicKey []byte
 
-	// ProofOfPossession is the public key signed by the private key to prove that you
-	// own the address and prevent rogue public-key attacks.
+	// ProofOfPossession is the public key signed by the private key to prove that you own the address and prevent rogue public-key attacks.
 	ProofOfPossession []byte
 
 	// WithdrawalAddress is the address to withdraw to.
@@ -82,10 +89,12 @@ func (d *DepositData) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(de, d)
 }
 
+// GetPublicKey returns the bls public key of the deposit data.
 func (d *DepositData) GetPublicKey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(d.PublicKey)
 }
 
+// GetSignature returns the bls signature of the deposit data.
 func (d *DepositData) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(d.ProofOfPossession)
 }

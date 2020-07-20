@@ -6,8 +6,10 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-var MaxBlockHeaderBytes = 76
+// MaxBlockHeaderBytes is the maximum amount of bytes a header can contain.
+const MaxBlockHeaderBytes = 372
 
+// BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
 	Version                    uint32
 	Nonce                      uint32

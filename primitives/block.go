@@ -6,9 +6,8 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-const (
-	maxBlockSize = 1024 * 512 // 512 kilobytes
-)
+// MaxBlockSize defines the maximum bytes on a block object.
+const MaxBlockSize = 1024 * 1024 * 2 // 2 MB
 
 // Block is a block in the blockchain.
 type Block struct {

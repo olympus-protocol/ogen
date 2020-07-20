@@ -6,6 +6,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// MsgGetBlocks is the message that contains the locator to fetch blocks.
 type MsgGetBlocks struct {
 	HashStop      chainhash.Hash
 	LocatorHashes []chainhash.Hash
@@ -29,18 +30,12 @@ func (m *MsgGetBlocks) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(d, m)
 }
 
+// Command returns the message topic
 func (m *MsgGetBlocks) Command() string {
 	return MsgGetBlocksCmd
 }
 
+// MaxPayloadLength returns the maximum size of the MsgGetBlocks message.
 func (m *MsgGetBlocks) MaxPayloadLength() uint32 {
-	return chainhash.HashSize + 40*chainhash.HashSize + 9
-}
-
-func NewMsgGetBlock(hashStop chainhash.Hash, locatorHashes []chainhash.Hash) *MsgGetBlocks {
-	m := &MsgGetBlocks{
-		HashStop:      hashStop,
-		LocatorHashes: locatorHashes,
-	}
-	return m
+	return chainhash.HashSize + (40*chainhash.HashSize + 9)
 }

@@ -11,6 +11,18 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+var (
+	// MaxSingleTransferPayload is the maximum payload size for a single transfer transaction.
+	MaxSingleTransferPayload = 188
+
+	// MaxMultipleTransferPayload is the maximum payload size for a multiple transfer transaction.
+	// Multiple Transfers are m-of-n signed transactions. The maximum defined amount of keys available to be used is 7 keys with the signatures.
+	MaxMultipleTransferPayload = 1068
+
+	// MaxTransactionSize is the maximum size of the transaction information without the payload.
+	MaxTransactionSize = 8
+)
+
 const (
 	// TxTransferSingle represents a transaction sending money from a single
 	// address to another address.
@@ -24,12 +36,12 @@ const (
 // TransferSinglePayload is a transaction payload for sending money from
 // a single address to another address.
 type TransferSinglePayload struct {
-	To            [20]byte
-	FromPublicKey []byte
-	Amount        uint64
-	Nonce         uint64
-	Fee           uint64
-	Signature     []byte
+	To            [20]byte // 20 bytes
+	FromPublicKey []byte   // 48 bytes
+	Amount        uint64   // 8 bytes
+	Nonce         uint64   // 8 bytes
+	Fee           uint64   // 8 bytes
+	Signature     []byte   // 96 bytes
 }
 
 // Hash calculates the transaction ID of the payload.
@@ -72,10 +84,12 @@ func (c TransferSinglePayload) SignatureMessage() chainhash.Hash {
 	return chainhash.HashH(b)
 }
 
+// GetSignature returns the bls signature of the transaction.
 func (c TransferSinglePayload) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(c.Signature)
 }
 
+// GetPublic returns the bls public key of the transaction.
 func (c TransferSinglePayload) GetPublic() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(c.FromPublicKey)
 }
@@ -129,11 +143,11 @@ var _ TxPayload = &TransferSinglePayload{}
 // TransferMultiPayload represents a transfer from a multisig to
 // another address.
 type TransferMultiPayload struct {
-	To       [20]byte
-	Amount   uint64
-	Nonce    uint64
-	Fee      uint64
-	MultiSig []byte
+	To       [20]byte // 20 bytes
+	Amount   uint64   // 8 bytes
+	Nonce    uint64   // 8 bytes
+	Fee      uint64   // 8 bytes
+	MultiSig []byte   // 1024 bytes
 }
 
 // Marshal encodes the data.
@@ -177,6 +191,7 @@ func (c TransferMultiPayload) SignatureMessage() chainhash.Hash {
 	return chainhash.HashH(b)
 }
 
+// GetPublic returns the bls public key of the multi signature transaction.
 func (c TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 	sig, err := c.GetSignature()
 	if err != nil {
@@ -185,6 +200,7 @@ func (c TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 	return sig.GetPublicKey()
 }
 
+// GetSignature returns the bls signature of the multi signature transaction.
 func (c TransferMultiPayload) GetSignature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer(c.MultiSig)
 	return bls.ReadFunctionalSignature(buf)
@@ -248,6 +264,7 @@ type Tx struct {
 	Payload []byte
 }
 
+// GetPayload returns the payload of the transaction.
 func (t *Tx) GetPayload() (TxPayload, error) {
 	switch t.Type {
 	case TxTransferMulti:
@@ -263,6 +280,7 @@ func (t *Tx) GetPayload() (TxPayload, error) {
 	}
 }
 
+// AppendPayload adds a specific payload to the transaction.
 func (t *Tx) AppendPayload(p TxPayload) error {
 	buf, err := p.Marshal()
 	if err != nil {

@@ -5,9 +5,13 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// MaxAddrPerMsg defines the maximum address that can be added into an addr message.
 const MaxAddrPerMsg = 500
+
+// MaxAddrPerPeer defines the maximum amount of address that a single peer can send.
 const MaxAddrPerPeer = 2
 
+// MsgAddr is the struct for the response of getaddr.
 type MsgAddr struct {
 	Addr [][]byte
 }
@@ -30,15 +34,13 @@ func (m *MsgAddr) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(d, m)
 }
 
+// Command returns the message topic
 func (m *MsgAddr) Command() string {
 	return MsgAddrCmd
 }
 
+// MaxPayloadLength returns the maximum size of the MsgAddr message.
 func (m *MsgAddr) MaxPayloadLength() uint32 {
-	netAddressSize := 26 // Max NetAddress size
+	netAddressSize := 0 // TODO check size of the ma multiaddr size.
 	return uint32(MaxAddrPerMsg * netAddressSize)
-}
-
-func NewMsgAddr() *MsgAddr {
-	return &MsgAddr{}
 }

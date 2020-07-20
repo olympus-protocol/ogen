@@ -13,8 +13,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// Multipub represents multiple public keys that can be signed by
-// some subset numNeeded.
+// Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
 	PublicKeys [][]byte
 	NumNeeded  uint16
@@ -111,7 +110,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  Multipub
-	Signatures [][]byte
+	Signatures [][]byte // 672
 	KeysSigned bitfield.Bitfield
 }
 

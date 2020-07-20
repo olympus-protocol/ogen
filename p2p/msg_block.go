@@ -6,9 +6,10 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-const MaxBlockSize = 1024 * 1024 * 5 // 5 MB
-const MaxBlocksPerMsg = 500
+// MaxBlocksPerMsg defines the maximum amount of blocks that a peer can send.
+const MaxBlocksPerMsg = 32
 
+// MsgBlocks is the struct of the message the is transmited upon the network.
 type MsgBlocks struct {
 	Blocks []primitives.Block
 }
@@ -31,15 +32,12 @@ func (m *MsgBlocks) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(d, m)
 }
 
+// Command returns the message topic
 func (m *MsgBlocks) Command() string {
 	return MsgBlocksCmd
 }
 
+// MaxPayloadLength returns the maximum size of the MsgBlocks message.
 func (m *MsgBlocks) MaxPayloadLength() uint32 {
-	return MaxBlockSize * MaxBlocksPerMsg
-}
-
-func NewMsgBlocks(b []primitives.Block) *MsgBlocks {
-	m := &MsgBlocks{b}
-	return m
+	return primitives.MaxBlockSize * MaxBlocksPerMsg
 }

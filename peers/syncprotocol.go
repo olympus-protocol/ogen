@@ -286,7 +286,11 @@ func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
 	lastBlockHeight := sp.chain.State().Tip().Height
 	buf := make([]byte, 8)
 	rand.Read(buf)
-	msg := p2p.NewMsgVersion(binary.LittleEndian.Uint64(buf), lastBlockHeight)
+	msg := &p2p.MsgVersion{
+		Nonce:     binary.LittleEndian.Uint64(buf),
+		LastBlock: lastBlockHeight,
+		Timestamp: uint64(time.Now().Unix()),
+	}
 	return msg
 }
 
