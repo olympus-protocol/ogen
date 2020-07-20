@@ -175,7 +175,6 @@ func (p *ProtocolHandler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
 	if !found {
 		return fmt.Errorf("not tracking peer %s", toPeer)
 	}
-
 	msgsChan <- msg
 	return nil
 }
