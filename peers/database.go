@@ -53,7 +53,7 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID) error {
 				if parsedPeer.ID == id {
 					// reduce score. If it reaches 0, ban
 					score, _ := strconv.Atoi(string(v))
-					fmt.Printf("peer %s has a banscore of: %s", id.String(), score)
+					fmt.Printf("peer %s has a banscore of: %s", id.String(), strconv.Itoa(score))
 					score -= 1
 					if score == 0 {
 
