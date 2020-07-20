@@ -24,10 +24,11 @@ import (
 )
 
 // Sync test.
-// 1. The initial node will load pre-built chain containing 1000 blocks at a certain genesis time.
-// 2. The second node will connect to the intial node and sync those 1000 blocks.
+// 1. The initial node will load pre-built chain containing 985 blocks at a certain genesis time.
+// 2. The second node will connect to the intial node and sync those 985 blocks.
 // 3. A third process will check the second node with timeouts to see if the sync is stalled at a certain point of the sync.
-// 	  if the second node finishes the sync of the 1000 blocks the test pass.
+// 	  if the second node finishes the sync of the 985 blocks the test pass.
+// There is a workaround to fetch the initilization params since those were not store during the generation process.
 func TestMain(m *testing.M) {
 	// Create datafolder
 	os.Mkdir(testdata.Node1Folder, 0777)
@@ -116,7 +117,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.RemoveAll(testdata.Node1Folder)
 }
 
 func runSecondNode(ps *server.Server, ip primitives.InitializationParameters) {
@@ -173,5 +173,4 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.RemoveAll(testdata.Node2Folder)
 }
