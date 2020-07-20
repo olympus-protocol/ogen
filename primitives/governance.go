@@ -10,11 +10,13 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// CommunityVoteDataInfo contains information about a community vote.
 type CommunityVoteDataInfo struct {
 	Hash chainhash.Hash
 	Data CommunityVoteData
 }
 
+// ReplacementVotes contains information about a replacement candidate selected.
 type ReplacementVotes struct {
 	Account [20]byte
 	Hash    chainhash.Hash
@@ -178,6 +180,7 @@ type GovernanceVote struct {
 	VoteEpoch     uint64
 }
 
+// Signature returns the governance vote bls signature.
 func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer([]byte{})
 	buf.Write(gv.FunctionalSig)
@@ -206,6 +209,7 @@ func (gv *GovernanceVote) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(d, gv)
 }
 
+// Valid returns a boolean that checks for validity of the vote.
 func (gv *GovernanceVote) Valid() bool {
 	sigHash := gv.SignatureHash()
 	sig, err := gv.Signature()

@@ -35,6 +35,7 @@ type Validator struct {
 	LastActiveEpoch  uint64
 }
 
+// StatusString returns the status on human readable string
 func (v *Validator) StatusString() string {
 	switch v.Status {
 	case StatusActive:
@@ -53,15 +54,15 @@ func (v *Validator) StatusString() string {
 }
 
 // IsActive checks if a validator is currently active.
-func (wr *Validator) IsActive() bool {
-	return wr.Status == StatusActive || wr.Status == StatusActivePendingExit
+func (v *Validator) IsActive() bool {
+	return v.Status == StatusActive || v.Status == StatusActivePendingExit
 }
 
 // IsActiveAtEpoch checks if a validator is active at a slot.
-func (wr *Validator) IsActiveAtEpoch(epoch uint64) bool {
-	return wr.IsActive() &&
-		(wr.FirstActiveEpoch == 0 || wr.FirstActiveEpoch <= epoch) &&
-		(wr.LastActiveEpoch == 0 || epoch <= wr.LastActiveEpoch)
+func (v *Validator) IsActiveAtEpoch(epoch uint64) bool {
+	return v.IsActive() &&
+		(v.FirstActiveEpoch == 0 || v.FirstActiveEpoch <= epoch) &&
+		(v.LastActiveEpoch == 0 || epoch <= v.LastActiveEpoch)
 }
 
 // Marshal encodes the data.
@@ -83,6 +84,6 @@ func (v *Validator) Unmarshal(b []byte) error {
 }
 
 // Copy returns a copy of the validator.
-func (wr *Validator) Copy() Validator {
-	return *wr
+func (v *Validator) Copy() Validator {
+	return *v
 }

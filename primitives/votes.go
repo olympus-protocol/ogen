@@ -49,21 +49,21 @@ func (av *AcceptedVoteInfo) Unmarshal(b []byte) error {
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
-func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
-	a2 := *a
+func (av *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
+	a2 := *av
 
-	a2.ParticipationBitfield = make([]uint8, len(a.ParticipationBitfield))
-	for i, b := range a.ParticipationBitfield {
+	a2.ParticipationBitfield = make([]uint8, len(av.ParticipationBitfield))
+	for i, b := range av.ParticipationBitfield {
 		a2.ParticipationBitfield[i] = b
 	}
 
-	a2.Data = a.Data.Copy()
+	a2.Data = av.Data.Copy()
 
 	return a2
 }
 
 // MaxVoteDataSize is the maximum size in bytes of vote data.
-const MaxVoteDataSize = 8 + 8 + 32 + 8 + 32 + 32
+const MaxVoteDataSize = 120
 
 // VoteData is the part of a vote that needs to be signed.
 type VoteData struct {
@@ -110,13 +110,11 @@ func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
 	// vs <= ss-min
 	// vs + min <= ss
 	// state slot >= vote slot + min
-
 	return v.Slot + p.MinAttestationInclusionDelay
 }
 
 func (v *VoteData) LastSlotValid(p *params.ChainParams) uint64 {
 	// ss <= vs+epoch-1
-
 	return v.Slot + p.EpochLength - 1
 }
 
@@ -197,6 +195,7 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 	}
 }
 
+// Hash returns the hash of the single validator vote.
 func (v *SingleValidatorVote) Hash() chainhash.Hash {
 	hash, _ := ssz.HashTreeRoot(v)
 	return chainhash.Hash(hash)

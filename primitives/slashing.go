@@ -7,8 +7,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// VoteSlashing is a slashing where validators vote in the span of their
-// other votes.
+// VoteSlashing is a slashing where validators vote in the span of their other votes.
 type VoteSlashing struct {
 	Vote1 MultiValidatorVote
 	Vote2 MultiValidatorVote
@@ -38,18 +37,22 @@ func (vs *VoteSlashing) Hash() chainhash.Hash {
 	return chainhash.Hash(hash)
 }
 
-// RANDAOSlashing is a slashing where a validator reveals their RANDAO
-// signature too early.
+// MaxRandaoSlashingLength is the maximum amount of bytes a randao slashing can contain.
+const MaxRandaoSlashingLength = 152
+
+// RANDAOSlashing is a slashing where a validator reveals their RANDAO signature too early.
 type RANDAOSlashing struct {
 	RandaoReveal    []byte
 	Slot            uint64
 	ValidatorPubkey []byte
 }
 
+// GetValidatorPubkey returns the validator bls public key.
 func (rs *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(rs.ValidatorPubkey)
 }
 
+// GetRandaoReveal returns the bls signature of the randao reveal.
 func (rs *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(rs.RandaoReveal)
 }
@@ -78,8 +81,7 @@ func (rs *RANDAOSlashing) Hash() chainhash.Hash {
 	return chainhash.Hash(hash)
 }
 
-// ProposerSlashing is a slashing to a block proposer that proposed
-// two blocks at the same slot.
+// ProposerSlashing is a slashing to a block proposer that proposed two blocks at the same slot.
 type ProposerSlashing struct {
 	BlockHeader1       BlockHeader
 	BlockHeader2       BlockHeader
@@ -88,14 +90,17 @@ type ProposerSlashing struct {
 	ValidatorPublicKey []byte
 }
 
+// GetValidatorPubkey returns the slashing bls validator public key.
 func (ps *ProposerSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(ps.ValidatorPublicKey)
 }
 
+// GetSignature1 returns the slashing first bls validator signature.
 func (ps *ProposerSlashing) GetSignature1() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(ps.Signature1)
 }
 
+// GetSignature2 returns the slashing second bls validator signature.
 func (ps *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(ps.Signature2)
 }

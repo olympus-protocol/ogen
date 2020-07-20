@@ -7,6 +7,9 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// MaxExitLength is the maximum amount of bytes an exit can contain.
+const MaxExitLength = 192
+
 // Exit exits the validator from the queue.
 type Exit struct {
 	ValidatorPubkey []byte
@@ -14,14 +17,17 @@ type Exit struct {
 	Signature       []byte
 }
 
+// GetWithdrawPubKey returns the withdraw bls public key
 func (e *Exit) GetWithdrawPubKey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(e.WithdrawPubkey)
 }
 
+// GetValidatorPubKey returns the validator bls public key
 func (e *Exit) GetValidatorPubKey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(e.ValidatorPubkey)
 }
 
+// GetSignature returns the exit bls signature.
 func (e *Exit) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(e.Signature)
 }
