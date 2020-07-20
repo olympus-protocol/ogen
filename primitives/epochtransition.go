@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -271,12 +272,20 @@ type EpochReceipt struct {
 
 // Marshal encodes the data.
 func (d *EpochReceipt) Marshal() ([]byte, error) {
-	return ssz.Marshal(d)
+	b, err := ssz.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (d *EpochReceipt) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, d)
+	de, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(de, d)
 }
 
 func (e EpochReceipt) TypeString() string {

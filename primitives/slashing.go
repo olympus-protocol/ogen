@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
@@ -15,12 +16,20 @@ type VoteSlashing struct {
 
 // Marshal encodes the data.
 func (vs *VoteSlashing) Marshal() ([]byte, error) {
-	return ssz.Marshal(vs)
+	b, err := ssz.Marshal(vs)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (vs *VoteSlashing) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, vs)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, vs)
 }
 
 // Hash calculates the hash of the slashing.
@@ -47,12 +56,20 @@ func (rs *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
 
 // Marshal encodes the data.
 func (rs *RANDAOSlashing) Marshal() ([]byte, error) {
-	return ssz.Marshal(rs)
+	b, err := ssz.Marshal(rs)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, rs)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, rs)
 }
 
 // Hash calculates the hash of the RANDAO slashing.
@@ -85,12 +102,20 @@ func (ps *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
 
 // Marshal encodes the data.
 func (ps *ProposerSlashing) Marshal() ([]byte, error) {
-	return ssz.Marshal(ps)
+	b, err := ssz.Marshal(ps)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (ps *ProposerSlashing) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, ps)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, ps)
 }
 
 // Hash calculates the hash of the proposer slashing.

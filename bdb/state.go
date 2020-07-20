@@ -244,7 +244,6 @@ func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*BlockNodeDisk
 	if err != nil {
 		return nil, err
 	}
-
 	d := new(BlockNodeDisk)
 	err = d.Unmarshal(diskSer)
 	return d, err

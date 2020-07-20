@@ -152,7 +152,7 @@ func (p *Proposer) ProposeBlocks() {
 			//if p.chain.State().Tip().Slot+p.params.EpochLength < slotToPropose {
 			//	p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
-				// wait 10 seconds before starting the next vote
+			// wait 10 seconds before starting the next vote
 			//	blockTimer = time.NewTimer(time.Second * 10)
 			//	continue
 			//}
@@ -285,7 +285,7 @@ func (p *Proposer) VoteForBlocks() {
 			//if p.chain.State().Tip().Slot+p.params.EpochLength < slotToVote {
 			//	p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
-				// wait 10 seconds before starting the next vote
+			// wait 10 seconds before starting the next vote
 			//	voteTimer = time.NewTimer(time.Second * 10)
 			//	continue
 			//}

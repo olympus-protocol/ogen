@@ -2,6 +2,7 @@ package primitives
 
 import (
 	fastssz "github.com/ferranbt/fastssz"
+	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
@@ -27,12 +28,20 @@ type CoinsState struct {
 
 // Marshal serialize to bytes the struct
 func (u *CoinsState) Marshal() ([]byte, error) {
-	return ssz.Marshal(u)
+	b, err := ssz.Marshal(u)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal deserialize the bytes to struct
 func (u *CoinsState) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, u)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, u)
 }
 
 // MarshalSSZ uses the fastssz interface to override the ssz Marshal function

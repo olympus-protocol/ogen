@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -12,12 +13,20 @@ type MsgGetBlocks struct {
 
 // Marshal serializes the data to bytes
 func (m *MsgGetBlocks) Marshal() ([]byte, error) {
-	return ssz.Marshal(m)
+	b, err := ssz.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal deserializes the data
 func (m *MsgGetBlocks) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 func (m *MsgGetBlocks) Command() string {

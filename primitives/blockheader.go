@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -27,12 +28,20 @@ type BlockHeader struct {
 
 // Marshal encodes the data.
 func (bh *BlockHeader) Marshal() ([]byte, error) {
-	return ssz.Marshal(bh)
+	b, err := ssz.Marshal(bh)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (bh *BlockHeader) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, bh)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, bh)
 }
 
 // Hash calculates the hash of the block header.
