@@ -16,7 +16,11 @@ type CombinedSignature struct {
 
 // Marshal encodes the data.
 func (cs *CombinedSignature) Marshal() ([]byte, error) {
-	return ssz.Marshal(cs)
+	b, err := ssz.Marshal(cs)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.

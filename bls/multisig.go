@@ -22,8 +22,11 @@ type Multipub struct {
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() []byte {
-	b, _ := ssz.Marshal(m)
-	return b
+	b, err := ssz.Marshal(m)
+	if err != nil {
+		return nil
+	}
+	return snappy.Encode(nil, b)
 }
 
 // Unmarshal decodes the data.
@@ -114,7 +117,11 @@ type Multisig struct {
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	return ssz.Marshal(m)
+	b, err := ssz.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
