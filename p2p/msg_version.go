@@ -15,7 +15,11 @@ type MsgVersion struct {
 
 // Marshal serializes the data to bytes
 func (m *MsgVersion) Marshal() ([]byte, error) {
-	return ssz.Marshal(m)
+	b, err := ssz.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal deserializes the data
