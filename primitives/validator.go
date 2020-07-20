@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
@@ -65,12 +66,20 @@ func (wr *Validator) IsActiveAtEpoch(epoch uint64) bool {
 
 // Marshal encodes the data.
 func (v *Validator) Marshal() ([]byte, error) {
-	return ssz.Marshal(v)
+	b, err := ssz.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (v *Validator) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, v)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, v)
 }
 
 // Copy returns a copy of the validator.

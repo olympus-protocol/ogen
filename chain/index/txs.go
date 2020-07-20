@@ -3,6 +3,7 @@ package index
 import (
 	"path"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 	"go.etcd.io/bbolt"
@@ -126,7 +127,11 @@ func (tl *TxLocator) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (tl *TxLocator) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, tl)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, tl)
 }
 
 // NewTxIndex returns/creates a new tx index database

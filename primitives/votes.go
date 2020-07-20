@@ -3,6 +3,7 @@ package primitives
 import (
 	"fmt"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/prysmaticlabs/go-ssz"
@@ -31,12 +32,20 @@ type AcceptedVoteInfo struct {
 
 // Marshal encodes the data.
 func (av *AcceptedVoteInfo) Marshal() ([]byte, error) {
-	return ssz.Marshal(av)
+	b, err := ssz.Marshal(av)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (av *AcceptedVoteInfo) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, av)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, av)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
@@ -81,12 +90,20 @@ type VoteData struct {
 
 // Marshal encodes the data.
 func (v *VoteData) Marshal() ([]byte, error) {
-	return ssz.Marshal(v)
+	b, err := ssz.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (v *VoteData) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, v)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, v)
 }
 
 func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
@@ -153,12 +170,20 @@ func (v *SingleValidatorVote) Signature() (*bls.Signature, error) {
 
 // Marshal encodes the data.
 func (v *SingleValidatorVote) Marshal() ([]byte, error) {
-	return ssz.Marshal(v)
+	b, err := ssz.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (v *SingleValidatorVote) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, v)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, v)
 }
 
 // AsMulti returns the single validator vote as a multi validator vote.
@@ -191,12 +216,20 @@ func (v *MultiValidatorVote) Signature() (*bls.Signature, error) {
 
 // Marshal encodes the data.
 func (v *MultiValidatorVote) Marshal() ([]byte, error) {
-	return ssz.Marshal(v)
+	b, err := ssz.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (v *MultiValidatorVote) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, v)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, v)
 }
 
 // Hash calculates the hash of the vote.

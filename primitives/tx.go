@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
@@ -48,12 +48,20 @@ func (c TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
 
 // Marshal encodes the data.
 func (c *TransferSinglePayload) Marshal() ([]byte, error) {
-	return ssz.Marshal(c)
+	b, err := ssz.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (c *TransferSinglePayload) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, c)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, c)
 }
 
 // SignatureMessage gets the message the needs to be signed.
@@ -130,7 +138,11 @@ type TransferMultiPayload struct {
 
 // Marshal encodes the data.
 func (c *TransferMultiPayload) Marshal() ([]byte, error) {
-	return ssz.Marshal(c)
+	b, err := ssz.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
@@ -214,12 +226,6 @@ var _ TxPayload = &TransferMultiPayload{}
 // GenesisPayload is the payload of the genesis transaction.
 type GenesisPayload struct{}
 
-// Encode does nothing for the genesis payload.
-func (g *GenesisPayload) Encode(w io.Writer) error { return nil }
-
-// Decode does nothing for the genesis payload.
-func (g *GenesisPayload) Decode(r io.Reader) error { return nil }
-
 // TxPayload represents anything that can be used as a payload in a transaction.
 type TxPayload interface {
 	Marshal() ([]byte, error)
@@ -264,12 +270,20 @@ func (t *Tx) AppendPayload(p TxPayload) error {
 
 // Marshal encodes the data.
 func (t *Tx) Marshal() ([]byte, error) {
-	return ssz.Marshal(t)
+	b, err := ssz.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (t *Tx) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, t)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, t)
 }
 
 // Hash calculates the transaction hash.

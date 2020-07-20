@@ -276,7 +276,7 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 				sp.syncInfo.syncing = false
 				sp.syncMutex.Unlock()
 			}
-			
+
 		}(theirVersion, ourVersion)
 	}
 	return nil

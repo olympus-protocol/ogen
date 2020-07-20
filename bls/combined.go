@@ -3,6 +3,7 @@ package bls
 import (
 	"fmt"
 
+	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
@@ -20,7 +21,11 @@ func (cs *CombinedSignature) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (cs *CombinedSignature) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, cs)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, cs)
 }
 
 // NewCombinedSignature creates a new combined signature

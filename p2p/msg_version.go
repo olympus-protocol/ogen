@@ -3,6 +3,7 @@ package p2p
 import (
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
@@ -19,7 +20,11 @@ func (m *MsgVersion) Marshal() ([]byte, error) {
 
 // Unmarshal deserializes the data
 func (m *MsgVersion) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 func (m *MsgVersion) Command() string {

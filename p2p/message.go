@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -46,7 +47,11 @@ func (h *MessageHeader) Marshal() ([]byte, error) {
 
 // Unmarshal deserializes the data
 func (h *MessageHeader) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, h)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, h)
 }
 
 func makeEmptyMessage(command string) (Message, error) {

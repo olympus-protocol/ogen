@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
@@ -20,12 +21,20 @@ type Deposit struct {
 
 // Marshal encodes the data.
 func (d *Deposit) Marshal() ([]byte, error) {
-	return ssz.Marshal(d)
+	b, err := ssz.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (d *Deposit) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, d)
+	de, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(de, d)
 }
 
 func (d *Deposit) GetPublicKey() (*bls.PublicKey, error) {
@@ -62,7 +71,11 @@ func (d *DepositData) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (d *DepositData) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, d)
+	de, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(de, d)
 }
 
 func (d *DepositData) GetPublicKey() (*bls.PublicKey, error) {

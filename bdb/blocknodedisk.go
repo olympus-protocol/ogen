@@ -1,6 +1,7 @@
 package bdb
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -17,10 +18,18 @@ type BlockNodeDisk struct {
 
 // Marshal encodes de data
 func (bnd *BlockNodeDisk) Marshal() ([]byte, error) {
-	return ssz.Marshal(bnd)
+	b, err := ssz.Marshal(bnd)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data
 func (bnd *BlockNodeDisk) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, bnd)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, bnd)
 }

@@ -1,6 +1,9 @@
 package bitfield
 
-import "github.com/prysmaticlabs/go-ssz"
+import (
+	"github.com/golang/snappy"
+	"github.com/prysmaticlabs/go-ssz"
+)
 
 // Bitfield is a bitfield of a certain length.
 type Bitfield []byte
@@ -32,7 +35,11 @@ func (b Bitfield) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (b Bitfield) Unmarshal(by []byte) error {
-	return ssz.Unmarshal(by, b)
+	de, err := snappy.Decode(nil, by)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(de, b)
 }
 
 // Copy returns a copy of the bitfield.

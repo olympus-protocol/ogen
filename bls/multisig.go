@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
@@ -27,7 +28,11 @@ func (m *Multipub) Marshal() []byte {
 
 // Unmarshal decodes the data.
 func (m *Multipub) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 // NewMultipub constructs a new multi-pubkey.
@@ -114,7 +119,11 @@ func (m *Multisig) Marshal() ([]byte, error) {
 
 // Unmarshal decodes the data.
 func (m *Multisig) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 // NewMultisig creates a new blank multisig.

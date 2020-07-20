@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -19,7 +20,11 @@ func (m *MsgBlocks) Marshal() ([]byte, error) {
 
 // Unmarshal deserializes the data
 func (m *MsgBlocks) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 func (m *MsgBlocks) Command() string {
