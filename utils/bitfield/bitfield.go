@@ -30,7 +30,11 @@ func (b Bitfield) MaxLength() uint {
 
 // Marshal encodes the data.
 func (b Bitfield) Marshal() ([]byte, error) {
-	return ssz.Marshal(b)
+	by, err := ssz.Marshal(b)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, by), nil
 }
 
 // Unmarshal decodes the data.

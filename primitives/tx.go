@@ -147,7 +147,7 @@ type TransferMultiPayload struct {
 	Amount   uint64
 	Nonce    uint64
 	Fee      uint64
-	MultiSig []byte 
+	MultiSig []byte
 }
 
 // Marshal encodes the data.
