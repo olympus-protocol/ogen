@@ -110,7 +110,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  Multipub
-	Signatures [][]byte // 672
+	Signatures [][]byte
 	KeysSigned bitfield.Bitfield
 }
 

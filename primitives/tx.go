@@ -36,12 +36,12 @@ const (
 // TransferSinglePayload is a transaction payload for sending money from
 // a single address to another address.
 type TransferSinglePayload struct {
-	To            [20]byte // 20 bytes
-	FromPublicKey []byte   // 48 bytes
-	Amount        uint64   // 8 bytes
-	Nonce         uint64   // 8 bytes
-	Fee           uint64   // 8 bytes
-	Signature     []byte   // 96 bytes
+	To            [20]byte
+	FromPublicKey []byte
+	Amount        uint64
+	Nonce         uint64
+	Fee           uint64
+	Signature     []byte
 }
 
 // Hash calculates the transaction ID of the payload.
@@ -143,11 +143,11 @@ var _ TxPayload = &TransferSinglePayload{}
 // TransferMultiPayload represents a transfer from a multisig to
 // another address.
 type TransferMultiPayload struct {
-	To       [20]byte // 20 bytes
-	Amount   uint64   // 8 bytes
-	Nonce    uint64   // 8 bytes
-	Fee      uint64   // 8 bytes
-	MultiSig []byte   // 1024 bytes
+	To       [20]byte
+	Amount   uint64
+	Nonce    uint64
+	Fee      uint64
+	MultiSig []byte 
 }
 
 // Marshal encodes the data.
