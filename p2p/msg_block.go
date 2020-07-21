@@ -6,8 +6,8 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-const MaxBlockSize = 1024 * 1024 * 5 // 5 MB
-const MaxBlocksPerMsg = 500
+// MaxBlocksPerMsg defines the maximum amount of blocks that a peer can send.
+const MaxBlocksPerMsg = 32
 
 // MsgBlocks is the struct of the message the is transmited upon the network.
 type MsgBlocks struct {

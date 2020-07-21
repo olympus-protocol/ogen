@@ -115,7 +115,7 @@ func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Bl
 	if err != nil {
 		return nil, err
 	}
-	
+
 	block := new(primitives.Block)
 	err = block.Unmarshal(blockBytes)
 	return block, err
