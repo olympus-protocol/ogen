@@ -23,6 +23,9 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
+var s *server.Server
+var ps *server.Server
+
 // Sync test.
 // 1. The initial node will load pre-built chain containing 985 blocks at a certain genesis time.
 // 2. The second node will connect to the intial node and sync those 985 blocks.
@@ -83,7 +86,7 @@ func TestMain(m *testing.M) {
 	// Create the initialization parameters
 	ip := primitives.InitializationParameters{
 		GenesisTime:       time.Unix(1595126983, 0),
-		PremineAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, []byte{163, 15, 14, 86, 107, 205, 124, 126, 243, 101, 198, 2, 95, 29, 158, 221, 60, 108, 201, 78}),
+		PremineAddress:    bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, []byte{163, 15, 14, 86, 107, 205, 124, 126, 243, 101, 198, 2, 95, 29, 158, 221, 60, 108, 201, 78}),
 		InitialValidators: validators,
 	}
 	// Load the block database
@@ -97,11 +100,12 @@ func TestMain(m *testing.M) {
 	config.InterruptListener(log, cancel)
 	c := testdata.Conf
 	c.DataFolder = testdata.Node1Folder
-	s, err := server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
+	ps, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go s.Start()
+	go ps.Start()
+	os.Exit(m.Run())
 	var initialValidators []primitives.ValidatorInitialization
 	for _, sv := range s.Chain.State().TipState().ValidatorRegistry {
 		initialValidators = append(initialValidators, primitives.ValidatorInitialization{
@@ -113,7 +117,7 @@ func TestMain(m *testing.M) {
 	go runSecondNode(s, ip)
 	<-ctx.Done()
 	bdb.Close()
-	err = s.Stop()
+	err = ps.Stop()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -142,35 +146,35 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters) {
 	c.DataFolder = testdata.Node2Folder
 	c.AddNodes = []peer.AddrInfo{psAddr}
 	c.RPCPort = "24000"
-	s, err := server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
+	s, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
 	go s.Start()
-	stall := 0
-	go func(ps *server.Server, s *server.Server, stall int) {
-		height := s.Chain.State().Height()
-		for {	
-			if ps.Chain.State().Tip().Hash.IsEqual(&s.Chain.State().Tip().Hash) {
-				os.Exit(0)
-			}		
-			time.Sleep(time.Second)
-			if s.Chain.State().Height() == height {
-				stall++
-			} else {
-				height = s.Chain.State().Height()
-			}
-			if stall >= 30 {
-				fmt.Println("test failed - stall time exceed")
-				os.Exit(0)
-			}
-		}
-	}(ps, s, stall)
-
 	<-ctx.Done()
 	bdb.Close()
 	err = s.Stop()
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func Test_SyncStatus(t *testing.T) {
+	stall := 0
+	height := s.Chain.State().Height()
+	for {
+		if ps.Chain.State().Tip().Hash.IsEqual(&s.Chain.State().Tip().Hash) {
+			os.Exit(0)
+		}
+		time.Sleep(time.Second)
+		if s.Chain.State().Height() == height {
+			stall++
+		} else {
+			height = s.Chain.State().Height()
+		}
+		if stall >= 30 {
+			fmt.Println("test failed - stall time exceed")
+			os.Exit(0)
+		}
 	}
 }
