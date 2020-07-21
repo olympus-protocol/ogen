@@ -72,7 +72,7 @@ func (b *Block) ExitMerkleRoot() chainhash.Hash {
 
 // DepositMerkleRoot calculates the merkle root of the deposits in the block.
 func (b *Block) DepositMerkleRoot() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(b.DepositMerkleRoot)
+	hash, _ := ssz.HashTreeRoot(b.Deposits)
 	return chainhash.Hash(hash)
 }
 
