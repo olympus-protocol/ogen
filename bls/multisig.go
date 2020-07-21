@@ -65,6 +65,7 @@ func (m *Multipub) Type() FunctionalSignatureType {
 	return TypeMulti
 }
 
+// PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
 func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byte {
 	out := make([]byte, 0, 2+20*len(pubkeys))
 

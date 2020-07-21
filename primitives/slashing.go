@@ -1,10 +1,30 @@
 package primitives
 
 import (
+	"errors"
+
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
+)
+
+var (
+	// ErrorRandaoSlashingSize returns when the randao slashing is above MaxRandaoSlashingSize
+	ErrorRandaoSlashingSize = errors.New("randao slashing too big")
+	// ErrorProposerSlashingSize returns when the randao slashing is above MaxRandaoSlashingSize
+	ErrorProposerSlashingSize = errors.New("proposer slashing too big")
+	// ErrorVoteSlashingSize returns when the vote slashing is above MaxVoteSlashingSize
+	ErrorVoteSlashingSize = errors.New("proposer slashing too big")
+)
+
+const (
+	// MaxRandaoSlashingSize is the maximum amount of bytes a randao slashing can contain.
+	MaxRandaoSlashingSize = 152
+	// MaxProposerSlashingSize is the maximum amount of bytes a proposer slashing can contain.
+	MaxProposerSlashingSize = 984
+	// MaxVoteSlashingSize is the maximum amount of bytes a vote slashing can contain.
+	MaxVoteSlashingSize = MaxMultiValidatorVoteSize * 2
 )
 
 // VoteSlashing is a slashing where validators vote in the span of their other votes.
@@ -19,6 +39,9 @@ func (vs *VoteSlashing) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxVoteSlashingSize {
+		return nil, ErrorVoteSlashingSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -28,17 +51,17 @@ func (vs *VoteSlashing) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxVoteSlashingSize {
+		return ErrorVoteSlashingSize
+	}
 	return ssz.Unmarshal(d, vs)
 }
 
 // Hash calculates the hash of the slashing.
 func (vs *VoteSlashing) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(vs)
-	return chainhash.Hash(hash)
+	b, _ := vs.Marshal()
+	return chainhash.HashH(b)
 }
-
-// MaxRandaoSlashingLength is the maximum amount of bytes a randao slashing can contain.
-const MaxRandaoSlashingLength = 152
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO signature too early.
 type RANDAOSlashing struct {
@@ -63,6 +86,9 @@ func (rs *RANDAOSlashing) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxRandaoSlashingSize {
+		return nil, ErrorRandaoSlashingSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -72,13 +98,16 @@ func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxRandaoSlashingSize {
+		return ErrorRandaoSlashingSize
+	}
 	return ssz.Unmarshal(d, rs)
 }
 
 // Hash calculates the hash of the RANDAO slashing.
 func (rs *RANDAOSlashing) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(rs)
-	return chainhash.Hash(hash)
+	b, _ := rs.Marshal()
+	return chainhash.HashH(b)
 }
 
 // ProposerSlashing is a slashing to a block proposer that proposed two blocks at the same slot.
@@ -111,6 +140,9 @@ func (ps *ProposerSlashing) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxRandaoSlashingSize {
+		return nil, ErrorProposerSlashingSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -120,11 +152,14 @@ func (ps *ProposerSlashing) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxRandaoSlashingSize {
+		return ErrorProposerSlashingSize
+	}
 	return ssz.Unmarshal(d, ps)
 }
 
 // Hash calculates the hash of the proposer slashing.
 func (ps *ProposerSlashing) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(ps)
-	return chainhash.Hash(hash)
+	b, _ := ps.Marshal()
+	return chainhash.HashH(b)
 }

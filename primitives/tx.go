@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -12,15 +13,29 @@ import (
 )
 
 var (
-	// MaxSingleTransferPayload is the maximum payload size for a single transfer transaction.
-	MaxSingleTransferPayload = 188
+	// ErrorSingleTransferPayloadSize returned when the single transfer payload size is above MaxSingleTransferPayloadSize
+	ErrorSingleTransferPayloadSize = errors.New("single transfer payload too big")
+	// ErrorMultiTransferPayloadSize returned when the multi transfer payload size is above MaxMultipleTransferPayloadSize
+	ErrorMultiTransferPayloadSize = errors.New("multi transfer payload too big")
+	// ErrorTxSingleSize returned when the tx size is above MaxTransactionSingleSize
+	ErrorTxSingleSize = errors.New("tx single transfer too big")
+	// ErrorTxMultiSize returned when the tx size is above MaxTransactionMultiSize
+	ErrorTxMultiSize = errors.New("tx multi transfer too big")
+)
 
-	// MaxMultipleTransferPayload is the maximum payload size for a multiple transfer transaction.
+const (
+	// MaxSingleTransferPayloadSize is the maximum payload size for a single transfer transaction.
+	MaxSingleTransferPayloadSize = 188
+
+	// MaxMultipleTransferPayloadSize is the maximum payload size for a multiple transfer transaction.
 	// Multiple Transfers are m-of-n signed transactions. The maximum defined amount of keys available to be used is 7 keys with the signatures.
-	MaxMultipleTransferPayload = 1068
+	MaxMultipleTransferPayloadSize = 1068
 
-	// MaxTransactionSize is the maximum size of the transaction information without the payload.
-	MaxTransactionSize = 8
+	// MaxTransactionSingleSize is the maximum size of the transaction information with a single transfer payload
+	MaxTransactionSingleSize = 8 + MaxSingleTransferPayloadSize
+
+	// MaxTransactionMultiSize is the maximum size of the transaction information with a multi transfer payload
+	MaxTransactionMultiSize = 8 + MaxMultipleTransferPayloadSize
 )
 
 const (
@@ -46,8 +61,8 @@ type TransferSinglePayload struct {
 
 // Hash calculates the transaction ID of the payload.
 func (c TransferSinglePayload) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(c)
-	return chainhash.Hash(hash)
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -64,6 +79,9 @@ func (c *TransferSinglePayload) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxSingleTransferPayloadSize {
+		return nil, ErrorSingleTransferPayloadSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -72,6 +90,9 @@ func (c *TransferSinglePayload) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if len(d) > MaxSingleTransferPayloadSize {
+		return ErrorSingleTransferPayloadSize
 	}
 	return ssz.Unmarshal(d, c)
 }
@@ -156,6 +177,9 @@ func (c *TransferMultiPayload) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxMultipleTransferPayloadSize {
+		return nil, ErrorMultiTransferPayloadSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -165,13 +189,16 @@ func (c *TransferMultiPayload) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxMultipleTransferPayloadSize {
+		return ErrorMultiTransferPayloadSize
+	}
 	return ssz.Unmarshal(d, c)
 }
 
 // Hash calculates the transaction ID of the payload.
 func (c TransferMultiPayload) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(c)
-	return chainhash.Hash(hash)
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -296,6 +323,16 @@ func (t *Tx) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	switch t.Type {
+	case TxTransferSingle:
+		if len(b) > MaxTransactionSingleSize {
+			return nil, ErrorTxSingleSize
+		}
+	case TxTransferMulti:
+		if len(b) > MaxTransactionMultiSize {
+			return nil, ErrorTxMultiSize
+		}
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -304,6 +341,17 @@ func (t *Tx) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	txType := binary.LittleEndian.Uint32(d[8:])
+	switch txType {
+	case TxTransferSingle:
+		if len(b) > MaxTransactionSingleSize {
+			return ErrorTxSingleSize
+		}
+	case TxTransferMulti:
+		if len(b) > MaxTransactionMultiSize {
+			return ErrorTxMultiSize
+		}
 	}
 	return ssz.Unmarshal(d, t)
 }

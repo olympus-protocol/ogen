@@ -18,11 +18,17 @@ func (m *MsgGetBlocks) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if uint32(len(b)) > m.MaxPayloadLength() {
+		return nil, ErrorSizeExceed
+	}
 	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal deserializes the data
 func (m *MsgGetBlocks) Unmarshal(b []byte) error {
+	if uint32(len(b)) > m.MaxPayloadLength() {
+		return ErrorSizeExceed
+	}
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err

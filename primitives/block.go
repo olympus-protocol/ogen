@@ -1,10 +1,15 @@
 package primitives
 
 import (
+	"errors"
+
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
+
+// ErrorBlockSize returns when the decompresed size of the block exceed MaxBlockSize
+var ErrorBlockSize = errors.New("the block size is too big")
 
 // MaxBlockSize defines the maximum bytes on a block object.
 const MaxBlockSize = 1024 * 1024 * 2 // 2 MB
@@ -30,6 +35,9 @@ func (b *Block) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(bd) > MaxBlockSize {
+		return nil, ErrorBlockSize
+	}
 	return snappy.Encode(nil, bd), nil
 }
 
@@ -39,6 +47,9 @@ func (b *Block) Unmarshal(by []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxBlockSize {
+		return ErrorBlockSize
+	}
 	return ssz.Unmarshal(d, b)
 }
 
@@ -47,8 +58,7 @@ func (b *Block) Hash() chainhash.Hash {
 	return b.Header.Hash()
 }
 
-// GovernanceVoteMerkleRoot calculates the merkle root of the governance votes in the
-// block.
+// GovernanceVoteMerkleRoot calculates the merkle root of the governance votes in the block.
 func (b *Block) GovernanceVoteMerkleRoot() chainhash.Hash {
 	hash, _ := ssz.HashTreeRoot(b.GovernanceVotes)
 	return chainhash.Hash(hash)

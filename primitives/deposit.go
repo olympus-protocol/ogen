@@ -1,14 +1,23 @@
 package primitives
 
 import (
+	"errors"
+
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// MaxDepositLength is the maximum amount of bytes a deposit can contain.
-const MaxDepositLength = 96 + 48 + MaxDepositDataSize
+var (
+	// ErrorDepositSize returned when the deposit size is above MaxDepositLength
+	ErrorDepositSize = errors.New("deposit size is too big")
+	// ErrorDepositDataSize returned when the deposit data size is above MaxDepositDataSize
+	ErrorDepositDataSize = errors.New("deposit data size is too big")
+)
+
+// MaxDepositSize is the maximum amount of bytes a deposit can contain.
+const MaxDepositSize = 96 + 48 + MaxDepositDataSize
 
 // Deposit is a deposit a user can submit to queue as a validator.
 type Deposit struct {
@@ -28,6 +37,9 @@ func (d *Deposit) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxDepositSize {
+		return nil, ErrorDepositSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -36,6 +48,9 @@ func (d *Deposit) Unmarshal(b []byte) error {
 	de, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if len(de) > MaxDepositSize {
+		return ErrorDepositSize
 	}
 	return ssz.Unmarshal(de, d)
 }
@@ -52,8 +67,8 @@ func (d *Deposit) GetSignature() (*bls.Signature, error) {
 
 // Hash calculates the hash of the deposit
 func (d *Deposit) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(d)
-	return chainhash.Hash(hash)
+	b, _ := d.Marshal()
+	return chainhash.HashH(b)
 }
 
 // MaxDepositDataSize is the maximum amount of bytes the deposit data can contain.
@@ -77,6 +92,9 @@ func (d *DepositData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxDepositSize {
+		return nil, ErrorDepositDataSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -85,6 +103,9 @@ func (d *DepositData) Unmarshal(b []byte) error {
 	de, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if len(de) > MaxDepositSize {
+		return ErrorDepositDataSize
 	}
 	return ssz.Unmarshal(de, d)
 }

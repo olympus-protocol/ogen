@@ -1,6 +1,8 @@
 package primitives
 
 import (
+	"errors"
+
 	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -24,6 +26,12 @@ const (
 	// the ejection balance.
 	StatusExitedWithoutPenalty
 )
+
+// ErrorValidatorSize returned when a validator size is above MaxValidatorSize
+var ErrorValidatorSize = errors.New("validatr size too big")
+
+// MaxValidatorSize is the maximum amount of bytes a validator can contain.
+const MaxValidatorSize = 93
 
 // Validator is a validator in the queue.
 type Validator struct {
@@ -71,6 +79,9 @@ func (v *Validator) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxValidatorSize {
+		return nil, ErrorValidatorSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -79,6 +90,9 @@ func (v *Validator) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if len(d) > MaxValidatorSize {
+		return ErrorValidatorSize
 	}
 	return ssz.Unmarshal(d, v)
 }

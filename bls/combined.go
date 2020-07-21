@@ -7,8 +7,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// CombinedSignature is a signature and a public key meant to match
-// the same interface as Multisig.
+// CombinedSignature is a signature and a public key meant to match the same interface as Multisig.
 type CombinedSignature struct {
 	S []byte
 	P []byte
@@ -40,12 +39,12 @@ func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
 	}
 }
 
-// ToSig outputs the bundled signature.
+// Sig outputs the bundled signature.
 func (cs *CombinedSignature) Sig() (*Signature, error) {
 	return SignatureFromBytes(cs.S)
 }
 
-// ToPub outputs the bundled public key.
+// Pub outputs the bundled public key.
 func (cs *CombinedSignature) Pub() (*PublicKey, error) {
 	return PublicKeyFromBytes(cs.P)
 }
