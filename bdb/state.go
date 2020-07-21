@@ -15,8 +15,10 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+// BlockDBBucketKey is the bucket key of the blocks on the database.
 var BlockDBBucketKey = []byte("blocksdb")
 
+// BlockDB is the struct wrapper for the block database.
 type BlockDB struct {
 	log    *logger.Logger
 	db     *bbolt.DB
@@ -27,13 +29,14 @@ type BlockDB struct {
 	canClose       sync.WaitGroup
 }
 
+// BlockDBUpdateTransaction is a wrapper for the bbolt transaction with writing privileges.
 type BlockDBUpdateTransaction struct {
 	BlockDBReadTransaction
 }
 
+// BlockDBReadTransaction is a wrapper for the bbolt transaction with view privileges.
 type BlockDBReadTransaction struct {
 	db  *BlockDB
-	log *logger.Logger
 	bkt *bbolt.Bucket
 }
 
@@ -79,7 +82,6 @@ func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 		}
 		blockTxn := BlockDBReadTransaction{
 			db:  bdb,
-			log: bdb.log,
 			bkt: bkt,
 		}
 
@@ -100,7 +102,6 @@ func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
 	return bdb.db.View(func(tx *bbolt.Tx) error {
 		blockTxn := &BlockDBReadTransaction{
 			db:  bdb,
-			log: bdb.log,
 			bkt: tx.Bucket(BlockDBBucketKey),
 		}
 
@@ -309,7 +310,7 @@ type DB interface {
 	View(func(DBViewTransaction) error) error
 }
 
-// DBTransactionRead is a transaction to view the state of the database.
+// DBViewTransaction is a transaction to view the state of the database.
 type DBViewTransaction interface {
 	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
 	GetRawBlock(hash chainhash.Hash) ([]byte, error)
@@ -322,7 +323,7 @@ type DBViewTransaction interface {
 	GetGenesisTime() (time.Time, error)
 }
 
-// DBTransaction is a transaction to update the state of the database.
+// DBUpdateTransaction is a transaction to update the state of the database.
 type DBUpdateTransaction interface {
 	AddRawBlock(block *primitives.Block) error
 	SetTip(chainhash.Hash) error

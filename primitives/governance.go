@@ -10,11 +10,13 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// CommunityVoteDataInfo contains information about a community vote.
 type CommunityVoteDataInfo struct {
 	Hash chainhash.Hash
 	Data CommunityVoteData
 }
 
+// ReplacementVotes contains information about a replacement candidate selected.
 type ReplacementVotes struct {
 	Account [20]byte
 	Hash    chainhash.Hash
@@ -148,8 +150,8 @@ func (c *CommunityVoteData) Copy() *CommunityVoteData {
 
 // Hash calculates the hash of the vote data.
 func (c *CommunityVoteData) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(c)
-	return chainhash.Hash(hash)
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 const (
@@ -178,6 +180,7 @@ type GovernanceVote struct {
 	VoteEpoch     uint64
 }
 
+// Signature returns the governance vote bls signature.
 func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer([]byte{})
 	buf.Write(gv.FunctionalSig)
@@ -206,6 +209,7 @@ func (gv *GovernanceVote) Unmarshal(b []byte) error {
 	return ssz.Unmarshal(d, gv)
 }
 
+// Valid returns a boolean that checks for validity of the vote.
 func (gv *GovernanceVote) Valid() bool {
 	sigHash := gv.SignatureHash()
 	sig, err := gv.Signature()
@@ -225,8 +229,8 @@ func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
 
 // Hash calculates the hash of the governance vote.
 func (gv *GovernanceVote) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(gv)
-	return chainhash.Hash(hash)
+	b, _ := gv.Marshal()
+	return chainhash.HashH(b)
 }
 
 // Copy copies the governance vote.

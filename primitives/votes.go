@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/golang/snappy"
@@ -12,21 +13,40 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
+var (
+	// ErrorVoteDataSize is returned when a vote data is above MaxVoteDataSize
+	ErrorVoteDataSize = errors.New("vote data too big")
+	// ErrorAcceptedVoteDataSize is returned when a vote data is above MaxAcceptedVoteInfoSize
+	ErrorAcceptedVoteDataSize = errors.New("accepted vote data too big")
+	// ErrorSingleValidatorVoteSize is returned when a single validator vote data is above MaxSingleValidatorVoteSize
+	ErrorSingleValidatorVoteSize = errors.New("single validator vote data too big")
+	// ErrorMultiValidatorVoteSize is returned when a multi validator vote data is above MaxMultiValidatorVoteSize
+	ErrorMultiValidatorVoteSize = errors.New("accepted vote data too big")
+)
+
+const (
+	// MaxVoteDataSize is the maximum size in bytes of vote data.
+	MaxVoteDataSize = 120
+	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
+	MaxAcceptedVoteInfoSize = 140
+	// MaxSingleValidatorVoteSize is the maximum size in bytes a single validator vote can contain.
+	MaxSingleValidatorVoteSize = 228
+	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
+	MaxMultiValidatorVoteSize = 228
+)
+
 // AcceptedVoteInfo is vote data and participation for accepted votes.
 type AcceptedVoteInfo struct {
-	// Data is the data of the vote which specifies the signed part of the
-	// attestation.
+	// Data is the data of the vote which specifies the signed part of the attestation.
 	Data VoteData
 
-	// ParticipationBitfield is any validator that participated in the
-	// vote.
+	// ParticipationBitfield is any validator that participated in the vote.
 	ParticipationBitfield bitfield.Bitfield
 
 	// Proposer is the proposer that included the attestation in a block.
 	Proposer uint32
 
-	// InclusionDelay is the delay from the attestation slot to the slot
-	// included.
+	// InclusionDelay is the delay from the attestation slot to the slot included.
 	InclusionDelay uint64
 }
 
@@ -35,6 +55,9 @@ func (av *AcceptedVoteInfo) Marshal() ([]byte, error) {
 	b, err := ssz.Marshal(av)
 	if err != nil {
 		return nil, err
+	}
+	if len(b) > MaxAcceptedVoteInfoSize {
+		return nil, ErrorAcceptedVoteDataSize
 	}
 	return snappy.Encode(nil, b), nil
 }
@@ -45,25 +68,25 @@ func (av *AcceptedVoteInfo) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxAcceptedVoteInfoSize {
+		return ErrorAcceptedVoteDataSize
+	}
 	return ssz.Unmarshal(d, av)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
-func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
-	a2 := *a
+func (av *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
+	a2 := *av
 
-	a2.ParticipationBitfield = make([]uint8, len(a.ParticipationBitfield))
-	for i, b := range a.ParticipationBitfield {
+	a2.ParticipationBitfield = make([]uint8, len(av.ParticipationBitfield))
+	for i, b := range av.ParticipationBitfield {
 		a2.ParticipationBitfield[i] = b
 	}
 
-	a2.Data = a.Data.Copy()
+	a2.Data = av.Data.Copy()
 
 	return a2
 }
-
-// MaxVoteDataSize is the maximum size in bytes of vote data.
-const MaxVoteDataSize = 8 + 8 + 32 + 8 + 32 + 32
 
 // VoteData is the part of a vote that needs to be signed.
 type VoteData struct {
@@ -94,6 +117,9 @@ func (v *VoteData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxVoteDataSize {
+		return nil, ErrorVoteDataSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -103,20 +129,23 @@ func (v *VoteData) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxVoteDataSize {
+		return ErrorVoteDataSize
+	}
 	return ssz.Unmarshal(d, v)
 }
 
+// FirstSlotValid return the first slot valid for current validator vote
 func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
 	// vs <= ss-min
 	// vs + min <= ss
 	// state slot >= vote slot + min
-
 	return v.Slot + p.MinAttestationInclusionDelay
 }
 
+// LastSlotValid return the last slot valid for current validator vote
 func (v *VoteData) LastSlotValid(p *params.ChainParams) uint64 {
 	// ss <= vs+epoch-1
-
 	return v.Slot + p.EpochLength - 1
 }
 
@@ -151,8 +180,8 @@ func (v *VoteData) Copy() VoteData {
 
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(v)
-	return chainhash.Hash(hash)
+	b, _ := v.Marshal()
+	return chainhash.HashH(b)
 }
 
 // SingleValidatorVote is a signed vote from a validator.
@@ -174,6 +203,9 @@ func (v *SingleValidatorVote) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxSingleValidatorVoteSize {
+		return nil, ErrorSingleValidatorVoteSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -182,6 +214,9 @@ func (v *SingleValidatorVote) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if len(d) > MaxSingleValidatorVoteSize {
+		return ErrorSingleValidatorVoteSize
 	}
 	return ssz.Unmarshal(d, v)
 }
@@ -197,9 +232,10 @@ func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
 	}
 }
 
+// Hash returns the hash of the single validator vote.
 func (v *SingleValidatorVote) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(v)
-	return chainhash.Hash(hash)
+	b, _ := v.Marshal()
+	return chainhash.HashH(b)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.
@@ -220,6 +256,9 @@ func (v *MultiValidatorVote) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxMultiValidatorVoteSize {
+		return nil, ErrorMultiValidatorVoteSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -229,11 +268,14 @@ func (v *MultiValidatorVote) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(d) > MaxMultiValidatorVoteSize {
+		return ErrorMultiValidatorVoteSize
+	}
 	return ssz.Unmarshal(d, v)
 }
 
 // Hash calculates the hash of the vote.
 func (v *MultiValidatorVote) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(v)
-	return chainhash.Hash(hash)
+	b, _ := v.Marshal()
+	return chainhash.HashH(b)
 }

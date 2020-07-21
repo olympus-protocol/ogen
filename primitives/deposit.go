@@ -1,11 +1,23 @@
 package primitives
 
 import (
+	"errors"
+
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
+
+var (
+	// ErrorDepositSize returned when the deposit size is above MaxDepositLength
+	ErrorDepositSize = errors.New("deposit size is too big")
+	// ErrorDepositDataSize returned when the deposit data size is above MaxDepositDataSize
+	ErrorDepositDataSize = errors.New("deposit data size is too big")
+)
+
+// MaxDepositSize is the maximum amount of bytes a deposit can contain.
+const MaxDepositSize = 328
 
 // Deposit is a deposit a user can submit to queue as a validator.
 type Deposit struct {
@@ -25,6 +37,9 @@ func (d *Deposit) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxDepositSize {
+		return nil, ErrorDepositSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -34,30 +49,37 @@ func (d *Deposit) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(de) > MaxDepositSize {
+		return ErrorDepositSize
+	}
 	return ssz.Unmarshal(de, d)
 }
 
+// GetPublicKey returns the bls public key of the deposit.
 func (d *Deposit) GetPublicKey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(d.PublicKey)
 }
 
+// GetSignature returns the bls signature of the deposit.
 func (d *Deposit) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(d.Signature)
 }
 
 // Hash calculates the hash of the deposit
 func (d *Deposit) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(d)
-	return chainhash.Hash(hash)
+	b, _ := d.Marshal()
+	return chainhash.HashH(b)
 }
+
+// MaxDepositDataSize is the maximum amount of bytes the deposit data can contain.
+const MaxDepositDataSize = 164
 
 // DepositData is the part of the deposit that is signed
 type DepositData struct {
 	// PublicKey is the key used for the validator.
 	PublicKey []byte
 
-	// ProofOfPossession is the public key signed by the private key to prove that you
-	// own the address and prevent rogue public-key attacks.
+	// ProofOfPossession is the public key signed by the private key to prove that you own the address and prevent rogue public-key attacks.
 	ProofOfPossession []byte
 
 	// WithdrawalAddress is the address to withdraw to.
@@ -70,6 +92,9 @@ func (d *DepositData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxDepositDataSize {
+		return nil, ErrorDepositDataSize
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -79,13 +104,18 @@ func (d *DepositData) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(de) > MaxDepositDataSize {
+		return ErrorDepositDataSize
+	}
 	return ssz.Unmarshal(de, d)
 }
 
+// GetPublicKey returns the bls public key of the deposit data.
 func (d *DepositData) GetPublicKey() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(d.PublicKey)
 }
 
+// GetSignature returns the bls signature of the deposit data.
 func (d *DepositData) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(d.ProofOfPossession)
 }

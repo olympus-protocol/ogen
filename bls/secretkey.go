@@ -20,6 +20,7 @@ func RandKey() *SecretKey {
 	return &SecretKey{secKey}
 }
 
+// DeriveSecretKey returns the derived secret key.
 func DeriveSecretKey(bs []byte) *SecretKey {
 	return &SecretKey{bls.DeriveSecretKey(bs)}
 }

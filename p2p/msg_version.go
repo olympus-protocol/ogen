@@ -1,12 +1,11 @@
 package p2p
 
 import (
-	"time"
-
 	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// MsgVersion is the struct that contains the node information during the version handshake.
 type MsgVersion struct {
 	LastBlock uint64 // 8 bytes
 	Nonce     uint64 // 8 bytes
@@ -19,6 +18,9 @@ func (m *MsgVersion) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if uint32(len(b)) > m.MaxPayloadLength() {
+		return nil, ErrorSizeExceed
+	}
 	return snappy.Encode(nil, b), nil
 }
 
@@ -28,21 +30,18 @@ func (m *MsgVersion) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if uint32(len(d)) > m.MaxPayloadLength() {
+		return ErrorSizeExceed
+	}
 	return ssz.Unmarshal(d, m)
 }
 
+// Command returns the message topic
 func (m *MsgVersion) Command() string {
 	return MsgVersionCmd
 }
 
+// MaxPayloadLength returns the maximum size of the MsgVersion message.
 func (m *MsgVersion) MaxPayloadLength() uint32 {
-	return 36
-}
-
-func NewMsgVersion(nonce uint64, lastBlock uint64) *MsgVersion {
-	return &MsgVersion{
-		Timestamp: uint64(time.Unix(time.Now().Unix(), 0).Unix()),
-		Nonce:     nonce,
-		LastBlock: lastBlock,
-	}
+	return 24
 }
