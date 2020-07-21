@@ -17,7 +17,7 @@ var (
 )
 
 // MaxDepositSize is the maximum amount of bytes a deposit can contain.
-const MaxDepositSize = 96 + 48 + MaxDepositDataSize
+const MaxDepositSize = 328
 
 // Deposit is a deposit a user can submit to queue as a validator.
 type Deposit struct {
@@ -92,7 +92,7 @@ func (d *DepositData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxDepositSize {
+	if len(b) > MaxDepositDataSize {
 		return nil, ErrorDepositDataSize
 	}
 	return snappy.Encode(nil, b), nil
@@ -104,7 +104,7 @@ func (d *DepositData) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(de) > MaxDepositSize {
+	if len(de) > MaxDepositDataSize {
 		return ErrorDepositDataSize
 	}
 	return ssz.Unmarshal(de, d)

@@ -20,11 +20,11 @@ var (
 
 const (
 	// MaxRandaoSlashingSize is the maximum amount of bytes a randao slashing can contain.
-	MaxRandaoSlashingSize = 152
+	MaxRandaoSlashingSize = 160
 	// MaxProposerSlashingSize is the maximum amount of bytes a proposer slashing can contain.
 	MaxProposerSlashingSize = 984
 	// MaxVoteSlashingSize is the maximum amount of bytes a vote slashing can contain.
-	MaxVoteSlashingSize = MaxMultiValidatorVoteSize * 2
+	MaxVoteSlashingSize = 464
 )
 
 // VoteSlashing is a slashing where validators vote in the span of their other votes.
@@ -140,7 +140,7 @@ func (ps *ProposerSlashing) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxRandaoSlashingSize {
+	if len(b) > MaxProposerSlashingSize {
 		return nil, ErrorProposerSlashingSize
 	}
 	return snappy.Encode(nil, b), nil
@@ -152,7 +152,7 @@ func (ps *ProposerSlashing) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(d) > MaxRandaoSlashingSize {
+	if len(d) > MaxProposerSlashingSize {
 		return ErrorProposerSlashingSize
 	}
 	return ssz.Unmarshal(d, ps)

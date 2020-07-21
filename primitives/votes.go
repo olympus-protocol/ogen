@@ -30,9 +30,9 @@ const (
 	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
 	MaxAcceptedVoteInfoSize = 140
 	// MaxSingleValidatorVoteSize is the maximum size in bytes a single validator vote can contain.
-	MaxSingleValidatorVoteSize = 224
+	MaxSingleValidatorVoteSize = 228
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
-	MaxMultiValidatorVoteSize = 224
+	MaxMultiValidatorVoteSize = 228
 )
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
@@ -117,8 +117,8 @@ func (v *VoteData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxAcceptedVoteInfoSize {
-		return nil, ErrorAcceptedVoteDataSize
+	if len(b) > MaxVoteDataSize {
+		return nil, ErrorVoteDataSize
 	}
 	return snappy.Encode(nil, b), nil
 }
@@ -129,8 +129,8 @@ func (v *VoteData) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(d) > MaxAcceptedVoteInfoSize {
-		return ErrorAcceptedVoteDataSize
+	if len(d) > MaxVoteDataSize {
+		return ErrorVoteDataSize
 	}
 	return ssz.Unmarshal(d, v)
 }

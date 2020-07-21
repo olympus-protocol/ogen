@@ -28,10 +28,10 @@ const (
 )
 
 // ErrorValidatorSize returned when a validator size is above MaxValidatorSize
-var ErrorValidatorSize = errors.New("validatr size too big")
+var ErrorValidatorSize = errors.New("validator size too big")
 
 // MaxValidatorSize is the maximum amount of bytes a validator can contain.
-const MaxValidatorSize = 93
+const MaxValidatorSize = 97
 
 // Validator is a validator in the queue.
 type Validator struct {

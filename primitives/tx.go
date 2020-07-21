@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
@@ -21,11 +20,13 @@ var (
 	ErrorTxSingleSize = errors.New("tx single transfer too big")
 	// ErrorTxMultiSize returned when the tx size is above MaxTransactionMultiSize
 	ErrorTxMultiSize = errors.New("tx multi transfer too big")
+	// ErrorInvalidSignature returned when a tx signature is invalid.
+	ErrorInvalidSignature = errors.New("invalid signature")
 )
 
 const (
 	// MaxSingleTransferPayloadSize is the maximum payload size for a single transfer transaction.
-	MaxSingleTransferPayloadSize = 188
+	MaxSingleTransferPayloadSize = 196
 
 	// MaxMultipleTransferPayloadSize is the maximum payload size for a multiple transfer transaction.
 	// Multiple Transfers are m-of-n signed transactions. The maximum defined amount of keys available to be used is 7 keys with the signatures.
@@ -128,7 +129,7 @@ func (c *TransferSinglePayload) VerifySig() error {
 	}
 	valid := sig.Verify(sigMsg[:], pub)
 	if !valid {
-		return fmt.Errorf("signature is not valid")
+		return ErrorInvalidSignature
 	}
 
 	return nil
@@ -242,7 +243,7 @@ func (c TransferMultiPayload) VerifySig() error {
 	}
 	valid := sig.Verify(sigMsg[:])
 	if !valid {
-		return fmt.Errorf("signature is not valid")
+		return ErrorInvalidSignature
 	}
 
 	return nil

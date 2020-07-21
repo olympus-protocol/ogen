@@ -6,7 +6,7 @@ import (
 )
 
 // MaxAddrPerMsg defines the maximum address that can be added into an addr message.
-const MaxAddrPerMsg = 500
+const MaxAddrPerMsg = 32
 
 // MaxAddrPerPeer defines the maximum amount of address that a single peer can send.
 const MaxAddrPerPeer = 2
@@ -30,12 +30,12 @@ func (m *MsgAddr) Marshal() ([]byte, error) {
 
 // Unmarshal deserializes the data
 func (m *MsgAddr) Unmarshal(b []byte) error {
-	if uint32(len(b)) > m.MaxPayloadLength() {
-		return ErrorSizeExceed
-	}
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if uint32(len(d)) > m.MaxPayloadLength() {
+		return ErrorSizeExceed
 	}
 	return ssz.Unmarshal(d, m)
 }
@@ -47,6 +47,6 @@ func (m *MsgAddr) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgAddr message.
 func (m *MsgAddr) MaxPayloadLength() uint32 {
-	netAddressSize := 0 // TODO check size of the ma multiaddr size.
+	netAddressSize := 500 // There is no a specific maximum size for ma formatted address.
 	return uint32(MaxAddrPerMsg * netAddressSize)
 }

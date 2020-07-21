@@ -13,7 +13,7 @@ import (
 var ErrorExitSize = errors.New("error size is to big")
 
 // MaxExitSize is the maximum amount of bytes an exit can contain.
-const MaxExitSize = 192
+const MaxExitSize = 204
 
 // Exit exits the validator from the queue.
 type Exit struct {

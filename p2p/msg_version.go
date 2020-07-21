@@ -26,12 +26,12 @@ func (m *MsgVersion) Marshal() ([]byte, error) {
 
 // Unmarshal deserializes the data
 func (m *MsgVersion) Unmarshal(b []byte) error {
-	if uint32(len(b)) > m.MaxPayloadLength() {
-		return ErrorSizeExceed
-	}
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
+	}
+	if uint32(len(d)) > m.MaxPayloadLength() {
+		return ErrorSizeExceed
 	}
 	return ssz.Unmarshal(d, m)
 }
