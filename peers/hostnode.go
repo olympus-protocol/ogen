@@ -39,11 +39,6 @@ const timeoutInterval = 60 * time.Second
 const heartbeatInterval = 20 * time.Second
 const initialBanScore = 5
 
-var configBucketKey = []byte("config")
-var privKeyDbKey = []byte("privkey")
-var peersDbKey = []byte("peers")
-var bansDbKey = []byte("bans")
-
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
 // The RPC communication is hanlded by App, not HostNode
@@ -84,7 +79,11 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	if err != nil {
 		return nil, err
 	}
-	priv, configBucket, err := GetPrivKey(netDB)
+	configBucket, err := InitBuckets(netDB)
+	if err != nil {
+		return nil, err
+	}
+	priv, err := GetPrivKey(netDB)
 	if err != nil {
 		return nil, err
 
@@ -93,8 +92,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	// get saved peers
 	savedAddresses, err := GetSavedPeers(netDB)
 	if err != nil {
-		return nil, err
-
+		config.Log.Errorf("error retrieving saved peers: %s", err)
 	}
 
 	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
@@ -313,18 +311,18 @@ func (node *HostNode) Start() error {
 	return nil
 }
 
-// Database - hostNode Functions
+// Database <-> hostNode Functions
 
 func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
 	if node.configDb == nil {
-		return errors.New("no saved db")
+		return errors.New("no initialized db in node")
 	}
 	return SavePeer(node.configDb, pma)
 }
 
 func (node *HostNode) BanScorePeer(id peer.ID) error {
 	if node.configDb == nil {
-		return errors.New("no saved db")
+		return errors.New("no initialized db in node")
 	}
 	err := BanscorePeer(node.configDb, id)
 	if err == nil {
@@ -335,9 +333,9 @@ func (node *HostNode) BanScorePeer(id peer.ID) error {
 	return err
 }
 
-func (node *HostNode) IsPeerBanned(id peer.ID) bool {
+func (node *HostNode) IsPeerBanned(id peer.ID) (bool, error) {
 	if node.configDb == nil {
-		return false
+		return false, errors.New("no initialized db in node")
 	}
 	return IsPeerBanned(node.configDb, id)
 }

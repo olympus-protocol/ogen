@@ -12,17 +12,57 @@ import (
 
 // contains several functions that interact with netDB database
 
-func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
-	err := netDB.Update(func(tx *bbolt.Tx) error {
+var configBucketKey = []byte("config")
+var privKeyDbKey = []byte("privkey")
+var peersDbKey = []byte("peers")
+var bansDbKey = []byte("bans")
+
+func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
+	err = netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
-		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
-		if b == nil {
-			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
+		configBucket = tx.Bucket(configBucketKey)
+		if configBucket == nil {
+			configBucket, err = tx.CreateBucketIfNotExists(configBucketKey)
 			if err != nil {
 				return err
 			}
 		}
-		err = b.Put(pma.Bytes(), []byte(strconv.Itoa(initialBanScore)))
+		peersBucket := tx.Bucket(peersDbKey)
+		if peersBucket == nil {
+			peersBucket, err = tx.CreateBucketIfNotExists(peersDbKey)
+			if err != nil {
+				return err
+			}
+		}
+		bansBucket := tx.Bucket(bansDbKey)
+		if bansBucket == nil {
+			bansBucket, err = tx.CreateBucketIfNotExists(bansDbKey)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return
+}
+
+func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
+	err := netDB.Update(func(tx *bbolt.Tx) error {
+		var err error
+		b := tx.Bucket(peersDbKey)
+		peerId, err := peer.AddrInfoFromP2pAddr(pma)
+		if err != nil {
+			return err
+		}
+		isBanned, err := IsPeerBanned(netDB, peerId.ID)
+		if err != nil {
+			return err
+		}
+		if !isBanned {
+			err = b.Put(pma.Bytes(), []byte(strconv.Itoa(initialBanScore)))
+		} else {
+			err = fmt.Errorf("peer %s is banned", peerId.ID.String())
+		}
 		return err
 	})
 	return err
@@ -32,40 +72,40 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 func BanscorePeer(netDB *bbolt.DB, id peer.ID) error {
 	err := netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
-		savedDb := tx.Bucket(configBucketKey).Bucket(peersDbKey)
-		if savedDb == nil {
-			savedDb, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		bansDb := tx.Bucket(configBucketKey).Bucket(bansDbKey)
-		if bansDb == nil {
-			bansDb, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(bansDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		err = savedDb.ForEach(func(k, v []byte) error {
-			addr, _ := multiaddr.NewMultiaddrBytes(k)
-			parsedPeer, err := peer.AddrInfoFromP2pAddr(addr)
-			if err == nil {
-				if parsedPeer.ID == id {
-					// reduce score. If it reaches 0, ban
-					score, _ := strconv.Atoi(string(v))
-					fmt.Printf("peer %s has a banscore of: %s", id.String(), strconv.Itoa(score))
-					score -= 1
-					if score == 0 {
+		savedDb := tx.Bucket(peersDbKey)
+		bansDb := tx.Bucket(bansDbKey)
 
-						// add to banlist
-						byteId, err := parsedPeer.ID.MarshalBinary()
-						if err == nil {
-							_ = bansDb.Put(byteId, nil)
+		err = savedDb.ForEach(func(k, v []byte) error {
+			addr, err := multiaddr.NewMultiaddrBytes(k)
+			if err != nil {
+				return err
+			}
+			parsedPeer, err := peer.AddrInfoFromP2pAddr(addr)
+			if err != nil {
+				return err
+			}
+			if parsedPeer.ID == id {
+				// reduce score. If it reaches 0, ban
+				score, _ := strconv.Atoi(string(v))
+				fmt.Printf("peer %s has a banscore of: %s \n", id.String(), strconv.Itoa(score))
+
+				score -= 1
+				if score == 0 {
+					// add to banlist
+					byteId, err := parsedPeer.ID.MarshalBinary()
+					if err == nil {
+						err = bansDb.Put(byteId, nil)
+						if err != nil {
+							return err
 						}
-						// remove from saved list
-						err = savedDb.Delete(k)
-					} else {
-						_ = savedDb.Put(k, []byte(strconv.Itoa(score)))
+						fmt.Printf("peer %s was banned \n", id.String())
+					}
+					// remove from saved list
+					err = savedDb.Delete(k)
+				} else {
+					err = savedDb.Put(k, []byte(strconv.Itoa(score)))
+					if err != nil {
+						return err
 					}
 				}
 			}
@@ -76,17 +116,11 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID) error {
 	return err
 }
 
-func IsPeerBanned(netDB *bbolt.DB, id peer.ID) bool {
+func IsPeerBanned(netDB *bbolt.DB, id peer.ID) (bool, error) {
 	var res bool
-	_ = netDB.Update(func(tx *bbolt.Tx) error {
+	err := netDB.View(func(tx *bbolt.Tx) error {
 		var err error
-		b := tx.Bucket(configBucketKey).Bucket(bansDbKey)
-		if b == nil {
-			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(bansDbKey)
-			if err != nil {
-				return err
-			}
-		}
+		b := tx.Bucket(bansDbKey)
 		byteId, err := id.MarshalBinary()
 		if err != nil {
 			return err
@@ -98,27 +132,15 @@ func IsPeerBanned(netDB *bbolt.DB, id peer.ID) bool {
 		}
 		return nil
 	})
-	return res
+	return res, err
 }
 
 func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err error) {
 	//retrieve the saved addresses
-	err = netDB.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket(configBucketKey).Bucket(peersDbKey)
-		if b == nil {
-			b, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(peersDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		bannedP := tx.Bucket(configBucketKey).Bucket(bansDbKey)
-		if bannedP == nil {
-			bannedP, err = tx.Bucket(configBucketKey).CreateBucketIfNotExists(bansDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		_ = b.ForEach(func(k, v []byte) error {
+	err = netDB.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(peersDbKey)
+		bannedP := tx.Bucket(bansDbKey)
+		err = b.ForEach(func(k, v []byte) error {
 			addr, err := multiaddr.NewMultiaddrBytes(k)
 			if err == nil {
 				peerId, err := peer.AddrInfoFromP2pAddr(addr)
@@ -146,17 +168,9 @@ func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err e
 	return
 }
 
-func GetPrivKey(netDB *bbolt.DB) (priv crypto.PrivKey, configBucket *bbolt.Bucket, err error) {
+func GetPrivKey(netDB *bbolt.DB) (priv crypto.PrivKey, err error) {
 	err = netDB.Update(func(tx *bbolt.Tx) error {
-		configBucket = tx.Bucket(configBucketKey)
-		// If the bucket doesn't exist, initialize the database
-		if configBucket == nil {
-			configBucket, err = tx.CreateBucketIfNotExists(configBucketKey)
-			if err != nil {
-				return err
-			}
-
-		}
+		configBucket := tx.Bucket(configBucketKey)
 		var keyBytes []byte
 		keyBytes = configBucket.Get(privKeyDbKey)
 		if keyBytes == nil {
