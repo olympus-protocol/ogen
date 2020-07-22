@@ -3,11 +3,11 @@ package bls
 import (
 	"fmt"
 
+	"github.com/golang/snappy"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// CombinedSignature is a signature and a public key meant to match
-// the same interface as Multisig.
+// CombinedSignature is a signature and a public key meant to match the same interface as Multisig.
 type CombinedSignature struct {
 	S []byte
 	P []byte
@@ -15,12 +15,20 @@ type CombinedSignature struct {
 
 // Marshal encodes the data.
 func (cs *CombinedSignature) Marshal() ([]byte, error) {
-	return ssz.Marshal(cs)
+	b, err := ssz.Marshal(cs)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (cs *CombinedSignature) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, cs)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, cs)
 }
 
 // NewCombinedSignature creates a new combined signature
@@ -31,12 +39,12 @@ func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
 	}
 }
 
-// ToSig outputs the bundled signature.
+// Sig outputs the bundled signature.
 func (cs *CombinedSignature) Sig() (*Signature, error) {
 	return SignatureFromBytes(cs.S)
 }
 
-// ToPub outputs the bundled public key.
+// Pub outputs the bundled public key.
 func (cs *CombinedSignature) Pub() (*PublicKey, error) {
 	return PublicKeyFromBytes(cs.P)
 }

@@ -2,13 +2,41 @@ package primitives
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
-	"fmt"
-	"io"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
+)
+
+var (
+	// ErrorSingleTransferPayloadSize returned when the single transfer payload size is above MaxSingleTransferPayloadSize
+	ErrorSingleTransferPayloadSize = errors.New("single transfer payload too big")
+	// ErrorMultiTransferPayloadSize returned when the multi transfer payload size is above MaxMultipleTransferPayloadSize
+	ErrorMultiTransferPayloadSize = errors.New("multi transfer payload too big")
+	// ErrorTxSingleSize returned when the tx size is above MaxTransactionSingleSize
+	ErrorTxSingleSize = errors.New("tx single transfer too big")
+	// ErrorTxMultiSize returned when the tx size is above MaxTransactionMultiSize
+	ErrorTxMultiSize = errors.New("tx multi transfer too big")
+	// ErrorInvalidSignature returned when a tx signature is invalid.
+	ErrorInvalidSignature = errors.New("invalid signature")
+)
+
+const (
+	// MaxSingleTransferPayloadSize is the maximum payload size for a single transfer transaction.
+	MaxSingleTransferPayloadSize = 196
+
+	// MaxMultipleTransferPayloadSize is the maximum payload size for a multiple transfer transaction.
+	// Multiple Transfers are m-of-n signed transactions. The maximum defined amount of keys available to be used is 7 keys with the signatures.
+	MaxMultipleTransferPayloadSize = 1068
+
+	// MaxTransactionSingleSize is the maximum size of the transaction information with a single transfer payload
+	MaxTransactionSingleSize = 8 + MaxSingleTransferPayloadSize
+
+	// MaxTransactionMultiSize is the maximum size of the transaction information with a multi transfer payload
+	MaxTransactionMultiSize = 8 + MaxMultipleTransferPayloadSize
 )
 
 const (
@@ -34,8 +62,8 @@ type TransferSinglePayload struct {
 
 // Hash calculates the transaction ID of the payload.
 func (c TransferSinglePayload) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(c)
-	return chainhash.Hash(hash)
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -48,12 +76,26 @@ func (c TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
 
 // Marshal encodes the data.
 func (c *TransferSinglePayload) Marshal() ([]byte, error) {
-	return ssz.Marshal(c)
+	b, err := ssz.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxSingleTransferPayloadSize {
+		return nil, ErrorSingleTransferPayloadSize
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (c *TransferSinglePayload) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, c)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	if len(d) > MaxSingleTransferPayloadSize {
+		return ErrorSingleTransferPayloadSize
+	}
+	return ssz.Unmarshal(d, c)
 }
 
 // SignatureMessage gets the message the needs to be signed.
@@ -64,10 +106,12 @@ func (c TransferSinglePayload) SignatureMessage() chainhash.Hash {
 	return chainhash.HashH(b)
 }
 
+// GetSignature returns the bls signature of the transaction.
 func (c TransferSinglePayload) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(c.Signature)
 }
 
+// GetPublic returns the bls public key of the transaction.
 func (c TransferSinglePayload) GetPublic() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(c.FromPublicKey)
 }
@@ -85,7 +129,7 @@ func (c *TransferSinglePayload) VerifySig() error {
 	}
 	valid := sig.Verify(sigMsg[:], pub)
 	if !valid {
-		return fmt.Errorf("signature is not valid")
+		return ErrorInvalidSignature
 	}
 
 	return nil
@@ -130,18 +174,32 @@ type TransferMultiPayload struct {
 
 // Marshal encodes the data.
 func (c *TransferMultiPayload) Marshal() ([]byte, error) {
-	return ssz.Marshal(c)
+	b, err := ssz.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxMultipleTransferPayloadSize {
+		return nil, ErrorMultiTransferPayloadSize
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (c *TransferMultiPayload) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, c)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	if len(d) > MaxMultipleTransferPayloadSize {
+		return ErrorMultiTransferPayloadSize
+	}
+	return ssz.Unmarshal(d, c)
 }
 
 // Hash calculates the transaction ID of the payload.
 func (c TransferMultiPayload) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(c)
-	return chainhash.Hash(hash)
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 // FromPubkeyHash calculates the hash of the from public key.
@@ -161,6 +219,7 @@ func (c TransferMultiPayload) SignatureMessage() chainhash.Hash {
 	return chainhash.HashH(b)
 }
 
+// GetPublic returns the bls public key of the multi signature transaction.
 func (c TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 	sig, err := c.GetSignature()
 	if err != nil {
@@ -169,6 +228,7 @@ func (c TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 	return sig.GetPublicKey()
 }
 
+// GetSignature returns the bls signature of the multi signature transaction.
 func (c TransferMultiPayload) GetSignature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer(c.MultiSig)
 	return bls.ReadFunctionalSignature(buf)
@@ -183,7 +243,7 @@ func (c TransferMultiPayload) VerifySig() error {
 	}
 	valid := sig.Verify(sigMsg[:])
 	if !valid {
-		return fmt.Errorf("signature is not valid")
+		return ErrorInvalidSignature
 	}
 
 	return nil
@@ -214,12 +274,6 @@ var _ TxPayload = &TransferMultiPayload{}
 // GenesisPayload is the payload of the genesis transaction.
 type GenesisPayload struct{}
 
-// Encode does nothing for the genesis payload.
-func (g *GenesisPayload) Encode(w io.Writer) error { return nil }
-
-// Decode does nothing for the genesis payload.
-func (g *GenesisPayload) Decode(r io.Reader) error { return nil }
-
 // TxPayload represents anything that can be used as a payload in a transaction.
 type TxPayload interface {
 	Marshal() ([]byte, error)
@@ -238,6 +292,7 @@ type Tx struct {
 	Payload []byte
 }
 
+// GetPayload returns the payload of the transaction.
 func (t *Tx) GetPayload() (TxPayload, error) {
 	switch t.Type {
 	case TxTransferMulti:
@@ -253,6 +308,7 @@ func (t *Tx) GetPayload() (TxPayload, error) {
 	}
 }
 
+// AppendPayload adds a specific payload to the transaction.
 func (t *Tx) AppendPayload(p TxPayload) error {
 	buf, err := p.Marshal()
 	if err != nil {
@@ -264,12 +320,41 @@ func (t *Tx) AppendPayload(p TxPayload) error {
 
 // Marshal encodes the data.
 func (t *Tx) Marshal() ([]byte, error) {
-	return ssz.Marshal(t)
+	b, err := ssz.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+	switch t.Type {
+	case TxTransferSingle:
+		if len(b) > MaxTransactionSingleSize {
+			return nil, ErrorTxSingleSize
+		}
+	case TxTransferMulti:
+		if len(b) > MaxTransactionMultiSize {
+			return nil, ErrorTxMultiSize
+		}
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (t *Tx) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, t)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	txType := binary.LittleEndian.Uint32(d[8:])
+	switch txType {
+	case TxTransferSingle:
+		if len(b) > MaxTransactionSingleSize {
+			return ErrorTxSingleSize
+		}
+	case TxTransferMulti:
+		if len(b) > MaxTransactionMultiSize {
+			return ErrorTxMultiSize
+		}
+	}
+	return ssz.Unmarshal(d, t)
 }
 
 // Hash calculates the transaction hash.

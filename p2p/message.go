@@ -10,6 +10,20 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+var (
+	// ErrorChecksum returned when the message header checksum doesn't match.
+	ErrorChecksum = errors.New("message checksum don't match")
+	// ErrorAnnLength returned when the header length doesn't match the message length.
+	ErrorAnnLength = errors.New("wrong announced length")
+	// ErrorSizeExceed returned when the message exceed the maximum payload message.
+	ErrorSizeExceed = errors.New("message exceed max payload length")
+	// ErrorNetMismatch returned when the message doesn't match the specified network.
+	ErrorNetMismatch = errors.New("wrong message network")
+)
+
+// MaxMsgSize is the maximum amount of bytes a message can have.
+var MaxMsgSize = 1024 * 1024 * 64
+
 const (
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
@@ -93,17 +107,18 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 	var checksum [4]byte
 	copy(checksum[:], chainhash.DoubleHashB(msgB)[0:4])
 	if header.Checksum != checksum {
-		return nil, errors.New("checksum don't match")
+		return nil, ErrorChecksum
 	}
+
 	if header.Length != uint32(len(msgB)) {
-		return nil, errors.New("wrong announced length")
+		return nil, ErrorAnnLength
 	}
 	err = msg.Unmarshal(msgB)
 	if err != nil {
 		return nil, err
 	}
 	if header.Length > msg.MaxPayloadLength() {
-		return nil, errors.New("message exceed max payload length")
+		return nil, ErrorSizeExceed
 	}
 	return msg, nil
 }
@@ -115,7 +130,7 @@ func readHeader(h []byte, net uint32) (MessageHeader, error) {
 		return MessageHeader{}, err
 	}
 	if header.Magic != net {
-		return MessageHeader{}, errors.New("wrong message network")
+		return MessageHeader{}, ErrorNetMismatch
 	}
 	return header, nil
 }

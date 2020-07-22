@@ -4,16 +4,19 @@ import (
 	"bytes"
 
 	fastssz "github.com/ferranbt/fastssz"
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
+// CommunityVoteDataInfo contains information about a community vote.
 type CommunityVoteDataInfo struct {
 	Hash chainhash.Hash
 	Data CommunityVoteData
 }
 
+// ReplacementVotes contains information about a replacement candidate selected.
 type ReplacementVotes struct {
 	Account [20]byte
 	Hash    chainhash.Hash
@@ -35,12 +38,20 @@ type Governance struct {
 
 // Marshal serializes the struct to bytes
 func (g *Governance) Marshal() ([]byte, error) {
-	return ssz.Marshal(g)
+	b, err := ssz.Marshal(g)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal deserialize the bytes to a struct
 func (g *Governance) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, g)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, g)
 }
 
 // MarshalSSZ overrides the ssz function using fastssz interface
@@ -112,12 +123,20 @@ type CommunityVoteData struct {
 
 // Marshal encodes the data.
 func (c *CommunityVoteData) Marshal() ([]byte, error) {
-	return ssz.Marshal(c)
+	b, err := ssz.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (c *CommunityVoteData) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, c)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, c)
 }
 
 // Copy copies the community vote data.
@@ -131,8 +150,8 @@ func (c *CommunityVoteData) Copy() *CommunityVoteData {
 
 // Hash calculates the hash of the vote data.
 func (c *CommunityVoteData) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(c)
-	return chainhash.Hash(hash)
+	b, _ := c.Marshal()
+	return chainhash.HashH(b)
 }
 
 const (
@@ -161,6 +180,7 @@ type GovernanceVote struct {
 	VoteEpoch     uint64
 }
 
+// Signature returns the governance vote bls signature.
 func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer([]byte{})
 	buf.Write(gv.FunctionalSig)
@@ -173,14 +193,23 @@ func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 
 // Marshal encodes the data.
 func (gv *GovernanceVote) Marshal() ([]byte, error) {
-	return ssz.Marshal(gv)
+	b, err := ssz.Marshal(gv)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (gv *GovernanceVote) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, gv)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, gv)
 }
 
+// Valid returns a boolean that checks for validity of the vote.
 func (gv *GovernanceVote) Valid() bool {
 	sigHash := gv.SignatureHash()
 	sig, err := gv.Signature()
@@ -200,8 +229,8 @@ func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
 
 // Hash calculates the hash of the governance vote.
 func (gv *GovernanceVote) Hash() chainhash.Hash {
-	hash, _ := ssz.HashTreeRoot(gv)
-	return chainhash.Hash(hash)
+	b, _ := gv.Marshal()
+	return chainhash.HashH(b)
 }
 
 // Copy copies the governance vote.

@@ -20,7 +20,9 @@ type StateValidatorsInfo struct {
 const LastBlockHashesSize = 8
 
 const (
+	// GovernanceStateActive is the enum to an active Governance voting state
 	GovernanceStateActive uint8 = iota
+	// GovernanceStateVoting is the enum to an voting Governance voting state
 	GovernanceStateVoting
 )
 

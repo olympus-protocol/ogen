@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
@@ -12,8 +13,7 @@ import (
 	"github.com/prysmaticlabs/go-ssz"
 )
 
-// Multipub represents multiple public keys that can be signed by
-// some subset numNeeded.
+// Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
 	PublicKeys [][]byte
 	NumNeeded  uint16
@@ -21,13 +21,20 @@ type Multipub struct {
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() []byte {
-	b, _ := ssz.Marshal(m)
-	return b
+	b, err := ssz.Marshal(m)
+	if err != nil {
+		return nil
+	}
+	return snappy.Encode(nil, b)
 }
 
 // Unmarshal decodes the data.
 func (m *Multipub) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 // NewMultipub constructs a new multi-pubkey.
@@ -58,6 +65,7 @@ func (m *Multipub) Type() FunctionalSignatureType {
 	return TypeMulti
 }
 
+// PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
 func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byte {
 	out := make([]byte, 0, 2+20*len(pubkeys))
 
@@ -109,12 +117,20 @@ type Multisig struct {
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	return ssz.Marshal(m)
+	b, err := ssz.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (m *Multisig) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, m)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return ssz.Unmarshal(d, m)
 }
 
 // NewMultisig creates a new blank multisig.
