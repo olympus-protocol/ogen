@@ -65,6 +65,7 @@ func newCoinMempoolItem() *coinMempoolItem {
 // CoinsMempool represents a mempool for coin transactions.
 type CoinsMempool struct {
 	blockchain *chain.Blockchain
+	hostNode   *peers.HostNode
 	params     *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
@@ -182,8 +183,12 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		tx := new(primitives.Tx)
 
 		if err := tx.Unmarshal(msg.Data); err != nil {
-			// TODO: ban peer
+
 			cm.log.Warnf("peer sent invalid transaction: %s", err)
+			err = cm.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			if err == nil {
+				cm.log.Warnf("peer %s was banned", msg.GetFrom().String())
+			}
 			continue
 		}
 
@@ -213,6 +218,7 @@ func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockcha
 		balances:   make(map[[20]byte]uint64),
 		ctx:        ctx,
 		blockchain: ch,
+		hostNode:   hostNode,
 		params:     params,
 		topic:      topic,
 		log:        log,

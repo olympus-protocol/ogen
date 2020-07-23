@@ -126,6 +126,8 @@ func (p *ProtocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		if !strings.Contains(err.Error(), "stream reset") {
 			p.log.Errorf("error receiving messages from peer %s: %s", id, err)
 		}
+		// reduce trust on peer
+		_ = p.host.BanScorePeer(id, BanMinScore)
 	}
 }
 

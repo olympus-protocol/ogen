@@ -17,6 +17,9 @@ var privKeyDbKey = []byte("privkey")
 var peersDbKey = []byte("peers")
 var bansDbKey = []byte("bans")
 
+const BanLimit = 5
+const BanMinScore = 1
+
 func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 	err = netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
@@ -59,7 +62,7 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 			return err
 		}
 		if !isBanned {
-			err = b.Put(pma.Bytes(), []byte(strconv.Itoa(initialBanScore)))
+			err = b.Put(pma.Bytes(), []byte(strconv.Itoa(0)))
 		} else {
 			err = fmt.Errorf("peer %s is banned", peerId.ID.String())
 		}
@@ -69,7 +72,7 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 }
 
 // Reduces the banscore of a peer. If it reaches limit, it will be banned
-func BanscorePeer(netDB *bbolt.DB, id peer.ID) error {
+func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 	err := netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
 		savedDb := tx.Bucket(peersDbKey)
@@ -89,8 +92,8 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID) error {
 				score, _ := strconv.Atoi(string(v))
 				fmt.Printf("peer %s has a banscore of: %s \n", id.String(), strconv.Itoa(score))
 
-				score -= 1
-				if score == 0 {
+				score += weight
+				if score >= BanLimit {
 					// add to banlist
 					byteId, err := parsedPeer.ID.MarshalBinary()
 					if err == nil {
@@ -145,13 +148,13 @@ func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err e
 			if err == nil {
 				peerId, err := peer.AddrInfoFromP2pAddr(addr)
 				if err != nil {
-					fmt.Println("120: " + err.Error() + ", removing from db")
+					fmt.Println("peer error: " + err.Error() + ", removing from db")
 					// if the saved peer cannot be validated, delete
 					err = b.Delete(k)
 				} else {
 					byteId, err := peerId.ID.MarshalBinary()
 					if err != nil {
-						fmt.Println("124: " + err.Error())
+						fmt.Println("cannot unmarshal peer: " + err.Error())
 					} else {
 						bannedPeerId := bannedP.Get(byteId)
 						if bannedPeerId == nil {

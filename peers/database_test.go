@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-const initialBanScore = 5
+const banLimit = 5
 
 var bansDbKey = []byte("bans")
 
@@ -83,8 +83,8 @@ func TestBanPeers(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, peerId)
 
-		for i := 0; i < initialBanScore; i++ {
-			err = peers.BanscorePeer(netDB, peerId.ID)
+		for i := 0; i < banLimit; i++ {
+			err = peers.BanscorePeer(netDB, peerId.ID, 1)
 		}
 
 		isBanned, err := peers.IsPeerBanned(netDB, peerId.ID)

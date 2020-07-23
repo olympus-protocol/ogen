@@ -37,7 +37,6 @@ type Config struct {
 
 const timeoutInterval = 60 * time.Second
 const heartbeatInterval = 20 * time.Second
-const initialBanScore = 5
 
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
@@ -320,11 +319,11 @@ func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
 	return SavePeer(node.configDb, pma)
 }
 
-func (node *HostNode) BanScorePeer(id peer.ID) error {
+func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
 	if node.configDb == nil {
 		return errors.New("no initialized db in node")
 	}
-	err := BanscorePeer(node.configDb, id)
+	err := BanscorePeer(node.configDb, id, weight)
 	if err == nil {
 		node.log.Errorf("banned peer: %s", id.String())
 		// disconnect
