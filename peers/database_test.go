@@ -13,9 +13,10 @@ import (
 	"testing"
 )
 
-const banLimit = 5
+const banLimit = 100
 
 var bansDbKey = []byte("bans")
+var ipDbKey = []byte("ips")
 
 func TestInitDb(t *testing.T) {
 	pathDir, _ := filepath.Abs("")
@@ -76,6 +77,7 @@ func TestBanPeers(t *testing.T) {
 
 		peer1, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWPzn8FgE4hbvmTvwdDRCZ2zz69mumw17fsPquPscjTWPS")
 		assert.Nil(t, err)
+
 		err = peers.SavePeer(netDB, peer1)
 		assert.Nil(t, err)
 
@@ -83,20 +85,31 @@ func TestBanPeers(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, peerId)
 
-		for i := 0; i < banLimit; i++ {
-			err = peers.BanscorePeer(netDB, peerId.ID, 1)
+		for i := 0; i < 5; i++ {
+			err = peers.BanscorePeer(netDB, peerId.ID, banLimit/5)
 		}
 
 		isBanned, err := peers.IsPeerBanned(netDB, peerId.ID)
 
 		assert.Equal(t, isBanned, true)
 
-		//remove from banList, it's just a test
+		//add same peer, and different peer with same ip address. In both cases it should not work, since it's an ip ban
+		err = peers.SavePeer(netDB, peer1)
+		assert.NotNil(t, err)
+
+		peer2, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1")
+		assert.Nil(t, err)
+		err = peers.SavePeer(netDB, peer2)
+		assert.NotNil(t, err)
+
+		//remove ip from banList, it's just a test
 		peerByte, err := peerId.ID.MarshalBinary()
 		_ = netDB.Update(func(tx *bbolt.Tx) error {
 			var err error
 			b := tx.Bucket(bansDbKey)
-			err = b.Delete(peerByte)
+			ipb := tx.Bucket(ipDbKey)
+			ipPeer := ipb.Get(peerByte)
+			err = b.Delete(ipPeer)
 			assert.Nil(t, err)
 			return nil
 		})
