@@ -9,6 +9,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"go.etcd.io/bbolt"
 	"strconv"
+	"time"
 )
 
 // contains several functions that interact with netDB database
@@ -71,26 +72,34 @@ func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 }
 
 func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
-	err := netDB.Update(func(tx *bbolt.Tx) error {
-		var err error
-		peersBucket := tx.Bucket(peersDbKey)
-		ipBucket := tx.Bucket(ipDbKey)
-		scoreBucket := tx.Bucket(scoresDbKey)
-		bansBucket := tx.Bucket(bansDbKey)
-		// get peerId from multiaddr
-		peerId, err := peer.AddrInfoFromP2pAddr(pma)
-		if err != nil {
-			return err
-		}
-		// extract ip from multiaddr
-		ip, err := extractIp(pma)
-		if err != nil {
-			return err
-		}
-		// check if ip is banned
-		bannedTime := bansBucket.Get([]byte(ip))
-		// if nil, means ip is not in banlist
-		if bannedTime == nil {
+	// get peerId from multiaddr
+	peerId, err := peer.AddrInfoFromP2pAddr(pma)
+	if err != nil {
+		return err
+	}
+	// extract ip from multiaddr
+	ip, err := extractIp(pma)
+	if err != nil {
+		return err
+	}
+	// check if ip is banned
+	isBanned, shoulDelete, err := IsIpBanned(netDB, ip)
+	if err != nil {
+		return err
+	}
+	if !isBanned {
+		err = netDB.Update(func(tx *bbolt.Tx) error {
+			var err error
+			peersBucket := tx.Bucket(peersDbKey)
+			ipBucket := tx.Bucket(ipDbKey)
+			scoreBucket := tx.Bucket(scoresDbKey)
+			bansDb := tx.Bucket(bansDbKey)
+			if shoulDelete {
+				err = bansDb.Delete([]byte(ip))
+			}
+			if err != nil {
+				return err
+			}
 			byteId, err := peerId.ID.MarshalBinary()
 			if err != nil {
 				return err
@@ -103,12 +112,13 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 			}
 			// save multiaddr of peerId
 			err = peersBucket.Put(byteId, pma.Bytes())
-		} else {
-			err = fmt.Errorf("peer %s is banned", peerId.ID.String())
-		}
-		return err
-	})
+			return err
+		})
+	} else {
+		err = fmt.Errorf("peer %s is banned", peerId.ID.String())
+	}
 	return err
+
 }
 
 // Reduces the banscore of a peer. If it reaches limit, it will be banned
@@ -145,14 +155,15 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 			if ipBytes == nil {
 				return errors.New("could not find peer ip")
 			}
-			//TODO: timestamp
-			err = bansDb.Put(ipBytes, nil)
+			timestamp := strconv.FormatInt(time.Now().Unix()+24*3600, 10)
+			err = bansDb.Put(ipBytes, []byte(timestamp))
 			if err != nil {
 				return err
 			}
-			fmt.Printf("ip %s was banned \n", string(ipBytes))
-			// remove from saved list
+			fmt.Printf("%s is banned until %s \n", string(ipBytes), timestamp)
+			// remove from saved list and score list
 			err = savedDb.Delete(byteId)
+			err = scoreDb.Delete(multiAddrBytes)
 		} else {
 			//update banscore
 			err = scoreDb.Put(multiAddrBytes, []byte(strconv.Itoa(score)))
@@ -163,32 +174,60 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 }
 
 func IsPeerBanned(netDB *bbolt.DB, id peer.ID) (bool, error) {
-	var res bool
+	var savedIp []byte
 	err := netDB.View(func(tx *bbolt.Tx) error {
 		var err error
-		bansB := tx.Bucket(bansDbKey)
 		ipb := tx.Bucket(ipDbKey)
 		byteId, err := id.MarshalBinary()
 		if err != nil {
 			return err
 		}
-		savedIp := ipb.Get(byteId)
-		if savedIp == nil {
-			return nil
-		}
-		bannedPeerIp := bansB.Get(savedIp)
-		if bannedPeerIp != nil {
-			res = true
-			return nil
+		savedIp = ipb.Get(byteId)
+		return nil
+	})
+	if savedIp == nil {
+		return true, nil
+	}
+	isBanned, shoudDelete, err := IsIpBanned(netDB, string(savedIp))
+	if shoudDelete {
+		err = netDB.Update(func(tx *bbolt.Tx) error {
+			var err error
+			banDb := tx.Bucket(bansDbKey)
+			err = banDb.Delete(savedIp)
+			return err
+		})
+	}
+	return isBanned, err
+}
+
+func IsIpBanned(netDB *bbolt.DB, ip string) (bool, bool, error) {
+	isBanned := false
+	shouldDelete := false
+	err := netDB.View(func(tx *bbolt.Tx) error {
+		bansB := tx.Bucket(bansDbKey)
+		ipBytes := []byte(ip)
+		bannedTime := bansB.Get(ipBytes)
+		if bannedTime != nil {
+			timeBan, err := strconv.ParseInt(string(bannedTime), 10, 64)
+			if err != nil {
+				return err
+			}
+			if timeBan <= time.Now().Unix() {
+				// if time has passed, unban
+				shouldDelete = true
+			} else {
+				isBanned = true
+			}
+			return err
 		}
 		return nil
 	})
-	return res, err
+	return isBanned, shouldDelete, err
 }
 
 func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err error) {
 	//retrieve the saved addresses
-	err = netDB.View(func(tx *bbolt.Tx) error {
+	err = netDB.Update(func(tx *bbolt.Tx) error {
 		savedBucket := tx.Bucket(peersDbKey)
 		err = savedBucket.ForEach(func(k, v []byte) error {
 			addr, err := multiaddr.NewMultiaddrBytes(v)
@@ -209,7 +248,7 @@ func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err e
 					}
 				}
 			}
-			return nil
+			return err
 		})
 		return err
 	})

@@ -50,6 +50,7 @@ func TestSavePeers(t *testing.T) {
 		assert.Nil(t, err)
 
 		peer1, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWPzn8FgE4hbvmTvwdDRCZ2zz69mumw17fsPquPscjTWPS")
+		assert.Nil(t, err)
 		peer2, err := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/24126/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1")
 		assert.Nil(t, err)
 
