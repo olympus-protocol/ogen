@@ -2,7 +2,7 @@ package peers
 
 import (
 	"context"
-	"crypto/rand"
+	"errors"
 	"net"
 	"path"
 	"sync"
@@ -38,9 +38,6 @@ type Config struct {
 const timeoutInterval = 60 * time.Second
 const heartbeatInterval = 20 * time.Second
 
-var configBucketKey = []byte("config")
-var privKeyDbKey = []byte("privkey")
-
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
 // The RPC communication is hanlded by App, not HostNode
@@ -69,6 +66,9 @@ type HostNode struct {
 
 	// database buckets
 	configBucket *bbolt.Bucket
+
+	// database reference
+	configDb *bbolt.DB
 }
 
 // NewHostNode creates a host node
@@ -78,46 +78,22 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 	if err != nil {
 		return nil, err
 	}
-	var priv crypto.PrivKey
-	var configBucket *bbolt.Bucket
-	err = netDB.Update(func(tx *bbolt.Tx) error {
-		configBucket = tx.Bucket(configBucketKey)
-		// If the bucket doesn't exist, initialize the database
-		if configBucket == nil {
-			configBucket, err = tx.CreateBucketIfNotExists(configBucketKey)
-			if err != nil {
-				return err
-			}
-
-		}
-		var keyBytes []byte
-		keyBytes = configBucket.Get(privKeyDbKey)
-		if keyBytes == nil {
-			priv, _, err = crypto.GenerateEd25519Key(rand.Reader)
-			if err != nil {
-				return err
-			}
-			privBytes, err := crypto.MarshalPrivateKey(priv)
-			if err != nil {
-				return err
-			}
-			err = configBucket.Put(privKeyDbKey, privBytes)
-			if err != nil {
-				return err
-			}
-			keyBytes = privBytes
-		}
-		key, err := crypto.UnmarshalPrivateKey(keyBytes)
-		if err != nil {
-			return err
-		}
-
-		priv = key
-		return nil
-	})
+	configBucket, err := InitBuckets(netDB)
 	if err != nil {
 		return nil, err
 	}
+	priv, err := GetPrivKey(netDB)
+	if err != nil {
+		return nil, err
+
+	}
+
+	// get saved peers
+	savedAddresses, err := GetSavedPeers(netDB)
+	if err != nil {
+		config.Log.Errorf("error retrieving saved peers: %s", err)
+	}
+
 	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
 	if err != nil {
 		return nil, err
@@ -128,6 +104,10 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		return nil, err
 	}
 	listenAddress := []multiaddr.Multiaddr{listen}
+
+	//append saved addresses
+	listenAddress = append(listenAddress, savedAddresses...)
+
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs(listenAddress...),
@@ -168,6 +148,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		log:               config.Log,
 		topics:            map[string]*pubsub.Topic{},
 		configBucket:      configBucket,
+		configDb:          netDB,
 	}
 
 	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)
@@ -327,4 +308,33 @@ func (node *HostNode) Start() error {
 	}
 
 	return nil
+}
+
+// Database <-> hostNode Functions
+
+func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
+	if node.configDb == nil {
+		return errors.New("no initialized db in node")
+	}
+	return SavePeer(node.configDb, pma)
+}
+
+func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
+	if node.configDb == nil {
+		return errors.New("no initialized db in node")
+	}
+	err := BanscorePeer(node.configDb, id, weight)
+	if err == nil {
+		node.log.Errorf("banned peer: %s", id.String())
+		// disconnect
+		_ = node.DisconnectPeer(id)
+	}
+	return err
+}
+
+func (node *HostNode) IsPeerBanned(id peer.ID) (bool, error) {
+	if node.configDb == nil {
+		return false, errors.New("no initialized db in node")
+	}
+	return IsPeerBanned(node.configDb, id)
 }

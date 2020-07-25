@@ -91,6 +91,7 @@ type VoteMempool struct {
 	log        *logger.Logger
 	ctx        context.Context
 	blockchain *chain.Blockchain
+	hostNode   *peers.HostNode
 
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
@@ -318,8 +319,11 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 		tx := new(primitives.SingleValidatorVote)
 
 		if err := tx.Unmarshal(msg.Data); err != nil {
-			// TODO: ban peer
 			m.log.Warnf("peer sent invalid vote: %s", err)
+			err = m.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			if err == nil {
+				m.log.Warnf("peer %s was banned", msg.GetFrom().String())
+			}
 			continue
 		}
 
@@ -364,6 +368,7 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 		ctx:        ctx,
 		blockchain: ch,
 		notifees:   make([]VoteSlashingNotifee, 0),
+		hostNode:   hostnode,
 	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {

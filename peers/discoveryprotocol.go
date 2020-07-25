@@ -50,7 +50,6 @@ func NewDiscoveryProtocol(ctx context.Context, host *HostNode, config Config) (*
 		return nil, err
 	}
 	host.Notify(dp)
-
 	return dp, nil
 }
 
@@ -72,7 +71,6 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	}
 
 	peers := msgAddr.Addr
-
 	// let's set a very short timeout so we can connect faster
 	timeout := time.Second * 5
 
@@ -94,6 +92,12 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 			cancel()
 			continue
 		}
+		//save connected peer
+		if err := cm.host.SavePeer(pma); err != nil {
+			cm.log.Tracef("error saving peer: %s", err)
+			cancel()
+			continue
+		}
 		cancel()
 	}
 
@@ -108,9 +112,13 @@ func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	peers := [][]byte{}
 	peersData := shufflePeers(cm.host.GetPeerInfos())
 
-	for _, p := range peersData {
-		if len(peers) < p2p.MaxAddrPerMsg {
-			peers = append(peers, p.Addrs[0].Bytes())
+	for i, p := range peersData {
+		if i < p2p.MaxAddrPerMsg {
+			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
+			if err != nil {
+				continue
+			}
+			peers = append(peers, peerMulti[0].Bytes())
 		}
 	}
 
