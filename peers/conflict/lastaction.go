@@ -3,6 +3,10 @@ package conflict
 import (
 	"context"
 	"encoding/binary"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
@@ -10,9 +14,6 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/prysmaticlabs/go-ssz"
-	"math/rand"
-	"sync"
-	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
@@ -20,8 +21,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
-// ValidatorHelloMessage is a message sent by validators to indicate that they
-// are coming online.
+// ValidatorHelloMessage is a message sent by validators to indicate that they are coming online.
 type ValidatorHelloMessage struct {
 	PublicKey []byte
 	Timestamp uint64
@@ -29,8 +29,9 @@ type ValidatorHelloMessage struct {
 	Signature []byte
 }
 
+// MaxPayloadLength returns the maximum amount a ValidatorHelloMessage can contain.
 func (v *ValidatorHelloMessage) MaxPayloadLength() uint32 {
-	return 160 // 48 + 8 + 8 + 96 =
+	return 168 // 48 + 8 + 8 + 96 + 8 (bytes to include the public and signature length)
 }
 
 // SignatureMessage gets the signed portion of the message.
@@ -49,8 +50,8 @@ func (v *ValidatorHelloMessage) SignatureMessage() []byte {
 	return msg
 }
 
-// Serialize serializes the hello message to the given writer.
-func (v *ValidatorHelloMessage) Serialize() ([]byte, error) {
+// Marshal serializes the hello message to the given writer.
+func (v *ValidatorHelloMessage) Marshal() ([]byte, error) {
 	b, err := ssz.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -61,7 +62,7 @@ func (v *ValidatorHelloMessage) Serialize() ([]byte, error) {
 	return snappy.Encode(nil, b), nil
 }
 
-// Deserialize deserializes the validator hello message from the reader.
+// Unmarshal deserializes the validator hello message from the reader.
 func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
@@ -169,7 +170,7 @@ func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 			l.log.Warnf("invalid signature: %s", err)
 		}
 
-		pub, err := bls.PublicKeyFromBytes(validatorHello.Signature)
+		pub, err := bls.PublicKeyFromBytes(validatorHello.PublicKey)
 		if err != nil {
 			l.log.Warnf("invalid pubkey: %s", err)
 		}
@@ -200,7 +201,7 @@ func (l *LastActionManager) StartValidator(valPub []byte, sign func(*ValidatorHe
 	signature := sign(validatorHello)
 	validatorHello.Signature = signature.Marshal()
 
-	msgBytes, _ := validatorHello.Serialize()
+	msgBytes, _ := validatorHello.Marshal()
 
 	l.startTopic.Publish(l.ctx, msgBytes)
 

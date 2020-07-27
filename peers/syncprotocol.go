@@ -15,13 +15,14 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
-const syncProtocolID = protocol.ID("/ogen/sync/0.0.1")
+const syncProtocolID = protocol.ID("/ogen/sync/" + config.OgenVersion)
 
 // SyncProtocol handles syncing for a blockchain.
 type SyncProtocol struct {
