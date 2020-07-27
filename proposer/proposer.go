@@ -3,6 +3,7 @@ package proposer
 import (
 	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/peers/conflict"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -41,6 +42,8 @@ type Proposer struct {
 	hostnode       *peers.HostNode
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
+
+	lastActionManager *conflict.LastActionManager
 }
 
 // OpenKeystore opens the keystore with the provided password
@@ -53,7 +56,7 @@ func (p *Proposer) OpenKeystore(password string) (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager *conflict.LastActionManager) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -66,19 +69,20 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		return nil, err
 	}
 	proposer = &Proposer{
-		log:            config.Log,
-		config:         config,
-		params:         params,
-		chain:          chain,
-		mineActive:     true,
-		context:        ctx,
-		Stop:           cancel,
-		voteMempool:    voteMempool,
-		coinsMempool:   coinsMempool,
-		actionsMempool: actionsMempool,
-		hostnode:       hostnode,
-		blockTopic:     blockTopic,
-		voteTopic:      voteTopic,
+		log:               config.Log,
+		config:            config,
+		params:            params,
+		chain:             chain,
+		mineActive:        true,
+		context:           ctx,
+		Stop:              cancel,
+		voteMempool:       voteMempool,
+		coinsMempool:      coinsMempool,
+		actionsMempool:    actionsMempool,
+		hostnode:          hostnode,
+		blockTopic:        blockTopic,
+		voteTopic:         voteTopic,
+		lastActionManager: manager,
 	}
 	chain.Notify(proposer)
 	return proposer, nil
@@ -316,6 +320,7 @@ func (p *Proposer) VoteForBlocks() {
 				ToEpoch:         toEpoch,
 				ToHash:          state.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, &p.params),
 				BeaconBlockHash: beaconBlock.Hash,
+				Nonce:           p.lastActionManager.GetNonce(),
 			}
 
 			dataHash := data.Hash()
