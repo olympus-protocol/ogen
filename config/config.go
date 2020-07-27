@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	version = "0.0.1"
+	OgenVersion = "0.0.1"
 )
 
 type Config struct {
@@ -29,8 +29,4 @@ type Config struct {
 	Debug   bool
 	LogFile bool
 	Pprof   bool
-}
-
-func OgenVersion() string {
-	return version
 }

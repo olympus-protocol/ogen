@@ -9,6 +9,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/utils/logger"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-const DiscoveryProtocolID = protocol.ID("/ogen/discovery/0.0.1")
+const discoveryProtocolID = protocol.ID("/ogen/discovery/" + config.OgenVersion)
 
 // DiscoveryProtocol is the service to discover other peers.
 type DiscoveryProtocol struct {
@@ -34,7 +35,7 @@ type DiscoveryProtocol struct {
 
 // NewDiscoveryProtocol creates a new discovery service.
 func NewDiscoveryProtocol(ctx context.Context, host *HostNode, config Config) (*DiscoveryProtocol, error) {
-	ph := newProtocolHandler(ctx, DiscoveryProtocolID, host, config)
+	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
 	dp := &DiscoveryProtocol{
 		host:            host,
 		ctx:             ctx,
@@ -198,7 +199,7 @@ func (cm *DiscoveryProtocol) Connected(net network.Network, conn network.Conn) {
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := cm.host.host.NewStream(cm.ctx, conn.RemotePeer(), DiscoveryProtocolID)
+	s, err := cm.host.host.NewStream(cm.ctx, conn.RemotePeer(), discoveryProtocolID)
 	if err != nil {
 		cm.log.Errorf("could not open stream for connection: %s", err)
 	}
