@@ -21,7 +21,7 @@ import (
 type ValidatorHelloMessage struct {
 	PublicKey bls.PublicKey
 	Timestamp uint64
-	Nonce uint64
+	Nonce     uint64
 	Signature bls.Signature
 }
 
@@ -78,7 +78,7 @@ const MaxMessagePropagationTime = 15 * time.Second
 
 type lastPing struct {
 	nonce uint64
-	time uint64
+	time  uint64
 }
 
 // LastActionManager keeps track of the last action recorded by validators.
@@ -88,13 +88,13 @@ type LastActionManager struct {
 	log *logger.Logger
 
 	hostNode *peers.HostNode
-	ctx context.Context
+	ctx      context.Context
 
 	nonce uint64
 
 	// lastActions are the last recorded actions by a validator with a certain
 	// salted private key hash.
-	lastActions map[[48]byte]lastPing
+	lastActions     map[[48]byte]lastPing
 	lastActionsLock sync.RWMutex
 
 	startTopic *pubsub.Topic
@@ -115,16 +115,16 @@ func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger
 	}
 
 	l := &LastActionManager{
-		hostNode: node,
-		ctx: ctx,
+		hostNode:    node,
+		ctx:         ctx,
 		lastActions: make(map[[48]byte]lastPing),
-		log: log,
-		startTopic: topic,
-		nonce: rand.Uint64(),
+		log:         log,
+		startTopic:  topic,
+		nonce:       rand.Uint64(),
 	}
 
 	go l.handleStartTopic(topicSub)
-	
+
 	return l, nil
 }
 
@@ -142,7 +142,7 @@ func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 			l.log.Warnf("invalid validator hello: %s", err)
 			return
 		}
-	
+
 		if !validatorHello.Signature.Verify(validatorHello.SignatureMessage(), &validatorHello.PublicKey) {
 			l.log.Warnf("validator hello signature did not verify")
 			return
@@ -157,7 +157,7 @@ func (l *LastActionManager) StartValidator(val bls.PublicKey, sign func(*Validat
 
 	pubSer := [48]byte{}
 	copy(pubSer[:], val.Marshal())
-	
+
 	// no actions observed
 	if _, ok := l.lastActions[pubSer]; !ok {
 		return true
@@ -167,7 +167,7 @@ func (l *LastActionManager) StartValidator(val bls.PublicKey, sign func(*Validat
 	lastActionTime := time.Unix(int64(lastAction.time), 0)
 
 	// last action was long enough ago we can start
-	if lastAction.nonce != l.nonce && time.Since(lastActionTime) > MaxMessagePropagationTime * 2 {
+	if lastAction.nonce != l.nonce && time.Since(lastActionTime) > MaxMessagePropagationTime*2 {
 		return true
 	}
 
@@ -191,7 +191,7 @@ func (l *LastActionManager) RegisterActionAt(by [48]byte, at uint64, nonce uint6
 	defer l.lastActionsLock.Unlock()
 
 	l.lastActions[by] = lastPing{
-		time: at,
+		time:  at,
 		nonce: nonce,
 	}
 }
