@@ -110,7 +110,7 @@ var TestNet = ChainParams{
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              80,
+	EjectionBalance:              90,
 	MaxBalanceChurnQuotient:      32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
