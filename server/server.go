@@ -73,7 +73,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	lastActionManager, err := conflict.NewLastActionManager(ctx, hostnode, logger)
+	lastActionManager, err := conflict.NewLastActionManager(ctx, hostnode, logger, ch, &currParams)
 	if err != nil {
 		return nil, err
 	}
