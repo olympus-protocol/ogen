@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/binary"
 	"github.com/golang/snappy"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/p2p"
+	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/prysmaticlabs/go-ssz"
 	"math/rand"
 	"sync"
@@ -98,12 +102,28 @@ type LastActionManager struct {
 	lastActionsLock sync.RWMutex
 
 	startTopic *pubsub.Topic
+
+	params *params.ChainParams
 }
+
+func (l *LastActionManager) NewTip(row *index.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt) {
+	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
+
+	proposerIndex := state.ProposerQueue[slotIndex]
+	proposer := state.ValidatorRegistry[proposerIndex]
+
+	var pubkey [48]byte
+	copy(pubkey[:], proposer.PubKey)
+
+	l.RegisterActionAt(pubkey, block.Header.Timestamp, block.Header.Nonce)
+}
+
+func (l *LastActionManager) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
 
 const validatorStartTopic = "validatorStart"
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger.Logger) (*LastActionManager, error) {
+func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger.Logger, ch *chain.Blockchain, params *params.ChainParams) (*LastActionManager, error) {
 	topic, err := node.Topic(validatorStartTopic)
 	if err != nil {
 		return nil, err
@@ -121,7 +141,10 @@ func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger
 		log:         log,
 		startTopic:  topic,
 		nonce:       rand.Uint64(),
+		params:      params,
 	}
+
+	ch.Notify(l)
 
 	go l.handleStartTopic(topicSub)
 
