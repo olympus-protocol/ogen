@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/peers/conflict"
 	"net/http"
 
 	"github.com/olympus-protocol/ogen/bdb"
@@ -72,11 +73,15 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
+	lastActionManager, err := conflict.NewLastActionManager(ctx, hostnode, logger)
+	if err != nil {
+		return nil, err
+	}
 	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hostnode, &currParams)
 	if err != nil {
 		return nil, err
 	}
-	voteMempool, err := mempool.NewVoteMempool(ctx, logger, &currParams, ch, hostnode)
+	voteMempool, err := mempool.NewVoteMempool(ctx, logger, &currParams, ch, hostnode, lastActionManager)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +94,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	if err != nil {
 		return nil, err
 	}
-	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool)
+	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool, lastActionManager)
 	if err != nil {
 		return nil, err
 	}
