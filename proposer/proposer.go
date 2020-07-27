@@ -219,7 +219,7 @@ func (p *Proposer) ProposeBlocks() {
 				block := primitives.Block{
 					Header: primitives.BlockHeader{
 						Version:       0,
-						Nonce:         0,
+						Nonce:         p.lastActionManager.GetNonce(),
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
