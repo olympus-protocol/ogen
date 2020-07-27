@@ -28,11 +28,11 @@ const (
 	// MaxVoteDataSize is the maximum size in bytes of vote data.
 	MaxVoteDataSize = 128
 	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
-	MaxAcceptedVoteInfoSize = 148
+	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 250 + 4 + 8
 	// MaxSingleValidatorVoteSize is the maximum size in bytes a single validator vote can contain.
-	MaxSingleValidatorVoteSize = 236
+	MaxSingleValidatorVoteSize = MaxVoteDataSize + 12 + 96
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
-	MaxMultiValidatorVoteSize = 236
+	MaxMultiValidatorVoteSize = MaxVoteDataSize + 96 + 250
 )
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
@@ -207,6 +207,7 @@ func (v *SingleValidatorVote) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(len(b))
 	if len(b) > MaxSingleValidatorVoteSize {
 		return nil, ErrorSingleValidatorVoteSize
 	}
