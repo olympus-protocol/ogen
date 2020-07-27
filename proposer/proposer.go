@@ -3,6 +3,7 @@ package proposer
 import (
 	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/peers/conflict"
 	"time"
 
@@ -177,6 +178,13 @@ func (p *Proposer) ProposeBlocks() {
 			proposer := state.ValidatorRegistry[proposerIndex]
 
 			if k, found := p.Keystore.GetValidatorKey(proposer.PubKey); found {
+				var pubkey [48]byte
+				copy(pubkey[:], proposer.PubKey)
+
+				if !p.lastActionManager.ShouldRun(pubkey) {
+					continue
+				}
+
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
 				votes, err := p.voteMempool.Get(slotToPropose, state, &p.params, proposerIndex)
@@ -329,6 +337,13 @@ func (p *Proposer) VoteForBlocks() {
 				validator := state.ValidatorRegistry[validatorIdx]
 
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+					var pubkey [48]byte
+					copy(pubkey[:], validator.PubKey)
+
+					if !p.lastActionManager.ShouldRun(pubkey) {
+						continue
+					}
+
 					sig := k.Sign(dataHash[:])
 
 					vote := primitives.SingleValidatorVote{
@@ -385,9 +400,15 @@ func (p *Proposer) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range p.chain.State().TipState().ValidatorRegistry {
-		if _, ok := p.Keystore.GetValidatorKey(w.PubKey); ok {
+		secKey, ok := p.Keystore.GetValidatorKey(w.PubKey)
+		if ok {
 			numOurs++
 		}
+
+		p.lastActionManager.StartValidator(w.PubKey, func(message *conflict.ValidatorHelloMessage) *bls.Signature {
+			msg := message.SignatureMessage()
+			return secKey.Sign(msg)
+		})
 		numTotal++
 	}
 

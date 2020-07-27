@@ -207,7 +207,6 @@ func (v *SingleValidatorVote) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(len(b))
 	if len(b) > MaxSingleValidatorVoteSize {
 		return nil, ErrorSingleValidatorVoteSize
 	}

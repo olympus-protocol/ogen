@@ -23,10 +23,10 @@ import (
 // ValidatorHelloMessage is a message sent by validators to indicate that they
 // are coming online.
 type ValidatorHelloMessage struct {
-	PublicKey bls.PublicKey
+	PublicKey []byte
 	Timestamp uint64
 	Nonce     uint64
-	Signature bls.Signature
+	Signature []byte
 }
 
 func (v *ValidatorHelloMessage) MaxPayloadLength() uint32 {
@@ -35,8 +35,6 @@ func (v *ValidatorHelloMessage) MaxPayloadLength() uint32 {
 
 // SignatureMessage gets the signed portion of the message.
 func (v *ValidatorHelloMessage) SignatureMessage() []byte {
-	pubkeyBytes := v.PublicKey.Marshal()
-
 	timeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timeBytes, v.Timestamp)
 
@@ -44,7 +42,7 @@ func (v *ValidatorHelloMessage) SignatureMessage() []byte {
 	binary.BigEndian.PutUint64(nonceBytes, v.Nonce)
 
 	msg := []byte{}
-	msg = append(msg, pubkeyBytes[:]...)
+	msg = append(msg, v.PublicKey[:]...)
 	msg = append(msg, timeBytes...)
 	msg = append(msg, nonceBytes...)
 
@@ -78,7 +76,7 @@ func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
 // take to propogate across the network. We wait double this before allowing a
 // validator to start.
-const MaxMessagePropagationTime = 15 * time.Second
+const MaxMessagePropagationTime = 60 * time.Second
 
 type lastPing struct {
 	nonce uint64
@@ -166,7 +164,17 @@ func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 			return
 		}
 
-		if !validatorHello.Signature.Verify(validatorHello.SignatureMessage(), &validatorHello.PublicKey) {
+		sig, err := bls.SignatureFromBytes(validatorHello.Signature)
+		if err != nil {
+			l.log.Warnf("invalid signature: %s", err)
+		}
+
+		pub, err := bls.PublicKeyFromBytes(validatorHello.Signature)
+		if err != nil {
+			l.log.Warnf("invalid pubkey: %s", err)
+		}
+
+		if !sig.Verify(validatorHello.SignatureMessage(), pub) {
 			l.log.Warnf("validator hello signature did not verify")
 			return
 		}
@@ -174,13 +182,39 @@ func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *LastActionManager) StartValidator(val bls.PublicKey, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
+func (l *LastActionManager) StartValidator(valPub []byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
 	l.lastActionsLock.RLock()
 	defer l.lastActionsLock.RUnlock()
 
 	pubSer := [48]byte{}
-	copy(pubSer[:], val.Marshal())
+	copy(pubSer[:], valPub)
 
+	if !l.ShouldRun(pubSer) {
+		return false
+	}
+
+	validatorHello := new(ValidatorHelloMessage)
+	validatorHello.PublicKey = valPub
+	validatorHello.Timestamp = uint64(time.Now().Unix())
+
+	signature := sign(validatorHello)
+	validatorHello.Signature = signature.Marshal()
+
+	msgBytes, _ := validatorHello.Serialize()
+
+	l.startTopic.Publish(l.ctx, msgBytes)
+
+	return true
+}
+
+func (l *LastActionManager) ShouldRun(val [48]byte) bool {
+	l.lastActionsLock.RLock()
+	defer l.lastActionsLock.RUnlock()
+
+	return l.shouldRun(val)
+}
+
+func (l *LastActionManager) shouldRun(pubSer [48]byte) bool {
 	// no actions observed
 	if _, ok := l.lastActions[pubSer]; !ok {
 		return true
@@ -193,17 +227,6 @@ func (l *LastActionManager) StartValidator(val bls.PublicKey, sign func(*Validat
 	if lastAction.nonce != l.nonce && time.Since(lastActionTime) > MaxMessagePropagationTime*2 {
 		return true
 	}
-
-	validatorHello := new(ValidatorHelloMessage)
-	validatorHello.PublicKey = val
-	validatorHello.Timestamp = uint64(time.Now().Unix())
-
-	signature := sign(validatorHello)
-	validatorHello.Signature = *signature
-
-	msgBytes, _ := validatorHello.Serialize()
-
-	l.startTopic.Publish(l.ctx, msgBytes)
 
 	return false
 }
