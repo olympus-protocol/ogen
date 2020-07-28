@@ -142,8 +142,8 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
 		Txs:             block.GetTxs(),
-		Signature:       hex.EncodeToString(block.Signature),
-		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
+		Signature:       hex.EncodeToString(block.Signature[:]),
+		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
 }

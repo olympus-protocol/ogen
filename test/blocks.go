@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -46,6 +45,6 @@ var Block = primitives.Block{
 	RANDAOSlashings:   []primitives.RANDAOSlashing{},
 	ProposerSlashings: []primitives.ProposerSlashing{},
 	GovernanceVotes:   []primitives.GovernanceVote{},
-	Signature:         bls.NewAggregateSignature().Marshal(),
-	RandaoSignature:   bls.NewAggregateSignature().Marshal(),
+	Signature:         sigB,
+	RandaoSignature:   sigB,
 }

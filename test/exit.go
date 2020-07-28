@@ -5,7 +5,7 @@ import (
 )
 
 var Exit = primitives.Exit{
-	ValidatorPubkey: randKey.Marshal(),
-	WithdrawPubkey:  randKey.Marshal(),
-	Signature:       sig.Marshal(),
+	ValidatorPubkey: pubB,
+	WithdrawPubkey:  pubB,
+	Signature:       sigB,
 }

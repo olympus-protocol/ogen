@@ -5,6 +5,9 @@ import (
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 )
 
+var sigB = [96]byte{}
+var pubB = [48]byte{}
+
 var randKey = bls.RandKey().PublicKey()
 var randKeyBytes = bls.RandKey().PublicKey().Marshal()
 
@@ -12,18 +15,23 @@ var sig = bls.NewAggregateSignature()
 var funcSigByte, _ = CombinedSignature.Marshal()
 var sigBytes = bls.NewAggregateSignature().Marshal()
 
+func init() {
+	copy(sigB[:], sigBytes)
+	copy(pubB[:], randKeyBytes)
+}
+
 var CombinedSignature = bls.CombinedSignature{
-	S: sig.Marshal(),
-	P: randKey.Marshal(),
+	S: sigB,
+	P: pubB,
 }
 
 var Multipub = bls.Multipub{
-	PublicKeys: [][]byte{randKeyBytes, randKeyBytes, randKeyBytes, randKeyBytes, randKeyBytes},
+	PublicKeys: [][48]byte{pubB, pubB, pubB, pubB, pubB},
 	NumNeeded:  5,
 }
 
 var Multisig = bls.Multisig{
 	PublicKey:  Multipub,
-	Signatures: [][]byte{sigBytes, sigBytes, sigBytes, sigBytes, sigBytes, sigBytes},
-	KeysSigned: bitfield.NewBitfield(5),
+	Signatures: [][96]byte{sigB, sigB, sigB, sigB, sigB, sigB},
+	KeysSigned: bitfield.NewBitfield(6),
 }

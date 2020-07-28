@@ -77,8 +77,8 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
 		Txs:             block.GetTxs(),
-		Signature:       hex.EncodeToString(block.Signature),
-		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
+		Signature:       hex.EncodeToString(block.Signature[:]),
+		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
 }
@@ -323,7 +323,7 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 			Amount:        p.Amount,
 			Nonce:         p.Nonce,
 			Fee:           p.Fee,
-			Signature:     hex.EncodeToString(p.Signature),
+			Signature:     hex.EncodeToString(p.Signature[:]),
 		}
 	case *primitives.TransferMultiPayload:
 		txParse.TransferMultiPayload = &proto.TransferMulti{

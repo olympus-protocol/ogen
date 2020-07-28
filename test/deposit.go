@@ -5,13 +5,13 @@ import (
 )
 
 var DepositData = primitives.DepositData{
-	PublicKey:         randKey.Marshal(),
-	ProofOfPossession: sig.Marshal(),
+	PublicKey:         pubB,
+	ProofOfPossession: sigB,
 	WithdrawalAddress: [20]byte{0x0, 0x1, 0x2},
 }
 
 var Deposit = primitives.Deposit{
-	PublicKey: randKey.Marshal(),
-	Signature: sig.Marshal(),
+	PublicKey: pubB,
+	Signature: sigB,
 	Data:      DepositData,
 }

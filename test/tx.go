@@ -6,11 +6,11 @@ import (
 
 var TransferSinglePayload = primitives.TransferSinglePayload{
 	To:            [20]byte{0x1, 0x2, 0x5, 0x10},
-	FromPublicKey: randKey.Marshal(),
+	FromPublicKey: pubB,
 	Amount:        100,
 	Nonce:         100,
 	Fee:           100,
-	Signature:     sig.Marshal(),
+	Signature:     sigB,
 }
 
 var TransferSinglePayloadBytes, _ = TransferSinglePayload.Marshal()
