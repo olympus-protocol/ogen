@@ -824,35 +824,35 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 
-	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
+	if !b.Header.TxMerkleRootH().IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
 	}
 
-	if !b.Header.VoteMerkleRoot.IsEqual(&voteMerkleRoot) {
+	if !b.Header.VoteMerkleRootH().IsEqual(&voteMerkleRoot) {
 		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
 	}
 
-	if !b.Header.DepositMerkleRoot.IsEqual(&depositMerkleRoot) {
+	if !b.Header.DepositMerkleRootH().IsEqual(&depositMerkleRoot) {
 		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
 	}
 
-	if !b.Header.ExitMerkleRoot.IsEqual(&exitMerkleRoot) {
+	if !b.Header.ExitMerkleRootH().IsEqual(&exitMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", exitMerkleRoot, b.Header.ExitMerkleRoot)
 	}
 
-	if !b.Header.VoteSlashingMerkleRoot.IsEqual(&voteSlashingMerkleRoot) {
+	if !b.Header.VoteSlashingMerkleRootH().IsEqual(&voteSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", voteSlashingMerkleRoot, b.Header.VoteSlashingMerkleRoot)
 	}
 
-	if !b.Header.ProposerSlashingMerkleRoot.IsEqual(&proposerSlashingMerkleRoot) {
+	if !b.Header.ProposerSlashingMerkleRootH().IsEqual(&proposerSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", proposerSlashingMerkleRoot, b.Header.ProposerSlashingMerkleRoot)
 	}
 
-	if !b.Header.RANDAOSlashingMerkleRoot.IsEqual(&randaoSlashingMerkleRoot) {
+	if !b.Header.RANDAOSlashingMerkleRootH().IsEqual(&randaoSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", randaoSlashingMerkleRoot, b.Header.RANDAOSlashingMerkleRoot)
 	}
 
-	if !b.Header.GovernanceVotesMerkleRoot.IsEqual(&governanceVoteMerkleRoot) {
+	if !b.Header.GovernanceVotesMerkleRootH().IsEqual(&governanceVoteMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
 	}
 

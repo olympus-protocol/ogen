@@ -75,7 +75,7 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	deposit := &primitives.Deposit{
 		PublicKey: pubKey,
 		Signature: ds,
-		Data:      *depositData,
+		Data:      depositData,
 	}
 
 	currentState := w.chain.State().TipState()
