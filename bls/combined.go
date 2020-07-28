@@ -9,8 +9,8 @@ import (
 
 // CombinedSignature is a signature and a public key meant to match the same interface as Multisig.
 type CombinedSignature struct {
-	S []byte
-	P []byte
+	S [96]byte
+	P [48]byte
 }
 
 // Marshal encodes the data.
@@ -33,9 +33,13 @@ func (cs *CombinedSignature) Unmarshal(b []byte) error {
 
 // NewCombinedSignature creates a new combined signature
 func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
+	var s [96]byte
+	var p [48]byte
+	copy(s[:], sig.Marshal())
+	copy(p[:], pub.Marshal())
 	return &CombinedSignature{
-		P: pub.Marshal(),
-		S: sig.Marshal(),
+		P: p,
+		S: s,
 	}
 }
 
@@ -64,9 +68,10 @@ func (cs *CombinedSignature) Sign(sk *SecretKey, msg []byte) error {
 	if !expectedPub.Equals(pub) {
 		return fmt.Errorf("expected key for %x, but got %x", cs.P, expectedPub.Marshal())
 	}
-
+	var s [96]byte
 	sig := sk.Sign(msg)
-	cs.S = sig.Marshal()
+	copy(s[:], sig.Marshal())
+	cs.S = s
 	return nil
 }
 

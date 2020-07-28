@@ -187,7 +187,7 @@ func (v *VoteData) Hash() chainhash.Hash {
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
 	Data   VoteData
-	Sig    []byte
+	Sig    [96]byte
 	Offset uint32
 	OutOf  uint32
 }
@@ -241,7 +241,7 @@ func (v *SingleValidatorVote) Hash() chainhash.Hash {
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
 	Data                  VoteData
-	Sig                   []byte
+	Sig                   [96]byte
 	ParticipationBitfield bitfield.Bitfield
 }
 

@@ -22,10 +22,10 @@ const MaxDepositSize = 328
 // Deposit is a deposit a user can submit to queue as a validator.
 type Deposit struct {
 	// PublicKey is the public key of the address that is depositing.
-	PublicKey []byte
+	PublicKey [48]byte
 
 	// Signature is the signature signing the deposit data.
-	Signature []byte
+	Signature [96]byte
 
 	// Data is the data that describes the new validator.
 	Data DepositData
@@ -77,10 +77,10 @@ const MaxDepositDataSize = 164
 // DepositData is the part of the deposit that is signed
 type DepositData struct {
 	// PublicKey is the key used for the validator.
-	PublicKey []byte
+	PublicKey [48]byte
 
 	// ProofOfPossession is the public key signed by the private key to prove that you own the address and prevent rogue public-key attacks.
-	ProofOfPossession []byte
+	ProofOfPossession [96]byte
 
 	// WithdrawalAddress is the address to withdraw to.
 	WithdrawalAddress [20]byte

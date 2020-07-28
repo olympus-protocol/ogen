@@ -253,9 +253,11 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 				sigs = append(sigs, sig)
 			}
 			sig := bls.AggregateSignatures(sigs)
+			var sigb [96]byte
+			copy(sigb[:], sig.Marshal())
 			vote := primitives.MultiValidatorVote{
 				Data:                  *m.pool[i].voteData,
-				Sig:                   sig.Marshal(),
+				Sig:                   sigb,
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
 			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {

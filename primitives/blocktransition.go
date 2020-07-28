@@ -312,7 +312,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
-		if bytes.Equal(v.PubKey, pubkeyBytes) {
+		if bytes.Equal(v.PubKey[:], pubkeyBytes[:]) {
 			proposerIndex = i
 		}
 	}
@@ -474,7 +474,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
-		if bytes.Equal(v.PubKey, pubkeyBytes) {
+		if bytes.Equal(v.PubKey[:], pubkeyBytes[:]) {
 			proposerIndex = i
 		}
 	}

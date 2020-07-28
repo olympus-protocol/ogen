@@ -243,9 +243,11 @@ func (p *Proposer) ProposeBlocks() {
 
 				blockSig := k.Sign(blockHash[:])
 				randaoSig := k.Sign(randaoHash[:])
-
-				block.Signature = blockSig.Marshal()
-				block.RandaoSignature = randaoSig.Marshal()
+				var s, rs [96]byte
+				copy(s[:], blockSig.Marshal())
+				copy(rs[:], randaoSig.Marshal())
+				block.Signature = s
+				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
 					return
@@ -325,10 +327,11 @@ func (p *Proposer) VoteForBlocks() {
 
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
 					sig := k.Sign(dataHash[:])
-
+					var s [96]byte
+					copy(s[:], sig.Marshal())
 					vote := primitives.SingleValidatorVote{
 						Data:   data,
-						Sig:    sig.Marshal(),
+						Sig:    s,
 						Offset: uint32(i),
 						OutOf:  uint32(len(validators)),
 					}

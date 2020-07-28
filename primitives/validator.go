@@ -36,7 +36,7 @@ const MaxValidatorSize = 97
 // Validator is a validator in the queue.
 type Validator struct {
 	Balance          uint64
-	PubKey           []byte
+	PubKey           [48]byte
 	PayeeAddress     [20]byte
 	Status           uint8
 	FirstActiveEpoch uint64

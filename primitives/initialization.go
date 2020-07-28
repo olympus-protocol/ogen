@@ -40,14 +40,16 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		}
 
 		var pkhBytes [20]byte
+		var pubKey [48]byte
 		copy(pkhBytes[:], pkh)
 		pubKeyBytes, err := hex.DecodeString(v.PubKey)
 		if err != nil {
 			return nil, fmt.Errorf("unable to decode pubkey to bytes")
 		}
+		copy(pubKey[:], pubKeyBytes)
 		initialValidators[i] = Validator{
 			Balance:          p.DepositAmount * p.UnitsPerCoin,
-			PubKey:           pubKeyBytes,
+			PubKey:           pubKey,
 			PayeeAddress:     pkhBytes,
 			Status:           StatusActive,
 			FirstActiveEpoch: 0,

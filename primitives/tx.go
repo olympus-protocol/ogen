@@ -53,11 +53,11 @@ const (
 // a single address to another address.
 type TransferSinglePayload struct {
 	To            [20]byte
-	FromPublicKey []byte
+	FromPublicKey [48]byte
 	Amount        uint64
 	Nonce         uint64
 	Fee           uint64
-	Signature     []byte
+	Signature     [96]byte
 }
 
 // Hash calculates the transaction ID of the payload.
@@ -101,7 +101,7 @@ func (c *TransferSinglePayload) Unmarshal(b []byte) error {
 // SignatureMessage gets the message the needs to be signed.
 func (c TransferSinglePayload) SignatureMessage() chainhash.Hash {
 	cp := c
-	cp.Signature = make([]byte, 96)
+	cp.Signature = [96]byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }

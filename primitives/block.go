@@ -25,8 +25,8 @@ type Block struct {
 	RANDAOSlashings   []RANDAOSlashing
 	ProposerSlashings []ProposerSlashing
 	GovernanceVotes   []GovernanceVote
-	Signature         []byte
-	RandaoSignature   []byte
+	Signature         [96]byte
+	RandaoSignature   [96]byte
 }
 
 // Marshal encodes the block.

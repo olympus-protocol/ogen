@@ -17,9 +17,9 @@ const MaxExitSize = 204
 
 // Exit exits the validator from the queue.
 type Exit struct {
-	ValidatorPubkey []byte
-	WithdrawPubkey  []byte
-	Signature       []byte
+	ValidatorPubkey [48]byte
+	WithdrawPubkey  [48]byte
+	Signature       [96]byte
 }
 
 // GetWithdrawPubKey returns the withdraw bls public key
