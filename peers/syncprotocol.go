@@ -163,7 +163,7 @@ func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
 	}
 	sp.log.Tracef("received blocks msg from peer %v", id)
 	for _, b := range msg.Blocks {
-		if err := sp.handleBlock(id, &b); err != nil {
+		if err := sp.handleBlock(id, b); err != nil {
 			return err
 		}
 	}
@@ -182,8 +182,11 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 	// first block is tip, so we check each block in order and check if the block matches
 	firstCommon := sp.chain.State().Chain().Genesis()
 	locatorHashesGenesis := &msg.LocatorHashes[len(msg.LocatorHashes)-1]
-
-	if !firstCommon.Hash.IsEqual(locatorHashesGenesis) {
+	locatorHashesGenHash, err := chainhash.NewHash(*locatorHashesGenesis)
+	if err != nil {
+		return fmt.Errorf("unable to get locator genesis hash")
+	}
+	if !firstCommon.Hash.IsEqual(locatorHashesGenHash) {
 		return fmt.Errorf("incorrect genesis block (got: %s, expected: %s)", locatorHashesGenesis, firstCommon.Hash)
 	}
 
@@ -196,9 +199,9 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 
 	sp.log.Debugf("found first common block %s", firstCommon.Hash)
 
-	blocksToSend := make([]primitives.Block, 0, 500)
+	blocksToSend := make([]*primitives.Block, 0, 500)
 
-	if firstCommon.Hash.IsEqual(locatorHashesGenesis) {
+	if firstCommon.Hash.IsEqual(locatorHashesGenHash) {
 		fc, ok := sp.chain.State().Chain().Next(firstCommon)
 		if !ok {
 			return nil
@@ -212,9 +215,9 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 			return err
 		}
 
-		blocksToSend = append(blocksToSend, *block)
+		blocksToSend = append(blocksToSend, block)
 
-		if firstCommon.Hash.IsEqual(&msg.HashStop) {
+		if firstCommon.Hash.IsEqual(msg.HashStopH()) {
 			break
 		}
 		var ok bool

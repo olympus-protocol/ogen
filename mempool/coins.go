@@ -15,7 +15,7 @@ import (
 )
 
 type coinMempoolItem struct {
-	transactions map[uint64]primitives.Tx
+	transactions map[uint64]*primitives.Tx
 	balanceSpent uint64
 }
 
@@ -38,7 +38,7 @@ func (cmi *coinMempoolItem) add(item primitives.Tx, maxAmount uint64) error {
 	}
 
 	cmi.balanceSpent += txAmount + txFee
-	cmi.transactions[txNonce] = item
+	cmi.transactions[txNonce] = &item
 
 	return nil
 }
@@ -58,7 +58,7 @@ func (cmi *coinMempoolItem) removeBefore(nonce uint64) {
 
 func newCoinMempoolItem() *coinMempoolItem {
 	return &coinMempoolItem{
-		transactions: make(map[uint64]primitives.Tx),
+		transactions: make(map[uint64]*primitives.Tx),
 	}
 }
 
@@ -130,10 +130,10 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]primitives.Tx, *primitives.State) {
+func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]*primitives.Tx, *primitives.State) {
 	cm.lock.RLock()
 	defer cm.lock.RUnlock()
-	allTransactions := make([]primitives.Tx, 0, maxTransactions)
+	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
 
 outer:
 	for _, addr := range cm.mempool {

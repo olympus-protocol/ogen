@@ -5,7 +5,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var Header = p2p.MessageHeader{
@@ -25,12 +24,12 @@ var MsgAddr = p2p.MsgAddr{
 }
 
 var MsgBlocks = p2p.MsgBlocks{
-	Blocks: []primitives.Block{Block, Block, Block, Block, Block},
+	Blocks: []*primitives.Block{&Block, &Block, &Block, &Block, &Block},
 }
 
 var MsgGetBlocks = p2p.MsgGetBlocks{
 	HashStop:      *Hash,
-	LocatorHashes: []chainhash.Hash{*Hash, *Hash, *Hash},
+	LocatorHashes: [][32]byte{Hash.CloneBytes(), Hash.CloneBytes(), Hash.CloneBytes()},
 }
 
 var MsgVersion = p2p.MsgVersion{

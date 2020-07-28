@@ -885,7 +885,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, d := range b.Deposits {
-		if err := s.ApplyDeposit(&d, p); err != nil {
+		if err := s.ApplyDeposit(d, p); err != nil {
 			return err
 		}
 	}
@@ -910,7 +910,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, vote := range b.GovernanceVotes {
-		if err := s.ProcessGovernanceVote(&vote, p); err != nil {
+		if err := s.ProcessGovernanceVote(vote, p); err != nil {
 			return err
 		}
 	}
@@ -920,31 +920,31 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 
 	for _, v := range b.Votes {
-		if err := s.ProcessVote(&v, p, uint64(proposerIndex)); err != nil {
+		if err := s.ProcessVote(v, p, uint64(proposerIndex)); err != nil {
 			return err
 		}
 	}
 
 	for _, e := range b.Exits {
-		if err := s.ApplyExit(&e); err != nil {
+		if err := s.ApplyExit(e); err != nil {
 			return err
 		}
 	}
 
 	for _, rs := range b.RANDAOSlashings {
-		if err := s.ApplyRANDAOSlashing(&rs, p); err != nil {
+		if err := s.ApplyRANDAOSlashing(rs, p); err != nil {
 			return err
 		}
 	}
 
 	for _, vs := range b.VoteSlashings {
-		if err := s.ApplyVoteSlashing(&vs, p); err != nil {
+		if err := s.ApplyVoteSlashing(vs, p); err != nil {
 			return err
 		}
 	}
 
 	for _, ps := range b.ProposerSlashings {
-		if err := s.ApplyProposerSlashing(&ps, p); err != nil {
+		if err := s.ApplyProposerSlashing(ps, p); err != nil {
 			return err
 		}
 	}

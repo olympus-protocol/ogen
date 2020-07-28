@@ -36,15 +36,15 @@ var BlockHeader = primitives.BlockHeader{
 }
 
 var Block = primitives.Block{
-	Header:            BlockHeader,
-	Votes:             []primitives.MultiValidatorVote{},
-	Txs:               []primitives.Tx{},
-	Deposits:          []primitives.Deposit{},
-	Exits:             []primitives.Exit{},
-	VoteSlashings:     []primitives.VoteSlashing{},
-	RANDAOSlashings:   []primitives.RANDAOSlashing{},
-	ProposerSlashings: []primitives.ProposerSlashing{},
-	GovernanceVotes:   []primitives.GovernanceVote{},
+	Header:            &BlockHeader,
+	Votes:             []*primitives.MultiValidatorVote{},
+	Txs:               []*primitives.Tx{},
+	Deposits:          []*primitives.Deposit{},
+	Exits:             []*primitives.Exit{},
+	VoteSlashings:     []*primitives.VoteSlashing{},
+	RANDAOSlashings:   []*primitives.RANDAOSlashing{},
+	ProposerSlashings: []*primitives.ProposerSlashing{},
+	GovernanceVotes:   []*primitives.GovernanceVote{},
 	Signature:         sigB,
 	RandaoSignature:   sigB,
 }

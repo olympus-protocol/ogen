@@ -8,8 +8,14 @@ import (
 
 // MsgGetBlocks is the message that contains the locator to fetch blocks.
 type MsgGetBlocks struct {
-	HashStop      chainhash.Hash
-	LocatorHashes []chainhash.Hash
+	HashStop      [32]byte
+	LocatorHashes [][32]byte
+}
+
+// HashStopH returns the HashStop data as a hash struct
+func (m *MsgGetBlocks) HashStopH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(m.HashStop)
+	return h
 }
 
 // Marshal serializes the data to bytes

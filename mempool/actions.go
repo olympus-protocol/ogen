@@ -19,22 +19,22 @@ import (
 // such as deposits, withdrawals, slashings, etc.
 type ActionMempool struct {
 	depositsLock sync.Mutex
-	deposits     []primitives.Deposit
+	deposits     []*primitives.Deposit
 
 	exitsLock sync.Mutex
-	exits     []primitives.Exit
+	exits     []*primitives.Exit
 
 	voteSlashingLock sync.Mutex
-	voteSlashings    []primitives.VoteSlashing
+	voteSlashings    []*primitives.VoteSlashing
 
 	proposerSlashingLock sync.Mutex
-	proposerSlashings    []primitives.ProposerSlashing
+	proposerSlashings    []*primitives.ProposerSlashing
 
 	randaoSlashingLock sync.Mutex
-	randaoSlashings    []primitives.RANDAOSlashing
+	randaoSlashings    []*primitives.RANDAOSlashing
 
 	governanceVoteLock sync.Mutex
-	governanceVotes    []primitives.GovernanceVote
+	governanceVotes    []*primitives.GovernanceVote
 
 	params     *params.ChainParams
 	ctx        context.Context
@@ -43,7 +43,7 @@ type ActionMempool struct {
 	hostNode   *peers.HostNode
 }
 
-func (am *ActionMempool) NotifyIllegalVotes(slashing primitives.VoteSlashing) {
+func (am *ActionMempool) NotifyIllegalVotes(slashing *primitives.VoteSlashing) {
 	slot1 := slashing.Vote1.Data.Slot
 	slot2 := slashing.Vote2.Data.Slot
 
@@ -58,7 +58,7 @@ func (am *ActionMempool) NotifyIllegalVotes(slashing primitives.VoteSlashing) {
 		return
 	}
 
-	if _, err := tipState.IsVoteSlashingValid(&slashing, am.params); err != nil {
+	if _, err := tipState.IsVoteSlashingValid(slashing, am.params); err != nil {
 		am.log.Error(err)
 		return
 	}
@@ -80,7 +80,7 @@ func (am *ActionMempool) NotifyIllegalVotes(slashing primitives.VoteSlashing) {
 func (am *ActionMempool) NewTip(_ *index.BlockRow, _ *primitives.Block, _ *primitives.State, _ []*primitives.EpochReceipt) {
 }
 
-func (am *ActionMempool) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {
+func (am *ActionMempool) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
 	slot1 := slashing.BlockHeader1.Slot
 	slot2 := slashing.BlockHeader2.Slot
 
@@ -95,7 +95,7 @@ func (am *ActionMempool) ProposerSlashingConditionViolated(slashing primitives.P
 		return
 	}
 
-	if _, err := tipState.IsProposerSlashingValid(&slashing); err != nil {
+	if _, err := tipState.IsProposerSlashingValid(slashing); err != nil {
 		am.log.Error(err)
 		return
 	}
@@ -206,20 +206,20 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 		}
 	}
 
-	am.deposits = append(am.deposits, *deposit)
+	am.deposits = append(am.deposits, deposit)
 
 	return nil
 }
 
 // GetDeposits gets deposits from the mempool. Mutates withState.
-func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]primitives.Deposit, *primitives.State, error) {
+func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]*primitives.Deposit, *primitives.State, error) {
 	am.depositsLock.Lock()
 	defer am.depositsLock.Unlock()
-	deposits := make([]primitives.Deposit, 0, num)
-	newMempool := make([]primitives.Deposit, 0, len(am.deposits))
+	deposits := make([]*primitives.Deposit, 0, num)
+	newMempool := make([]*primitives.Deposit, 0, len(am.deposits))
 
 	for _, d := range am.deposits {
-		if err := withState.ApplyDeposit(&d, am.params); err != nil {
+		if err := withState.ApplyDeposit(d, am.params); err != nil {
 			continue
 		}
 		// if there is no error, it can be part of the new mempool
@@ -238,7 +238,7 @@ func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]pr
 // RemoveByBlock removes transactions that were in an accepted block.
 func (am *ActionMempool) RemoveByBlock(b *primitives.Block, tipState *primitives.State) {
 	am.depositsLock.Lock()
-	newDeposits := make([]primitives.Deposit, 0, len(am.deposits))
+	newDeposits := make([]*primitives.Deposit, 0, len(am.deposits))
 outer:
 	for _, d1 := range am.deposits {
 		for _, d2 := range b.Deposits {
@@ -247,7 +247,7 @@ outer:
 			}
 		}
 
-		if tipState.IsDepositValid(&d1, am.params) != nil {
+		if tipState.IsDepositValid(d1, am.params) != nil {
 			continue
 		}
 
@@ -257,7 +257,7 @@ outer:
 	am.depositsLock.Unlock()
 
 	am.exitsLock.Lock()
-	newExits := make([]primitives.Exit, 0, len(am.exits))
+	newExits := make([]*primitives.Exit, 0, len(am.exits))
 outer1:
 	for _, e1 := range am.exits {
 		for _, e2 := range b.Exits {
@@ -266,7 +266,7 @@ outer1:
 			}
 		}
 
-		if tipState.IsExitValid(&e1) != nil {
+		if tipState.IsExitValid(e1) != nil {
 			continue
 		}
 
@@ -276,7 +276,7 @@ outer1:
 	am.exitsLock.Unlock()
 
 	am.proposerSlashingLock.Lock()
-	newProposerSlashings := make([]primitives.ProposerSlashing, 0, len(am.proposerSlashings))
+	newProposerSlashings := make([]*primitives.ProposerSlashing, 0, len(am.proposerSlashings))
 	for _, ps := range am.proposerSlashings {
 		psHash := ps.Hash()
 		if b.Header.Slot >= ps.BlockHeader2.Slot+am.params.EpochLength-1 {
@@ -295,7 +295,7 @@ outer1:
 			}
 		}
 
-		if _, err := tipState.IsProposerSlashingValid(&ps); err != nil {
+		if _, err := tipState.IsProposerSlashingValid(ps); err != nil {
 			continue
 		}
 
@@ -305,7 +305,7 @@ outer1:
 	am.proposerSlashingLock.Unlock()
 
 	am.voteSlashingLock.Lock()
-	newVoteSlashings := make([]primitives.VoteSlashing, 0, len(am.voteSlashings))
+	newVoteSlashings := make([]*primitives.VoteSlashing, 0, len(am.voteSlashings))
 	for _, vs := range am.voteSlashings {
 		vsHash := vs.Hash()
 		if b.Header.Slot >= vs.Vote1.Data.LastSlotValid(am.params) {
@@ -324,7 +324,7 @@ outer1:
 			}
 		}
 
-		if _, err := tipState.IsVoteSlashingValid(&vs, am.params); err != nil {
+		if _, err := tipState.IsVoteSlashingValid(vs, am.params); err != nil {
 			continue
 		}
 
@@ -334,7 +334,7 @@ outer1:
 	am.voteSlashingLock.Unlock()
 
 	am.randaoSlashingLock.Lock()
-	newRANDAOSlashings := make([]primitives.RANDAOSlashing, 0, len(am.randaoSlashings))
+	newRANDAOSlashings := make([]*primitives.RANDAOSlashing, 0, len(am.randaoSlashings))
 	for _, rs := range am.randaoSlashings {
 		rsHash := rs.Hash()
 
@@ -346,7 +346,7 @@ outer1:
 			}
 		}
 
-		if _, err := tipState.IsRANDAOSlashingValid(&rs); err != nil {
+		if _, err := tipState.IsRANDAOSlashingValid(rs); err != nil {
 			continue
 		}
 
@@ -356,7 +356,7 @@ outer1:
 	am.randaoSlashingLock.Unlock()
 
 	am.governanceVoteLock.Lock()
-	newGovernanceVotes := make([]primitives.GovernanceVote, 0, len(am.governanceVotes))
+	newGovernanceVotes := make([]*primitives.GovernanceVote, 0, len(am.governanceVotes))
 	for _, gv := range am.governanceVotes {
 		gvHash := gv.Hash()
 
@@ -368,7 +368,7 @@ outer1:
 			}
 		}
 
-		if err := tipState.IsGovernanceVoteValid(&gv, am.params); err != nil {
+		if err := tipState.IsGovernanceVoteValid(gv, am.params); err != nil {
 			continue
 		}
 
@@ -425,7 +425,7 @@ func (am *ActionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 		}
 	}
 
-	am.governanceVotes = append(am.governanceVotes, *vote)
+	am.governanceVotes = append(am.governanceVotes, vote)
 
 	return nil
 }
@@ -474,20 +474,20 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 		}
 	}
 
-	am.exits = append(am.exits, *exit)
+	am.exits = append(am.exits, exit)
 
 	return nil
 }
 
 // GetExits gets exits from the mempool. Mutates withState.
-func (am *ActionMempool) GetExits(num int, state *primitives.State) ([]primitives.Exit, error) {
+func (am *ActionMempool) GetExits(num int, state *primitives.State) ([]*primitives.Exit, error) {
 	am.exitsLock.Lock()
 	defer am.exitsLock.Unlock()
-	exits := make([]primitives.Exit, 0, num)
-	newMempool := make([]primitives.Exit, 0, len(am.exits))
+	exits := make([]*primitives.Exit, 0, num)
+	newMempool := make([]*primitives.Exit, 0, len(am.exits))
 
 	for _, e := range am.exits {
-		if err := state.ApplyExit(&e); err != nil {
+		if err := state.ApplyExit(e); err != nil {
 			continue
 		}
 		// if there is no error, it can be part of the new mempool
@@ -504,14 +504,14 @@ func (am *ActionMempool) GetExits(num int, state *primitives.State) ([]primitive
 }
 
 // GetProposerSlashings gets proposer slashings from the mempool. Mutates withState.
-func (am *ActionMempool) GetProposerSlashings(num int, state *primitives.State) ([]primitives.ProposerSlashing, error) {
+func (am *ActionMempool) GetProposerSlashings(num int, state *primitives.State) ([]*primitives.ProposerSlashing, error) {
 	am.proposerSlashingLock.Lock()
 	defer am.proposerSlashingLock.Unlock()
-	slashings := make([]primitives.ProposerSlashing, 0, num)
-	newMempool := make([]primitives.ProposerSlashing, 0, len(am.proposerSlashings))
+	slashings := make([]*primitives.ProposerSlashing, 0, num)
+	newMempool := make([]*primitives.ProposerSlashing, 0, len(am.proposerSlashings))
 
 	for _, ps := range am.proposerSlashings {
-		if err := state.ApplyProposerSlashing(&ps, am.params); err != nil {
+		if err := state.ApplyProposerSlashing(ps, am.params); err != nil {
 			continue
 		}
 		// if there is no error, it can be part of the new mempool
@@ -528,14 +528,14 @@ func (am *ActionMempool) GetProposerSlashings(num int, state *primitives.State) 
 }
 
 // GetVoteSlashings gets vote slashings from the mempool. Mutates withState.
-func (am *ActionMempool) GetVoteSlashings(num int, state *primitives.State) ([]primitives.VoteSlashing, error) {
+func (am *ActionMempool) GetVoteSlashings(num int, state *primitives.State) ([]*primitives.VoteSlashing, error) {
 	am.voteSlashingLock.Lock()
 	defer am.voteSlashingLock.Unlock()
-	slashings := make([]primitives.VoteSlashing, 0, num)
-	newMempool := make([]primitives.VoteSlashing, 0, len(am.voteSlashings))
+	slashings := make([]*primitives.VoteSlashing, 0, num)
+	newMempool := make([]*primitives.VoteSlashing, 0, len(am.voteSlashings))
 
 	for _, vs := range am.voteSlashings {
-		if err := state.ApplyVoteSlashing(&vs, am.params); err != nil {
+		if err := state.ApplyVoteSlashing(vs, am.params); err != nil {
 			continue
 		}
 		// if there is no error, it can be part of the new mempool
@@ -552,14 +552,14 @@ func (am *ActionMempool) GetVoteSlashings(num int, state *primitives.State) ([]p
 }
 
 // GetRANDAOSlashings gets RANDAO slashings from the mempool. Mutates withState.
-func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([]primitives.RANDAOSlashing, error) {
+func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([]*primitives.RANDAOSlashing, error) {
 	am.randaoSlashingLock.Lock()
 	defer am.randaoSlashingLock.Unlock()
-	slashings := make([]primitives.RANDAOSlashing, 0, num)
-	newMempool := make([]primitives.RANDAOSlashing, 0, len(am.randaoSlashings))
+	slashings := make([]*primitives.RANDAOSlashing, 0, num)
+	newMempool := make([]*primitives.RANDAOSlashing, 0, len(am.randaoSlashings))
 
 	for _, rs := range am.randaoSlashings {
-		if err := state.ApplyRANDAOSlashing(&rs, am.params); err != nil {
+		if err := state.ApplyRANDAOSlashing(rs, am.params); err != nil {
 			continue
 		}
 		// if there is no error, it can be part of the new mempool
@@ -576,14 +576,14 @@ func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([
 }
 
 // GetGovernanceVotes gets governance votes from the mempool. Mutates state.
-func (am *ActionMempool) GetGovernanceVotes(num int, state *primitives.State) ([]primitives.GovernanceVote, error) {
+func (am *ActionMempool) GetGovernanceVotes(num int, state *primitives.State) ([]*primitives.GovernanceVote, error) {
 	am.governanceVoteLock.Lock()
 	defer am.governanceVoteLock.Unlock()
-	votes := make([]primitives.GovernanceVote, 0, num)
-	newMempool := make([]primitives.GovernanceVote, 0, len(am.governanceVotes))
+	votes := make([]*primitives.GovernanceVote, 0, num)
+	newMempool := make([]*primitives.GovernanceVote, 0, len(am.governanceVotes))
 
 	for _, gv := range am.governanceVotes {
-		if err := state.ProcessGovernanceVote(&gv, am.params); err != nil {
+		if err := state.ProcessGovernanceVote(gv, am.params); err != nil {
 			continue
 		}
 		// if there is no error, it can be part of the new mempool

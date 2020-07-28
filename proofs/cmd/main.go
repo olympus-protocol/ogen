@@ -29,8 +29,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	merkleRootHash, err := chainhash.NewHash(merkleRootHex)
+	merkleRootBytes := [32]byte{}
+	copy(merkleRootBytes[:], merkleRootHex)
+	merkleRootHash, err := chainhash.NewHash(merkleRootBytes)
 	if err != nil {
 		panic(err)
 	}

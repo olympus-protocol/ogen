@@ -11,7 +11,7 @@ const MaxBlocksPerMsg = 32
 
 // MsgBlocks is the struct of the message the is transmited upon the network.
 type MsgBlocks struct {
-	Blocks []primitives.Block
+	Blocks []*primitives.Block `ssz-max:"32"`
 }
 
 // Marshal serializes the data to bytes

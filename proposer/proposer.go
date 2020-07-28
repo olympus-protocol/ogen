@@ -134,7 +134,7 @@ func (p *Proposer) publishBlock(block *primitives.Block) {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (p *Proposer) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
+func (p *Proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *Proposer) ProposeBlocks() {
 	slotToPropose := p.getCurrentSlot() + 1
@@ -213,7 +213,7 @@ func (p *Proposer) ProposeBlocks() {
 				}
 
 				block := primitives.Block{
-					Header: primitives.BlockHeader{
+					Header: &primitives.BlockHeader{
 						Version:       0,
 						Nonce:         0,
 						PrevBlockHash: tipHash,

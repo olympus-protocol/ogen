@@ -168,7 +168,7 @@ func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, new
 	}
 }
 
-func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
+func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {}
 
 func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_SubscribeBlocksServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)

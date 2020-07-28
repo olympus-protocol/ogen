@@ -76,14 +76,14 @@ func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs index.AccountTxs, err 
 }
 
 // GetTx gets the transaction from the database and block reference.
-func (ch *Blockchain) GetTx(h chainhash.Hash) (tx primitives.Tx, err error) {
+func (ch *Blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
 	loc, err := ch.txidx.GetTx(h)
 	if err != nil {
-		return primitives.Tx{}, err
+		return nil, err
 	}
 	block, err := ch.GetBlock(loc.Block)
 	if err != nil {
-		return primitives.Tx{}, err
+		return nil, err
 	}
 	return block.Txs[loc.Index], nil
 }

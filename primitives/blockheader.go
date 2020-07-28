@@ -5,7 +5,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-
 )
 
 // ErrorBlockHeaderSize returns when the Blockheader decompresed size is above MaxBlockHeaderBytes
@@ -35,61 +34,61 @@ type BlockHeader struct {
 
 // TxMerkleRootH returns the TxMerkleRoot data as a hash struct
 func (bh *BlockHeader) TxMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.TxMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.TxMerkleRoot)
 	return h
 }
 
 // VoteMerkleRootH returns the VoteMerkleRoot data as a hash struct
 func (bh *BlockHeader) VoteMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.VoteMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.VoteMerkleRoot)
 	return h
 }
 
 // DepositMerkleRootH returns the DepositMerkleRoot data as a hash struct
 func (bh *BlockHeader) DepositMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.DepositMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.DepositMerkleRoot)
 	return h
 }
 
 // ExitMerkleRootH returns the ExitMerkleRoot data as a hash struct
 func (bh *BlockHeader) ExitMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.ExitMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.ExitMerkleRoot)
 	return h
 }
 
 // VoteSlashingMerkleRootH returns the VoteSlashingMerkleRoot data as a hash struct
 func (bh *BlockHeader) VoteSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.VoteSlashingMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.VoteSlashingMerkleRoot)
 	return h
 }
 
 // GovernanceVotesMerkleRootH returns the GovernanceVotesMerkleRoot data as a hash struct
 func (bh *BlockHeader) GovernanceVotesMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.GovernanceVotesMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.GovernanceVotesMerkleRoot)
 	return h
 }
 
 // PrevBlockHashH returns the PrevBlockHash data as a hash struct
 func (bh *BlockHeader) PrevBlockHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.PrevBlockHash[:])
+	h, _ := chainhash.NewHash(bh.PrevBlockHash)
 	return h
 }
 
 // RANDAOSlashingMerkleRootH returns the RANDAOSlashingMerkleRoot data as a hash struct
 func (bh *BlockHeader) RANDAOSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.RANDAOSlashingMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.RANDAOSlashingMerkleRoot)
 	return h
 }
 
 // ProposerSlashingMerkleRootH returns the ProposerSlashingMerkleRoot data as a hash struct
 func (bh *BlockHeader) ProposerSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.ProposerSlashingMerkleRoot[:])
+	h, _ := chainhash.NewHash(bh.ProposerSlashingMerkleRoot)
 	return h
 }
 
 // StateRootH returns the StateRoot data as a hash struct
 func (bh *BlockHeader) StateRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.StateRoot[:])
+	h, _ := chainhash.NewHash(bh.StateRoot)
 	return h
 }
 

@@ -3,6 +3,7 @@ package primitives
 import (
 	"errors"
 
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
@@ -15,27 +16,41 @@ const MaxBlockSize = 1024 * 1024 * 2 // 2 MB
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header            BlockHeader
-	Votes             []MultiValidatorVote
-	Txs               []Tx
-	Deposits          []Deposit
-	Exits             []Exit
-	VoteSlashings     []VoteSlashing
-	RANDAOSlashings   []RANDAOSlashing
-	ProposerSlashings []ProposerSlashing
-	GovernanceVotes   []GovernanceVote
-	Signature         [96]byte
-	RandaoSignature   [96]byte
+	Header            *BlockHeader
+	Votes             []*MultiValidatorVote `ssz-max:"32"`   // MaxVotesPerBlock
+	Txs               []*Tx                 `ssz-max:"1000"` // MaxTxsPerBlock
+	Deposits          []*Deposit            `ssz-max:"32"`   // MaxDepositsPerBlock
+	Exits             []*Exit               `ssz-max:"32"`   // MaxExitsPerBlock
+	VoteSlashings     []*VoteSlashing       `ssz-max:"10"`   // MaxVoteSlashingsPerBlock
+	RANDAOSlashings   []*RANDAOSlashing     `ssz-max:"20"`   // MaxRANDAOSlashingsPerBlock
+	ProposerSlashings []*ProposerSlashing   `ssz-max:"2"`    // MaxProposerSlashingsPerBlock
+	GovernanceVotes   []*GovernanceVote     `ssz-max:"128"`  // MaxGovernanceVotesPerBlock
+	Signature         [96]byte              `ssz-size:"96"`
+	RandaoSignature   [96]byte              `ssz-size:"96"`
 }
 
 // Marshal encodes the block.
 func (b *Block) Marshal() ([]byte, error) {
-	return nil, nil
+	bb, err := b.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(bb) > MaxBlockHeaderBytes {
+		return nil, ErrorBlockHeaderSize
+	}
+	return snappy.Encode(nil, bb), nil
 }
 
 // Unmarshal decodes the block.
-func (b *Block) Unmarshal(by []byte) error {
-	return nil
+func (b *Block) Unmarshal(bb []byte) error {
+	d, err := snappy.Decode(nil, bb)
+	if err != nil {
+		return err
+	}
+	if len(d) > MaxBlockHeaderBytes {
+		return ErrorBlockHeaderSize
+	}
+	return b.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the block.

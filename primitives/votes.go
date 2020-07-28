@@ -136,19 +136,19 @@ func (v *VoteData) Unmarshal(b []byte) error {
 
 // FromHashH returns the FromHash data as a hash struct
 func (v *VoteData) FromHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(v.FromHash[:])
+	h, _ := chainhash.NewHash(v.FromHash)
 	return h
 }
 
 // ToHashH returns the ToHash data as a hash struct
 func (v *VoteData) ToHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(v.FromHash[:])
+	h, _ := chainhash.NewHash(v.FromHash)
 	return h
 }
 
 // BeaconBlockHashH returns the BeaconBlockHash data as a hash struct
 func (v *VoteData) BeaconBlockHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(v.BeaconBlockHash[:])
+	h, _ := chainhash.NewHash(v.BeaconBlockHash)
 	return h
 }
 

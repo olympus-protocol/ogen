@@ -215,7 +215,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 				voteMulti := vote.AsMulti()
 				conflictingMulti := conflicting.AsMulti()
 				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(primitives.VoteSlashing{
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
 						Vote1: voteMulti,
 						Vote2: conflictingMulti,
 					})
@@ -237,10 +237,10 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]primitives.MultiValidatorVote, error) {
+func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	votes := make([]primitives.MultiValidatorVote, 0)
+	votes := make([]*primitives.MultiValidatorVote, 0)
 	for _, i := range m.poolOrder {
 		v := m.pool[i]
 		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
@@ -255,12 +255,12 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			sig := bls.AggregateSignatures(sigs)
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
-			vote := primitives.MultiValidatorVote{
+			vote := &primitives.MultiValidatorVote{
 				Data:                  m.pool[i].voteData,
 				Sig:                   sigb,
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
-			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {
+			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
 				continue
 			}
 			votes = append(votes, vote)
@@ -389,5 +389,5 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 
 // VoteSlashingNotifee is notified when an illegal vote occurs.
 type VoteSlashingNotifee interface {
-	NotifyIllegalVotes(slashing primitives.VoteSlashing)
+	NotifyIllegalVotes(slashing *primitives.VoteSlashing)
 }

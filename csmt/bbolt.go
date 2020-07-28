@@ -183,7 +183,9 @@ func (b *BoltTreeTransaction) Hash() (*chainhash.Hash, error) {
 	if i == nil {
 		return &EmptyTree, nil
 	}
-	return chainhash.NewHash(i)
+	ib := [32]byte{}
+	copy(ib[:], i)
+	return chainhash.NewHash(ib)
 }
 
 // NewBoltTreeDB creates a new bbolt tree database from a bbolt database.

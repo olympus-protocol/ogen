@@ -43,8 +43,10 @@ func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 			return nil
 		}
 		err := accBkt.ForEach(func(k, _ []byte) error {
+			kb := [32]byte{}
+			copy(kb[:], k)
 			txs.Amount++
-			h, err := chainhash.NewHash(k)
+			h, err := chainhash.NewHash(kb)
 			if err != nil {
 				return err
 			}
@@ -101,7 +103,8 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 		if err != nil {
 			return err
 		}
-		err = accBkt.Put(locator.Hash.CloneBytes(), []byte{})
+		locHash := locator.Hash.CloneBytes()
+		err = accBkt.Put(locHash[:], []byte{})
 		if err != nil {
 			return err
 		}
