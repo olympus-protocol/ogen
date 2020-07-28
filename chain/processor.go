@@ -159,8 +159,8 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			copy(os[:], otherSig.Marshal())
 			copy(p[:], proposerPub.Marshal())
 			n.ProposerSlashingConditionViolated(primitives.ProposerSlashing{
-				BlockHeader1:       block.Header,
-				BlockHeader2:       otherBlock.Header,
+				BlockHeader1:       &block.Header,
+				BlockHeader2:       &otherBlock.Header,
 				Signature1:         b,
 				Signature2:         os,
 				ValidatorPublicKey: p,

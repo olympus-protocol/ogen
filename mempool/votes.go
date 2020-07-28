@@ -216,8 +216,8 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 				conflictingMulti := conflicting.AsMulti()
 				for _, n := range m.notifees {
 					n.NotifyIllegalVotes(primitives.VoteSlashing{
-						Vote1: *voteMulti,
-						Vote2: *conflictingMulti,
+						Vote1: voteMulti,
+						Vote2: conflictingMulti,
 					})
 				}
 				return

@@ -5,8 +5,8 @@ import (
 )
 
 var VoteSlashing = primitives.VoteSlashing{
-	Vote1: MultiValidatorVote,
-	Vote2: MultiValidatorVote,
+	Vote1: &MultiValidatorVote,
+	Vote2: &MultiValidatorVote,
 }
 
 var RANDAOSlashing = primitives.RANDAOSlashing{
@@ -16,8 +16,8 @@ var RANDAOSlashing = primitives.RANDAOSlashing{
 }
 
 var ProposerSlashing = primitives.ProposerSlashing{
-	BlockHeader1:       BlockHeader,
-	BlockHeader2:       BlockHeader,
+	BlockHeader1:       &BlockHeader,
+	BlockHeader2:       &BlockHeader,
 	Signature1:         sigB,
 	Signature2:         sigB,
 	ValidatorPublicKey: pubB,

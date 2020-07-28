@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // MsgVersion is the struct that contains the node information during the version handshake.
@@ -14,7 +13,7 @@ type MsgVersion struct {
 
 // Marshal serializes the data to bytes
 func (m *MsgVersion) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(m)
+	b, err := m.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +32,7 @@ func (m *MsgVersion) Unmarshal(b []byte) error {
 	if uint32(len(d)) > m.MaxPayloadLength() {
 		return ErrorSizeExceed
 	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(d)
 }
 
 // Command returns the message topic
