@@ -34,7 +34,7 @@ func (a *AcceptedVoteInfo) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.MarshalUint64(dst, a.InclusionDelay)
 
 	// Field (1) 'ParticipationBitfield'
-	if len(a.ParticipationBitfield) != 0 {
+	if len(a.ParticipationBitfield) > 2048 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -76,6 +76,9 @@ func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'ParticipationBitfield'
 	{
 		buf = tail[o1:]
+		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+			return err
+		}
 		a.ParticipationBitfield = append(a.ParticipationBitfield, buf...)
 	}
 	return err
@@ -106,11 +109,7 @@ func (a *AcceptedVoteInfo) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (1) 'ParticipationBitfield'
-	if len(a.ParticipationBitfield) != 0 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	hh.PutBytes(a.ParticipationBitfield)
+	hh.PutBitlist(a.ParticipationBitfield, 2048)
 
 	// Field (2) 'Proposer'
 	hh.PutUint64(a.Proposer)

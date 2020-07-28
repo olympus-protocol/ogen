@@ -13,5 +13,5 @@ var DepositData = primitives.DepositData{
 var Deposit = primitives.Deposit{
 	PublicKey: pubB,
 	Signature: sigB,
-	Data:      DepositData,
+	Data:      &DepositData,
 }

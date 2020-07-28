@@ -8,7 +8,6 @@ import (
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 var (
@@ -42,7 +41,7 @@ const (
 const (
 	// TxTransferSingle represents a transaction sending money from a single
 	// address to another address.
-	TxTransferSingle uint32 = iota + 1
+	TxTransferSingle uint64 = iota + 1
 
 	// TxTransferMulti represents a transaction sending money from a multisig
 	// address to another address.
@@ -52,12 +51,12 @@ const (
 // TransferSinglePayload is a transaction payload for sending money from
 // a single address to another address.
 type TransferSinglePayload struct {
-	To            [20]byte
-	FromPublicKey [48]byte
+	To            [20]byte `ssz-size:"20"`
+	FromPublicKey [48]byte `ssz-size:"48"`
 	Amount        uint64
 	Nonce         uint64
 	Fee           uint64
-	Signature     [96]byte
+	Signature     [96]byte `ssz-size:"96"`
 }
 
 // Hash calculates the transaction ID of the payload.
@@ -76,7 +75,7 @@ func (c TransferSinglePayload) FromPubkeyHash() (out [20]byte, err error) {
 
 // Marshal encodes the data.
 func (c *TransferSinglePayload) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(c)
+	b, err := c.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (c *TransferSinglePayload) Unmarshal(b []byte) error {
 	if len(d) > MaxSingleTransferPayloadSize {
 		return ErrorSingleTransferPayloadSize
 	}
-	return ssz.Unmarshal(d, c)
+	return c.UnmarshalSSZ(d)
 }
 
 // SignatureMessage gets the message the needs to be signed.
@@ -165,16 +164,16 @@ var _ TxPayload = &TransferSinglePayload{}
 // TransferMultiPayload represents a transfer from a multisig to
 // another address.
 type TransferMultiPayload struct {
-	To       [20]byte
+	To       [20]byte `ssz-max:"20"`
 	Amount   uint64
 	Nonce    uint64
 	Fee      uint64
-	MultiSig []byte
+	MultiSig []byte `ssz-max:"2048"`
 }
 
 // Marshal encodes the data.
 func (c *TransferMultiPayload) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(c)
+	b, err := c.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +192,7 @@ func (c *TransferMultiPayload) Unmarshal(b []byte) error {
 	if len(d) > MaxMultipleTransferPayloadSize {
 		return ErrorMultiTransferPayloadSize
 	}
-	return ssz.Unmarshal(d, c)
+	return c.UnmarshalSSZ(d)
 }
 
 // Hash calculates the transaction ID of the payload.
@@ -287,9 +286,9 @@ type TxPayload interface {
 
 // Tx represents a transaction on the blockchain.
 type Tx struct {
-	Version uint32
-	Type    uint32
-	Payload []byte
+	Version uint64
+	Type    uint64
+	Payload []byte `ssz-max:"2048"`
 }
 
 // GetPayload returns the payload of the transaction.
@@ -320,7 +319,7 @@ func (t *Tx) AppendPayload(p TxPayload) error {
 
 // Marshal encodes the data.
 func (t *Tx) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(t)
+	b, err := t.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +342,7 @@ func (t *Tx) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	txType := binary.LittleEndian.Uint32(d[8:])
+	txType := binary.LittleEndian.Uint64(d[8:])
 	switch txType {
 	case TxTransferSingle:
 		if len(b) > MaxTransactionSingleSize {
@@ -354,7 +353,7 @@ func (t *Tx) Unmarshal(b []byte) error {
 			return ErrorTxMultiSize
 		}
 	}
-	return ssz.Unmarshal(d, t)
+	return t.UnmarshalSSZ(d)
 }
 
 // Hash calculates the transaction hash.

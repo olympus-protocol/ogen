@@ -29,11 +29,14 @@ const (
 // ErrorValidatorSize returned when a validator size is above MaxValidatorSize
 var ErrorValidatorSize = errors.New("validator size too big")
 
+// MaxValidatorSize is the maximum amount of bytes a validator can contain.
+const MaxValidatorSize = 100
+
 // Validator is a validator in the queue.
 type Validator struct {
 	Balance          uint64
-	PubKey           [48]byte
-	PayeeAddress     [20]byte
+	PubKey           [48]byte `ssz-size:"48"`
+	PayeeAddress     [20]byte `ssz-size:"20"`
 	Status           uint64
 	FirstActiveEpoch uint64
 	LastActiveEpoch  uint64
@@ -75,7 +78,7 @@ func (v *Validator) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > v.SizeSSZ() {
+	if len(b) > MaxValidatorSize {
 		return nil, ErrorValidatorSize
 	}
 	return snappy.Encode(nil, b), nil
@@ -87,7 +90,7 @@ func (v *Validator) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(d) > v.SizeSSZ() {
+	if len(d) > MaxValidatorSize {
 		return ErrorValidatorSize
 	}
 	return v.UnmarshalSSZ(d)
