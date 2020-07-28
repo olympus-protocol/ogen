@@ -14,7 +14,7 @@ import (
 )
 
 // GetEffectiveBalance gets the balance of a validator.
-func (s *State) GetEffectiveBalance(index uint32, p *params.ChainParams) uint64 {
+func (s *State) GetEffectiveBalance(index uint64, p *params.ChainParams) uint64 {
 	b := s.ValidatorRegistry[index].Balance
 	if b >= p.DepositAmount {
 		return p.DepositAmount
@@ -48,11 +48,11 @@ func intSqrt(n uint64) uint64 {
 }
 
 type voterGroup struct {
-	voters       map[uint32]struct{}
+	voters       map[uint64]struct{}
 	totalBalance uint64
 }
 
-func (vg *voterGroup) add(id uint32, bal uint64) {
+func (vg *voterGroup) add(id uint64, bal uint64) {
 	if _, found := vg.voters[id]; found {
 		return
 	}
@@ -61,7 +61,7 @@ func (vg *voterGroup) add(id uint32, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []Validator, bitfield []uint8, validatorIndices []uint32) {
+func (vg *voterGroup) addFromBitfield(registry []Validator, bitfield []uint8, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
@@ -71,19 +71,19 @@ func (vg *voterGroup) addFromBitfield(registry []Validator, bitfield []uint8, va
 	}
 }
 
-func (vg *voterGroup) contains(id uint32) bool {
+func (vg *voterGroup) contains(id uint64) bool {
 	_, found := vg.voters[id]
 	return found
 }
 
 func newVoterGroup() voterGroup {
 	return voterGroup{
-		voters: make(map[uint32]struct{}),
+		voters: make(map[uint64]struct{}),
 	}
 }
 
 // ActivateValidator activates a validator in the state at a certain index.
-func (s *State) ActivateValidator(index uint32) error {
+func (s *State) ActivateValidator(index uint64) error {
 	validator := &s.ValidatorRegistry[index]
 	if validator.Status != StatusStarting {
 		return errors.New("validator is not pending activation")
@@ -94,7 +94,7 @@ func (s *State) ActivateValidator(index uint32) error {
 }
 
 // InitiateValidatorExit moves a validator from active to pending exit.
-func (s *State) InitiateValidatorExit(index uint32) error {
+func (s *State) InitiateValidatorExit(index uint64) error {
 	validator := &s.ValidatorRegistry[index]
 	if validator.Status != StatusActive {
 		return errors.New("validator is not active")
@@ -105,7 +105,7 @@ func (s *State) InitiateValidatorExit(index uint32) error {
 }
 
 // ExitValidator handles state changes when a validator exits.
-func (s *State) ExitValidator(index uint32, status uint8, p *params.ChainParams) error {
+func (s *State) ExitValidator(index uint64, status uint64, p *params.ChainParams) error {
 	validator := &s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
@@ -134,7 +134,7 @@ func (s *State) ExitValidator(index uint32, status uint8, p *params.ChainParams)
 }
 
 // UpdateValidatorStatus moves a validator to a specific status.
-func (s *State) UpdateValidatorStatus(index uint32, status uint8, p *params.ChainParams) error {
+func (s *State) UpdateValidatorStatus(index uint64, status uint64, p *params.ChainParams) error {
 	if status == StatusActive {
 		err := s.ActivateValidator(index)
 		return err
@@ -157,7 +157,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 
 	balanceChurn := uint64(0)
 	for idx, validator := range s.ValidatorRegistry {
-		index := uint32(idx)
+		index := uint64(idx)
 
 		// start validators if needed
 		if validator.Status == StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= s.EpochIndex {
@@ -176,7 +176,7 @@ func (s *State) updateValidatorRegistry(p *params.ChainParams) error {
 
 	balanceChurn = 0
 	for idx, validator := range s.ValidatorRegistry {
-		index := uint32(idx)
+		index := uint64(idx)
 
 		if validator.Status == StatusActivePendingExit && validator.LastActiveEpoch <= s.EpochIndex {
 			balanceChurn += s.GetEffectiveBalance(index, p)
@@ -205,8 +205,8 @@ func generateRandNumber(from chainhash.Hash, max uint32) uint64 {
 }
 
 // Shuffle shuffles validator using a RANDAO.
-func Shuffle(randao chainhash.Hash, vals []uint32) []uint32 {
-	nextProposers := make([]uint32, len(vals))
+func Shuffle(randao chainhash.Hash, vals []uint64) []uint64 {
+	nextProposers := make([]uint64, len(vals))
 	copy(nextProposers, vals)
 
 	for i := uint64(0); i < uint64(len(nextProposers)-1); i++ {
@@ -219,9 +219,9 @@ func Shuffle(randao chainhash.Hash, vals []uint32) []uint32 {
 }
 
 // DetermineNextProposers gets the next shuffling.
-func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint32, p *params.ChainParams) []uint32 {
+func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint64, p *params.ChainParams) []uint64 {
 	validatorsChosen := make(map[uint64]struct{})
-	nextProposers := make([]uint32, p.EpochLength)
+	nextProposers := make([]uint64, p.EpochLength)
 
 	for i := range nextProposers {
 		found := true
@@ -234,7 +234,7 @@ func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint32, p 
 		}
 
 		validatorsChosen[val] = struct{}{}
-		nextProposers[i] = uint32(val)
+		nextProposers[i] = uint64(val)
 		randao = chainhash.HashH(randao[:])
 	}
 
@@ -251,7 +251,7 @@ func (s *State) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chai
 }
 
 const (
-	RewardMatchedFromEpoch uint8 = iota
+	RewardMatchedFromEpoch uint64 = iota
 	PenaltyMissingFromEpoch
 	RewardMatchedToEpoch
 	PenaltyMissingToEpoch
@@ -265,9 +265,9 @@ const (
 
 // EpochReceipt is a balance change carried our by an epoch transition.
 type EpochReceipt struct {
-	Type      uint8
+	Type      uint64
 	Amount    uint64
-	Validator uint32
+	Validator uint64
 }
 
 // Marshal encodes the data.
@@ -337,7 +337,7 @@ func (s *State) GetTotalBalances() uint64 {
 
 // NextVoteEpoch increments the voting epoch, resets votes,
 // and updates the state.
-func (s *State) NextVoteEpoch(newState uint8) {
+func (s *State) NextVoteEpoch(newState uint64) {
 	s.VoteEpoch++
 	s.VoteEpochStartSlot = s.Slot
 	// TODO reinitiate the governance state.
@@ -451,7 +451,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	}
 
 	// previousEpochVotersMap maps validator to their assigned vote
-	previousEpochVotersMap := make(map[uint32]*AcceptedVoteInfo)
+	previousEpochVotersMap := make(map[uint64]*AcceptedVoteInfo)
 
 	for _, v := range s.PreviousEpochVotes {
 		validatorIndices, err := s.GetVoteCommittee(v.Data.Slot, p)
@@ -460,10 +460,10 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
-		if v.Data.BeaconBlockHash.IsEqual(&actualBlockHash) {
+		if v.Data.BeaconBlockHashH().IsEqual(&actualBlockHash) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		if v.Data.ToHash.IsEqual(&previousEpochBoundaryHash) {
+		if v.Data.ToHashH().IsEqual(&previousEpochBoundaryHash) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
 		for _, validatorIdx := range validatorIndices {
@@ -477,7 +477,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 			return nil, err
 		}
 
-		if v.Data.ToHash.IsEqual(&epochBoundaryHash) {
+		if v.Data.ToHashH().IsEqual(&epochBoundaryHash) {
 			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validators)
 		}
 	}
@@ -511,13 +511,13 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 	const numRewards = 5
 
-	baseReward := func(index uint32) uint64 {
+	baseReward := func(index uint64) uint64 {
 		return s.GetEffectiveBalance(index, p) * p.UnitsPerCoin * p.BaseRewardPerBlock * p.EpochLength / totalBalance / numRewards
 	}
 
 	receipts := make([]*EpochReceipt, 0)
 
-	rewardValidator := func(index uint32, reward uint64, why uint8) {
+	rewardValidator := func(index uint64, reward uint64, why uint64) {
 		s.ValidatorRegistry[index].Balance += reward
 		receipts = append(receipts, &EpochReceipt{
 			Validator: index,
@@ -526,7 +526,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		})
 	}
 
-	penalizeValidator := func(index uint32, penalty uint64, why uint8) {
+	penalizeValidator := func(index uint64, penalty uint64, why uint64) {
 		if s.ValidatorRegistry[index].FirstActiveEpoch+5 >= s.EpochIndex {
 			return
 		}
@@ -540,7 +540,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 	if s.Slot >= 2*p.EpochLength {
 		for index, validator := range s.ValidatorRegistry {
-			idx := uint32(index)
+			idx := uint64(index)
 			if !validator.IsActive() {
 				continue
 			}
@@ -574,8 +574,8 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		}
 
 		// inclusion rewards
-		proposerRewardInclusion := make(map[uint32]uint64)
-		proposerRewardDistance := make(map[uint32]uint64)
+		proposerRewardInclusion := make(map[uint64]uint64)
+		proposerRewardDistance := make(map[uint64]uint64)
 		for voter := range previousEpochVoters.voters {
 			vote := previousEpochVotersMap[voter]
 
@@ -608,7 +608,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		finalityDelay := s.EpochIndex - s.FinalizedEpoch
 		if finalityDelay > 4 {
 			for index := range s.ValidatorRegistry {
-				idx := uint32(index)
+				idx := uint64(index)
 				w := &s.ValidatorRegistry[idx]
 				if !w.IsActive() {
 					continue
@@ -628,7 +628,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 
 	for index, validator := range s.ValidatorRegistry {
 		if validator.IsActive() && validator.Balance < p.EjectionBalance*p.UnitsPerCoin {
-			err := s.UpdateValidatorStatus(uint32(index), StatusExitedWithoutPenalty, p)
+			err := s.UpdateValidatorStatus(uint64(index), StatusExitedWithoutPenalty, p)
 			if err != nil {
 				return nil, err
 			}

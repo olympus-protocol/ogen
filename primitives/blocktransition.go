@@ -277,7 +277,7 @@ func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalA
 }
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
+func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -321,7 +321,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return uint32(proposerIndex), nil
+	return uint64(proposerIndex), nil
 }
 
 // ApplyProposerSlashing applies the proposer slashing to the state.
@@ -335,8 +335,8 @@ func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParam
 }
 
 // IsVoteSlashingValid checks if the vote slashing is valid.
-func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint32, error) {
-	if vs.Vote1.Data.Equals(&vs.Vote2.Data) {
+func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint64, error) {
+	if vs.Vote1.Data.Equals(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
 
@@ -347,8 +347,8 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	voteParticipation1 := vs.Vote1.ParticipationBitfield
 	voteParticipation2 := vs.Vote2.ParticipationBitfield
 
-	voteCommittee1 := make(map[uint32]struct{})
-	common := make([]uint32, 0)
+	voteCommittee1 := make(map[uint64]struct{})
+	common := make([]uint64, 0)
 
 	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot, p)
 	if err != nil {
@@ -452,7 +452,7 @@ func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error
 }
 
 // IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
-func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
+func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
 	if rs.Slot >= s.Slot {
 		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
 	}
@@ -483,7 +483,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return uint32(proposerIndex), nil
+	return uint64(proposerIndex), nil
 }
 
 // ApplyRANDAOSlashing applies the RANDAO slashing to the state.
@@ -497,7 +497,7 @@ func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) e
 }
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint32, error) {
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
@@ -670,7 +670,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
 		}
 
-		if !s.JustifiedEpochHash.IsEqual(&v.Data.FromHash) {
+		if !s.JustifiedEpochHash.IsEqual(v.Data.FromHashH()) {
 			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash, v.Data.FromHash)
 		}
 	} else if s.EpochIndex > 0 && v.Data.ToEpoch == s.EpochIndex-1 {
@@ -678,7 +678,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 			return fmt.Errorf("expected from epoch to match previous justified epoch (expected: %d, got: %d)", s.PreviousJustifiedEpoch, v.Data.FromEpoch)
 		}
 
-		if !s.PreviousJustifiedEpochHash.IsEqual(&v.Data.FromHash) {
+		if !s.PreviousJustifiedEpochHash.IsEqual(v.Data.FromHashH()) {
 			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash, v.Data.FromHash)
 		}
 	} else {
@@ -725,7 +725,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint32) error {
+func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
 	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
@@ -920,7 +920,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 
 	for _, v := range b.Votes {
-		if err := s.ProcessVote(&v, p, proposerIndex); err != nil {
+		if err := s.ProcessVote(&v, p, uint64(proposerIndex)); err != nil {
 			return err
 		}
 	}

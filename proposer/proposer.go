@@ -330,10 +330,10 @@ func (p *Proposer) VoteForBlocks() {
 					var s [96]byte
 					copy(s[:], sig.Marshal())
 					vote := primitives.SingleValidatorVote{
-						Data:   data,
+						Data:   &data,
 						Sig:    s,
-						Offset: uint32(i),
-						OutOf:  uint32(len(validators)),
+						Offset: uint64(i),
+						OutOf:  uint64(len(validators)),
 					}
 
 					p.voteMempool.Add(&vote)

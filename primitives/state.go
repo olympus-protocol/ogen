@@ -21,7 +21,7 @@ const LastBlockHashesSize = 8
 
 const (
 	// GovernanceStateActive is the enum to an active Governance voting state
-	GovernanceStateActive uint8 = iota
+	GovernanceStateActive uint64 = iota
 	// GovernanceStateVoting is the enum to an voting Governance voting state
 	GovernanceStateVoting
 )
@@ -55,14 +55,14 @@ type SerializableState struct {
 	EpochIndex uint64
 
 	// ProposerQueue is the queue of validators scheduled to create a block.
-	ProposerQueue []uint32
+	ProposerQueue []uint64
 
-	PreviousEpochVoteAssignments []uint32
-	CurrentEpochVoteAssignments  []uint32
+	PreviousEpochVoteAssignments []uint64
+	CurrentEpochVoteAssignments  []uint64
 
 	// NextProposerQueue is the queue of validators scheduled to create a block
 	// in the next epoch.
-	NextProposerQueue []uint32
+	NextProposerQueue []uint64
 
 	// JustifiedBitfield is a bitfield where the nth least significant bit
 	// represents whether the nth last epoch was justified.
@@ -105,7 +105,7 @@ type SerializableState struct {
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
-	VotingState        uint8
+	VotingState        uint64
 
 	LastPaidSlot uint64
 }
@@ -139,14 +139,14 @@ type State struct {
 	EpochIndex uint64
 
 	// ProposerQueue is the queue of validators scheduled to create a block.
-	ProposerQueue []uint32
+	ProposerQueue []uint64
 
-	PreviousEpochVoteAssignments []uint32
-	CurrentEpochVoteAssignments  []uint32
+	PreviousEpochVoteAssignments []uint64
+	CurrentEpochVoteAssignments  []uint64
 
 	// NextProposerQueue is the queue of validators scheduled to create a block
 	// in the next epoch.
-	NextProposerQueue []uint32
+	NextProposerQueue []uint64
 
 	// JustifiedBitfield is a bitfield where the nth least significant bit
 	// represents whether the nth last epoch was justified.
@@ -189,7 +189,7 @@ type State struct {
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
-	VotingState        uint8
+	VotingState        uint64
 
 	LastPaidSlot uint64
 }
@@ -279,11 +279,11 @@ func (s *State) Unmarshal(b []byte) error {
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
-func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint32 {
-	vals := make([]uint32, 0, len(s.ValidatorRegistry))
+func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint64 {
+	vals := make([]uint64, 0, len(s.ValidatorRegistry))
 	for i, v := range s.ValidatorRegistry {
 		if v.IsActiveAtEpoch(epoch) {
-			vals = append(vals, uint32(i))
+			vals = append(vals, uint64(i))
 		}
 	}
 
@@ -361,22 +361,22 @@ func (s *State) Copy() State {
 		s2.ValidatorRegistry[i] = c.Copy()
 	}
 
-	s2.ProposerQueue = make([]uint32, len(s.ProposerQueue))
+	s2.ProposerQueue = make([]uint64, len(s.ProposerQueue))
 	for i, c := range s.ProposerQueue {
 		s2.ProposerQueue[i] = c
 	}
 
-	s2.NextProposerQueue = make([]uint32, len(s.NextProposerQueue))
+	s2.NextProposerQueue = make([]uint64, len(s.NextProposerQueue))
 	for i, c := range s.NextProposerQueue {
 		s2.NextProposerQueue[i] = c
 	}
 
-	s2.CurrentEpochVoteAssignments = make([]uint32, len(s.CurrentEpochVoteAssignments))
+	s2.CurrentEpochVoteAssignments = make([]uint64, len(s.CurrentEpochVoteAssignments))
 	for i, c := range s.CurrentEpochVoteAssignments {
 		s2.CurrentEpochVoteAssignments[i] = c
 	}
 
-	s2.PreviousEpochVoteAssignments = make([]uint32, len(s.PreviousEpochVoteAssignments))
+	s2.PreviousEpochVoteAssignments = make([]uint64, len(s.PreviousEpochVoteAssignments))
 	for i, c := range s.PreviousEpochVoteAssignments {
 		s2.PreviousEpochVoteAssignments[i] = c
 	}

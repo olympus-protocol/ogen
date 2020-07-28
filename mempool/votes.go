@@ -22,11 +22,11 @@ import (
 type mempoolVote struct {
 	individualVotes         []*primitives.SingleValidatorVote
 	participationBitfield   bitfield.Bitfield
-	participatingValidators map[uint32]struct{}
+	participatingValidators map[uint64]struct{}
 	voteData                *primitives.VoteData
 }
 
-func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidatorVote, bool) {
+func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
 	if !mv.participationBitfield.Get(uint(offset)) {
 		return nil, false
 	}
@@ -41,7 +41,7 @@ func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidat
 	return vote, vote != nil
 }
 
-func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint32) {
+func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
 	if mv.participationBitfield.Get(uint(vote.Offset)) {
 		return
 	}
@@ -70,12 +70,12 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 	return shouldRemove
 }
 
-func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
+func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
 		participationBitfield:   make([]uint8, (outOf+7)/8),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
-		participatingValidators: make(map[uint32]struct{}),
+		participatingValidators: make(map[uint64]struct{}),
 	}
 }
 
@@ -186,7 +186,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		return
 	}
 
-	if vote.Offset >= uint32(len(committee)) {
+	if vote.Offset >= uint64(len(committee)) {
 		return
 	}
 
@@ -228,7 +228,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	if vs, found := m.pool[voteHash]; found {
 		vs.add(vote, voter)
 	} else {
-		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
+		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
 	}
@@ -237,7 +237,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint32) ([]primitives.MultiValidatorVote, error) {
+func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	votes := make([]primitives.MultiValidatorVote, 0)
@@ -256,7 +256,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
 			vote := primitives.MultiValidatorVote{
-				Data:                  *m.pool[i].voteData,
+				Data:                  m.pool[i].voteData,
 				Sig:                   sigb,
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}

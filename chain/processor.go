@@ -14,7 +14,7 @@ import (
 
 type blockRowAndValidator struct {
 	row       *index.BlockRow
-	validator uint32
+	validator uint64
 }
 
 // UpdateChainHead updates the blockchain head if needed
@@ -87,7 +87,7 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chai
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(validator uint32) (row *index.BlockRow, err error) {
+func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *index.BlockRow, err error) {
 	var att *primitives.MultiValidatorVote
 	att, ok := ch.state.GetLatestVote(validator)
 	if !ok {

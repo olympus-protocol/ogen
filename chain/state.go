@@ -90,12 +90,12 @@ type StateService struct {
 	finalizedHead blockNodeAndState
 	justifiedHead blockNodeAndState
 
-	latestVotes     map[uint32]*primitives.MultiValidatorVote
+	latestVotes     map[uint64]*primitives.MultiValidatorVote
 	latestVotesLock sync.RWMutex
 }
 
 // GetLatestVote gets the latest vote for this validator.
-func (s *StateService) GetLatestVote(val uint32) (*primitives.MultiValidatorVote, bool) {
+func (s *StateService) GetLatestVote(val uint64) (*primitives.MultiValidatorVote, bool) {
 	s.latestVotesLock.RLock()
 	s.latestVotesLock.RUnlock()
 
@@ -105,7 +105,7 @@ func (s *StateService) GetLatestVote(val uint32) (*primitives.MultiValidatorVote
 }
 
 // SetLatestVotesIfNeeded sets the latest vote for this validator.
-func (s *StateService) SetLatestVotesIfNeeded(vals []uint32, vote *primitives.MultiValidatorVote) {
+func (s *StateService) SetLatestVotesIfNeeded(vals []uint64, vote *primitives.MultiValidatorVote) {
 	s.latestVotesLock.Lock()
 	defer s.latestVotesLock.Unlock()
 	for _, v := range vals {
@@ -336,7 +336,7 @@ func NewStateService(log *logger.Logger, ip primitives.InitializationParameters,
 		stateMap: map[chainhash.Hash]*stateDerivedFromBlock{
 			genesisHash: newStateDerivedFromBlock(genesisState),
 		},
-		latestVotes: make(map[uint32]*primitives.MultiValidatorVote),
+		latestVotes: make(map[uint64]*primitives.MultiValidatorVote),
 		db:          db,
 	}
 	err = ss.initChainState(db, params, *genesisState)
