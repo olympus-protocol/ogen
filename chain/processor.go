@@ -227,7 +227,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		for _, a := range block.Votes {
+		for _, a := range block.Votes.Votes {
 			validators, err := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
 			if err != nil {
 				return err
@@ -287,11 +287,11 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// Once a block is acceped build tx index and account tx tracking
 
-		for i, tx := range block.Txs {
+		for i, tx := range block.Txs.Txs {
 			locator := index.TxLocator{
 				Hash:  tx.Hash(),
 				Block: block.Hash(),
-				Index: uint32(i),
+				Index: uint64(i),
 			}
 			payload, err := tx.GetPayload()
 			if err != nil {

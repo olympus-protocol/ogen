@@ -34,6 +34,6 @@ func GetGenesisBlock(params params.ChainParams) Block {
 			StateRoot:                  chainhash.Hash{},
 			FeeAddress:                 [20]byte{},
 		},
-		Txs: []*Tx{},
+		Txs: &Txs{[]*Tx{}},
 	}
 }

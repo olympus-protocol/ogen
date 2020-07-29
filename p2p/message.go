@@ -47,19 +47,19 @@ type Message interface {
 // MessageHeader header of the message
 type MessageHeader struct {
 	Magic    uint64
-	Command  [40]byte
+	Command  [40]byte `ssz-size:"40"`
 	Length   uint64
-	Checksum [4]byte
+	Checksum [4]byte `ssz-size:"4"`
 }
 
 // Marshal serializes the data to bytes
 func (h *MessageHeader) Marshal() ([]byte, error) {
-	return ssz.Marshal(h)
+	return h.MarshalSSZ()
 }
 
 // Unmarshal deserializes the data
 func (h *MessageHeader) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, h)
+	return h.UnmarshalSSZ(b)
 }
 
 func makeEmptyMessage(command string) (Message, error) {

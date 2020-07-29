@@ -60,10 +60,27 @@ build_windows_amd64:
 	CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 $(GOBUILD) -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a
 
 gen_ssz:
+	sszgen -path ./p2p/message.go
 	sszgen -path ./p2p/msg_version.go
 	sszgen -path ./p2p/msg_block.go -include ./primitives/block.go,./primitives/blockheader.go,./primitives/votes.go,./primitives/tx.go,./primitives/deposit.go,./primitives/exit.go,./primitives/slashing.go,./primitives/governance.go
 	sszgen -path ./p2p/msg_addr.go
 	sszgen -path ./p2p/msg_getblocks.go
+	sszgen -path ./primitives/block.go -include ./primitives/votes.go,./primitives/blockheader.go,./primitives/tx.go,./primitives/deposit.go,./primitives/exit.go,./primitives/slashing.go,./primitives/governance.go
+	sszgen -path ./primitives/blockheader.go
+	sszgen -path ./primitives/coins.go
+	sszgen -path ./primitives/deposit.go
+	sszgen -path ./primitives/exit.go
+	sszgen -path ./primitives/governance.go
+	sszgen -path ./primitives/validator.go
+	sszgen -path ./primitives/votes.go
+	sszgen -path ./primitives/blockheader.go
+	sszgen -path ./primitives/slashing.go -include ./primitives/votes.go,./primitives/blockheader.go
+	sszgen -path ./primitives/tx.go
+	sszgen -path ./primitives/epochtransition.go -objs EpochReceipt
+	sszgen -path ./bls/combined.go
+	sszgen -path ./bls/multisig.go
+	sszgen -path ./chain/index/txs.go -objs TxLocator
+	sszgen -path ./bdb/blocknodedisk.go
 
 clean:
 	@echo Cleaning...

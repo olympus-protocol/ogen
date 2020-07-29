@@ -20,7 +20,7 @@ type Multipub struct {
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() []byte {
-	b, err := m.MarshalSSZ() 
+	b, err := m.MarshalSSZ()
 	if err != nil {
 		return nil
 	}
@@ -113,7 +113,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte `ssz-max:"32"`
-	KeysSigned []byte `ssz:"bitlist" ssz-max:"2048"`
+	KeysSigned []byte     `ssz:"bitlist" ssz-max:"2048"`
 }
 
 // Marshal encodes the data.
@@ -143,7 +143,6 @@ func NewMultisig(multipub *Multipub) *Multisig {
 	}
 }
 
-
 // GetPublicKey gets the public key included in the signature.
 func (m *Multisig) GetPublicKey() (FunctionalPublicKey, error) {
 	return m.PublicKey, nil
@@ -164,7 +163,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
-	if m.KeysSigned.Get(uint(idx)) {
+	if m.KeysSigned[uint(idx)/8]&(1<<(uint(idx)%8)) != 0 {
 		return nil
 	}
 
@@ -174,14 +173,14 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	var s [96]byte
 	copy(s[:], sig.Marshal())
 	m.Signatures = append(m.Signatures, s)
-	m.KeysSigned.Set(uint(idx))
+	m.KeysSigned[uint(idx)/8] |= (1 << (uint(idx) % 8))
 
 	return nil
 }
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
-	if uint(len(m.PublicKey.PublicKeys)) > m.KeysSigned.MaxLength() {
+	if uint(len(m.PublicKey.PublicKeys)) > uint(len(m.KeysSigned))*8 {
 		return false
 	}
 
@@ -196,7 +195,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
-		if m.KeysSigned.Get(uint(i)) {
+		if m.KeysSigned[uint(i)/8]&(1<<(uint(i)%8)) != 0 {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
 			if err != nil {

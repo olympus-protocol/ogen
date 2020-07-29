@@ -31,7 +31,7 @@ var Multipub = bls.Multipub{
 }
 
 var Multisig = bls.Multisig{
-	PublicKey:  Multipub,
+	PublicKey:  &Multipub,
 	Signatures: [][96]byte{sigB, sigB, sigB, sigB, sigB, sigB},
 	KeysSigned: bitfield.NewBitfield(6),
 }

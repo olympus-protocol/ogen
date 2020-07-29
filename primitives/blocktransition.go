@@ -856,41 +856,41 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
 	}
 
-	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
-		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes))
+	if uint64(len(b.Votes.Votes)) > p.MaxVotesPerBlock {
+		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes.Votes))
 	}
 
-	if uint64(len(b.Txs)) > p.MaxTxsPerBlock {
-		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs))
+	if uint64(len(b.Txs.Txs)) > p.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs.Txs))
 	}
 
-	if uint64(len(b.Deposits)) > p.MaxDepositsPerBlock {
-		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits))
+	if uint64(len(b.Deposits.Deposits)) > p.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits.Deposits))
 	}
 
-	if uint64(len(b.Exits)) > p.MaxExitsPerBlock {
-		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
+	if uint64(len(b.Exits.Exits)) > p.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits.Exits))
 	}
 
-	if uint64(len(b.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
-		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
+	if uint64(len(b.RANDAOSlashings.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
+		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings.RANDAOSlashings))
 	}
 
-	if uint64(len(b.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
-		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
+	if uint64(len(b.VoteSlashings.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
+		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings.VoteSlashings))
 	}
 
-	if uint64(len(b.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
-		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
+	if uint64(len(b.ProposerSlashings.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
+		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings.ProposerSlashings))
 	}
 
-	for _, d := range b.Deposits {
+	for _, d := range b.Deposits.Deposits {
 		if err := s.ApplyDeposit(d, p); err != nil {
 			return err
 		}
 	}
 
-	for _, tx := range b.Txs {
+	for _, tx := range b.Txs.Txs {
 		pload, err := tx.GetPayload()
 		if err != nil {
 			return err
@@ -909,7 +909,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 		}
 	}
 
-	for _, vote := range b.GovernanceVotes {
+	for _, vote := range b.GovernanceVotes.GovernanceVotes {
 		if err := s.ProcessGovernanceVote(vote, p); err != nil {
 			return err
 		}
@@ -919,31 +919,31 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 
-	for _, v := range b.Votes {
+	for _, v := range b.Votes.Votes {
 		if err := s.ProcessVote(v, p, uint64(proposerIndex)); err != nil {
 			return err
 		}
 	}
 
-	for _, e := range b.Exits {
+	for _, e := range b.Exits.Exits {
 		if err := s.ApplyExit(e); err != nil {
 			return err
 		}
 	}
 
-	for _, rs := range b.RANDAOSlashings {
+	for _, rs := range b.RANDAOSlashings.RANDAOSlashings {
 		if err := s.ApplyRANDAOSlashing(rs, p); err != nil {
 			return err
 		}
 	}
 
-	for _, vs := range b.VoteSlashings {
+	for _, vs := range b.VoteSlashings.VoteSlashings {
 		if err := s.ApplyVoteSlashing(vs, p); err != nil {
 			return err
 		}
 	}
 
-	for _, ps := range b.ProposerSlashings {
+	for _, ps := range b.ProposerSlashings.ProposerSlashings {
 		if err := s.ApplyProposerSlashing(ps, p); err != nil {
 			return err
 		}

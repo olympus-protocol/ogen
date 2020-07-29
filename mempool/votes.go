@@ -287,7 +287,7 @@ func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
 func (m *VoteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	for _, v := range b.Votes {
+	for _, v := range b.Votes.Votes {
 		voteHash := v.Data.Hash()
 
 		var shouldRemove bool

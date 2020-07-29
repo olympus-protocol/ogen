@@ -1,6 +1,5 @@
 package bitfield
 
-
 // Bitfield is a bitfield of a certain length.
 type Bitfield []byte
 

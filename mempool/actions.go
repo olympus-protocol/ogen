@@ -241,7 +241,7 @@ func (am *ActionMempool) RemoveByBlock(b *primitives.Block, tipState *primitives
 	newDeposits := make([]*primitives.Deposit, 0, len(am.deposits))
 outer:
 	for _, d1 := range am.deposits {
-		for _, d2 := range b.Deposits {
+		for _, d2 := range b.Deposits.Deposits {
 			if bytes.Equal(d1.Data.PublicKey[:], d2.Data.PublicKey[:]) {
 				continue outer
 			}
@@ -260,7 +260,7 @@ outer:
 	newExits := make([]*primitives.Exit, 0, len(am.exits))
 outer1:
 	for _, e1 := range am.exits {
-		for _, e2 := range b.Exits {
+		for _, e2 := range b.Exits.Exits {
 			if bytes.Equal(e1.ValidatorPubkey[:], e2.ValidatorPubkey[:]) {
 				continue outer1
 			}
@@ -287,7 +287,7 @@ outer1:
 			continue
 		}
 
-		for _, blockSlashing := range b.ProposerSlashings {
+		for _, blockSlashing := range b.ProposerSlashings.ProposerSlashings {
 			blockSlashingHash := blockSlashing.Hash()
 
 			if blockSlashingHash.IsEqual(&psHash) {
@@ -316,7 +316,7 @@ outer1:
 			continue
 		}
 
-		for _, voteSlashing := range b.VoteSlashings {
+		for _, voteSlashing := range b.VoteSlashings.VoteSlashings {
 			voteSlashingHash := voteSlashing.Hash()
 
 			if voteSlashingHash.IsEqual(&vsHash) {
@@ -338,7 +338,7 @@ outer1:
 	for _, rs := range am.randaoSlashings {
 		rsHash := rs.Hash()
 
-		for _, blockSlashing := range b.VoteSlashings {
+		for _, blockSlashing := range b.VoteSlashings.VoteSlashings {
 			blockSlashingHash := blockSlashing.Hash()
 
 			if blockSlashingHash.IsEqual(&rsHash) {
@@ -360,7 +360,7 @@ outer1:
 	for _, gv := range am.governanceVotes {
 		gvHash := gv.Hash()
 
-		for _, blockSlashing := range b.VoteSlashings {
+		for _, blockSlashing := range b.VoteSlashings.VoteSlashings {
 			blockSlashingHash := blockSlashing.Hash()
 
 			if blockSlashingHash.IsEqual(&gvHash) {

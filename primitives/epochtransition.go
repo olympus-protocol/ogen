@@ -10,7 +10,6 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -272,7 +271,7 @@ type EpochReceipt struct {
 
 // Marshal encodes the data.
 func (d *EpochReceipt) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(d)
+	b, err := d.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +284,7 @@ func (d *EpochReceipt) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(de, d)
+	return d.UnmarshalSSZ(de)
 }
 
 func (e EpochReceipt) TypeString() string {

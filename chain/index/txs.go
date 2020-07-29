@@ -102,8 +102,7 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 		if err != nil {
 			return err
 		}
-		locHash := locator.Hash.CloneBytes()
-		err = accBkt.Put(locHash[:], []byte{})
+		err = accBkt.Put(locator.Hash[:], []byte{})
 		if err != nil {
 			return err
 		}
@@ -117,14 +116,14 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 
 // TxLocator is a simple struct to find a database referenced to a block without building a full index
 type TxLocator struct {
-	Hash  [32]byte
-	Block [32]byte
-	Index uint32
+	Hash  [32]byte `ssz-size:"32"`
+	Block [32]byte `ssz-size:"32"`
+	Index uint64
 }
 
 // Marshal encodes the data.
 func (tl *TxLocator) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(tl)
+	b, err := tl.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +136,7 @@ func (tl *TxLocator) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, tl)
+	return tl.UnmarshalSSZ(d)
 }
 
 // NewTxIndex returns/creates a new tx index database
