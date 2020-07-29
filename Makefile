@@ -5,9 +5,6 @@ GOCLEAN=$(GOCMD) clean
 FOLDER_NAME= ogen-$(OGEN_VERSION)
 OGEN_VERSION=0.0.1
 
-build_integration:
-	go test -tags ogen_test -c ./test/integration/ogen_test.go
-
 build: 
 	$(GOBUILD) 
 

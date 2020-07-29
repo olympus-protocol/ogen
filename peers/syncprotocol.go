@@ -270,13 +270,12 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 					// When we finished the sync send a last message to fetch blocks produced during sync.
 					break
 				}
-				sp.syncMutex.Lock()
-				sp.syncInfo.lastRequest = time.Now()
-				sp.syncInfo.withPeer = ""
-				sp.syncInfo.syncing = false
-				sp.syncMutex.Unlock()
 			}
-
+			sp.syncMutex.Lock()
+			sp.syncInfo.lastRequest = time.Now()
+			sp.syncInfo.withPeer = ""
+			sp.syncInfo.syncing = false
+			sp.syncMutex.Unlock()
 		}(theirVersion, ourVersion)
 	}
 	return nil
