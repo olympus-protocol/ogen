@@ -60,7 +60,7 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []Validator, bitfield []uint8, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, bitfield []uint8, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
@@ -83,7 +83,7 @@ func newVoterGroup() voterGroup {
 
 // ActivateValidator activates a validator in the state at a certain index.
 func (s *State) ActivateValidator(index uint64) error {
-	validator := &s.ValidatorRegistry[index]
+	validator := s.ValidatorRegistry[index]
 	if validator.Status != StatusStarting {
 		return errors.New("validator is not pending activation")
 	}
@@ -94,7 +94,7 @@ func (s *State) ActivateValidator(index uint64) error {
 
 // InitiateValidatorExit moves a validator from active to pending exit.
 func (s *State) InitiateValidatorExit(index uint64) error {
-	validator := &s.ValidatorRegistry[index]
+	validator := s.ValidatorRegistry[index]
 	if validator.Status != StatusActive {
 		return errors.New("validator is not active")
 	}
@@ -105,7 +105,7 @@ func (s *State) InitiateValidatorExit(index uint64) error {
 
 // ExitValidator handles state changes when a validator exits.
 func (s *State) ExitValidator(index uint64, status uint64, p *params.ChainParams) error {
-	validator := &s.ValidatorRegistry[index]
+	validator := s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
 	if prevStatus == StatusExitedWithPenalty {
@@ -466,7 +466,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
 		for _, validatorIdx := range validatorIndices {
-			previousEpochVotersMap[validatorIdx] = &v
+			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
 
@@ -608,7 +608,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 		if finalityDelay > 4 {
 			for index := range s.ValidatorRegistry {
 				idx := uint64(index)
-				w := &s.ValidatorRegistry[idx]
+				w := s.ValidatorRegistry[idx]
 				if !w.IsActive() {
 					continue
 				}
@@ -655,7 +655,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger
 	copy(s.RANDAO[:], s.NextRANDAO[:])
 
 	s.PreviousEpochVotes = s.CurrentEpochVotes
-	s.CurrentEpochVotes = make([]AcceptedVoteInfo, 0)
+	s.CurrentEpochVotes = make([]*AcceptedVoteInfo, 0)
 
 	return receipts, nil
 }

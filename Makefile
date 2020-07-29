@@ -77,6 +77,7 @@ gen_ssz:
 	sszgen -path ./primitives/slashing.go -include ./primitives/votes.go,./primitives/blockheader.go
 	sszgen -path ./primitives/tx.go
 	sszgen -path ./primitives/epochtransition.go -objs EpochReceipt
+	sszgen -path ./primitives/state.go -objs SerializableState -include ./primitives/coins.go,./primitives/validator.go,./primitives/votes.go,./primitives/governance.go
 	sszgen -path ./bls/combined.go
 	sszgen -path ./bls/multisig.go
 	sszgen -path ./chain/index/txs.go -objs TxLocator

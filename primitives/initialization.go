@@ -27,7 +27,7 @@ type InitializationParameters struct {
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
 func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (*State, error) {
-	initialValidators := make([]Validator, len(ip.InitialValidators))
+	initialValidators := make([]*Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
 		_, pkh, err := bech32.Decode(v.PayeeAddress)
@@ -47,7 +47,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 			return nil, fmt.Errorf("unable to decode pubkey to bytes")
 		}
 		copy(pubKey[:], pubKeyBytes)
-		initialValidators[i] = Validator{
+		initialValidators[i] = &Validator{
 			Balance:          p.DepositAmount * p.UnitsPerCoin,
 			PubKey:           pubKey,
 			PayeeAddress:     pkhBytes,
@@ -80,12 +80,12 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		JustificationBitfield:         0,
 		JustifiedEpoch:                0,
 		FinalizedEpoch:                0,
-		LatestBlockHashes:             make([]chainhash.Hash, p.LatestBlockRootsLength),
+		LatestBlockHashes:             make([][32]byte, p.LatestBlockRootsLength),
 		JustifiedEpochHash:            genesisHash,
-		CurrentEpochVotes:             make([]AcceptedVoteInfo, 0),
+		CurrentEpochVotes:             make([]*AcceptedVoteInfo, 0),
 		PreviousJustifiedEpoch:        0,
 		PreviousJustifiedEpochHash:    genesisHash,
-		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
+		PreviousEpochVotes:            make([]*AcceptedVoteInfo, 0),
 		CurrentManagers:               p.InitialManagers,
 		VoteEpoch:                     0,
 		VoteEpochStartSlot:            0,

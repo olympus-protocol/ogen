@@ -648,7 +648,7 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
-	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
+	s.ValidatorRegistry = append(s.ValidatorRegistry, &Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
 		PubKey:           deposit.Data.PublicKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
@@ -744,14 +744,14 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	}
 
 	if v.Data.ToEpoch == s.EpochIndex {
-		s.CurrentEpochVotes = append(s.CurrentEpochVotes, AcceptedVoteInfo{
+		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
-		s.PreviousEpochVotes = append(s.PreviousEpochVotes, AcceptedVoteInfo{
+		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
