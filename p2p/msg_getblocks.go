@@ -3,13 +3,12 @@ package p2p
 import (
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // MsgGetBlocks is the message that contains the locator to fetch blocks.
 type MsgGetBlocks struct {
-	HashStop      [32]byte
-	LocatorHashes [][32]byte
+	HashStop      [32]byte `ssz-size:"32"`
+	LocatorHashes [][]byte `ssz-size:"64,32"`
 }
 
 // HashStopH returns the HashStop data as a hash struct
@@ -20,11 +19,11 @@ func (m *MsgGetBlocks) HashStopH() *chainhash.Hash {
 
 // Marshal serializes the data to bytes
 func (m *MsgGetBlocks) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(m)
+	b, err := m.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	if uint32(len(b)) > m.MaxPayloadLength() {
+	if uint64(len(b)) > m.MaxPayloadLength() {
 		return nil, ErrorSizeExceed
 	}
 	return snappy.Encode(nil, b), nil
@@ -36,10 +35,10 @@ func (m *MsgGetBlocks) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if uint32(len(d)) > m.MaxPayloadLength() {
+	if uint64(len(d)) > m.MaxPayloadLength() {
 		return ErrorSizeExceed
 	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(d)
 }
 
 // Command returns the message topic
@@ -48,6 +47,6 @@ func (m *MsgGetBlocks) Command() string {
 }
 
 // MaxPayloadLength returns the maximum size of the MsgGetBlocks message.
-func (m *MsgGetBlocks) MaxPayloadLength() uint32 {
+func (m *MsgGetBlocks) MaxPayloadLength() uint64 {
 	return chainhash.HashSize + (40*chainhash.HashSize + 9)
 }

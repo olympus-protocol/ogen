@@ -1,11 +1,11 @@
 package index_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 var accounts = map[int][20]byte{
@@ -47,7 +47,7 @@ func Test_TxLocatorSerializing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(newLoc, locators[0])
+	equal := reflect.DeepEqual(newLoc, locators[0])
 	if !equal {
 		t.Fatal("error: serialize TxLocator")
 	}
@@ -90,7 +90,7 @@ func Test_IndexStoreAndFetch(t *testing.T) {
 	if acc2Txs.Amount != 2 {
 		t.Fatal("error: wrong amount of txs tracked.")
 	}
-	equal := ssz.DeepEqual(acc3Txs, index.AccountTxs{})
+	equal := reflect.DeepEqual(acc3Txs, index.AccountTxs{})
 	if !equal {
 		t.Fatal("error: error getting empty account information.")
 	}
@@ -98,7 +98,7 @@ func Test_IndexStoreAndFetch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal = ssz.DeepEqual(loc, locators[0])
+	equal = reflect.DeepEqual(loc, locators[0])
 	if !equal {
 		t.Fatal("error: locators doesn't match")
 	}

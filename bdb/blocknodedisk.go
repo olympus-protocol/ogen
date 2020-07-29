@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/golang/snappy"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-ssz"
 )
 
@@ -16,12 +15,12 @@ const MaxBlockNodeSize = 624
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {
-	StateRoot chainhash.Hash
+	StateRoot [32]byte
 	Height    uint64
 	Slot      uint64
-	Children  []chainhash.Hash
-	Hash      chainhash.Hash
-	Parent    chainhash.Hash
+	Children  [][32]byte
+	Hash      [32]byte
+	Parent    [32]byte
 }
 
 // Marshal encodes de data

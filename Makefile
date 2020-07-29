@@ -59,6 +59,12 @@ pack_windows_amd64: build_windows_amd64
 build_windows_amd64:
 	CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 $(GOBUILD) -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a
 
+gen_ssz:
+	sszgen -path ./p2p/msg_version.go
+	sszgen -path ./p2p/msg_block.go -include ./primitives/block.go,./primitives/blockheader.go,./primitives/votes.go,./primitives/tx.go,./primitives/deposit.go,./primitives/exit.go,./primitives/slashing.go,./primitives/governance.go
+	sszgen -path ./p2p/msg_addr.go
+	sszgen -path ./p2p/msg_getblocks.go
+
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./...

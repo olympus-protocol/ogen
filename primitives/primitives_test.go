@@ -6,7 +6,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_BlockHeaderSerialize(t *testing.T) {
@@ -19,7 +18,7 @@ func Test_BlockHeaderSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.BlockHeader, desc)
+	equal := reflect.DeepEqual(testdata.BlockHeader, desc)
 	if !equal {
 		t.Fatal("error: serialize BlockHeader")
 	}
@@ -35,7 +34,7 @@ func Test_BlockSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Block, desc)
+	equal := reflect.DeepEqual(testdata.Block, desc)
 	if !equal {
 		t.Fatal("error: serialize Block")
 	}
@@ -51,7 +50,7 @@ func Test_DepositSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Deposit, desc)
+	equal := reflect.DeepEqual(testdata.Deposit, desc)
 	if !equal {
 		t.Fatal("error: serialize Deposit")
 	}
@@ -67,7 +66,7 @@ func Test_ExitSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Exit, desc)
+	equal := reflect.DeepEqual(testdata.Exit, desc)
 	if !equal {
 		t.Fatal("error: serialize Exit")
 	}
@@ -83,7 +82,7 @@ func Test_EpochReceiptSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.EpochReceipt, desc)
+	equal := reflect.DeepEqual(testdata.EpochReceipt, desc)
 	if !equal {
 		t.Fatal("error: serialize Exit")
 	}
@@ -99,7 +98,7 @@ func Test_CommunityVoteDataSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.CommunityVoteData, desc)
+	equal := reflect.DeepEqual(testdata.CommunityVoteData, desc)
 	if !equal {
 		t.Fatal("error: serialize CommunityVoteData")
 	}
@@ -115,7 +114,7 @@ func Test_GovernanceVoteSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.GovernanceVote, desc)
+	equal := reflect.DeepEqual(testdata.GovernanceVote, desc)
 	if !equal {
 		t.Fatal("error: serialize GovernanceVote")
 	}
@@ -131,7 +130,7 @@ func Test_VoteSlashingSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.VoteSlashing, desc)
+	equal := reflect.DeepEqual(testdata.VoteSlashing, desc)
 	if !equal {
 		t.Fatal("error: serialize VoteSlashing")
 	}
@@ -147,7 +146,7 @@ func Test_RANDAOSlashingSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.RANDAOSlashing, desc)
+	equal := reflect.DeepEqual(testdata.RANDAOSlashing, desc)
 	if !equal {
 		t.Fatal("error: serialize RANDAOSlashing")
 	}
@@ -163,7 +162,7 @@ func Test_ProposerSlashingSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.ProposerSlashing, desc)
+	equal := reflect.DeepEqual(testdata.ProposerSlashing, desc)
 	if !equal {
 		t.Fatal("error: serialize ProposerSlashing")
 	}
@@ -179,7 +178,7 @@ func Test_TransferSinglePayloadSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.TransferSinglePayload, desc)
+	equal := reflect.DeepEqual(testdata.TransferSinglePayload, desc)
 	if !equal {
 		t.Fatal("error: serialize TransferSinglePayload")
 	}
@@ -195,7 +194,7 @@ func Test_TransferMultiPayloadSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.TransferMultiPayload, desc)
+	equal := reflect.DeepEqual(testdata.TransferMultiPayload, desc)
 	if !equal {
 		t.Fatal("error: serialize TransferMultiPayload")
 	}
@@ -211,7 +210,7 @@ func Test_TxSingleSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.TxSingle, desc)
+	equal := reflect.DeepEqual(testdata.TxSingle, desc)
 	if !equal {
 		t.Fatal("error: serialize TxSingle")
 	}
@@ -227,7 +226,7 @@ func Test_TxMultiSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.TxMulti, desc)
+	equal := reflect.DeepEqual(testdata.TxMulti, desc)
 	if !equal {
 		t.Fatal("error: serialize TxMulti")
 	}
@@ -243,7 +242,7 @@ func Test_ValidatorSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Validator, desc)
+	equal := reflect.DeepEqual(testdata.Validator, desc)
 	if !equal {
 		t.Fatal("error: serialize Validator")
 	}
@@ -259,7 +258,7 @@ func Test_AcceptedVoteInfoSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.AcceptedVoteInfo, desc)
+	equal := reflect.DeepEqual(testdata.AcceptedVoteInfo, desc)
 	if !equal {
 		t.Fatal("error: serialize AcceptedVoteInfo")
 	}
@@ -275,7 +274,7 @@ func Test_VoteDataSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.VoteData, desc)
+	equal := reflect.DeepEqual(testdata.VoteData, desc)
 	if !equal {
 		t.Fatal("error: serialize VoteData")
 	}
@@ -291,7 +290,7 @@ func Test_SingleValidatorVoteSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.SingleValidatorVote, desc)
+	equal := reflect.DeepEqual(testdata.SingleValidatorVote, desc)
 	if !equal {
 		t.Fatal("error: serialize SingleValidatorVote")
 	}
@@ -307,7 +306,7 @@ func Test_MultiValidatorVoteSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.MultiValidatorVote, desc)
+	equal := reflect.DeepEqual(testdata.MultiValidatorVote, desc)
 	if !equal {
 		t.Fatal("error: serialize MultiValidatorVote")
 	}

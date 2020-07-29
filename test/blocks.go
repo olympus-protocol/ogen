@@ -5,14 +5,13 @@ import (
 
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
 var BlockRow = bdb.BlockNodeDisk{
 	StateRoot: *Hash,
 	Height:    1000,
 	Slot:      1000,
-	Children:  make([]chainhash.Hash, 32),
+	Children:  make([][32]byte, 32),
 	Hash:      *Hash,
 	Parent:    *Hash,
 }

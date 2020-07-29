@@ -29,7 +29,7 @@ var MsgBlocks = p2p.MsgBlocks{
 
 var MsgGetBlocks = p2p.MsgGetBlocks{
 	HashStop:      *Hash,
-	LocatorHashes: [][32]byte{Hash.CloneBytes(), Hash.CloneBytes(), Hash.CloneBytes()},
+	LocatorHashes: [][]byte{Hash[:], Hash[:], Hash[:]},
 }
 
 var MsgVersion = p2p.MsgVersion{

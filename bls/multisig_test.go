@@ -18,7 +18,7 @@ func TestCorrectnessMultisig(t *testing.T) {
 
 	// create 10-of-20 multipub
 	multiPub := bls.NewMultipub(publicKeys, 10)
-	multisig := bls.NewMultisig(*multiPub)
+	multisig := bls.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 
@@ -66,7 +66,7 @@ func TestMultisigDecodeEncode(t *testing.T) {
 
 	// create 10-of-20 multipub
 	multiPub := bls.NewMultipub(publicKeys, 10)
-	multisig := bls.NewMultisig(*multiPub)
+	multisig := bls.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 

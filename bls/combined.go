@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // CombinedSignature is a signature and a public key meant to match the same interface as Multisig.
@@ -15,7 +14,7 @@ type CombinedSignature struct {
 
 // Marshal encodes the data.
 func (cs *CombinedSignature) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(cs)
+	b, err := cs.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +27,7 @@ func (cs *CombinedSignature) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, cs)
+	return cs.UnmarshalSSZ(d)
 }
 
 // NewCombinedSignature creates a new combined signature

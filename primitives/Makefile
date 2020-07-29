@@ -9,5 +9,4 @@ gen_ssz:
 	sszgen -path ./votes.go
 	sszgen -path ./blockheader.go
 	sszgen -path ./slashing.go -include ./votes.go,./blockheader.go
-	# TODO TX
-	#sszgen -path ./tx.go
+	sszgen -path ./tx.go

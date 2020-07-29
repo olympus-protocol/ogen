@@ -1,11 +1,11 @@
 package bdb_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_BlockNodeDiskSerialize(t *testing.T) {
@@ -18,7 +18,7 @@ func Test_BlockNodeDiskSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.BlockNode, desc)
+	equal := reflect.DeepEqual(testdata.BlockNode, desc)
 	if !equal {
 		t.Fatal("error: serialize BlockNodeDisk")
 	}

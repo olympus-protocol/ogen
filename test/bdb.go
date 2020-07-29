@@ -11,7 +11,7 @@ var BlockNode = bdb.BlockNodeDisk{
 	StateRoot: *Hash,
 	Height:    10298,
 	Slot:      1000,
-	Children:  []chainhash.Hash{*Hash, *Hash, *Hash},
+	Children:  [][32]byte{*Hash, *Hash, *Hash},
 	Hash:      *Hash,
 	Parent:    *Hash,
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 	"go.etcd.io/bbolt"
 )
 
@@ -118,8 +117,8 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 
 // TxLocator is a simple struct to find a database referenced to a block without building a full index
 type TxLocator struct {
-	Hash  chainhash.Hash
-	Block chainhash.Hash
+	Hash  [32]byte
+	Block [32]byte
 	Index uint32
 }
 

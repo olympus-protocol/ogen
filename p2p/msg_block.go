@@ -3,7 +3,6 @@ package p2p
 import (
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // MaxBlocksPerMsg defines the maximum amount of blocks that a peer can send.
@@ -16,11 +15,11 @@ type MsgBlocks struct {
 
 // Marshal serializes the data to bytes
 func (m *MsgBlocks) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(m)
+	b, err := m.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	if uint32(len(b)) > m.MaxPayloadLength() {
+	if uint64(len(b)) > m.MaxPayloadLength() {
 		return nil, ErrorSizeExceed
 	}
 	return snappy.Encode(nil, b), nil
@@ -32,10 +31,10 @@ func (m *MsgBlocks) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if uint32(len(d)) > m.MaxPayloadLength() {
+	if uint64(len(d)) > m.MaxPayloadLength() {
 		return ErrorSizeExceed
 	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(d)
 }
 
 // Command returns the message topic
@@ -44,6 +43,6 @@ func (m *MsgBlocks) Command() string {
 }
 
 // MaxPayloadLength returns the maximum size of the MsgBlocks message.
-func (m *MsgBlocks) MaxPayloadLength() uint32 {
+func (m *MsgBlocks) MaxPayloadLength() uint64 {
 	return primitives.MaxBlockSize * MaxBlocksPerMsg
 }

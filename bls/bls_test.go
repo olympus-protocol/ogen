@@ -1,11 +1,11 @@
 package bls_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bls"
 	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_CombinedSignatureSerialize(t *testing.T) {
@@ -18,7 +18,7 @@ func Test_CombinedSignatureSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.CombinedSignature, desc)
+	equal := reflect.DeepEqual(testdata.CombinedSignature, desc)
 	if !equal {
 		t.Fatal("error: serialize CombinedSignature")
 	}
@@ -31,7 +31,7 @@ func Test_MultipubSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Multipub, desc)
+	equal := reflect.DeepEqual(testdata.Multipub, desc)
 	if !equal {
 		t.Fatal("error: serialize Multipub")
 	}
@@ -47,7 +47,7 @@ func Test_MultisigSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Multisig, desc)
+	equal := reflect.DeepEqual(testdata.Multisig, desc)
 	if !equal {
 		t.Fatal("error: serialize Multisig")
 	}

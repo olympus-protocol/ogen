@@ -2,11 +2,11 @@ package p2p_test
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/p2p"
 	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_MessageHeaderSerialize(t *testing.T) {
@@ -19,7 +19,7 @@ func Test_MessageHeaderSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.Header, desc)
+	equal := reflect.DeepEqual(testdata.Header, desc)
 	if !equal {
 		t.Fatal("error: serialize MessageHeader")
 	}
@@ -35,7 +35,7 @@ func Test_MsgGetAddrSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.MsgGetAddr, desc)
+	equal := reflect.DeepEqual(testdata.MsgGetAddr, desc)
 	if !equal {
 		t.Fatal("error: serialize MsgAddr")
 	}
@@ -51,7 +51,7 @@ func Test_MsgAddrSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.MsgAddr, desc)
+	equal := reflect.DeepEqual(testdata.MsgAddr, desc)
 	if !equal {
 		t.Fatal("error: serialize MsgAddr")
 	}
@@ -67,7 +67,7 @@ func Test_MsgGetBlocksSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.MsgGetBlocks, desc)
+	equal := reflect.DeepEqual(testdata.MsgGetBlocks, desc)
 	if !equal {
 		t.Fatal("error: serialize MsgGetBlocks")
 	}
@@ -83,7 +83,7 @@ func Test_MsgVersionSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.MsgVersion, desc)
+	equal := reflect.DeepEqual(testdata.MsgVersion, desc)
 	if !equal {
 		t.Fatal("error: serialize MsgVersion")
 	}
@@ -99,7 +99,7 @@ func Test_MsgBlocksSerialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	equal := ssz.DeepEqual(testdata.MsgBlocks, desc)
+	equal := reflect.DeepEqual(testdata.MsgBlocks, desc)
 	if !equal {
 		t.Fatal("error: serialize MsgBlocks")
 	}
@@ -115,7 +115,7 @@ func Test_MsgWithHeaderSerialize(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	equal := ssz.DeepEqual(msg.(*p2p.MsgBlocks), &testdata.MsgBlocks)
+	equal := reflect.DeepEqual(msg.(*p2p.MsgBlocks), &testdata.MsgBlocks)
 	if !equal {
 		t.Error("error: serialize MsgWithHeader")
 	}

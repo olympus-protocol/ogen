@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"bytes"
+
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -42,7 +44,7 @@ func (s *StateService) loadBlockIndex(txn bdb.DBViewTransaction, genesisHash cha
 		return err
 	}
 
-	queue := []chainhash.Hash{genesisHash}
+	queue := [][32]byte{genesisHash}
 
 	for len(queue) > 0 {
 		current := queue[0]
@@ -60,8 +62,7 @@ func (s *StateService) loadBlockIndex(txn bdb.DBViewTransaction, genesisHash cha
 		if err != nil {
 			return err
 		}
-
-		if current.IsEqual(&justifiedHead) {
+		if bytes.Equal(current[:], justifiedHead[:]) {
 			continue
 		}
 

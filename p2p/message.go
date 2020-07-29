@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 var (
@@ -42,14 +41,14 @@ type Message interface {
 	Marshal() ([]byte, error)
 	Unmarshal(b []byte) error
 	Command() string
-	MaxPayloadLength() uint32
+	MaxPayloadLength() uint64
 }
 
 // MessageHeader header of the message
 type MessageHeader struct {
-	Magic    uint32
+	Magic    uint64
 	Command  [40]byte
-	Length   uint32
+	Length   uint64
 	Checksum [4]byte
 }
 
@@ -110,7 +109,7 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 		return nil, ErrorChecksum
 	}
 
-	if header.Length != uint32(len(msgB)) {
+	if header.Length != uint64(len(msgB)) {
 		return nil, ErrorAnnLength
 	}
 	err = msg.Unmarshal(msgB)
@@ -129,7 +128,7 @@ func readHeader(h []byte, net uint32) (MessageHeader, error) {
 	if err != nil {
 		return MessageHeader{}, err
 	}
-	if header.Magic != net {
+	if header.Magic != uint64(net) {
 		return MessageHeader{}, ErrorNetMismatch
 	}
 	return header, nil
@@ -143,7 +142,7 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 	}
 	var checksum [4]byte
 	copy(checksum[:], chainhash.DoubleHashB(ser)[0:4])
-	hb, err := writeHeader(msg, net, uint32(len(ser)), checksum)
+	hb, err := writeHeader(msg, net, uint64(len(ser)), checksum)
 	if err != nil {
 		return err
 	}
@@ -157,11 +156,11 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 	return nil
 }
 
-func writeHeader(msg Message, net uint32, length uint32, checksum [4]byte) ([]byte, error) {
+func writeHeader(msg Message, net uint32, length uint64, checksum [4]byte) ([]byte, error) {
 	cmd := [40]byte{}
 	copy(cmd[:], []byte(msg.Command()))
 	header := MessageHeader{
-		Magic:    net,
+		Magic:    uint64(net),
 		Command:  cmd,
 		Length:   length,
 		Checksum: checksum,

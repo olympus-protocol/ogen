@@ -10,18 +10,17 @@ import (
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
-	PublicKeys [][48]byte
-	NumNeeded  uint16
+	PublicKeys [][48]byte `ssz-max:"32"`
+	NumNeeded  uint64
 }
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() []byte {
-	b, err := ssz.Marshal(m)
+	b, err := m.MarshalSSZ() 
 	if err != nil {
 		return nil
 	}
@@ -34,11 +33,11 @@ func (m *Multipub) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(d)
 }
 
 // NewMultipub constructs a new multi-pubkey.
-func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
+func NewMultipub(pubs []*PublicKey, numNeeded uint64) *Multipub {
 	pubsB := [][48]byte{}
 	for _, p := range pubs {
 		var pub [48]byte
@@ -68,11 +67,11 @@ func (m *Multipub) Type() FunctionalSignatureType {
 }
 
 // PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
-func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byte {
+func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint64) [20]byte {
 	out := make([]byte, 0, 2+20*len(pubkeys))
 
 	numNeededBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(numNeededBytes, numNeeded)
+	binary.BigEndian.PutUint64(numNeededBytes, numNeeded)
 
 	out = append(out, out...)
 	for _, p := range pubkeys {
@@ -112,14 +111,14 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
-	PublicKey  Multipub
-	Signatures [][96]byte
-	KeysSigned bitfield.Bitfield
+	PublicKey  *Multipub
+	Signatures [][96]byte `ssz-max:"32"`
+	KeysSigned []byte `ssz:"bitlist" ssz-max:"2048"`
 }
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(m)
+	b, err := m.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -132,11 +131,11 @@ func (m *Multisig) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(d)
 }
 
 // NewMultisig creates a new blank multisig.
-func NewMultisig(multipub Multipub) *Multisig {
+func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: [][96]byte{},
@@ -144,9 +143,10 @@ func NewMultisig(multipub Multipub) *Multisig {
 	}
 }
 
+
 // GetPublicKey gets the public key included in the signature.
 func (m *Multisig) GetPublicKey() (FunctionalPublicKey, error) {
-	return &m.PublicKey, nil
+	return m.PublicKey, nil
 }
 
 // Sign signs a multisig through a secret key.
@@ -232,9 +232,9 @@ func (m *Multisig) Copy() FunctionalSignature {
 	}
 
 	pub := m.PublicKey.Copy()
-	newMultisig.PublicKey = *pub
+	newMultisig.PublicKey = pub
 
-	newMultisig.KeysSigned = m.KeysSigned.Copy()
+	newMultisig.KeysSigned = m.KeysSigned
 
 	return newMultisig
 }
