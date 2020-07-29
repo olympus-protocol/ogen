@@ -3,48 +3,58 @@ package bls_test
 import (
 	"testing"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/bls"
-	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_CombinedSignatureSerialize(t *testing.T) {
+var f = fuzz.New()
 
-	ser, err := testdata.CombinedSignature.Marshal()
-	
+func Test_CombinedSignatureSerialize(t *testing.T) {
+	v := new(bls.CombinedSignature)
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc bls.CombinedSignature
+	desc := new(bls.CombinedSignature)
 
 	err = desc.Unmarshal(ser)
-	
+
 	assert.NoError(t, err)
 
-	assert.Equal(t, testdata.CombinedSignature, desc)
+	assert.Equal(t, v, desc)
 }
 
 func Test_MultipubSerialize(t *testing.T) {
-	ser := testdata.Multipub.Marshal()
+	v := new(bls.Multipub)
+	f.Fuzz(v)
 
-	var desc bls.Multipub
+	ser := v.Marshal()
+
+	desc := new(bls.Multipub)
 
 	err := desc.Unmarshal(ser)
-	
+
 	assert.NoError(t, err)
 
-	assert.Equal(t, testdata.Multipub, desc)
+	assert.Equal(t, v, desc)
 }
 
 func Test_MultisigSerialize(t *testing.T) {
-	ser, err := testdata.Multisig.Marshal()
-	
+	v := new(bls.Multisig)
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc bls.Multisig
+	desc := new(bls.Multisig)
 
 	err = desc.Unmarshal(ser)
-	
+
 	assert.NoError(t, err)
 
-	assert.Equal(t, testdata.Multisig, desc)
+	assert.Equal(t, v, desc)
 }

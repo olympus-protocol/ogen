@@ -39,7 +39,7 @@ var locators = []index.TxLocator{
 
 func Test_TxLocatorSerializing(t *testing.T) {
 	ser, err := locators[0].Marshal()
-	
+
 	assert.NoError(t, err)
 
 	var newLoc index.TxLocator
@@ -60,7 +60,7 @@ func Test_IndexStoreAndFetch(t *testing.T) {
 	for i, loc := range locators {
 		if i < 2 {
 			err = idx.SetTx(loc, accounts[0])
-			
+
 			assert.NoError(t, err)
 
 		}
@@ -71,27 +71,27 @@ func Test_IndexStoreAndFetch(t *testing.T) {
 		}
 	}
 	acc1Txs, err := idx.GetAccountTxs(accounts[0])
-	
+
 	assert.NoError(t, err)
 
 	acc2Txs, err := idx.GetAccountTxs(accounts[1])
-	
+
 	assert.NoError(t, err)
 
 	acc3Txs, err := idx.GetAccountTxs(accounts[2])
-	
+
 	assert.NoError(t, err)
 
 	assert.Equal(t, acc1Txs.Amount, uint64(2))
-	
+
 	assert.Equal(t, acc2Txs.Amount, uint64(2))
 
-	assert.Equal(t, index.AccountTxs(index.AccountTxs{Amount:0x0, Txs:[]chainhash.Hash{}}), acc3Txs)
+	assert.Equal(t, index.AccountTxs(index.AccountTxs{Amount: 0x0, Txs: []chainhash.Hash{}}), acc3Txs)
 
 	loc, err := idx.GetTx(locators[0].Hash)
-	
+
 	assert.NoError(t, err)
 
 	assert.Equal(t, loc, locators[0])
-	
+
 }

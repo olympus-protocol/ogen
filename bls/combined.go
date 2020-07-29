@@ -2,8 +2,6 @@ package bls
 
 import (
 	"fmt"
-
-	"github.com/golang/snappy"
 )
 
 // CombinedSignature is a signature and a public key meant to match the same interface as Multisig.
@@ -14,20 +12,12 @@ type CombinedSignature struct {
 
 // Marshal encodes the data.
 func (cs *CombinedSignature) Marshal() ([]byte, error) {
-	b, err := cs.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	return snappy.Encode(nil, b), nil
+	return cs.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (cs *CombinedSignature) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	return cs.UnmarshalSSZ(d)
+	return cs.UnmarshalSSZ(b)
 }
 
 // NewCombinedSignature creates a new combined signature
@@ -35,7 +25,8 @@ func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
 	var s [96]byte
 	var p [48]byte
 	copy(s[:], sig.Marshal())
-	copy(p[:], pub.Marshal())
+	pubB := pub.Marshal()
+	copy(p[:], pubB)
 	return &CombinedSignature{
 		P: p,
 		S: s,

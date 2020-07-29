@@ -1,346 +1,478 @@
 package primitives_test
 
 import (
-	"reflect"
 	"testing"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/primitives"
-	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_BlockHeaderSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
 
-	ser, err := testdata.BlockHeader.Marshal()
+	v := new(primitives.BlockHeader)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.BlockHeader
+	desc := new(primitives.BlockHeader)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.BlockHeader, desc)
-	if !equal {
-		t.Fatal("error: serialize BlockHeader")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_BlockSerialize(t *testing.T) {
 
-	ser, err := testdata.Block.Marshal()
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Block)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.Block
+	desc := new(primitives.Block)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.Block, desc)
-	if !equal {
-		t.Fatal("error: serialize Block")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_DepositSerialize(t *testing.T) {
 
-	ser, err := testdata.Deposit.Marshal()
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Deposit)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.Deposit
+	desc := new(primitives.Deposit)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.Deposit, desc)
-	if !equal {
-		t.Fatal("error: serialize Deposit")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_ExitSerialize(t *testing.T) {
 
-	ser, err := testdata.Exit.Marshal()
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Exit)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.Exit
+	desc := new(primitives.Exit)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.Exit, desc)
-	if !equal {
-		t.Fatal("error: serialize Exit")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_EpochReceiptSerialize(t *testing.T) {
 
-	ser, err := testdata.EpochReceipt.Marshal()
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.EpochReceipt)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.EpochReceipt
+	desc := new(primitives.EpochReceipt)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.EpochReceipt, desc)
-	if !equal {
-		t.Fatal("error: serialize Exit")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_CommunityVoteDataSerialize(t *testing.T) {
 
-	ser, err := testdata.CommunityVoteData.Marshal()
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.CommunityVoteData)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.CommunityVoteData
+	desc := new(primitives.CommunityVoteData)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.CommunityVoteData, desc)
-	if !equal {
-		t.Fatal("error: serialize CommunityVoteData")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_GovernanceVoteSerialize(t *testing.T) {
 
-	ser, err := testdata.GovernanceVote.Marshal()
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.GovernanceVote)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.GovernanceVote
+	desc := new(primitives.GovernanceVote)
 
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.GovernanceVote, desc)
-	if !equal {
-		t.Fatal("error: serialize GovernanceVote")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_VoteSlashingSerialize(t *testing.T) {
-	ser, err := testdata.VoteSlashing.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.VoteSlashing)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.VoteSlashing
+	desc := new(primitives.VoteSlashing)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.VoteSlashing, desc)
-	if !equal {
-		t.Fatal("error: serialize VoteSlashing")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_RANDAOSlashingSerialize(t *testing.T) {
-	ser, err := testdata.RANDAOSlashing.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.RANDAOSlashing)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.RANDAOSlashing
+	desc := new(primitives.RANDAOSlashing)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.RANDAOSlashing, desc)
-	if !equal {
-		t.Fatal("error: serialize RANDAOSlashing")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_ProposerSlashingSerialize(t *testing.T) {
-	ser, err := testdata.ProposerSlashing.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.ProposerSlashing)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.ProposerSlashing
+	desc := new(primitives.ProposerSlashing)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.ProposerSlashing, desc)
-	if !equal {
-		t.Fatal("error: serialize ProposerSlashing")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_TransferSinglePayloadSerialize(t *testing.T) {
-	ser, err := testdata.TransferSinglePayload.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.TransferSinglePayload)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.TransferSinglePayload
+	desc := new(primitives.TransferSinglePayload)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.TransferSinglePayload, desc)
-	if !equal {
-		t.Fatal("error: serialize TransferSinglePayload")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_TransferMultiPayloadSerialize(t *testing.T) {
-	ser, err := testdata.TransferMultiPayload.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.TransferMultiPayload)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.TransferMultiPayload
+	desc := new(primitives.TransferMultiPayload)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.TransferMultiPayload, desc)
-	if !equal {
-		t.Fatal("error: serialize TransferMultiPayload")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_TxSingleSerialize(t *testing.T) {
-	ser, err := testdata.TxSingle.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Tx)
+
+	p := new(primitives.TransferSinglePayload)
+
+	f.Fuzz(p)
+
+	v.AppendPayload(p)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.Tx
+	desc := new(primitives.Tx)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.TxSingle, desc)
-	if !equal {
-		t.Fatal("error: serialize TxSingle")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_TxMultiSerialize(t *testing.T) {
-	ser, err := testdata.TxMulti.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Tx)
+
+	p := new(primitives.TransferMultiPayload)
+
+	f.Fuzz(p)
+
+	v.AppendPayload(p)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.Tx
+	desc := new(primitives.Tx)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.TxMulti, desc)
-	if !equal {
-		t.Fatal("error: serialize TxMulti")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_ValidatorSerialize(t *testing.T) {
-	ser, err := testdata.Validator.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Validator)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.Validator
+	desc := new(primitives.Validator)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.Validator, desc)
-	if !equal {
-		t.Fatal("error: serialize Validator")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_AcceptedVoteInfoSerialize(t *testing.T) {
-	ser, err := testdata.AcceptedVoteInfo.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.AcceptedVoteInfo)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.AcceptedVoteInfo
+	desc := new(primitives.AcceptedVoteInfo)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.AcceptedVoteInfo, desc)
-	if !equal {
-		t.Fatal("error: serialize AcceptedVoteInfo")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_VoteDataSerialize(t *testing.T) {
-	ser, err := testdata.VoteData.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.VoteData)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.VoteData
+	desc := new(primitives.VoteData)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.VoteData, desc)
-	if !equal {
-		t.Fatal("error: serialize VoteData")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_SingleValidatorVoteSerialize(t *testing.T) {
-	ser, err := testdata.SingleValidatorVote.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.SingleValidatorVote)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.SingleValidatorVote
+	desc := new(primitives.SingleValidatorVote)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.SingleValidatorVote, desc)
-	if !equal {
-		t.Fatal("error: serialize SingleValidatorVote")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_MultiValidatorVoteSerialize(t *testing.T) {
-	ser, err := testdata.MultiValidatorVote.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.MultiValidatorVote)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.MultiValidatorVote
+	desc := new(primitives.MultiValidatorVote)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.MultiValidatorVote, desc)
-	if !equal {
-		t.Fatal("error: serialize MultiValidatorVote")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_CoinStateSerialize(t *testing.T) {
-	ser, err := testdata.MockCoinState.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.CoinsState)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.CoinsState
+	desc := new(primitives.CoinsState)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.MockCoinState, desc)
-	if !equal {
-		t.Fatal("error: serialize MockCoinState")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_GovernanceSerialize(t *testing.T) {
-	ser, err := testdata.MockGovernanceState.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.Governance)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.Governance
+	desc := new(primitives.Governance)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	equal := reflect.DeepEqual(testdata.MockGovernanceState, desc)
-	if !equal {
-		t.Fatal("error: serialize MockGovernanceState")
-	}
+	assert.Equal(t, v, desc)
 }
 
 func Test_StateSerialize(t *testing.T) {
-	ser, err := testdata.MockState.Marshal()
+
+	f := fuzz.New().NilChance(0)
+
+	v := new(primitives.State)
+
+	f.Fuzz(v)
+
+	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
-	var desc primitives.State
+	desc := new(primitives.State)
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
-	//equal := reflect.DeepEqual(testdata.MockState, desc)
-	//if !equal {
-	//	t.Fatal("error: serialize MockState")
-	//}
+	assert.Equal(t, v, desc)
 }

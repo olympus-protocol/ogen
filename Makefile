@@ -65,7 +65,7 @@ gen_ssz:
 	sszgen -path ./p2p/msg_block.go -include ./primitives/block.go,./primitives/blockheader.go,./primitives/votes.go,./primitives/tx.go,./primitives/deposit.go,./primitives/exit.go,./primitives/slashing.go,./primitives/governance.go
 	sszgen -path ./p2p/msg_addr.go
 	sszgen -path ./p2p/msg_getblocks.go
-	sszgen -path ./primitives/block.go -include ./primitives/votes.go,./primitives/blockheader.go,./primitives/tx.go,./primitives/deposit.go,./primitives/exit.go,./primitives/slashing.go,./primitives/governance.go
+	sszgen -path ./primitives/block.go -include ./bls/multisig.go,./primitives/votes.go,./primitives/blockheader.go,./primitives/tx.go,./primitives/deposit.go,./primitives/exit.go,./primitives/slashing.go,./primitives/governance.go
 	sszgen -path ./primitives/blockheader.go
 	sszgen -path ./primitives/coins.go
 	sszgen -path ./primitives/deposit.go

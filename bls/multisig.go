@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
@@ -20,20 +19,13 @@ type Multipub struct {
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() []byte {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil
-	}
-	return snappy.Encode(nil, b)
+	b, _ := m.MarshalSSZ()
+	return b
 }
 
 // Unmarshal decodes the data.
 func (m *Multipub) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // NewMultipub constructs a new multi-pubkey.
@@ -118,20 +110,12 @@ type Multisig struct {
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	return snappy.Encode(nil, b), nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (m *Multisig) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // NewMultisig creates a new blank multisig.
