@@ -7,8 +7,8 @@ import (
 
 // MsgGetBlocks is the message that contains the locator to fetch blocks.
 type MsgGetBlocks struct {
-	HashStop      [32]byte `ssz-size:"32"`
-	LocatorHashes [][]byte `ssz-size:"64,32"`
+	HashStop      [32]byte     `ssz-size:"32"`
+	LocatorHashes [64][32]byte `ssz-size:"64,32"`
 }
 
 // HashStopH returns the HashStop data as a hash struct
@@ -48,5 +48,5 @@ func (m *MsgGetBlocks) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgGetBlocks message.
 func (m *MsgGetBlocks) MaxPayloadLength() uint64 {
-	return chainhash.HashSize + (40*chainhash.HashSize + 9)
+	return 32 + (64 * 32)
 }

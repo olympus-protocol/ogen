@@ -7,6 +7,13 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 )
 
+var Addr = [500]byte{}
+
+func init() {
+	addrB := []byte("/ip4/0.0.0.0/tcp/24126/p2p/12D3KooWCNzTeoaaVGKGRqS7vfzFxZMvXccNRCabCFQxS5cQaf6F")
+	copy(Addr[:], addrB)
+}
+
 var Header = p2p.MessageHeader{
 	Magic:    99999999,
 	Command:  [40]byte{0x67, 0x65, 0x74, 0x62, 0x6c, 0x6f, 0x63, 0x6b},
@@ -17,10 +24,7 @@ var Header = p2p.MessageHeader{
 var MsgGetAddr = p2p.MsgGetAddr{}
 
 var MsgAddr = p2p.MsgAddr{
-	Addr: [][]byte{
-		[]byte("/ip4/0.0.0.0/tcp/24126/p2p/12D3KooWCNzTeoaaVGKGRqS7vfzFxZMvXccNRCabCFQxS5cQaf6F"),
-		[]byte("/ip4/0.0.0.0/tcp/24126/p2p/12D3KooWKjMZJ7Henz6dQ1JxrbLi5osL7t8pQ1qskKKvGEM5WmL6"),
-	},
+	Addr: [32][500]byte{Addr, Addr},
 }
 
 var MsgBlocks = p2p.MsgBlocks{
@@ -29,7 +33,7 @@ var MsgBlocks = p2p.MsgBlocks{
 
 var MsgGetBlocks = p2p.MsgGetBlocks{
 	HashStop:      *Hash,
-	LocatorHashes: [][]byte{Hash[:], Hash[:], Hash[:]},
+	LocatorHashes: [64][32]byte{*Hash, *Hash, *Hash},
 }
 
 var MsgVersion = p2p.MsgVersion{

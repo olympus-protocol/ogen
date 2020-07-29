@@ -12,7 +12,7 @@ const MaxAddrPerPeer = 2
 
 // MsgAddr is the struct for the response of getaddr.
 type MsgAddr struct {
-	Addr [][]byte `ssz-size:"32,500"`
+	Addr [32][500]byte
 }
 
 // Marshal serializes the data to bytes

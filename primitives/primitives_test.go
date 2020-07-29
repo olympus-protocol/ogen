@@ -1,23 +1,25 @@
 package primitives_test
 
 import (
-	"reflect"
-	"testing"
-
 	"github.com/olympus-protocol/ogen/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/stretchr/testify/assert"
+	"reflect"
+	"testing"
 )
 
 func Test_BlockHeaderSerialize(t *testing.T) {
+
 	ser, err := testdata.BlockHeader.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.BlockHeader
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.BlockHeader, desc)
 	if !equal {
 		t.Fatal("error: serialize BlockHeader")
@@ -25,15 +27,17 @@ func Test_BlockHeaderSerialize(t *testing.T) {
 }
 
 func Test_BlockSerialize(t *testing.T) {
+
 	ser, err := testdata.Block.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.Block
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.Block, desc)
 	if !equal {
 		t.Fatal("error: serialize Block")
@@ -41,15 +45,17 @@ func Test_BlockSerialize(t *testing.T) {
 }
 
 func Test_DepositSerialize(t *testing.T) {
+
 	ser, err := testdata.Deposit.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.Deposit
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.Deposit, desc)
 	if !equal {
 		t.Fatal("error: serialize Deposit")
@@ -57,15 +63,17 @@ func Test_DepositSerialize(t *testing.T) {
 }
 
 func Test_ExitSerialize(t *testing.T) {
+
 	ser, err := testdata.Exit.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.Exit
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.Exit, desc)
 	if !equal {
 		t.Fatal("error: serialize Exit")
@@ -73,15 +81,17 @@ func Test_ExitSerialize(t *testing.T) {
 }
 
 func Test_EpochReceiptSerialize(t *testing.T) {
+
 	ser, err := testdata.EpochReceipt.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.EpochReceipt
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.EpochReceipt, desc)
 	if !equal {
 		t.Fatal("error: serialize Exit")
@@ -89,15 +99,17 @@ func Test_EpochReceiptSerialize(t *testing.T) {
 }
 
 func Test_CommunityVoteDataSerialize(t *testing.T) {
+
 	ser, err := testdata.CommunityVoteData.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.CommunityVoteData
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.CommunityVoteData, desc)
 	if !equal {
 		t.Fatal("error: serialize CommunityVoteData")
@@ -105,15 +117,17 @@ func Test_CommunityVoteDataSerialize(t *testing.T) {
 }
 
 func Test_GovernanceVoteSerialize(t *testing.T) {
+
 	ser, err := testdata.GovernanceVote.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	var desc primitives.GovernanceVote
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.GovernanceVote, desc)
 	if !equal {
 		t.Fatal("error: serialize GovernanceVote")

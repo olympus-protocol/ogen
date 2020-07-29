@@ -18,16 +18,8 @@ func (m *MsgGetBlocks) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = append(dst, m.HashStop[:]...)
 
 	// Field (1) 'LocatorHashes'
-	if len(m.LocatorHashes) != 64 {
-		err = ssz.ErrVectorLength
-		return
-	}
 	for ii := 0; ii < 64; ii++ {
-		if len(m.LocatorHashes[ii]) != 32 {
-			err = ssz.ErrBytesLength
-			return
-		}
-		dst = append(dst, m.LocatorHashes[ii]...)
+		dst = append(dst, m.LocatorHashes[ii][:]...)
 	}
 
 	return
@@ -45,9 +37,9 @@ func (m *MsgGetBlocks) UnmarshalSSZ(buf []byte) error {
 	copy(m.HashStop[:], buf[0:32])
 
 	// Field (1) 'LocatorHashes'
-	m.LocatorHashes = make([][]byte, 64)
+
 	for ii := 0; ii < 64; ii++ {
-		m.LocatorHashes[ii] = append(m.LocatorHashes[ii], buf[32:2080][ii*32:(ii+1)*32]...)
+		copy(m.LocatorHashes[ii][:], buf[32:2080][ii*32:(ii+1)*32])
 	}
 
 	return err
@@ -73,17 +65,9 @@ func (m *MsgGetBlocks) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (1) 'LocatorHashes'
 	{
-		if len(m.LocatorHashes) != 64 {
-			err = ssz.ErrVectorLength
-			return
-		}
 		subIndx := hh.Index()
 		for _, i := range m.LocatorHashes {
-			if len(i) != 32 {
-				err = ssz.ErrBytesLength
-				return
-			}
-			hh.Append(i)
+			hh.Append(i[:])
 		}
 		hh.Merkleize(subIndx)
 	}

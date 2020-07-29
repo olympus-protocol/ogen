@@ -1,11 +1,11 @@
 package index_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/stretchr/testify/assert"
 )
 
 var accounts = map[int][20]byte{
@@ -39,67 +39,59 @@ var locators = []index.TxLocator{
 
 func Test_TxLocatorSerializing(t *testing.T) {
 	ser, err := locators[0].Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	
+	assert.NoError(t, err)
+
 	var newLoc index.TxLocator
+
 	err = newLoc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := reflect.DeepEqual(newLoc, locators[0])
-	if !equal {
-		t.Fatal("error: serialize TxLocator")
-	}
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, locators[0], newLoc)
 }
 
 func Test_IndexStoreAndFetch(t *testing.T) {
+
 	idx, err := index.NewTxIndex("./")
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
+
 	for i, loc := range locators {
 		if i < 2 {
 			err = idx.SetTx(loc, accounts[0])
-			if err != nil {
-				t.Fatal(err)
-			}
+			
+			assert.NoError(t, err)
+
 		}
 		if i >= 2 {
 			err = idx.SetTx(loc, accounts[1])
-			if err != nil {
-				t.Fatal(err)
-			}
+
+			assert.NoError(t, err)
 		}
 	}
 	acc1Txs, err := idx.GetAccountTxs(accounts[0])
-	if err != nil {
-		t.Fatal(err)
-	}
+	
+	assert.NoError(t, err)
+
 	acc2Txs, err := idx.GetAccountTxs(accounts[1])
-	if err != nil {
-		t.Fatal(err)
-	}
+	
+	assert.NoError(t, err)
+
 	acc3Txs, err := idx.GetAccountTxs(accounts[2])
-	if err != nil {
-		t.Fatal(err)
-	}
-	if acc1Txs.Amount != 2 {
-		t.Fatal("error: wrong amount of txs tracked.")
-	}
-	if acc2Txs.Amount != 2 {
-		t.Fatal("error: wrong amount of txs tracked.")
-	}
-	equal := reflect.DeepEqual(acc3Txs, index.AccountTxs{})
-	if !equal {
-		t.Fatal("error: error getting empty account information.")
-	}
+	
+	assert.NoError(t, err)
+
+	assert.Equal(t, acc1Txs.Amount, uint64(2))
+	
+	assert.Equal(t, acc2Txs.Amount, uint64(2))
+
+	assert.Equal(t, index.AccountTxs(index.AccountTxs{Amount:0x0, Txs:[]chainhash.Hash{}}), acc3Txs)
+
 	loc, err := idx.GetTx(locators[0].Hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal = reflect.DeepEqual(loc, locators[0])
-	if !equal {
-		t.Fatal("error: locators doesn't match")
-	}
+	
+	assert.NoError(t, err)
+
+	assert.Equal(t, loc, locators[0])
+	
 }

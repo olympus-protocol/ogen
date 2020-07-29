@@ -15,16 +15,8 @@ func (m *MsgAddr) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 
 	// Field (0) 'Addr'
-	if len(m.Addr) != 32 {
-		err = ssz.ErrVectorLength
-		return
-	}
 	for ii := 0; ii < 32; ii++ {
-		if len(m.Addr[ii]) != 500 {
-			err = ssz.ErrBytesLength
-			return
-		}
-		dst = append(dst, m.Addr[ii]...)
+		dst = append(dst, m.Addr[ii][:]...)
 	}
 
 	return
@@ -39,9 +31,9 @@ func (m *MsgAddr) UnmarshalSSZ(buf []byte) error {
 	}
 
 	// Field (0) 'Addr'
-	m.Addr = make([][]byte, 32)
+
 	for ii := 0; ii < 32; ii++ {
-		m.Addr[ii] = append(m.Addr[ii], buf[0:16000][ii*500:(ii+1)*500]...)
+		copy(m.Addr[ii][:], buf[0:16000][ii*500:(ii+1)*500])
 	}
 
 	return err
@@ -64,17 +56,9 @@ func (m *MsgAddr) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (0) 'Addr'
 	{
-		if len(m.Addr) != 32 {
-			err = ssz.ErrVectorLength
-			return
-		}
 		subIndx := hh.Index()
 		for _, i := range m.Addr {
-			if len(i) != 500 {
-				err = ssz.ErrBytesLength
-				return
-			}
-			hh.Append(i)
+			hh.Append(i[:])
 		}
 		hh.Merkleize(subIndx)
 	}

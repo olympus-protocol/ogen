@@ -1,54 +1,50 @@
 package bls_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bls"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_CombinedSignatureSerialize(t *testing.T) {
+
 	ser, err := testdata.CombinedSignature.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	
+	assert.NoError(t, err)
+
 	var desc bls.CombinedSignature
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := reflect.DeepEqual(testdata.CombinedSignature, desc)
-	if !equal {
-		t.Fatal("error: serialize CombinedSignature")
-	}
+	
+	assert.NoError(t, err)
+
+	assert.Equal(t, testdata.CombinedSignature, desc)
 }
 
 func Test_MultipubSerialize(t *testing.T) {
 	ser := testdata.Multipub.Marshal()
+
 	var desc bls.Multipub
+
 	err := desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := reflect.DeepEqual(testdata.Multipub, desc)
-	if !equal {
-		t.Fatal("error: serialize Multipub")
-	}
+	
+	assert.NoError(t, err)
+
+	assert.Equal(t, testdata.Multipub, desc)
 }
 
 func Test_MultisigSerialize(t *testing.T) {
 	ser, err := testdata.Multisig.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	
+	assert.NoError(t, err)
+
 	var desc bls.Multisig
+
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := reflect.DeepEqual(testdata.Multisig, desc)
-	if !equal {
-		t.Fatal("error: serialize Multisig")
-	}
+	
+	assert.NoError(t, err)
+
+	assert.Equal(t, testdata.Multisig, desc)
 }

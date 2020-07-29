@@ -182,9 +182,7 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 	// first block is tip, so we check each block in order and check if the block matches
 	firstCommon := sp.chain.State().Chain().Genesis()
 	locatorHashesGenesis := &msg.LocatorHashes[len(msg.LocatorHashes)-1]
-	var locatorGen [32]byte
-	copy(locatorGen[:], *locatorHashesGenesis)
-	locatorHashesGenHash, err := chainhash.NewHash(locatorGen)
+	locatorHashesGenHash, err := chainhash.NewHash(*locatorHashesGenesis)
 	if err != nil {
 		return fmt.Errorf("unable to get locator genesis hash")
 	}
@@ -193,9 +191,7 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 	}
 
 	for _, b := range msg.LocatorHashes {
-		var hash [32]byte
-		copy(hash[:], b)
-		locatorHash, err := chainhash.NewHash(hash)
+		locatorHash, err := chainhash.NewHash(b)
 		if err != nil {
 			return fmt.Errorf("unable to get hash from locator")
 		}

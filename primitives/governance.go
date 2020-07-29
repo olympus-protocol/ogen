@@ -28,7 +28,7 @@ type GovernanceSerializable struct {
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
 type CommunityVoteData struct {
-	ReplacementCandidates [][20]byte `ssz-size:"20"`
+	ReplacementCandidates [5][20]byte `ssz-size:"20"`
 }
 
 // Marshal encodes the data.
@@ -52,9 +52,7 @@ func (c *CommunityVoteData) Unmarshal(b []byte) error {
 // Copy copies the community vote data.
 func (c *CommunityVoteData) Copy() *CommunityVoteData {
 	newCommunityVoteData := *c
-	newCommunityVoteData.ReplacementCandidates = make([][20]byte, len(c.ReplacementCandidates))
-	copy(newCommunityVoteData.ReplacementCandidates, c.ReplacementCandidates)
-
+	newCommunityVoteData.ReplacementCandidates = c.ReplacementCandidates
 	return &newCommunityVoteData
 }
 
@@ -85,8 +83,8 @@ const (
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
 	Type          uint64
-	Data          []byte `ssz-max:"2048"` // TODO Calculate
-	FunctionalSig []byte `ssz-max:"2048"` // TODO Calculate
+	Data          []byte `ssz-size:"2048"` // TODO Calculate
+	FunctionalSig []byte `ssz-size:"2048"` // TODO Calculate
 	VoteEpoch     uint64
 }
 

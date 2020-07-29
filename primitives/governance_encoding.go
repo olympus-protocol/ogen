@@ -32,7 +32,7 @@ func (c *CommunityVoteDataInfo) MarshalSSZTo(buf []byte) (dst []byte, err error)
 func (c *CommunityVoteDataInfo) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 432 {
+	if size != 132 {
 		return ssz.ErrSize
 	}
 
@@ -43,7 +43,7 @@ func (c *CommunityVoteDataInfo) UnmarshalSSZ(buf []byte) error {
 	if c.Data == nil {
 		c.Data = new(CommunityVoteData)
 	}
-	if err = c.Data.UnmarshalSSZ(buf[32:432]); err != nil {
+	if err = c.Data.UnmarshalSSZ(buf[32:132]); err != nil {
 		return err
 	}
 
@@ -52,7 +52,7 @@ func (c *CommunityVoteDataInfo) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the CommunityVoteDataInfo object
 func (c *CommunityVoteDataInfo) SizeSSZ() (size int) {
-	size = 432
+	size = 132
 	return
 }
 
@@ -153,7 +153,7 @@ func (g *GovernanceSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 
 	// Offset (1) 'CommunityVotes'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(g.CommunityVotes) * 432
+	offset += len(g.CommunityVotes) * 132
 
 	// Field (0) 'ReplaceVotes'
 	if len(g.ReplaceVotes) > 1099511627776 {
@@ -222,7 +222,7 @@ func (g *GovernanceSerializable) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'CommunityVotes'
 	{
 		buf = tail[o1:]
-		num, err := ssz.DivideInt2(len(buf), 432, 1099511627776)
+		num, err := ssz.DivideInt2(len(buf), 132, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ func (g *GovernanceSerializable) UnmarshalSSZ(buf []byte) error {
 			if g.CommunityVotes[ii] == nil {
 				g.CommunityVotes[ii] = new(CommunityVoteDataInfo)
 			}
-			if err = g.CommunityVotes[ii].UnmarshalSSZ(buf[ii*432 : (ii+1)*432]); err != nil {
+			if err = g.CommunityVotes[ii].UnmarshalSSZ(buf[ii*132 : (ii+1)*132]); err != nil {
 				return err
 			}
 		}
@@ -247,7 +247,7 @@ func (g *GovernanceSerializable) SizeSSZ() (size int) {
 	size += len(g.ReplaceVotes) * 52
 
 	// Field (1) 'CommunityVotes'
-	size += len(g.CommunityVotes) * 432
+	size += len(g.CommunityVotes) * 132
 
 	return
 }
@@ -307,11 +307,7 @@ func (c *CommunityVoteData) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 
 	// Field (0) 'ReplacementCandidates'
-	if len(c.ReplacementCandidates) != 20 {
-		err = ssz.ErrVectorLength
-		return
-	}
-	for ii := 0; ii < 20; ii++ {
+	for ii := 0; ii < 5; ii++ {
 		dst = append(dst, c.ReplacementCandidates[ii][:]...)
 	}
 
@@ -322,14 +318,14 @@ func (c *CommunityVoteData) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (c *CommunityVoteData) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 400 {
+	if size != 100 {
 		return ssz.ErrSize
 	}
 
 	// Field (0) 'ReplacementCandidates'
-	c.ReplacementCandidates = make([][20]byte, 20)
-	for ii := 0; ii < 20; ii++ {
-		copy(c.ReplacementCandidates[ii][:], buf[0:400][ii*20:(ii+1)*20])
+
+	for ii := 0; ii < 5; ii++ {
+		copy(c.ReplacementCandidates[ii][:], buf[0:100][ii*20:(ii+1)*20])
 	}
 
 	return err
@@ -337,7 +333,7 @@ func (c *CommunityVoteData) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the CommunityVoteData object
 func (c *CommunityVoteData) SizeSSZ() (size int) {
-	size = 400
+	size = 100
 	return
 }
 
@@ -352,10 +348,6 @@ func (c *CommunityVoteData) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (0) 'ReplacementCandidates'
 	{
-		if len(c.ReplacementCandidates) != 20 {
-			err = ssz.ErrVectorLength
-			return
-		}
 		subIndx := hh.Index()
 		for _, i := range c.ReplacementCandidates {
 			hh.Append(i[:])

@@ -83,7 +83,7 @@ func makeEmptyMessage(command string) (Message, error) {
 
 // ReadMessage decodes the message from reader
 func ReadMessage(r io.Reader, net uint32) (Message, error) {
-	headerBuf := make([]byte, 52)
+	headerBuf := make([]byte, 60)
 	_, err := io.ReadFull(r, headerBuf)
 	if err != nil {
 		return nil, err
