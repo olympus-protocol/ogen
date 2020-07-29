@@ -20,7 +20,7 @@ var TransferMultiPayload = primitives.TransferMultiPayload{
 	Amount:   100,
 	Nonce:    100,
 	Fee:      100,
-	MultiSig: []byte{0x0},
+	MultiSig: &Multisig,
 }
 
 var TransferMultiPayloadBytes, _ = TransferMultiPayload.Marshal()

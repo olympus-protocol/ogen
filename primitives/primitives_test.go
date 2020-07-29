@@ -1,11 +1,12 @@
 package primitives_test
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/olympus-protocol/ogen/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"testing"
 )
 
 func Test_BlockHeaderSerialize(t *testing.T) {
@@ -136,14 +137,12 @@ func Test_GovernanceVoteSerialize(t *testing.T) {
 
 func Test_VoteSlashingSerialize(t *testing.T) {
 	ser, err := testdata.VoteSlashing.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.VoteSlashing
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.VoteSlashing, desc)
 	if !equal {
 		t.Fatal("error: serialize VoteSlashing")
@@ -152,14 +151,12 @@ func Test_VoteSlashingSerialize(t *testing.T) {
 
 func Test_RANDAOSlashingSerialize(t *testing.T) {
 	ser, err := testdata.RANDAOSlashing.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.RANDAOSlashing
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.RANDAOSlashing, desc)
 	if !equal {
 		t.Fatal("error: serialize RANDAOSlashing")
@@ -168,14 +165,12 @@ func Test_RANDAOSlashingSerialize(t *testing.T) {
 
 func Test_ProposerSlashingSerialize(t *testing.T) {
 	ser, err := testdata.ProposerSlashing.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.ProposerSlashing
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.ProposerSlashing, desc)
 	if !equal {
 		t.Fatal("error: serialize ProposerSlashing")
@@ -184,14 +179,12 @@ func Test_ProposerSlashingSerialize(t *testing.T) {
 
 func Test_TransferSinglePayloadSerialize(t *testing.T) {
 	ser, err := testdata.TransferSinglePayload.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.TransferSinglePayload
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.TransferSinglePayload, desc)
 	if !equal {
 		t.Fatal("error: serialize TransferSinglePayload")
@@ -200,14 +193,12 @@ func Test_TransferSinglePayloadSerialize(t *testing.T) {
 
 func Test_TransferMultiPayloadSerialize(t *testing.T) {
 	ser, err := testdata.TransferMultiPayload.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.TransferMultiPayload
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.TransferMultiPayload, desc)
 	if !equal {
 		t.Fatal("error: serialize TransferMultiPayload")
@@ -216,14 +207,12 @@ func Test_TransferMultiPayloadSerialize(t *testing.T) {
 
 func Test_TxSingleSerialize(t *testing.T) {
 	ser, err := testdata.TxSingle.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.Tx
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.TxSingle, desc)
 	if !equal {
 		t.Fatal("error: serialize TxSingle")
@@ -232,14 +221,12 @@ func Test_TxSingleSerialize(t *testing.T) {
 
 func Test_TxMultiSerialize(t *testing.T) {
 	ser, err := testdata.TxMulti.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.Tx
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.TxMulti, desc)
 	if !equal {
 		t.Fatal("error: serialize TxMulti")
@@ -248,14 +235,12 @@ func Test_TxMultiSerialize(t *testing.T) {
 
 func Test_ValidatorSerialize(t *testing.T) {
 	ser, err := testdata.Validator.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.Validator
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.Validator, desc)
 	if !equal {
 		t.Fatal("error: serialize Validator")
@@ -264,14 +249,12 @@ func Test_ValidatorSerialize(t *testing.T) {
 
 func Test_AcceptedVoteInfoSerialize(t *testing.T) {
 	ser, err := testdata.AcceptedVoteInfo.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.AcceptedVoteInfo
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.AcceptedVoteInfo, desc)
 	if !equal {
 		t.Fatal("error: serialize AcceptedVoteInfo")
@@ -280,14 +263,12 @@ func Test_AcceptedVoteInfoSerialize(t *testing.T) {
 
 func Test_VoteDataSerialize(t *testing.T) {
 	ser, err := testdata.VoteData.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.VoteData
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.VoteData, desc)
 	if !equal {
 		t.Fatal("error: serialize VoteData")
@@ -296,14 +277,12 @@ func Test_VoteDataSerialize(t *testing.T) {
 
 func Test_SingleValidatorVoteSerialize(t *testing.T) {
 	ser, err := testdata.SingleValidatorVote.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.SingleValidatorVote
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.SingleValidatorVote, desc)
 	if !equal {
 		t.Fatal("error: serialize SingleValidatorVote")
@@ -312,14 +291,12 @@ func Test_SingleValidatorVoteSerialize(t *testing.T) {
 
 func Test_MultiValidatorVoteSerialize(t *testing.T) {
 	ser, err := testdata.MultiValidatorVote.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.MultiValidatorVote
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.MultiValidatorVote, desc)
 	if !equal {
 		t.Fatal("error: serialize MultiValidatorVote")
@@ -328,14 +305,12 @@ func Test_MultiValidatorVoteSerialize(t *testing.T) {
 
 func Test_CoinStateSerialize(t *testing.T) {
 	ser, err := testdata.MockCoinState.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.CoinsState
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.MockCoinState, desc)
 	if !equal {
 		t.Fatal("error: serialize MockCoinState")
@@ -344,14 +319,12 @@ func Test_CoinStateSerialize(t *testing.T) {
 
 func Test_GovernanceSerialize(t *testing.T) {
 	ser, err := testdata.MockGovernanceState.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.Governance
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	equal := reflect.DeepEqual(testdata.MockGovernanceState, desc)
 	if !equal {
 		t.Fatal("error: serialize MockGovernanceState")
@@ -360,14 +333,12 @@ func Test_GovernanceSerialize(t *testing.T) {
 
 func Test_StateSerialize(t *testing.T) {
 	ser, err := testdata.MockState.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	var desc primitives.State
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	//equal := reflect.DeepEqual(testdata.MockState, desc)
 	//if !equal {
 	//	t.Fatal("error: serialize MockState")

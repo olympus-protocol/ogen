@@ -789,22 +789,12 @@ func (g *GovernanceVotes) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (0) 'GovernanceVotes'
 	dst = ssz.WriteOffset(dst, offset)
-	for ii := 0; ii < len(g.GovernanceVotes); ii++ {
-		offset += 4
-		offset += g.GovernanceVotes[ii].SizeSSZ()
-	}
+	offset += len(g.GovernanceVotes) * 4112
 
 	// Field (0) 'GovernanceVotes'
 	if len(g.GovernanceVotes) > 128 {
 		err = ssz.ErrListTooBig
 		return
-	}
-	{
-		offset = 4 * len(g.GovernanceVotes)
-		for ii := 0; ii < len(g.GovernanceVotes); ii++ {
-			dst = ssz.WriteOffset(dst, offset)
-			offset += g.GovernanceVotes[ii].SizeSSZ()
-		}
 	}
 	for ii := 0; ii < len(g.GovernanceVotes); ii++ {
 		if dst, err = g.GovernanceVotes[ii].MarshalSSZTo(dst); err != nil {
@@ -834,22 +824,18 @@ func (g *GovernanceVotes) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'GovernanceVotes'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DecodeDynamicLength(buf, 128)
+		num, err := ssz.DivideInt2(len(buf), 4112, 128)
 		if err != nil {
 			return err
 		}
 		g.GovernanceVotes = make([]*GovernanceVote, num)
-		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
-			if g.GovernanceVotes[indx] == nil {
-				g.GovernanceVotes[indx] = new(GovernanceVote)
+		for ii := 0; ii < num; ii++ {
+			if g.GovernanceVotes[ii] == nil {
+				g.GovernanceVotes[ii] = new(GovernanceVote)
 			}
-			if err = g.GovernanceVotes[indx].UnmarshalSSZ(buf); err != nil {
+			if err = g.GovernanceVotes[ii].UnmarshalSSZ(buf[ii*4112 : (ii+1)*4112]); err != nil {
 				return err
 			}
-			return nil
-		})
-		if err != nil {
-			return err
 		}
 	}
 	return err
@@ -860,10 +846,7 @@ func (g *GovernanceVotes) SizeSSZ() (size int) {
 	size = 4
 
 	// Field (0) 'GovernanceVotes'
-	for ii := 0; ii < len(g.GovernanceVotes); ii++ {
-		size += 4
-		size += g.GovernanceVotes[ii].SizeSSZ()
-	}
+	size += len(g.GovernanceVotes) * 4112
 
 	return
 }

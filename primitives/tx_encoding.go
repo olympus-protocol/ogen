@@ -3,6 +3,7 @@ package primitives
 
 import (
 	ssz "github.com/ferranbt/fastssz"
+	"github.com/olympus-protocol/ogen/bls"
 )
 
 // MarshalSSZ ssz marshals the TransferSinglePayload object
@@ -125,14 +126,15 @@ func (t *TransferMultiPayload) MarshalSSZTo(buf []byte) (dst []byte, err error) 
 
 	// Offset (4) 'MultiSig'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(t.MultiSig)
+	if t.MultiSig == nil {
+		t.MultiSig = new(bls.Multisig)
+	}
+	offset += t.MultiSig.SizeSSZ()
 
 	// Field (4) 'MultiSig'
-	if len(t.MultiSig) != 0 {
-		err = ssz.ErrBytesLength
+	if dst, err = t.MultiSig.MarshalSSZTo(dst); err != nil {
 		return
 	}
-	dst = append(dst, t.MultiSig...)
 
 	return
 }
@@ -168,7 +170,12 @@ func (t *TransferMultiPayload) UnmarshalSSZ(buf []byte) error {
 	// Field (4) 'MultiSig'
 	{
 		buf = tail[o4:]
-		t.MultiSig = append(t.MultiSig, buf...)
+		if t.MultiSig == nil {
+			t.MultiSig = new(bls.Multisig)
+		}
+		if err = t.MultiSig.UnmarshalSSZ(buf); err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -178,7 +185,10 @@ func (t *TransferMultiPayload) SizeSSZ() (size int) {
 	size = 48
 
 	// Field (4) 'MultiSig'
-	size += len(t.MultiSig)
+	if t.MultiSig == nil {
+		t.MultiSig = new(bls.Multisig)
+	}
+	size += t.MultiSig.SizeSSZ()
 
 	return
 }
@@ -205,11 +215,9 @@ func (t *TransferMultiPayload) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutUint64(t.Fee)
 
 	// Field (4) 'MultiSig'
-	if len(t.MultiSig) != 0 {
-		err = ssz.ErrBytesLength
+	if err = t.MultiSig.HashTreeRootWith(hh); err != nil {
 		return
 	}
-	hh.PutBytes(t.MultiSig)
 
 	hh.Merkleize(indx)
 	return

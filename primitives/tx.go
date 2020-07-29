@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 
@@ -168,7 +167,7 @@ type TransferMultiPayload struct {
 	Amount   uint64
 	Nonce    uint64
 	Fee      uint64
-	MultiSig []byte `ssz-max:"2048"`
+	MultiSig *bls.Multisig `ssz-size:"2048"`
 }
 
 // Marshal encodes the data.
@@ -213,7 +212,7 @@ func (c TransferMultiPayload) FromPubkeyHash() ([20]byte, error) {
 // SignatureMessage gets the message the needs to be signed.
 func (c TransferMultiPayload) SignatureMessage() chainhash.Hash {
 	cp := c
-	cp.MultiSig = []byte{}
+	cp.MultiSig = nil
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
@@ -229,8 +228,7 @@ func (c TransferMultiPayload) GetPublic() (bls.FunctionalPublicKey, error) {
 
 // GetSignature returns the bls signature of the multi signature transaction.
 func (c TransferMultiPayload) GetSignature() (bls.FunctionalSignature, error) {
-	buf := bytes.NewBuffer(c.MultiSig)
-	return bls.ReadFunctionalSignature(buf)
+	return c.MultiSig, nil
 }
 
 // VerifySig verifies the signatures is valid.

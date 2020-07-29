@@ -367,35 +367,26 @@ func (g *GovernanceVote) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the GovernanceVote object to a target array
 func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(24)
 
 	// Field (0) 'Type'
 	dst = ssz.MarshalUint64(dst, g.Type)
 
-	// Offset (1) 'Data'
-	dst = ssz.WriteOffset(dst, offset)
-	offset += len(g.Data)
-
-	// Offset (2) 'FunctionalSig'
-	dst = ssz.WriteOffset(dst, offset)
-	offset += len(g.FunctionalSig)
-
-	// Field (3) 'VoteEpoch'
-	dst = ssz.MarshalUint64(dst, g.VoteEpoch)
-
 	// Field (1) 'Data'
-	if len(g.Data) != 0 {
+	if len(g.Data) != 2048 {
 		err = ssz.ErrBytesLength
 		return
 	}
 	dst = append(dst, g.Data...)
 
 	// Field (2) 'FunctionalSig'
-	if len(g.FunctionalSig) != 0 {
+	if len(g.FunctionalSig) != 2048 {
 		err = ssz.ErrBytesLength
 		return
 	}
 	dst = append(dst, g.FunctionalSig...)
+
+	// Field (3) 'VoteEpoch'
+	dst = ssz.MarshalUint64(dst, g.VoteEpoch)
 
 	return
 }
@@ -404,53 +395,28 @@ func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (g *GovernanceVote) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 24 {
+	if size != 4112 {
 		return ssz.ErrSize
 	}
-
-	tail := buf
-	var o1, o2 uint64
 
 	// Field (0) 'Type'
 	g.Type = ssz.UnmarshallUint64(buf[0:8])
 
-	// Offset (1) 'Data'
-	if o1 = ssz.ReadOffset(buf[8:12]); o1 > size {
-		return ssz.ErrOffset
-	}
-
-	// Offset (2) 'FunctionalSig'
-	if o2 = ssz.ReadOffset(buf[12:16]); o2 > size || o1 > o2 {
-		return ssz.ErrOffset
-	}
-
-	// Field (3) 'VoteEpoch'
-	g.VoteEpoch = ssz.UnmarshallUint64(buf[16:24])
-
 	// Field (1) 'Data'
-	{
-		buf = tail[o1:o2]
-		g.Data = append(g.Data, buf...)
-	}
+	g.Data = append(g.Data, buf[8:2056]...)
 
 	// Field (2) 'FunctionalSig'
-	{
-		buf = tail[o2:]
-		g.FunctionalSig = append(g.FunctionalSig, buf...)
-	}
+	g.FunctionalSig = append(g.FunctionalSig, buf[2056:4104]...)
+
+	// Field (3) 'VoteEpoch'
+	g.VoteEpoch = ssz.UnmarshallUint64(buf[4104:4112])
+
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the GovernanceVote object
 func (g *GovernanceVote) SizeSSZ() (size int) {
-	size = 24
-
-	// Field (1) 'Data'
-	size += len(g.Data)
-
-	// Field (2) 'FunctionalSig'
-	size += len(g.FunctionalSig)
-
+	size = 4112
 	return
 }
 
@@ -467,14 +433,14 @@ func (g *GovernanceVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutUint64(g.Type)
 
 	// Field (1) 'Data'
-	if len(g.Data) != 0 {
+	if len(g.Data) != 2048 {
 		err = ssz.ErrBytesLength
 		return
 	}
 	hh.PutBytes(g.Data)
 
 	// Field (2) 'FunctionalSig'
-	if len(g.FunctionalSig) != 0 {
+	if len(g.FunctionalSig) != 2048 {
 		err = ssz.ErrBytesLength
 		return
 	}

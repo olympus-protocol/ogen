@@ -326,12 +326,16 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 			Signature:     hex.EncodeToString(p.Signature[:]),
 		}
 	case *primitives.TransferMultiPayload:
+		sig, err := p.MultiSig.Marshal()
+		if err != nil {
+			return nil, err
+		}
 		txParse.TransferMultiPayload = &proto.TransferMulti{
 			To:        hex.EncodeToString(p.To[:]),
 			Amount:    p.Amount,
 			Nonce:     p.Nonce,
 			Fee:       p.Fee,
-			Signature: hex.EncodeToString(p.MultiSig),
+			Signature: hex.EncodeToString(sig),
 		}
 	}
 
