@@ -128,7 +128,7 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 		if err != nil {
 			return err
 		}
-	} 
+	}
 	return nil
 
 }
