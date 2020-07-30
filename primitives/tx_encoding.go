@@ -14,28 +14,22 @@ func (t *Tx) MarshalSSZ() ([]byte, error) {
 func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 
-	// Field (0) 'Version'
-	dst = ssz.MarshalUint64(dst, t.Version)
-
-	// Field (1) 'Type'
-	dst = ssz.MarshalUint64(dst, t.Type)
-
-	// Field (2) 'To'
+	// Field (0) 'To'
 	dst = append(dst, t.To[:]...)
 
-	// Field (3) 'FromPublicKey'
+	// Field (1) 'FromPublicKey'
 	dst = append(dst, t.FromPublicKey[:]...)
 
-	// Field (4) 'Amount'
+	// Field (2) 'Amount'
 	dst = ssz.MarshalUint64(dst, t.Amount)
 
-	// Field (5) 'Nonce'
+	// Field (3) 'Nonce'
 	dst = ssz.MarshalUint64(dst, t.Nonce)
 
-	// Field (6) 'Fee'
+	// Field (4) 'Fee'
 	dst = ssz.MarshalUint64(dst, t.Fee)
 
-	// Field (7) 'Signature'
+	// Field (5) 'Signature'
 	dst = append(dst, t.Signature[:]...)
 
 	return
@@ -45,40 +39,34 @@ func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (t *Tx) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 204 {
+	if size != 188 {
 		return ssz.ErrSize
 	}
 
-	// Field (0) 'Version'
-	t.Version = ssz.UnmarshallUint64(buf[0:8])
+	// Field (0) 'To'
+	copy(t.To[:], buf[0:20])
 
-	// Field (1) 'Type'
-	t.Type = ssz.UnmarshallUint64(buf[8:16])
+	// Field (1) 'FromPublicKey'
+	copy(t.FromPublicKey[:], buf[20:68])
 
-	// Field (2) 'To'
-	copy(t.To[:], buf[16:36])
+	// Field (2) 'Amount'
+	t.Amount = ssz.UnmarshallUint64(buf[68:76])
 
-	// Field (3) 'FromPublicKey'
-	copy(t.FromPublicKey[:], buf[36:84])
+	// Field (3) 'Nonce'
+	t.Nonce = ssz.UnmarshallUint64(buf[76:84])
 
-	// Field (4) 'Amount'
-	t.Amount = ssz.UnmarshallUint64(buf[84:92])
+	// Field (4) 'Fee'
+	t.Fee = ssz.UnmarshallUint64(buf[84:92])
 
-	// Field (5) 'Nonce'
-	t.Nonce = ssz.UnmarshallUint64(buf[92:100])
-
-	// Field (6) 'Fee'
-	t.Fee = ssz.UnmarshallUint64(buf[100:108])
-
-	// Field (7) 'Signature'
-	copy(t.Signature[:], buf[108:204])
+	// Field (5) 'Signature'
+	copy(t.Signature[:], buf[92:188])
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Tx object
 func (t *Tx) SizeSSZ() (size int) {
-	size = 204
+	size = 188
 	return
 }
 
@@ -91,28 +79,22 @@ func (t *Tx) HashTreeRoot() ([32]byte, error) {
 func (t *Tx) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
-	// Field (0) 'Version'
-	hh.PutUint64(t.Version)
-
-	// Field (1) 'Type'
-	hh.PutUint64(t.Type)
-
-	// Field (2) 'To'
+	// Field (0) 'To'
 	hh.PutBytes(t.To[:])
 
-	// Field (3) 'FromPublicKey'
+	// Field (1) 'FromPublicKey'
 	hh.PutBytes(t.FromPublicKey[:])
 
-	// Field (4) 'Amount'
+	// Field (2) 'Amount'
 	hh.PutUint64(t.Amount)
 
-	// Field (5) 'Nonce'
+	// Field (3) 'Nonce'
 	hh.PutUint64(t.Nonce)
 
-	// Field (6) 'Fee'
+	// Field (4) 'Fee'
 	hh.PutUint64(t.Fee)
 
-	// Field (7) 'Signature'
+	// Field (5) 'Signature'
 	hh.PutBytes(t.Signature[:])
 
 	hh.Merkleize(indx)

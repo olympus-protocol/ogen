@@ -305,9 +305,13 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 		return nil, err
 	}
 	txParse := &proto.Tx{
-		Hash:    tx.Hash().String(),
-		Version: tx.Version,
-		Type:    tx.Type,
+		Hash: tx.Hash().String(),
+		To: hex.EncodeToString(tx.To[:]),
+		FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
+		Amount: tx.Amount,
+		Nonce: tx.Nonce,
+		Fee: tx.Fee,
+		Signature: hex.EncodeToString(tx.Signature[:]),
 	}
 	return txParse, nil
 }

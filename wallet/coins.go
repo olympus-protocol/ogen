@@ -164,8 +164,6 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	copy(p[:], pub.Marshal())
 
 	tx := &primitives.Tx{
-		Type:          0,
-		Version:       0,
 		To:            toPkh,
 		FromPublicKey: p,
 		Amount:        amount,

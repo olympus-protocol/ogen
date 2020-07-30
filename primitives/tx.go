@@ -18,7 +18,7 @@ var (
 
 const (
 	// MaxTransactionSize is the maximum size of the transaction information with a single transfer payload
-	MaxTransactionSize = 204
+	MaxTransactionSize = 188
 )
 
 // // TransferMultiPayload represents a transfer from a multisig to another address.
@@ -128,8 +128,6 @@ const (
 
 // Tx represents a transaction on the blockchain.
 type Tx struct {
-	Version       uint64
-	Type          uint64
 	To            [20]byte `ssz-size:"20"`
 	FromPublicKey [48]byte `ssz-size:"48"`
 	Amount        uint64
@@ -190,7 +188,7 @@ func (t Tx) GetSignature() (*bls.Signature, error) {
 	return bls.SignatureFromBytes(t.Signature)
 }
 
-// GetSignature returns the bls signature of the transaction.
+// GetPublic returns the bls public key of the transaction.
 func (t Tx) GetPublic() (*bls.PublicKey, error) {
 	return bls.PublicKeyFromBytes(t.FromPublicKey)
 }

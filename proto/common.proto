@@ -44,27 +44,12 @@ message Account {
 
 message Tx {
     string hash = 1;
-    uint64 type = 2;
-    uint64 version = 3;
-    TransferSingle transfer_single_payload = 4;
-    TransferMulti transfer_multi_payload = 5;
-}
-
-message TransferSingle {
-    string to = 1;
-    string from_public_key = 2;
-    uint64 amount = 3;
-    uint64 nonce = 4;
-    uint64 fee = 5;
-    string signature = 6;
-}
-
-message TransferMulti {
-    string to = 1;
-    uint64 amount = 2;
-    uint64 nonce = 3;
-    uint64 fee = 4;
-    string signature = 5;
+    string to = 2;
+    string from_public_key = 3;
+    uint64 amount = 4;
+    uint64 nonce = 5;
+    uint64 fee = 6;
+    string signature = 7;
 }
 
 message BlockHeader {
