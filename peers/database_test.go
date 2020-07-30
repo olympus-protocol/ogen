@@ -99,12 +99,12 @@ func TestBanPeers(t *testing.T) {
 
 		// add same peer, and different peer with same ip address. In both cases it should not work, since it's an ip ban
 		err = peers.SavePeer(netDB, peer1)
-		assert.NotNil(t, err)
+		assert.NoError(t, err)
 
 		peer2, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1")
 		assert.NoError(t, err)
 		err = peers.SavePeer(netDB, peer2)
-		assert.NotNil(t, err)
+		assert.NoError(t, err)
 
 		//remove ip from banList, it's just a test
 		peerByte, err := peerId.ID.MarshalBinary()
