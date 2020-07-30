@@ -4,14 +4,14 @@ package rpc_test
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/hex"
-	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/cli/rpcclient"
+	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/proto"
@@ -19,9 +19,19 @@ import (
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
-var C *rpcclient.RPCClient
+type RPC struct {
+	conn    *grpc.ClientConn
+	chain      proto.ChainClient
+	validators proto.ValidatorsClient
+	utils      proto.UtilsClient
+	network    proto.NetworkClient
+	wallet     proto.WalletClient
+}
+var C *RPC
 var S *server.Server
 
 // RPC Functional test
@@ -71,7 +81,7 @@ func startNode(m *testing.M) {
 
 	// Create the initialization parameters
 	ip := primitives.InitializationParameters{
-		GenesisTime:       time.Unix(time.Now().Unix()+10, 0),
+		GenesisTime:       time.Unix(time.Now().Unix()+7, 0),
 		PremineAddress:    addr,
 		InitialValidators: validators,
 	}
@@ -104,7 +114,10 @@ func startNode(m *testing.M) {
 	S.Proposer.Start()
 
 	// Initialize the RPC Client
-	rpcClient()
+	err = rpcClient()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Wait 5 seconds to generate some blocks
 	time.Sleep(time.Second * 5)
@@ -113,20 +126,45 @@ func startNode(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func rpcClient() {
-	C = rpcclient.NewRPCClient("127.0.0.1:" + testdata.Conf.RPCPort, testdata.Node1Folder)
+func rpcClient() error {
+	// Load the certificates (this is optional).
+	certPool, err := chainrpc.LoadCerts(testdata.Node1Folder)
+	if err != nil {
+		return nil
+	}
+
+	// Create the credentials for the RPC connection.
+	creds := credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: false,
+		RootCAs:            certPool,
+	})
+	// Start the gRPC dial
+	conn, err := grpc.Dial("127.0.0.1:" + testdata.Conf.RPCPort, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		return err
+	}
+	
+	// Initialize the clients from the protobuf
+	C = &RPC{
+		conn: conn,
+		chain:      proto.NewChainClient(conn),
+		validators: proto.NewValidatorsClient(conn),
+		utils:      proto.NewUtilsClient(conn),
+		network:    proto.NewNetworkClient(conn),
+		wallet:     proto.NewWalletClient(conn),
+	}
+	return nil
 }
 
 func Test_Chain_GetChainInfo(t *testing.T) {
-
-	s, err := C.GetChainInfo()
-
-	assert.NoError(t, err)
-	assert.NotNil(t, s)
-
-	var ChainInfo proto.ChainInfo
-
-	err = json.Unmarshal([]byte(s), &ChainInfo)
+	ctx := context.Background()
+	res, err := C.chain.GetChainInfo(ctx, &proto.Empty{})
 
 	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.IsType(t, &proto.ChainInfo{}, res)
+
+	assert.Equal(t, S.Chain.State().Tip().Hash.String(), res.BlockHash)
+	assert.Equal(t, S.Chain.State().Tip().Height, res.BlockHeight)
 }
