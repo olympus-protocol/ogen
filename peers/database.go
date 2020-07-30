@@ -208,6 +208,9 @@ func IsPeerBanned(netDB *bbolt.DB, id peer.ID) (bool, error) {
 		savedIP = ipb.Get(byteID)
 		return nil
 	})
+	if err != nil {
+		return false, err
+	}
 	if savedIP == nil {
 		return true, nil
 	}
@@ -260,7 +263,7 @@ func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err e
 				peerID, err := peer.AddrInfoFromP2pAddr(addr)
 				if err != nil {
 					// if the saved peer cannot be validated, delete
-					err = savedBucket.Delete(k)
+					savedBucket.Delete(k)
 				} else {
 					isBanned, err := IsPeerBanned(netDB, peerID.ID)
 					if !isBanned && err == nil {
