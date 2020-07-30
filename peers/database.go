@@ -3,7 +3,6 @@ package peers
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
@@ -93,7 +92,6 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 	}
 	if !isBanned {
 		err = netDB.Update(func(tx *bbolt.Tx) error {
-			var err error
 			peersBucket := tx.Bucket(peersDbKey)
 			ipBucket := tx.Bucket(ipDbKey)
 			scoreBucket := tx.Bucket(scoresDbKey)
@@ -116,6 +114,9 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 			// create banscore for peer if it does not have one
 			if scoreBucket.Get(pma.Bytes()) == nil {
 				err = scoreBucket.Put(pma.Bytes(), []byte(strconv.Itoa(0)))
+				if err != nil {
+					return err
+				}
 			}
 			// save multiaddr of peerId
 			err = peersBucket.Put(byteID, pma.Bytes())
@@ -124,10 +125,11 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 			}
 			return nil
 		})
-	} else {
-		err = fmt.Errorf("peer %s is banned", peerID.ID.String())
-	}
-	return err
+		if err != nil {
+			return err
+		}
+	} 
+	return nil
 
 }
 
@@ -157,7 +159,6 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("peer %s has a banscore of: %s \n", id.String(), strconv.Itoa(score))
 		score += weight
 		if score >= BanLimit {
 			// add to banlist
@@ -170,17 +171,28 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%s is banned until %s \n", string(ipBytes), timestamp)
 			// remove from saved list and score list
 			err = savedDb.Delete(byteID)
+			if err != nil {
+				return err
+			}
 			err = scoreDb.Delete(multiAddrBytes)
+			if err != nil {
+				return err
+			}
 		} else {
 			//update banscore
 			err = scoreDb.Put(multiAddrBytes, []byte(strconv.Itoa(score)))
+			if err != nil {
+				return err
+			}
 		}
-		return err
+		return nil
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // IsPeerBanned returns a boolean if a peer is already known and banned.
@@ -247,7 +259,6 @@ func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err e
 			if err == nil {
 				peerID, err := peer.AddrInfoFromP2pAddr(addr)
 				if err != nil {
-					fmt.Println("peer error: " + err.Error() + ", removing from db")
 					// if the saved peer cannot be validated, delete
 					err = savedBucket.Delete(k)
 				} else {
