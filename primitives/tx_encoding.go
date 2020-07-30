@@ -3,267 +3,7 @@ package primitives
 
 import (
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/olympus-protocol/ogen/bls"
 )
-
-// MarshalSSZ ssz marshals the TransferSinglePayload object
-func (t *TransferSinglePayload) MarshalSSZ() ([]byte, error) {
-	return ssz.MarshalSSZ(t)
-}
-
-// MarshalSSZTo ssz marshals the TransferSinglePayload object to a target array
-func (t *TransferSinglePayload) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
-
-	// Field (0) 'To'
-	dst = append(dst, t.To[:]...)
-
-	// Field (1) 'FromPublicKey'
-	dst = append(dst, t.FromPublicKey[:]...)
-
-	// Field (2) 'Amount'
-	dst = ssz.MarshalUint64(dst, t.Amount)
-
-	// Field (3) 'Nonce'
-	dst = ssz.MarshalUint64(dst, t.Nonce)
-
-	// Field (4) 'Fee'
-	dst = ssz.MarshalUint64(dst, t.Fee)
-
-	// Field (5) 'Signature'
-	dst = append(dst, t.Signature[:]...)
-
-	return
-}
-
-// UnmarshalSSZ ssz unmarshals the TransferSinglePayload object
-func (t *TransferSinglePayload) UnmarshalSSZ(buf []byte) error {
-	var err error
-	size := uint64(len(buf))
-	if size != 188 {
-		return ssz.ErrSize
-	}
-
-	// Field (0) 'To'
-	copy(t.To[:], buf[0:20])
-
-	// Field (1) 'FromPublicKey'
-	copy(t.FromPublicKey[:], buf[20:68])
-
-	// Field (2) 'Amount'
-	t.Amount = ssz.UnmarshallUint64(buf[68:76])
-
-	// Field (3) 'Nonce'
-	t.Nonce = ssz.UnmarshallUint64(buf[76:84])
-
-	// Field (4) 'Fee'
-	t.Fee = ssz.UnmarshallUint64(buf[84:92])
-
-	// Field (5) 'Signature'
-	copy(t.Signature[:], buf[92:188])
-
-	return err
-}
-
-// SizeSSZ returns the ssz encoded size in bytes for the TransferSinglePayload object
-func (t *TransferSinglePayload) SizeSSZ() (size int) {
-	size = 188
-	return
-}
-
-// HashTreeRoot ssz hashes the TransferSinglePayload object
-func (t *TransferSinglePayload) HashTreeRoot() ([32]byte, error) {
-	return ssz.HashWithDefaultHasher(t)
-}
-
-// HashTreeRootWith ssz hashes the TransferSinglePayload object with a hasher
-func (t *TransferSinglePayload) HashTreeRootWith(hh *ssz.Hasher) (err error) {
-	indx := hh.Index()
-
-	// Field (0) 'To'
-	hh.PutBytes(t.To[:])
-
-	// Field (1) 'FromPublicKey'
-	hh.PutBytes(t.FromPublicKey[:])
-
-	// Field (2) 'Amount'
-	hh.PutUint64(t.Amount)
-
-	// Field (3) 'Nonce'
-	hh.PutUint64(t.Nonce)
-
-	// Field (4) 'Fee'
-	hh.PutUint64(t.Fee)
-
-	// Field (5) 'Signature'
-	hh.PutBytes(t.Signature[:])
-
-	hh.Merkleize(indx)
-	return
-}
-
-// MarshalSSZ ssz marshals the TransferMultiPayload object
-func (t *TransferMultiPayload) MarshalSSZ() ([]byte, error) {
-	return ssz.MarshalSSZ(t)
-}
-
-// MarshalSSZTo ssz marshals the TransferMultiPayload object to a target array
-func (t *TransferMultiPayload) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
-	offset := int(48)
-
-	// Field (0) 'To'
-	dst = append(dst, t.To[:]...)
-
-	// Field (1) 'Amount'
-	dst = ssz.MarshalUint64(dst, t.Amount)
-
-	// Field (2) 'Nonce'
-	dst = ssz.MarshalUint64(dst, t.Nonce)
-
-	// Field (3) 'Fee'
-	dst = ssz.MarshalUint64(dst, t.Fee)
-
-	// Offset (4) 'MultiSig'
-	dst = ssz.WriteOffset(dst, offset)
-	if t.MultiSig == nil {
-		t.MultiSig = new(bls.Multisig)
-	}
-	offset += t.MultiSig.SizeSSZ()
-
-	// Field (4) 'MultiSig'
-	if dst, err = t.MultiSig.MarshalSSZTo(dst); err != nil {
-		return
-	}
-
-	return
-}
-
-// UnmarshalSSZ ssz unmarshals the TransferMultiPayload object
-func (t *TransferMultiPayload) UnmarshalSSZ(buf []byte) error {
-	var err error
-	size := uint64(len(buf))
-	if size < 48 {
-		return ssz.ErrSize
-	}
-
-	tail := buf
-	var o4 uint64
-
-	// Field (0) 'To'
-	copy(t.To[:], buf[0:20])
-
-	// Field (1) 'Amount'
-	t.Amount = ssz.UnmarshallUint64(buf[20:28])
-
-	// Field (2) 'Nonce'
-	t.Nonce = ssz.UnmarshallUint64(buf[28:36])
-
-	// Field (3) 'Fee'
-	t.Fee = ssz.UnmarshallUint64(buf[36:44])
-
-	// Offset (4) 'MultiSig'
-	if o4 = ssz.ReadOffset(buf[44:48]); o4 > size {
-		return ssz.ErrOffset
-	}
-
-	// Field (4) 'MultiSig'
-	{
-		buf = tail[o4:]
-		if t.MultiSig == nil {
-			t.MultiSig = new(bls.Multisig)
-		}
-		if err = t.MultiSig.UnmarshalSSZ(buf); err != nil {
-			return err
-		}
-	}
-	return err
-}
-
-// SizeSSZ returns the ssz encoded size in bytes for the TransferMultiPayload object
-func (t *TransferMultiPayload) SizeSSZ() (size int) {
-	size = 48
-
-	// Field (4) 'MultiSig'
-	if t.MultiSig == nil {
-		t.MultiSig = new(bls.Multisig)
-	}
-	size += t.MultiSig.SizeSSZ()
-
-	return
-}
-
-// HashTreeRoot ssz hashes the TransferMultiPayload object
-func (t *TransferMultiPayload) HashTreeRoot() ([32]byte, error) {
-	return ssz.HashWithDefaultHasher(t)
-}
-
-// HashTreeRootWith ssz hashes the TransferMultiPayload object with a hasher
-func (t *TransferMultiPayload) HashTreeRootWith(hh *ssz.Hasher) (err error) {
-	indx := hh.Index()
-
-	// Field (0) 'To'
-	hh.PutBytes(t.To[:])
-
-	// Field (1) 'Amount'
-	hh.PutUint64(t.Amount)
-
-	// Field (2) 'Nonce'
-	hh.PutUint64(t.Nonce)
-
-	// Field (3) 'Fee'
-	hh.PutUint64(t.Fee)
-
-	// Field (4) 'MultiSig'
-	if err = t.MultiSig.HashTreeRootWith(hh); err != nil {
-		return
-	}
-
-	hh.Merkleize(indx)
-	return
-}
-
-// MarshalSSZ ssz marshals the GenesisPayload object
-func (g *GenesisPayload) MarshalSSZ() ([]byte, error) {
-	return ssz.MarshalSSZ(g)
-}
-
-// MarshalSSZTo ssz marshals the GenesisPayload object to a target array
-func (g *GenesisPayload) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
-
-	return
-}
-
-// UnmarshalSSZ ssz unmarshals the GenesisPayload object
-func (g *GenesisPayload) UnmarshalSSZ(buf []byte) error {
-	var err error
-	size := uint64(len(buf))
-	if size != 0 {
-		return ssz.ErrSize
-	}
-
-	return err
-}
-
-// SizeSSZ returns the ssz encoded size in bytes for the GenesisPayload object
-func (g *GenesisPayload) SizeSSZ() (size int) {
-	size = 0
-	return
-}
-
-// HashTreeRoot ssz hashes the GenesisPayload object
-func (g *GenesisPayload) HashTreeRoot() ([32]byte, error) {
-	return ssz.HashWithDefaultHasher(g)
-}
-
-// HashTreeRootWith ssz hashes the GenesisPayload object with a hasher
-func (g *GenesisPayload) HashTreeRootWith(hh *ssz.Hasher) (err error) {
-	indx := hh.Index()
-
-	hh.Merkleize(indx)
-	return
-}
 
 // MarshalSSZ ssz marshals the Tx object
 func (t *Tx) MarshalSSZ() ([]byte, error) {
@@ -280,8 +20,23 @@ func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (1) 'Type'
 	dst = ssz.MarshalUint64(dst, t.Type)
 
-	// Field (2) 'Payload'
-	dst = append(dst, t.Payload[:]...)
+	// Field (2) 'To'
+	dst = append(dst, t.To[:]...)
+
+	// Field (3) 'FromPublicKey'
+	dst = append(dst, t.FromPublicKey[:]...)
+
+	// Field (4) 'Amount'
+	dst = ssz.MarshalUint64(dst, t.Amount)
+
+	// Field (5) 'Nonce'
+	dst = ssz.MarshalUint64(dst, t.Nonce)
+
+	// Field (6) 'Fee'
+	dst = ssz.MarshalUint64(dst, t.Fee)
+
+	// Field (7) 'Signature'
+	dst = append(dst, t.Signature[:]...)
 
 	return
 }
@@ -290,7 +45,7 @@ func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (t *Tx) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 2064 {
+	if size != 204 {
 		return ssz.ErrSize
 	}
 
@@ -300,15 +55,30 @@ func (t *Tx) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Type'
 	t.Type = ssz.UnmarshallUint64(buf[8:16])
 
-	// Field (2) 'Payload'
-	copy(t.Payload[:], buf[16:2064])
+	// Field (2) 'To'
+	copy(t.To[:], buf[16:36])
+
+	// Field (3) 'FromPublicKey'
+	copy(t.FromPublicKey[:], buf[36:84])
+
+	// Field (4) 'Amount'
+	t.Amount = ssz.UnmarshallUint64(buf[84:92])
+
+	// Field (5) 'Nonce'
+	t.Nonce = ssz.UnmarshallUint64(buf[92:100])
+
+	// Field (6) 'Fee'
+	t.Fee = ssz.UnmarshallUint64(buf[100:108])
+
+	// Field (7) 'Signature'
+	copy(t.Signature[:], buf[108:204])
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Tx object
 func (t *Tx) SizeSSZ() (size int) {
-	size = 2064
+	size = 204
 	return
 }
 
@@ -327,8 +97,23 @@ func (t *Tx) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	// Field (1) 'Type'
 	hh.PutUint64(t.Type)
 
-	// Field (2) 'Payload'
-	hh.PutBytes(t.Payload[:])
+	// Field (2) 'To'
+	hh.PutBytes(t.To[:])
+
+	// Field (3) 'FromPublicKey'
+	hh.PutBytes(t.FromPublicKey[:])
+
+	// Field (4) 'Amount'
+	hh.PutUint64(t.Amount)
+
+	// Field (5) 'Nonce'
+	hh.PutUint64(t.Nonce)
+
+	// Field (6) 'Fee'
+	hh.PutUint64(t.Fee)
+
+	// Field (7) 'Signature'
+	hh.PutBytes(t.Signature[:])
 
 	hh.Merkleize(indx)
 	return

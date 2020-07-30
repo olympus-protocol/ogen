@@ -137,7 +137,7 @@ func (t *Txs) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (0) 'Txs'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(t.Txs) * 2064
+	offset += len(t.Txs) * 204
 
 	// Field (0) 'Txs'
 	if len(t.Txs) > 1000 {
@@ -172,7 +172,7 @@ func (t *Txs) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Txs'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 2064, 1000)
+		num, err := ssz.DivideInt2(len(buf), 204, 1000)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func (t *Txs) UnmarshalSSZ(buf []byte) error {
 			if t.Txs[ii] == nil {
 				t.Txs[ii] = new(Tx)
 			}
-			if err = t.Txs[ii].UnmarshalSSZ(buf[ii*2064 : (ii+1)*2064]); err != nil {
+			if err = t.Txs[ii].UnmarshalSSZ(buf[ii*204 : (ii+1)*204]); err != nil {
 				return err
 			}
 		}
@@ -194,7 +194,7 @@ func (t *Txs) SizeSSZ() (size int) {
 	size = 4
 
 	// Field (0) 'Txs'
-	size += len(t.Txs) * 2064
+	size += len(t.Txs) * 204
 
 	return
 }

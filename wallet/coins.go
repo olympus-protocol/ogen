@@ -162,7 +162,10 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	nonce := w.chain.State().TipState().CoinsState.Nonces[acc] + 1
 	var p [48]byte
 	copy(p[:], pub.Marshal())
-	payload := &primitives.TransferSinglePayload{
+
+	tx := &primitives.Tx{
+		Type:          0,
+		Version:       0,
 		To:            toPkh,
 		FromPublicKey: p,
 		Amount:        amount,
@@ -170,21 +173,12 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		Fee:           1,
 	}
 
-	sigMsg := payload.SignatureMessage()
+	sigMsg := tx.SignatureMessage()
 	sig := priv.Sign(sigMsg[:])
 	var s [96]byte
 	copy(s[:], sig.Marshal())
-	payload.Signature = s
+	tx.Signature = s
 
-	tx := &primitives.Tx{
-		Type:    primitives.TxTransferSingle,
-		Version: 0,
-	}
-
-	err = tx.AppendPayload(payload)
-	if err != nil {
-		return nil, err
-	}
 	currentState := w.chain.State().TipState()
 
 	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {

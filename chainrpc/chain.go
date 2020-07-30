@@ -304,39 +304,11 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 	if err != nil {
 		return nil, err
 	}
-	payload, err := tx.GetPayload()
-	if err != nil {
-		return nil, err
-	}
 	txParse := &proto.Tx{
 		Hash:    tx.Hash().String(),
 		Version: tx.Version,
 		Type:    tx.Type,
 	}
-	switch p := payload.(type) {
-	case *primitives.TransferSinglePayload:
-		txParse.TransferSinglePayload = &proto.TransferSingle{
-			To:            hex.EncodeToString(p.To[:]),
-			FromPublicKey: hex.EncodeToString(p.FromPublicKey[:]),
-			Amount:        p.Amount,
-			Nonce:         p.Nonce,
-			Fee:           p.Fee,
-			Signature:     hex.EncodeToString(p.Signature[:]),
-		}
-	case *primitives.TransferMultiPayload:
-		sig, err := p.MultiSig.Marshal()
-		if err != nil {
-			return nil, err
-		}
-		txParse.TransferMultiPayload = &proto.TransferMulti{
-			To:        hex.EncodeToString(p.To[:]),
-			Amount:    p.Amount,
-			Nonce:     p.Nonce,
-			Fee:       p.Fee,
-			Signature: hex.EncodeToString(sig),
-		}
-	}
-
 	return txParse, nil
 }
 

@@ -12,7 +12,7 @@ import (
 var ErrorBlockSize = errors.New("the block size is too big")
 
 // MaxBlockSize defines the maximum bytes on a block object.
-const MaxBlockSize = 1024 * 1024 * 2 // 2 MB
+const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
 
 // Votes is the struct on the block that contains block votes.
 type Votes struct {
@@ -56,17 +56,17 @@ type GovernanceVotes struct {
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header            *BlockHeader
-	Votes             *Votes
-	Txs               *Txs
-	Deposits          *Deposits
-	Exits             *Exits
-	VoteSlashings     *VoteSlashings
-	RANDAOSlashings   *RANDAOSlashings
-	ProposerSlashings *ProposerSlashings
+	Header            *BlockHeader       // 			  	  372 bytes
+	Votes             *Votes             // 333 * 32 		= 10656 bytes
+	Txs               *Txs               //	204 * 9000  	= 1836000 bytes
+	Deposits          *Deposits          // 308 * 32 		= 9856 bytes
+	Exits             *Exits             // 192 * 32 		= 6144 bytes
+	VoteSlashings     *VoteSlashings     // 666 * 10 		= 6660 bytes
+	RANDAOSlashings   *RANDAOSlashings   // 152 * 20 		= 3040 bytes
+	ProposerSlashings *ProposerSlashings // 984 * 2 		= 1968 bytes
 	GovernanceVotes   *GovernanceVotes
-	Signature         [96]byte `ssz-size:"96"`
-	RandaoSignature   [96]byte `ssz-size:"96"`
+	Signature         [96]byte `ssz-size:"96"` // 96 bytes
+	RandaoSignature   [96]byte `ssz-size:"96"` // 96 bytes
 }
 
 // Marshal encodes the block.

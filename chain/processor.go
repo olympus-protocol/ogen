@@ -293,22 +293,18 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 				Block: block.Hash(),
 				Index: uint64(i),
 			}
-			payload, err := tx.GetPayload()
+			from, err := tx.FromPubkeyHash()
 			if err != nil {
 				return err
 			}
-			from, err := payload.FromPubkeyHash()
-			if err != nil {
-				return err
-			}
-			to := payload.GetToAccount()
+
 			// Add index to senders
 			err = ch.txidx.SetTx(locator, from)
 			if err != nil {
 				return err
 			}
 			// Add index to receivers
-			err = ch.txidx.SetTx(locator, to)
+			err = ch.txidx.SetTx(locator, tx.To)
 			if err != nil {
 				return err
 			}

@@ -217,84 +217,13 @@ func Test_ProposerSlashingSerialize(t *testing.T) {
 	assert.Equal(t, v, desc)
 }
 
-func Test_TransferSinglePayloadSerialize(t *testing.T) {
-
-	f := fuzz.New().NilChance(0)
-
-	v := new(primitives.TransferSinglePayload)
-
-	f.Fuzz(v)
-
-	ser, err := v.Marshal()
-
-	assert.NoError(t, err)
-
-	desc := new(primitives.TransferSinglePayload)
-
-	err = desc.Unmarshal(ser)
-
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
-func Test_TransferMultiPayloadSerialize(t *testing.T) {
-
-	f := fuzz.New().NilChance(0)
-
-	v := new(primitives.TransferMultiPayload)
-
-	f.Fuzz(v)
-
-	ser, err := v.Marshal()
-
-	assert.NoError(t, err)
-
-	desc := new(primitives.TransferMultiPayload)
-
-	err = desc.Unmarshal(ser)
-
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
 func Test_TxSingleSerialize(t *testing.T) {
 
 	f := fuzz.New().NilChance(0)
 
 	v := new(primitives.Tx)
 
-	p := new(primitives.TransferSinglePayload)
-
-	f.Fuzz(p)
-
-	v.AppendPayload(p)
-
-	ser, err := v.Marshal()
-
-	assert.NoError(t, err)
-
-	desc := new(primitives.Tx)
-
-	err = desc.Unmarshal(ser)
-
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
-func Test_TxMultiSerialize(t *testing.T) {
-
-	f := fuzz.New().NilChance(0)
-
-	v := new(primitives.Tx)
-
-	p := new(primitives.TransferMultiPayload)
-
-	f.Fuzz(p)
-
-	v.AppendPayload(p)
+	f.Fuzz(v)
 
 	ser, err := v.Marshal()
 
