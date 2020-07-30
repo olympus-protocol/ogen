@@ -33,8 +33,10 @@ func SignatureFromBytes(sig []byte) (*Signature, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into signature")
 	}
-	sigCache.Set(string(sig), signature, 48)
-	return &Signature{s: signature}, nil
+	sigObj := &Signature{s: signature}
+	copiedSig := sigObj.Copy()
+	sigCache.Set(string(sig), copiedSig, 48)
+	return sigObj, nil
 }
 
 // Verify a bls signature given a public key, a message.
