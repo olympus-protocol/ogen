@@ -25,11 +25,15 @@ func SignatureFromBytes(sig []byte) (*Signature, error) {
 	if len(sig) != 96 {
 		return nil, fmt.Errorf("signature must be %d bytes", 96)
 	}
+	if cv, ok := sigCache.Get(string(sig)); ok {
+		return cv.(*Signature).Copy(), nil
+	}
 	signature := &bls.Sign{}
 	err := signature.Deserialize(sig)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into signature")
 	}
+	sigCache.Set(string(sig), signature, 48)
 	return &Signature{s: signature}, nil
 }
 

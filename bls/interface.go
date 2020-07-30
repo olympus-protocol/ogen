@@ -36,6 +36,12 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 	BufferItems: 64,
 })
 
+var sigCache, _ = ristretto.NewCache(&ristretto.Config{
+	NumCounters: maxKeys,
+	MaxCost:     1 << 19, // 500 kb is cache max size
+	BufferItems: 64,
+})
+
 // RFieldModulus for the bls-381 curve.
 var RFieldModulus, _ = new(big.Int).SetString("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10)
 
