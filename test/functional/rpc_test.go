@@ -1,4 +1,4 @@
-//+build rpc_test
+// +build rpc_test
 
 package rpc_test
 
@@ -24,13 +24,14 @@ import (
 )
 
 type RPC struct {
-	conn    *grpc.ClientConn
+	conn       *grpc.ClientConn
 	chain      proto.ChainClient
 	validators proto.ValidatorsClient
 	utils      proto.UtilsClient
 	network    proto.NetworkClient
 	wallet     proto.WalletClient
 }
+
 var C *RPC
 var S *server.Server
 
@@ -97,7 +98,7 @@ func startNode() {
 	}
 
 	// Create the server instance
-	
+
 	// Get the configuration params from the testdata
 	c := testdata.Conf
 
@@ -140,14 +141,14 @@ func rpcClient() error {
 		RootCAs:            certPool,
 	})
 	// Start the gRPC dial
-	conn, err := grpc.Dial("127.0.0.1:" + testdata.Conf.RPCPort, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial("127.0.0.1:"+testdata.Conf.RPCPort, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}
-	
+
 	// Initialize the clients from the protobuf
 	C = &RPC{
-		conn: conn,
+		conn:       conn,
 		chain:      proto.NewChainClient(conn),
 		validators: proto.NewValidatorsClient(conn),
 		utils:      proto.NewUtilsClient(conn),

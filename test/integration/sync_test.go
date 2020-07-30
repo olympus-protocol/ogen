@@ -1,4 +1,4 @@
-//+build sync_test
+// +build sync_test
 
 package sync_test
 

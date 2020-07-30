@@ -1,4 +1,4 @@
-//+build dos_test
+// +build dos_test
 
 package dos_test
 
