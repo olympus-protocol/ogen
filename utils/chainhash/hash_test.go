@@ -62,7 +62,7 @@ func TestHash(t *testing.T) {
 	}
 
 	// Set hash from byte slice and ensure contents match.
-	err = hash.SetBytes(blockHash.CloneBytes())
+	err = hash.SetBytes(blockHash[:])
 	if err != nil {
 		t.Errorf("SetBytes: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestHash(t *testing.T) {
 	}
 
 	// Invalid size for SetBytes.
-	err = hash.SetBytes([32]byte{0x00})
+	err = hash.SetBytes([]byte{0x00})
 	if err == nil {
 		t.Errorf("SetBytes: failed to received expected err - got: nil")
 	}

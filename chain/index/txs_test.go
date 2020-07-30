@@ -38,6 +38,7 @@ var locators = []index.TxLocator{
 }
 
 func Test_TxLocatorSerializing(t *testing.T) {
+
 	ser, err := locators[0].Marshal()
 
 	assert.NoError(t, err)

@@ -273,7 +273,6 @@ func (t *Tx) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the Tx object to a target array
 func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(20)
 
 	// Field (0) 'Version'
 	dst = ssz.MarshalUint64(dst, t.Version)
@@ -281,16 +280,8 @@ func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (1) 'Type'
 	dst = ssz.MarshalUint64(dst, t.Type)
 
-	// Offset (2) 'Payload'
-	dst = ssz.WriteOffset(dst, offset)
-	offset += len(t.Payload)
-
 	// Field (2) 'Payload'
-	if len(t.Payload) != 0 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	dst = append(dst, t.Payload...)
+	dst = append(dst, t.Payload[:]...)
 
 	return
 }
@@ -299,12 +290,9 @@ func (t *Tx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (t *Tx) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 20 {
+	if size != 2064 {
 		return ssz.ErrSize
 	}
-
-	tail := buf
-	var o2 uint64
 
 	// Field (0) 'Version'
 	t.Version = ssz.UnmarshallUint64(buf[0:8])
@@ -312,26 +300,15 @@ func (t *Tx) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Type'
 	t.Type = ssz.UnmarshallUint64(buf[8:16])
 
-	// Offset (2) 'Payload'
-	if o2 = ssz.ReadOffset(buf[16:20]); o2 > size {
-		return ssz.ErrOffset
-	}
-
 	// Field (2) 'Payload'
-	{
-		buf = tail[o2:]
-		t.Payload = append(t.Payload, buf...)
-	}
+	copy(t.Payload[:], buf[16:2064])
+
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Tx object
 func (t *Tx) SizeSSZ() (size int) {
-	size = 20
-
-	// Field (2) 'Payload'
-	size += len(t.Payload)
-
+	size = 2064
 	return
 }
 
@@ -351,11 +328,7 @@ func (t *Tx) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutUint64(t.Type)
 
 	// Field (2) 'Payload'
-	if len(t.Payload) != 0 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	hh.PutBytes(t.Payload)
+	hh.PutBytes(t.Payload[:])
 
 	hh.Merkleize(indx)
 	return

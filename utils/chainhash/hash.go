@@ -43,7 +43,7 @@ func (hash *Hash) CloneBytes() [32]byte {
 
 // SetBytes sets the bytes which represent the hash.  An error is returned if
 // the number of bytes passed in is not HashSize.
-func (hash *Hash) SetBytes(newHash [32]byte) error {
+func (hash *Hash) SetBytes(newHash []byte) error {
 	nhlen := len(newHash)
 	if nhlen != HashSize {
 		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
@@ -69,7 +69,7 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 // the number of bytes passed in is not HashSize.
 func NewHash(newHash [32]byte) (*Hash, error) {
 	var sh Hash
-	err := sh.SetBytes(newHash)
+	err := sh.SetBytes(newHash[:])
 	if err != nil {
 		return nil, err
 	}

@@ -167,7 +167,7 @@ type TransferMultiPayload struct {
 	Amount   uint64
 	Nonce    uint64
 	Fee      uint64
-	MultiSig *bls.Multisig `ssz-size:"2048"`
+	MultiSig *bls.Multisig
 }
 
 // Marshal encodes the data.
@@ -286,7 +286,7 @@ type TxPayload interface {
 type Tx struct {
 	Version uint64
 	Type    uint64
-	Payload []byte `ssz-max:"2048"`
+	Payload [2048]byte `ssz-max:"2048"` // TODO: This must not be hardcoded
 }
 
 // GetPayload returns the payload of the transaction.
@@ -294,11 +294,11 @@ func (t *Tx) GetPayload() (TxPayload, error) {
 	switch t.Type {
 	case TxTransferMulti:
 		payload := new(TransferMultiPayload)
-		payload.Unmarshal(t.Payload)
+		payload.Unmarshal(t.Payload[:])
 		return payload, nil
 	case TxTransferSingle:
 		payload := new(TransferSinglePayload)
-		payload.Unmarshal(t.Payload)
+		payload.Unmarshal(t.Payload[:])
 		return payload, nil
 	default:
 		return nil, errors.New("unknown transaction type")
@@ -311,7 +311,7 @@ func (t *Tx) AppendPayload(p TxPayload) error {
 	if err != nil {
 		return err
 	}
-	t.Payload = buf
+	copy(t.Payload[:], buf)
 	return nil
 }
 

@@ -361,7 +361,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
 			s.NextVoteEpoch(GovernanceStateVoting)
 			for i := range s.CurrentManagers {
-				s.ManagerReplacement.Set(uint(i))
+				s.ManagerReplacement.SetBitAt(uint64(i), true)
 			}
 		}
 	case GovernanceStateVoting:
@@ -388,7 +388,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 					copy(newManagers, s.CurrentManagers)
 
 					for i := range newManagers {
-						if s.ManagerReplacement.Get(uint(i)) {
+						if s.ManagerReplacement.BitAt(uint64(i)) {
 							copy(newManagers[i][:], voteData.ReplacementCandidates[i][:])
 						}
 					}

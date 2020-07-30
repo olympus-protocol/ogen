@@ -372,18 +372,10 @@ func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.MarshalUint64(dst, g.Type)
 
 	// Field (1) 'Data'
-	if len(g.Data) != 2048 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	dst = append(dst, g.Data...)
+	dst = append(dst, g.Data[:]...)
 
 	// Field (2) 'FunctionalSig'
-	if len(g.FunctionalSig) != 2048 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	dst = append(dst, g.FunctionalSig...)
+	dst = append(dst, g.FunctionalSig[:]...)
 
 	// Field (3) 'VoteEpoch'
 	dst = ssz.MarshalUint64(dst, g.VoteEpoch)
@@ -403,10 +395,10 @@ func (g *GovernanceVote) UnmarshalSSZ(buf []byte) error {
 	g.Type = ssz.UnmarshallUint64(buf[0:8])
 
 	// Field (1) 'Data'
-	g.Data = append(g.Data, buf[8:2056]...)
+	copy(g.Data[:], buf[8:2056])
 
 	// Field (2) 'FunctionalSig'
-	g.FunctionalSig = append(g.FunctionalSig, buf[2056:4104]...)
+	copy(g.FunctionalSig[:], buf[2056:4104])
 
 	// Field (3) 'VoteEpoch'
 	g.VoteEpoch = ssz.UnmarshallUint64(buf[4104:4112])
@@ -433,18 +425,10 @@ func (g *GovernanceVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutUint64(g.Type)
 
 	// Field (1) 'Data'
-	if len(g.Data) != 2048 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	hh.PutBytes(g.Data)
+	hh.PutBytes(g.Data[:])
 
 	// Field (2) 'FunctionalSig'
-	if len(g.FunctionalSig) != 2048 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	hh.PutBytes(g.FunctionalSig)
+	hh.PutBytes(g.FunctionalSig[:])
 
 	// Field (3) 'VoteEpoch'
 	hh.PutUint64(g.VoteEpoch)

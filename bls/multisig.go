@@ -7,8 +7,8 @@ import (
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
@@ -61,7 +61,7 @@ func (m *Multipub) Type() FunctionalSignatureType {
 // PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
 func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint64) [20]byte {
 	keys := len(pubkeys)
-	out := make([]byte, (20 * keys) + 8)
+	out := make([]byte, (20*keys)+8)
 
 	numNeededBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(numNeededBytes, numNeeded)
@@ -104,8 +104,8 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  *Multipub
-	Signatures [][96]byte `ssz-max:"32"`
-	KeysSigned []byte     `ssz:"bitlist" ssz-max:"2048"`
+	Signatures [][96]byte       `ssz-max:"32"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"33"`
 }
 
 // Marshal encodes the data.
@@ -123,7 +123,7 @@ func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: [][96]byte{},
-		KeysSigned: bitfield.NewBitfield(uint(len(multipub.PublicKeys))),
+		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys))),
 	}
 }
 

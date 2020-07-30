@@ -1,8 +1,8 @@
 package primitives
 
 import (
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // SerializableState is a serializable copy of the state
@@ -181,7 +181,7 @@ type State struct {
 	CurrentManagers [][20]byte
 
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
-	ManagerReplacement bitfield.Bitfield
+	ManagerReplacement bitfield.Bitlist
 
 	// Governance represents current votes state
 	Governance Governance
@@ -403,7 +403,7 @@ func (s *State) Copy() State {
 	s2.CurrentManagers = make([][20]byte, len(s.CurrentManagers))
 	copy(s2.CurrentManagers, s.CurrentManagers)
 
-	s2.ManagerReplacement = s.ManagerReplacement.Copy()
+	s2.ManagerReplacement = s.ManagerReplacement
 
 	s2.Governance = s.Governance
 	return s2

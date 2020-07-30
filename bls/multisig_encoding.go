@@ -148,7 +148,7 @@ func (m *Multisig) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (2) 'KeysSigned'
-	if len(m.KeysSigned) > 2048 {
+	if len(m.KeysSigned) > 33 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -210,7 +210,7 @@ func (m *Multisig) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'KeysSigned'
 	{
 		buf = tail[o2:]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		if err = ssz.ValidateBitlist(buf, 33); err != nil {
 			return err
 		}
 		m.KeysSigned = append(m.KeysSigned, buf...)
@@ -266,7 +266,7 @@ func (m *Multisig) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (2) 'KeysSigned'
-	hh.PutBitlist(m.KeysSigned, 2048)
+	hh.PutBitlist(m.KeysSigned, 33)
 
 	hh.Merkleize(indx)
 	return

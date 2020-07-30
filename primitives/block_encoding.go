@@ -137,22 +137,12 @@ func (t *Txs) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (0) 'Txs'
 	dst = ssz.WriteOffset(dst, offset)
-	for ii := 0; ii < len(t.Txs); ii++ {
-		offset += 4
-		offset += t.Txs[ii].SizeSSZ()
-	}
+	offset += len(t.Txs) * 2064
 
 	// Field (0) 'Txs'
 	if len(t.Txs) > 1000 {
 		err = ssz.ErrListTooBig
 		return
-	}
-	{
-		offset = 4 * len(t.Txs)
-		for ii := 0; ii < len(t.Txs); ii++ {
-			dst = ssz.WriteOffset(dst, offset)
-			offset += t.Txs[ii].SizeSSZ()
-		}
 	}
 	for ii := 0; ii < len(t.Txs); ii++ {
 		if dst, err = t.Txs[ii].MarshalSSZTo(dst); err != nil {
@@ -182,22 +172,18 @@ func (t *Txs) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Txs'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DecodeDynamicLength(buf, 1000)
+		num, err := ssz.DivideInt2(len(buf), 2064, 1000)
 		if err != nil {
 			return err
 		}
 		t.Txs = make([]*Tx, num)
-		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
-			if t.Txs[indx] == nil {
-				t.Txs[indx] = new(Tx)
+		for ii := 0; ii < num; ii++ {
+			if t.Txs[ii] == nil {
+				t.Txs[ii] = new(Tx)
 			}
-			if err = t.Txs[indx].UnmarshalSSZ(buf); err != nil {
+			if err = t.Txs[ii].UnmarshalSSZ(buf[ii*2064 : (ii+1)*2064]); err != nil {
 				return err
 			}
-			return nil
-		})
-		if err != nil {
-			return err
 		}
 	}
 	return err
@@ -208,10 +194,7 @@ func (t *Txs) SizeSSZ() (size int) {
 	size = 4
 
 	// Field (0) 'Txs'
-	for ii := 0; ii < len(t.Txs); ii++ {
-		size += 4
-		size += t.Txs[ii].SizeSSZ()
-	}
+	size += len(t.Txs) * 2064
 
 	return
 }

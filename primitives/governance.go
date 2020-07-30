@@ -83,15 +83,15 @@ const (
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
 	Type          uint64
-	Data          []byte `ssz-size:"2048"` // TODO Calculate
-	FunctionalSig []byte `ssz-size:"2048"` // TODO Calculate
+	Data          [2048]byte `ssz-size:"2048"` // TODO Calculate
+	FunctionalSig [2048]byte `ssz-size:"2048"` // TODO Calculate
 	VoteEpoch     uint64
 }
 
 // Signature returns the governance vote bls signature.
 func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer([]byte{})
-	buf.Write(gv.FunctionalSig)
+	buf.Write(gv.FunctionalSig[:])
 	sig, err := bls.ReadFunctionalSignature(buf)
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func (gv *GovernanceVote) Valid() bool {
 // SignatureHash gets the signed part of the hash.
 func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := gv.Copy()
-	cp.FunctionalSig = []byte{}
+	cp.FunctionalSig = [2048]byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
@@ -144,8 +144,8 @@ func (gv *GovernanceVote) Hash() chainhash.Hash {
 // Copy copies the governance vote.
 func (gv *GovernanceVote) Copy() *GovernanceVote {
 	newGv := *gv
-	newGv.Data = make([]byte, len(gv.Data))
-	copy(newGv.Data, gv.Data)
+	newGv.Data = [2048]byte{}
+	copy(newGv.Data[:], gv.Data[:])
 	newGv.FunctionalSig = gv.FunctionalSig
 	return &newGv
 }
