@@ -124,7 +124,7 @@ func startNode() {
 	}
 
 	// Wait 5 seconds to generate some blocks
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 1)
 }
 
 func rpcClient() error {
@@ -168,4 +168,36 @@ func Test_Chain_GetChainInfo(t *testing.T) {
 
 	assert.Equal(t, S.Chain.State().Tip().Hash.String(), res.BlockHash)
 	assert.Equal(t, S.Chain.State().Tip().Height, res.BlockHeight)
+}
+
+func Test_Chain_GetRawBlock(t *testing.T) {
+	ctx := context.Background()
+	hash := S.Chain.State().Tip().Hash
+	res, err := C.chain.GetRawBlock(ctx, &proto.Hash{Hash: hash.String()})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.IsType(t, &proto.Block{}, res)
+
+	block, err := S.Chain.GetRawBlock(hash)
+	assert.NoError(t, err)
+
+	assert.Equal(t, hex.EncodeToString(block), res.RawBlock)
+}
+
+func Test_Chain_GetBlock(t *testing.T) {
+	ctx := context.Background()
+	hash := S.Chain.State().Tip().Hash
+	res, err := C.chain.GetBlock(ctx, &proto.Hash{Hash: hash.String()})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.IsType(t, &proto.Block{}, res)
+
+	block, err := S.Chain.GetBlock(hash)
+	assert.NoError(t, err)
+
+	assert.Equal(t, block.Hash().String(), res.Hash)
 }
