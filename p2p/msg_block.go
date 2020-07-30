@@ -9,7 +9,7 @@ import (
 // MaxBlocksPerMsg defines the maximum amount of blocks that a peer can send.
 const MaxBlocksPerMsg = 32
 
-// MsgBlocks is the struct of the message the is transmited upon the network.
+// MsgBlocks is the struct of the message the is transmitted upon the network.
 type MsgBlocks struct {
 	Blocks []primitives.Block
 }
