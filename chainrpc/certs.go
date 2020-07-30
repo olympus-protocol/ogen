@@ -44,8 +44,29 @@ var baseCA = &x509.Certificate{
 func LoadCerts(dataFolder string) (*x509.CertPool, error) {
 open:
 	ca, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CA))
+	if err != nil {
+		err := GenerateCerts(dataFolder)
+		if err != nil {
+			return nil, err
+		}
+		goto open
+	}
 	caKey, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CaKey))
+	if err != nil {
+		err := GenerateCerts(dataFolder)
+		if err != nil {
+			return nil, err
+		}
+		goto open
+	}
 	cert, err := ioutil.ReadFile(path.Join(dataFolder, "cert", Cert))
+	if err != nil {
+		err := GenerateCerts(dataFolder)
+		if err != nil {
+			return nil, err
+		}
+		goto open
+	}
 	certKey, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CertKey))
 	if err != nil {
 		err := GenerateCerts(dataFolder)

@@ -103,7 +103,6 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 		return nil
 	}
 
-	ok := true
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return errors.New("unable to decode hash from string")
@@ -117,7 +116,6 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 		return errors.New("there is no next blockrow")
 	}
 	for {
-		ok := true
 		rawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
 		if err != nil {
 			return errors.New("unable get raw block")

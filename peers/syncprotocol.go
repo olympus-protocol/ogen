@@ -256,7 +256,7 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		}
 	}
 	// If the node has more blocks, start the syncing process.
-	// The syncing process must ensure no unnecesary blocks are requested and we don't start a sync routine with other peer.
+	// The syncing process must ensure no unnecessary blocks are requested and we don't start a sync routine with other peer.
 	// We also need to check if this peer stops sending block msg.
 	if theirVersion.LastBlock > ourVersion.LastBlock && !sp.syncInfo.syncing {
 		sp.syncInfo.lastRequest = time.Now()
