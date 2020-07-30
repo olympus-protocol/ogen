@@ -25,7 +25,7 @@ func SignatureFromBytes(sig [96]byte) (*Signature, error) {
 	if len(sig) != 96 {
 		return nil, fmt.Errorf("signature must be %d bytes", 96)
 	}
-	if cv, ok := sigCache.Get(string(sig)); ok {
+	if cv, ok := sigCache.Get(string(sig[:])); ok {
 		return cv.(*Signature).Copy(), nil
 	}
 	signature := &bls.Sign{}
@@ -35,7 +35,7 @@ func SignatureFromBytes(sig [96]byte) (*Signature, error) {
 	}
 	sigObj := &Signature{s: signature}
 	copiedSig := sigObj.Copy()
-	sigCache.Set(string(sig), copiedSig, 48)
+	sigCache.Set(string(sig[:]), copiedSig, 48)
 	return sigObj, nil
 }
 

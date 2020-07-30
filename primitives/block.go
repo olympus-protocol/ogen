@@ -75,8 +75,8 @@ func (b *Block) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(bb) > MaxBlockHeaderBytes {
-		return nil, ErrorBlockHeaderSize
+	if len(bb) > MaxBlockSize {
+		return nil, ErrorBlockSize
 	}
 	return snappy.Encode(nil, bb), nil
 }
@@ -87,8 +87,8 @@ func (b *Block) Unmarshal(bb []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(d) > MaxBlockHeaderBytes {
-		return ErrorBlockHeaderSize
+	if len(d) > MaxBlockSize {
+		return ErrorBlockSize
 	}
 	return b.UnmarshalSSZ(d)
 }
