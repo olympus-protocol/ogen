@@ -504,6 +504,10 @@ func TestEmptyBranchWitness(t *testing.T) {
 		}
 
 		newRoot, err = ApplyWitness(*w1, *newRoot)
+		if err != nil {
+			return err
+		}
+
 		return err
 	})
 

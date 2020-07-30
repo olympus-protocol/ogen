@@ -22,8 +22,10 @@ var bansDbKey = []byte("bans")
 var ipDbKey = []byte("ips")
 var scoresDbKey = []byte("scores")
 
+// BanLimit is the maximum ban score for a peer to get banned.
 const BanLimit = 100
 
+// InitBuckets initializes the peer database buckets
 func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 	err = netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
@@ -37,7 +39,7 @@ func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 		// peersBucket holds a peerId as key and it's multiaddr as value
 		peersBucket := tx.Bucket(peersDbKey)
 		if peersBucket == nil {
-			peersBucket, err = tx.CreateBucketIfNotExists(peersDbKey)
+			_, err = tx.CreateBucketIfNotExists(peersDbKey)
 			if err != nil {
 				return err
 			}
@@ -45,7 +47,7 @@ func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 		// bansBucket holds an IP address as key and a timestamp as value
 		bansBucket := tx.Bucket(bansDbKey)
 		if bansBucket == nil {
-			bansBucket, err = tx.CreateBucketIfNotExists(bansDbKey)
+			_, err = tx.CreateBucketIfNotExists(bansDbKey)
 			if err != nil {
 				return err
 			}
@@ -53,7 +55,7 @@ func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 		// ipBucket holds a peerId as key and an IP address as value
 		ipBucket := tx.Bucket(ipDbKey)
 		if ipBucket == nil {
-			ipBucket, err = tx.CreateBucketIfNotExists(ipDbKey)
+			_, err = tx.CreateBucketIfNotExists(ipDbKey)
 			if err != nil {
 				return err
 			}
@@ -61,7 +63,7 @@ func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 		// scoresBucket holds a multiaddress  as key and the banscore as value
 		scoreBucket := tx.Bucket(scoresDbKey)
 		if scoreBucket == nil {
-			scoreBucket, err = tx.CreateBucketIfNotExists(scoresDbKey)
+			_, err = tx.CreateBucketIfNotExists(scoresDbKey)
 			if err != nil {
 				return err
 			}
@@ -71,19 +73,21 @@ func InitBuckets(netDB *bbolt.DB) (configBucket *bbolt.Bucket, err error) {
 	return
 }
 
+// SavePeer stores a peer to the node peers database.
 func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
-	// get peerId from multiaddr
-	peerId, err := peer.AddrInfoFromP2pAddr(pma)
+
+	// get peerID from multiaddr
+	peerID, err := peer.AddrInfoFromP2pAddr(pma)
 	if err != nil {
 		return err
 	}
 	// extract ip from multiaddr
-	ip, err := extractIp(pma)
+	ip, err := extractIP(pma)
 	if err != nil {
 		return err
 	}
 	// check if ip is banned
-	isBanned, shoulDelete, err := IsIpBanned(netDB, ip)
+	isBanned, shoulDelete, err := IsIPBanned(netDB, ip)
 	if err != nil {
 		return err
 	}
@@ -100,28 +104,34 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 			if err != nil {
 				return err
 			}
-			byteId, err := peerId.ID.MarshalBinary()
+			byteID, err := peerID.ID.MarshalBinary()
 			if err != nil {
 				return err
 			}
 			// save ip from peer
-			err = ipBucket.Put(byteId, []byte(ip))
+			err = ipBucket.Put(byteID, []byte(ip))
+			if err != nil {
+				return err
+			}
 			// create banscore for peer if it does not have one
 			if scoreBucket.Get(pma.Bytes()) == nil {
 				err = scoreBucket.Put(pma.Bytes(), []byte(strconv.Itoa(0)))
 			}
 			// save multiaddr of peerId
-			err = peersBucket.Put(byteId, pma.Bytes())
-			return err
+			err = peersBucket.Put(byteID, pma.Bytes())
+			if err != nil {
+				return err
+			}
+			return nil
 		})
 	} else {
-		err = fmt.Errorf("peer %s is banned", peerId.ID.String())
+		err = fmt.Errorf("peer %s is banned", peerID.ID.String())
 	}
 	return err
 
 }
 
-// Reduces the banscore of a peer. If it reaches limit, it will be banned
+// BanscorePeer reduces the banscore of a peer. If it reaches limit, it will be banned
 func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 	err := netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
@@ -130,11 +140,11 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 		ipb := tx.Bucket(ipDbKey)
 		scoreDb := tx.Bucket(scoresDbKey)
 		//get multiaddr from peerId
-		byteId, err := id.MarshalBinary()
+		byteID, err := id.MarshalBinary()
 		if err != nil {
 			return err
 		}
-		multiAddrBytes := savedDb.Get(byteId)
+		multiAddrBytes := savedDb.Get(byteID)
 		if multiAddrBytes == nil {
 			return errors.New("could not find peer")
 		}
@@ -151,7 +161,7 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 		score += weight
 		if score >= BanLimit {
 			// add to banlist
-			ipBytes := ipb.Get(byteId)
+			ipBytes := ipb.Get(byteID)
 			if ipBytes == nil {
 				return errors.New("could not find peer ip")
 			}
@@ -162,7 +172,7 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 			}
 			fmt.Printf("%s is banned until %s \n", string(ipBytes), timestamp)
 			// remove from saved list and score list
-			err = savedDb.Delete(byteId)
+			err = savedDb.Delete(byteID)
 			err = scoreDb.Delete(multiAddrBytes)
 		} else {
 			//update banscore
@@ -173,34 +183,36 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 	return err
 }
 
+// IsPeerBanned returns a boolean if a peer is already known and banned.
 func IsPeerBanned(netDB *bbolt.DB, id peer.ID) (bool, error) {
-	var savedIp []byte
+	var savedIP []byte
 	err := netDB.View(func(tx *bbolt.Tx) error {
 		var err error
 		ipb := tx.Bucket(ipDbKey)
-		byteId, err := id.MarshalBinary()
+		byteID, err := id.MarshalBinary()
 		if err != nil {
 			return err
 		}
-		savedIp = ipb.Get(byteId)
+		savedIP = ipb.Get(byteID)
 		return nil
 	})
-	if savedIp == nil {
+	if savedIP == nil {
 		return true, nil
 	}
-	isBanned, shoudDelete, err := IsIpBanned(netDB, string(savedIp))
+	isBanned, shoudDelete, err := IsIPBanned(netDB, string(savedIP))
 	if shoudDelete {
 		err = netDB.Update(func(tx *bbolt.Tx) error {
 			var err error
 			banDb := tx.Bucket(bansDbKey)
-			err = banDb.Delete(savedIp)
+			err = banDb.Delete(savedIP)
 			return err
 		})
 	}
 	return isBanned, err
 }
 
-func IsIpBanned(netDB *bbolt.DB, ip string) (bool, bool, error) {
+// IsIPBanned returns booleans if a peer is alreday known and banned.
+func IsIPBanned(netDB *bbolt.DB, ip string) (bool, bool, error) {
 	isBanned := false
 	shouldDelete := false
 	err := netDB.View(func(tx *bbolt.Tx) error {
@@ -225,20 +237,21 @@ func IsIpBanned(netDB *bbolt.DB, ip string) (bool, bool, error) {
 	return isBanned, shouldDelete, err
 }
 
+// GetSavedPeers returns a list of already known peers.
 func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err error) {
-	//retrieve the saved addresses
+	// retrieve the saved addresses
 	err = netDB.Update(func(tx *bbolt.Tx) error {
 		savedBucket := tx.Bucket(peersDbKey)
 		err = savedBucket.ForEach(func(k, v []byte) error {
 			addr, err := multiaddr.NewMultiaddrBytes(v)
 			if err == nil {
-				peerId, err := peer.AddrInfoFromP2pAddr(addr)
+				peerID, err := peer.AddrInfoFromP2pAddr(addr)
 				if err != nil {
 					fmt.Println("peer error: " + err.Error() + ", removing from db")
 					// if the saved peer cannot be validated, delete
 					err = savedBucket.Delete(k)
 				} else {
-					isBanned, err := IsPeerBanned(netDB, peerId.ID)
+					isBanned, err := IsPeerBanned(netDB, peerID.ID)
 					if !isBanned && err == nil {
 						savedAddresses = append(savedAddresses, addr)
 					}
@@ -255,6 +268,7 @@ func GetSavedPeers(netDB *bbolt.DB) (savedAddresses []multiaddr.Multiaddr, err e
 	return
 }
 
+// GetPrivKey returns the private key for the hostnode.
 func GetPrivKey(netDB *bbolt.DB) (priv crypto.PrivKey, err error) {
 	err = netDB.Update(func(tx *bbolt.Tx) error {
 		configBucket := tx.Bucket(configBucketKey)
@@ -288,7 +302,7 @@ func GetPrivKey(netDB *bbolt.DB) (priv crypto.PrivKey, err error) {
 	return
 }
 
-func extractIp(pma multiaddr.Multiaddr) (ip string, err error) {
+func extractIP(pma multiaddr.Multiaddr) (ip string, err error) {
 	protocols := pma.Protocols()
 	for _, s := range protocols {
 		if s.Name == "ip4" || s.Name == "ip6" {
