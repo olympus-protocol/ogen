@@ -10,7 +10,7 @@ import (
 var ErrorBlockNodeSize = errors.New("blocknode size is too big")
 
 // MaxBlockNodeSize is the maximum amount of bytes a BlockNodeDisk can be
-const MaxBlockNodeSize = 624
+const MaxBlockNodeSize = 2160
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {

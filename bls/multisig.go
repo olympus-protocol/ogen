@@ -60,16 +60,16 @@ func (m *Multipub) Type() FunctionalSignatureType {
 
 // PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
 func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint64) [20]byte {
-	out := make([]byte, 0, 2+20*len(pubkeys))
+	keys := len(pubkeys)
+	out := make([]byte, (20 * keys) + 8)
 
-	numNeededBytes := make([]byte, 2)
+	numNeededBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(numNeededBytes, numNeeded)
 
-	out = append(out, out...)
 	for _, p := range pubkeys {
 		out = append(out, p[:]...)
 	}
-
+	out = append(out, numNeededBytes...)
 	h := chainhash.HashH(out)
 	var h20 [20]byte
 	copy(h20[:], h[:20])
