@@ -137,17 +137,17 @@ func (c *CLI) Run() {
 			out += "\n"
 		// Chain methods
 		case "getchaininfo":
-			out, err = c.rpcClient.getChainInfo()
+			out, err = c.rpcClient.GetChainInfo()
 		case "getrawblock":
-			out, err = c.rpcClient.getRawBlock(args[1:])
+			out, err = c.rpcClient.GetRawBlock(args[1:])
 		case "getblockhash":
-			out, err = c.rpcClient.getBlockHash(args[1:])
+			out, err = c.rpcClient.GetBlockHash(args[1:])
 		case "getblock":
-			out, err = c.rpcClient.getBlock(args[1:])
+			out, err = c.rpcClient.GetBlock(args[1:])
 		case "getaccountinfo":
-			out, err = c.rpcClient.getAccountInfo(args[1:])
+			out, err = c.rpcClient.GetAccountInfo(args[1:])
 		case "gettransaction":
-			out, err = c.rpcClient.getTransaction(args[1:])
+			out, err = c.rpcClient.GetTransaction(args[1:])
 
 		// Validator methods
 		case "getvalidatorslist":

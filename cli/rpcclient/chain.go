@@ -10,7 +10,8 @@ import (
 	"github.com/olympus-protocol/ogen/proto"
 )
 
-func (c *RPCClient) getChainInfo() (string, error) {
+// GetChainInfo returns current chain information https://doc.oly.tech/documentation/rpc-interface/commands/chain#getchaininfo
+func (c *RPCClient) GetChainInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.chain.GetChainInfo(ctx, &proto.Empty{})
@@ -24,7 +25,8 @@ func (c *RPCClient) getChainInfo() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getRawBlock(args []string) (string, error) {
+// GetRawBlock returns the requested block serialized https://doc.oly.tech/documentation/rpc-interface/commands/chain#getrawblock
+func (c *RPCClient) GetRawBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -40,7 +42,8 @@ func (c *RPCClient) getRawBlock(args []string) (string, error) {
 	return res.GetRawBlock(), nil
 }
 
-func (c *RPCClient) getBlockHash(args []string) (string, error) {
+// GetBlockHash returns current block hash https://doc.oly.tech/documentation/rpc-interface/commands/chain#getblockhash
+func (c *RPCClient) GetBlockHash(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -60,7 +63,8 @@ func (c *RPCClient) getBlockHash(args []string) (string, error) {
 	return res.GetHash(), nil
 }
 
-func (c *RPCClient) getBlock(args []string) (string, error) {
+// GetBlock returns current block in a human readable format https://doc.oly.tech/documentation/rpc-interface/commands/chain#getblock
+func (c *RPCClient) GetBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -80,7 +84,8 @@ func (c *RPCClient) getBlock(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getAccountInfo(args []string) (string, error) {
+// GetAccountInfo returns the specified account information https://doc.oly.tech/documentation/rpc-interface/commands/chain#getaccountinfo
+func (c *RPCClient) GetAccountInfo(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -100,7 +105,8 @@ func (c *RPCClient) getAccountInfo(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getTransaction(args []string) (string, error) {
+// GetTransaction returns the specified transaction on a human readable format https://doc.oly.tech/documentation/rpc-interface/commands/chain#gettransaction
+func (c *RPCClient) GetTransaction(args []string) (string, error) {
 	if len(args) < 1 {
 		return "", errors.New("Usage: gettransaction <txid>")
 	}
