@@ -45,6 +45,7 @@ chain/index/*.db
 chainrpc/cert/
 wallet/wallets/
 keystore/*.db
+peers/*.db
 
 # Integration
 data/
