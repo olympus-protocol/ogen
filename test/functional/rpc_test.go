@@ -38,10 +38,14 @@ var S *server.Server
 // 1. Start a new chain with a single node moving.
 // 2. Use all the RPC methods trough a RPC Client and check all calls.
 func TestMain(m *testing.M) {
-	startNode(m)
+	// Create the node server and the clients for global usage
+	startNode()
+
+	// Run the test functions.
+	os.Exit(m.Run())
 }
 
-func startNode(m *testing.M) {
+func startNode() {
 
 	// Create datafolder
 	os.Mkdir(testdata.Node1Folder, 0777)
@@ -121,9 +125,6 @@ func startNode(m *testing.M) {
 
 	// Wait 5 seconds to generate some blocks
 	time.Sleep(time.Second * 5)
-
-	// Run the test functions.
-	os.Exit(m.Run())
 }
 
 func rpcClient() error {
