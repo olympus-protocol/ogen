@@ -24,4 +24,3 @@ func Test_ValidatorHelloMessageSerializtion(t *testing.T) {
 
 	assert.Equal(t, v, desc)
 }
-
