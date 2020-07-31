@@ -76,7 +76,7 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	timeout := time.Second * 5
 
 	for _, pb := range peers {
-		pma, err := multiaddr.NewMultiaddrBytes(pb)
+		pma, err := multiaddr.NewMultiaddrBytes(pb[:])
 		if err != nil {
 			continue
 		}
@@ -110,21 +110,19 @@ func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return fmt.Errorf("message received is not get addr")
 	}
-	peers := [][]byte{}
+	peers := [32][500]byte{}
 	peersData := shufflePeers(cm.host.GetPeerInfos())
 
-	for i, p := range peersData {
+	for i := range peers {
 		if i < p2p.MaxAddrPerMsg {
-			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
+			peerMulti, err := peer.AddrInfoToP2pAddrs(&peersData[i])
 			if err != nil {
 				continue
 			}
-			peers = append(peers, peerMulti[0].Bytes())
+			var peer [500]byte
+			copy(peer[:], peerMulti[0].Bytes())
+			peers[i] = peer
 		}
-	}
-
-	if len(peers) > p2p.MaxAddrPerMsg {
-		peers = peers[:p2p.MaxAddrPerMsg]
 	}
 
 	return cm.protocolHandler.SendMessage(id, &p2p.MsgAddr{

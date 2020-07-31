@@ -8,16 +8,18 @@ import (
 )
 
 func TestMultiValidatorVoteSerializeDeserialize(t *testing.T) {
+	var s [96]byte
 	sig := bls.NewAggregateSignature()
+	copy(s[:], sig.Marshal())
 	bl := &MultiValidatorVote{
-		Data: VoteData{
+		Data: &VoteData{
 			Slot:      1,
 			FromEpoch: 2,
 			FromHash:  [32]byte{3},
 			ToEpoch:   4,
 			ToHash:    [32]byte{5},
 		},
-		Sig:                   sig.Marshal(),
+		Sig:                   s,
 		ParticipationBitfield: []byte{1, 2, 3, 4},
 	}
 
@@ -38,7 +40,7 @@ func TestMultiValidatorVoteSerializeDeserialize(t *testing.T) {
 
 func TestAcceptedVoteInfoCopy(t *testing.T) {
 	av := &AcceptedVoteInfo{
-		Data: VoteData{
+		Data: &VoteData{
 			Slot:      1,
 			FromEpoch: 2,
 			FromHash:  [32]byte{3},
@@ -74,7 +76,7 @@ func TestAcceptedVoteInfoCopy(t *testing.T) {
 
 func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
 	av := &AcceptedVoteInfo{
-		Data: VoteData{
+		Data: &VoteData{
 			Slot:      1,
 			FromEpoch: 2,
 			FromHash:  [32]byte{3},

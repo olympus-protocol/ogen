@@ -107,9 +107,13 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 		return nil, errors.New("unable to decode block raw data")
 	}
 	txParse := &proto.Tx{
-		Hash:    tx.Hash().String(),
-		Version: tx.Version,
-		Type:    tx.Type,
+		Hash:          tx.Hash().String(),
+		To:            hex.EncodeToString(tx.To[:]),
+		FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
+		Amount:        tx.Amount,
+		Nonce:         tx.Nonce,
+		Fee:           tx.Fee,
+		Signature:     hex.EncodeToString(tx.Signature[:]),
 	}
 	return txParse, nil
 }
@@ -128,22 +132,22 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
 			Nonce:                      block.Header.Nonce,
-			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),
-			VoteMerkleRoot:             block.Header.VoteMerkleRoot.String(),
-			DepositMerkleRoot:          block.Header.DepositMerkleRoot.String(),
-			ExitMerkleRoot:             block.Header.ExitMerkleRoot.String(),
-			VoteSlashingMerkleRoot:     block.Header.VoteSlashingMerkleRoot.String(),
-			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRoot.String(),
-			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRoot.String(),
-			PrevBlockHash:              block.Header.PrevBlockHash.String(),
+			TxMerkleRoot:               block.Header.TxMerkleRootH().String(),
+			VoteMerkleRoot:             block.Header.VoteMerkleRootH().String(),
+			DepositMerkleRoot:          block.Header.DepositMerkleRootH().String(),
+			ExitMerkleRoot:             block.Header.ExitMerkleRootH().String(),
+			VoteSlashingMerkleRoot:     block.Header.VoteSlashingMerkleRootH().String(),
+			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRootH().String(),
+			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRootH().String(),
+			PrevBlockHash:              block.Header.PrevBlockHashH().String(),
 			Timestamp:                  block.Header.Timestamp,
 			Slot:                       block.Header.Slot,
-			StateRoot:                  block.Header.StateRoot.String(),
+			StateRoot:                  block.Header.StateRootH().String(),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
 		Txs:             block.GetTxs(),
-		Signature:       hex.EncodeToString(block.Signature),
-		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
+		Signature:       hex.EncodeToString(block.Signature[:]),
+		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
 }

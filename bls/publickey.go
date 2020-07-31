@@ -25,21 +25,21 @@ func (p *PublicKey) Unmarshal(b []byte) error {
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
-func PublicKeyFromBytes(pub []byte) (*PublicKey, error) {
+func PublicKeyFromBytes(pub [48]byte) (*PublicKey, error) {
 	if len(pub) != 48 {
 		return nil, fmt.Errorf("public key must be %d bytes", 48)
 	}
-	if cv, ok := pubkeyCache.Get(string(pub)); ok {
+	if cv, ok := pubkeyCache.Get(string(pub[:])); ok {
 		return cv.(*PublicKey).Copy(), nil
 	}
 	pubKey := &bls.PublicKey{}
-	err := pubKey.Deserialize(pub)
+	err := pubKey.Deserialize(pub[:])
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal bytes into public key")
 	}
 	pubKeyObj := &PublicKey{p: pubKey}
 	copiedKey := pubKeyObj.Copy()
-	pubkeyCache.Set(string(pub), copiedKey, 48)
+	pubkeyCache.Set(string(pub[:]), copiedKey, 48)
 	return pubKeyObj, nil
 }
 
@@ -63,8 +63,7 @@ func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
 // ToAddress converts the public key to a Bech32 address.
 func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
 	out := make([]byte, 20)
-	pkS := p.Marshal()
-	h := chainhash.HashH(pkS[:])
+	h := chainhash.HashH(p.Marshal())
 	copy(out[:], h[:20])
 	return bech32.Encode(pubPrefix, out), nil
 }

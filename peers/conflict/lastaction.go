@@ -13,7 +13,6 @@ import (
 	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/prysmaticlabs/go-ssz"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
@@ -23,10 +22,10 @@ import (
 
 // ValidatorHelloMessage is a message sent by validators to indicate that they are coming online.
 type ValidatorHelloMessage struct {
-	PublicKey []byte
+	PublicKey [48]byte
 	Timestamp uint64
 	Nonce     uint64
-	Signature []byte
+	Signature [96]byte
 }
 
 // MaxPayloadLength returns the maximum amount a ValidatorHelloMessage can contain.
@@ -52,7 +51,7 @@ func (v *ValidatorHelloMessage) SignatureMessage() []byte {
 
 // Marshal serializes the hello message to the given writer.
 func (v *ValidatorHelloMessage) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(v)
+	b, err := v.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +70,7 @@ func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
 	if uint32(len(d)) > v.MaxPayloadLength() {
 		return p2p.ErrorSizeExceed
 	}
-	return ssz.Unmarshal(d, v)
+	return v.UnmarshalSSZ(d)
 }
 
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
@@ -106,13 +105,11 @@ func (l *LastActionManager) NewTip(row *index.BlockRow, block *primitives.Block,
 	proposerIndex := state.ProposerQueue[slotIndex]
 	proposer := state.ValidatorRegistry[proposerIndex]
 
-	var pubkey [48]byte
-	copy(pubkey[:], proposer.PubKey)
-
-	l.RegisterActionAt(pubkey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
+	l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 }
 
-func (l *LastActionManager) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
+func (l *LastActionManager) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
+}
 
 const validatorStartTopic = "validatorStart"
 
@@ -178,14 +175,11 @@ func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *LastActionManager) StartValidator(valPub []byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
+func (l *LastActionManager) StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
 	l.lastActionsLock.RLock()
 	defer l.lastActionsLock.RUnlock()
 
-	pubSer := [48]byte{}
-	copy(pubSer[:], valPub)
-
-	if !l.ShouldRun(pubSer) {
+	if !l.ShouldRun(valPub) {
 		return false
 	}
 
@@ -194,7 +188,9 @@ func (l *LastActionManager) StartValidator(valPub []byte, sign func(*ValidatorHe
 	validatorHello.Timestamp = uint64(time.Now().Unix())
 
 	signature := sign(validatorHello)
-	validatorHello.Signature = signature.Marshal()
+	var sig [96]byte
+	copy(sig[:], signature.Marshal())
+	validatorHello.Signature = sig
 
 	msgBytes, _ := validatorHello.Marshal()
 

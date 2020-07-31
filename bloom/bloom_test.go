@@ -1,6 +1,7 @@
 package bloom_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bloom"
@@ -15,19 +16,14 @@ func TestBloomBasic(t *testing.T) {
 	b.Add(chainhash.HashH([]byte("hello3!")))
 	b.Add(chainhash.HashH([]byte("hello4!")))
 
-	if !b.Has(chainhash.HashH([]byte("hello!"))) {
-		t.Fatal("expected hello! to be in bloom filter")
-	}
-	if !b.Has(chainhash.HashH([]byte("hello2!"))) {
-		t.Fatal("expected hello2! to be in bloom filter")
-	}
-	if !b.Has(chainhash.HashH([]byte("hello3!"))) {
-		t.Fatal("expected hello3! to be in bloom filter")
-	}
-	if !b.Has(chainhash.HashH([]byte("hello4!"))) {
-		t.Fatal("expected hello4! to be in bloom filter")
-	}
-	if b.Has(chainhash.HashH([]byte("hello5!"))) {
-		t.Fatal("expected hello5! to not be in bloom filter")
-	}
+	assert.True(t, b.Has(chainhash.HashH([]byte("hello!"))))
+
+	assert.True(t, b.Has(chainhash.HashH([]byte("hello2!"))))
+
+	assert.True(t, b.Has(chainhash.HashH([]byte("hello3!"))))
+
+	assert.True(t, b.Has(chainhash.HashH([]byte("hello4!"))))
+
+	assert.False(t, b.Has(chainhash.HashH([]byte("hello5!"))))
+
 }

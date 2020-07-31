@@ -139,7 +139,7 @@ func (p *Proposer) publishBlock(block *primitives.Block) {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (p *Proposer) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
+func (p *Proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *Proposer) ProposeBlocks() {
 	slotToPropose := p.getCurrentSlot() + 1
@@ -179,10 +179,8 @@ func (p *Proposer) ProposeBlocks() {
 			proposer := state.ValidatorRegistry[proposerIndex]
 
 			if k, found := p.Keystore.GetValidatorKey(proposer.PubKey); found {
-				var pubkey [48]byte
-				copy(pubkey[:], proposer.PubKey)
 
-				if !p.lastActionManager.ShouldRun(pubkey) {
+				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
 					continue
 				}
 
@@ -226,20 +224,20 @@ func (p *Proposer) ProposeBlocks() {
 				}
 
 				block := primitives.Block{
-					Header: primitives.BlockHeader{
+					Header: &primitives.BlockHeader{
 						Version:       0,
 						Nonce:         p.lastActionManager.GetNonce(),
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
 					},
-					Votes:             votes,
-					Txs:               coinTxs,
-					Deposits:          depositTxs,
-					Exits:             exitTxs,
-					RANDAOSlashings:   randaoSlashings,
-					VoteSlashings:     voteSlashings,
-					ProposerSlashings: proposerSlashings,
+					Votes:             &primitives.Votes{Votes: votes},
+					Txs:               &primitives.Txs{Txs: coinTxs},
+					Deposits:          &primitives.Deposits{Deposits: depositTxs},
+					Exits:             &primitives.Exits{Exits: exitTxs},
+					RANDAOSlashings:   &primitives.RANDAOSlashings{RANDAOSlashings: randaoSlashings},
+					VoteSlashings:     &primitives.VoteSlashings{VoteSlashings: voteSlashings},
+					ProposerSlashings: &primitives.ProposerSlashings{ProposerSlashings: proposerSlashings},
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
@@ -256,9 +254,11 @@ func (p *Proposer) ProposeBlocks() {
 
 				blockSig := k.Sign(blockHash[:])
 				randaoSig := k.Sign(randaoHash[:])
-
-				block.Signature = blockSig.Marshal()
-				block.RandaoSignature = randaoSig.Marshal()
+				var s, rs [96]byte
+				copy(s[:], blockSig.Marshal())
+				copy(rs[:], randaoSig.Marshal())
+				block.Signature = s
+				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
 					return
@@ -338,20 +338,19 @@ func (p *Proposer) VoteForBlocks() {
 				validator := state.ValidatorRegistry[validatorIdx]
 
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
-					var pubkey [48]byte
-					copy(pubkey[:], validator.PubKey)
 
-					if !p.lastActionManager.ShouldRun(pubkey) {
+					if !p.lastActionManager.ShouldRun(validator.PubKey) {
 						continue
 					}
 
 					sig := k.Sign(dataHash[:])
-
+					var s [96]byte
+					copy(s[:], sig.Marshal())
 					vote := primitives.SingleValidatorVote{
-						Data:   data,
-						Sig:    sig.Marshal(),
-						Offset: uint32(i),
-						OutOf:  uint32(len(validators)),
+						Data:   &data,
+						Sig:    s,
+						Offset: uint64(i),
+						OutOf:  uint64(len(validators)),
 					}
 
 					p.voteMempool.Add(&vote)

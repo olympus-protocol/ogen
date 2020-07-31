@@ -44,32 +44,17 @@ message Account {
 
 message Tx {
     string hash = 1;
-    uint32 type = 2;
-    uint32 version = 3;
-    TransferSingle transfer_single_payload = 4;
-    TransferMulti transfer_multi_payload = 5;
-}
-
-message TransferSingle {
-    string to = 1;
-    string from_public_key = 2;
-    uint64 amount = 3;
-    uint64 nonce = 4;
-    uint64 fee = 5;
-    string signature = 6;
-}
-
-message TransferMulti {
-    string to = 1;
-    uint64 amount = 2;
-    uint64 nonce = 3;
-    uint64 fee = 4;
-    string signature = 5;
+    string to = 2;
+    string from_public_key = 3;
+    uint64 amount = 4;
+    uint64 nonce = 5;
+    uint64 fee = 6;
+    string signature = 7;
 }
 
 message BlockHeader {
-    uint32   version = 1;
-    uint64   nonce = 2;
+    uint64  version = 1;
+    uint64  nonce = 2;
     string  tx_merkle_root = 3;
     string  vote_merkle_root = 4;
     string  deposit_merkle_root = 5;
@@ -78,7 +63,7 @@ message BlockHeader {
     string  randao_slashing_merkle_root = 8;
     string  proposer_slashing_merkle_root = 9;
     string  prev_block_hash = 10;
-    uint64   timestamp = 11;
+    uint64  timestamp = 11;
     uint64  slot = 12;
     string  state_root = 13;
     string  fee_address = 14;

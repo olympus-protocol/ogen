@@ -17,7 +17,7 @@ var genesisHash = chainhash.Hash([chainhash.HashSize]byte{
 // GetGenesisBlock gets the genesis block for a certain chain parameters.
 func GetGenesisBlock(params params.ChainParams) Block {
 	return Block{
-		Header: BlockHeader{
+		Header: &BlockHeader{
 			Version:                    1,
 			Nonce:                      0,
 			TxMerkleRoot:               chainhash.Hash{},
@@ -34,6 +34,6 @@ func GetGenesisBlock(params params.ChainParams) Block {
 			StateRoot:                  chainhash.Hash{},
 			FeeAddress:                 [20]byte{},
 		},
-		Txs: []Tx{},
+		Txs: &Txs{[]*Tx{}},
 	}
 }

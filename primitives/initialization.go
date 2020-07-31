@@ -7,8 +7,8 @@ import (
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // ValidatorInitialization is the parameters needed to initialize validators.
@@ -27,7 +27,7 @@ type InitializationParameters struct {
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
 func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (*State, error) {
-	initialValidators := make([]Validator, len(ip.InitialValidators))
+	initialValidators := make([]*Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
 		_, pkh, err := bech32.Decode(v.PayeeAddress)
@@ -40,14 +40,16 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		}
 
 		var pkhBytes [20]byte
+		var pubKey [48]byte
 		copy(pkhBytes[:], pkh)
 		pubKeyBytes, err := hex.DecodeString(v.PubKey)
 		if err != nil {
 			return nil, fmt.Errorf("unable to decode pubkey to bytes")
 		}
-		initialValidators[i] = Validator{
+		copy(pubKey[:], pubKeyBytes)
+		initialValidators[i] = &Validator{
 			Balance:          p.DepositAmount * p.UnitsPerCoin,
-			PubKey:           pubKeyBytes,
+			PubKey:           pubKey,
 			PayeeAddress:     pkhBytes,
 			Status:           StatusActive,
 			FirstActiveEpoch: 0,
@@ -78,12 +80,12 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		JustificationBitfield:         0,
 		JustifiedEpoch:                0,
 		FinalizedEpoch:                0,
-		LatestBlockHashes:             make([]chainhash.Hash, p.LatestBlockRootsLength),
+		LatestBlockHashes:             make([][32]byte, p.LatestBlockRootsLength),
 		JustifiedEpochHash:            genesisHash,
-		CurrentEpochVotes:             make([]AcceptedVoteInfo, 0),
+		CurrentEpochVotes:             make([]*AcceptedVoteInfo, 0),
 		PreviousJustifiedEpoch:        0,
 		PreviousJustifiedEpochHash:    genesisHash,
-		PreviousEpochVotes:            make([]AcceptedVoteInfo, 0),
+		PreviousEpochVotes:            make([]*AcceptedVoteInfo, 0),
 		CurrentManagers:               p.InitialManagers,
 		VoteEpoch:                     0,
 		VoteEpochStartSlot:            0,
@@ -95,7 +97,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
 	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.ManagerReplacement = bitfield.NewBitfield(uint(len(s.CurrentManagers)))
+	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)))
 
 	return s, nil
 }

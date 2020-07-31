@@ -63,22 +63,22 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
 			Nonce:                      block.Header.Nonce,
-			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),
-			VoteMerkleRoot:             block.Header.VoteMerkleRoot.String(),
-			DepositMerkleRoot:          block.Header.DepositMerkleRoot.String(),
-			ExitMerkleRoot:             block.Header.ExitMerkleRoot.String(),
-			VoteSlashingMerkleRoot:     block.Header.VoteSlashingMerkleRoot.String(),
-			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRoot.String(),
-			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRoot.String(),
-			PrevBlockHash:              block.Header.PrevBlockHash.String(),
+			TxMerkleRoot:               block.Header.TxMerkleRootH().String(),
+			VoteMerkleRoot:             block.Header.VoteMerkleRootH().String(),
+			DepositMerkleRoot:          block.Header.DepositMerkleRootH().String(),
+			ExitMerkleRoot:             block.Header.ExitMerkleRootH().String(),
+			VoteSlashingMerkleRoot:     block.Header.VoteSlashingMerkleRootH().String(),
+			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRootH().String(),
+			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRootH().String(),
+			PrevBlockHash:              block.Header.PrevBlockHashH().String(),
 			Timestamp:                  block.Header.Timestamp,
 			Slot:                       block.Header.Slot,
-			StateRoot:                  block.Header.StateRoot.String(),
+			StateRoot:                  block.Header.StateRootH().String(),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
 		Txs:             block.GetTxs(),
-		Signature:       hex.EncodeToString(block.Signature),
-		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
+		Signature:       hex.EncodeToString(block.Signature[:]),
+		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
 }
@@ -166,7 +166,7 @@ func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, new
 	}
 }
 
-func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
+func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {}
 
 func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_SubscribeBlocksServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)
@@ -304,35 +304,15 @@ func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto
 	if err != nil {
 		return nil, err
 	}
-	payload, err := tx.GetPayload()
-	if err != nil {
-		return nil, err
-	}
 	txParse := &proto.Tx{
-		Hash:    tx.Hash().String(),
-		Version: tx.Version,
-		Type:    tx.Type,
+		Hash:          tx.Hash().String(),
+		To:            hex.EncodeToString(tx.To[:]),
+		FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
+		Amount:        tx.Amount,
+		Nonce:         tx.Nonce,
+		Fee:           tx.Fee,
+		Signature:     hex.EncodeToString(tx.Signature[:]),
 	}
-	switch p := payload.(type) {
-	case *primitives.TransferSinglePayload:
-		txParse.TransferSinglePayload = &proto.TransferSingle{
-			To:            hex.EncodeToString(p.To[:]),
-			FromPublicKey: hex.EncodeToString(p.FromPublicKey[:]),
-			Amount:        p.Amount,
-			Nonce:         p.Nonce,
-			Fee:           p.Fee,
-			Signature:     hex.EncodeToString(p.Signature),
-		}
-	case *primitives.TransferMultiPayload:
-		txParse.TransferMultiPayload = &proto.TransferMulti{
-			To:        hex.EncodeToString(p.To[:]),
-			Amount:    p.Amount,
-			Nonce:     p.Nonce,
-			Fee:       p.Fee,
-			Signature: hex.EncodeToString(p.MultiSig),
-		}
-	}
-
 	return txParse, nil
 }
 

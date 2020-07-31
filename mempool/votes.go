@@ -15,20 +15,20 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/prysmaticlabs/go-bitfield"
 )
 
 type mempoolVote struct {
 	individualVotes         []*primitives.SingleValidatorVote
-	participationBitfield   bitfield.Bitfield
-	participatingValidators map[uint32]struct{}
+	participationBitfield   bitfield.Bitlist
+	participatingValidators map[uint64]struct{}
 	voteData                *primitives.VoteData
 }
 
-func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidatorVote, bool) {
-	if !mv.participationBitfield.Get(uint(offset)) {
+func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
+	if !mv.participationBitfield.BitAt(offset) {
 		return nil, false
 	}
 
@@ -42,12 +42,12 @@ func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidat
 	return vote, vote != nil
 }
 
-func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint32) {
-	if mv.participationBitfield.Get(uint(vote.Offset)) {
+func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
+	if mv.participationBitfield.BitAt(vote.Offset) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	mv.participationBitfield.Set(uint(vote.Offset))
+	mv.participationBitfield.SetBitAt(vote.Offset, true)
 	mv.participatingValidators[voter] = struct{}{}
 }
 
@@ -71,12 +71,12 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 	return shouldRemove
 }
 
-func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
+func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
 		participationBitfield:   make([]uint8, (outOf+7)/8),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
-		participatingValidators: make(map[uint32]struct{}),
+		participatingValidators: make(map[uint64]struct{}),
 	}
 }
 
@@ -189,16 +189,13 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		return
 	}
 
-	if vote.Offset >= uint32(len(committee)) {
+	if vote.Offset >= uint64(len(committee)) {
 		return
 	}
 
 	voter := committee[vote.Offset]
 
-	var pubkey [48]byte
-	copy(pubkey[:], currentState.ValidatorRegistry[voter].PubKey)
-
-	m.lastActionManager.RegisterAction(pubkey, vote.Data.Nonce)
+	m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[voter].PubKey, vote.Data.Nonce)
 
 	// slashing check... check if this vote interferes with any
 	// votes in the mempool
@@ -223,9 +220,9 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 				voteMulti := vote.AsMulti()
 				conflictingMulti := conflicting.AsMulti()
 				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(primitives.VoteSlashing{
-						Vote1: *voteMulti,
-						Vote2: *conflictingMulti,
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: voteMulti,
+						Vote2: conflictingMulti,
 					})
 				}
 				return
@@ -236,7 +233,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	if vs, found := m.pool[voteHash]; found {
 		vs.add(vote, voter)
 	} else {
-		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
+		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
 	}
@@ -245,10 +242,10 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint32) ([]primitives.MultiValidatorVote, error) {
+func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	votes := make([]primitives.MultiValidatorVote, 0)
+	votes := make([]*primitives.MultiValidatorVote, 0)
 	for _, i := range m.poolOrder {
 		v := m.pool[i]
 		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
@@ -261,12 +258,14 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 				sigs = append(sigs, sig)
 			}
 			sig := bls.AggregateSignatures(sigs)
-			vote := primitives.MultiValidatorVote{
-				Data:                  *m.pool[i].voteData,
-				Sig:                   sig.Marshal(),
+			var sigb [96]byte
+			copy(sigb[:], sig.Marshal())
+			vote := &primitives.MultiValidatorVote{
+				Data:                  m.pool[i].voteData,
+				Sig:                   sigb,
 				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
 			}
-			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {
+			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
 				continue
 			}
 			votes = append(votes, vote)
@@ -293,7 +292,7 @@ func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
 func (m *VoteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	for _, v := range b.Votes {
+	for _, v := range b.Votes.Votes {
 		voteHash := v.Data.Hash()
 
 		var shouldRemove bool
@@ -396,5 +395,5 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 
 // VoteSlashingNotifee is notified when an illegal vote occurs.
 type VoteSlashingNotifee interface {
-	NotifyIllegalVotes(slashing primitives.VoteSlashing)
+	NotifyIllegalVotes(slashing *primitives.VoteSlashing)
 }

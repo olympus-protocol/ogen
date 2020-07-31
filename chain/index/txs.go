@@ -5,7 +5,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 	"go.etcd.io/bbolt"
 )
 
@@ -43,8 +42,10 @@ func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 			return nil
 		}
 		err := accBkt.ForEach(func(k, _ []byte) error {
+			kb := [32]byte{}
+			copy(kb[:], k)
 			txs.Amount++
-			h, err := chainhash.NewHash(k)
+			h, err := chainhash.NewHash(kb)
 			if err != nil {
 				return err
 			}
@@ -101,7 +102,7 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 		if err != nil {
 			return err
 		}
-		err = accBkt.Put(locator.Hash.CloneBytes(), []byte{})
+		err = accBkt.Put(locator.Hash[:], []byte{})
 		if err != nil {
 			return err
 		}
@@ -115,14 +116,14 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 
 // TxLocator is a simple struct to find a database referenced to a block without building a full index
 type TxLocator struct {
-	Hash  chainhash.Hash
-	Block chainhash.Hash
-	Index uint32
+	Hash  [32]byte `ssz-size:"32"`
+	Block [32]byte `ssz-size:"32"`
+	Index uint64
 }
 
 // Marshal encodes the data.
 func (tl *TxLocator) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(tl)
+	b, err := tl.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func (tl *TxLocator) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, tl)
+	return tl.UnmarshalSSZ(d)
 }
 
 // NewTxIndex returns/creates a new tx index database

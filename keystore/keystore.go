@@ -238,8 +238,8 @@ func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 }
 
 // GetValidatorKey gets a validator key from the key store.
-func (k *Keystore) GetValidatorKey(pubkey []byte) (*bls.SecretKey, bool) {
-	pubHash := chainhash.HashH(pubkey)
+func (k *Keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
+	pubHash := chainhash.HashH(pubkey[:])
 	k.keysLock.Lock()
 	key, ok := k.keys[pubHash]
 	k.keysLock.Unlock()

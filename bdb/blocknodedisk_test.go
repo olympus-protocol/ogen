@@ -14,10 +14,13 @@ func Test_BlockNodeDiskSerialize(t *testing.T) {
 	f.Fuzz(&v)
 
 	ser, err := v.Marshal()
+
 	assert.NoError(t, err)
 
 	var desc bdb.BlockNodeDisk
+
 	err = desc.Unmarshal(ser)
+
 	assert.NoError(t, err)
 
 	assert.Equal(t, v, desc)

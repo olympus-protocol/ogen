@@ -49,10 +49,13 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	if err != nil {
 		return nil, err
 	}
-
+	var p [48]byte
+	var s [96]byte
+	copy(p[:], validatorPubBytes)
+	copy(s[:], validatorProofOfPossession.Marshal())
 	depositData := &primitives.DepositData{
-		PublicKey:         validatorPub.Marshal(),
-		ProofOfPossession: validatorProofOfPossession.Marshal(),
+		PublicKey:         p,
+		ProofOfPossession: s,
 		WithdrawalAddress: addr,
 	}
 
@@ -65,10 +68,14 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 
 	depositSig := priv.Sign(depositHash[:])
 
+	var pubKey [48]byte
+	var ds [96]byte
+	copy(pubKey[:], pub.Marshal())
+	copy(ds[:], depositSig.Marshal())
 	deposit := &primitives.Deposit{
-		PublicKey: pub.Marshal(),
-		Signature: depositSig.Marshal(),
-		Data:      *depositData,
+		PublicKey: pubKey,
+		Signature: ds,
+		Data:      depositData,
 	}
 
 	currentState := w.chain.State().TipState()
@@ -90,7 +97,7 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 		return nil, err
 	}
 
-	validatorPub, err := bls.PublicKeyFromBytes(validatorPubKey[:])
+	validatorPub, err := bls.PublicKeyFromBytes(validatorPubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +110,15 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 	msgHash := chainhash.HashH([]byte(msg))
 
 	sig := priv.Sign(msgHash[:])
-
+	var valp, withp [48]byte
+	var s [96]byte
+	copy(valp[:], validatorPub.Marshal())
+	copy(withp[:], pub.Marshal())
+	copy(s[:], sig.Marshal())
 	exit := &primitives.Exit{
-		ValidatorPubkey: validatorPub.Marshal(),
-		WithdrawPubkey:  pub.Marshal(),
-		Signature:       sig.Marshal(),
+		ValidatorPubkey: valp,
+		WithdrawPubkey:  withp,
+		Signature:       s,
 	}
 
 	if err := w.actionMempool.AddExit(exit, currentState); err != nil {
@@ -149,29 +160,23 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	}
 
 	nonce := w.chain.State().TipState().CoinsState.Nonces[acc] + 1
+	var p [48]byte
+	copy(p[:], pub.Marshal())
 
-	payload := &primitives.TransferSinglePayload{
+	tx := &primitives.Tx{
 		To:            toPkh,
-		FromPublicKey: pub.Marshal(),
+		FromPublicKey: p,
 		Amount:        amount,
 		Nonce:         nonce,
 		Fee:           1,
 	}
 
-	sigMsg := payload.SignatureMessage()
+	sigMsg := tx.SignatureMessage()
 	sig := priv.Sign(sigMsg[:])
+	var s [96]byte
+	copy(s[:], sig.Marshal())
+	tx.Signature = s
 
-	payload.Signature = sig.Marshal()
-
-	tx := &primitives.Tx{
-		Type:    primitives.TxTransferSingle,
-		Version: 0,
-	}
-
-	err = tx.AppendPayload(payload)
-	if err != nil {
-		return nil, err
-	}
 	currentState := w.chain.State().TipState()
 
 	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {

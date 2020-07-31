@@ -5,43 +5,43 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
+	"github.com/prysmaticlabs/go-bitfield"
+)
+
+var (
+	// MaxMultiPubSize is the maximum amount of bytes a Multipub key can contain. 32 public keys.
+	MaxMultiPubSize = (32 * 48) + 8
+	// MaxMultisigSize is the maximum amount of bytes a Multisig can contain. 32 public keys and 32 signatures.
+	MaxMultisigSize = MaxMultiPubSize + (96 * 32) + 32
 )
 
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
-	PublicKeys [][]byte
-	NumNeeded  uint16
+	PublicKeys [][48]byte `ssz-max:"32"`
+	NumNeeded  uint64
 }
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() []byte {
-	b, err := ssz.Marshal(m)
-	if err != nil {
-		return nil
-	}
-	return snappy.Encode(nil, b)
+	b, _ := m.MarshalSSZ()
+	return b
 }
 
 // Unmarshal decodes the data.
 func (m *Multipub) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(b)
 }
 
 // NewMultipub constructs a new multi-pubkey.
-func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
-	pubsB := [][]byte{}
+func NewMultipub(pubs []*PublicKey, numNeeded uint64) *Multipub {
+	var pubsB [][48]byte
 	for _, p := range pubs {
-		pubsB = append(pubsB, p.Marshal())
+		var pub [48]byte
+		copy(pub[:], p.Marshal())
+		pubsB = append(pubsB, pub)
 	}
 	return &Multipub{
 		PublicKeys: pubsB,
@@ -52,7 +52,7 @@ func NewMultipub(pubs []*PublicKey, numNeeded uint16) *Multipub {
 // Copy returns a copy of the multipub.
 func (m *Multipub) Copy() *Multipub {
 	newM := *m
-	newM.PublicKeys = make([][]byte, len(m.PublicKeys))
+	newM.PublicKeys = make([][48]byte, len(m.PublicKeys))
 	for i := range newM.PublicKeys {
 		newM.PublicKeys[i] = m.PublicKeys[i]
 	}
@@ -66,17 +66,17 @@ func (m *Multipub) Type() FunctionalSignatureType {
 }
 
 // PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
-func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint16) [20]byte {
-	out := make([]byte, 0, 2+20*len(pubkeys))
+func PublicKeyHashesToMultisigHash(pubkeys [][20]byte, numNeeded uint64) [20]byte {
+	keys := len(pubkeys)
+	out := make([]byte, (20*keys)+8)
 
-	numNeededBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(numNeededBytes, numNeeded)
+	numNeededBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(numNeededBytes, numNeeded)
 
-	out = append(out, out...)
 	for _, p := range pubkeys {
 		out = append(out, p[:]...)
 	}
-
+	out = append(out, numNeededBytes...)
 	h := chainhash.HashH(out)
 	var h20 [20]byte
 	copy(h20[:], h[:20])
@@ -110,41 +110,33 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
-	PublicKey  Multipub
-	Signatures [][]byte
-	KeysSigned bitfield.Bitfield
+	PublicKey  *Multipub
+	Signatures [][96]byte       `ssz-max:"32"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"32"`
 }
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-	return snappy.Encode(nil, b), nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (m *Multisig) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	return ssz.Unmarshal(d, m)
+	return m.UnmarshalSSZ(b)
 }
 
 // NewMultisig creates a new blank multisig.
-func NewMultisig(multipub Multipub) *Multisig {
+func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
-		Signatures: [][]byte{},
-		KeysSigned: bitfield.NewBitfield(uint(len(multipub.PublicKeys))),
+		Signatures: [][96]byte{},
+		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys))),
 	}
 }
 
 // GetPublicKey gets the public key included in the signature.
 func (m *Multisig) GetPublicKey() (FunctionalPublicKey, error) {
-	return &m.PublicKey, nil
+	return m.PublicKey, nil
 }
 
 // Sign signs a multisig through a secret key.
@@ -153,7 +145,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 
 	idx := -1
 	for i := range m.PublicKey.PublicKeys {
-		if bytes.Equal(m.PublicKey.PublicKeys[i], pub.Marshal()) {
+		if bytes.Equal(m.PublicKey.PublicKeys[i][:], pub.Marshal()) {
 			idx = i
 		}
 	}
@@ -162,23 +154,23 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
-	if m.KeysSigned.Get(uint(idx)) {
+	if m.KeysSigned.BitAt(uint64(idx)) {
 		return nil
 	}
-
 	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
 
 	sig := secKey.Sign(msgI[:])
-
-	m.Signatures = append(m.Signatures, sig.Marshal())
-	m.KeysSigned.Set(uint(idx))
+	var s [96]byte
+	copy(s[:], sig.Marshal())
+	m.Signatures = append(m.Signatures, s)
+	m.KeysSigned.SetBitAt(uint64(idx), true)
 
 	return nil
 }
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
-	if uint(len(m.PublicKey.PublicKeys)) > m.KeysSigned.MaxLength() {
+	if uint(len(m.PublicKey.PublicKeys)) > uint(m.KeysSigned.Len()) {
 		return false
 	}
 
@@ -190,10 +182,10 @@ func (m *Multisig) Verify(msg []byte) bool {
 	if err != nil {
 		return false
 	}
-	activePubs := make([][]byte, 0)
+	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
-		if m.KeysSigned.Get(uint(i)) {
+		if m.KeysSigned.BitAt(uint64(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
 			if err != nil {
@@ -209,7 +201,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 
 	msgs := make([][32]byte, len(m.Signatures))
 	for i := range msgs {
-		msgs[i] = chainhash.HashH(append(msg, activePubs[i]...))
+		msgs[i] = chainhash.HashH(append(msg, activePubs[i][:]...))
 	}
 
 	return aggSig.AggregateVerify(activePubsKeys, msgs)
@@ -223,15 +215,15 @@ func (m *Multisig) Type() FunctionalSignatureType {
 // Copy copies the signature.
 func (m *Multisig) Copy() FunctionalSignature {
 	newMultisig := &Multisig{}
-	newMultisig.Signatures = make([][]byte, len(m.Signatures))
+	newMultisig.Signatures = make([][96]byte, len(m.Signatures))
 	for i := range newMultisig.Signatures {
 		newMultisig.Signatures[i] = m.Signatures[i]
 	}
 
 	pub := m.PublicKey.Copy()
-	newMultisig.PublicKey = *pub
+	newMultisig.PublicKey = pub
 
-	newMultisig.KeysSigned = m.KeysSigned.Copy()
+	newMultisig.KeysSigned = m.KeysSigned
 
 	return newMultisig
 }

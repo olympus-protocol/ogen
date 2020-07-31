@@ -2,6 +2,7 @@ package bls_test
 
 import (
 	fuzz "github.com/google/gofuzz"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -39,8 +40,16 @@ func Test_MultipubSerialize(t *testing.T) {
 
 func Test_MultisigSerialize(t *testing.T) {
 	f := fuzz.New().NilChance(0)
-	var v bls.Multisig
-	f.Fuzz(&v)
+	var m bls.Multipub
+	var s [][96]byte
+	f.Fuzz(&m)
+	f.Fuzz(&s)
+
+	v := bls.Multisig{
+		PublicKey:  &m,
+		Signatures: s,
+		KeysSigned: bitfield.NewBitlist(uint64(len(m.PublicKeys))),
+	}
 
 	ser, err := v.Marshal()
 	assert.NoError(t, err)

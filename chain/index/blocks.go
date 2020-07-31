@@ -185,7 +185,7 @@ func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 // to a serializable version.
 func (br *BlockRow) ToBlockNodeDisk() *bdb.BlockNodeDisk {
 	childrenNodes := br.Children()
-	children := make([]chainhash.Hash, len(childrenNodes))
+	children := make([][32]byte, len(childrenNodes))
 	for i := range childrenNodes {
 		children[i] = childrenNodes[i].Hash
 	}

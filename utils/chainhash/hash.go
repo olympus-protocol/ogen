@@ -34,9 +34,9 @@ func (hash Hash) String() string {
 //
 // NOTE: It is generally cheaper to just slice the hash directly thereby reusing
 // the same bytes rather than calling this method.
-func (hash *Hash) CloneBytes() []byte {
-	newHash := make([]byte, HashSize)
-	copy(newHash, hash[:])
+func (hash *Hash) CloneBytes() [32]byte {
+	newHash := [32]byte{}
+	copy(newHash[:], hash[:])
 
 	return newHash
 }
@@ -49,7 +49,7 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
 			HashSize)
 	}
-	copy(hash[:], newHash)
+	copy(hash[:], newHash[:])
 
 	return nil
 }
@@ -67,9 +67,9 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 
 // NewHash returns a new Hash from a byte slice.  An error is returned if
 // the number of bytes passed in is not HashSize.
-func NewHash(newHash []byte) (*Hash, error) {
+func NewHash(newHash [32]byte) (*Hash, error) {
 	var sh Hash
-	err := sh.SetBytes(newHash)
+	err := sh.SetBytes(newHash[:])
 	if err != nil {
 		return nil, err
 	}

@@ -190,7 +190,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
-			ReplacementCandidates: make([][20]byte, len(p.GovernancePercentages)),
+			ReplacementCandidates: [5][20]byte{},
 		}
 
 		for i := range voteData.ReplacementCandidates {
@@ -215,7 +215,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 }
 
 // ApplyTransactionSingle applies a transaction to the coin state.
-func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+func (s *State) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
 	pkh, err := tx.FromPubkeyHash()
 	if err != nil {
@@ -246,38 +246,38 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 }
 
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
-func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
-	u := s.CoinsState
-	pkh, err := tx.FromPubkeyHash()
-	if err != nil {
-		return err
-	}
-	if u.Balances[pkh] < tx.Amount+tx.Fee {
-		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
-	}
+// func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+// 	u := s.CoinsState
+// 	pkh, err := tx.FromPubkeyHash()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if u.Balances[pkh] < tx.Amount+tx.Fee {
+// 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+// 	}
 
-	if u.Nonces[pkh] >= tx.Nonce {
-		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
-	}
+// 	if u.Nonces[pkh] >= tx.Nonce {
+// 		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+// 	}
 
-	if err := tx.VerifySig(); err != nil {
-		return err
-	}
+// 	if err := tx.VerifySig(); err != nil {
+// 		return err
+// 	}
 
-	u.Balances[pkh] -= tx.Amount + tx.Fee
-	u.Balances[tx.To] += tx.Amount
-	u.Balances[blockWithdrawalAddress] += tx.Fee
-	u.Nonces[pkh] = tx.Nonce
+// 	u.Balances[pkh] -= tx.Amount + tx.Fee
+// 	u.Balances[tx.To] += tx.Amount
+// 	u.Balances[blockWithdrawalAddress] += tx.Fee
+// 	u.Nonces[pkh] = tx.Nonce
 
-	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		delete(s.Governance.ReplaceVotes, pkh)
-	}
+// 	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+// 		delete(s.Governance.ReplaceVotes, pkh)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
+func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -312,7 +312,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
-		if bytes.Equal(v.PubKey, pubkeyBytes) {
+		if bytes.Equal(v.PubKey[:], pubkeyBytes[:]) {
 			proposerIndex = i
 		}
 	}
@@ -321,7 +321,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return uint32(proposerIndex), nil
+	return uint64(proposerIndex), nil
 }
 
 // ApplyProposerSlashing applies the proposer slashing to the state.
@@ -335,8 +335,8 @@ func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParam
 }
 
 // IsVoteSlashingValid checks if the vote slashing is valid.
-func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint32, error) {
-	if vs.Vote1.Data.Equals(&vs.Vote2.Data) {
+func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint64, error) {
+	if vs.Vote1.Data.Equals(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
 
@@ -347,8 +347,8 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	voteParticipation1 := vs.Vote1.ParticipationBitfield
 	voteParticipation2 := vs.Vote2.ParticipationBitfield
 
-	voteCommittee1 := make(map[uint32]struct{})
-	common := make([]uint32, 0)
+	voteCommittee1 := make(map[uint64]struct{})
+	common := make([]uint64, 0)
 
 	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot, p)
 	if err != nil {
@@ -452,7 +452,7 @@ func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error
 }
 
 // IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
-func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
+func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
 	if rs.Slot >= s.Slot {
 		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
 	}
@@ -474,7 +474,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
-		if bytes.Equal(v.PubKey, pubkeyBytes) {
+		if bytes.Equal(v.PubKey[:], pubkeyBytes[:]) {
 			proposerIndex = i
 		}
 	}
@@ -483,7 +483,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return uint32(proposerIndex), nil
+	return uint64(proposerIndex), nil
 }
 
 // ApplyRANDAOSlashing applies the RANDAO slashing to the state.
@@ -497,7 +497,7 @@ func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) e
 }
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint32, error) {
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
@@ -648,7 +648,7 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
-	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
+	s.ValidatorRegistry = append(s.ValidatorRegistry, &Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
 		PubKey:           deposit.Data.PublicKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
@@ -660,10 +660,10 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	return nil
 }
 
-func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([]byte, error) {
+func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([48]byte, error) {
 	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 	if err != nil {
-		return nil, err
+		return [48]byte{}, err
 	}
 
 	validatorIdx := validators[v.Offset]
@@ -681,7 +681,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
 		}
 
-		if !s.JustifiedEpochHash.IsEqual(&v.Data.FromHash) {
+		if !s.JustifiedEpochHash.IsEqual(v.Data.FromHashH()) {
 			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash, v.Data.FromHash)
 		}
 	} else if s.EpochIndex > 0 && v.Data.ToEpoch == s.EpochIndex-1 {
@@ -689,7 +689,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 			return fmt.Errorf("expected from epoch to match previous justified epoch (expected: %d, got: %d)", s.PreviousJustifiedEpoch, v.Data.FromEpoch)
 		}
 
-		if !s.PreviousJustifiedEpochHash.IsEqual(&v.Data.FromHash) {
+		if !s.PreviousJustifiedEpochHash.IsEqual(v.Data.FromHashH()) {
 			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash, v.Data.FromHash)
 		}
 	} else {
@@ -736,7 +736,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint32) error {
+func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
 	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
@@ -755,14 +755,14 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	}
 
 	if v.Data.ToEpoch == s.EpochIndex {
-		s.CurrentEpochVotes = append(s.CurrentEpochVotes, AcceptedVoteInfo{
+		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
-		s.PreviousEpochVotes = append(s.PreviousEpochVotes, AcceptedVoteInfo{
+		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
@@ -835,93 +835,80 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 
-	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
+	if !b.Header.TxMerkleRootH().IsEqual(&transactionMerkleRoot) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
 	}
 
-	if !b.Header.VoteMerkleRoot.IsEqual(&voteMerkleRoot) {
+	if !b.Header.VoteMerkleRootH().IsEqual(&voteMerkleRoot) {
 		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
 	}
 
-	if !b.Header.DepositMerkleRoot.IsEqual(&depositMerkleRoot) {
+	if !b.Header.DepositMerkleRootH().IsEqual(&depositMerkleRoot) {
 		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
 	}
 
-	if !b.Header.ExitMerkleRoot.IsEqual(&exitMerkleRoot) {
+	if !b.Header.ExitMerkleRootH().IsEqual(&exitMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", exitMerkleRoot, b.Header.ExitMerkleRoot)
 	}
 
-	if !b.Header.VoteSlashingMerkleRoot.IsEqual(&voteSlashingMerkleRoot) {
+	if !b.Header.VoteSlashingMerkleRootH().IsEqual(&voteSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", voteSlashingMerkleRoot, b.Header.VoteSlashingMerkleRoot)
 	}
 
-	if !b.Header.ProposerSlashingMerkleRoot.IsEqual(&proposerSlashingMerkleRoot) {
+	if !b.Header.ProposerSlashingMerkleRootH().IsEqual(&proposerSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", proposerSlashingMerkleRoot, b.Header.ProposerSlashingMerkleRoot)
 	}
 
-	if !b.Header.RANDAOSlashingMerkleRoot.IsEqual(&randaoSlashingMerkleRoot) {
+	if !b.Header.RANDAOSlashingMerkleRootH().IsEqual(&randaoSlashingMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", randaoSlashingMerkleRoot, b.Header.RANDAOSlashingMerkleRoot)
 	}
 
-	if !b.Header.GovernanceVotesMerkleRoot.IsEqual(&governanceVoteMerkleRoot) {
+	if !b.Header.GovernanceVotesMerkleRootH().IsEqual(&governanceVoteMerkleRoot) {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
 	}
 
-	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
-		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes))
+	if uint64(len(b.Votes.Votes)) > p.MaxVotesPerBlock {
+		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes.Votes))
 	}
 
-	if uint64(len(b.Txs)) > p.MaxTxsPerBlock {
-		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs))
+	if uint64(len(b.Txs.Txs)) > p.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs.Txs))
 	}
 
-	if uint64(len(b.Deposits)) > p.MaxDepositsPerBlock {
-		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits))
+	if uint64(len(b.Deposits.Deposits)) > p.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits.Deposits))
 	}
 
-	if uint64(len(b.Exits)) > p.MaxExitsPerBlock {
-		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
+	if uint64(len(b.Exits.Exits)) > p.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits.Exits))
 	}
 
-	if uint64(len(b.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
-		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
+	if uint64(len(b.RANDAOSlashings.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
+		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings.RANDAOSlashings))
 	}
 
-	if uint64(len(b.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
-		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
+	if uint64(len(b.VoteSlashings.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
+		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings.VoteSlashings))
 	}
 
-	if uint64(len(b.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
-		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
+	if uint64(len(b.ProposerSlashings.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
+		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings.ProposerSlashings))
 	}
 
-	for _, d := range b.Deposits {
-		if err := s.ApplyDeposit(&d, p); err != nil {
+	for _, d := range b.Deposits.Deposits {
+		if err := s.ApplyDeposit(d, p); err != nil {
 			return err
 		}
 	}
 
-	for _, tx := range b.Txs {
-		pload, err := tx.GetPayload()
-		if err != nil {
+	for _, tx := range b.Txs.Txs {
+		if err := s.ApplyTransactionSingle(tx, b.Header.FeeAddress, p); err != nil {
 			return err
-		}
-		switch payload := pload.(type) {
-		case *TransferSinglePayload:
-			if err := s.ApplyTransactionSingle(payload, b.Header.FeeAddress, p); err != nil {
-				return err
-			}
-		case *TransferMultiPayload:
-			if err := s.ApplyTransactionMulti(payload, b.Header.FeeAddress, p); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("payload missing from transaction")
 		}
 	}
 
-	for _, vote := range b.GovernanceVotes {
-		if err := s.ProcessGovernanceVote(&vote, p); err != nil {
+	for _, vote := range b.GovernanceVotes.GovernanceVotes {
+		if err := s.ProcessGovernanceVote(vote, p); err != nil {
 			return err
 		}
 	}
@@ -930,32 +917,32 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 
-	for _, v := range b.Votes {
-		if err := s.ProcessVote(&v, p, proposerIndex); err != nil {
+	for _, v := range b.Votes.Votes {
+		if err := s.ProcessVote(v, p, uint64(proposerIndex)); err != nil {
 			return err
 		}
 	}
 
-	for _, e := range b.Exits {
-		if err := s.ApplyExit(&e); err != nil {
+	for _, e := range b.Exits.Exits {
+		if err := s.ApplyExit(e); err != nil {
 			return err
 		}
 	}
 
-	for _, rs := range b.RANDAOSlashings {
-		if err := s.ApplyRANDAOSlashing(&rs, p); err != nil {
+	for _, rs := range b.RANDAOSlashings.RANDAOSlashings {
+		if err := s.ApplyRANDAOSlashing(rs, p); err != nil {
 			return err
 		}
 	}
 
-	for _, vs := range b.VoteSlashings {
-		if err := s.ApplyVoteSlashing(&vs, p); err != nil {
+	for _, vs := range b.VoteSlashings.VoteSlashings {
+		if err := s.ApplyVoteSlashing(vs, p); err != nil {
 			return err
 		}
 	}
 
-	for _, ps := range b.ProposerSlashings {
-		if err := s.ApplyProposerSlashing(&ps, p); err != nil {
+	for _, ps := range b.ProposerSlashings.ProposerSlashings {
+		if err := s.ApplyProposerSlashing(ps, p); err != nil {
 			return err
 		}
 	}
