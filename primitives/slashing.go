@@ -21,7 +21,7 @@ const (
 	// MaxRandaoSlashingSize is the maximum amount of bytes a randao slashing can contain.
 	MaxRandaoSlashingSize = 152
 	// MaxProposerSlashingSize is the maximum amount of bytes a proposer slashing can contain.
-	MaxProposerSlashingSize = MaxBlockHeaderBytes*2 + (240)
+	MaxProposerSlashingSize = MaxBlockHeaderBytes*2 + 96*2 + 48
 	// MaxVoteSlashingSize is the maximum amount of bytes a vote slashing can contain.
 	MaxVoteSlashingSize = MaxMultiValidatorVoteSize * 2
 )

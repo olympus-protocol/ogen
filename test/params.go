@@ -13,7 +13,7 @@ var WalletPassPrefix = "wallet_pass-"
 
 var Node1Folder = "./data_node1"
 var Node2Folder = "./data_node2"
-var Node32older = "./data_node2"
+var Node3Folder = "./data_node3"
 
 var PremineAddr = bls.RandKey()
 

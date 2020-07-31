@@ -25,13 +25,13 @@ var (
 
 const (
 	// MaxVoteDataSize is the maximum size in bytes of vote data.
-	MaxVoteDataSize = 120
+	MaxVoteDataSize = 128
 	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
-	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 2048 + 8 + 8
+	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 250 + 4 + 8
 	// MaxSingleValidatorVoteSize is the maximum size in bytes a single validator vote can contain.
-	MaxSingleValidatorVoteSize = MaxVoteDataSize + 96 + 8 + 8
+	MaxSingleValidatorVoteSize = MaxVoteDataSize + 12 + 96
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
-	MaxMultiValidatorVoteSize = 228 + 96 + 9
+	MaxMultiValidatorVoteSize = MaxVoteDataSize + 96 + 250
 )
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
@@ -108,6 +108,9 @@ type VoteData struct {
 
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash [32]byte `ssz-size:"32"`
+
+	// Nonce identifies the client that proposed the block.
+	Nonce uint64
 }
 
 // Marshal encodes the data.
@@ -183,7 +186,7 @@ func (v *VoteData) IsSurroundVote(v2 *VoteData) bool {
 // Equals checks if vote data equals another vote data.
 func (v *VoteData) Equals(other *VoteData) bool {
 	if v.Slot != other.Slot || v.FromEpoch != other.FromEpoch || v.ToEpoch != other.ToEpoch ||
-		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || bytes.Equal(v.ToHash[:], other.ToHash[:]) || bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) {
+		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || bytes.Equal(v.ToHash[:], other.ToHash[:]) || bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) || v.Nonce != other.Nonce {
 		return false
 	}
 
