@@ -11,6 +11,13 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 )
 
+var (
+	// MaxMultiPubSize is the maximum amount of bytes a Multipub key can contain. 32 public keys.
+	MaxMultiPubSize = (32 * 48) + 8
+	// MaxMultisigSize is the maximum amount of bytes a Multisig can contain. 32 public keys and 32 signatures.
+	MaxMultisigSize = MaxMultiPubSize + (96 * 32) + 32
+)
+
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
 	PublicKeys [][48]byte `ssz-max:"32"`
@@ -30,7 +37,7 @@ func (m *Multipub) Unmarshal(b []byte) error {
 
 // NewMultipub constructs a new multi-pubkey.
 func NewMultipub(pubs []*PublicKey, numNeeded uint64) *Multipub {
-	pubsB := [][48]byte{}
+	var pubsB [][48]byte
 	for _, p := range pubs {
 		var pub [48]byte
 		copy(pub[:], p.Marshal())
@@ -105,7 +112,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"33"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"32"`
 }
 
 // Marshal encodes the data.
@@ -147,24 +154,23 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
-	if m.KeysSigned[uint(idx)/8]&(1<<(uint(idx)%8)) != 0 {
+	if m.KeysSigned.BitAt(uint64(idx)) {
 		return nil
 	}
-
 	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
 
 	sig := secKey.Sign(msgI[:])
 	var s [96]byte
 	copy(s[:], sig.Marshal())
 	m.Signatures = append(m.Signatures, s)
-	m.KeysSigned[uint(idx)/8] |= (1 << (uint(idx) % 8))
+	m.KeysSigned.SetBitAt(uint64(idx), true)
 
 	return nil
 }
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
-	if uint(len(m.PublicKey.PublicKeys)) > uint(len(m.KeysSigned))*8 {
+	if uint(len(m.PublicKey.PublicKeys)) > uint(m.KeysSigned.Len()) {
 		return false
 	}
 
@@ -179,7 +185,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
-		if m.KeysSigned[uint(i)/8]&(1<<(uint(i)%8)) != 0 {
+		if m.KeysSigned.BitAt(uint64(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
 			if err != nil {

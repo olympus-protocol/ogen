@@ -3,6 +3,7 @@
 package bls_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -20,9 +21,7 @@ func TestBasicSignature(t *testing.T) {
 
 	valid := sig.Verify(msg, p)
 
-	if !valid {
-		t.Fatal("signature is not valid and should be")
-	}
+	assert.True(t, valid)
 }
 
 type XORShift struct {
@@ -63,9 +62,9 @@ func TestAggregateSignatures(t *testing.T) {
 	aggregateSig := bls.AggregateSignatures([]*bls.Signature{sig0, sig1, sig2})
 
 	valid := aggregateSig.FastAggregateVerify([]*bls.PublicKey{p0, p1, p2}, msg)
-	if !valid {
-		t.Fatal("aggregate signature was not valid")
-	}
+
+	assert.True(t, valid)
+
 }
 
 // func TestVerifyAggregate(t *testing.T) {

@@ -179,10 +179,8 @@ func (p *Proposer) ProposeBlocks() {
 			proposer := state.ValidatorRegistry[proposerIndex]
 
 			if k, found := p.Keystore.GetValidatorKey(proposer.PubKey); found {
-				var pubkey [48]byte
-				copy(pubkey[:], proposer.PubKey)
 
-				if !p.lastActionManager.ShouldRun(pubkey) {
+				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
 					continue
 				}
 
@@ -340,10 +338,8 @@ func (p *Proposer) VoteForBlocks() {
 				validator := state.ValidatorRegistry[validatorIdx]
 
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
-					var pubkey [48]byte
-					copy(pubkey[:], validator.PubKey)
 
-					if !p.lastActionManager.ShouldRun(pubkey) {
+					if !p.lastActionManager.ShouldRun(validator.PubKey) {
 						continue
 					}
 

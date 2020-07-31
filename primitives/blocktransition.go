@@ -660,10 +660,10 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	return nil
 }
 
-func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([]byte, error) {
+func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([48]byte, error) {
 	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 	if err != nil {
-		return nil, err
+		return [48]byte{}, err
 	}
 
 	validatorIdx := validators[v.Offset]

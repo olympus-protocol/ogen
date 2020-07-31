@@ -23,25 +23,25 @@ type BlockNodeDisk struct {
 }
 
 // Marshal encodes de data
-func (bnd *BlockNodeDisk) Marshal() ([]byte, error) {
-	b, err := bnd.MarshalSSZ()
+func (b *BlockNodeDisk) Marshal() ([]byte, error) {
+	by, err := b.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxBlockNodeSize {
+	if len(by) > MaxBlockNodeSize {
 		return nil, ErrorBlockNodeSize
 	}
-	return snappy.Encode(nil, b), nil
+	return snappy.Encode(nil, by), nil
 }
 
 // Unmarshal decodes the data
-func (bnd *BlockNodeDisk) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
+func (b *BlockNodeDisk) Unmarshal(by []byte) error {
+	d, err := snappy.Decode(nil, by)
 	if err != nil {
 		return err
 	}
 	if len(d) > MaxBlockNodeSize {
 		return ErrorBlockNodeSize
 	}
-	return bnd.UnmarshalSSZ(d)
+	return b.UnmarshalSSZ(d)
 }

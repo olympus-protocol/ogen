@@ -195,10 +195,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 
 	voter := committee[vote.Offset]
 
-	var pubkey [48]byte
-	copy(pubkey[:], currentState.ValidatorRegistry[voter].PubKey)
-
-	m.lastActionManager.RegisterAction(pubkey, vote.Data.Nonce)
+	m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[voter].PubKey, vote.Data.Nonce)
 
 	// slashing check... check if this vote interferes with any
 	// votes in the mempool
