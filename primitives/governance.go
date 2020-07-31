@@ -2,10 +2,28 @@ package primitives
 
 import (
 	"bytes"
+	"errors"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+)
+
+var (
+	// ErrorReplacementsVoteSize is returned when a ReplacementVotes exceed MaxReplacementVoteSize
+	ErrorReplacementsVoteSize = errors.New("replacement vote size too big")
+	// ErrorGovernanceVote is returned when a GovernanceVote exceed MaxGovernanceVoteSize
+	ErrorGovernanceVoteSize = errors.New("governance vote size too big")
+	// ErrorCommunityVoteData is returned when a CommunityVoteData exceed MaxCommunityVoteDataSize
+	ErrorCommunityVoteDataSize = errors.New("community vote size too big")
+)
+
+const (
+	// MaxReplacementsVoteSize is the maximum amount of bytes a ReplacementVotes can have
+	MaxReplacementsVoteSize = 52
+	// MaxGovernanceVoteSize is the maximum amount of bytes a GovernanceVote can have
+	MaxGovernanceVoteSize = 260
+	// MaxCommunityVoteDataSize is the maximum amount of bytes a CommunityVoteData can have
+	MaxCommunityVoteDataSize = 104
 )
 
 // CommunityVoteDataInfo contains information about a community vote.
@@ -16,8 +34,28 @@ type CommunityVoteDataInfo struct {
 
 // ReplacementVotes contains information about a replacement candidate selected.
 type ReplacementVotes struct {
-	Account [20]byte `ssz-size:"20"`
-	Hash    [32]byte `ssz-size:"32"`
+	Account [20]byte
+	Hash    [32]byte
+}
+
+// Marshal encodes the data.
+func (r *ReplacementVotes) Marshal() ([]byte, error) {
+	b, err := r.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxReplacementsVoteSize {
+		return nil, ErrorReplacementsVoteSize
+	}
+	return b, nil
+}
+
+// Unmarshal decodes the data.
+func (r *ReplacementVotes) Unmarshal(b []byte) error {
+	if len(b) > MaxReplacementsVoteSize {
+		return ErrorReplacementsVoteSize
+	}
+	return r.UnmarshalSSZ(b)
 }
 
 // GovernanceSerializable is a struct that contains the Governance state on a serializable struct.
@@ -28,7 +66,7 @@ type GovernanceSerializable struct {
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
 type CommunityVoteData struct {
-	ReplacementCandidates [5][20]byte `ssz-size:"20"`
+	ReplacementCandidates [][20]byte `ssz-max:"5"`
 }
 
 // Marshal encodes the data.
@@ -37,16 +75,18 @@ func (c *CommunityVoteData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return snappy.Encode(nil, b), nil
+	if len(b) > MaxCommunityVoteDataSize {
+		return nil, ErrorCommunityVoteDataSize
+	}
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (c *CommunityVoteData) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
+	if len(b) > MaxCommunityVoteDataSize {
+		return ErrorCommunityVoteDataSize
 	}
-	return c.UnmarshalSSZ(d)
+	return c.UnmarshalSSZ(b)
 }
 
 // Copy copies the community vote data.
@@ -83,15 +123,15 @@ const (
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
 	Type          uint64
-	Data          [2048]byte `ssz-size:"2048"` // TODO Calculate
-	FunctionalSig [2048]byte `ssz-size:"2048"` // TODO Calculate
+	Data          [100]byte
+	FunctionalSig [144]byte
 	VoteEpoch     uint64
 }
 
 // Signature returns the governance vote bls signature.
-func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
+func (g *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 	buf := bytes.NewBuffer([]byte{})
-	buf.Write(gv.FunctionalSig[:])
+	buf.Write(g.FunctionalSig[:])
 	sig, err := bls.ReadFunctionalSignature(buf)
 	if err != nil {
 		return nil, err
@@ -100,27 +140,29 @@ func (gv *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
 }
 
 // Marshal encodes the data.
-func (gv *GovernanceVote) Marshal() ([]byte, error) {
-	b, err := gv.MarshalSSZ()
+func (g *GovernanceVote) Marshal() ([]byte, error) {
+	b, err := g.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	return snappy.Encode(nil, b), nil
+	if len(b) > MaxGovernanceVoteSize {
+		return nil, ErrorGovernanceVoteSize
+	}
+	return b, nil
 }
 
 // Unmarshal decodes the data.
-func (gv *GovernanceVote) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
+func (g *GovernanceVote) Unmarshal(b []byte) error {
+	if len(b) > MaxGovernanceVoteSize {
+		return ErrorGovernanceVoteSize
 	}
-	return gv.UnmarshalSSZ(d)
+	return g.UnmarshalSSZ(b)
 }
 
 // Valid returns a boolean that checks for validity of the vote.
-func (gv *GovernanceVote) Valid() bool {
-	sigHash := gv.SignatureHash()
-	sig, err := gv.Signature()
+func (g *GovernanceVote) Valid() bool {
+	sigHash := g.SignatureHash()
+	sig, err := g.Signature()
 	if err != nil {
 		return false
 	}
@@ -128,24 +170,24 @@ func (gv *GovernanceVote) Valid() bool {
 }
 
 // SignatureHash gets the signed part of the hash.
-func (gv *GovernanceVote) SignatureHash() chainhash.Hash {
-	cp := gv.Copy()
-	cp.FunctionalSig = [2048]byte{}
+func (g *GovernanceVote) SignatureHash() chainhash.Hash {
+	cp := g.Copy()
+	cp.FunctionalSig = [144]byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
 
 // Hash calculates the hash of the governance vote.
-func (gv *GovernanceVote) Hash() chainhash.Hash {
-	b, _ := gv.Marshal()
+func (g *GovernanceVote) Hash() chainhash.Hash {
+	b, _ := g.Marshal()
 	return chainhash.HashH(b)
 }
 
 // Copy copies the governance vote.
-func (gv *GovernanceVote) Copy() *GovernanceVote {
-	newGv := *gv
-	newGv.Data = [2048]byte{}
-	copy(newGv.Data[:], gv.Data[:])
-	newGv.FunctionalSig = gv.FunctionalSig
+func (g *GovernanceVote) Copy() *GovernanceVote {
+	newGv := *g
+	newGv.Data = [100]byte{}
+	copy(newGv.Data[:], g.Data[:])
+	newGv.FunctionalSig = g.FunctionalSig
 	return &newGv
 }

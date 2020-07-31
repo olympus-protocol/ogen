@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-bitfield"
 )
@@ -264,13 +265,21 @@ func (s *State) FromSerializable(ser *SerializableState) {
 // Marshal encodes the data.
 func (s *State) Marshal() ([]byte, error) {
 	ser := s.ToSerializable()
-	return ser.MarshalSSZ()
+	b, err := ser.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (s *State) Unmarshal(b []byte) error {
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
 	ser := new(SerializableState)
-	err := ser.UnmarshalSSZ(b)
+	err = ser.UnmarshalSSZ(d)
 	if err != nil {
 		return err
 	}

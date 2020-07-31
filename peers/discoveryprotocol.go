@@ -110,18 +110,18 @@ func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return fmt.Errorf("message received is not get addr")
 	}
-	peers := [32][500]byte{}
+	var peers [][64]byte
 	peersData := shufflePeers(cm.host.GetPeerInfos())
 
-	for i := range peers {
+	for i, p := range peersData {
 		if i < p2p.MaxAddrPerMsg {
-			peerMulti, err := peer.AddrInfoToP2pAddrs(&peersData[i])
+			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
 			if err != nil {
 				continue
 			}
-			var peer [500]byte
-			copy(peer[:], peerMulti[0].Bytes())
-			peers[i] = peer
+			var pb [64]byte
+			copy(pb[:], peerMulti[0].Bytes())
+			peers = append(peers, pb)
 		}
 	}
 

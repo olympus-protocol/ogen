@@ -105,7 +105,7 @@ func ReadFunctionalSignature(r io.Reader) (FunctionalSignature, error) {
 	case TypeMulti:
 		out = new(Multisig)
 	}
-	data := []byte{}
+	var data []byte
 	_, err := io.ReadFull(r, data)
 	if err != nil {
 		return nil, err

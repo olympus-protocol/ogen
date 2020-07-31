@@ -3,7 +3,6 @@ package primitives
 import (
 	"errors"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -21,10 +20,10 @@ const MaxDepositSize = MaxDepositDataSize + 48 + 96
 // Deposit is a deposit a user can submit to queue as a validator.
 type Deposit struct {
 	// PublicKey is the public key of the address that is depositing.
-	PublicKey [48]byte `ssz-size:"48"`
+	PublicKey [48]byte
 
 	// Signature is the signature signing the deposit data.
-	Signature [96]byte `ssz-size:"96"`
+	Signature [96]byte
 
 	// Data is the data that describes the new validator.
 	Data *DepositData
@@ -39,19 +38,15 @@ func (d *Deposit) Marshal() ([]byte, error) {
 	if len(b) > MaxDepositSize {
 		return nil, ErrorDepositSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (d *Deposit) Unmarshal(b []byte) error {
-	de, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(de) > MaxDepositSize {
+	if len(b) > MaxDepositSize {
 		return ErrorDepositSize
 	}
-	return d.UnmarshalSSZ(de)
+	return d.UnmarshalSSZ(b)
 }
 
 // GetPublicKey returns the bls public key of the deposit.
@@ -76,13 +71,13 @@ const MaxDepositDataSize = 164
 // DepositData is the part of the deposit that is signed
 type DepositData struct {
 	// PublicKey is the key used for the validator.
-	PublicKey [48]byte `ssz-size:"48"`
+	PublicKey [48]byte
 
 	// ProofOfPossession is the public key signed by the private key to prove that you own the address and prevent rogue public-key attacks.
-	ProofOfPossession [96]byte `ssz-size:"96"`
+	ProofOfPossession [96]byte
 
 	// WithdrawalAddress is the address to withdraw to.
-	WithdrawalAddress [20]byte `ssz-size:"20"`
+	WithdrawalAddress [20]byte
 }
 
 // Marshal encodes the data.
@@ -94,16 +89,12 @@ func (d *DepositData) Marshal() ([]byte, error) {
 	if len(b) > MaxDepositDataSize {
 		return nil, ErrorDepositDataSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (d *DepositData) Unmarshal(b []byte) error {
-	de, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(de) > MaxDepositDataSize {
+	if len(b) > MaxDepositDataSize {
 		return ErrorDepositDataSize
 	}
 	return d.UnmarshalSSZ(b)

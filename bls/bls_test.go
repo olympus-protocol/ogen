@@ -25,10 +25,9 @@ func Test_CombinedSignatureSerialize(t *testing.T) {
 }
 
 func Test_MultipubSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
+	f := fuzz.New().NilChance(0).NumElements(32, 32)
 	var v bls.Multipub
 	f.Fuzz(&v)
-
 	ser := v.Marshal()
 
 	var desc bls.Multipub
@@ -39,12 +38,11 @@ func Test_MultipubSerialize(t *testing.T) {
 }
 
 func Test_MultisigSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
+	f := fuzz.New().NilChance(0).NumElements(32, 32)
 	var m bls.Multipub
 	var s [][96]byte
 	f.Fuzz(&m)
 	f.Fuzz(&s)
-
 	v := bls.Multisig{
 		PublicKey:  &m,
 		Signatures: s,

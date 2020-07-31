@@ -140,7 +140,7 @@ func (t *Txs) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	offset += len(t.Txs) * 188
 
 	// Field (0) 'Txs'
-	if len(t.Txs) > 1000 {
+	if len(t.Txs) > 9000 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -172,7 +172,7 @@ func (t *Txs) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Txs'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 188, 1000)
+		num, err := ssz.DivideInt2(len(buf), 188, 9000)
 		if err != nil {
 			return err
 		}
@@ -212,7 +212,7 @@ func (t *Txs) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(t.Txs))
-		if num > 1000 {
+		if num > 9000 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -221,7 +221,7 @@ func (t *Txs) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 1000)
+		hh.MerkleizeWithMixin(subIndx, num, 9000)
 	}
 
 	hh.Merkleize(indx)
@@ -772,7 +772,7 @@ func (g *GovernanceVotes) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (0) 'GovernanceVotes'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(g.GovernanceVotes) * 4112
+	offset += len(g.GovernanceVotes) * 260
 
 	// Field (0) 'GovernanceVotes'
 	if len(g.GovernanceVotes) > 128 {
@@ -807,7 +807,7 @@ func (g *GovernanceVotes) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'GovernanceVotes'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 4112, 128)
+		num, err := ssz.DivideInt2(len(buf), 260, 128)
 		if err != nil {
 			return err
 		}
@@ -816,7 +816,7 @@ func (g *GovernanceVotes) UnmarshalSSZ(buf []byte) error {
 			if g.GovernanceVotes[ii] == nil {
 				g.GovernanceVotes[ii] = new(GovernanceVote)
 			}
-			if err = g.GovernanceVotes[ii].UnmarshalSSZ(buf[ii*4112 : (ii+1)*4112]); err != nil {
+			if err = g.GovernanceVotes[ii].UnmarshalSSZ(buf[ii*260 : (ii+1)*260]); err != nil {
 				return err
 			}
 		}
@@ -829,7 +829,7 @@ func (g *GovernanceVotes) SizeSSZ() (size int) {
 	size = 4
 
 	// Field (0) 'GovernanceVotes'
-	size += len(g.GovernanceVotes) * 4112
+	size += len(g.GovernanceVotes) * 260
 
 	return
 }
