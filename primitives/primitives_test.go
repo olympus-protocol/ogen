@@ -146,7 +146,7 @@ func Test_EpochReceiptSerialize(t *testing.T) {
 }
 
 func Test_CommunityVoteDataSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
+	f := fuzz.New().NilChance(0).NumElements(5, 5)
 	var v primitives.CommunityVoteData
 	f.Fuzz(&v)
 
