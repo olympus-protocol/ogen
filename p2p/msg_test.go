@@ -2,121 +2,114 @@ package p2p_test
 
 import (
 	"bytes"
+	fuzz "github.com/google/gofuzz"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/p2p"
-	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_MessageHeaderSerialize(t *testing.T) {
-	ser, err := testdata.Header.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v p2p.MessageHeader
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc p2p.MessageHeader
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.Header, desc)
-	if !equal {
-		t.Fatal("error: serialize MessageHeader")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MsgGetAddrSerialize(t *testing.T) {
-	ser, err := testdata.MsgGetAddr.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgGetAddr
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc p2p.MsgGetAddr
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.MsgGetAddr, desc)
-	if !equal {
-		t.Fatal("error: serialize MsgAddr")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MsgAddrSerialize(t *testing.T) {
-	ser, err := testdata.MsgAddr.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgAddr
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc p2p.MsgAddr
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.MsgAddr, desc)
-	if !equal {
-		t.Fatal("error: serialize MsgAddr")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MsgGetBlocksSerialize(t *testing.T) {
-	ser, err := testdata.MsgGetBlocks.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgGetBlocks
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc p2p.MsgGetBlocks
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.MsgGetBlocks, desc)
-	if !equal {
-		t.Fatal("error: serialize MsgGetBlocks")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MsgVersionSerialize(t *testing.T) {
-	ser, err := testdata.MsgVersion.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgVersion
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc p2p.MsgVersion
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.MsgVersion, desc)
-	if !equal {
-		t.Fatal("error: serialize MsgVersion")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MsgBlocksSerialize(t *testing.T) {
-	ser, err := testdata.MsgBlocks.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgBlocks
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc p2p.MsgBlocks
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.MsgBlocks, desc)
-	if !equal {
-		t.Fatal("error: serialize MsgBlocks")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MsgWithHeaderSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgBlocks
+	f.Fuzz(&v)
+
 	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, &testdata.MsgBlocks, 333)
-	if err != nil {
-		t.Error(err)
-	}
+	err := p2p.WriteMessage(buf, &v, 333)
+	assert.NoError(t, err)
+
 	msg, err := p2p.ReadMessage(buf, 333)
-	if err != nil {
-		t.Error(err)
-	}
-	equal := ssz.DeepEqual(msg.(*p2p.MsgBlocks), &testdata.MsgBlocks)
-	if !equal {
-		t.Error("error: serialize MsgWithHeader")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, msg.(*p2p.MsgBlocks), &v)
 }

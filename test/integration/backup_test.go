@@ -5,9 +5,11 @@ package backup_test
 import (
 	"context"
 	"encoding/hex"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path"
+	"sync"
 	"testing"
 	"time"
 
@@ -32,7 +34,6 @@ var F *server.Server
 var FAddr peer.AddrInfo
 var B *server.Server
 var M *server.Server
-var MAddr peer.AddrInfo
 
 // Backup Validator Test
 // 1. Create two nodes that are creating a chain (Primary, Backup, Mover).
@@ -55,41 +56,52 @@ func createValidators() {
 	// Create datafolder Mover Node
 	os.Mkdir(testdata.Node3Folder, 0777)
 
-	keystorePrimary, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
-	if err != nil {
-		panic(err)
-	}
-	// Generate the validators data.
-	valDataPrimary, err := keystorePrimary.GenerateNewValidatorKey(128, testdata.KeystorePass)
-	if err != nil {
-		panic(err)
-	}
-	// Convert the validators to initialization params.
-	for _, vk := range valDataPrimary {
-		val := primitives.ValidatorInitialization{
-			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
-			PayeeAddress: premineAddr,
+	var w sync.WaitGroup
+	w.Add(2)
+	go func(w *sync.WaitGroup) {
+		keystorePrimary, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
+		if err != nil {
+			panic(err)
 		}
-		initParams.InitialValidators = append(initParams.InitialValidators, val)
-	}
+		// Generate the validators data.
+		valDataPrimary, err := keystorePrimary.GenerateNewValidatorKey(128, testdata.KeystorePass)
+		if err != nil {
+			panic(err)
+		}
+		// Convert the validators to initialization params.
+		for _, vk := range valDataPrimary {
+			val := primitives.ValidatorInitialization{
+				PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
+				PayeeAddress: premineAddr,
+			}
+			initParams.InitialValidators = append(initParams.InitialValidators, val)
+		}
+		w.Done()
+		return
+	}(&w)
 
-	keystoreMover, err := keystore.NewKeystore(testdata.Node3Folder, nil, testdata.KeystorePass)
-	if err != nil {
-		panic(err)
-	}
-	// Generate the validators data.
-	valDataMover, err := keystoreMover.GenerateNewValidatorKey(128, testdata.KeystorePass)
-	if err != nil {
-		panic(err)
-	}
-	// Convert the validators to initialization params.
-	for _, vk := range valDataMover {
-		val := primitives.ValidatorInitialization{
-			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
-			PayeeAddress: premineAddr,
+	go func(w *sync.WaitGroup) {
+		keystoreMover, err := keystore.NewKeystore(testdata.Node3Folder, nil, testdata.KeystorePass)
+		if err != nil {
+			panic(err)
 		}
-		initParams.InitialValidators = append(initParams.InitialValidators, val)
-	}
+		// Generate the validators data.
+		valDataMover, err := keystoreMover.GenerateNewValidatorKey(128, testdata.KeystorePass)
+		if err != nil {
+			panic(err)
+		}
+		// Convert the validators to initialization params.
+		for _, vk := range valDataMover {
+			val := primitives.ValidatorInitialization{
+				PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
+				PayeeAddress: premineAddr,
+			}
+			initParams.InitialValidators = append(initParams.InitialValidators, val)
+		}
+		w.Done()
+		return
+	}(&w)
+	w.Wait()
 }
 
 func firstNode() {
@@ -112,7 +124,6 @@ func firstNode() {
 
 	// Override the datafolder.
 	c.DataFolder = testdata.Node1Folder
-	c.AddNodes = []peer.AddrInfo{MAddr}
 	c.Port = "24132"
 
 	// Create the server instance
@@ -120,6 +131,7 @@ func firstNode() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	FAddr = peer.AddrInfo{
 		ID:    F.HostNode.GetHost().ID(),
 		Addrs: F.HostNode.GetHost().Network().ListenAddresses(),
@@ -171,7 +183,6 @@ func secondNode() {
 	// Override the datafolder.
 	c.DataFolder = testdata.Node2Folder
 	c.RPCPort = "25001"
-	c.AddNodes = []peer.AddrInfo{FAddr}
 	c.Port = "24131"
 	// Create the server instance
 	B, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, bdb, initParams)
@@ -216,10 +227,6 @@ func thirdNode() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	MAddr = peer.AddrInfo{
-		ID:    M.HostNode.GetHost().ID(),
-		Addrs: M.HostNode.GetHost().Network().ListenAddresses(),
-	}
 
 	// Start the server
 	go M.Start()
@@ -231,12 +238,29 @@ func thirdNode() {
 	M.Proposer.Start()
 }
 
+// Since nodes are not connect all 3 tip states should be the same.
+func Test_StallProposing(t *testing.T) {
+	tipPrimary := F.Chain.State().Tip()
+	tipMover := M.Chain.State().Tip()
+	tipBackup := M.Chain.State().Tip()
+	assert.Equal(t, tipPrimary, tipMover, tipBackup)
+}
+
+func Test_Connections(t *testing.T) {
+	// The backup node should connect to the Primary node
+	err := B.HostNode.GetHost().Connect(context.TODO(), FAddr)
+	assert.NoError(t, err)
+	// The mover node should connect to the Primary node
+	err = M.HostNode.GetHost().Connect(context.TODO(), FAddr)
+	assert.NoError(t, err)
+}
+
 // Start the backup proposing routine with a delay from the first node. If starting at the same time it will get slashed.
 func Test_StartBackupProposing(t *testing.T) {
 	time.Sleep(time.Second * 30)
 	B.Proposer.Start()
 	time.Sleep(time.Second * 30)
-	// TODO check for nos slashing on blocks.
+	// TODO check for no slashing on blocks.
 }
 
 // Stop the primary node proposing routine and check the backup is doing the voting/proposing job.

@@ -1,25 +1,24 @@
 package bdb_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
+	"github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_BlockNodeDiskSerialize(t *testing.T) {
-	ser, err := testdata.BlockNode.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v bdb.BlockNodeDisk
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc bdb.BlockNodeDisk
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.BlockNode, desc)
-	if !equal {
-		t.Fatal("error: serialize BlockNodeDisk")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
