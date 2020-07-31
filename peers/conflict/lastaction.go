@@ -108,7 +108,8 @@ func (l *LastActionManager) NewTip(row *index.BlockRow, block *primitives.Block,
 	l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 }
 
-func (l *LastActionManager) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {}
+func (l *LastActionManager) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
+}
 
 const validatorStartTopic = "validatorStart"
 
