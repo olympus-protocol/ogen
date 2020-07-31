@@ -79,11 +79,6 @@ func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
 // validator to start.
 const MaxMessagePropagationTime = 60 * time.Second
 
-type lastPing struct {
-	nonce uint64
-	time  uint64
-}
-
 // LastActionManager keeps track of the last action recorded by validators.
 // This is a very basic protection against slashing. Validators, on startup,
 // will broadcast a StartMessage
@@ -97,7 +92,7 @@ type LastActionManager struct {
 
 	// lastActions are the last recorded actions by a validator with a certain
 	// salted private key hash.
-	lastActions     map[[48]byte]lastPing
+	lastActions     map[[48]byte]time.Time
 	lastActionsLock sync.RWMutex
 
 	startTopic *pubsub.Topic
@@ -114,7 +109,7 @@ func (l *LastActionManager) NewTip(row *index.BlockRow, block *primitives.Block,
 	var pubkey [48]byte
 	copy(pubkey[:], proposer.PubKey)
 
-	l.RegisterActionAt(pubkey, block.Header.Timestamp, block.Header.Nonce)
+	l.RegisterActionAt(pubkey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 }
 
 func (l *LastActionManager) ProposerSlashingConditionViolated(slashing primitives.ProposerSlashing) {}
@@ -136,7 +131,7 @@ func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger
 	l := &LastActionManager{
 		hostNode:    node,
 		ctx:         ctx,
-		lastActions: make(map[[48]byte]lastPing),
+		lastActions: make(map[[48]byte]time.Time),
 		log:         log,
 		startTopic:  topic,
 		nonce:       rand.Uint64(),
@@ -222,10 +217,9 @@ func (l *LastActionManager) shouldRun(pubSer [48]byte) bool {
 	}
 
 	lastAction := l.lastActions[pubSer]
-	lastActionTime := time.Unix(int64(lastAction.time), 0)
 
 	// last action was long enough ago we can start
-	if lastAction.nonce != l.nonce && time.Since(lastActionTime) > MaxMessagePropagationTime*2 {
+	if time.Since(lastAction) > MaxMessagePropagationTime*2 {
 		return true
 	}
 
@@ -233,19 +227,20 @@ func (l *LastActionManager) shouldRun(pubSer [48]byte) bool {
 }
 
 // RegisterActionAt registers an action by a validator at a certain time.
-func (l *LastActionManager) RegisterActionAt(by [48]byte, at uint64, nonce uint64) {
+func (l *LastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce uint64) {
 	l.lastActionsLock.Lock()
 	defer l.lastActionsLock.Unlock()
 
-	l.lastActions[by] = lastPing{
-		time:  at,
-		nonce: nonce,
+	if nonce == l.nonce {
+		return
 	}
+
+	l.lastActions[by] = at
 }
 
 // RegisterAction registers an action by a validator.
 func (l *LastActionManager) RegisterAction(by [48]byte, nonce uint64) {
-	l.RegisterActionAt(by, uint64(time.Now().Unix()), nonce)
+	l.RegisterActionAt(by, time.Now(), nonce)
 }
 
 func (l *LastActionManager) GetNonce() uint64 {
