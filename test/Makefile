@@ -3,6 +3,11 @@ test_sync:
 	./sync.test
 	make clean
 
+test_backup:
+	go test -tags backup_test -c integration/backup_test.go
+	./backup.test
+	make clean
+
 test_rpc:
 	go test -tags rpc_test -c functional/rpc_test.go
 	./rpc.test

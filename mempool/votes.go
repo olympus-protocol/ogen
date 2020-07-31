@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/peers/conflict"
 	"math/rand"
 	"sort"
 	"sync"
@@ -95,6 +96,8 @@ type VoteMempool struct {
 
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
+
+	lastActionManager *conflict.LastActionManager
 }
 
 func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
@@ -191,6 +194,11 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	}
 
 	voter := committee[vote.Offset]
+
+	var pubkey [48]byte
+	copy(pubkey[:], currentState.ValidatorRegistry[voter].PubKey)
+
+	m.lastActionManager.RegisterAction(pubkey, vote.Data.Nonce)
 
 	// slashing check... check if this vote interferes with any
 	// votes in the mempool
@@ -360,15 +368,16 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode) (*VoteMempool, error) {
+func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, manager *conflict.LastActionManager) (*VoteMempool, error) {
 	vm := &VoteMempool{
-		pool:       make(map[chainhash.Hash]*mempoolVote),
-		params:     p,
-		log:        log,
-		ctx:        ctx,
-		blockchain: ch,
-		notifees:   make([]VoteSlashingNotifee, 0),
-		hostNode:   hostnode,
+		pool:              make(map[chainhash.Hash]*mempoolVote),
+		params:            p,
+		log:               log,
+		ctx:               ctx,
+		blockchain:        ch,
+		notifees:          make([]VoteSlashingNotifee, 0),
+		hostNode:          hostnode,
+		lastActionManager: manager,
 	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {

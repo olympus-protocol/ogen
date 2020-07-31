@@ -12,12 +12,12 @@ import (
 var ErrorBlockHeaderSize = errors.New("blockheader size is too big")
 
 // MaxBlockHeaderBytes is the maximum amount of bytes a header can contain.
-const MaxBlockHeaderBytes = 372
+const MaxBlockHeaderBytes = 376
 
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
 	Version                    uint32
-	Nonce                      uint32
+	Nonce                      uint64
 	TxMerkleRoot               chainhash.Hash
 	VoteMerkleRoot             chainhash.Hash
 	DepositMerkleRoot          chainhash.Hash
