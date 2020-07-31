@@ -3,6 +3,7 @@ package conflict
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"math/rand"
 	"sync"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/p2p"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/primitives"
 
@@ -20,17 +20,22 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
+var (
+	// ErrorValidatorHelloMessageSize returns when serialized MaxValidatorHelloMessageSize size exceed MaxValidatorHelloMessageSize.
+	ErrorValidatorHelloMessageSize = errors.New("validator hello message too big")
+)
+
+const (
+	// MaxValidatorHelloMessageSize is the maximum amount of bytes a CombinedSignature can contain.
+	MaxValidatorHelloMessageSize = 160
+)
+
 // ValidatorHelloMessage is a message sent by validators to indicate that they are coming online.
 type ValidatorHelloMessage struct {
 	PublicKey [48]byte
 	Timestamp uint64
 	Nonce     uint64
 	Signature [96]byte
-}
-
-// MaxPayloadLength returns the maximum amount a ValidatorHelloMessage can contain.
-func (v *ValidatorHelloMessage) MaxPayloadLength() uint32 {
-	return 168 // 48 + 8 + 8 + 96 + 8 (bytes to include the public and signature length)
 }
 
 // SignatureMessage gets the signed portion of the message.
@@ -55,8 +60,8 @@ func (v *ValidatorHelloMessage) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if uint32(len(b)) > v.MaxPayloadLength() {
-		return nil, p2p.ErrorSizeExceed
+	if len(b) > MaxValidatorHelloMessageSize {
+		return nil, ErrorValidatorHelloMessageSize
 	}
 	return snappy.Encode(nil, b), nil
 }
@@ -67,8 +72,8 @@ func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if uint32(len(d)) > v.MaxPayloadLength() {
-		return p2p.ErrorSizeExceed
+	if len(d) > MaxValidatorHelloMessageSize {
+		return ErrorValidatorHelloMessageSize
 	}
 	return v.UnmarshalSSZ(d)
 }

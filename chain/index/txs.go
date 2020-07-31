@@ -1,11 +1,22 @@
 package index
 
 import (
+	"errors"
 	"path"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
+)
+
+var (
+	// ErrorTxLocatorSize returns when serialized TxLocator size exceed MaxTxLocatorSize.
+	ErrorCombinedSignatureSize = errors.New("tx locator too big")
+)
+
+const (
+	// MaxTxLocatorSize is the maximum amount of bytes a TxLocator can contain.
+	MaxTxLocatorSize = 72
 )
 
 // AccountTxs is just a helper struct for database storage of account transactions.
@@ -122,21 +133,27 @@ type TxLocator struct {
 }
 
 // Marshal encodes the data.
-func (tl *TxLocator) Marshal() ([]byte, error) {
-	b, err := tl.MarshalSSZ()
+func (t *TxLocator) Marshal() ([]byte, error) {
+	b, err := t.MarshalSSZ()
 	if err != nil {
 		return nil, err
+	}
+	if len(b) > MaxTxLocatorSize {
+		return nil, ErrorCombinedSignatureSize
 	}
 	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
-func (tl *TxLocator) Unmarshal(b []byte) error {
+func (t *TxLocator) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
 	}
-	return tl.UnmarshalSSZ(d)
+	if len(d) > MaxTxLocatorSize {
+		return ErrorCombinedSignatureSize
+	}
+	return t.UnmarshalSSZ(d)
 }
 
 // NewTxIndex returns/creates a new tx index database

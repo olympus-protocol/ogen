@@ -1,10 +1,17 @@
 package bls
 
 import (
+	"errors"
 	"fmt"
+	"github.com/golang/snappy"
 )
 
 var (
+	// ErrorCombinedSignatureSize returns when serialized CombinedSignature size exceed MaxCombinedSignatureSize.
+	ErrorCombinedSignatureSize = errors.New("combined signature too big")
+)
+
+const (
 	// MaxCombinedSignatureSize is the maximum amount of bytes a CombinedSignature can contain.
 	MaxCombinedSignatureSize = 96 + 48
 )
@@ -17,12 +24,26 @@ type CombinedSignature struct {
 
 // Marshal encodes the data.
 func (c *CombinedSignature) Marshal() ([]byte, error) {
-	return c.MarshalSSZ()
+	b, err := c.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxCombinedSignatureSize {
+		return nil, ErrorCombinedSignatureSize
+	}
+	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
 func (c *CombinedSignature) Unmarshal(b []byte) error {
-	return c.UnmarshalSSZ(b)
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	if len(b) > MaxCombinedSignatureSize {
+		return ErrorCombinedSignatureSize
+	}
+	return c.UnmarshalSSZ(d)
 }
 
 // NewCombinedSignature creates a new combined signature
