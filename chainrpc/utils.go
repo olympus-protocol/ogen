@@ -107,13 +107,13 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 		return nil, errors.New("unable to decode block raw data")
 	}
 	txParse := &proto.Tx{
-		Hash: tx.Hash().String(),
-		To: hex.EncodeToString(tx.To[:]),
+		Hash:          tx.Hash().String(),
+		To:            hex.EncodeToString(tx.To[:]),
 		FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
-		Amount: tx.Amount,
-		Nonce: tx.Nonce,
-		Fee: tx.Fee,
-		Signature: hex.EncodeToString(tx.Signature[:]),
+		Amount:        tx.Amount,
+		Nonce:         tx.Nonce,
+		Fee:           tx.Fee,
+		Signature:     hex.EncodeToString(tx.Signature[:]),
 	}
 	return txParse, nil
 }

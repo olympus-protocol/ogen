@@ -82,6 +82,7 @@ gen_ssz:
 	sszgen -path ./bls/multisig.go
 	sszgen -path ./chain/index/txs.go -objs TxLocator
 	sszgen -path ./bdb/blocknodedisk.go
+	sszgen -path ./peers/conflict/lastaction.go -objs ValidatorHelloMessage
 
 clean:
 	@echo Cleaning...

@@ -13,7 +13,7 @@ func (a *AcceptedVoteInfo) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the AcceptedVoteInfo object to a target array
 func (a *AcceptedVoteInfo) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(140)
+	offset := int(148)
 
 	// Field (0) 'Data'
 	if a.Data == nil {
@@ -47,7 +47,7 @@ func (a *AcceptedVoteInfo) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 140 {
+	if size < 148 {
 		return ssz.ErrSize
 	}
 
@@ -58,20 +58,20 @@ func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 	if a.Data == nil {
 		a.Data = new(VoteData)
 	}
-	if err = a.Data.UnmarshalSSZ(buf[0:120]); err != nil {
+	if err = a.Data.UnmarshalSSZ(buf[0:128]); err != nil {
 		return err
 	}
 
 	// Offset (1) 'ParticipationBitfield'
-	if o1 = ssz.ReadOffset(buf[120:124]); o1 > size {
+	if o1 = ssz.ReadOffset(buf[128:132]); o1 > size {
 		return ssz.ErrOffset
 	}
 
 	// Field (2) 'Proposer'
-	a.Proposer = ssz.UnmarshallUint64(buf[124:132])
+	a.Proposer = ssz.UnmarshallUint64(buf[132:140])
 
 	// Field (3) 'InclusionDelay'
-	a.InclusionDelay = ssz.UnmarshallUint64(buf[132:140])
+	a.InclusionDelay = ssz.UnmarshallUint64(buf[140:148])
 
 	// Field (1) 'ParticipationBitfield'
 	{
@@ -86,7 +86,7 @@ func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the AcceptedVoteInfo object
 func (a *AcceptedVoteInfo) SizeSSZ() (size int) {
-	size = 140
+	size = 148
 
 	// Field (1) 'ParticipationBitfield'
 	size += len(a.ParticipationBitfield)
@@ -148,6 +148,9 @@ func (v *VoteData) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (5) 'BeaconBlockHash'
 	dst = append(dst, v.BeaconBlockHash[:]...)
 
+	// Field (6) 'Nonce'
+	dst = ssz.MarshalUint64(dst, v.Nonce)
+
 	return
 }
 
@@ -155,7 +158,7 @@ func (v *VoteData) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (v *VoteData) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 120 {
+	if size != 128 {
 		return ssz.ErrSize
 	}
 
@@ -177,12 +180,15 @@ func (v *VoteData) UnmarshalSSZ(buf []byte) error {
 	// Field (5) 'BeaconBlockHash'
 	copy(v.BeaconBlockHash[:], buf[88:120])
 
+	// Field (6) 'Nonce'
+	v.Nonce = ssz.UnmarshallUint64(buf[120:128])
+
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the VoteData object
 func (v *VoteData) SizeSSZ() (size int) {
-	size = 120
+	size = 128
 	return
 }
 
@@ -212,6 +218,9 @@ func (v *VoteData) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (5) 'BeaconBlockHash'
 	hh.PutBytes(v.BeaconBlockHash[:])
+
+	// Field (6) 'Nonce'
+	hh.PutUint64(v.Nonce)
 
 	hh.Merkleize(indx)
 	return
@@ -250,7 +259,7 @@ func (s *SingleValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (s *SingleValidatorVote) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 232 {
+	if size != 240 {
 		return ssz.ErrSize
 	}
 
@@ -258,25 +267,25 @@ func (s *SingleValidatorVote) UnmarshalSSZ(buf []byte) error {
 	if s.Data == nil {
 		s.Data = new(VoteData)
 	}
-	if err = s.Data.UnmarshalSSZ(buf[0:120]); err != nil {
+	if err = s.Data.UnmarshalSSZ(buf[0:128]); err != nil {
 		return err
 	}
 
 	// Field (1) 'Sig'
-	copy(s.Sig[:], buf[120:216])
+	copy(s.Sig[:], buf[128:224])
 
 	// Field (2) 'Offset'
-	s.Offset = ssz.UnmarshallUint64(buf[216:224])
+	s.Offset = ssz.UnmarshallUint64(buf[224:232])
 
 	// Field (3) 'OutOf'
-	s.OutOf = ssz.UnmarshallUint64(buf[224:232])
+	s.OutOf = ssz.UnmarshallUint64(buf[232:240])
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the SingleValidatorVote object
 func (s *SingleValidatorVote) SizeSSZ() (size int) {
-	size = 232
+	size = 240
 	return
 }
 
@@ -315,7 +324,7 @@ func (m *MultiValidatorVote) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the MultiValidatorVote object to a target array
 func (m *MultiValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(220)
+	offset := int(228)
 
 	// Field (0) 'Data'
 	if m.Data == nil {
@@ -346,7 +355,7 @@ func (m *MultiValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 220 {
+	if size < 228 {
 		return ssz.ErrSize
 	}
 
@@ -357,15 +366,15 @@ func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 	if m.Data == nil {
 		m.Data = new(VoteData)
 	}
-	if err = m.Data.UnmarshalSSZ(buf[0:120]); err != nil {
+	if err = m.Data.UnmarshalSSZ(buf[0:128]); err != nil {
 		return err
 	}
 
 	// Field (1) 'Sig'
-	copy(m.Sig[:], buf[120:216])
+	copy(m.Sig[:], buf[128:224])
 
 	// Offset (2) 'ParticipationBitfield'
-	if o2 = ssz.ReadOffset(buf[216:220]); o2 > size {
+	if o2 = ssz.ReadOffset(buf[224:228]); o2 > size {
 		return ssz.ErrOffset
 	}
 
@@ -382,7 +391,7 @@ func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the MultiValidatorVote object
 func (m *MultiValidatorVote) SizeSSZ() (size int) {
-	size = 220
+	size = 228
 
 	// Field (2) 'ParticipationBitfield'
 	size += len(m.ParticipationBitfield)
