@@ -326,7 +326,7 @@ func Test_MultiValidatorVoteSerialize(t *testing.T) {
 }
 
 func Test_CoinStateSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(1000000, 1000000)
+	f := fuzz.New().NilChance(0).NumElements(10000, 10000)
 	balances := map[[20]byte]uint64{}
 	nonces := map[[20]byte]uint64{}
 	f.Fuzz(&balances)
