@@ -37,20 +37,14 @@ func Test_BlockSerialize(t *testing.T) {
 	f.Fuzz(&rsig)
 
 	f.NumElements(32, 32)
-	votes := new(primitives.Votes)
 	deposits := new(primitives.Deposits)
 	exits := new(primitives.Exits)
-	f.Fuzz(votes)
 	f.Fuzz(deposits)
 	f.Fuzz(exits)
 
-	f.NumElements(9000, 9000)
+	f.NumElements(1000, 1000)
 	txs := new(primitives.Txs)
 	f.Fuzz(txs)
-
-	f.NumElements(10, 10)
-	votesSlash := new(primitives.VoteSlashings)
-	f.Fuzz(votesSlash)
 
 	f.NumElements(20, 20)
 	randaoSlash := new(primitives.RANDAOSlashings)
@@ -66,11 +60,11 @@ func Test_BlockSerialize(t *testing.T) {
 
 	v := primitives.Block{
 		Header:            blockheader,
-		Votes:             votes,
+		Votes:             &primitives.Votes{Votes: fuzzMultiValidatorVote(32)},
 		Txs:               txs,
 		Deposits:          deposits,
 		Exits:             exits,
-		VoteSlashings:     votesSlash,
+		VoteSlashings:     &primitives.VoteSlashings{VoteSlashings: fuzzVoteSlashing(10)},
 		RANDAOSlashings:   randaoSlash,
 		ProposerSlashings: proposerSlash,
 		GovernanceVotes:   governanceVotes,
@@ -206,18 +200,15 @@ func Test_GovernanceVoteSerialize(t *testing.T) {
 }
 
 func Test_VoteSlashingSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v primitives.VoteSlashing
-	f.Fuzz(&v)
-
-	ser, err := v.Marshal()
+	v := fuzzVoteSlashing(1)
+	ser, err := v[0].Marshal()
 	assert.NoError(t, err)
 
-	var desc primitives.VoteSlashing
+	desc := new(primitives.VoteSlashing)
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
-	assert.Equal(t, v, desc)
+	assert.Equal(t, v[0], desc)
 }
 
 func Test_RANDAOSlashingSerialize(t *testing.T) {
@@ -311,18 +302,15 @@ func Test_SingleValidatorVoteSerialize(t *testing.T) {
 }
 
 func Test_MultiValidatorVoteSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v primitives.MultiValidatorVote
-	f.Fuzz(&v)
-
-	ser, err := v.Marshal()
+	v := fuzzMultiValidatorVote(1)
+	ser, err := v[0].Marshal()
 	assert.NoError(t, err)
 
-	var desc primitives.MultiValidatorVote
+	desc := new(primitives.MultiValidatorVote)
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
-	assert.Equal(t, v, desc)
+	assert.Equal(t, v[0], desc)
 }
 
 func Test_CoinStateSerialize(t *testing.T) {
@@ -472,4 +460,34 @@ func Test_TransactionSerialize(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, v, desc)
+}
+
+func fuzzVoteSlashing(n int) []*primitives.VoteSlashing {
+	var votes []*primitives.VoteSlashing
+	for i := 0; i < n; i++ {
+		v := &primitives.VoteSlashing{
+			Vote1: fuzzMultiValidatorVote(1)[0],
+			Vote2: fuzzMultiValidatorVote(1)[0],
+		}
+		votes = append(votes, v)
+	}
+	return votes
+}
+
+func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
+	var votes []*primitives.MultiValidatorVote
+	for i := 0; i < n; i++ {
+		f := fuzz.New().NilChance(0)
+		d := new(primitives.VoteData)
+		var sig [96]byte
+		f.Fuzz(d)
+		f.Fuzz(&sig)
+		v := &primitives.MultiValidatorVote{
+			Data:                  d,
+			Sig:                   sig,
+			ParticipationBitfield: bitfield.NewBitlist(uint64(2042)),
+		}
+		votes = append(votes, v)
+	}
+	return votes
 }

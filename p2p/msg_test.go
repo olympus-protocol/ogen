@@ -4,6 +4,7 @@ import (
 	"bytes"
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -83,11 +84,9 @@ func Test_MsgVersionSerialize(t *testing.T) {
 	assert.Equal(t, v, desc)
 }
 
-// Is not possible to test against equal states because of slice ordering. TODO find a solution
 func Test_MsgBlocksSerialize(t *testing.T) {
-	// TODO fix weird behaviour, when using 2 or more blocks, it doesn't work.
 	v := p2p.MsgBlocks{
-		Blocks: fuzzedBlock(5),
+		Blocks: fuzzBlock(32),
 	}
 
 	ser, err := v.Marshal()
@@ -99,9 +98,26 @@ func Test_MsgBlocksSerialize(t *testing.T) {
 	err = desc.Unmarshal(ser)
 
 	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
-func fuzzedBlock(n int) []*primitives.Block {
+func Test_MsgWithHeaderSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var v p2p.MsgVersion
+	f.Fuzz(&v)
+
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, &v, 333)
+	assert.NoError(t, err)
+
+	msg, err := p2p.ReadMessage(buf, 333)
+	assert.NoError(t, err)
+
+	assert.Equal(t, msg.(*p2p.MsgVersion), &v)
+}
+
+func fuzzBlock(n int) []*primitives.Block {
 	var blocks []*primitives.Block
 	for i := 0; i < n; i++ {
 		f := fuzz.New().NilChance(0)
@@ -137,12 +153,12 @@ func fuzzedBlock(n int) []*primitives.Block {
 		f.Fuzz(governanceVotes)
 
 		v := &primitives.Block{
-			Votes:             nil,
 			Header:            blockheader,
+			Votes:             &primitives.Votes{Votes: fuzzMultiValidatorVote(32)},
 			Txs:               txs,
 			Deposits:          deposits,
 			Exits:             exits,
-			VoteSlashings:     nil,
+			VoteSlashings:     &primitives.VoteSlashings{VoteSlashings: fuzzVoteSlashing(10)},
 			RANDAOSlashings:   randaoSlash,
 			ProposerSlashings: proposerSlash,
 			GovernanceVotes:   governanceVotes,
@@ -154,17 +170,32 @@ func fuzzedBlock(n int) []*primitives.Block {
 	return blocks
 }
 
-func Test_MsgWithHeaderSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v p2p.MsgVersion
-	f.Fuzz(&v)
+func fuzzVoteSlashing(n int) []*primitives.VoteSlashing {
+	var votes []*primitives.VoteSlashing
+	for i := 0; i < n; i++ {
+		v := &primitives.VoteSlashing{
+			Vote1: fuzzMultiValidatorVote(1)[0],
+			Vote2: fuzzMultiValidatorVote(1)[0],
+		}
+		votes = append(votes, v)
+	}
+	return votes
+}
 
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, &v, 333)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 333)
-	assert.NoError(t, err)
-
-	assert.Equal(t, msg.(*p2p.MsgVersion), &v)
+func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
+	var votes []*primitives.MultiValidatorVote
+	for i := 0; i < n; i++ {
+		f := fuzz.New().NilChance(0)
+		d := new(primitives.VoteData)
+		var sig [96]byte
+		f.Fuzz(d)
+		f.Fuzz(&sig)
+		v := &primitives.MultiValidatorVote{
+			Data:                  d,
+			Sig:                   sig,
+			ParticipationBitfield: bitfield.NewBitlist(uint64(2042)),
+		}
+		votes = append(votes, v)
+	}
+	return votes
 }
