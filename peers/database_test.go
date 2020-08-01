@@ -1,8 +1,6 @@
 package peers_test
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/peers"
@@ -63,8 +61,6 @@ func TestSavePeers(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, len(savedAddresses), 2)
 
-		s, _ := json.MarshalIndent(savedAddresses, "", "\t")
-		fmt.Println(string(s))
 		defer netDB.Close()
 	}
 }

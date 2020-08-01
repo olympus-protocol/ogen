@@ -2,6 +2,7 @@ package primitives_test
 
 import (
 	fuzz "github.com/google/gofuzz"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
@@ -37,34 +38,34 @@ func Test_BlockSerialize(t *testing.T) {
 	f.Fuzz(&rsig)
 
 	f.NumElements(32, 32)
-	deposits := new(primitives.Deposits)
-	exits := new(primitives.Exits)
-	f.Fuzz(deposits)
-	f.Fuzz(exits)
+	var deposits []*primitives.Deposit
+	var exits []*primitives.Exit
+	f.Fuzz(&deposits)
+	f.Fuzz(&exits)
 
 	f.NumElements(1000, 1000)
-	txs := new(primitives.Txs)
-	f.Fuzz(txs)
+	var txs []*primitives.Tx
+	f.Fuzz(&txs)
 
 	f.NumElements(20, 20)
-	randaoSlash := new(primitives.RANDAOSlashings)
-	f.Fuzz(randaoSlash)
+	var randaoSlash []*primitives.RANDAOSlashing
+	f.Fuzz(&randaoSlash)
 
 	f.NumElements(2, 2)
-	proposerSlash := new(primitives.ProposerSlashings)
-	f.Fuzz(proposerSlash)
+	var proposerSlash []*primitives.ProposerSlashing
+	f.Fuzz(&proposerSlash)
 
 	f.NumElements(128, 128)
-	governanceVotes := new(primitives.GovernanceVotes)
-	f.Fuzz(governanceVotes)
+	var governanceVotes []*primitives.GovernanceVote
+	f.Fuzz(&governanceVotes)
 
 	v := primitives.Block{
 		Header:            blockheader,
-		Votes:             &primitives.Votes{Votes: fuzzMultiValidatorVote(32)},
+		Votes:             fuzzMultiValidatorVote(32),
 		Txs:               txs,
 		Deposits:          deposits,
 		Exits:             exits,
-		VoteSlashings:     &primitives.VoteSlashings{VoteSlashings: fuzzVoteSlashing(10)},
+		VoteSlashings:     fuzzVoteSlashing(10),
 		RANDAOSlashings:   randaoSlash,
 		ProposerSlashings: proposerSlash,
 		GovernanceVotes:   governanceVotes,
@@ -417,21 +418,21 @@ func Test_StateSerialize(t *testing.T) {
 		NextRANDAO:                    nextrandao,
 		Slot:                          slot,
 		EpochIndex:                    epoch,
-		ProposerQueue:                 nil,
-		PreviousEpochVoteAssignments:  nil,
-		CurrentEpochVoteAssignments:   nil,
-		NextProposerQueue:             nil,
+		ProposerQueue:                 make([]uint64, 0),
+		PreviousEpochVoteAssignments:  make([]uint64, 0),
+		CurrentEpochVoteAssignments:   make([]uint64, 0),
+		NextProposerQueue:             make([]uint64, 0),
 		JustificationBitfield:         justifbit,
 		FinalizedEpoch:                finalepoch,
-		LatestBlockHashes:             nil,
+		LatestBlockHashes:             make([][32]byte, 64),
 		JustifiedEpoch:                justified,
 		JustifiedEpochHash:            justifiedepoch,
-		CurrentEpochVotes:             nil,
+		CurrentEpochVotes:             make([]*primitives.AcceptedVoteInfo, 0),
 		PreviousJustifiedEpoch:        previousjustepoch,
 		PreviousJustifiedEpochHash:    previousjustified,
-		PreviousEpochVotes:            nil,
-		CurrentManagers:               nil,
-		ManagerReplacement:            nil,
+		PreviousEpochVotes:            make([]*primitives.AcceptedVoteInfo, 0),
+		CurrentManagers:               make([][20]byte, 5),
+		ManagerReplacement:            bitfield.NewBitlist(uint64(5)),
 		Governance:                    gs,
 		VoteEpoch:                     voteepoch,
 		VoteEpochStartSlot:            votestartslot,
@@ -442,6 +443,83 @@ func Test_StateSerialize(t *testing.T) {
 	ser, err := v.Marshal()
 	assert.NoError(t, err)
 
+	var desc primitives.State
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+}
+
+func Test_StateSerializeForInitialParams(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var genHash [32]byte
+	f.Fuzz(&genHash)
+
+	var currManagers [][20]byte
+	f.NumElements(5, 5)
+	f.Fuzz(&currManagers)
+
+	val := make([]*primitives.Validator, 128)
+	for i := range val {
+		var pub [48]byte
+		var payee [20]byte
+		f.Fuzz(&pub)
+		f.Fuzz(&payee)
+		v := &primitives.Validator{
+			Balance:          100,
+			PubKey:           pub,
+			PayeeAddress:     payee,
+			Status:           primitives.StatusActive,
+			FirstActiveEpoch: 0,
+			LastActiveEpoch:  0,
+		}
+		val[i] = v
+	}
+
+	hash, err := testdata.PremineAddr.PublicKey().Hash()
+
+	assert.NoError(t, err)
+
+	is := &primitives.State{
+		CoinsState: primitives.CoinsState{
+			Balances: map[[20]byte]uint64{
+				hash: 400 * 1000000,
+			},
+			Nonces: make(map[[20]byte]uint64),
+		},
+		ValidatorRegistry:             val,
+		LatestValidatorRegistryChange: 0,
+		RANDAO:                        chainhash.Hash{},
+		NextRANDAO:                    chainhash.Hash{},
+		Slot:                          0,
+		EpochIndex:                    0,
+		JustificationBitfield:         0,
+		JustifiedEpoch:                0,
+		FinalizedEpoch:                0,
+		LatestBlockHashes:             make([][32]byte, 0),
+		JustifiedEpochHash:            genHash,
+		CurrentEpochVotes:             make([]*primitives.AcceptedVoteInfo, 0),
+		PreviousJustifiedEpoch:        0,
+		PreviousJustifiedEpochHash:    genHash,
+		PreviousEpochVotes:            make([]*primitives.AcceptedVoteInfo, 0),
+		CurrentManagers:               currManagers,
+		VoteEpoch:                     0,
+		VoteEpochStartSlot:            0,
+		Governance: primitives.Governance{
+			ReplaceVotes:   make(map[[20]byte]chainhash.Hash),
+			CommunityVotes: make(map[chainhash.Hash]primitives.CommunityVoteData),
+		},
+		VotingState:        primitives.GovernanceStateActive,
+		LastPaidSlot:       0,
+		ManagerReplacement: bitfield.NewBitlist(uint64(5)),
+	}
+
+	activeValidators := is.GetValidatorIndicesActiveAt(0)
+	is.ProposerQueue = primitives.DetermineNextProposers(chainhash.Hash{}, activeValidators, &testdata.IntTestParams)
+	is.NextProposerQueue = primitives.DetermineNextProposers(chainhash.Hash{}, activeValidators, &testdata.IntTestParams)
+	is.CurrentEpochVoteAssignments = primitives.Shuffle(chainhash.Hash{}, activeValidators)
+	is.PreviousEpochVoteAssignments = primitives.Shuffle(chainhash.Hash{}, activeValidators)
+
+	ser, err := is.Marshal()
+	assert.NoError(t, err)
 	var desc primitives.State
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)

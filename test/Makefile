@@ -12,6 +12,11 @@ test_rpc:
 	go test -tags rpc_test -c functional/rpc_test.go
 	./rpc.test
 	make clean
+
+test_chain:
+	go test -tags chain_test -c functional/chain_test.go
+	./chain.test
+	make clean
 	
 clean:
 	rm -rf data_*	

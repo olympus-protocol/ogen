@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -835,79 +836,78 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 
-	if !b.Header.TxMerkleRootH().IsEqual(&transactionMerkleRoot) {
-		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
+	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
+		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
 	}
 
-	if !b.Header.VoteMerkleRootH().IsEqual(&voteMerkleRoot) {
-		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
+	if !bytes.Equal(voteMerkleRoot[:], b.Header.VoteMerkleRoot[:]) {
+		return fmt.Errorf("expected vote merkle root to be %s but got %s", hex.EncodeToString(voteMerkleRoot[:]), hex.EncodeToString(b.Header.VoteMerkleRoot[:]))
 	}
 
-	if !b.Header.DepositMerkleRootH().IsEqual(&depositMerkleRoot) {
-		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
+	if !bytes.Equal(depositMerkleRoot[:], b.Header.DepositMerkleRoot[:]) {
+		return fmt.Errorf("expected deposit merkle root to be %s but got %s", hex.EncodeToString(depositMerkleRoot[:]), hex.EncodeToString(b.Header.DepositMerkleRoot[:]))
+	}
+	if !bytes.Equal(exitMerkleRoot[:], b.Header.ExitMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(exitMerkleRoot[:]), hex.EncodeToString(b.Header.ExitMerkleRoot[:]))
 	}
 
-	if !b.Header.ExitMerkleRootH().IsEqual(&exitMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", exitMerkleRoot, b.Header.ExitMerkleRoot)
+	if !bytes.Equal(voteSlashingMerkleRoot[:], b.Header.VoteSlashingMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(voteSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.VoteSlashingMerkleRoot[:]))
 	}
 
-	if !b.Header.VoteSlashingMerkleRootH().IsEqual(&voteSlashingMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", voteSlashingMerkleRoot, b.Header.VoteSlashingMerkleRoot)
+	if !bytes.Equal(proposerSlashingMerkleRoot[:], b.Header.ProposerSlashingMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(proposerSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.ProposerSlashingMerkleRoot[:]))
 	}
 
-	if !b.Header.ProposerSlashingMerkleRootH().IsEqual(&proposerSlashingMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", proposerSlashingMerkleRoot, b.Header.ProposerSlashingMerkleRoot)
+	if !bytes.Equal(randaoSlashingMerkleRoot[:], b.Header.RANDAOSlashingMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(randaoSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.RANDAOSlashingMerkleRoot[:]))
 	}
 
-	if !b.Header.RANDAOSlashingMerkleRootH().IsEqual(&randaoSlashingMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", randaoSlashingMerkleRoot, b.Header.RANDAOSlashingMerkleRoot)
+	if !bytes.Equal(governanceVoteMerkleRoot[:], b.Header.GovernanceVotesMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
 	}
 
-	if !b.Header.GovernanceVotesMerkleRootH().IsEqual(&governanceVoteMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
+	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
+		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes))
 	}
 
-	if uint64(len(b.Votes.Votes)) > p.MaxVotesPerBlock {
-		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes.Votes))
+	if uint64(len(b.Txs)) > p.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs))
 	}
 
-	if uint64(len(b.Txs.Txs)) > p.MaxTxsPerBlock {
-		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs.Txs))
+	if uint64(len(b.Deposits)) > p.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits))
 	}
 
-	if uint64(len(b.Deposits.Deposits)) > p.MaxDepositsPerBlock {
-		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits.Deposits))
+	if uint64(len(b.Exits)) > p.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
 	}
 
-	if uint64(len(b.Exits.Exits)) > p.MaxExitsPerBlock {
-		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits.Exits))
+	if uint64(len(b.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
+		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
 	}
 
-	if uint64(len(b.RANDAOSlashings.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
-		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings.RANDAOSlashings))
+	if uint64(len(b.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
+		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
 	}
 
-	if uint64(len(b.VoteSlashings.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
-		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings.VoteSlashings))
+	if uint64(len(b.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
+		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
-	if uint64(len(b.ProposerSlashings.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
-		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings.ProposerSlashings))
-	}
-
-	for _, d := range b.Deposits.Deposits {
+	for _, d := range b.Deposits {
 		if err := s.ApplyDeposit(d, p); err != nil {
 			return err
 		}
 	}
 
-	for _, tx := range b.Txs.Txs {
+	for _, tx := range b.Txs {
 		if err := s.ApplyTransactionSingle(tx, b.Header.FeeAddress, p); err != nil {
 			return err
 		}
 	}
 
-	for _, vote := range b.GovernanceVotes.GovernanceVotes {
+	for _, vote := range b.GovernanceVotes {
 		if err := s.ProcessGovernanceVote(vote, p); err != nil {
 			return err
 		}
@@ -917,31 +917,31 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 
-	for _, v := range b.Votes.Votes {
+	for _, v := range b.Votes {
 		if err := s.ProcessVote(v, p, uint64(proposerIndex)); err != nil {
 			return err
 		}
 	}
 
-	for _, e := range b.Exits.Exits {
+	for _, e := range b.Exits {
 		if err := s.ApplyExit(e); err != nil {
 			return err
 		}
 	}
 
-	for _, rs := range b.RANDAOSlashings.RANDAOSlashings {
+	for _, rs := range b.RANDAOSlashings {
 		if err := s.ApplyRANDAOSlashing(rs, p); err != nil {
 			return err
 		}
 	}
 
-	for _, vs := range b.VoteSlashings.VoteSlashings {
+	for _, vs := range b.VoteSlashings {
 		if err := s.ApplyVoteSlashing(vs, p); err != nil {
 			return err
 		}
 	}
 
-	for _, ps := range b.ProposerSlashings.ProposerSlashings {
+	for _, ps := range b.ProposerSlashings {
 		if err := s.ApplyProposerSlashing(ps, p); err != nil {
 			return err
 		}

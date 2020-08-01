@@ -7,18 +7,11 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-var genesisHash = chainhash.Hash([chainhash.HashSize]byte{
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-})
-
 // GetGenesisBlock gets the genesis block for a certain chain parameters.
 func GetGenesisBlock(params params.ChainParams) Block {
 	return Block{
 		Header: &BlockHeader{
-			Version:                    1,
+			Version:                    0,
 			Nonce:                      0,
 			TxMerkleRoot:               chainhash.Hash{},
 			VoteMerkleRoot:             chainhash.Hash{},
@@ -34,6 +27,6 @@ func GetGenesisBlock(params params.ChainParams) Block {
 			StateRoot:                  chainhash.Hash{},
 			FeeAddress:                 [20]byte{},
 		},
-		Txs: &Txs{[]*Tx{}},
+		Txs: []*Tx{},
 	}
 }

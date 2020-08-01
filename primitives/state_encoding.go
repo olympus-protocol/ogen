@@ -126,7 +126,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (1) 'ValidatorRegistry'
-	if len(s.ValidatorRegistry) > 310995116277762 {
+	if len(s.ValidatorRegistry) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -137,7 +137,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (7) 'ProposerQueue'
-	if len(s.ProposerQueue) > 310995116277762 {
+	if len(s.ProposerQueue) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -146,7 +146,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (8) 'PreviousEpochVoteAssignments'
-	if len(s.PreviousEpochVoteAssignments) > 310995116277762 {
+	if len(s.PreviousEpochVoteAssignments) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -155,7 +155,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (9) 'CurrentEpochVoteAssignments'
-	if len(s.CurrentEpochVoteAssignments) > 310995116277762 {
+	if len(s.CurrentEpochVoteAssignments) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -164,7 +164,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (10) 'NextProposerQueue'
-	if len(s.NextProposerQueue) > 310995116277762 {
+	if len(s.NextProposerQueue) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -182,7 +182,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (16) 'CurrentEpochVotes'
-	if len(s.CurrentEpochVotes) > 310995116277762 {
+	if len(s.CurrentEpochVotes) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -200,7 +200,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (19) 'PreviousEpochVotes'
-	if len(s.PreviousEpochVotes) > 310995116277762 {
+	if len(s.PreviousEpochVotes) > 1099511627776 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -227,7 +227,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (21) 'ManagerReplacement'
-	if len(s.ManagerReplacement) != 0 {
+	if len(s.ManagerReplacement) > 2048 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -371,7 +371,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'ValidatorRegistry'
 	{
 		buf = tail[o1:o7]
-		num, err := ssz.DivideInt2(len(buf), 100, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 100, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -389,7 +389,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (7) 'ProposerQueue'
 	{
 		buf = tail[o7:o8]
-		num, err := ssz.DivideInt2(len(buf), 8, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 8, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -402,7 +402,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (8) 'PreviousEpochVoteAssignments'
 	{
 		buf = tail[o8:o9]
-		num, err := ssz.DivideInt2(len(buf), 8, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 8, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -415,7 +415,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (9) 'CurrentEpochVoteAssignments'
 	{
 		buf = tail[o9:o10]
-		num, err := ssz.DivideInt2(len(buf), 8, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 8, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -428,7 +428,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (10) 'NextProposerQueue'
 	{
 		buf = tail[o10:o13]
-		num, err := ssz.DivideInt2(len(buf), 8, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 8, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -454,7 +454,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (16) 'CurrentEpochVotes'
 	{
 		buf = tail[o16:o19]
-		num, err := ssz.DecodeDynamicLength(buf, 310995116277762)
+		num, err := ssz.DecodeDynamicLength(buf, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -476,7 +476,7 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (19) 'PreviousEpochVotes'
 	{
 		buf = tail[o19:o20]
-		num, err := ssz.DecodeDynamicLength(buf, 310995116277762)
+		num, err := ssz.DecodeDynamicLength(buf, 1099511627776)
 		if err != nil {
 			return err
 		}
@@ -511,6 +511,9 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (21) 'ManagerReplacement'
 	{
 		buf = tail[o21:o22]
+		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+			return err
+		}
 		s.ManagerReplacement = append(s.ManagerReplacement, buf...)
 	}
 
@@ -600,7 +603,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(s.ValidatorRegistry))
-		if num > 310995116277762 {
+		if num > 1099511627776 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -609,7 +612,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 310995116277762)
+		hh.MerkleizeWithMixin(subIndx, num, 1099511627776)
 	}
 
 	// Field (2) 'LatestValidatorRegistryChange'
@@ -629,7 +632,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (7) 'ProposerQueue'
 	{
-		if len(s.ProposerQueue) > 310995116277762 {
+		if len(s.ProposerQueue) > 1099511627776 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -639,12 +642,12 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		}
 		hh.FillUpTo32()
 		numItems := uint64(len(s.ProposerQueue))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(310995116277762, numItems, 8))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(1099511627776, numItems, 8))
 	}
 
 	// Field (8) 'PreviousEpochVoteAssignments'
 	{
-		if len(s.PreviousEpochVoteAssignments) > 310995116277762 {
+		if len(s.PreviousEpochVoteAssignments) > 1099511627776 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -654,12 +657,12 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		}
 		hh.FillUpTo32()
 		numItems := uint64(len(s.PreviousEpochVoteAssignments))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(310995116277762, numItems, 8))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(1099511627776, numItems, 8))
 	}
 
 	// Field (9) 'CurrentEpochVoteAssignments'
 	{
-		if len(s.CurrentEpochVoteAssignments) > 310995116277762 {
+		if len(s.CurrentEpochVoteAssignments) > 1099511627776 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -669,12 +672,12 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		}
 		hh.FillUpTo32()
 		numItems := uint64(len(s.CurrentEpochVoteAssignments))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(310995116277762, numItems, 8))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(1099511627776, numItems, 8))
 	}
 
 	// Field (10) 'NextProposerQueue'
 	{
-		if len(s.NextProposerQueue) > 310995116277762 {
+		if len(s.NextProposerQueue) > 1099511627776 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -684,7 +687,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		}
 		hh.FillUpTo32()
 		numItems := uint64(len(s.NextProposerQueue))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(310995116277762, numItems, 8))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(1099511627776, numItems, 8))
 	}
 
 	// Field (11) 'JustificationBitfield'
@@ -717,7 +720,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(s.CurrentEpochVotes))
-		if num > 310995116277762 {
+		if num > 1099511627776 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -726,7 +729,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 310995116277762)
+		hh.MerkleizeWithMixin(subIndx, num, 1099511627776)
 	}
 
 	// Field (17) 'PreviousJustifiedEpoch'
@@ -739,7 +742,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(s.PreviousEpochVotes))
-		if num > 310995116277762 {
+		if num > 1099511627776 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -748,7 +751,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 310995116277762)
+		hh.MerkleizeWithMixin(subIndx, num, 1099511627776)
 	}
 
 	// Field (20) 'CurrentManagers'
@@ -766,11 +769,7 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (21) 'ManagerReplacement'
-	if len(s.ManagerReplacement) != 0 {
-		err = ssz.ErrBytesLength
-		return
-	}
-	hh.PutBytes(s.ManagerReplacement)
+	hh.PutBitlist(s.ManagerReplacement, 2048)
 
 	// Field (22) 'Governance'
 	if err = s.Governance.HashTreeRootWith(hh); err != nil {

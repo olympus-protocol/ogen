@@ -32,66 +32,6 @@ type BlockHeader struct {
 	FeeAddress                 [20]byte `ssz-size:"20"`
 }
 
-// TxMerkleRootH returns the TxMerkleRoot data as a hash struct
-func (b *BlockHeader) TxMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.TxMerkleRoot)
-	return h
-}
-
-// VoteMerkleRootH returns the VoteMerkleRoot data as a hash struct
-func (b *BlockHeader) VoteMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.VoteMerkleRoot)
-	return h
-}
-
-// DepositMerkleRootH returns the DepositMerkleRoot data as a hash struct
-func (b *BlockHeader) DepositMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.DepositMerkleRoot)
-	return h
-}
-
-// ExitMerkleRootH returns the ExitMerkleRoot data as a hash struct
-func (b *BlockHeader) ExitMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.ExitMerkleRoot)
-	return h
-}
-
-// VoteSlashingMerkleRootH returns the VoteSlashingMerkleRoot data as a hash struct
-func (b *BlockHeader) VoteSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.VoteSlashingMerkleRoot)
-	return h
-}
-
-// GovernanceVotesMerkleRootH returns the GovernanceVotesMerkleRoot data as a hash struct
-func (b *BlockHeader) GovernanceVotesMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.GovernanceVotesMerkleRoot)
-	return h
-}
-
-// PrevBlockHashH returns the PrevBlockHash data as a hash struct
-func (b *BlockHeader) PrevBlockHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.PrevBlockHash)
-	return h
-}
-
-// RANDAOSlashingMerkleRootH returns the RANDAOSlashingMerkleRoot data as a hash struct
-func (b *BlockHeader) RANDAOSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.RANDAOSlashingMerkleRoot)
-	return h
-}
-
-// ProposerSlashingMerkleRootH returns the ProposerSlashingMerkleRoot data as a hash struct
-func (b *BlockHeader) ProposerSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.ProposerSlashingMerkleRoot)
-	return h
-}
-
-// StateRootH returns the StateRoot data as a hash struct
-func (b *BlockHeader) StateRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(b.StateRoot)
-	return h
-}
-
 // Marshal encodes the data.
 func (b *BlockHeader) Marshal() ([]byte, error) {
 	by, err := b.MarshalSSZ()

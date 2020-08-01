@@ -131,34 +131,34 @@ func fuzzBlock(n int) []*primitives.Block {
 		f.Fuzz(&rsig)
 
 		f.NumElements(32, 32)
-		deposits := new(primitives.Deposits)
-		exits := new(primitives.Exits)
-		f.Fuzz(deposits)
-		f.Fuzz(exits)
+		var deposits []*primitives.Deposit
+		var exits []*primitives.Exit
+		f.Fuzz(&deposits)
+		f.Fuzz(&exits)
 
-		f.NumElements(100, 100)
-		txs := new(primitives.Txs)
-		f.Fuzz(txs)
+		f.NumElements(1000, 1000)
+		var txs []*primitives.Tx
+		f.Fuzz(&txs)
 
 		f.NumElements(20, 20)
-		randaoSlash := new(primitives.RANDAOSlashings)
-		f.Fuzz(randaoSlash)
+		var randaoSlash []*primitives.RANDAOSlashing
+		f.Fuzz(&randaoSlash)
 
 		f.NumElements(2, 2)
-		proposerSlash := new(primitives.ProposerSlashings)
-		f.Fuzz(proposerSlash)
+		var proposerSlash []*primitives.ProposerSlashing
+		f.Fuzz(&proposerSlash)
 
 		f.NumElements(128, 128)
-		governanceVotes := new(primitives.GovernanceVotes)
-		f.Fuzz(governanceVotes)
+		var governanceVotes []*primitives.GovernanceVote
+		f.Fuzz(&governanceVotes)
 
 		v := &primitives.Block{
 			Header:            blockheader,
-			Votes:             &primitives.Votes{Votes: fuzzMultiValidatorVote(32)},
+			Votes:             fuzzMultiValidatorVote(32),
 			Txs:               txs,
 			Deposits:          deposits,
 			Exits:             exits,
-			VoteSlashings:     &primitives.VoteSlashings{VoteSlashings: fuzzVoteSlashing(10)},
+			VoteSlashings:     fuzzVoteSlashing(10),
 			RANDAOSlashings:   randaoSlash,
 			ProposerSlashings: proposerSlash,
 			GovernanceVotes:   governanceVotes,

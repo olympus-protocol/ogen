@@ -112,7 +112,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"33"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
 }
 
 // Marshal encodes the data.

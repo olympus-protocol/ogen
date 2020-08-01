@@ -85,7 +85,7 @@ func (ch *Blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return block.Txs.Txs[loc.Index], nil
+	return block.Txs[loc.Index], nil
 }
 
 // NewBlockchain constructs a new blockchain.

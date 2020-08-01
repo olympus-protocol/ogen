@@ -94,7 +94,7 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
-	for _, tx := range b.Txs.Txs {
+	for _, tx := range b.Txs {
 		fpkh, err := tx.FromPubkeyHash()
 		if err != nil {
 			continue

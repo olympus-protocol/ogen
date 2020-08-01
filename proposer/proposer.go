@@ -231,13 +231,13 @@ func (p *Proposer) ProposeBlocks() {
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
 					},
-					Votes:             &primitives.Votes{Votes: votes},
-					Txs:               &primitives.Txs{Txs: coinTxs},
-					Deposits:          &primitives.Deposits{Deposits: depositTxs},
-					Exits:             &primitives.Exits{Exits: exitTxs},
-					RANDAOSlashings:   &primitives.RANDAOSlashings{RANDAOSlashings: randaoSlashings},
-					VoteSlashings:     &primitives.VoteSlashings{VoteSlashings: voteSlashings},
-					ProposerSlashings: &primitives.ProposerSlashings{ProposerSlashings: proposerSlashings},
+					Votes:             votes,
+					Txs:               coinTxs,
+					Deposits:          depositTxs,
+					Exits:             exitTxs,
+					RANDAOSlashings:   randaoSlashings,
+					VoteSlashings:     voteSlashings,
+					ProposerSlashings: proposerSlashings,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()

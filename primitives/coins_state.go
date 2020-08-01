@@ -71,8 +71,8 @@ func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
 
 // ToSerializable converts the struct from maps to slices.
 func (u *CoinsState) ToSerializable() CoinsStateSerializable {
-	balances := []*AccountInfo{}
-	nonces := []*AccountInfo{}
+	var balances []*AccountInfo
+	var nonces []*AccountInfo
 	for k, v := range u.Balances {
 		balances = append(balances, &AccountInfo{Account: k, Info: v})
 	}

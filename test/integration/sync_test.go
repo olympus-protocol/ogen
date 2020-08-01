@@ -18,7 +18,7 @@ import (
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
-	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
