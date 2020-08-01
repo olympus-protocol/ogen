@@ -137,7 +137,7 @@ func fuzzedBlock(n int) []*primitives.Block {
 		f.Fuzz(governanceVotes)
 
 		v := &primitives.Block{
-			Votes: nil,
+			Votes:             nil,
 			Header:            blockheader,
 			Txs:               txs,
 			Deposits:          deposits,
