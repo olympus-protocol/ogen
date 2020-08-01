@@ -10,6 +10,8 @@ import (
 )
 
 var (
+	// ErrorMessageHeaderSize returns when a MessageHeader size exceed MaxMessageHeaderSize
+	ErrorMessageHeaderSize = errors.New("message header too big")
 	// ErrorChecksum returned when the message header checksum doesn't match.
 	ErrorChecksum = errors.New("message checksum don't match")
 	// ErrorAnnLength returned when the header length doesn't match the message length.
@@ -20,10 +22,9 @@ var (
 	ErrorNetMismatch = errors.New("wrong message network")
 )
 
-// MaxMsgSize is the maximum amount of bytes a message can have.
-var MaxMsgSize = 1024 * 1024 * 64
-
 const (
+	// MaxMessageHeaderSize is the maximum bytes a MessageHeader can contain
+	MaxMessageHeaderSize = 60
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
 	// MsgGetAddrCmd ask node for address
@@ -53,13 +54,23 @@ type MessageHeader struct {
 }
 
 // Marshal serializes the data to bytes
-func (h *MessageHeader) Marshal() ([]byte, error) {
-	return h.MarshalSSZ()
+func (m *MessageHeader) Marshal() ([]byte, error) {
+	b, err := m.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxMessageHeaderSize {
+		return nil, ErrorMessageHeaderSize
+	}
+	return b, nil
 }
 
 // Unmarshal deserializes the data
-func (h *MessageHeader) Unmarshal(b []byte) error {
-	return h.UnmarshalSSZ(b)
+func (m *MessageHeader) Unmarshal(b []byte) error {
+	if len(b) > MaxMessageHeaderSize {
+		return ErrorMessageHeaderSize
+	}
+	return m.UnmarshalSSZ(b)
 }
 
 func makeEmptyMessage(command string) (Message, error) {

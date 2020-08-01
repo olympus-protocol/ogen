@@ -62,7 +62,7 @@ var IntTestParams = params.ChainParams{
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
-	MaxTxsPerBlock:               1000,
+	MaxTxsPerBlock:               9000,
 	MaxDepositsPerBlock:          32,
 	MaxExitsPerBlock:             32,
 	MaxRANDAOSlashingsPerBlock:   20,

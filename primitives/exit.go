@@ -3,7 +3,6 @@ package primitives
 import (
 	"errors"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -16,9 +15,9 @@ const MaxExitSize = 192
 
 // Exit exits the validator from the queue.
 type Exit struct {
-	ValidatorPubkey [48]byte `ssz-size:"48"`
-	WithdrawPubkey  [48]byte `ssz-size:"48"`
-	Signature       [96]byte `ssz-size:"96"`
+	ValidatorPubkey [48]byte
+	WithdrawPubkey  [48]byte
+	Signature       [96]byte
 }
 
 // GetWithdrawPubKey returns the withdraw bls public key
@@ -45,19 +44,15 @@ func (e *Exit) Marshal() ([]byte, error) {
 	if len(b) > MaxExitSize {
 		return nil, ErrorExitSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (e *Exit) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxExitSize {
+	if len(b) > MaxExitSize {
 		return ErrorExitSize
 	}
-	return e.UnmarshalSSZ(d)
+	return e.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the exit.

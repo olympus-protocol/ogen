@@ -21,7 +21,7 @@ type Votes struct {
 
 // Txs is the struct on the block that contains block txs.
 type Txs struct {
-	Txs []*Tx `ssz-max:"1000"` // MaxTxsPerBlock
+	Txs []*Tx `ssz-max:"9000"` // MaxTxsPerBlock
 }
 
 // Deposits is the struct on the block that contains block deposits.

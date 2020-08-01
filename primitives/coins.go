@@ -2,7 +2,7 @@ package primitives
 
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
 type AccountInfo struct {
-	Account [20]byte `ssz-size:"20"`
+	Account [20]byte
 	Info    uint64
 }
 

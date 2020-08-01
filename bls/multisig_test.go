@@ -27,7 +27,7 @@ func TestCorrectnessMultisig(t *testing.T) {
 		assert.NoError(t, multisig.Sign(secretKeys[i], msg))
 	}
 
-	assert.True(t, multisig.Verify(msg))
+	assert.False(t, multisig.Verify(msg))
 
 	assert.NoError(t, multisig.Sign(secretKeys[9], msg))
 
@@ -60,22 +60,16 @@ func TestMultisigDecodeEncode(t *testing.T) {
 	msg := []byte("hello there!")
 
 	for i := 0; i < 10; i++ {
-		if err := multisig.Sign(secretKeys[i], msg); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, multisig.Sign(secretKeys[i], msg))
 	}
 
 	multiBytes, err := multisig.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
 
 	newMulti := new(bls.Multisig)
-	if err := newMulti.Unmarshal(multiBytes); err != nil {
-		t.Fatal(err)
-	}
 
-	if !newMulti.Verify(msg) {
-		t.Fatal("multisig should validate after serializing and deserializing")
-	}
+	assert.NoError(t, newMulti.Unmarshal(multiBytes))
+
+	assert.True(t, newMulti.Verify(msg))
 }

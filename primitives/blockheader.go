@@ -11,7 +11,7 @@ import (
 var ErrorBlockHeaderSize = errors.New("blockheader size is too big")
 
 // MaxBlockHeaderBytes is the maximum amount of bytes a header can contain.
-const MaxBlockHeaderBytes = 376
+const MaxBlockHeaderBytes = 372
 
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
@@ -33,91 +33,91 @@ type BlockHeader struct {
 }
 
 // TxMerkleRootH returns the TxMerkleRoot data as a hash struct
-func (bh *BlockHeader) TxMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.TxMerkleRoot)
+func (b *BlockHeader) TxMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.TxMerkleRoot)
 	return h
 }
 
 // VoteMerkleRootH returns the VoteMerkleRoot data as a hash struct
-func (bh *BlockHeader) VoteMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.VoteMerkleRoot)
+func (b *BlockHeader) VoteMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.VoteMerkleRoot)
 	return h
 }
 
 // DepositMerkleRootH returns the DepositMerkleRoot data as a hash struct
-func (bh *BlockHeader) DepositMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.DepositMerkleRoot)
+func (b *BlockHeader) DepositMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.DepositMerkleRoot)
 	return h
 }
 
 // ExitMerkleRootH returns the ExitMerkleRoot data as a hash struct
-func (bh *BlockHeader) ExitMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.ExitMerkleRoot)
+func (b *BlockHeader) ExitMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.ExitMerkleRoot)
 	return h
 }
 
 // VoteSlashingMerkleRootH returns the VoteSlashingMerkleRoot data as a hash struct
-func (bh *BlockHeader) VoteSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.VoteSlashingMerkleRoot)
+func (b *BlockHeader) VoteSlashingMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.VoteSlashingMerkleRoot)
 	return h
 }
 
 // GovernanceVotesMerkleRootH returns the GovernanceVotesMerkleRoot data as a hash struct
-func (bh *BlockHeader) GovernanceVotesMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.GovernanceVotesMerkleRoot)
+func (b *BlockHeader) GovernanceVotesMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.GovernanceVotesMerkleRoot)
 	return h
 }
 
 // PrevBlockHashH returns the PrevBlockHash data as a hash struct
-func (bh *BlockHeader) PrevBlockHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.PrevBlockHash)
+func (b *BlockHeader) PrevBlockHashH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.PrevBlockHash)
 	return h
 }
 
 // RANDAOSlashingMerkleRootH returns the RANDAOSlashingMerkleRoot data as a hash struct
-func (bh *BlockHeader) RANDAOSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.RANDAOSlashingMerkleRoot)
+func (b *BlockHeader) RANDAOSlashingMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.RANDAOSlashingMerkleRoot)
 	return h
 }
 
 // ProposerSlashingMerkleRootH returns the ProposerSlashingMerkleRoot data as a hash struct
-func (bh *BlockHeader) ProposerSlashingMerkleRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.ProposerSlashingMerkleRoot)
+func (b *BlockHeader) ProposerSlashingMerkleRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.ProposerSlashingMerkleRoot)
 	return h
 }
 
 // StateRootH returns the StateRoot data as a hash struct
-func (bh *BlockHeader) StateRootH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(bh.StateRoot)
+func (b *BlockHeader) StateRootH() *chainhash.Hash {
+	h, _ := chainhash.NewHash(b.StateRoot)
 	return h
 }
 
 // Marshal encodes the data.
-func (bh *BlockHeader) Marshal() ([]byte, error) {
-	b, err := bh.MarshalSSZ()
+func (b *BlockHeader) Marshal() ([]byte, error) {
+	by, err := b.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxBlockHeaderBytes {
+	if len(by) > MaxBlockHeaderBytes {
 		return nil, ErrorBlockHeaderSize
 	}
-	return snappy.Encode(nil, b), nil
+	return snappy.Encode(nil, by), nil
 }
 
 // Unmarshal decodes the data.
-func (bh *BlockHeader) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
+func (b *BlockHeader) Unmarshal(by []byte) error {
+	d, err := snappy.Decode(nil, by)
 	if err != nil {
 		return err
 	}
 	if len(d) > MaxBlockHeaderBytes {
 		return ErrorBlockHeaderSize
 	}
-	return bh.UnmarshalSSZ(d)
+	return b.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the block header.
-func (bh *BlockHeader) Hash() chainhash.Hash {
-	b, _ := bh.Marshal()
-	return chainhash.HashH(b)
+func (b *BlockHeader) Hash() chainhash.Hash {
+	by, _ := b.Marshal()
+	return chainhash.HashH(by)
 }

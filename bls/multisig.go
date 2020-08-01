@@ -15,7 +15,7 @@ var (
 	// MaxMultiPubSize is the maximum amount of bytes a Multipub key can contain. 32 public keys.
 	MaxMultiPubSize = (32 * 48) + 8
 	// MaxMultisigSize is the maximum amount of bytes a Multisig can contain. 32 public keys and 32 signatures.
-	MaxMultisigSize = MaxMultiPubSize + (96 * 32) + 32
+	MaxMultisigSize = MaxMultiPubSize + (96 * 32) + 33
 )
 
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
@@ -112,7 +112,7 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"32"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"33"`
 }
 
 // Marshal encodes the data.

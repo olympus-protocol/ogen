@@ -33,8 +33,8 @@ type VoteSlashing struct {
 }
 
 // Marshal encodes the data.
-func (vs *VoteSlashing) Marshal() ([]byte, error) {
-	b, err := vs.MarshalSSZ()
+func (v *VoteSlashing) Marshal() ([]byte, error) {
+	b, err := v.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (vs *VoteSlashing) Marshal() ([]byte, error) {
 }
 
 // Unmarshal decodes the data.
-func (vs *VoteSlashing) Unmarshal(b []byte) error {
+func (v *VoteSlashing) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
@@ -53,20 +53,20 @@ func (vs *VoteSlashing) Unmarshal(b []byte) error {
 	if len(d) > MaxVoteSlashingSize {
 		return ErrorVoteSlashingSize
 	}
-	return vs.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the slashing.
-func (vs *VoteSlashing) Hash() chainhash.Hash {
-	b, _ := vs.Marshal()
+func (v *VoteSlashing) Hash() chainhash.Hash {
+	b, _ := v.Marshal()
 	return chainhash.HashH(b)
 }
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO signature too early.
 type RANDAOSlashing struct {
-	RandaoReveal    [96]byte `ssz-size:"96"`
+	RandaoReveal    [96]byte
 	Slot            uint64
-	ValidatorPubkey [48]byte `ssz-size:"48"`
+	ValidatorPubkey [48]byte
 }
 
 // GetValidatorPubkey returns the validator bls public key.

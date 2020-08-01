@@ -1,27 +1,43 @@
 package bls
 
 import (
+	"errors"
 	"fmt"
 )
 
 var (
+	// ErrorCombinedSignatureSize returns when serialized CombinedSignature size exceed MaxCombinedSignatureSize.
+	ErrorCombinedSignatureSize = errors.New("combined signature too big")
+)
+
+const (
 	// MaxCombinedSignatureSize is the maximum amount of bytes a CombinedSignature can contain.
 	MaxCombinedSignatureSize = 96 + 48
 )
 
 // CombinedSignature is a signature and a public key meant to match the same interface as Multisig.
 type CombinedSignature struct {
-	S [96]byte `ssz-size:"96"`
-	P [48]byte `ssz-size:"48"`
+	S [96]byte
+	P [48]byte
 }
 
 // Marshal encodes the data.
 func (c *CombinedSignature) Marshal() ([]byte, error) {
-	return c.MarshalSSZ()
+	b, err := c.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxCombinedSignatureSize {
+		return nil, ErrorCombinedSignatureSize
+	}
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (c *CombinedSignature) Unmarshal(b []byte) error {
+	if len(b) > MaxCombinedSignatureSize {
+		return ErrorCombinedSignatureSize
+	}
 	return c.UnmarshalSSZ(b)
 }
 

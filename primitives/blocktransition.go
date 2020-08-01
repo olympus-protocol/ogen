@@ -190,7 +190,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
-			ReplacementCandidates: [5][20]byte{},
+			ReplacementCandidates: [][20]byte{},
 		}
 
 		for i := range voteData.ReplacementCandidates {

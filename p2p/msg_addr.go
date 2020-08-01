@@ -7,12 +7,9 @@ import (
 // MaxAddrPerMsg defines the maximum address that can be added into an addr message.
 const MaxAddrPerMsg = 32
 
-// MaxAddrPerPeer defines the maximum amount of address that a single peer can send.
-const MaxAddrPerPeer = 2
-
 // MsgAddr is the struct for the response of getaddr.
 type MsgAddr struct {
-	Addr [32][500]byte
+	Addr [][64]byte `ssz-max:"32"`
 }
 
 // Marshal serializes the data to bytes
@@ -46,6 +43,5 @@ func (m *MsgAddr) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgAddr message.
 func (m *MsgAddr) MaxPayloadLength() uint64 {
-	netAddressSize := 500 // There is no a specific maximum size for ma formatted address.
-	return uint64(MaxAddrPerMsg * netAddressSize)
+	return uint64(MaxAddrPerMsg*64) + 4
 }

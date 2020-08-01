@@ -22,7 +22,7 @@ func (s *State) GetEffectiveBalance(index uint64, p *params.ChainParams) uint64 
 	return b
 }
 
-func (s *State) getActiveBalance(p *params.ChainParams) uint64 {
+func (s *State) getActiveBalance(_ *params.ChainParams) uint64 {
 	balance := uint64(0)
 
 	for _, v := range s.ValidatorRegistry {
@@ -34,16 +34,6 @@ func (s *State) getActiveBalance(p *params.ChainParams) uint64 {
 	}
 
 	return balance
-}
-
-func intSqrt(n uint64) uint64 {
-	x := n
-	y := (x + 1) / 2
-	for y < x {
-		x = y
-		y = (x + n/x) / 2
-	}
-	return x
 }
 
 type voterGroup struct {
@@ -233,7 +223,7 @@ func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint64, p 
 		}
 
 		validatorsChosen[val] = struct{}{}
-		nextProposers[i] = uint64(val)
+		nextProposers[i] = val
 		randao = chainhash.HashH(randao[:])
 	}
 
@@ -262,6 +252,16 @@ const (
 	PenaltyInactivityLeakNoVote
 )
 
+var (
+	// ErrorEpochReceiptSize is returned when an EpochReceipt exceed MaxEpochReceiptSize
+	ErrorEpochReceiptSize = errors.New("epoch receipt too big")
+)
+
+const (
+	// MaxEpochReceiptSize is the maximum amount of bytes an EpochReceipt can contain
+	MaxEpochReceiptSize = 24
+)
+
 // EpochReceipt is a balance change carried our by an epoch transition.
 type EpochReceipt struct {
 	Type      uint64
@@ -270,21 +270,27 @@ type EpochReceipt struct {
 }
 
 // Marshal encodes the data.
-func (d *EpochReceipt) Marshal() ([]byte, error) {
-	b, err := d.MarshalSSZ()
+func (e *EpochReceipt) Marshal() ([]byte, error) {
+	b, err := e.MarshalSSZ()
 	if err != nil {
 		return nil, err
+	}
+	if len(b) > MaxEpochReceiptSize {
+		return nil, ErrorEpochReceiptSize
 	}
 	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
-func (d *EpochReceipt) Unmarshal(b []byte) error {
+func (e *EpochReceipt) Unmarshal(b []byte) error {
 	de, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
 	}
-	return d.UnmarshalSSZ(de)
+	if len(de) > MaxEpochReceiptSize {
+		return ErrorEpochReceiptSize
+	}
+	return e.UnmarshalSSZ(de)
 }
 
 func (e EpochReceipt) TypeString() string {
@@ -427,7 +433,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 }
 
 // ProcessEpochTransition runs an epoch transition on the state.
-func (s *State) ProcessEpochTransition(p *params.ChainParams, log *logger.Logger) ([]*EpochReceipt, error) {
+func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) ([]*EpochReceipt, error) {
 	s.CheckForVoteTransitions(p)
 
 	totalBalance := s.getActiveBalance(p)
