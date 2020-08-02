@@ -918,7 +918,7 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 
 	for _, v := range b.Votes {
-		if err := s.ProcessVote(v, p, uint64(proposerIndex)); err != nil {
+		if err := s.ProcessVote(v, p, proposerIndex); err != nil {
 			return err
 		}
 	}
