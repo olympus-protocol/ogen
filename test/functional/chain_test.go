@@ -5,8 +5,11 @@ package chain_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/bdb"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
@@ -43,6 +46,8 @@ func TestMain(m *testing.M) {
 	firstNode()
 	// Run second node.
 	secondNode()
+	// Log epoch receipts from first node
+	go logNotify()
 	// Run tests
 	os.Exit(m.Run())
 }
@@ -58,7 +63,7 @@ func createValidators() {
 	}
 
 	// Generate the validators data.
-	valDataPrimary, err := k.GenerateNewValidatorKey(128, testdata.KeystorePass)
+	valDataPrimary, err := k.GenerateNewValidatorKey(8, testdata.KeystorePass)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +79,12 @@ func createValidators() {
 }
 
 func firstNode() {
-	log := logger.New(os.Stdin)
+	// Create logger
+	logfile, err := os.Create(testdata.Node1Folder + "/log.log")
+	if err != nil {
+		panic(err)
+	}
+	log := logger.New(logfile)
 	log.WithDebug()
 
 	// Load the block database
@@ -149,6 +159,53 @@ func secondNode() {
 	}
 	// Start the server
 	go B.Start()
+}
+
+type blockNotifee struct {
+	blocks chan blockAndReceipts
+}
+
+type blockAndReceipts struct {
+	block    *primitives.Block
+	receipts []*primitives.EpochReceipt
+	state    *primitives.State
+}
+
+func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
+	bn := blockNotifee{
+		blocks: make(chan blockAndReceipts),
+	}
+	go func() {
+		chain.Notify(&bn)
+		<-ctx.Done()
+		chain.Unnotify(&bn)
+	}()
+
+	return bn
+}
+
+func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+	fmt.Printf("Slot %v Hash: %s Height: %v StateRoot: %s \n", row.Slot, hex.EncodeToString(row.Hash[:]), row.Height, hex.EncodeToString(row.StateRoot[:]))
+	fmt.Printf("%v Epoch Receipts \n", len(receipts))
+	for _, receipt := range receipts {
+		fmt.Printf("Validator: %v Amount: %v Type: %s \n", receipt.Validator, receipt.Amount, receipt.TypeString())
+	}
+}
+
+func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
+	fmt.Printf("Slashing:  %s \n", hex.EncodeToString(slashing.ValidatorPublicKey[:]))
+}
+
+
+func logNotify() {
+	bn := newBlockNotifee(context.Background(), F.Chain)
+	for {
+		select {
+		case bl := <-bn.blocks:
+			fmt.Println(bl)
+		}
+	}
+
 }
 
 func Test_Connections(t *testing.T) {

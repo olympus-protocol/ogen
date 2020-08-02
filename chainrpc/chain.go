@@ -123,7 +123,10 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 		response := &proto.RawData{
 			Data: hex.EncodeToString(rawBlock),
 		}
-		stream.Send(response)
+		err = stream.Send(response)
+		if err != nil {
+			return err
+		}
 		blockRow, ok = s.chain.State().Chain().Next(blockRow)
 		if blockRow == nil || !ok {
 			break

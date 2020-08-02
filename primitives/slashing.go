@@ -70,42 +70,38 @@ type RANDAOSlashing struct {
 }
 
 // GetValidatorPubkey returns the validator bls public key.
-func (rs *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
-	return bls.PublicKeyFromBytes(rs.ValidatorPubkey)
+func (r *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(r.ValidatorPubkey)
 }
 
 // GetRandaoReveal returns the bls signature of the randao reveal.
-func (rs *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(rs.RandaoReveal)
+func (r *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(r.RandaoReveal)
 }
 
 // Marshal encodes the data.
-func (rs *RANDAOSlashing) Marshal() ([]byte, error) {
-	b, err := rs.MarshalSSZ()
+func (r *RANDAOSlashing) Marshal() ([]byte, error) {
+	b, err := r.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
 	if len(b) > MaxRandaoSlashingSize {
 		return nil, ErrorRandaoSlashingSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
-func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxRandaoSlashingSize {
+func (r *RANDAOSlashing) Unmarshal(b []byte) error {
+	if len(b) > MaxRandaoSlashingSize {
 		return ErrorRandaoSlashingSize
 	}
-	return rs.UnmarshalSSZ(d)
+	return r.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the RANDAO slashing.
-func (rs *RANDAOSlashing) Hash() chainhash.Hash {
-	b, _ := rs.Marshal()
+func (r *RANDAOSlashing) Hash() chainhash.Hash {
+	b, _ := r.Marshal()
 	return chainhash.HashH(b)
 }
 

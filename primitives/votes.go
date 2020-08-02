@@ -227,19 +227,15 @@ func (s *SingleValidatorVote) Marshal() ([]byte, error) {
 	if len(b) > MaxSingleValidatorVoteSize {
 		return nil, ErrorSingleValidatorVoteSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (s *SingleValidatorVote) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxSingleValidatorVoteSize {
+	if len(b) > MaxSingleValidatorVoteSize {
 		return ErrorSingleValidatorVoteSize
 	}
-	return s.UnmarshalSSZ(d)
+	return s.UnmarshalSSZ(b)
 }
 
 // AsMulti returns the single validator vote as a multi validator vote.
