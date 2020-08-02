@@ -17,18 +17,17 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 type mempoolVote struct {
 	individualVotes         []*primitives.SingleValidatorVote
-	participationBitfield   bitfield.Bitlist
+	participationBitfield   []uint8
 	participatingValidators map[uint64]struct{}
 	voteData                *primitives.VoteData
 }
 
 func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
-	if !mv.participationBitfield.BitAt(offset) {
+	if !mv.participationBitfield.Get(uint(offset)) {
 		return nil, false
 	}
 
@@ -43,11 +42,11 @@ func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidat
 }
 
 func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
-	if mv.participationBitfield.BitAt(vote.Offset) {
+	if mv.participationBitfield.Get(uint(vote.Offset)) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	mv.participationBitfield.SetBitAt(vote.Offset, true)
+	mv.participationBitfield.Set(uint(vote.Offset))
 	mv.participatingValidators[voter] = struct{}{}
 }
 
@@ -73,7 +72,7 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   bitfield.NewBitlist(outOf),
+		participationBitfield:   bitfield.NewBitfield(uint(outOf)),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),

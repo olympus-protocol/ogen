@@ -99,7 +99,7 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (21) 'ManagerReplacement'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(s.ManagerReplacement)
+	offset += len(s.ManagerReplacement) * 1
 
 	// Offset (22) 'Governance'
 	dst = ssz.WriteOffset(dst, offset)
@@ -228,10 +228,12 @@ func (s *SerializableState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (21) 'ManagerReplacement'
 	if len(s.ManagerReplacement) > 2048 {
-		err = ssz.ErrBytesLength
+		err = ssz.ErrListTooBig
 		return
 	}
-	dst = append(dst, s.ManagerReplacement...)
+	for ii := 0; ii < len(s.ManagerReplacement); ii++ {
+		dst = ssz.MarshalUint8(dst, s.ManagerReplacement[ii])
+	}
 
 	// Field (22) 'Governance'
 	if dst, err = s.Governance.MarshalSSZTo(dst); err != nil {
@@ -511,10 +513,14 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 	// Field (21) 'ManagerReplacement'
 	{
 		buf = tail[o21:o22]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		num, err := ssz.DivideInt2(len(buf), 1, 2048)
+		if err != nil {
 			return err
 		}
-		s.ManagerReplacement = append(s.ManagerReplacement, buf...)
+		s.ManagerReplacement = ssz.ExtendUint8(s.ManagerReplacement, num)
+		for ii := 0; ii < num; ii++ {
+			s.ManagerReplacement[ii] = ssz.UnmarshallUint8(buf[ii*1 : (ii+1)*1])
+		}
 	}
 
 	// Field (22) 'Governance'
@@ -574,7 +580,7 @@ func (s *SerializableState) SizeSSZ() (size int) {
 	size += len(s.CurrentManagers) * 20
 
 	// Field (21) 'ManagerReplacement'
-	size += len(s.ManagerReplacement)
+	size += len(s.ManagerReplacement) * 1
 
 	// Field (22) 'Governance'
 	if s.Governance == nil {
@@ -769,7 +775,19 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (21) 'ManagerReplacement'
-	hh.PutBitlist(s.ManagerReplacement, 2048)
+	{
+		if len(s.ManagerReplacement) > 2048 {
+			err = ssz.ErrListTooBig
+			return
+		}
+		subIndx := hh.Index()
+		for _, i := range s.ManagerReplacement {
+			hh.AppendUint64(i)
+		}
+		hh.FillUpTo32()
+		numItems := uint64(len(s.ManagerReplacement))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(2048, numItems, 8))
+	}
 
 	// Field (22) 'Governance'
 	if err = s.Governance.HashTreeRootWith(hh); err != nil {

@@ -25,7 +25,7 @@ func (a *AcceptedVoteInfo) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (1) 'ParticipationBitfield'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(a.ParticipationBitfield)
+	offset += len(a.ParticipationBitfield) * 1
 
 	// Field (2) 'Proposer'
 	dst = ssz.MarshalUint64(dst, a.Proposer)
@@ -35,10 +35,12 @@ func (a *AcceptedVoteInfo) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (1) 'ParticipationBitfield'
 	if len(a.ParticipationBitfield) > 2048 {
-		err = ssz.ErrBytesLength
+		err = ssz.ErrListTooBig
 		return
 	}
-	dst = append(dst, a.ParticipationBitfield...)
+	for ii := 0; ii < len(a.ParticipationBitfield); ii++ {
+		dst = ssz.MarshalUint8(dst, a.ParticipationBitfield[ii])
+	}
 
 	return
 }
@@ -76,10 +78,14 @@ func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'ParticipationBitfield'
 	{
 		buf = tail[o1:]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		num, err := ssz.DivideInt2(len(buf), 1, 2048)
+		if err != nil {
 			return err
 		}
-		a.ParticipationBitfield = append(a.ParticipationBitfield, buf...)
+		a.ParticipationBitfield = ssz.ExtendUint8(a.ParticipationBitfield, num)
+		for ii := 0; ii < num; ii++ {
+			a.ParticipationBitfield[ii] = ssz.UnmarshallUint8(buf[ii*1 : (ii+1)*1])
+		}
 	}
 	return err
 }
@@ -89,7 +95,7 @@ func (a *AcceptedVoteInfo) SizeSSZ() (size int) {
 	size = 148
 
 	// Field (1) 'ParticipationBitfield'
-	size += len(a.ParticipationBitfield)
+	size += len(a.ParticipationBitfield) * 1
 
 	return
 }
@@ -109,7 +115,19 @@ func (a *AcceptedVoteInfo) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (1) 'ParticipationBitfield'
-	hh.PutBitlist(a.ParticipationBitfield, 2048)
+	{
+		if len(a.ParticipationBitfield) > 2048 {
+			err = ssz.ErrListTooBig
+			return
+		}
+		subIndx := hh.Index()
+		for _, i := range a.ParticipationBitfield {
+			hh.AppendUint64(i)
+		}
+		hh.FillUpTo32()
+		numItems := uint64(len(a.ParticipationBitfield))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(2048, numItems, 8))
+	}
 
 	// Field (2) 'Proposer'
 	hh.PutUint64(a.Proposer)
@@ -339,14 +357,16 @@ func (m *MultiValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (2) 'ParticipationBitfield'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(m.ParticipationBitfield)
+	offset += len(m.ParticipationBitfield) * 1
 
 	// Field (2) 'ParticipationBitfield'
 	if len(m.ParticipationBitfield) > 2048 {
-		err = ssz.ErrBytesLength
+		err = ssz.ErrListTooBig
 		return
 	}
-	dst = append(dst, m.ParticipationBitfield...)
+	for ii := 0; ii < len(m.ParticipationBitfield); ii++ {
+		dst = ssz.MarshalUint8(dst, m.ParticipationBitfield[ii])
+	}
 
 	return
 }
@@ -381,10 +401,14 @@ func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'ParticipationBitfield'
 	{
 		buf = tail[o2:]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		num, err := ssz.DivideInt2(len(buf), 1, 2048)
+		if err != nil {
 			return err
 		}
-		m.ParticipationBitfield = append(m.ParticipationBitfield, buf...)
+		m.ParticipationBitfield = ssz.ExtendUint8(m.ParticipationBitfield, num)
+		for ii := 0; ii < num; ii++ {
+			m.ParticipationBitfield[ii] = ssz.UnmarshallUint8(buf[ii*1 : (ii+1)*1])
+		}
 	}
 	return err
 }
@@ -394,7 +418,7 @@ func (m *MultiValidatorVote) SizeSSZ() (size int) {
 	size = 228
 
 	// Field (2) 'ParticipationBitfield'
-	size += len(m.ParticipationBitfield)
+	size += len(m.ParticipationBitfield) * 1
 
 	return
 }
@@ -417,7 +441,19 @@ func (m *MultiValidatorVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutBytes(m.Sig[:])
 
 	// Field (2) 'ParticipationBitfield'
-	hh.PutBitlist(m.ParticipationBitfield, 2048)
+	{
+		if len(m.ParticipationBitfield) > 2048 {
+			err = ssz.ErrListTooBig
+			return
+		}
+		subIndx := hh.Index()
+		for _, i := range m.ParticipationBitfield {
+			hh.AppendUint64(i)
+		}
+		hh.FillUpTo32()
+		numItems := uint64(len(m.ParticipationBitfield))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(2048, numItems, 8))
+	}
 
 	hh.Merkleize(indx)
 	return

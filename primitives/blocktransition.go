@@ -403,7 +403,7 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 				break
 			}
 
-			if voteParticipation2[i]&(1<<uint(j)) == 0 {
+			if voteParticipation2.BitAt(uint64(i)) {
 				continue
 			}
 
@@ -710,7 +710,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 				break
 			}
 
-			if v.ParticipationBitfield[i]&(1<<uint(j)) == 0 {
+			if v.ParticipationBitfield.BitAt(uint64(i)) {
 				continue
 			}
 

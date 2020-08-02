@@ -8,7 +8,6 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // ValidatorInitialization is the parameters needed to initialize validators.
@@ -97,7 +96,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
 	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)))
+	s.ManagerReplacement = []uint8{}
 
 	return s, nil
 }

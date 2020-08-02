@@ -131,7 +131,7 @@ func (m *Multisig) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (2) 'KeysSigned'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(m.KeysSigned)
+	offset += len(m.KeysSigned) * 1
 
 	// Field (0) 'PublicKey'
 	if dst, err = m.PublicKey.MarshalSSZTo(dst); err != nil {
@@ -149,10 +149,12 @@ func (m *Multisig) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (2) 'KeysSigned'
 	if len(m.KeysSigned) > 2048 {
-		err = ssz.ErrBytesLength
+		err = ssz.ErrListTooBig
 		return
 	}
-	dst = append(dst, m.KeysSigned...)
+	for ii := 0; ii < len(m.KeysSigned); ii++ {
+		dst = ssz.MarshalUint8(dst, m.KeysSigned[ii])
+	}
 
 	return
 }
@@ -210,10 +212,14 @@ func (m *Multisig) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'KeysSigned'
 	{
 		buf = tail[o2:]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		num, err := ssz.DivideInt2(len(buf), 1, 2048)
+		if err != nil {
 			return err
 		}
-		m.KeysSigned = append(m.KeysSigned, buf...)
+		m.KeysSigned = ssz.ExtendUint8(m.KeysSigned, num)
+		for ii := 0; ii < num; ii++ {
+			m.KeysSigned[ii] = ssz.UnmarshallUint8(buf[ii*1 : (ii+1)*1])
+		}
 	}
 	return err
 }
@@ -232,7 +238,7 @@ func (m *Multisig) SizeSSZ() (size int) {
 	size += len(m.Signatures) * 96
 
 	// Field (2) 'KeysSigned'
-	size += len(m.KeysSigned)
+	size += len(m.KeysSigned) * 1
 
 	return
 }
@@ -266,7 +272,19 @@ func (m *Multisig) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (2) 'KeysSigned'
-	hh.PutBitlist(m.KeysSigned, 2048)
+	{
+		if len(m.KeysSigned) > 2048 {
+			err = ssz.ErrListTooBig
+			return
+		}
+		subIndx := hh.Index()
+		for _, i := range m.KeysSigned {
+			hh.AppendUint64(i)
+		}
+		hh.FillUpTo32()
+		numItems := uint64(len(m.KeysSigned))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(2048, numItems, 8))
+	}
 
 	hh.Merkleize(indx)
 	return

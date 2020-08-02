@@ -49,7 +49,7 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []*Validator, bitfield []uint8, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, bitfield bitfield.Bitfield, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
@@ -432,6 +432,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.CheckForVoteTransitions(p)
 
 	totalBalance := s.getActiveBalance(p)
+	fmt.Printf("TotalBalance: %v \n", totalBalance)
 
 	// These are voters who voted for a target of the previous epoch.
 	previousEpochVoters := newVoterGroup()
@@ -486,12 +487,16 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash
 	s.JustificationBitfield <<= 1
 
+	fmt.Printf("PreviousEpochVotersMatchingTargetHash Total Balance: %v \n", 3*previousEpochVotersMatchingTargetHash.totalBalance)
+
 	// >2/3 voted with target of the previous epoch
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 1 // mark
 		s.JustifiedEpoch = s.EpochIndex - 1
 		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
 	}
+
+	fmt.Printf("CurrentEpochVotersMatchingTarget Total Balance: %v \n", 3*currentEpochVotersMatchingTarget.totalBalance)
 
 	if 3*currentEpochVotersMatchingTarget.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 0

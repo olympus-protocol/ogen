@@ -8,7 +8,6 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 var (
@@ -111,8 +110,8 @@ func (m *Multipub) ToBech32(prefixes params.AddrPrefixes) string {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  *Multipub
-	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	Signatures [][96]byte `ssz-max:"32"`
+	KeysSigned []uint8    `ssz-max:"2048"`
 }
 
 // Marshal encodes the data.
@@ -130,7 +129,7 @@ func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: [][96]byte{},
-		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys))),
+		KeysSigned: bitfield.NewBitfield(uint(len(multipub.PublicKeys))),
 	}
 }
 
@@ -154,7 +153,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
-	if m.KeysSigned.BitAt(uint64(idx)) {
+	if m.KeysSigned.Get(uint(idx)) {
 		return nil
 	}
 	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
@@ -163,14 +162,14 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	var s [96]byte
 	copy(s[:], sig.Marshal())
 	m.Signatures = append(m.Signatures, s)
-	m.KeysSigned.SetBitAt(uint64(idx), true)
+	m.KeysSigned.Set(uint(idx))
 
 	return nil
 }
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
-	if uint(len(m.PublicKey.PublicKeys)) > uint(m.KeysSigned.Len()) {
+	if uint(len(m.PublicKey.PublicKeys)) > m.KeysSigned.MaxLength() {
 		return false
 	}
 
@@ -185,7 +184,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
-		if m.KeysSigned.BitAt(uint64(i)) {
+		if m.KeysSigned.Get(uint(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
 			if err != nil {

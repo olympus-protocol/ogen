@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/prysmaticlabs/go-bitfield"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
@@ -41,7 +40,7 @@ type AcceptedVoteInfo struct {
 	Data *VoteData
 
 	// ParticipationBitfield is any validator that participated in the vote.
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	ParticipationBitfield []uint8 `ssz-max:"2048"`
 
 	// Proposer is the proposer that included the attestation in a block.
 	Proposer uint64
@@ -82,6 +81,7 @@ func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	for i, b := range a.ParticipationBitfield {
 		a2.ParticipationBitfield[i] = b
 	}
+
 	vd := a.Data.Copy()
 	a2.Data = &vd
 
@@ -240,8 +240,8 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf)
-	participationBitfield.SetBitAt(s.Offset, true)
+	participationBitfield := make([]uint8, (s.OutOf+7)/8)
+	participationBitfield[s.Offset/8] |= 1 << uint(s.Offset%8)
 	return &MultiValidatorVote{
 		Data:                  s.Data,
 		Sig:                   s.Sig,
@@ -259,7 +259,7 @@ func (s *SingleValidatorVote) Hash() chainhash.Hash {
 type MultiValidatorVote struct {
 	Data                  *VoteData
 	Sig                   [96]byte
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	ParticipationBitfield []uint8 `ssz-max:"2048"`
 }
 
 // Signature returns the signature on BLS type

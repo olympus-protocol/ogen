@@ -2,7 +2,6 @@ package primitives
 
 import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // SerializableState is a serializable copy of the state
@@ -77,7 +76,7 @@ type SerializableState struct {
 	CurrentManagers [][20]byte `ssz-max:"5"`
 
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
-	ManagerReplacement bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	ManagerReplacement []uint8 `ssz-max:"2048"`
 
 	// Governance represents current votes state
 	Governance *GovernanceSerializable
@@ -181,7 +180,7 @@ type State struct {
 	CurrentManagers [][20]byte
 
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
-	ManagerReplacement bitfield.Bitlist
+	ManagerReplacement []uint8
 
 	// Governance represents current votes state
 	Governance Governance

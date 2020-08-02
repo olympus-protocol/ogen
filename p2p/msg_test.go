@@ -4,7 +4,6 @@ import (
 	"bytes"
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -193,7 +192,7 @@ func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
 		v := &primitives.MultiValidatorVote{
 			Data:                  d,
 			Sig:                   sig,
-			ParticipationBitfield: bitfield.NewBitlist(uint64(2042)),
+			ParticipationBitfield: []uint8{},
 		}
 		votes = append(votes, v)
 	}
