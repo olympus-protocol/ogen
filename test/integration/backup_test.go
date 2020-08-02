@@ -5,6 +5,9 @@ package backup_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
+	"github.com/olympus-protocol/ogen/chain"
+	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -52,9 +55,15 @@ func TestMain(m *testing.M) {
 
 func createValidators() {
 	// Create datafolder Primary Node
-	os.Mkdir(testdata.Node1Folder, 0777)
+	err := os.Mkdir(testdata.Node1Folder, 0777)
+	if err != nil {
+		panic(err)
+	}
 	// Create datafolder Mover Node
-	os.Mkdir(testdata.Node3Folder, 0777)
+	err = os.Mkdir(testdata.Node3Folder, 0777)
+	if err != nil {
+		panic(err)
+	}
 
 	var w sync.WaitGroup
 	w.Add(2)
@@ -114,7 +123,7 @@ func firstNode() {
 	log.WithDebug()
 
 	// Load the block database
-	bdb, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,7 +136,7 @@ func firstNode() {
 	c.Port = "24132"
 
 	// Create the server instance
-	F, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, bdb, initParams)
+	F, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, db, initParams)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,16 +150,24 @@ func firstNode() {
 	go F.Start()
 
 	// Open the keystore to start generating blocks
-	F.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = F.Proposer.OpenKeystore(testdata.KeystorePass)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start the proposer
-	F.Proposer.Start()
+	err = F.Proposer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func secondNode() {
 	// Create datafolder
-	os.Mkdir(testdata.Node2Folder, 0777)
-
+	err := os.Mkdir(testdata.Node2Folder, 0777)
+	if err != nil {
+		panic(err)
+	}
 	// Create logger
 	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
 	if err != nil {
@@ -172,7 +189,7 @@ func secondNode() {
 	}
 
 	// Load the block database
-	bdb, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -185,7 +202,7 @@ func secondNode() {
 	c.RPCPort = "25001"
 	c.Port = "24131"
 	// Create the server instance
-	B, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, bdb, initParams)
+	B, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, db, initParams)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -193,14 +210,13 @@ func secondNode() {
 	go B.Start()
 
 	// Open the keystore to start generating blocks
-	B.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = B.Proposer.OpenKeystore(testdata.KeystorePass)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func thirdNode() {
-
-	// Create datafolder
-	os.Mkdir(testdata.Node3Folder, 0777)
-
 	// Create logger
 	logfile, err := os.Create(testdata.Node3Folder + "/log.log")
 	if err != nil {
@@ -210,7 +226,7 @@ func thirdNode() {
 	log.WithDebug()
 
 	// Load the block database
-	bdb, err := bdb.NewBlockDB(testdata.Node3Folder, testdata.IntTestParams, log)
+	db, err := bdb.NewBlockDB(testdata.Node3Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -223,7 +239,7 @@ func thirdNode() {
 	c.RPCPort = "25002"
 	c.Port = "24130"
 	// Create the server instance
-	M, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, bdb, initParams)
+	M, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, db, initParams)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -232,10 +248,40 @@ func thirdNode() {
 	go M.Start()
 
 	// Open the keystore to start generating blocks
-	M.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = M.Proposer.OpenKeystore(testdata.KeystorePass)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start the proposer
-	M.Proposer.Start()
+	err = M.Proposer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+type blockNotifee struct {
+	slash chan struct{}
+}
+
+func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
+	bn := blockNotifee{
+		slash: make(chan struct{}),
+	}
+	go func() {
+		chain.Notify(&bn)
+		<-ctx.Done()
+		chain.Unnotify(&bn)
+	}()
+
+	return bn
+}
+
+func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {}
+
+func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
+	fmt.Println(slashing)
+	bn.slash <-struct {}{}
 }
 
 // Since nodes are not connect all 3 tip states should be the same.
@@ -257,10 +303,17 @@ func Test_Connections(t *testing.T) {
 
 // Start the backup proposing routine with a delay from the first node. If starting at the same time it will get slashed.
 func Test_StartBackupProposing(t *testing.T) {
-	time.Sleep(time.Second * 30)
-	B.Proposer.Start()
-	time.Sleep(time.Second * 30)
-	// TODO check for no slashing on blocks.
+	time.Sleep(time.Second * 15)
+	err := B.Proposer.Start()
+	assert.NoError(t, err)
+	time.Sleep(time.Second * 15)
+	go func() {
+		bn := newBlockNotifee(context.Background(), M.Chain)
+		for {
+			<-bn.slash
+			assert.Fail(t, "slashing detected, backup failed")
+		}
+	}()
 }
 
 // Stop the primary node proposing routine and check the backup is doing the voting/proposing job.
