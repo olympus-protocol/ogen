@@ -93,7 +93,7 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 }
 
 func (c *RPCClient) genValidatorKey(args []string) (out string, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 30)
 	defer cancel()
 	amount := 0
 	if len(args) < 2 {
