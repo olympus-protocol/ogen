@@ -107,30 +107,41 @@ load:
 }
 
 func (k *Keystore) load(password string) error {
+
 	valid, err := k.checkPassword(password)
 	if err != nil {
 		return err
 	}
+
 	if !valid {
 		return errors.New("invalid password")
 	}
 	nonce, salt, err := k.getEncryptionData()
+
 	if err != nil {
 		return err
 	}
 	err = k.db.View(func(tx *bbolt.Tx) error {
+
 		keysbkt := tx.Bucket(keysBucket)
 		if keysbkt == nil {
 			return errorNotInitialized
 		}
+
 		k.keys = make(map[chainhash.Hash]*bls.SecretKey)
+
 		err = keysbkt.ForEach(func(keypub, keyprv []byte) error {
+
 			pubHash := chainhash.HashH(keypub)
 			priv, err := aesbls.Decrypt(nonce, salt, keyprv, []byte(password))
 			if err != nil {
 				return err
 			}
-			k.addKeyMap(pubHash, priv)
+
+			err = k.addKeyMap(pubHash, priv)
+			if err != nil {
+				return err
+			}
 			return nil
 		})
 		if err != nil {
@@ -228,7 +239,7 @@ func (k *Keystore) Close() error {
 
 // GetValidatorKeys gets all keys.
 func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
-	keys := []*bls.SecretKey{}
+	var keys []*bls.SecretKey
 	k.keysLock.Lock()
 	for _, k := range k.keys {
 		keys = append(keys, k)
