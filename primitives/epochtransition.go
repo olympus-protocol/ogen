@@ -3,6 +3,7 @@ package primitives
 import (
 	"errors"
 	"fmt"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
 	"math/big"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -49,11 +50,11 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []*Validator, bitfield bitfield.Bitfield, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, field []uint8, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
-		if bitfield[b]&(1<<j) > 0 {
+		if field[b]&(1<<j) > 0 {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
@@ -362,7 +363,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
 			s.NextVoteEpoch(GovernanceStateVoting)
 			for i := range s.CurrentManagers {
-				s.ManagerReplacement.SetBitAt(uint64(i), true)
+				bitfcheck.Set(s.ManagerReplacement, uint(i))
 			}
 		}
 	case GovernanceStateVoting:
@@ -389,7 +390,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 					copy(newManagers, s.CurrentManagers)
 
 					for i := range newManagers {
-						if s.ManagerReplacement.BitAt(uint64(i)) {
+						if bitfcheck.Get(s.ManagerReplacement, uint(i)) {
 							copy(newManagers[i][:], voteData.ReplacementCandidates[i][:])
 						}
 					}
@@ -471,13 +472,12 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
-
+	fmt.Println(s.CurrentEpochVotes)
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 		if err != nil {
 			return nil, err
 		}
-
 		if v.Data.ToHashH().IsEqual(&epochBoundaryHash) {
 			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validators)
 		}

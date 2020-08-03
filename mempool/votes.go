@@ -3,6 +3,8 @@ package mempool
 import (
 	"context"
 	"github.com/olympus-protocol/ogen/peers/conflict"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
+	"github.com/prysmaticlabs/go-bitfield"
 	"math/rand"
 	"sort"
 	"sync"
@@ -27,7 +29,7 @@ type mempoolVote struct {
 }
 
 func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
-	if !mv.participationBitfield.Get(uint(offset)) {
+	if !bitfcheck.Get(mv.participationBitfield, uint(offset)) {
 		return nil, false
 	}
 
@@ -42,11 +44,11 @@ func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidat
 }
 
 func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
-	if mv.participationBitfield.Get(uint(vote.Offset)) {
+	if bitfcheck.Get(mv.participationBitfield, uint(vote.Offset)) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	mv.participationBitfield.Set(uint(vote.Offset))
+	bitfcheck.Set(mv.participationBitfield, uint(vote.Offset))
 	mv.participatingValidators[voter] = struct{}{}
 }
 
@@ -72,7 +74,7 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   bitfield.NewBitfield(uint(outOf)),
+		participationBitfield:   make([]byte, uint(outOf)+7/8),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),
@@ -259,12 +261,14 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			sig := bls.AggregateSignatures(sigs)
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
+			bf := bitfield.NewBitlist(uint64(len(v.participationBitfield)))
 			vote := &primitives.MultiValidatorVote{
 				Data:                  m.pool[i].voteData,
 				Sig:                   sigb,
-				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
+				ParticipationBitfield: append(bf, v.participationBitfield...),
 			}
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
+				// TODO we may need to ban the node here.
 				continue
 			}
 			votes = append(votes, vote)

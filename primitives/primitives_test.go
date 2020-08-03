@@ -4,6 +4,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -259,7 +260,7 @@ func Test_AcceptedVoteInfoSerialize(t *testing.T) {
 	f := fuzz.New().NilChance(0)
 	var v primitives.AcceptedVoteInfo
 	f.Fuzz(&v)
-	v.ParticipationBitfield = []uint8{}
+	v.ParticipationBitfield = bitfield.NewBitlist(8)
 
 	ser, err := v.Marshal()
 	assert.NoError(t, err)
@@ -431,7 +432,7 @@ func Test_StateSerialize(t *testing.T) {
 		PreviousJustifiedEpochHash:    previousjustified,
 		PreviousEpochVotes:            make([]*primitives.AcceptedVoteInfo, 0),
 		CurrentManagers:               make([][20]byte, 5),
-		ManagerReplacement:            []uint8{},
+		ManagerReplacement:            bitfield.NewBitlist(5),
 		Governance:                    gs,
 		VoteEpoch:                     voteepoch,
 		VoteEpochStartSlot:            votestartslot,
@@ -508,7 +509,7 @@ func Test_StateSerializeForInitialParams(t *testing.T) {
 		},
 		VotingState:        primitives.GovernanceStateActive,
 		LastPaidSlot:       0,
-		ManagerReplacement: []uint8{},
+		ManagerReplacement: bitfield.NewBitlist(5),
 	}
 
 	activeValidators := is.GetValidatorIndicesActiveAt(0)
@@ -562,7 +563,7 @@ func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
 		v := &primitives.MultiValidatorVote{
 			Data:                  d,
 			Sig:                   sig,
-			ParticipationBitfield: []uint8{},
+			ParticipationBitfield: bitfield.NewBitlist(10),
 		}
 		votes = append(votes, v)
 	}

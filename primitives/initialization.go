@@ -3,6 +3,7 @@ package primitives
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/prysmaticlabs/go-bitfield"
 	"time"
 
 	"github.com/olympus-protocol/ogen/params"
@@ -96,7 +97,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
 	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.ManagerReplacement = []uint8{}
+	s.ManagerReplacement = bitfield.NewBitlist(5)
 
 	return s, nil
 }

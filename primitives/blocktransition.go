@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -403,7 +402,7 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 				break
 			}
 
-			if voteParticipation2.BitAt(uint64(i)) {
+			if voteParticipation2[i]&(1<<uint(j)) == 0 {
 				continue
 			}
 
@@ -710,7 +709,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 				break
 			}
 
-			if v.ParticipationBitfield.BitAt(uint64(i)) {
+			if v.ParticipationBitfield[i]&(1<<uint(j)) == 0 {
 				continue
 			}
 

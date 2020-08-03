@@ -2,6 +2,7 @@ package bls_test
 
 import (
 	fuzz "github.com/google/gofuzz"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -45,7 +46,7 @@ func Test_MultisigSerialize(t *testing.T) {
 	v := bls.Multisig{
 		PublicKey:  &m,
 		Signatures: s,
-		KeysSigned: []uint8{},
+		KeysSigned: bitfield.NewBitlist(uint64(len(m.PublicKeys))),
 	}
 
 	ser, err := v.Marshal()
