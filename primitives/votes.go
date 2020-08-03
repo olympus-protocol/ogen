@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/prysmaticlabs/go-bitfield"
@@ -78,7 +79,10 @@ func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
 func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	a2 := *a
 
-	a2.ParticipationBitfield = a.ParticipationBitfield
+	a2.ParticipationBitfield = bitfield.NewBitlist(a.ParticipationBitfield.Len())
+	for i, b := range a.ParticipationBitfield {
+		a2.ParticipationBitfield[i] = b
+	}
 
 	vd := a.Data.Copy()
 	a2.Data = &vd
@@ -151,7 +155,7 @@ func (v *VoteData) LastSlotValid(p *params.ChainParams) uint64 {
 }
 
 func (v *VoteData) String() string {
-	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, v.BeaconBlockHash)
+	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, hex.EncodeToString(v.BeaconBlockHash[:]))
 }
 
 // IsDoubleVote checks if the two votes form a double vote.
@@ -220,7 +224,7 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist( (s.OutOf+7) * 8)
+	participationBitfield := bitfield.NewBitlist((s.OutOf + 7) * 8)
 	participationBitfield[s.Offset/8] |= 1 << uint(s.Offset%8)
 	return &MultiValidatorVote{
 		Data:                  s.Data,

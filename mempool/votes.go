@@ -74,7 +74,7 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   bitfield.NewBitlist((outOf+ 7) * 8),
+		participationBitfield:   bitfield.NewBitlist((outOf + 7) * 8),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),
