@@ -41,6 +41,10 @@ func (s *utilsServer) StopProposer(ctx context.Context, _ *proto.Empty) (*proto.
 }
 
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
+	err := s.proposer.OpenKeystore(in.Password)
+	if err != nil {
+		return nil, err
+	}
 	key, err := s.proposer.Keystore.GenerateNewValidatorKey(in.Keys, in.Password)
 	if err != nil {
 		return nil, err

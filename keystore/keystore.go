@@ -261,7 +261,10 @@ func (k *Keystore) GenerateNewValidatorKey(amount uint64, password string) ([]*b
 	for i := range keys {
 		// Generate a new key
 		key := bls.RandKey()
-		k.addKey(key, password)
+		err := k.addKey(key, password)
+		if err != nil {
+			return nil, err
+		}
 		keys[i] = key
 	}
 	return keys, nil
