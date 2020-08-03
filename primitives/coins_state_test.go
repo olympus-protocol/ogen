@@ -104,7 +104,7 @@ func TestCoinsState_Copy(t *testing.T) {
 	var balances map[[20]byte]uint64
 	var nonces map[[20]byte]uint64
 
-	key := [20]byte{1,2,3}
+	key := [20]byte{1, 2, 3}
 
 	f.Fuzz(&balances)
 	f.Fuzz(&nonces)
@@ -122,6 +122,6 @@ func TestCoinsState_Copy(t *testing.T) {
 	cs.Nonces[key] = 11
 	cs.Balances[key] = 11
 
-	assert.NotEqual(t, cs2.Nonces[key], 11)
-	assert.NotEqual(t, cs2.Balances[key], 11)
+	assert.Equal(t, cs2.Nonces[key], uint64(10))
+	assert.Equal(t, cs2.Balances[key], uint64(10))
 }

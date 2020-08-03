@@ -227,8 +227,5 @@ func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 	if !w.open {
 		return [20]byte{}, errorNotOpen
 	}
-	if len(w.accountRaw) != 20 {
-		return [20]byte{}, errors.New("expected address to be 20 bytes")
-	}
 	return w.accountRaw, nil
 }

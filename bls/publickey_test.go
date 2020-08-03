@@ -15,5 +15,5 @@ func TestPublicKey_Copy(t *testing.T) {
 
 	pub = bls.RandKey().PublicKey()
 
-	assert.NotEqual(t, pub2.Marshal(), pub.Marshal())
+	assert.Equal(t, pub2.Marshal(), rand.PublicKey().Marshal())
 }

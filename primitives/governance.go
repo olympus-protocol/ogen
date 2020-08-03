@@ -91,9 +91,13 @@ func (c *CommunityVoteData) Unmarshal(b []byte) error {
 
 // Copy copies the community vote data.
 func (c *CommunityVoteData) Copy() *CommunityVoteData {
-	newCommunityVoteData := *c
-	newCommunityVoteData.ReplacementCandidates = c.ReplacementCandidates
-	return &newCommunityVoteData
+	newCommunityVoteData := &CommunityVoteData{
+		ReplacementCandidates: make([][20]byte, len(c.ReplacementCandidates)),
+	}
+	for i := range c.ReplacementCandidates {
+		newCommunityVoteData.ReplacementCandidates[i] = c.ReplacementCandidates[i]
+	}
+	return newCommunityVoteData
 }
 
 // Hash calculates the hash of the vote data.

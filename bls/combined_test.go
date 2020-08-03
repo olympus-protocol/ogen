@@ -26,5 +26,5 @@ func Test_CombinedSignatureCopy(t *testing.T) {
 	var copyNewPub [48]byte
 	copy(copyNewPub[:], pub.Marshal())
 
-	assert.NotEqual(t, copyNewPub[:], newPub[:])
+	assert.Equal(t, copyNewPub[:], rand.PublicKey().Marshal())
 }

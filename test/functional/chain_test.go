@@ -196,7 +196,6 @@ func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.P
 	fmt.Printf("Slashing:  %s \n", hex.EncodeToString(slashing.ValidatorPublicKey[:]))
 }
 
-
 func logNotify() {
 	bn := newBlockNotifee(context.Background(), F.Chain)
 	for {

@@ -15,5 +15,5 @@ func TestSignature_Copy(t *testing.T) {
 
 	sig = bls.RandKey().Sign([]byte("test"))
 
-	assert.NotEqual(t, sig2.Marshal(), sig.Marshal())
+	assert.Equal(t, sig2.Marshal(), rand.Sign([]byte("test")).Marshal())
 }

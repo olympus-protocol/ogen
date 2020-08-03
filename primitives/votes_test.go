@@ -20,25 +20,25 @@ func TestVoteData_Copy(t *testing.T) {
 	v2 := v.Copy()
 
 	v.Slot = 6
-	assert.NotEqual(t, v2.Slot, 6)
+	assert.Equal(t, v2.Slot, uint64(5))
 
 	v.FromEpoch = 6
-	assert.NotEqual(t, v2.FromEpoch, 6)
+	assert.Equal(t, v2.FromEpoch, uint64(5))
 
 	v.FromHash[31] = 10
-	assert.NotEqual(t, v2.FromHash[31], 10)
+	assert.Equal(t, v2.FromHash[31], uint8(0))
 
 	v.ToEpoch = 10
-	assert.NotEqual(t, v2.ToEpoch, 10)
+	assert.Equal(t, v2.ToEpoch, uint64(5))
 
 	v.ToHash[31] = 10
-	assert.NotEqual(t, v2.ToHash[31], 10)
+	assert.Equal(t, v2.ToHash[31], uint8(0))
 
 	v.BeaconBlockHash[31] = 10
-	assert.NotEqual(t, v2.BeaconBlockHash[31], 10)
+	assert.Equal(t, v2.BeaconBlockHash[31], uint8(0))
 
 	v.Nonce = 10
-	assert.NotEqual(t, v2.Nonce, 10)
+	assert.Equal(t, v2.Nonce, uint64(5))
 }
 
 func TestAcceptedVoteInfo_Copy(t *testing.T) {
@@ -56,18 +56,19 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	}
 
 	av2 := av.Copy()
+
 	av.Data.Slot = 2
-	assert.NotEqual(t, av2.Data.Slot, 2)
+	assert.Equal(t, av2.Data.Slot, uint64(1))
 
 	av.ParticipationBitfield[0] = 7
 
-	assert.NotEqual(t, av2.ParticipationBitfield[0], 7)
+	assert.Equal(t, av2.ParticipationBitfield[0], uint8(0))
 
 	av.Proposer = 7
 
-	assert.NotEqual(t, av2.Proposer, 7)
+	assert.Equal(t, av2.Proposer, uint64(8))
 
 	av.InclusionDelay = 7
 
-	assert.NotEqual(t, av2.InclusionDelay, 7)
+	assert.Equal(t, av2.InclusionDelay, uint64(9))
 }

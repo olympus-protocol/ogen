@@ -79,7 +79,7 @@ func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
 }
 
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
-// take to propogate across the network. We wait double this before allowing a
+// take to propagate across the network. We wait double this before allowing a
 // validator to start.
 const MaxMessagePropagationTime = 60 * time.Second
 

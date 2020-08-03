@@ -38,8 +38,8 @@ func (g *Governance) Unmarshal(b []byte) error {
 
 // ToSerializable creates a copy of the struct into a slices struct
 func (g *Governance) ToSerializable() GovernanceSerializable {
-	replaceVotes := []*ReplacementVotes{}
-	communityVotes := []*CommunityVoteDataInfo{}
+	var replaceVotes []*ReplacementVotes
+	var communityVotes []*CommunityVoteDataInfo
 	for k, v := range g.ReplaceVotes {
 		replaceVotes = append(replaceVotes, &ReplacementVotes{Account: k, Hash: v})
 	}
