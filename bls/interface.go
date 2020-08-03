@@ -4,12 +4,15 @@
 package bls
 
 import (
+	"github.com/olympus-protocol/bls-go/bls"
+	"github.com/olympus-protocol/ogen/params"
 	"io"
 	"math/big"
 
 	"github.com/dgraph-io/ristretto"
-	"github.com/olympus-protocol/bls-go/bls"
 )
+
+var prefixes params.AccountPrefixes
 
 // KeyPair is an interface struct to serve keypairs
 type KeyPair struct {
@@ -24,6 +27,11 @@ func init() {
 	if err := bls.SetETHmode(bls.EthModeDraft07); err != nil {
 		panic(err)
 	}
+}
+
+func Initialize(p params.ChainParams) error {
+	prefixes = p.AccountPrefixes
+	return nil
 }
 
 // DomainByteLength length of domain byte array.

@@ -4,11 +4,12 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-// AddrPrefixes are prefixes used for addresses.
-type AddrPrefixes struct {
+// AccountPrefixes are prefixes used for account bech32 encoding.
+type AccountPrefixes struct {
 	Public   string
 	Private  string
 	Multisig string
+	Contract string
 }
 
 // ChainParams are parameters that are unique for the chain.
@@ -16,7 +17,7 @@ type ChainParams struct {
 	Name                         string
 	DefaultP2PPort               string
 	GenesisHash                  chainhash.Hash
-	AddrPrefix                   AddrPrefixes
+	AccountPrefixes              AccountPrefixes
 	GovernanceBudgetQuotient     uint64
 	EpochLength                  uint64
 	EjectionBalance              uint64
@@ -52,10 +53,11 @@ type ChainParams struct {
 var Mainnet = ChainParams{
 	Name:           "mainnet",
 	DefaultP2PPort: "24126",
-	AddrPrefix: AddrPrefixes{
+	AccountPrefixes: AccountPrefixes{
 		Public:   "olpub",
 		Private:  "olprv",
 		Multisig: "olmul",
+		Contract: "olctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
@@ -103,10 +105,11 @@ var testnetChainFileHash, _ = chainhash.NewHashFromStr("7ed4c3c74888ee032ff2adaa
 var TestNet = ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "25126",
-	AddrPrefix: AddrPrefixes{
+	AccountPrefixes: AccountPrefixes{
 		Public:   "tlpub",
 		Private:  "tlprv",
 		Multisig: "tlmul",
+		Contract: "tlctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,

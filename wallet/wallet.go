@@ -109,7 +109,7 @@ func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	w.priv = secret
 	w.open = true
 	w.pub = secret.PublicKey()
-	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
+	w.account, err = w.pub.ToAccount()
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (w *Wallet) OpenWallet(name string, password string) error {
 	}
 	w.priv = secret
 	w.pub = secret.PublicKey()
-	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
+	w.account, err = w.pub.ToAccount()
 	if err != nil {
 		return err
 	}

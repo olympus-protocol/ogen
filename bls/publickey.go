@@ -1,8 +1,6 @@
 package bls
 
 import (
-	"fmt"
-
 	"github.com/olympus-protocol/bls-go/bls"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -26,9 +24,6 @@ func (p *PublicKey) Unmarshal(b []byte) error {
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
 func PublicKeyFromBytes(pub [48]byte) (*PublicKey, error) {
-	if len(pub) != 48 {
-		return nil, fmt.Errorf("public key must be %d bytes", 48)
-	}
 	if cv, ok := pubkeyCache.Get(string(pub[:])); ok {
 		return cv.(*PublicKey).Copy(), nil
 	}
@@ -60,12 +55,12 @@ func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
 	return p
 }
 
-// ToAddress converts the public key to a Bech32 address.
-func (p *PublicKey) ToAddress(pubPrefix string) (string, error) {
+// ToAccount converts the public key to a Bech32 address.
+func (p *PublicKey) ToAccount() (string, error) {
 	out := make([]byte, 20)
 	h := chainhash.HashH(p.Marshal())
 	copy(out[:], h[:20])
-	return bech32.Encode(pubPrefix, out), nil
+	return bech32.Encode(prefixes.Public, out), nil
 }
 
 // Hash calculates the hash of the public key.

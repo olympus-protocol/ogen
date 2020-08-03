@@ -44,10 +44,11 @@ var Conf = config.Config{
 var IntTestParams = params.ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "25126",
-	AddrPrefix: params.AddrPrefixes{
-		Public:   "tlpub",
-		Private:  "tlprv",
-		Multisig: "tlmul",
+	AccountPrefixes: params.AccountPrefixes{
+		Public:   "itpub",
+		Private:  "itprv",
+		Multisig: "itmul",
+		Contract: "itctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,

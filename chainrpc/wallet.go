@@ -73,7 +73,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if err != nil {
 		return nil, err
 	}
-	if prefix != s.params.AddrPrefix.Private {
+	if prefix != s.params.AccountPrefixes.Private {
 		return nil, errors.New("wrong wallet format for current network")
 	}
 	blsPriv, err := bls.SecretKeyFromBytes(priv)
@@ -96,7 +96,7 @@ func (s *walletServer) DumpWallet(context.Context, *proto.Empty) (*proto.KeyPair
 	if err != nil {
 		return nil, err
 	}
-	wif, err := priv.ToWIF(s.params.AddrPrefix.Private)
+	wif, err := priv.ToWIF()
 	if err != nil {
 		return nil, err
 	}

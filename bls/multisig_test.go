@@ -39,12 +39,12 @@ func TestCorrectnessMultisig(t *testing.T) {
 
 	assert.True(t, multisig.Verify(msg))
 
-	multiPub.ToBech32(params.AddrPrefixes{
+	multiPub.ToBech32(params.AccountPrefixes{
 		Multisig: "olmul",
 	})
 }
 
-func TestMultisigDecodeEncode(t *testing.T) {
+func TestMultisigSerializeSign(t *testing.T) {
 	secretKeys := make([]*bls.SecretKey, 20)
 	publicKeys := make([]*bls.PublicKey, 20)
 
