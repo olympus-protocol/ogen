@@ -106,10 +106,9 @@ func (c *CombinedSignature) Type() FunctionalSignatureType {
 
 // Copy copies the combined signature.
 func (c *CombinedSignature) Copy() FunctionalSignature {
-	newCs := &CombinedSignature{}
-	newCs.S = c.S
-	newCs.P = c.P
-
+	newCs := new(CombinedSignature)
+	copy(newCs.P[:], c.P[:])
+	copy(newCs.S[:], c.S[:])
 	return newCs
 }
 

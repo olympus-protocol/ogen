@@ -6,7 +6,42 @@ import (
 	"testing"
 )
 
-func TestAcceptedVoteInfoCopy(t *testing.T) {
+func TestVoteData_Copy(t *testing.T) {
+	v := &VoteData{
+		Slot:            5,
+		FromEpoch:       5,
+		FromHash:        [32]byte{1, 2, 3},
+		ToEpoch:         5,
+		ToHash:          [32]byte{1, 2, 3},
+		BeaconBlockHash: [32]byte{1, 2, 3},
+		Nonce:           5,
+	}
+
+	v2 := v.Copy()
+
+	v.Slot = 6
+	assert.NotEqual(t, v2.Slot, 6)
+
+	v.FromEpoch = 6
+	assert.NotEqual(t, v2.FromEpoch, 6)
+
+	v.FromHash[31] = 10
+	assert.NotEqual(t, v2.FromHash[31], 10)
+
+	v.ToEpoch = 10
+	assert.NotEqual(t, v2.ToEpoch, 10)
+
+	v.ToHash[31] = 10
+	assert.NotEqual(t, v2.ToHash[31], 10)
+
+	v.BeaconBlockHash[31] = 10
+	assert.NotEqual(t, v2.BeaconBlockHash[31], 10)
+
+	v.Nonce = 10
+	assert.NotEqual(t, v2.Nonce, 10)
+}
+
+func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	av := &AcceptedVoteInfo{
 		Data: &VoteData{
 			Slot:      1,
