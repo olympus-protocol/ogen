@@ -43,7 +43,7 @@ func (ch *Blockchain) Start() (err error) {
 }
 
 func (ch *Blockchain) Stop() {
-	ch.log.Info("Stoping Blockchain instance")
+	ch.log.Info("Stopping Blockchain instance")
 }
 
 func (ch *Blockchain) State() *StateService {
