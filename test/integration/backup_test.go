@@ -5,6 +5,7 @@ package backup_test
 import (
 	"context"
 	"encoding/hex"
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,11 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
-var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAddress(testdata.IntTestParams.AddrPrefix.Public)
+func init() {
+	bls.Initialize(testdata.IntTestParams)
+}
+
+var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
 var initParams = primitives.InitializationParameters{
 	GenesisTime:       time.Unix(time.Now().Unix()+30, 0),
