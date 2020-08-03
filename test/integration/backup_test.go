@@ -5,7 +5,6 @@ package backup_test
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/stretchr/testify/assert"
@@ -280,7 +279,6 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {}
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
-	fmt.Println(slashing)
 	bn.slash <-struct {}{}
 }
 

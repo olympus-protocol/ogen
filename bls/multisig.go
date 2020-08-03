@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
+	"github.com/prysmaticlabs/go-bitfield"
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 var (
@@ -130,7 +131,7 @@ func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: [][96]byte{},
-		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys))),
+		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys) * 8)),
 	}
 }
 
@@ -154,7 +155,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
 
-	if m.KeysSigned.BitAt(uint64(idx)) {
+	if bitfcheck.Get(m.KeysSigned, uint(idx)) {
 		return nil
 	}
 	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
@@ -163,14 +164,14 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	var s [96]byte
 	copy(s[:], sig.Marshal())
 	m.Signatures = append(m.Signatures, s)
-	m.KeysSigned.SetBitAt(uint64(idx), true)
+	bitfcheck.Set(m.KeysSigned, uint(idx))
 
 	return nil
 }
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
-	if uint(len(m.PublicKey.PublicKeys)) > uint(m.KeysSigned.Len()) {
+	if uint(len(m.PublicKey.PublicKeys)) > uint(len(m.KeysSigned))*8 {
 		return false
 	}
 
@@ -185,7 +186,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
-		if m.KeysSigned.BitAt(uint64(i)) {
+		if bitfcheck.Get(m.KeysSigned, uint(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
 			if err != nil {

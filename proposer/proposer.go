@@ -312,7 +312,7 @@ func (p *Proposer) VoteForBlocks() {
 
 			validators, err := state.GetVoteCommittee(slotToVote, &p.params)
 			if err != nil {
-				p.log.Errorf("error getting vote committee: %e", err)
+				p.log.Errorf("error getting vote committee: %s", err.Error())
 				continue
 			}
 			toEpoch := (slotToVote - 1) / p.params.EpochLength
@@ -344,16 +344,20 @@ func (p *Proposer) VoteForBlocks() {
 					}
 
 					sig := k.Sign(dataHash[:])
-					var s [96]byte
-					copy(s[:], sig.Marshal())
+					var sigB [96]byte
+					copy(sigB[:], sig.Marshal())
 					vote := primitives.SingleValidatorVote{
 						Data:   &data,
-						Sig:    s,
+						Sig:    sigB,
 						Offset: uint64(i),
 						OutOf:  uint64(len(validators)),
 					}
 
-					p.voteMempool.Add(&vote)
+					err = p.voteMempool.AddValidate(&vote, state)
+					if err != nil {
+						p.log.Errorf("error submitting vote: %s", err.Error())
+						continue
+					}
 
 					go p.publishVote(&vote)
 

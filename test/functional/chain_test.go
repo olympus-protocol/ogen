@@ -33,7 +33,7 @@ var F *server.Server
 var FAddr peer.AddrInfo
 var B *server.Server
 
-var runUntilHeight = 20
+var runUntilHeight = 50
 
 // Chain Test
 // 1. This test will create a node that moves the chain based on the initialization params.

@@ -193,7 +193,7 @@ func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
 		v := &primitives.MultiValidatorVote{
 			Data:                  d,
 			Sig:                   sig,
-			ParticipationBitfield: bitfield.NewBitlist(uint64(2042)),
+			ParticipationBitfield: bitfield.NewBitlist(5),
 		}
 		votes = append(votes, v)
 	}

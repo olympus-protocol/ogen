@@ -1,14 +1,15 @@
 package primitives
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
-
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"math/big"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -49,11 +50,11 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []*Validator, bitfield []uint8, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, field []uint8, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
 		b := idx / 8
 		j := idx % 8
-		if bitfield[b]&(1<<j) > 0 {
+		if field[b]&(1<<j) > 0 {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
@@ -362,7 +363,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
 			s.NextVoteEpoch(GovernanceStateVoting)
 			for i := range s.CurrentManagers {
-				s.ManagerReplacement.SetBitAt(uint64(i), true)
+				bitfcheck.Set(s.ManagerReplacement, uint(i))
 			}
 		}
 	case GovernanceStateVoting:
@@ -389,7 +390,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 					copy(newManagers, s.CurrentManagers)
 
 					for i := range newManagers {
-						if s.ManagerReplacement.BitAt(uint64(i)) {
+						if bitfcheck.Get(s.ManagerReplacement, uint(i)) {
 							copy(newManagers[i][:], voteData.ReplacementCandidates[i][:])
 						}
 					}
@@ -460,24 +461,22 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
-		if v.Data.BeaconBlockHashH().IsEqual(&actualBlockHash) {
+		if bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		if v.Data.ToHashH().IsEqual(&previousEpochBoundaryHash) {
+		if bytes.Equal(previousEpochBoundaryHash[:], v.Data.ToHash[:]) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
 		for _, validatorIdx := range validatorIndices {
 			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
-
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 		if err != nil {
 			return nil, err
 		}
-
-		if v.Data.ToHashH().IsEqual(&epochBoundaryHash) {
+		if bytes.Equal(epochBoundaryHash[:], v.Data.FromHash[:]) {
 			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validators)
 		}
 	}
