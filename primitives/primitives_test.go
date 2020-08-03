@@ -410,6 +410,26 @@ func Test_StateSerialize(t *testing.T) {
 	f.NumElements(100, 100)
 	f.Fuzz(&valreg)
 
+	var currManagers [][20]byte
+	f.NumElements(5, 5)
+	f.Fuzz(&currManagers)
+
+	var currEpochVotes, prevEpochVotes []*primitives.AcceptedVoteInfo
+	f.NumElements(20, 20)
+	f.Fuzz(&currEpochVotes)
+	f.Fuzz(&prevEpochVotes)
+
+	var latesBlockHashes [][32]byte
+	f.NumElements(64, 64)
+	f.Fuzz(&latesBlockHashes)
+
+	var proposerQueue, prevEpochVoteAssign, currEpochVoteAssign, nextPropQueue []uint64
+	f.NumElements(100, 100)
+	f.Fuzz(&proposerQueue)
+	f.Fuzz(&prevEpochVoteAssign)
+	f.Fuzz(&currEpochVoteAssign)
+	f.Fuzz(&nextPropQueue)
+
 	v := primitives.State{
 		CoinsState:                    cs,
 		ValidatorRegistry:             valreg,
@@ -418,21 +438,21 @@ func Test_StateSerialize(t *testing.T) {
 		NextRANDAO:                    nextrandao,
 		Slot:                          slot,
 		EpochIndex:                    epoch,
-		ProposerQueue:                 make([]uint64, 0),
-		PreviousEpochVoteAssignments:  make([]uint64, 0),
-		CurrentEpochVoteAssignments:   make([]uint64, 0),
-		NextProposerQueue:             make([]uint64, 0),
+		ProposerQueue:                 proposerQueue,
+		PreviousEpochVoteAssignments:  prevEpochVoteAssign,
+		CurrentEpochVoteAssignments:   currEpochVoteAssign,
+		NextProposerQueue:             nextPropQueue,
 		JustificationBitfield:         justifbit,
 		FinalizedEpoch:                finalepoch,
-		LatestBlockHashes:             make([][32]byte, 64),
+		LatestBlockHashes:             latesBlockHashes,
 		JustifiedEpoch:                justified,
 		JustifiedEpochHash:            justifiedepoch,
-		CurrentEpochVotes:             make([]*primitives.AcceptedVoteInfo, 0),
+		CurrentEpochVotes:             currEpochVotes,
 		PreviousJustifiedEpoch:        previousjustepoch,
 		PreviousJustifiedEpochHash:    previousjustified,
-		PreviousEpochVotes:            make([]*primitives.AcceptedVoteInfo, 0),
-		CurrentManagers:               make([][20]byte, 5),
-		ManagerReplacement:            bitfield.NewBitlist(5),
+		PreviousEpochVotes:            prevEpochVotes,
+		CurrentManagers:               currManagers,
+		ManagerReplacement:            bitfield.NewBitlist(5 * 8),
 		Governance:                    gs,
 		VoteEpoch:                     voteepoch,
 		VoteEpochStartSlot:            votestartslot,

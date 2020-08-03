@@ -61,3 +61,20 @@ func (g *Governance) FromSerializable(s *GovernanceSerializable) {
 	}
 	return
 }
+
+// Copy copies Governance and returns a new one
+func (g *Governance) Copy() Governance {
+	ng := *g
+	ng.ReplaceVotes = make(map[[20]byte]chainhash.Hash, len(g.ReplaceVotes))
+	ng.CommunityVotes = make(map[chainhash.Hash]CommunityVoteData, len(g.CommunityVotes))
+
+	for i := range g.ReplaceVotes {
+		ng.ReplaceVotes[i] = g.ReplaceVotes[i]
+	}
+
+	for i := range g.CommunityVotes {
+		ng.CommunityVotes[i] = g.CommunityVotes[i]
+	}
+
+	return ng
+}
