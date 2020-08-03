@@ -84,7 +84,7 @@ func (c *CoinsStateSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 	offset += len(c.Nonces) * 28
 
 	// Field (0) 'Balances'
-	if len(c.Balances) > 310995116277762 {
+	if len(c.Balances) > 2097152 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -95,7 +95,7 @@ func (c *CoinsStateSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 	}
 
 	// Field (1) 'Nonces'
-	if len(c.Nonces) > 310995116277762 {
+	if len(c.Nonces) > 2097152 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -132,7 +132,7 @@ func (c *CoinsStateSerializable) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Balances'
 	{
 		buf = tail[o0:o1]
-		num, err := ssz.DivideInt2(len(buf), 28, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 28, 2097152)
 		if err != nil {
 			return err
 		}
@@ -150,7 +150,7 @@ func (c *CoinsStateSerializable) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Nonces'
 	{
 		buf = tail[o1:]
-		num, err := ssz.DivideInt2(len(buf), 28, 310995116277762)
+		num, err := ssz.DivideInt2(len(buf), 28, 2097152)
 		if err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ func (c *CoinsStateSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(c.Balances))
-		if num > 310995116277762 {
+		if num > 2097152 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -202,14 +202,14 @@ func (c *CoinsStateSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 310995116277762)
+		hh.MerkleizeWithMixin(subIndx, num, 2097152)
 	}
 
 	// Field (1) 'Nonces'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(c.Nonces))
-		if num > 310995116277762 {
+		if num > 2097152 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -218,7 +218,7 @@ func (c *CoinsStateSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 310995116277762)
+		hh.MerkleizeWithMixin(subIndx, num, 2097152)
 	}
 
 	hh.Merkleize(indx)

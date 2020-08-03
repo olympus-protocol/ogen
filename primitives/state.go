@@ -10,7 +10,7 @@ type SerializableState struct {
 	// CoinsState keeps if accounts balances and transactions.
 	CoinsState *CoinsStateSerializable
 	// ValidatorRegistry keeps track of validators in the state.
-	ValidatorRegistry []*Validator `ssz-max:"1099511627776"`
+	ValidatorRegistry []*Validator `ssz-max:"2097152"`
 
 	// LatestValidatorRegistryChange keeps track of the last time the validator
 	// registry was changed. We only want to update the registry if a block was
@@ -34,14 +34,14 @@ type SerializableState struct {
 	EpochIndex uint64
 
 	// ProposerQueue is the queue of validators scheduled to create a block.
-	ProposerQueue []uint64 `ssz-max:"1099511627776"`
+	ProposerQueue []uint64 `ssz-max:"2097152"`
 
-	PreviousEpochVoteAssignments []uint64 `ssz-max:"1099511627776"`
-	CurrentEpochVoteAssignments  []uint64 `ssz-max:"1099511627776"`
+	PreviousEpochVoteAssignments []uint64 `ssz-max:"2097152"`
+	CurrentEpochVoteAssignments  []uint64 `ssz-max:"2097152"`
 
 	// NextProposerQueue is the queue of validators scheduled to create a block
 	// in the next epoch.
-	NextProposerQueue []uint64 `ssz-max:"1099511627776"`
+	NextProposerQueue []uint64 `ssz-max:"2097152"`
 
 	// JustifiedBitfield is a bitfield where the nth least significant bit
 	// represents whether the nth last epoch was justified.
@@ -61,7 +61,7 @@ type SerializableState struct {
 
 	// CurrentEpochVotes are votes that are being submitted where
 	// the source epoch matches justified epoch.
-	CurrentEpochVotes []*AcceptedVoteInfo `ssz-max:"1099511627776"`
+	CurrentEpochVotes []*AcceptedVoteInfo `ssz-max:"2097152"`
 
 	// PreviousJustifiedEpoch is the second-to-last epoch that >2/3 of validators
 	// voted for.
@@ -71,7 +71,7 @@ type SerializableState struct {
 	PreviousJustifiedEpochHash [32]byte `ssz-size:"32"`
 
 	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
-	PreviousEpochVotes []*AcceptedVoteInfo `ssz-max:"1099511627776"`
+	PreviousEpochVotes []*AcceptedVoteInfo `ssz-max:"2097152"`
 
 	// CurrentManagers are current managers of the governance funds.
 	CurrentManagers [][20]byte `ssz-max:"5"`

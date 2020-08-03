@@ -8,6 +8,6 @@ type AccountInfo struct {
 
 // CoinsStateSerializable is a struct to properly serialize the coinstate efficiently
 type CoinsStateSerializable struct {
-	Balances []*AccountInfo `ssz-max:"310995116277762"`
-	Nonces   []*AccountInfo `ssz-max:"310995116277762"`
+	Balances []*AccountInfo `ssz-max:"2097152"`
+	Nonces   []*AccountInfo `ssz-max:"2097152"`
 }

@@ -181,7 +181,7 @@ func (g *GovernanceSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 	}
 
 	// Field (0) 'ReplaceVotes'
-	if len(g.ReplaceVotes) > 1099511627776 {
+	if len(g.ReplaceVotes) > 2097152 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -192,7 +192,7 @@ func (g *GovernanceSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 	}
 
 	// Field (1) 'CommunityVotes'
-	if len(g.CommunityVotes) > 1099511627776 {
+	if len(g.CommunityVotes) > 2097152 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -236,7 +236,7 @@ func (g *GovernanceSerializable) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'ReplaceVotes'
 	{
 		buf = tail[o0:o1]
-		num, err := ssz.DivideInt2(len(buf), 52, 1099511627776)
+		num, err := ssz.DivideInt2(len(buf), 52, 2097152)
 		if err != nil {
 			return err
 		}
@@ -254,7 +254,7 @@ func (g *GovernanceSerializable) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'CommunityVotes'
 	{
 		buf = tail[o1:]
-		num, err := ssz.DecodeDynamicLength(buf, 1099511627776)
+		num, err := ssz.DecodeDynamicLength(buf, 2097152)
 		if err != nil {
 			return err
 		}
@@ -304,7 +304,7 @@ func (g *GovernanceSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(g.ReplaceVotes))
-		if num > 1099511627776 {
+		if num > 2097152 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -313,14 +313,14 @@ func (g *GovernanceSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 1099511627776)
+		hh.MerkleizeWithMixin(subIndx, num, 2097152)
 	}
 
 	// Field (1) 'CommunityVotes'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(g.CommunityVotes))
-		if num > 1099511627776 {
+		if num > 2097152 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -329,7 +329,7 @@ func (g *GovernanceSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 1099511627776)
+		hh.MerkleizeWithMixin(subIndx, num, 2097152)
 	}
 
 	hh.Merkleize(indx)

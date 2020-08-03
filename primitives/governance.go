@@ -60,8 +60,8 @@ func (r *ReplacementVotes) Unmarshal(b []byte) error {
 
 // GovernanceSerializable is a struct that contains the Governance state on a serializable struct.
 type GovernanceSerializable struct {
-	ReplaceVotes   []*ReplacementVotes      `ssz-max:"1099511627776"`
-	CommunityVotes []*CommunityVoteDataInfo `ssz-max:"1099511627776"`
+	ReplaceVotes   []*ReplacementVotes      `ssz-max:"2097152"`
+	CommunityVotes []*CommunityVoteDataInfo `ssz-max:"2097152"`
 }
 
 // CommunityVoteData is the votes that users sign to vote for a specific candidate.
