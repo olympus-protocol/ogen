@@ -78,10 +78,7 @@ func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
 func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	a2 := *a
 
-	a2.ParticipationBitfield = make([]byte, len(a.ParticipationBitfield))
-	for i, b := range a.ParticipationBitfield {
-		a2.ParticipationBitfield[i] = b
-	}
+	a2.ParticipationBitfield = a.ParticipationBitfield
 
 	vd := a.Data.Copy()
 	a2.Data = &vd
@@ -242,7 +239,7 @@ func (s *SingleValidatorVote) Hash() chainhash.Hash {
 type MultiValidatorVote struct {
 	Data                  *VoteData
 	Sig                   [96]byte
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitfield" ssz-max:"2048"`
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
 }
 
 // Signature returns the signature on BLS type
