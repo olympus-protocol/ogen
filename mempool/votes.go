@@ -23,7 +23,7 @@ import (
 
 type mempoolVote struct {
 	individualVotes         []*primitives.SingleValidatorVote
-	participationBitfield   []uint8
+	participationBitfield   bitfield.Bitlist
 	participatingValidators map[uint64]struct{}
 	voteData                *primitives.VoteData
 }
@@ -74,7 +74,7 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   make([]byte, uint(outOf)+7/8),
+		participationBitfield:   bitfield.NewBitlist((outOf+ 7) * 8),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),
@@ -261,11 +261,10 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			sig := bls.AggregateSignatures(sigs)
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
-			bf := bitfield.NewBitlist(uint64(len(v.participationBitfield)))
 			vote := &primitives.MultiValidatorVote{
 				Data:                  m.pool[i].voteData,
 				Sig:                   sigb,
-				ParticipationBitfield: append(bf, v.participationBitfield...),
+				ParticipationBitfield: v.participationBitfield,
 			}
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
 				// TODO we may need to ban the node here.

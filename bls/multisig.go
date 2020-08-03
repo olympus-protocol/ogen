@@ -131,7 +131,7 @@ func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: [][96]byte{},
-		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys))),
+		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys) * 8)),
 	}
 }
 

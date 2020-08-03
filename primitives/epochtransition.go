@@ -1,15 +1,15 @@
 package primitives
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
-	"math/big"
-
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"math/big"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -433,7 +433,6 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.CheckForVoteTransitions(p)
 
 	totalBalance := s.getActiveBalance(p)
-	fmt.Printf("TotalBalance: %v \n", totalBalance)
 
 	// These are voters who voted for a target of the previous epoch.
 	previousEpochVoters := newVoterGroup()
@@ -462,23 +461,22 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
-		if v.Data.BeaconBlockHashH().IsEqual(&actualBlockHash) {
+		if bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		if v.Data.ToHashH().IsEqual(&previousEpochBoundaryHash) {
+		if bytes.Equal(previousEpochBoundaryHash[:], v.Data.ToHash[:]) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
 		for _, validatorIdx := range validatorIndices {
 			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
-	fmt.Println(s.CurrentEpochVotes)
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 		if err != nil {
 			return nil, err
 		}
-		if v.Data.ToHashH().IsEqual(&epochBoundaryHash) {
+		if bytes.Equal(epochBoundaryHash[:], v.Data.FromHash[:]) {
 			currentEpochVotersMatchingTarget.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validators)
 		}
 	}
@@ -487,16 +485,12 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash
 	s.JustificationBitfield <<= 1
 
-	fmt.Printf("PreviousEpochVotersMatchingTargetHash Total Balance: %v \n", 3*previousEpochVotersMatchingTargetHash.totalBalance)
-
 	// >2/3 voted with target of the previous epoch
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 1 // mark
 		s.JustifiedEpoch = s.EpochIndex - 1
 		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
 	}
-
-	fmt.Printf("CurrentEpochVotersMatchingTarget Total Balance: %v \n", 3*currentEpochVotersMatchingTarget.totalBalance)
 
 	if 3*currentEpochVotersMatchingTarget.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 0

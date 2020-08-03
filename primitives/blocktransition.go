@@ -673,6 +673,9 @@ func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParam
 
 // IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+	if v.Data == nil {
+		return fmt.Errorf("vote data is empty")
+	}
 	if v.Data.Slot == 0 {
 		return fmt.Errorf("slot out of range")
 	}
@@ -680,17 +683,15 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		if v.Data.FromEpoch != s.JustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
 		}
-
-		if !s.JustifiedEpochHash.IsEqual(v.Data.FromHashH()) {
-			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash, v.Data.FromHash)
+		if !bytes.Equal(s.JustifiedEpochHash[:], v.Data.FromHash[:]) {
+			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash.String(), hex.EncodeToString(v.Data.FromHash[:]))
 		}
 	} else if s.EpochIndex > 0 && v.Data.ToEpoch == s.EpochIndex-1 {
 		if v.Data.FromEpoch != s.PreviousJustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match previous justified epoch (expected: %d, got: %d)", s.PreviousJustifiedEpoch, v.Data.FromEpoch)
 		}
-
-		if !s.PreviousJustifiedEpochHash.IsEqual(v.Data.FromHashH()) {
-			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash, v.Data.FromHash)
+		if !bytes.Equal(s.PreviousJustifiedEpochHash[:], v.Data.FromHash[:]) {
+			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash.String(), hex.EncodeToString(v.Data.FromHash[:]))
 		}
 	} else {
 		return fmt.Errorf("vote should have target epoch of either the current epoch (%d) or the previous epoch (%d) but got %d", s.EpochIndex, s.EpochIndex-1, v.Data.ToEpoch)

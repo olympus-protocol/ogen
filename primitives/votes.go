@@ -139,24 +139,6 @@ func (v *VoteData) Unmarshal(b []byte) error {
 	return v.UnmarshalSSZ(d)
 }
 
-// FromHashH returns the FromHash data as a hash struct
-func (v *VoteData) FromHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(v.FromHash)
-	return h
-}
-
-// ToHashH returns the ToHash data as a hash struct
-func (v *VoteData) ToHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(v.FromHash)
-	return h
-}
-
-// BeaconBlockHashH returns the BeaconBlockHash data as a hash struct
-func (v *VoteData) BeaconBlockHashH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(v.BeaconBlockHash)
-	return h
-}
-
 // FirstSlotValid return the first slot valid for current validator vote
 func (v *VoteData) FirstSlotValid(p *params.ChainParams) uint64 {
 	// vs <= ss-min
@@ -241,7 +223,7 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf+7)
+	participationBitfield := bitfield.NewBitlist( (s.OutOf+7) * 8)
 	participationBitfield[s.Offset/8] |= 1 << uint(s.Offset%8)
 	return &MultiValidatorVote{
 		Data:                  s.Data,
