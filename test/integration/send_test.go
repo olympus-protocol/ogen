@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 	}
 	log.Infof("Generated %v keys", len(validatorKeys))
 	keystore.Close()
-	addr, err := testdata.PremineAddr.PublicKey().ToAddress(testdata.IntTestParams.AddrPrefix.Public)
+	addr, err := testdata.PremineAddr.PublicKey().ToAccount()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -116,8 +116,8 @@ func TestMain(m *testing.M) {
 	var initialValidators []primitives.ValidatorInitialization
 	for _, sv := range server1.Chain.State().TipState().ValidatorRegistry {
 		initialValidators = append(initialValidators, primitives.ValidatorInitialization{
-			PubKey:       hex.EncodeToString(sv.PubKey),
-			PayeeAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, sv.PayeeAddress[:]),
+			PubKey:       hex.EncodeToString(sv.PubKey[:]),
+			PayeeAddress: bech32.Encode(testdata.IntTestParams.AccountPrefixes.Public, sv.PayeeAddress[:]),
 		})
 	}
 	ip.InitialValidators = initialValidators
@@ -240,7 +240,7 @@ func Test_PremineAccount(t *testing.T) {
 
 	//Test PremineAddr balance and add premineAddr account to RPCWallet"
 
-	privKey, _ := testdata.PremineAddr.ToWIF(testdata.IntTestParams.AddrPrefix.Private)
+	privKey, _ := testdata.PremineAddr.ToWIF()
 
 	response, err := C.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: "premineAddrAccount", Key: &proto.KeyPair{Private: privKey}})
 	assert.Nil(t, err)
@@ -266,7 +266,7 @@ func Test_SendTxs(t *testing.T) {
 	//Create an empty address to send coins
 	ctx := context.Background()
 	secondAccount := bls.RandKey()
-	secondAddr, _ := secondAccount.PublicKey().ToAddress(testdata.IntTestParams.AddrPrefix.Public)
+	secondAddr, _ := secondAccount.PublicKey().ToAccount()
 
 	//Send a first, valid transaction
 	_, err = C.wallet.SendTransaction(ctx, &proto.SendTransactionInfo{Account: secondAddr, Amount: "10"})
@@ -306,25 +306,27 @@ func Test_SendTxs(t *testing.T) {
 	var toPkh [20]byte
 	copy(toPkh[:], data)
 
+	var p [48]byte
+	copy(p[:], pub.Marshal())
+
 	nonceMap := server1.Chain.State().TipState().CoinsState.Nonces
 	nonce := nonceMap[acc1Byte]
 	assert.NotNil(t, nonce)
 
-	payload := &primitives.TransferSinglePayload{
+	tx := &primitives.Tx{
 		To:            toPkh,
-		FromPublicKey: pub.Marshal(),
+		FromPublicKey: p,
 		Amount:        11,
 		Nonce:         nonce,
 		Fee:           1,
 	}
-	sigMsg := payload.SignatureMessage()
+
+	sigMsg := tx.SignatureMessage()
 	sig := testdata.PremineAddr.Sign(sigMsg[:])
-	payload.Signature = sig.Marshal()
-	tx := &primitives.Tx{
-		Type:    primitives.TxTransferSingle,
-		Version: 0,
-	}
-	err = tx.AppendPayload(payload)
+	var s [96]byte
+	copy(s[:], sig.Marshal())
+	tx.Signature = s
+
 	byteTx, _ := tx.Marshal()
 	rawTx := hex.EncodeToString(byteTx)
 

@@ -129,7 +129,7 @@ func (p *ProtocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		// reduce trust on peer
 		err = p.host.BanScorePeer(id, 10)
 		if err == nil {
-			p.log.Warnf("peer %s banscore increased", id, err)
+			p.log.Warnf("peer %s banscore increased", id)
 		}
 	}
 }

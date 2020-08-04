@@ -80,7 +80,7 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 	}
 
 	// adding a nonce rule for Ddos protection
-	txNonce := payload.GetNonce()
+	txNonce := item.Nonce
 	if txNonce != state.Nonces[fpkh]+1 {
 		return errors.New("invalid nonce")
 	}
