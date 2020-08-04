@@ -95,7 +95,7 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		}
 		//save connected peer
 		if err := cm.host.SavePeer(pma); err != nil {
-			cm.log.Tracef("error saving peer: %s", err)
+			cm.log.Errorf("error saving peer: %s", err)
 			cancel()
 			continue
 		}
