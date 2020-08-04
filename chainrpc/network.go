@@ -15,9 +15,10 @@ type networkServer struct {
 }
 
 func (s *networkServer) GetNetworkInfo(context.Context, *proto.Empty) (*proto.NetworkInfo, error) {
-	peers := s.hostnode.GetPeerList()
-	return &proto.NetworkInfo{Peers: int32(len(peers))}, nil
+	p := s.hostnode.GetPeerList()
+	return &proto.NetworkInfo{Peers: int32(len(p)), ID: s.hostnode.GetHost().ID().String()}, nil
 }
+
 func (s *networkServer) GetPeersInfo(context.Context, *proto.Empty) (*proto.Peers, error) {
 	peersID := s.hostnode.GetPeerList()
 	peersInfo := make([]*proto.Peer, len(peersID))

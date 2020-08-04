@@ -35,7 +35,7 @@ type Password struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Password string `protobuf:"bytes,1,opt,name=password,proto3" json:"password"`
+	Password string `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
 }
 
 func (x *Password) Reset() {
@@ -82,8 +82,8 @@ type GenValidatorKeys struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Password string `protobuf:"bytes,1,opt,name=password,proto3" json:"password"`
-	Keys     uint64 `protobuf:"varint,2,opt,name=keys,proto3" json:"keys"`
+	Password string `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
+	Keys     uint64 `protobuf:"varint,2,opt,name=keys,proto3" json:"keys,omitempty"`
 }
 
 func (x *GenValidatorKeys) Reset() {

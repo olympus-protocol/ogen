@@ -35,8 +35,8 @@ type SendTransactionInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account"`
-	Amount  string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount"`
+	Account string `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	Amount  string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *SendTransactionInfo) Reset() {
@@ -90,7 +90,7 @@ type Wallets struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Wallets []string `protobuf:"bytes,1,rep,name=wallets,proto3" json:"wallets"`
+	Wallets []string `protobuf:"bytes,1,rep,name=wallets,proto3" json:"wallets,omitempty"`
 }
 
 func (x *Wallets) Reset() {
@@ -137,8 +137,8 @@ type WalletReference struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name     string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
-	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password"`
+	Name     string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 }
 
 func (x *WalletReference) Reset() {
@@ -192,9 +192,9 @@ type ImportWalletData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name     string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
-	Key      *KeyPair `protobuf:"bytes,2,opt,name=key,proto3" json:"key"`
-	Password string   `protobuf:"bytes,3,opt,name=password,proto3" json:"password"`
+	Name     string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Key      *KeyPair `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Password string   `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
 }
 
 func (x *ImportWalletData) Reset() {

@@ -49,9 +49,7 @@ service Network {
 
 message NetworkInfo {
     int32 peers = 1;
-    int32 protocol = 2;
-    string version = 3;
-    
+    string ID = 2;
 }
 
 message Peers {
