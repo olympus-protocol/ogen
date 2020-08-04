@@ -7,10 +7,11 @@ import (
 	"io"
 
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 var (
+	// ErrorMessageHeaderSize returns when a MessageHeader size exceed MaxMessageHeaderSize
+	ErrorMessageHeaderSize = errors.New("message header too big")
 	// ErrorChecksum returned when the message header checksum doesn't match.
 	ErrorChecksum = errors.New("message checksum don't match")
 	// ErrorAnnLength returned when the header length doesn't match the message length.
@@ -21,10 +22,9 @@ var (
 	ErrorNetMismatch = errors.New("wrong message network")
 )
 
-// MaxMsgSize is the maximum amount of bytes a message can have.
-var MaxMsgSize = 1024 * 1024 * 64
-
 const (
+	// MaxMessageHeaderSize is the maximum bytes a MessageHeader can contain
+	MaxMessageHeaderSize = 60
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
 	// MsgGetAddrCmd ask node for address
@@ -42,25 +42,35 @@ type Message interface {
 	Marshal() ([]byte, error)
 	Unmarshal(b []byte) error
 	Command() string
-	MaxPayloadLength() uint32
+	MaxPayloadLength() uint64
 }
 
 // MessageHeader header of the message
 type MessageHeader struct {
-	Magic    uint32
-	Command  [40]byte
-	Length   uint32
-	Checksum [4]byte
+	Magic    uint64
+	Command  [40]byte `ssz-size:"40"`
+	Length   uint64
+	Checksum [4]byte `ssz-size:"4"`
 }
 
 // Marshal serializes the data to bytes
-func (h *MessageHeader) Marshal() ([]byte, error) {
-	return ssz.Marshal(h)
+func (m *MessageHeader) Marshal() ([]byte, error) {
+	b, err := m.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxMessageHeaderSize {
+		return nil, ErrorMessageHeaderSize
+	}
+	return b, nil
 }
 
 // Unmarshal deserializes the data
-func (h *MessageHeader) Unmarshal(b []byte) error {
-	return ssz.Unmarshal(b, h)
+func (m *MessageHeader) Unmarshal(b []byte) error {
+	if len(b) > MaxMessageHeaderSize {
+		return ErrorMessageHeaderSize
+	}
+	return m.UnmarshalSSZ(b)
 }
 
 func makeEmptyMessage(command string) (Message, error) {
@@ -84,7 +94,7 @@ func makeEmptyMessage(command string) (Message, error) {
 
 // ReadMessage decodes the message from reader
 func ReadMessage(r io.Reader, net uint32) (Message, error) {
-	headerBuf := make([]byte, 52)
+	headerBuf := make([]byte, 60)
 	_, err := io.ReadFull(r, headerBuf)
 	if err != nil {
 		return nil, err
@@ -110,7 +120,7 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 		return nil, ErrorChecksum
 	}
 
-	if header.Length != uint32(len(msgB)) {
+	if header.Length != uint64(len(msgB)) {
 		return nil, ErrorAnnLength
 	}
 	err = msg.Unmarshal(msgB)
@@ -129,7 +139,7 @@ func readHeader(h []byte, net uint32) (MessageHeader, error) {
 	if err != nil {
 		return MessageHeader{}, err
 	}
-	if header.Magic != net {
+	if header.Magic != uint64(net) {
 		return MessageHeader{}, ErrorNetMismatch
 	}
 	return header, nil
@@ -143,7 +153,7 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 	}
 	var checksum [4]byte
 	copy(checksum[:], chainhash.DoubleHashB(ser)[0:4])
-	hb, err := writeHeader(msg, net, uint32(len(ser)), checksum)
+	hb, err := writeHeader(msg, net, uint64(len(ser)), checksum)
 	if err != nil {
 		return err
 	}
@@ -157,11 +167,11 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 	return nil
 }
 
-func writeHeader(msg Message, net uint32, length uint32, checksum [4]byte) ([]byte, error) {
+func writeHeader(msg Message, net uint32, length uint64, checksum [4]byte) ([]byte, error) {
 	cmd := [40]byte{}
 	copy(cmd[:], []byte(msg.Command()))
 	header := MessageHeader{
-		Magic:    net,
+		Magic:    uint64(net),
 		Command:  cmd,
 		Length:   length,
 		Checksum: checksum,

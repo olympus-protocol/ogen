@@ -1,8 +1,6 @@
 package peers_test
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/peers"
@@ -63,8 +61,6 @@ func TestSavePeers(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, len(savedAddresses), 2)
 
-		s, _ := json.MarshalIndent(savedAddresses, "", "\t")
-		fmt.Println(string(s))
 		defer netDB.Close()
 	}
 }
@@ -88,24 +84,28 @@ func TestBanPeers(t *testing.T) {
 
 		for i := 0; i < 5; i++ {
 			_, err = peers.BanscorePeer(netDB, peerId.ID, banLimit/5)
+			assert.NoError(t, err)
 		}
 
 		isBanned, err := peers.IsPeerBanned(netDB, peerId.ID)
 
+		assert.NoError(t, err)
+
 		assert.Equal(t, isBanned, true)
 
-		//add same peer, and different peer with same ip address. In both cases it should not work, since it's an ip ban
+		// add same peer, and different peer with same ip address. In both cases it should not work, since it's an ip ban
 		err = peers.SavePeer(netDB, peer1)
-		assert.NotNil(t, err)
+		assert.NoError(t, err)
 
 		peer2, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1")
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		err = peers.SavePeer(netDB, peer2)
-		assert.NotNil(t, err)
+		assert.NoError(t, err)
 
 		//remove ip from banList, it's just a test
 		peerByte, err := peerId.ID.MarshalBinary()
-		_ = netDB.Update(func(tx *bbolt.Tx) error {
+		assert.NoError(t, err)
+		err = netDB.Update(func(tx *bbolt.Tx) error {
 			var err error
 			b := tx.Bucket(bansDbKey)
 			ipb := tx.Bucket(ipDbKey)
@@ -114,6 +114,7 @@ func TestBanPeers(t *testing.T) {
 			assert.Nil(t, err)
 			return nil
 		})
+		assert.NoError(t, err)
 		defer netDB.Close()
 	}
 }

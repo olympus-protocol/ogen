@@ -1,4 +1,4 @@
-//+build sync_test
+// +build sync_test
 
 package sync_test
 
@@ -18,7 +18,7 @@ import (
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
-	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
@@ -28,7 +28,7 @@ var ps *server.Server
 
 // Sync test.
 // 1. The initial node will load pre-built chain containing 985 blocks at a certain genesis time.
-// 2. The second node will connect to the intial node and sync those 985 blocks.
+// 2. The second node will connect to the initial node and sync those 985 blocks.
 // 3. A third process will check the second node with timeouts to see if the sync is stalled at a certain point of the sync.
 // 	  if the second node finishes the sync of the 985 blocks the test pass.
 // There is a workaround to fetch the initilization params since those were not store during the generation process.

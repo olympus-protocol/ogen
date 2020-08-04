@@ -7,16 +7,25 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 )
 
+// KeystorePass is a simple string password for keystore tests
 var KeystorePass = "test_pass"
 
+// WalletPassPrefix is a simple string password for wallets test
 var WalletPassPrefix = "wallet_pass-"
 
+// Node1Folder is the folder where node 1 stores its data
 var Node1Folder = "./data_node1"
-var Node2Folder = "./data_node2"
-var Node32older = "./data_node2"
 
+// Node2Folder is the folder where node 2 stores its data
+var Node2Folder = "./data_node2"
+
+// Node3Folder is the folder where node 3 stores its data
+var Node3Folder = "./data_node3"
+
+// PremineAddr a random bls key to use as premine addr
 var PremineAddr = bls.RandKey()
 
+// Conf are the test configuration flags
 var Conf = config.Config{
 	NetworkName:  "integration tests net",
 	AddNodes:     []peer.AddrInfo{},
@@ -31,13 +40,15 @@ var Conf = config.Config{
 	Pprof:        true,
 }
 
+// IntTestParams network parameters for test chains.
 var IntTestParams = params.ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "25126",
-	AddrPrefix: params.AddrPrefixes{
-		Public:   "tlpub",
-		Private:  "tlprv",
-		Multisig: "tlmul",
+	AccountPrefixes: params.AccountPrefixes{
+		Public:   "itpub",
+		Private:  "itprv",
+		Multisig: "itmul",
+		Contract: "itctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
@@ -52,7 +63,7 @@ var IntTestParams = params.ChainParams{
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
-	MaxTxsPerBlock:               1000,
+	MaxTxsPerBlock:               9000,
 	MaxDepositsPerBlock:          32,
 	MaxExitsPerBlock:             32,
 	MaxRANDAOSlashingsPerBlock:   20,

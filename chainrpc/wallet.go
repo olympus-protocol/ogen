@@ -33,14 +33,7 @@ func (s *walletServer) ListWallets(context.Context, *proto.Empty) (*proto.Wallet
 	return &proto.Wallets{Wallets: walletFiles}, nil
 }
 func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.KeyPair, error) {
-	ok := s.wallet.HasWallet(ref.Name)
-	if !ok {
-		err := s.wallet.NewWallet(ref.Name, nil, ref.Password)
-		if err != nil {
-			return nil, err
-		}
-	}
-	err := s.wallet.OpenWallet(ref.Name, ref.Password)
+	err := s.wallet.NewWallet(ref.Name, nil, ref.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +73,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if err != nil {
 		return nil, err
 	}
-	if prefix != s.params.AddrPrefix.Private {
+	if prefix != s.params.AccountPrefixes.Private {
 		return nil, errors.New("wrong wallet format for current network")
 	}
 	blsPriv, err := bls.SecretKeyFromBytes(priv)
@@ -103,7 +96,7 @@ func (s *walletServer) DumpWallet(context.Context, *proto.Empty) (*proto.KeyPair
 	if err != nil {
 		return nil, err
 	}
-	wif, err := priv.ToWIF(s.params.AddrPrefix.Private)
+	wif, err := priv.ToWIF()
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +138,7 @@ func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
 	parsedValidators := make([]*proto.ValidatorRegistry, len(validators.Validators))
 	for i, v := range validators.Validators {
 		newValidator := &proto.ValidatorRegistry{
-			PublicKey:        hex.EncodeToString(v.PubKey),
+			PublicKey:        hex.EncodeToString(v.PubKey[:]),
 			Status:           v.StatusString(),
 			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,

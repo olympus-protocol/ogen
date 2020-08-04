@@ -14,7 +14,7 @@ import (
 
 type blockRowAndValidator struct {
 	row       *index.BlockRow
-	validator uint32
+	validator uint64
 }
 
 // UpdateChainHead updates the blockchain head if needed
@@ -87,7 +87,7 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chai
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(validator uint32) (row *index.BlockRow, err error) {
+func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *index.BlockRow, err error) {
 	var att *primitives.MultiValidatorVote
 	att, ok := ch.state.GetLatestVote(validator)
 	if !ok {
@@ -153,12 +153,17 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Warnf("found duplicate block at slot %d, reporting...", block.Header.Slot)
 
 		for n := range ch.notifees {
-			n.ProposerSlashingConditionViolated(primitives.ProposerSlashing{
+			var b, os [96]byte
+			var p [48]byte
+			copy(b[:], blockSig.Marshal())
+			copy(os[:], otherSig.Marshal())
+			copy(p[:], proposerPub.Marshal())
+			n.ProposerSlashingConditionViolated(&primitives.ProposerSlashing{
 				BlockHeader1:       block.Header,
 				BlockHeader2:       otherBlock.Header,
-				Signature1:         blockSig.Marshal(),
-				Signature2:         otherSig.Marshal(),
-				ValidatorPublicKey: proposerPub.Marshal(),
+				Signature1:         b,
+				Signature2:         os,
+				ValidatorPublicKey: p,
 			})
 		}
 		return nil
@@ -228,7 +233,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 				return err
 			}
 
-			ch.state.SetLatestVotesIfNeeded(validators, &a)
+			ch.state.SetLatestVotesIfNeeded(validators, a)
 		}
 
 		// TODO: remove when we have fork choice
@@ -286,24 +291,20 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 			locator := index.TxLocator{
 				Hash:  tx.Hash(),
 				Block: block.Hash(),
-				Index: uint32(i),
+				Index: uint64(i),
 			}
-			payload, err := tx.GetPayload()
+			from, err := tx.FromPubkeyHash()
 			if err != nil {
 				return err
 			}
-			from, err := payload.FromPubkeyHash()
-			if err != nil {
-				return err
-			}
-			to := payload.GetToAccount()
+
 			// Add index to senders
 			err = ch.txidx.SetTx(locator, from)
 			if err != nil {
 				return err
 			}
 			// Add index to receivers
-			err = ch.txidx.SetTx(locator, to)
+			err = ch.txidx.SetTx(locator, tx.To)
 			if err != nil {
 				return err
 			}

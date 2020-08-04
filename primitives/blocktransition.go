@@ -2,9 +2,9 @@ package primitives
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
-
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
@@ -190,7 +190,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		// we check if it's above the threshold every few epochs, but not here
 	case VoteFor:
 		voteData := CommunityVoteData{
-			ReplacementCandidates: make([][20]byte, len(p.GovernancePercentages)),
+			ReplacementCandidates: [][20]byte{},
 		}
 
 		for i := range voteData.ReplacementCandidates {
@@ -215,7 +215,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 }
 
 // ApplyTransactionSingle applies a transaction to the coin state.
-func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+func (s *State) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
 	pkh, err := tx.FromPubkeyHash()
 	if err != nil {
@@ -246,38 +246,38 @@ func (s *State) ApplyTransactionSingle(tx *TransferSinglePayload, blockWithdrawa
 }
 
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
-func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
-	u := s.CoinsState
-	pkh, err := tx.FromPubkeyHash()
-	if err != nil {
-		return err
-	}
-	if u.Balances[pkh] < tx.Amount+tx.Fee {
-		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
-	}
+// func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+// 	u := s.CoinsState
+// 	pkh, err := tx.FromPubkeyHash()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if u.Balances[pkh] < tx.Amount+tx.Fee {
+// 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+// 	}
 
-	if u.Nonces[pkh] >= tx.Nonce {
-		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
-	}
+// 	if u.Nonces[pkh] >= tx.Nonce {
+// 		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+// 	}
 
-	if err := tx.VerifySig(); err != nil {
-		return err
-	}
+// 	if err := tx.VerifySig(); err != nil {
+// 		return err
+// 	}
 
-	u.Balances[pkh] -= tx.Amount + tx.Fee
-	u.Balances[tx.To] += tx.Amount
-	u.Balances[blockWithdrawalAddress] += tx.Fee
-	u.Nonces[pkh] = tx.Nonce
+// 	u.Balances[pkh] -= tx.Amount + tx.Fee
+// 	u.Balances[tx.To] += tx.Amount
+// 	u.Balances[blockWithdrawalAddress] += tx.Fee
+// 	u.Nonces[pkh] = tx.Nonce
 
-	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
-		delete(s.Governance.ReplaceVotes, pkh)
-	}
+// 	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+// 		delete(s.Governance.ReplaceVotes, pkh)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
+func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -312,7 +312,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
-		if bytes.Equal(v.PubKey, pubkeyBytes) {
+		if bytes.Equal(v.PubKey[:], pubkeyBytes[:]) {
 			proposerIndex = i
 		}
 	}
@@ -321,7 +321,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return uint32(proposerIndex), nil
+	return uint64(proposerIndex), nil
 }
 
 // ApplyProposerSlashing applies the proposer slashing to the state.
@@ -335,8 +335,8 @@ func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParam
 }
 
 // IsVoteSlashingValid checks if the vote slashing is valid.
-func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint32, error) {
-	if vs.Vote1.Data.Equals(&vs.Vote2.Data) {
+func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint64, error) {
+	if vs.Vote1.Data.Equals(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
 
@@ -347,8 +347,8 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	voteParticipation1 := vs.Vote1.ParticipationBitfield
 	voteParticipation2 := vs.Vote2.ParticipationBitfield
 
-	voteCommittee1 := make(map[uint32]struct{})
-	common := make([]uint32, 0)
+	voteCommittee1 := make(map[uint64]struct{})
+	common := make([]uint64, 0)
 
 	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot, p)
 	if err != nil {
@@ -452,7 +452,7 @@ func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error
 }
 
 // IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
-func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
+func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
 	if rs.Slot >= s.Slot {
 		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
 	}
@@ -474,7 +474,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 
 	proposerIndex := -1
 	for i, v := range s.ValidatorRegistry {
-		if bytes.Equal(v.PubKey, pubkeyBytes) {
+		if bytes.Equal(v.PubKey[:], pubkeyBytes[:]) {
 			proposerIndex = i
 		}
 	}
@@ -483,7 +483,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint32, error) {
 		return 0, fmt.Errorf("proposer-slashing: validator is already exited")
 	}
 
-	return uint32(proposerIndex), nil
+	return uint64(proposerIndex), nil
 }
 
 // ApplyRANDAOSlashing applies the RANDAO slashing to the state.
@@ -497,7 +497,7 @@ func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) e
 }
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint32, error) {
+func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
@@ -648,7 +648,7 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
-	s.ValidatorRegistry = append(s.ValidatorRegistry, Validator{
+	s.ValidatorRegistry = append(s.ValidatorRegistry, &Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
 		PubKey:           deposit.Data.PublicKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
@@ -660,8 +660,22 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	return nil
 }
 
+func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([48]byte, error) {
+	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
+	if err != nil {
+		return [48]byte{}, err
+	}
+
+	validatorIdx := validators[v.Offset]
+
+	return s.ValidatorRegistry[validatorIdx].PubKey, nil
+}
+
 // IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+	if v.Data == nil {
+		return fmt.Errorf("vote data is empty")
+	}
 	if v.Data.Slot == 0 {
 		return fmt.Errorf("slot out of range")
 	}
@@ -669,17 +683,15 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		if v.Data.FromEpoch != s.JustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
 		}
-
-		if !s.JustifiedEpochHash.IsEqual(&v.Data.FromHash) {
-			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash, v.Data.FromHash)
+		if !bytes.Equal(s.JustifiedEpochHash[:], v.Data.FromHash[:]) {
+			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash.String(), hex.EncodeToString(v.Data.FromHash[:]))
 		}
 	} else if s.EpochIndex > 0 && v.Data.ToEpoch == s.EpochIndex-1 {
 		if v.Data.FromEpoch != s.PreviousJustifiedEpoch {
 			return fmt.Errorf("expected from epoch to match previous justified epoch (expected: %d, got: %d)", s.PreviousJustifiedEpoch, v.Data.FromEpoch)
 		}
-
-		if !s.PreviousJustifiedEpochHash.IsEqual(&v.Data.FromHash) {
-			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash, v.Data.FromHash)
+		if !bytes.Equal(s.PreviousJustifiedEpochHash[:], v.Data.FromHash[:]) {
+			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash.String(), hex.EncodeToString(v.Data.FromHash[:]))
 		}
 	} else {
 		return fmt.Errorf("vote should have target epoch of either the current epoch (%d) or the previous epoch (%d) but got %d", s.EpochIndex, s.EpochIndex-1, v.Data.ToEpoch)
@@ -725,7 +737,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint32) error {
+func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
 	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
@@ -744,14 +756,14 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	}
 
 	if v.Data.ToEpoch == s.EpochIndex {
-		s.CurrentEpochVotes = append(s.CurrentEpochVotes, AcceptedVoteInfo{
+		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
-		s.PreviousEpochVotes = append(s.PreviousEpochVotes, AcceptedVoteInfo{
+		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
@@ -824,36 +836,35 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 
-	if !b.Header.TxMerkleRoot.IsEqual(&transactionMerkleRoot) {
-		return fmt.Errorf("expected transaction merkle root to be %s but got %s", transactionMerkleRoot, b.Header.TxMerkleRoot)
+	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
+		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
 	}
 
-	if !b.Header.VoteMerkleRoot.IsEqual(&voteMerkleRoot) {
-		return fmt.Errorf("expected vote merkle root to be %s but got %s", voteMerkleRoot, b.Header.VoteMerkleRoot)
+	if !bytes.Equal(voteMerkleRoot[:], b.Header.VoteMerkleRoot[:]) {
+		return fmt.Errorf("expected vote merkle root to be %s but got %s", hex.EncodeToString(voteMerkleRoot[:]), hex.EncodeToString(b.Header.VoteMerkleRoot[:]))
 	}
 
-	if !b.Header.DepositMerkleRoot.IsEqual(&depositMerkleRoot) {
-		return fmt.Errorf("expected deposit merkle root to be %s but got %s", depositMerkleRoot, b.Header.DepositMerkleRoot)
+	if !bytes.Equal(depositMerkleRoot[:], b.Header.DepositMerkleRoot[:]) {
+		return fmt.Errorf("expected deposit merkle root to be %s but got %s", hex.EncodeToString(depositMerkleRoot[:]), hex.EncodeToString(b.Header.DepositMerkleRoot[:]))
+	}
+	if !bytes.Equal(exitMerkleRoot[:], b.Header.ExitMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(exitMerkleRoot[:]), hex.EncodeToString(b.Header.ExitMerkleRoot[:]))
 	}
 
-	if !b.Header.ExitMerkleRoot.IsEqual(&exitMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", exitMerkleRoot, b.Header.ExitMerkleRoot)
+	if !bytes.Equal(voteSlashingMerkleRoot[:], b.Header.VoteSlashingMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(voteSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.VoteSlashingMerkleRoot[:]))
 	}
 
-	if !b.Header.VoteSlashingMerkleRoot.IsEqual(&voteSlashingMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", voteSlashingMerkleRoot, b.Header.VoteSlashingMerkleRoot)
+	if !bytes.Equal(proposerSlashingMerkleRoot[:], b.Header.ProposerSlashingMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(proposerSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.ProposerSlashingMerkleRoot[:]))
 	}
 
-	if !b.Header.ProposerSlashingMerkleRoot.IsEqual(&proposerSlashingMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", proposerSlashingMerkleRoot, b.Header.ProposerSlashingMerkleRoot)
+	if !bytes.Equal(randaoSlashingMerkleRoot[:], b.Header.RANDAOSlashingMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(randaoSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.RANDAOSlashingMerkleRoot[:]))
 	}
 
-	if !b.Header.RANDAOSlashingMerkleRoot.IsEqual(&randaoSlashingMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", randaoSlashingMerkleRoot, b.Header.RANDAOSlashingMerkleRoot)
-	}
-
-	if !b.Header.GovernanceVotesMerkleRoot.IsEqual(&governanceVoteMerkleRoot) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", governanceVoteMerkleRoot, b.Header.GovernanceVotesMerkleRoot)
+	if !bytes.Equal(governanceVoteMerkleRoot[:], b.Header.GovernanceVotesMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
 	}
 
 	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
@@ -885,32 +896,19 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	}
 
 	for _, d := range b.Deposits {
-		if err := s.ApplyDeposit(&d, p); err != nil {
+		if err := s.ApplyDeposit(d, p); err != nil {
 			return err
 		}
 	}
 
 	for _, tx := range b.Txs {
-		pload, err := tx.GetPayload()
-		if err != nil {
+		if err := s.ApplyTransactionSingle(tx, b.Header.FeeAddress, p); err != nil {
 			return err
-		}
-		switch payload := pload.(type) {
-		case *TransferSinglePayload:
-			if err := s.ApplyTransactionSingle(payload, b.Header.FeeAddress, p); err != nil {
-				return err
-			}
-		case *TransferMultiPayload:
-			if err := s.ApplyTransactionMulti(payload, b.Header.FeeAddress, p); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("payload missing from transaction")
 		}
 	}
 
 	for _, vote := range b.GovernanceVotes {
-		if err := s.ProcessGovernanceVote(&vote, p); err != nil {
+		if err := s.ProcessGovernanceVote(vote, p); err != nil {
 			return err
 		}
 	}
@@ -920,31 +918,31 @@ func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
 	proposerIndex := s.ProposerQueue[slotIndex]
 
 	for _, v := range b.Votes {
-		if err := s.ProcessVote(&v, p, proposerIndex); err != nil {
+		if err := s.ProcessVote(v, p, proposerIndex); err != nil {
 			return err
 		}
 	}
 
 	for _, e := range b.Exits {
-		if err := s.ApplyExit(&e); err != nil {
+		if err := s.ApplyExit(e); err != nil {
 			return err
 		}
 	}
 
 	for _, rs := range b.RANDAOSlashings {
-		if err := s.ApplyRANDAOSlashing(&rs, p); err != nil {
+		if err := s.ApplyRANDAOSlashing(rs, p); err != nil {
 			return err
 		}
 	}
 
 	for _, vs := range b.VoteSlashings {
-		if err := s.ApplyVoteSlashing(&vs, p); err != nil {
+		if err := s.ApplyVoteSlashing(vs, p); err != nil {
 			return err
 		}
 	}
 
 	for _, ps := range b.ProposerSlashings {
-		if err := s.ApplyProposerSlashing(&ps, p); err != nil {
+		if err := s.ApplyProposerSlashing(ps, p); err != nil {
 			return err
 		}
 	}

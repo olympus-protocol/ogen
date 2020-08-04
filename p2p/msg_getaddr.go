@@ -19,6 +19,6 @@ func (m *MsgGetAddr) Command() string {
 }
 
 // MaxPayloadLength returns the maximum size of the MsgGetAddr message.
-func (m *MsgGetAddr) MaxPayloadLength() uint32 {
+func (m *MsgGetAddr) MaxPayloadLength() uint64 {
 	return 0
 }

@@ -109,7 +109,7 @@ func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	w.priv = secret
 	w.open = true
 	w.pub = secret.PublicKey()
-	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
+	w.account, err = w.pub.ToAccount()
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (w *Wallet) OpenWallet(name string, password string) error {
 	}
 	w.priv = secret
 	w.pub = secret.PublicKey()
-	w.account, err = w.pub.ToAddress(w.params.AddrPrefix.Public)
+	w.account, err = w.pub.ToAccount()
 	if err != nil {
 		return err
 	}
@@ -226,9 +226,6 @@ func (w *Wallet) GetPublic() (*bls.PublicKey, error) {
 func (w *Wallet) GetAccountRaw() ([20]byte, error) {
 	if !w.open {
 		return [20]byte{}, errorNotOpen
-	}
-	if len(w.accountRaw) != 20 {
-		return [20]byte{}, errors.New("expected address to be 20 bytes")
 	}
 	return w.accountRaw, nil
 }

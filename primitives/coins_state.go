@@ -1,34 +1,17 @@
 package primitives
 
-import (
-	fastssz "github.com/ferranbt/fastssz"
-	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/go-ssz"
-)
-
-// AccountInfo is the information contained into both slices. It represents the account hash and a value.
-type AccountInfo struct {
-	Account [20]byte
-	Info    uint64
-}
-
-// CoinsStateSerializable is a struct to properly serialize the coinstate efficiently
-type CoinsStateSerializable struct {
-	Balances []AccountInfo
-	Nonces   []AccountInfo
-}
+import "github.com/golang/snappy"
 
 // CoinsState is the state that we use to store accounts balances and Nonces
 type CoinsState struct {
 	Balances map[[20]byte]uint64
 	Nonces   map[[20]byte]uint64
-	fastssz.Marshaler
-	fastssz.Unmarshaler
 }
 
 // Marshal serialize to bytes the struct
 func (u *CoinsState) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(u)
+	s := u.ToSerializable()
+	b, err := s.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -41,42 +24,12 @@ func (u *CoinsState) Unmarshal(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, u)
-}
-
-// MarshalSSZ uses the fastssz interface to override the ssz Marshal function
-func (u *CoinsState) MarshalSSZ() ([]byte, error) {
-	b := []byte{}
-	return u.MarshalSSZTo(b)
-}
-
-// MarshalSSZTo utility function to match the fastssz interface
-func (u *CoinsState) MarshalSSZTo(dst []byte) ([]byte, error) {
-	state := u.ToSerializable()
-	mb, err := ssz.Marshal(state)
-	if err != nil {
-		return nil, err
-	}
-	copy(dst, mb)
-	return mb, nil
-}
-
-// SizeSSZ returns the Size of the struct
-func (u *CoinsState) SizeSSZ() int {
-	size := 0
-	size += len(u.Balances) * 28
-	size += len(u.Nonces) * 28
-	return size
-}
-
-// UnmarshalSSZ overrides the ssz unmarshal function using a different struct
-func (u *CoinsState) UnmarshalSSZ(b []byte) error {
-	serializable := new(CoinsStateSerializable)
-	err := ssz.Unmarshal(b, serializable)
+	us := new(CoinsStateSerializable)
+	err = us.UnmarshalSSZ(d)
 	if err != nil {
 		return err
 	}
-	u.FromSerializable(serializable)
+	u.FromSerializable(us)
 	return nil
 }
 
@@ -118,13 +71,13 @@ func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
 
 // ToSerializable converts the struct from maps to slices.
 func (u *CoinsState) ToSerializable() CoinsStateSerializable {
-	balances := []AccountInfo{}
-	nonces := []AccountInfo{}
+	var balances []*AccountInfo
+	var nonces []*AccountInfo
 	for k, v := range u.Balances {
-		balances = append(balances, AccountInfo{Account: k, Info: v})
+		balances = append(balances, &AccountInfo{Account: k, Info: v})
 	}
 	for k, v := range u.Nonces {
-		nonces = append(nonces, AccountInfo{Account: k, Info: v})
+		nonces = append(nonces, &AccountInfo{Account: k, Info: v})
 	}
 	return CoinsStateSerializable{Balances: balances, Nonces: nonces}
 }

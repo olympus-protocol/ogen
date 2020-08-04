@@ -1,54 +1,60 @@
 package bls_test
 
 import (
+	fuzz "github.com/google/gofuzz"
+	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/bls"
-	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 func Test_CombinedSignatureSerialize(t *testing.T) {
-	ser, err := testdata.CombinedSignature.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := fuzz.New().NilChance(0)
+	var v bls.CombinedSignature
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc bls.CombinedSignature
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.CombinedSignature, desc)
-	if !equal {
-		t.Fatal("error: serialize CombinedSignature")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MultipubSerialize(t *testing.T) {
-	ser := testdata.Multipub.Marshal()
+	f := fuzz.New().NilChance(0).NumElements(32, 32)
+	var v bls.Multipub
+	f.Fuzz(&v)
+	ser := v.Marshal()
+
 	var desc bls.Multipub
 	err := desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.Multipub, desc)
-	if !equal {
-		t.Fatal("error: serialize Multipub")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }
 
 func Test_MultisigSerialize(t *testing.T) {
-	ser, err := testdata.Multisig.Marshal()
-	if err != nil {
-		t.Fatal(err)
+	f := fuzz.New().NilChance(0).NumElements(32, 32)
+	var m bls.Multipub
+	var s [][96]byte
+	f.Fuzz(&m)
+	f.Fuzz(&s)
+	v := bls.Multisig{
+		PublicKey:  &m,
+		Signatures: s,
+		KeysSigned: bitfield.NewBitlist(uint64(len(m.PublicKeys))),
 	}
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
 	var desc bls.Multisig
 	err = desc.Unmarshal(ser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	equal := ssz.DeepEqual(testdata.Multisig, desc)
-	if !equal {
-		t.Fatal("error: serialize Multisig")
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
 }

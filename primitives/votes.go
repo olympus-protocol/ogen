@@ -1,15 +1,16 @@
 package primitives
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/prysmaticlabs/go-bitfield"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/prysmaticlabs/go-ssz"
 
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -26,33 +27,33 @@ var (
 
 const (
 	// MaxVoteDataSize is the maximum size in bytes of vote data.
-	MaxVoteDataSize = 120
+	MaxVoteDataSize = 128
 	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
-	MaxAcceptedVoteInfoSize = 140
+	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 2064
 	// MaxSingleValidatorVoteSize is the maximum size in bytes a single validator vote can contain.
-	MaxSingleValidatorVoteSize = 228
+	MaxSingleValidatorVoteSize = MaxVoteDataSize + 112
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
-	MaxMultiValidatorVoteSize = 228
+	MaxMultiValidatorVoteSize = MaxVoteDataSize + 2144
 )
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
 type AcceptedVoteInfo struct {
 	// Data is the data of the vote which specifies the signed part of the attestation.
-	Data VoteData
+	Data *VoteData
 
 	// ParticipationBitfield is any validator that participated in the vote.
-	ParticipationBitfield bitfield.Bitfield
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
 
 	// Proposer is the proposer that included the attestation in a block.
-	Proposer uint32
+	Proposer uint64
 
 	// InclusionDelay is the delay from the attestation slot to the slot included.
 	InclusionDelay uint64
 }
 
 // Marshal encodes the data.
-func (av *AcceptedVoteInfo) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(av)
+func (a *AcceptedVoteInfo) Marshal() ([]byte, error) {
+	b, err := a.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (av *AcceptedVoteInfo) Marshal() ([]byte, error) {
 }
 
 // Unmarshal decodes the data.
-func (av *AcceptedVoteInfo) Unmarshal(b []byte) error {
+func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
@@ -71,19 +72,20 @@ func (av *AcceptedVoteInfo) Unmarshal(b []byte) error {
 	if len(d) > MaxAcceptedVoteInfoSize {
 		return ErrorAcceptedVoteDataSize
 	}
-	return ssz.Unmarshal(d, av)
+	return a.UnmarshalSSZ(d)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
-func (av *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
-	a2 := *av
+func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
+	a2 := *a
 
-	a2.ParticipationBitfield = make([]uint8, len(av.ParticipationBitfield))
-	for i, b := range av.ParticipationBitfield {
+	a2.ParticipationBitfield = bitfield.NewBitlist(a.ParticipationBitfield.Len())
+	for i, b := range a.ParticipationBitfield {
 		a2.ParticipationBitfield[i] = b
 	}
 
-	a2.Data = av.Data.Copy()
+	vd := a.Data.Copy()
+	a2.Data = &vd
 
 	return a2
 }
@@ -98,22 +100,25 @@ type VoteData struct {
 	FromEpoch uint64
 
 	// FromHash is the block hash of the FromEpoch.
-	FromHash chainhash.Hash
+	FromHash [32]byte
 
 	// ToEpoch is the target epoch of the vote which should either be the
 	// current epoch or the previous epoch.
 	ToEpoch uint64
 
 	// ToHash is the block hash of the ToEpoch.
-	ToHash chainhash.Hash
+	ToHash [32]byte
 
 	// BeaconBlockHash is for the fork choice.
-	BeaconBlockHash chainhash.Hash
+	BeaconBlockHash [32]byte
+
+	// Nonce identifies the client that proposed the block.
+	Nonce uint64
 }
 
 // Marshal encodes the data.
 func (v *VoteData) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(v)
+	b, err := v.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +137,7 @@ func (v *VoteData) Unmarshal(b []byte) error {
 	if len(d) > MaxVoteDataSize {
 		return ErrorVoteDataSize
 	}
-	return ssz.Unmarshal(d, v)
+	return v.UnmarshalSSZ(d)
 }
 
 // FirstSlotValid return the first slot valid for current validator vote
@@ -150,23 +155,23 @@ func (v *VoteData) LastSlotValid(p *params.ChainParams) uint64 {
 }
 
 func (v *VoteData) String() string {
-	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, v.BeaconBlockHash)
+	return fmt.Sprintf("Vote(epochs: %d -> %d, beacon: %s)", v.FromEpoch, v.ToEpoch, hex.EncodeToString(v.BeaconBlockHash[:]))
 }
 
 // IsDoubleVote checks if the two votes form a double vote.
-func (v *VoteData) IsDoubleVote(v2 VoteData) bool {
-	return v.ToEpoch == v2.ToEpoch && !v.Equals(&v2)
+func (v *VoteData) IsDoubleVote(v2 *VoteData) bool {
+	return v.ToEpoch == v2.ToEpoch && !v.Equals(v2)
 }
 
 // IsSurroundVote checks if the two votes form a surrounded vote.
-func (v *VoteData) IsSurroundVote(v2 VoteData) bool {
+func (v *VoteData) IsSurroundVote(v2 *VoteData) bool {
 	return v.FromEpoch < v2.FromEpoch && v2.ToEpoch < v.ToEpoch
 }
 
 // Equals checks if vote data equals another vote data.
 func (v *VoteData) Equals(other *VoteData) bool {
 	if v.Slot != other.Slot || v.FromEpoch != other.FromEpoch || v.ToEpoch != other.ToEpoch ||
-		!v.FromHash.IsEqual(&other.FromHash) || !v.ToHash.IsEqual(&other.ToHash) || !v.BeaconBlockHash.IsEqual(&other.BeaconBlockHash) {
+		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || bytes.Equal(v.ToHash[:], other.ToHash[:]) || bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) || v.Nonce != other.Nonce {
 		return false
 	}
 
@@ -186,73 +191,69 @@ func (v *VoteData) Hash() chainhash.Hash {
 
 // SingleValidatorVote is a signed vote from a validator.
 type SingleValidatorVote struct {
-	Data   VoteData
-	Sig    []byte
-	Offset uint32
-	OutOf  uint32
+	Data   *VoteData
+	Sig    [96]byte
+	Offset uint64
+	OutOf  uint64
 }
 
 // Signature returns the signature on BLS type
-func (v *SingleValidatorVote) Signature() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(v.Sig)
+func (s *SingleValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(s.Sig)
 }
 
 // Marshal encodes the data.
-func (v *SingleValidatorVote) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(v)
+func (s *SingleValidatorVote) Marshal() ([]byte, error) {
+	b, err := s.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
 	if len(b) > MaxSingleValidatorVoteSize {
 		return nil, ErrorSingleValidatorVoteSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
-func (v *SingleValidatorVote) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxSingleValidatorVoteSize {
+func (s *SingleValidatorVote) Unmarshal(b []byte) error {
+	if len(b) > MaxSingleValidatorVoteSize {
 		return ErrorSingleValidatorVoteSize
 	}
-	return ssz.Unmarshal(d, v)
+	return s.UnmarshalSSZ(b)
 }
 
 // AsMulti returns the single validator vote as a multi validator vote.
-func (v *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := make([]uint8, (v.OutOf+7)/8)
-	participationBitfield[v.Offset/8] |= (1 << uint(v.Offset%8))
+func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
+	participationBitfield := bitfield.NewBitlist((s.OutOf + 7) * 8)
+	participationBitfield[s.Offset/8] |= 1 << uint(s.Offset%8)
 	return &MultiValidatorVote{
-		Data:                  v.Data,
-		Sig:                   v.Sig,
+		Data:                  s.Data,
+		Sig:                   s.Sig,
 		ParticipationBitfield: participationBitfield,
 	}
 }
 
 // Hash returns the hash of the single validator vote.
-func (v *SingleValidatorVote) Hash() chainhash.Hash {
-	b, _ := v.Marshal()
+func (s *SingleValidatorVote) Hash() chainhash.Hash {
+	b, _ := s.Marshal()
 	return chainhash.HashH(b)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
-	Data                  VoteData
-	Sig                   []byte
-	ParticipationBitfield bitfield.Bitfield
+	Data                  *VoteData
+	Sig                   [96]byte
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
 }
 
 // Signature returns the signature on BLS type
-func (v *MultiValidatorVote) Signature() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(v.Sig)
+func (m *MultiValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(m.Sig)
 }
 
 // Marshal encodes the data.
-func (v *MultiValidatorVote) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(v)
+func (m *MultiValidatorVote) Marshal() ([]byte, error) {
+	b, err := m.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +264,7 @@ func (v *MultiValidatorVote) Marshal() ([]byte, error) {
 }
 
 // Unmarshal decodes the data.
-func (v *MultiValidatorVote) Unmarshal(b []byte) error {
+func (m *MultiValidatorVote) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
@@ -271,11 +272,11 @@ func (v *MultiValidatorVote) Unmarshal(b []byte) error {
 	if len(d) > MaxMultiValidatorVoteSize {
 		return ErrorMultiValidatorVoteSize
 	}
-	return ssz.Unmarshal(d, v)
+	return m.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the vote.
-func (v *MultiValidatorVote) Hash() chainhash.Hash {
-	b, _ := v.Marshal()
+func (m *MultiValidatorVote) Hash() chainhash.Hash {
+	b, _ := m.Marshal()
 	return chainhash.HashH(b)
 }

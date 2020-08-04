@@ -27,6 +27,7 @@ type NetPrefix struct {
 	Private []byte
 }
 
+// Mainnet is Olympus default base58 prefix for extended public/private keys.
 var Mainnet = &NetPrefix{
 	Public:  []byte{0x1f, 0x74, 0x90, 0xf0},
 	Private: []byte{0x11, 0x24, 0xd9, 0x70},
@@ -332,8 +333,9 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 		// Calculate the corresponding intermediate public key for
 		// intermediate private key.
 		ilPub := ilKey.PublicKey()
-
-		parentPub, err := bls.PublicKeyFromBytes(k.key)
+		var p [48]byte
+		copy(p[:], k.key)
+		parentPub, err := bls.PublicKeyFromBytes(p)
 		if err != nil {
 			return nil, err
 		}
@@ -417,7 +419,9 @@ func (k *ExtendedKey) BlsPubKey() (*bls.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bls.PublicKeyFromBytes(pubBytes)
+	var p [48]byte
+	copy(p[:], pubBytes)
+	return bls.PublicKeyFromBytes(p)
 }
 
 // BlsPrivKey converts the extended key to a bls private key and returns it.
@@ -588,9 +592,10 @@ func NewKeyFromString(key string) (*ExtendedKey, error) {
 			return nil, ErrUnusableSeed
 		}
 	} else {
-		// Ensure the public key parses correctly and is actually on the
-		// secp256k1 curve.
-		_, err := bls.PublicKeyFromBytes(keyData)
+		// Ensure the public key parses correctly.
+		var p [48]byte
+		copy(p[:], keyData)
+		_, err := bls.PublicKeyFromBytes(p)
 		if err != nil {
 			return nil, err
 		}

@@ -200,34 +200,6 @@ func (node *HostNode) GetHost() host.Host {
 	return node.host
 }
 
-// SubscribeMessage registers a handler for a network topic.
-func (node *HostNode) SubscribeMessage(topic string, handler func([]byte, peer.ID)) (*pubsub.Subscription, error) {
-	subscription, err := node.gossipSub.Subscribe(topic)
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		for {
-			msg, err := subscription.Next(node.ctx)
-			node.log.Debugf("received broadcast of size %d on topic %s", len(msg.Data), topic)
-			if err != nil {
-				node.log.Errorf("error when receiving message: %s", err)
-				continue
-			}
-
-			handler(msg.Data, msg.GetFrom())
-		}
-	}()
-
-	return subscription, nil
-}
-
-// UnsubscribeMessage cancels a subscription to a topic.
-func (node *HostNode) UnsubscribeMessage(subscription *pubsub.Subscription) {
-	subscription.Cancel()
-}
-
 func (node *HostNode) removePeer(p peer.ID) {
 	node.host.Peerstore().ClearAddrs(p)
 }

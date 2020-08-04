@@ -5,7 +5,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 // ErrorBlockHeaderSize returns when the Blockheader decompresed size is above MaxBlockHeaderBytes
@@ -16,49 +15,49 @@ const MaxBlockHeaderBytes = 372
 
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
-	Version                    uint32
-	Nonce                      uint32
-	TxMerkleRoot               chainhash.Hash
-	VoteMerkleRoot             chainhash.Hash
-	DepositMerkleRoot          chainhash.Hash
-	ExitMerkleRoot             chainhash.Hash
-	VoteSlashingMerkleRoot     chainhash.Hash
-	RANDAOSlashingMerkleRoot   chainhash.Hash
-	ProposerSlashingMerkleRoot chainhash.Hash
-	GovernanceVotesMerkleRoot  chainhash.Hash
-	PrevBlockHash              chainhash.Hash
+	Version                    uint64
+	Nonce                      uint64
+	TxMerkleRoot               [32]byte `ssz-size:"32"`
+	VoteMerkleRoot             [32]byte `ssz-size:"32"`
+	DepositMerkleRoot          [32]byte `ssz-size:"32"`
+	ExitMerkleRoot             [32]byte `ssz-size:"32"`
+	VoteSlashingMerkleRoot     [32]byte `ssz-size:"32"`
+	RANDAOSlashingMerkleRoot   [32]byte `ssz-size:"32"`
+	ProposerSlashingMerkleRoot [32]byte `ssz-size:"32"`
+	GovernanceVotesMerkleRoot  [32]byte `ssz-size:"32"`
+	PrevBlockHash              [32]byte `ssz-size:"32"`
 	Timestamp                  uint64
 	Slot                       uint64
-	StateRoot                  chainhash.Hash
-	FeeAddress                 [20]byte
+	StateRoot                  [32]byte `ssz-size:"32"`
+	FeeAddress                 [20]byte `ssz-size:"20"`
 }
 
 // Marshal encodes the data.
-func (bh *BlockHeader) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(bh)
+func (b *BlockHeader) Marshal() ([]byte, error) {
+	by, err := b.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxBlockHeaderBytes {
+	if len(by) > MaxBlockHeaderBytes {
 		return nil, ErrorBlockHeaderSize
 	}
-	return snappy.Encode(nil, b), nil
+	return snappy.Encode(nil, by), nil
 }
 
 // Unmarshal decodes the data.
-func (bh *BlockHeader) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
+func (b *BlockHeader) Unmarshal(by []byte) error {
+	d, err := snappy.Decode(nil, by)
 	if err != nil {
 		return err
 	}
 	if len(d) > MaxBlockHeaderBytes {
 		return ErrorBlockHeaderSize
 	}
-	return ssz.Unmarshal(d, bh)
+	return b.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the block header.
-func (bh *BlockHeader) Hash() chainhash.Hash {
-	b, _ := bh.Marshal()
-	return chainhash.HashH(b)
+func (b *BlockHeader) Hash() chainhash.Hash {
+	by, _ := b.Marshal()
+	return chainhash.HashH(by)
 }

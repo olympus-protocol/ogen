@@ -2,6 +2,9 @@ package mempool
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/peers/conflict"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
+	"github.com/prysmaticlabs/go-bitfield"
 	"math/rand"
 	"sort"
 	"sync"
@@ -14,20 +17,19 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 type mempoolVote struct {
 	individualVotes         []*primitives.SingleValidatorVote
-	participationBitfield   bitfield.Bitfield
-	participatingValidators map[uint32]struct{}
+	participationBitfield   bitfield.Bitlist
+	participatingValidators map[uint64]struct{}
 	voteData                *primitives.VoteData
 }
 
-func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidatorVote, bool) {
-	if !mv.participationBitfield.Get(uint(offset)) {
+func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
+	if !bitfcheck.Get(mv.participationBitfield, uint(offset)) {
 		return nil, false
 	}
 
@@ -41,12 +43,12 @@ func (mv *mempoolVote) getVoteByOffset(offset uint32) (*primitives.SingleValidat
 	return vote, vote != nil
 }
 
-func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint32) {
-	if mv.participationBitfield.Get(uint(vote.Offset)) {
+func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
+	if bitfcheck.Get(mv.participationBitfield, uint(vote.Offset)) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	mv.participationBitfield.Set(uint(vote.Offset))
+	bitfcheck.Set(mv.participationBitfield, uint(vote.Offset))
 	mv.participatingValidators[voter] = struct{}{}
 }
 
@@ -70,12 +72,12 @@ func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool)
 	return shouldRemove
 }
 
-func newMempoolVote(outOf uint32, voteData *primitives.VoteData) *mempoolVote {
+func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   make([]uint8, (outOf+7)/8),
+		participationBitfield:   bitfield.NewBitlist((outOf + 7) * 8),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
-		participatingValidators: make(map[uint32]struct{}),
+		participatingValidators: make(map[uint64]struct{}),
 	}
 }
 
@@ -95,6 +97,8 @@ type VoteMempool struct {
 
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
+
+	lastActionManager *conflict.LastActionManager
 }
 
 func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
@@ -186,11 +190,13 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		return
 	}
 
-	if vote.Offset >= uint32(len(committee)) {
+	if vote.Offset >= uint64(len(committee)) {
 		return
 	}
 
 	voter := committee[vote.Offset]
+
+	m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[voter].PubKey, vote.Data.Nonce)
 
 	// slashing check... check if this vote interferes with any
 	// votes in the mempool
@@ -215,9 +221,9 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 				voteMulti := vote.AsMulti()
 				conflictingMulti := conflicting.AsMulti()
 				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(primitives.VoteSlashing{
-						Vote1: *voteMulti,
-						Vote2: *conflictingMulti,
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: voteMulti,
+						Vote2: conflictingMulti,
 					})
 				}
 				return
@@ -228,7 +234,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 	if vs, found := m.pool[voteHash]; found {
 		vs.add(vote, voter)
 	} else {
-		m.pool[voteHash] = newMempoolVote(vote.OutOf, &vote.Data)
+		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
 	}
@@ -237,10 +243,10 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint32) ([]primitives.MultiValidatorVote, error) {
+func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	votes := make([]primitives.MultiValidatorVote, 0)
+	votes := make([]*primitives.MultiValidatorVote, 0)
 	for _, i := range m.poolOrder {
 		v := m.pool[i]
 		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
@@ -253,12 +259,15 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 				sigs = append(sigs, sig)
 			}
 			sig := bls.AggregateSignatures(sigs)
-			vote := primitives.MultiValidatorVote{
-				Data:                  *m.pool[i].voteData,
-				Sig:                   sig.Marshal(),
-				ParticipationBitfield: append([]uint8(nil), v.participationBitfield...),
+			var sigb [96]byte
+			copy(sigb[:], sig.Marshal())
+			vote := &primitives.MultiValidatorVote{
+				Data:                  m.pool[i].voteData,
+				Sig:                   sigb,
+				ParticipationBitfield: v.participationBitfield,
 			}
-			if err := s.ProcessVote(&vote, p, proposerIndex); err != nil {
+			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
+				// TODO we may need to ban the node here.
 				continue
 			}
 			votes = append(votes, vote)
@@ -360,15 +369,16 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode) (*VoteMempool, error) {
+func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, manager *conflict.LastActionManager) (*VoteMempool, error) {
 	vm := &VoteMempool{
-		pool:       make(map[chainhash.Hash]*mempoolVote),
-		params:     p,
-		log:        log,
-		ctx:        ctx,
-		blockchain: ch,
-		notifees:   make([]VoteSlashingNotifee, 0),
-		hostNode:   hostnode,
+		pool:              make(map[chainhash.Hash]*mempoolVote),
+		params:            p,
+		log:               log,
+		ctx:               ctx,
+		blockchain:        ch,
+		notifees:          make([]VoteSlashingNotifee, 0),
+		hostNode:          hostnode,
+		lastActionManager: manager,
 	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
@@ -387,5 +397,5 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 
 // VoteSlashingNotifee is notified when an illegal vote occurs.
 type VoteSlashingNotifee interface {
-	NotifyIllegalVotes(slashing primitives.VoteSlashing)
+	NotifyIllegalVotes(slashing *primitives.VoteSlashing)
 }

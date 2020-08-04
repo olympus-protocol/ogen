@@ -4,12 +4,15 @@
 package bls
 
 import (
+	"github.com/olympus-protocol/bls-go/bls"
+	"github.com/olympus-protocol/ogen/params"
 	"io"
 	"math/big"
 
 	"github.com/dgraph-io/ristretto"
-	"github.com/olympus-protocol/bls-go/bls"
 )
+
+var prefixes params.AccountPrefixes
 
 // KeyPair is an interface struct to serve keypairs
 type KeyPair struct {
@@ -26,11 +29,22 @@ func init() {
 	}
 }
 
+func Initialize(p params.ChainParams) error {
+	prefixes = p.AccountPrefixes
+	return nil
+}
+
 // DomainByteLength length of domain byte array.
 const DomainByteLength = 4
 
 var maxKeys = int64(100000)
 var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
+	NumCounters: maxKeys,
+	MaxCost:     1 << 19, // 500 kb is cache max size
+	BufferItems: 64,
+})
+
+var sigCache, _ = ristretto.NewCache(&ristretto.Config{
 	NumCounters: maxKeys,
 	MaxCost:     1 << 19, // 500 kb is cache max size
 	BufferItems: 64,
@@ -99,7 +113,7 @@ func ReadFunctionalSignature(r io.Reader) (FunctionalSignature, error) {
 	case TypeMulti:
 		out = new(Multisig)
 	}
-	data := []byte{}
+	var data []byte
 	_, err := io.ReadFull(r, data)
 	if err != nil {
 		return nil, err

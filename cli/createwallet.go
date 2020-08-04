@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/bls"
 
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/params"
@@ -32,6 +33,10 @@ var generateWalletCmd = &cobra.Command{
 			net = &params.TestNet
 		default:
 			net = &params.Mainnet
+		}
+		err = bls.Initialize(*net)
+		if err != nil {
+			panic(err)
 		}
 		w, err := wallet.NewWallet(context.Background(), nil, DataFolder, net, nil, nil, nil, nil)
 		if err != nil {

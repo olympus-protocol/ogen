@@ -39,8 +39,8 @@ func SecretKeyFromBytes(priv []byte) (*SecretKey, error) {
 }
 
 // ToWIF converts the private key to a Bech32 encoded string.
-func (s *SecretKey) ToWIF(privPrefix string) (string, error) {
-	return bech32.Encode(privPrefix, s.Marshal()), nil
+func (s *SecretKey) ToWIF() (string, error) {
+	return bech32.Encode(prefixes.Private, s.Marshal()), nil
 }
 
 // PublicKey obtains the public key corresponding to the BLS secret key.

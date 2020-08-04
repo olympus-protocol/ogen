@@ -4,12 +4,11 @@ import (
 	"errors"
 
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 const (
 	// StatusStarting is when the validator is waiting to join.
-	StatusStarting uint8 = iota
+	StatusStarting uint64 = iota
 
 	// StatusActive is when the validator is currently in the queue.
 	StatusActive
@@ -31,14 +30,14 @@ const (
 var ErrorValidatorSize = errors.New("validator size too big")
 
 // MaxValidatorSize is the maximum amount of bytes a validator can contain.
-const MaxValidatorSize = 97
+const MaxValidatorSize = 100
 
 // Validator is a validator in the queue.
 type Validator struct {
 	Balance          uint64
-	PubKey           []byte
+	PubKey           [48]byte
 	PayeeAddress     [20]byte
-	Status           uint8
+	Status           uint64
 	FirstActiveEpoch uint64
 	LastActiveEpoch  uint64
 }
@@ -75,7 +74,7 @@ func (v *Validator) IsActiveAtEpoch(epoch uint64) bool {
 
 // Marshal encodes the data.
 func (v *Validator) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(v)
+	b, err := v.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +93,7 @@ func (v *Validator) Unmarshal(b []byte) error {
 	if len(d) > MaxValidatorSize {
 		return ErrorValidatorSize
 	}
-	return ssz.Unmarshal(d, v)
+	return v.UnmarshalSSZ(d)
 }
 
 // Copy returns a copy of the validator.

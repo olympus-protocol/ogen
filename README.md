@@ -2,7 +2,8 @@
 
 ![Actions](https://github.com/olympus-protocol/ogen/workflows/Ogen/badge.svg)
 [![Go Report](https://goreportcard.com/badge/github.com/olympus-protocol/ogen)](https://goreportcard.com/report/github.com/olympus-protocol/ogen)
-[![GoDocs](https://godoc.org/github.com/olympus-protocol/ogen?status.svg)](http://godoc.org/github.com/olympus-protocol/ogen)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/olympus-protocol/ogen?tab=doc)](https://pkg.go.dev/github.com/olympus-protocol/ogen?tab=doc)
+[![codecov](https://codecov.io/gh/olympus-protocol/ogen/branch/master/graph/badge.svg)](https://codecov.io/gh/olympus-protocol/ogen)
 
 > Ogen was a divine figure in classical antiquity to be the divine personification of the ocean.
 

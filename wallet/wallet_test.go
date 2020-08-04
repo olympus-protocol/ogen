@@ -31,7 +31,7 @@ func Test_NewWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testAccount, err := secret.PublicKey().ToAddress(params.Mainnet.AddrPrefix.Public)
+	testAccount, err := secret.PublicKey().ToAccount()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func Test_OpenWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testAccount, err := secret.PublicKey().ToAddress(params.Mainnet.AddrPrefix.Public)
+	testAccount, err := secret.PublicKey().ToAccount()
 	if err != nil {
 		t.Fatal(err)
 	}

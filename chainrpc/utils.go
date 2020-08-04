@@ -41,6 +41,10 @@ func (s *utilsServer) StopProposer(ctx context.Context, _ *proto.Empty) (*proto.
 }
 
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
+	err := s.proposer.OpenKeystore(in.Password)
+	if err != nil {
+		return nil, err
+	}
 	key, err := s.proposer.Keystore.GenerateNewValidatorKey(in.Keys, in.Password)
 	if err != nil {
 		return nil, err
@@ -107,9 +111,13 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 		return nil, errors.New("unable to decode block raw data")
 	}
 	txParse := &proto.Tx{
-		Hash:    tx.Hash().String(),
-		Version: tx.Version,
-		Type:    tx.Type,
+		Hash:          tx.Hash().String(),
+		To:            hex.EncodeToString(tx.To[:]),
+		FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
+		Amount:        tx.Amount,
+		Nonce:         tx.Nonce,
+		Fee:           tx.Fee,
+		Signature:     hex.EncodeToString(tx.Signature[:]),
 	}
 	return txParse, nil
 }
@@ -128,22 +136,22 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 		Header: &proto.BlockHeader{
 			Version:                    block.Header.Version,
 			Nonce:                      block.Header.Nonce,
-			TxMerkleRoot:               block.Header.TxMerkleRoot.String(),
-			VoteMerkleRoot:             block.Header.VoteMerkleRoot.String(),
-			DepositMerkleRoot:          block.Header.DepositMerkleRoot.String(),
-			ExitMerkleRoot:             block.Header.ExitMerkleRoot.String(),
-			VoteSlashingMerkleRoot:     block.Header.VoteSlashingMerkleRoot.String(),
-			RandaoSlashingMerkleRoot:   block.Header.RANDAOSlashingMerkleRoot.String(),
-			ProposerSlashingMerkleRoot: block.Header.ProposerSlashingMerkleRoot.String(),
-			PrevBlockHash:              block.Header.PrevBlockHash.String(),
+			TxMerkleRoot:               hex.EncodeToString(block.Header.TxMerkleRoot[:]),
+			VoteMerkleRoot:             hex.EncodeToString(block.Header.VoteMerkleRoot[:]),
+			DepositMerkleRoot:          hex.EncodeToString(block.Header.DepositMerkleRoot[:]),
+			ExitMerkleRoot:             hex.EncodeToString(block.Header.ExitMerkleRoot[:]),
+			VoteSlashingMerkleRoot:     hex.EncodeToString(block.Header.VoteSlashingMerkleRoot[:]),
+			RandaoSlashingMerkleRoot:   hex.EncodeToString(block.Header.RANDAOSlashingMerkleRoot[:]),
+			ProposerSlashingMerkleRoot: hex.EncodeToString(block.Header.ProposerSlashingMerkleRoot[:]),
+			PrevBlockHash:              hex.EncodeToString(block.Header.PrevBlockHash[:]),
 			Timestamp:                  block.Header.Timestamp,
 			Slot:                       block.Header.Slot,
-			StateRoot:                  block.Header.StateRoot.String(),
+			StateRoot:                  hex.EncodeToString(block.Header.StateRoot[:]),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
 		Txs:             block.GetTxs(),
-		Signature:       hex.EncodeToString(block.Signature),
-		RandaoSignature: hex.EncodeToString(block.RandaoSignature),
+		Signature:       hex.EncodeToString(block.Signature[:]),
+		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
 }

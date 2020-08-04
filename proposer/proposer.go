@@ -3,6 +3,8 @@ package proposer
 import (
 	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/peers/conflict"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -41,6 +43,8 @@ type Proposer struct {
 	hostnode       *peers.HostNode
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
+
+	lastActionManager *conflict.LastActionManager
 }
 
 // OpenKeystore opens the keystore with the provided password
@@ -53,7 +57,7 @@ func (p *Proposer) OpenKeystore(password string) (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager *conflict.LastActionManager) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -66,19 +70,20 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		return nil, err
 	}
 	proposer = &Proposer{
-		log:            config.Log,
-		config:         config,
-		params:         params,
-		chain:          chain,
-		mineActive:     true,
-		context:        ctx,
-		Stop:           cancel,
-		voteMempool:    voteMempool,
-		coinsMempool:   coinsMempool,
-		actionsMempool: actionsMempool,
-		hostnode:       hostnode,
-		blockTopic:     blockTopic,
-		voteTopic:      voteTopic,
+		log:               config.Log,
+		config:            config,
+		params:            params,
+		chain:             chain,
+		mineActive:        true,
+		context:           ctx,
+		Stop:              cancel,
+		voteMempool:       voteMempool,
+		coinsMempool:      coinsMempool,
+		actionsMempool:    actionsMempool,
+		hostnode:          hostnode,
+		blockTopic:        blockTopic,
+		voteTopic:         voteTopic,
+		lastActionManager: manager,
 	}
 	chain.Notify(proposer)
 	return proposer, nil
@@ -134,7 +139,7 @@ func (p *Proposer) publishBlock(block *primitives.Block) {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (p *Proposer) ProposerSlashingConditionViolated(_ primitives.ProposerSlashing) {}
+func (p *Proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *Proposer) ProposeBlocks() {
 	slotToPropose := p.getCurrentSlot() + 1
@@ -144,11 +149,12 @@ func (p *Proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-			if p.hostnode.PeersConnected() == 0 && p.hostnode.Syncing() {
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 				blockTimer = time.NewTimer(time.Second * 10)
 				continue
 			}
+
 			//if p.chain.State().Tip().Slot+p.params.EpochLength < slotToPropose {
 			//	p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
@@ -173,6 +179,11 @@ func (p *Proposer) ProposeBlocks() {
 			proposer := state.ValidatorRegistry[proposerIndex]
 
 			if k, found := p.Keystore.GetValidatorKey(proposer.PubKey); found {
+
+				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
+					continue
+				}
+
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
 				votes, err := p.voteMempool.Get(slotToPropose, state, &p.params, proposerIndex)
@@ -213,9 +224,9 @@ func (p *Proposer) ProposeBlocks() {
 				}
 
 				block := primitives.Block{
-					Header: primitives.BlockHeader{
+					Header: &primitives.BlockHeader{
 						Version:       0,
-						Nonce:         0,
+						Nonce:         p.lastActionManager.GetNonce(),
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
@@ -243,9 +254,11 @@ func (p *Proposer) ProposeBlocks() {
 
 				blockSig := k.Sign(blockHash[:])
 				randaoSig := k.Sign(randaoHash[:])
-
-				block.Signature = blockSig.Marshal()
-				block.RandaoSignature = randaoSig.Marshal()
+				var s, rs [96]byte
+				copy(s[:], blockSig.Marshal())
+				copy(rs[:], randaoSig.Marshal())
+				block.Signature = s
+				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
 					return
@@ -276,12 +289,12 @@ func (p *Proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 			// check if we're an attester for this slot
 			p.log.Infof("sending votes for slot %d", slotToVote)
-
-			if p.hostnode.PeersConnected() == 0 && p.hostnode.Syncing() {
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 				continue
 			}
+
 			//if p.chain.State().Tip().Slot+p.params.EpochLength < slotToVote {
 			//	p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 
@@ -299,7 +312,7 @@ func (p *Proposer) VoteForBlocks() {
 
 			validators, err := state.GetVoteCommittee(slotToVote, &p.params)
 			if err != nil {
-				p.log.Errorf("error getting vote committee: %e", err)
+				p.log.Errorf("error getting vote committee: %s", err.Error())
 				continue
 			}
 			toEpoch := (slotToVote - 1) / p.params.EpochLength
@@ -316,6 +329,7 @@ func (p *Proposer) VoteForBlocks() {
 				ToEpoch:         toEpoch,
 				ToHash:          state.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, &p.params),
 				BeaconBlockHash: beaconBlock.Hash,
+				Nonce:           p.lastActionManager.GetNonce(),
 			}
 
 			dataHash := data.Hash()
@@ -324,16 +338,26 @@ func (p *Proposer) VoteForBlocks() {
 				validator := state.ValidatorRegistry[validatorIdx]
 
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
-					sig := k.Sign(dataHash[:])
 
-					vote := primitives.SingleValidatorVote{
-						Data:   data,
-						Sig:    sig.Marshal(),
-						Offset: uint32(i),
-						OutOf:  uint32(len(validators)),
+					if !p.lastActionManager.ShouldRun(validator.PubKey) {
+						continue
 					}
 
-					p.voteMempool.Add(&vote)
+					sig := k.Sign(dataHash[:])
+					var sigB [96]byte
+					copy(sigB[:], sig.Marshal())
+					vote := primitives.SingleValidatorVote{
+						Data:   &data,
+						Sig:    sigB,
+						Offset: uint64(i),
+						OutOf:  uint64(len(validators)),
+					}
+
+					err = p.voteMempool.AddValidate(&vote, state)
+					if err != nil {
+						p.log.Errorf("error submitting vote: %s", err.Error())
+						continue
+					}
 
 					go p.publishVote(&vote)
 
@@ -380,8 +404,15 @@ func (p *Proposer) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range p.chain.State().TipState().ValidatorRegistry {
-		if _, ok := p.Keystore.GetValidatorKey(w.PubKey); ok {
+		secKey, ok := p.Keystore.GetValidatorKey(w.PubKey)
+		if ok {
 			numOurs++
+		}
+		if ok {
+			p.lastActionManager.StartValidator(w.PubKey, func(message *conflict.ValidatorHelloMessage) *bls.Signature {
+				msg := message.SignatureMessage()
+				return secKey.Sign(msg)
+			})
 		}
 		numTotal++
 	}

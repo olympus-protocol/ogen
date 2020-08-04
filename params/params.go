@@ -4,11 +4,12 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
-// AddrPrefixes are prefixes used for addresses.
-type AddrPrefixes struct {
+// AccountPrefixes are prefixes used for account bech32 encoding.
+type AccountPrefixes struct {
 	Public   string
 	Private  string
 	Multisig string
+	Contract string
 }
 
 // ChainParams are parameters that are unique for the chain.
@@ -16,7 +17,7 @@ type ChainParams struct {
 	Name                         string
 	DefaultP2PPort               string
 	GenesisHash                  chainhash.Hash
-	AddrPrefix                   AddrPrefixes
+	AccountPrefixes              AccountPrefixes
 	GovernanceBudgetQuotient     uint64
 	EpochLength                  uint64
 	EjectionBalance              uint64
@@ -36,6 +37,7 @@ type ChainParams struct {
 	MaxRANDAOSlashingsPerBlock   uint64
 	MaxProposerSlashingsPerBlock uint64
 	MaxVoteSlashingsPerBlock     uint64
+	MaxGovernanceVotesPerBlock   uint64
 	WhistleblowerRewardQuotient  uint64
 	GovernancePercentages        []uint8
 	MinVotingBalance             uint64
@@ -51,10 +53,11 @@ type ChainParams struct {
 var Mainnet = ChainParams{
 	Name:           "mainnet",
 	DefaultP2PPort: "24126",
-	AddrPrefix: AddrPrefixes{
+	AccountPrefixes: AccountPrefixes{
 		Public:   "olpub",
 		Private:  "olprv",
 		Multisig: "olmul",
+		Contract: "olctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
@@ -69,12 +72,13 @@ var Mainnet = ChainParams{
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 60,
-	MaxTxsPerBlock:               1000,
+	MaxTxsPerBlock:               9000,
 	MaxDepositsPerBlock:          32,
 	MaxExitsPerBlock:             32,
 	MaxRANDAOSlashingsPerBlock:   20,
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
+	MaxGovernanceVotesPerBlock:   128,
 	WhistleblowerRewardQuotient:  2, // Validator loses half their deposit
 	GovernancePercentages: []uint8{
 		30, // tech
@@ -95,16 +99,17 @@ var Mainnet = ChainParams{
 	},
 }
 
-var testnetChainFileHash, _ = chainhash.NewHashFromStr("7ed4c3c74888ee032ff2adaa5a185329413a7d3d415adf994517c5b5f81e46a7")
+var testnetChainFileHash, _ = chainhash.NewHashFromStr("386b77a7208407e5e84a1c3cf353da110be54dc09aeb0edefd4cb7d31a2f6cdc")
 
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "25126",
-	AddrPrefix: AddrPrefixes{
+	AccountPrefixes: AccountPrefixes{
 		Public:   "tlpub",
 		Private:  "tlprv",
 		Multisig: "tlmul",
+		Contract: "tlctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
@@ -120,7 +125,7 @@ var TestNet = ChainParams{
 	SlotDuration:                 20,
 	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
-	MaxTxsPerBlock:               5000,
+	MaxTxsPerBlock:               9000,
 	MaxVotesPerBlock:             32,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,

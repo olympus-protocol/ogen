@@ -1,12 +1,22 @@
 package index
 
 import (
+	"errors"
 	"path"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 	"go.etcd.io/bbolt"
+)
+
+var (
+	// ErrorTxLocatorSize returns when serialized TxLocator size exceed MaxTxLocatorSize.
+	ErrorCombinedSignatureSize = errors.New("tx locator too big")
+)
+
+const (
+	// MaxTxLocatorSize is the maximum amount of bytes a TxLocator can contain.
+	MaxTxLocatorSize = 72
 )
 
 // AccountTxs is just a helper struct for database storage of account transactions.
@@ -43,8 +53,10 @@ func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 			return nil
 		}
 		err := accBkt.ForEach(func(k, _ []byte) error {
+			kb := [32]byte{}
+			copy(kb[:], k)
 			txs.Amount++
-			h, err := chainhash.NewHash(k)
+			h, err := chainhash.NewHash(kb)
 			if err != nil {
 				return err
 			}
@@ -101,7 +113,7 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 		if err != nil {
 			return err
 		}
-		err = accBkt.Put(locator.Hash.CloneBytes(), []byte{})
+		err = accBkt.Put(locator.Hash[:], []byte{})
 		if err != nil {
 			return err
 		}
@@ -115,27 +127,33 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 
 // TxLocator is a simple struct to find a database referenced to a block without building a full index
 type TxLocator struct {
-	Hash  chainhash.Hash
-	Block chainhash.Hash
-	Index uint32
+	Hash  [32]byte `ssz-size:"32"`
+	Block [32]byte `ssz-size:"32"`
+	Index uint64
 }
 
 // Marshal encodes the data.
-func (tl *TxLocator) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(tl)
+func (t *TxLocator) Marshal() ([]byte, error) {
+	b, err := t.MarshalSSZ()
 	if err != nil {
 		return nil, err
+	}
+	if len(b) > MaxTxLocatorSize {
+		return nil, ErrorCombinedSignatureSize
 	}
 	return snappy.Encode(nil, b), nil
 }
 
 // Unmarshal decodes the data.
-func (tl *TxLocator) Unmarshal(b []byte) error {
+func (t *TxLocator) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
 	}
-	return ssz.Unmarshal(d, tl)
+	if len(d) > MaxTxLocatorSize {
+		return ErrorCombinedSignatureSize
+	}
+	return t.UnmarshalSSZ(d)
 }
 
 // NewTxIndex returns/creates a new tx index database

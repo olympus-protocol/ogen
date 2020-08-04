@@ -28,7 +28,9 @@ func Test_KestoreCreate(t *testing.T) {
 		}
 	}
 	for _, key := range keys {
-		secret, ok := k.GetValidatorKey(key.PublicKey().Marshal())
+		var pub [48]byte
+		copy(pub[:], key.PublicKey().Marshal())
+		secret, ok := k.GetValidatorKey(pub)
 		if !ok {
 			t.Fatal("key not found")
 		}
@@ -63,7 +65,9 @@ func Test_KeystoreOpen(t *testing.T) {
 		}
 	}
 	for _, key := range keys {
-		secret, ok := k.GetValidatorKey(key.PublicKey().Marshal())
+		var pub [48]byte
+		copy(pub[:], key.PublicKey().Marshal())
+		secret, ok := k.GetValidatorKey(pub)
 		if !ok {
 			t.Fatal("key not found")
 		}

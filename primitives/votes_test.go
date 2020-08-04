@@ -1,102 +1,74 @@
 package primitives
 
 import (
+	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/stretchr/testify/assert"
 	"testing"
-
-	"github.com/go-test/deep"
-	"github.com/olympus-protocol/ogen/bls"
 )
 
-func TestMultiValidatorVoteSerializeDeserialize(t *testing.T) {
-	sig := bls.NewAggregateSignature()
-	bl := &MultiValidatorVote{
-		Data: VoteData{
-			Slot:      1,
-			FromEpoch: 2,
-			FromHash:  [32]byte{3},
-			ToEpoch:   4,
-			ToHash:    [32]byte{5},
-		},
-		Sig:                   sig.Marshal(),
-		ParticipationBitfield: []byte{1, 2, 3, 4},
+func TestVoteData_Copy(t *testing.T) {
+	v := &VoteData{
+		Slot:            5,
+		FromEpoch:       5,
+		FromHash:        [32]byte{1, 2, 3},
+		ToEpoch:         5,
+		ToHash:          [32]byte{1, 2, 3},
+		BeaconBlockHash: [32]byte{1, 2, 3},
+		Nonce:           5,
 	}
 
-	buf, err := bl.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	v2 := v.Copy()
 
-	av2 := &MultiValidatorVote{}
-	if err := av2.Unmarshal(buf); err != nil {
-		t.Fatal(err)
-	}
+	v.Slot = 6
+	assert.Equal(t, v2.Slot, uint64(5))
 
-	if diff := deep.Equal(bl, av2); diff != nil {
-		t.Fatal(diff)
-	}
+	v.FromEpoch = 6
+	assert.Equal(t, v2.FromEpoch, uint64(5))
+
+	v.FromHash[31] = 10
+	assert.Equal(t, v2.FromHash[31], uint8(0))
+
+	v.ToEpoch = 10
+	assert.Equal(t, v2.ToEpoch, uint64(5))
+
+	v.ToHash[31] = 10
+	assert.Equal(t, v2.ToHash[31], uint8(0))
+
+	v.BeaconBlockHash[31] = 10
+	assert.Equal(t, v2.BeaconBlockHash[31], uint8(0))
+
+	v.Nonce = 10
+	assert.Equal(t, v2.Nonce, uint64(5))
 }
 
-func TestAcceptedVoteInfoCopy(t *testing.T) {
+func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	av := &AcceptedVoteInfo{
-		Data: VoteData{
+		Data: &VoteData{
 			Slot:      1,
 			FromEpoch: 2,
 			FromHash:  [32]byte{3},
 			ToEpoch:   4,
 			ToHash:    [32]byte{5},
 		},
-		ParticipationBitfield: []uint8{6, 7},
+		ParticipationBitfield: bitfield.NewBitlist(2 * 8),
 		Proposer:              8,
 		InclusionDelay:        9,
 	}
 
 	av2 := av.Copy()
+
 	av.Data.Slot = 2
-	if av2.Data.Slot == 2 {
-		t.Fatal("mutating data mutates copy")
-	}
+	assert.Equal(t, av2.Data.Slot, uint64(1))
 
 	av.ParticipationBitfield[0] = 7
-	if av2.ParticipationBitfield[0] == 7 {
-		t.Fatal("mutating participation bitfield mutates copy")
-	}
+
+	assert.Equal(t, av2.ParticipationBitfield[0], uint8(0))
 
 	av.Proposer = 7
-	if av2.Proposer == 7 {
-		t.Fatal("mutating proposer mutates copy")
-	}
+
+	assert.Equal(t, av2.Proposer, uint64(8))
 
 	av.InclusionDelay = 7
-	if av2.InclusionDelay == 7 {
-		t.Fatal("mutating inclusion delay mutates copy")
-	}
-}
 
-func TestAcceptedVoteInfoSerializeDeserialize(t *testing.T) {
-	av := &AcceptedVoteInfo{
-		Data: VoteData{
-			Slot:      1,
-			FromEpoch: 2,
-			FromHash:  [32]byte{3},
-			ToEpoch:   4,
-			ToHash:    [32]byte{5},
-		},
-		ParticipationBitfield: []uint8{6, 7},
-		Proposer:              8,
-		InclusionDelay:        9,
-	}
-
-	buf, err := av.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	av2 := &AcceptedVoteInfo{}
-	if err := av2.Unmarshal(buf); err != nil {
-		t.Fatal(err)
-	}
-
-	if diff := deep.Equal(av, av2); diff != nil {
-		t.Fatal(diff)
-	}
+	assert.Equal(t, av2.InclusionDelay, uint64(9))
 }

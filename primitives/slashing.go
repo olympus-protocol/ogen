@@ -6,7 +6,6 @@ import (
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-ssz"
 )
 
 var (
@@ -20,22 +19,22 @@ var (
 
 const (
 	// MaxRandaoSlashingSize is the maximum amount of bytes a randao slashing can contain.
-	MaxRandaoSlashingSize = 160
+	MaxRandaoSlashingSize = 152
 	// MaxProposerSlashingSize is the maximum amount of bytes a proposer slashing can contain.
-	MaxProposerSlashingSize = 984
+	MaxProposerSlashingSize = MaxBlockHeaderBytes*2 + 96*2 + 48
 	// MaxVoteSlashingSize is the maximum amount of bytes a vote slashing can contain.
-	MaxVoteSlashingSize = 464
+	MaxVoteSlashingSize = MaxMultiValidatorVoteSize * 2
 )
 
 // VoteSlashing is a slashing where validators vote in the span of their other votes.
 type VoteSlashing struct {
-	Vote1 MultiValidatorVote
-	Vote2 MultiValidatorVote
+	Vote1 *MultiValidatorVote
+	Vote2 *MultiValidatorVote
 }
 
 // Marshal encodes the data.
-func (vs *VoteSlashing) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(vs)
+func (v *VoteSlashing) Marshal() ([]byte, error) {
+	b, err := v.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +45,7 @@ func (vs *VoteSlashing) Marshal() ([]byte, error) {
 }
 
 // Unmarshal decodes the data.
-func (vs *VoteSlashing) Unmarshal(b []byte) error {
+func (v *VoteSlashing) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
@@ -54,69 +53,65 @@ func (vs *VoteSlashing) Unmarshal(b []byte) error {
 	if len(d) > MaxVoteSlashingSize {
 		return ErrorVoteSlashingSize
 	}
-	return ssz.Unmarshal(d, vs)
+	return v.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the slashing.
-func (vs *VoteSlashing) Hash() chainhash.Hash {
-	b, _ := vs.Marshal()
+func (v *VoteSlashing) Hash() chainhash.Hash {
+	b, _ := v.Marshal()
 	return chainhash.HashH(b)
 }
 
 // RANDAOSlashing is a slashing where a validator reveals their RANDAO signature too early.
 type RANDAOSlashing struct {
-	RandaoReveal    []byte
+	RandaoReveal    [96]byte
 	Slot            uint64
-	ValidatorPubkey []byte
+	ValidatorPubkey [48]byte
 }
 
 // GetValidatorPubkey returns the validator bls public key.
-func (rs *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
-	return bls.PublicKeyFromBytes(rs.ValidatorPubkey)
+func (r *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(r.ValidatorPubkey)
 }
 
 // GetRandaoReveal returns the bls signature of the randao reveal.
-func (rs *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(rs.RandaoReveal)
+func (r *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(r.RandaoReveal)
 }
 
 // Marshal encodes the data.
-func (rs *RANDAOSlashing) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(rs)
+func (r *RANDAOSlashing) Marshal() ([]byte, error) {
+	b, err := r.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
 	if len(b) > MaxRandaoSlashingSize {
 		return nil, ErrorRandaoSlashingSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
-func (rs *RANDAOSlashing) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxRandaoSlashingSize {
+func (r *RANDAOSlashing) Unmarshal(b []byte) error {
+	if len(b) > MaxRandaoSlashingSize {
 		return ErrorRandaoSlashingSize
 	}
-	return ssz.Unmarshal(d, rs)
+	return r.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the RANDAO slashing.
-func (rs *RANDAOSlashing) Hash() chainhash.Hash {
-	b, _ := rs.Marshal()
+func (r *RANDAOSlashing) Hash() chainhash.Hash {
+	b, _ := r.Marshal()
 	return chainhash.HashH(b)
 }
 
 // ProposerSlashing is a slashing to a block proposer that proposed two blocks at the same slot.
 type ProposerSlashing struct {
-	BlockHeader1       BlockHeader
-	BlockHeader2       BlockHeader
-	Signature1         []byte
-	Signature2         []byte
-	ValidatorPublicKey []byte
+	BlockHeader1       *BlockHeader
+	BlockHeader2       *BlockHeader
+	Signature1         [96]byte `ssz-size:"96"`
+	Signature2         [96]byte `ssz-size:"96"`
+	ValidatorPublicKey [48]byte `ssz-size:"48"`
 }
 
 // GetValidatorPubkey returns the slashing bls validator public key.
@@ -136,7 +131,7 @@ func (ps *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
 
 // Marshal encodes the data.
 func (ps *ProposerSlashing) Marshal() ([]byte, error) {
-	b, err := ssz.Marshal(ps)
+	b, err := ps.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +150,7 @@ func (ps *ProposerSlashing) Unmarshal(b []byte) error {
 	if len(d) > MaxProposerSlashingSize {
 		return ErrorProposerSlashingSize
 	}
-	return ssz.Unmarshal(d, ps)
+	return ps.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the proposer slashing.

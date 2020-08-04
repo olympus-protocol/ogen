@@ -71,11 +71,11 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 			Private: hex.EncodeToString(blsKeyPair.Marshal()),
 		}
 	} else {
-		addr, err := blsKeyPair.PublicKey().ToAddress("olpub")
+		addr, err := blsKeyPair.PublicKey().ToAccount()
 		if err != nil {
 			return "", errors.New("unable to encode public key to bech32")
 		}
-		wif, err := blsKeyPair.ToWIF("olprv")
+		wif, err := blsKeyPair.ToWIF()
 		if err != nil {
 			return "", errors.New("unable to encode private key to bech32")
 		}
@@ -93,7 +93,7 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 }
 
 func (c *RPCClient) genValidatorKey(args []string) (out string, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 30)
 	defer cancel()
 	amount := 0
 	if len(args) < 2 {
