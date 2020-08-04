@@ -33,6 +33,13 @@ func (s *walletServer) ListWallets(context.Context, *proto.Empty) (*proto.Wallet
 	return &proto.Wallets{Wallets: walletFiles}, nil
 }
 func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.KeyPair, error) {
+	ok := s.wallet.HasWallet(ref.Name)
+	if !ok {
+		err := s.wallet.NewWallet(ref.Name, nil, ref.Password)
+		if err != nil {
+			return nil, err
+		}
+	}
 	err := s.wallet.OpenWallet(ref.Name, ref.Password)
 	if err != nil {
 		return nil, err

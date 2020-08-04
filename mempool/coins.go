@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -89,12 +90,17 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 	if err != nil {
 		return err
 	}
+
+	// adding a nonce rule for Ddos protection
+	txNonce := payload.GetNonce()
+	if txNonce != state.Nonces[fpkh]+1 {
+		return errors.New("invalid nonce")
+	}
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
 	}
-
 	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err
 	}
@@ -197,6 +203,12 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		err = cm.Add(*tx, &currentState)
 		if err != nil {
 			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+			if err.Error() == "invalid nonce" {
+				err = cm.hostNode.BanScorePeer(msg.GetFrom(), 10)
+				if err == nil {
+					cm.log.Warnf("peer %s banscore was increased", msg.GetFrom().String())
+				}
+			}
 		}
 	}
 }

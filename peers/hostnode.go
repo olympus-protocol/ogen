@@ -323,11 +323,15 @@ func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
 	if node.configDb == nil {
 		return errors.New("no initialized db in node")
 	}
-	err := BanscorePeer(node.configDb, id, weight)
+	if node.host.ID() == id {
+		return errors.New("trying to ban itself")
+	}
+	banned, err := BanscorePeer(node.configDb, id, weight)
 	if err == nil {
-		node.log.Errorf("banned peer: %s", id.String())
-		// disconnect
-		_ = node.DisconnectPeer(id)
+		if banned {
+			// disconnect
+			_ = node.DisconnectPeer(id)
+		}
 	}
 	return err
 }

@@ -122,7 +122,8 @@ func SavePeer(netDB *bbolt.DB, pma multiaddr.Multiaddr) error {
 }
 
 // Reduces the banscore of a peer. If it reaches limit, it will be banned
-func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
+func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) (bool, error) {
+	shoulBan := false
 	err := netDB.Update(func(tx *bbolt.Tx) error {
 		var err error
 		savedDb := tx.Bucket(peersDbKey)
@@ -147,9 +148,10 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("peer %s has a banscore of: %s \n", id.String(), strconv.Itoa(score))
 		score += weight
+		fmt.Printf("peer %s banscore increased to: %s \n", id.String(), strconv.Itoa(score))
 		if score >= BanLimit {
+			shoulBan = true
 			// add to banlist
 			ipBytes := ipb.Get(byteId)
 			if ipBytes == nil {
@@ -170,7 +172,7 @@ func BanscorePeer(netDB *bbolt.DB, id peer.ID, weight int) error {
 		}
 		return err
 	})
-	return err
+	return shoulBan, err
 }
 
 func IsPeerBanned(netDB *bbolt.DB, id peer.ID) (bool, error) {

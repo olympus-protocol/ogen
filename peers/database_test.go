@@ -87,7 +87,7 @@ func TestBanPeers(t *testing.T) {
 		assert.NotNil(t, peerId)
 
 		for i := 0; i < 5; i++ {
-			err = peers.BanscorePeer(netDB, peerId.ID, banLimit/5)
+			_, err = peers.BanscorePeer(netDB, peerId.ID, banLimit/5)
 		}
 
 		isBanned, err := peers.IsPeerBanned(netDB, peerId.ID)
