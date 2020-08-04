@@ -201,8 +201,15 @@ func TestState_Copy(t *testing.T) {
 	s.CurrentManagers[0][0] = 2
 	assert.Equal(t, s2.CurrentManagers[0][0], uint8(1))
 
+	assert.Equal(t, s.ManagerReplacement, s2.ManagerReplacement)
+
 	s.ManagerReplacement[0] = 1
 	assert.Equal(t, s2.ManagerReplacement[0], uint8(0))
+
+	assert.Equal(t, s.ManagerReplacement.Len(), s2.ManagerReplacement.Len())
+
+	assert.Equal(t, len(s.ManagerReplacement), len(s2.ManagerReplacement))
+
 
 }
 

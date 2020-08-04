@@ -407,7 +407,7 @@ func (s *State) Copy() State {
 	s2.CurrentManagers = make([][20]byte, len(s.CurrentManagers))
 	copy(s2.CurrentManagers, s.CurrentManagers)
 
-	s2.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.ManagerReplacement) * 8))
+	s2.ManagerReplacement = bitfield.NewBitlist(s.ManagerReplacement.Len())
 	for i, b := range s.ManagerReplacement {
 		s2.ManagerReplacement[i] = b
 	}

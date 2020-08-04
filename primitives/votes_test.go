@@ -60,6 +60,12 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	av.Data.Slot = 2
 	assert.Equal(t, av2.Data.Slot, uint64(1))
 
+	assert.Equal(t, av.ParticipationBitfield.Len(), av2.ParticipationBitfield.Len())
+
+	assert.Equal(t, len(av.ParticipationBitfield), len(av2.ParticipationBitfield))
+
+	assert.Equal(t, av.ParticipationBitfield, av2.ParticipationBitfield)
+
 	av.ParticipationBitfield[0] = 7
 
 	assert.Equal(t, av2.ParticipationBitfield[0], uint8(0))
@@ -71,4 +77,30 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	av.InclusionDelay = 7
 
 	assert.Equal(t, av2.InclusionDelay, uint64(9))
+
+}
+
+
+func TestSingleValidatorVote_AsMulti(t *testing.T) {
+	s := &SingleValidatorVote{
+		Data:   &VoteData{
+			Slot:            5,
+			FromEpoch:       5,
+			FromHash:        [32]byte{1, 2, 3},
+			ToEpoch:         5,
+			ToHash:          [32]byte{1, 2, 3},
+			BeaconBlockHash: [32]byte{1, 2, 3},
+			Nonce:           5,
+		},
+		Sig:    [96]byte{1, 2, 3},
+		Offset: 1,
+		OutOf:  5,
+	}
+
+	mv := s.AsMulti()
+
+	assert.Equal(t, mv.Data, s.Data)
+
+	assert.Equal(t, mv.Sig, s.Sig)
+
 }

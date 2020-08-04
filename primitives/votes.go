@@ -79,8 +79,8 @@ func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
 func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	a2 := *a
 
-	a2.ParticipationBitfield = bitfield.NewBitlist(uint64(len(a.ParticipationBitfield) * 8))
-	for i, b := range a.ParticipationBitfield {
+	a2.ParticipationBitfield = bitfield.NewBitlist(a.ParticipationBitfield.Len())
+	for i, b := range a.ParticipationBitfield.Bytes() {
 		a2.ParticipationBitfield[i] = b
 	}
 
