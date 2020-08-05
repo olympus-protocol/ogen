@@ -268,8 +268,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 				ParticipationBitfield: v.participationBitfield,
 			}
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
-				// TODO we may need to ban the node here.
-				continue
+				return nil, err
 			}
 			if uint64(len(votes)) < p.MaxVotesPerBlock {
 				votes = append(votes, vote)

@@ -149,19 +149,11 @@ func (p *Proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() || p.chain.State().Tip().Slot+p.params.EpochLength < slotToPropose {
 				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 				blockTimer = time.NewTimer(time.Second * 10)
 				continue
 			}
-
-			//if p.chain.State().Tip().Slot+p.params.EpochLength < slotToPropose {
-			//	p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
-
-			// wait 10 seconds before starting the next vote
-			//	blockTimer = time.NewTimer(time.Second * 10)
-			//	continue
-			//}
 
 			// check if we're an attester for this slot
 			tip := p.chain.State().Tip()
@@ -191,6 +183,7 @@ func (p *Proposer) ProposeBlocks() {
 					p.log.Error(err)
 					return
 				}
+
 				depositTxs, state, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
@@ -289,19 +282,11 @@ func (p *Proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 			// check if we're an attester for this slot
 			p.log.Infof("sending votes for slot %d", slotToVote)
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() || p.chain.State().Tip().Slot+p.params.EpochLength < slotToVote {
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 				continue
 			}
-
-			//if p.chain.State().Tip().Slot+p.params.EpochLength < slotToVote {
-			//	p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
-
-			// wait 10 seconds before starting the next vote
-			//	voteTimer = time.NewTimer(time.Second * 10)
-			//	continue
-			//}
 
 			s := p.chain.State()
 
@@ -315,6 +300,9 @@ func (p *Proposer) VoteForBlocks() {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
 				continue
 			}
+
+			p.log.Debugf("committing for slot %d with %d validators", slotToVote, len(validators))
+
 			toEpoch := (slotToVote - 1) / p.params.EpochLength
 
 			beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)

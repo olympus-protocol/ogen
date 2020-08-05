@@ -60,7 +60,7 @@ var IntTestParams = params.ChainParams{
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
 	MaxVotesPerBlock:             2048,
-	MaxTxsPerBlock:               9000,
+	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,
 	MaxRANDAOSlashingsPerBlock:   20,
