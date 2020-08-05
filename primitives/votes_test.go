@@ -1,13 +1,14 @@
-package primitives
+package primitives_test
 
 import (
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestVoteData_Copy(t *testing.T) {
-	v := &VoteData{
+	v := &primitives.VoteData{
 		Slot:            5,
 		FromEpoch:       5,
 		FromHash:        [32]byte{1, 2, 3},
@@ -42,8 +43,8 @@ func TestVoteData_Copy(t *testing.T) {
 }
 
 func TestAcceptedVoteInfo_Copy(t *testing.T) {
-	av := &AcceptedVoteInfo{
-		Data: &VoteData{
+	av := &primitives.AcceptedVoteInfo{
+		Data: &primitives.VoteData{
 			Slot:      1,
 			FromEpoch: 2,
 			FromHash:  [32]byte{3},
@@ -60,6 +61,12 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	av.Data.Slot = 2
 	assert.Equal(t, av2.Data.Slot, uint64(1))
 
+	assert.Equal(t, av.ParticipationBitfield.Len(), av2.ParticipationBitfield.Len())
+
+	assert.Equal(t, len(av.ParticipationBitfield), len(av2.ParticipationBitfield))
+
+	assert.Equal(t, av.ParticipationBitfield, av2.ParticipationBitfield)
+
 	av.ParticipationBitfield[0] = 7
 
 	assert.Equal(t, av2.ParticipationBitfield[0], uint8(0))
@@ -71,4 +78,41 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	av.InclusionDelay = 7
 
 	assert.Equal(t, av2.InclusionDelay, uint64(9))
+
+}
+
+
+func TestSingleValidatorVote_AsMulti(t *testing.T) {
+	s := &primitives.SingleValidatorVote{
+		Data:   &primitives.VoteData{
+			Slot:            5,
+			FromEpoch:       5,
+			FromHash:        [32]byte{1, 2, 3},
+			ToEpoch:         5,
+			ToHash:          [32]byte{1, 2, 3},
+			BeaconBlockHash: [32]byte{1, 2, 3},
+			Nonce:           5,
+		},
+		Sig:    [96]byte{1, 2, 3},
+		Offset: 56,
+		OutOf:  512,
+	}
+
+	mv := s.AsMulti()
+
+	assert.Equal(t, mv.Data, s.Data)
+
+	assert.Equal(t, mv.Sig, s.Sig)
+
+	b, err := mv.Marshal()
+	assert.NoError(t, err)
+
+	var m primitives.MultiValidatorVote
+
+	err = m.Unmarshal(b)
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, mv, &m)
+
 }

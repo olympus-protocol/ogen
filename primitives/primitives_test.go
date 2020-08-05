@@ -430,6 +430,8 @@ func Test_StateSerialize(t *testing.T) {
 	f.Fuzz(&currEpochVoteAssign)
 	f.Fuzz(&nextPropQueue)
 
+	bl := bitfield.NewBitlist(5)
+
 	v := primitives.State{
 		CoinsState:                    cs,
 		ValidatorRegistry:             valreg,
@@ -452,7 +454,7 @@ func Test_StateSerialize(t *testing.T) {
 		PreviousJustifiedEpochHash:    previousjustified,
 		PreviousEpochVotes:            prevEpochVotes,
 		CurrentManagers:               currManagers,
-		ManagerReplacement:            bitfield.NewBitlist(5 * 8),
+		ManagerReplacement:            bl,
 		Governance:                    gs,
 		VoteEpoch:                     voteepoch,
 		VoteEpochStartSlot:            votestartslot,
