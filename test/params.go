@@ -10,9 +10,6 @@ import (
 // KeystorePass is a simple string password for keystore tests
 var KeystorePass = "test_pass"
 
-// WalletPassPrefix is a simple string password for wallets test
-var WalletPassPrefix = "wallet_pass-"
-
 // Node1Folder is the folder where node 1 stores its data
 var Node1Folder = "./data_node1"
 
@@ -56,16 +53,16 @@ var IntTestParams = params.ChainParams{
 	EpochLength:                  5,
 	EjectionBalance:              95,
 	MaxBalanceChurnQuotient:      32,
-	MaxVotesPerBlock:             32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                100,
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
-	MaxTxsPerBlock:               9000,
-	MaxDepositsPerBlock:          32,
-	MaxExitsPerBlock:             32,
+	MaxVotesPerBlock:             2048,
+	MaxTxsPerBlock:               5000,
+	MaxDepositsPerBlock:          128,
+	MaxExitsPerBlock:             128,
 	MaxRANDAOSlashingsPerBlock:   20,
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
