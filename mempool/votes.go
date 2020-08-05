@@ -59,7 +59,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 		if uint64(len(participationBitfield) * 8) >= v.Offset {
 			return shouldRemove
 		}
-		if bitfcheck.Get(participationBitfield, uint(v.Offset)) {
+		if !bitfcheck.Get(participationBitfield, uint(v.Offset)) {
 			newVotes = append(newVotes, v)
 			shouldRemove = false
 		}
