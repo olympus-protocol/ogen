@@ -1,13 +1,14 @@
-package primitives
+package primitives_test
 
 import (
+	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestVoteData_Copy(t *testing.T) {
-	v := &VoteData{
+	v := &primitives.VoteData{
 		Slot:            5,
 		FromEpoch:       5,
 		FromHash:        [32]byte{1, 2, 3},
@@ -42,8 +43,8 @@ func TestVoteData_Copy(t *testing.T) {
 }
 
 func TestAcceptedVoteInfo_Copy(t *testing.T) {
-	av := &AcceptedVoteInfo{
-		Data: &VoteData{
+	av := &primitives.AcceptedVoteInfo{
+		Data: &primitives.VoteData{
 			Slot:      1,
 			FromEpoch: 2,
 			FromHash:  [32]byte{3},
@@ -82,8 +83,8 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 
 
 func TestSingleValidatorVote_AsMulti(t *testing.T) {
-	s := &SingleValidatorVote{
-		Data:   &VoteData{
+	s := &primitives.SingleValidatorVote{
+		Data:   &primitives.VoteData{
 			Slot:            5,
 			FromEpoch:       5,
 			FromHash:        [32]byte{1, 2, 3},
@@ -93,8 +94,8 @@ func TestSingleValidatorVote_AsMulti(t *testing.T) {
 			Nonce:           5,
 		},
 		Sig:    [96]byte{1, 2, 3},
-		Offset: 1,
-		OutOf:  5,
+		Offset: 0,
+		OutOf:  256,
 	}
 
 	mv := s.AsMulti()
@@ -103,4 +104,14 @@ func TestSingleValidatorVote_AsMulti(t *testing.T) {
 
 	assert.Equal(t, mv.Sig, s.Sig)
 
+	b, err := mv.Marshal()
+	assert.NoError(t, err)
+
+	var m primitives.MultiValidatorVote
+
+	err = m.Unmarshal(b)
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, mv, &m)
 }
