@@ -94,8 +94,8 @@ func TestSingleValidatorVote_AsMulti(t *testing.T) {
 			Nonce:           5,
 		},
 		Sig:    [96]byte{1, 2, 3},
-		Offset: 0,
-		OutOf:  256,
+		Offset: 1,
+		OutOf:  128,
 	}
 
 	mv := s.AsMulti()
@@ -114,4 +114,5 @@ func TestSingleValidatorVote_AsMulti(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, mv, &m)
+
 }
