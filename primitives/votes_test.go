@@ -94,8 +94,8 @@ func TestSingleValidatorVote_AsMulti(t *testing.T) {
 			Nonce:           5,
 		},
 		Sig:    [96]byte{1, 2, 3},
-		Offset: 1,
-		OutOf:  128,
+		Offset: 56,
+		OutOf:  512,
 	}
 
 	mv := s.AsMulti()
