@@ -52,22 +52,23 @@ func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
 	mv.participatingValidators[voter] = struct{}{}
 }
 
-func (mv *mempoolVote) remove(participationBitfield []uint8) (shouldRemove bool) {
+func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRemove bool) {
 	shouldRemove = true
 	newVotes := make([]*primitives.SingleValidatorVote, 0, len(mv.individualVotes))
 	for _, v := range mv.individualVotes {
-		if len(participationBitfield) >= int(v.Offset/8) {
+		if uint64(len(participationBitfield) * 8) >= v.Offset {
 			return shouldRemove
 		}
-		if participationBitfield[v.Offset/8]&(1<<uint(v.Offset%8)) == 0 {
+		if bitfcheck.Get(participationBitfield, uint(v.Offset)) {
 			newVotes = append(newVotes, v)
 			shouldRemove = false
 		}
 	}
 
 	mv.individualVotes = newVotes
-	for i, p := range participationBitfield {
-		mv.participationBitfield[i] &= ^p
+	mv.participationBitfield = bitfield.NewBitlist(participationBitfield.Len())
+	for i, p := range participationBitfield.Bytes() {
+		mv.participationBitfield[i] = p
 	}
 	return shouldRemove
 }
