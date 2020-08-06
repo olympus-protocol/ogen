@@ -1,3 +1,5 @@
+// +build mempools_test
+
 package mempools_test
 
 import (
