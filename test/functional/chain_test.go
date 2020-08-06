@@ -15,6 +15,7 @@ import (
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -38,7 +39,7 @@ var F *server.Server
 var FAddr peer.AddrInfo
 var B *server.Server
 
-var runUntilHeight = 50
+var runUntilHeight = 51
 
 // Chain Test
 // 1. This test will create a node that moves the chain based on the initialization params.
@@ -195,7 +196,7 @@ func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, new
 	for _, receipt := range receipts {
 		fmt.Printf("Validator: %v Amount: %v Type: %s \n", receipt.Validator, receipt.Amount, receipt.TypeString())
 	}
-	fmt.Printf("Justificated epoch %v Finalized epoch %v", newState.JustifiedEpoch, newState.FinalizedEpoch)
+	fmt.Printf("Justificated epoch %v Finalized epoch %v \n", newState.JustifiedEpoch, newState.FinalizedEpoch)
 }
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
@@ -250,6 +251,13 @@ func Test_NodesStateMatch(t *testing.T) {
 }
 
 func Test_JustifiedEpochAndHash(t *testing.T) {
+
+	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, uint64(8))
+
+	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, uint64(7))
+
+
+	assert.NotEqual(t, F.Chain.State().TipState().JustifiedEpochHash, chainhash.Hash{})
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, B.Chain.State().TipState().JustifiedEpoch)
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
 	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
