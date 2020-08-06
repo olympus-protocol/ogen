@@ -237,7 +237,7 @@ func (p *Proposer) ProposeBlocks() {
 					RANDAOSlashings:   randaoSlashings,
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
-					GovernanceVotes: governanceVotes,
+					GovernanceVotes:   governanceVotes,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()

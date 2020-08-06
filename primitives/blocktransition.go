@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
+	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
@@ -753,18 +754,21 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	if err != nil {
 		return err
 	}
-
+	bl := bitfield.NewBitlist(v.ParticipationBitfield.Len())
+	for i, p := range v.ParticipationBitfield.Bytes() {
+		bl[i] = p
+	}
 	if v.Data.ToEpoch == s.EpochIndex {
 		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
-			ParticipationBitfield: v.ParticipationBitfield,
+			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
 		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
-			ParticipationBitfield: v.ParticipationBitfield,
+			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
