@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/bdb"
+	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/keystore"
@@ -21,7 +22,11 @@ import (
 	"time"
 )
 
-var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAddress(testdata.IntTestParams.AddrPrefix.Public)
+func init() {
+	bls.Initialize(testdata.IntTestParams)
+}
+
+var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
 var initParams = primitives.InitializationParameters{
 	GenesisTime:       time.Unix(time.Now().Unix()+30, 0),
@@ -190,6 +195,7 @@ func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, new
 	for _, receipt := range receipts {
 		fmt.Printf("Validator: %v Amount: %v Type: %s \n", receipt.Validator, receipt.Amount, receipt.TypeString())
 	}
+	fmt.Printf("Justificated epoch %v Finalized epoch %v", newState.JustifiedEpoch, newState.FinalizedEpoch)
 }
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
@@ -243,10 +249,9 @@ func Test_NodesStateMatch(t *testing.T) {
 	assert.Equal(t, F.Chain.State().Tip().Hash, B.Chain.State().Tip().Hash)
 }
 
-func Test_JustifiedHash(t *testing.T) {
-	// Since it is only one node, the latest justified state should be slot
+func Test_JustifiedEpochAndHash(t *testing.T) {
+	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, B.Chain.State().TipState().JustifiedEpoch)
+	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
+	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
 }
 
-func Test_FinalizedHash(t *testing.T) {
-	// Since it is only one node, the latest finalized state should be slot
-}
