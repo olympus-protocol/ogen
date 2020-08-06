@@ -14,7 +14,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chainrpc"
-	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/proto"
@@ -53,7 +52,7 @@ func TestMain(m *testing.M) {
 func startNode() {
 
 	// Create datafolder
-	os.Mkdir(testdata.Node1Folder, 0777)
+	err := os.Mkdir(testdata.Node1Folder, 0777)
 
 	// Initialize the logger
 	log := logger.New(os.Stdin)
@@ -67,21 +66,24 @@ func startNode() {
 
 	// Create a keystore
 	log.Info("Creating keystore")
-	keystore, err := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
+	ks, err := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Generate 128 validators
-	valData, err := keystore.GenerateNewValidatorKey(128, testdata.KeystorePass)
+	valData, err := ks.GenerateNewValidatorKey(128, testdata.KeystorePass)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	keystore.Close()
+	err = ks.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Conver the validator to initialization params.
-	validators := []primitives.ValidatorInitialization{}
+	// Convert the validator to initialization params.
+	var validators []primitives.ValidatorInitialization
 	for _, vk := range valData {
 		val := primitives.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
@@ -92,13 +94,13 @@ func startNode() {
 
 	// Create the initialization parameters
 	ip := primitives.InitializationParameters{
-		GenesisTime:       time.Unix(time.Now().Unix()+7, 0),
+		GenesisTime:       time.Unix(time.Now().Unix() + 15, 0),
 		PremineAddress:    addr,
 		InitialValidators: validators,
 	}
 
 	// Load the block database
-	bdb, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,15 +116,16 @@ func startNode() {
 	c.DataFolder = testdata.Node1Folder
 
 	// Create the server instance.
-	ctx, cancel := context.WithCancel(context.Background())
-	config.InterruptListener(log, cancel)
-	S, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
+	ctx := context.Background()
+
+	S, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, db, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Start the server
 	go S.Start()
+
 	// Initialize the RPC Client
 	err = rpcClient()
 	if err != nil {
@@ -130,8 +133,8 @@ func startNode() {
 	}
 
 	// Open the Keystore to start generating blocks
-	S.Proposer.OpenKeystore(testdata.KeystorePass)
-	S.Proposer.Start()
+	err = S.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = S.Proposer.Start()
 
 	// Wait 5 seconds to generate some blocks
 	time.Sleep(time.Second * 10)
