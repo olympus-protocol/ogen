@@ -9,6 +9,7 @@ import (
 	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/prysmaticlabs/go-bitfield"
 	"math/big"
 )
 
@@ -50,11 +51,9 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []*Validator, field []uint8, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, field bitfield.Bitlist, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
-		b := idx / 8
-		j := idx % 8
-		if field[b]&(1<<j) > 0 {
+		if bitfcheck.Get(field, uint(idx)) {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
