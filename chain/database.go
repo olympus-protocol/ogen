@@ -55,7 +55,7 @@ func (s *StateService) loadBlockIndex(txn bdb.DBViewTransaction, genesisHash cha
 	for len(queue) > 0 {
 		current := queue[0]
 
-		s.log.Debugf("loading block node %s", current)
+		s.log.Debugf("Loading block node %s", current)
 
 		queue = queue[1:]
 
@@ -181,12 +181,12 @@ func (s *StateService) loadStateMap(txn bdb.DBViewTransaction) error {
 }
 
 func (s *StateService) loadBlockchainFromDisk(txn bdb.DBViewTransaction, genesisHash chainhash.Hash) error {
-	s.log.Info("loading block index...")
+	s.log.Info("Loading block index...")
 	err := s.loadBlockIndex(txn, genesisHash)
 	if err != nil {
 		return err
 	}
-	s.log.Info("loading justified and finalized states...")
+	s.log.Info("Loading justified and finalized states...")
 	err = s.loadJustifiedAndFinalizedStates(txn)
 	if err != nil {
 		return err

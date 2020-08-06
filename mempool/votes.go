@@ -95,6 +95,7 @@ type VoteMempool struct {
 	ctx        context.Context
 	blockchain *chain.Blockchain
 	hostNode   *peers.HostNode
+	voteTopic  *pubsub.Topic
 
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
@@ -199,8 +200,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 
 	m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[voter].PubKey, vote.Data.Nonce)
 
-	// slashing check... check if this vote interferes with any
-	// votes in the mempool
+	// slashing check... check if this vote interferes with any votes in the mempool
 	voteData := vote.Data
 	for h, v := range m.pool {
 		if voteHash.IsEqual(&h) {
@@ -238,19 +238,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
-
-		// If the vote is not found, relay it.
-		topic, err := m.hostNode.Topic("votes")
-		b, err := vote.Marshal()
-		if err != nil {
-			m.log.Error(err)
-			return
-		}
-		err = topic.Publish(m.ctx, b)
-		if err != nil {
-			m.log.Error(err)
-			return
-		}
+		m.relay(vote)
 	}
 
 	m.sortMempool()
@@ -376,6 +364,19 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 	}
 }
 
+func (m *VoteMempool) relay(vote *primitives.SingleValidatorVote) {
+	b, err := vote.Marshal()
+	if err != nil {
+		m.log.Error(err)
+		return
+	}
+	err = m.voteTopic.Publish(m.ctx, b)
+	if err != nil {
+		m.log.Error(err)
+		return
+	}
+}
+
 // Notify registers a notifee to be notified when illegal votes occur.
 func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 	m.notifeesLock.Lock()
@@ -385,16 +386,6 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 
 // NewVoteMempool creates a new mempool.
 func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, manager *conflict.LastActionManager) (*VoteMempool, error) {
-	vm := &VoteMempool{
-		pool:              make(map[chainhash.Hash]*mempoolVote),
-		params:            p,
-		log:               log,
-		ctx:               ctx,
-		blockchain:        ch,
-		notifees:          make([]VoteSlashingNotifee, 0),
-		hostNode:          hostnode,
-		lastActionManager: manager,
-	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
 		return nil, err
@@ -403,6 +394,18 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 	voteSub, err := voteTopic.Subscribe()
 	if err != nil {
 		return nil, err
+	}
+
+	vm := &VoteMempool{
+		pool:              make(map[chainhash.Hash]*mempoolVote),
+		params:            p,
+		log:               log,
+		ctx:               ctx,
+		blockchain:        ch,
+		voteTopic:         voteTopic,
+		notifees:          make([]VoteSlashingNotifee, 0),
+		hostNode:          hostnode,
+		lastActionManager: manager,
 	}
 
 	go vm.handleSubscription(voteSub, hostnode.GetHost().ID())

@@ -149,7 +149,7 @@ func (p *Proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing()  {
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 				blockTimer = time.NewTimer(time.Second * 10)
 				continue
@@ -216,6 +216,12 @@ func (p *Proposer) ProposeBlocks() {
 					return
 				}
 
+				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), state)
+				if err != nil {
+					p.log.Error(err)
+					return
+				}
+
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
@@ -231,6 +237,7 @@ func (p *Proposer) ProposeBlocks() {
 					RANDAOSlashings:   randaoSlashings,
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
+					GovernanceVotes: governanceVotes,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()

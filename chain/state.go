@@ -172,7 +172,7 @@ func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 
 func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, genesisState primitives.State) error {
 	// Get the state snap from db dbindex and deserialize
-	s.log.Info("loading chain state...")
+	s.log.Info("Loading chain state...")
 
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Header.Hash()

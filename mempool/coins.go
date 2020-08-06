@@ -79,15 +79,17 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 		return err
 	}
 
-	// adding a nonce rule for Ddos protection
 	txNonce := item.Nonce
+
 	if txNonce != state.Nonces[fpkh]+1 {
 		return errors.New("invalid nonce")
 	}
+
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
+		cm.relay(item)
 	}
 	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err
@@ -179,6 +181,19 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 				}
 			}
 		}
+	}
+}
+
+func (cm *CoinsMempool) relay(tx primitives.Tx) {
+	b, err := tx.Marshal()
+	if err != nil {
+		cm.log.Error(err)
+		return
+	}
+	err = cm.topic.Publish(cm.ctx, b)
+	if err != nil {
+		cm.log.Error(err)
+		return
 	}
 }
 

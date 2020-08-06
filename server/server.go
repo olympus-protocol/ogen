@@ -66,9 +66,9 @@ func (s *Server) Stop() error {
 // NewServer creates a server instance and initializes the ogen services.
 func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 
-	logger.Tracef("loading network parameters for %v", currParams.Name)
+	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
-	logger.Tracef("initializing bls module with params for %v", currParams.Name)
+	logger.Tracef("Initializing bls module with params for %v", currParams.Name)
 
 	err := bls.Initialize(currParams)
 	if err != nil {
