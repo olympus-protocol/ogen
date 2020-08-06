@@ -225,7 +225,7 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf)
+	participationBitfield := bitfield.NewBitlist(s.OutOf + 7)
 	bitfcheck.Set(participationBitfield, uint(s.Offset))
 	return &MultiValidatorVote{
 		Data:                  s.Data,
