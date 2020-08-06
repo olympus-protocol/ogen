@@ -6,12 +6,15 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/hex"
+	"fmt"
+	"github.com/olympus-protocol/ogen/bls"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chainrpc"
+	"github.com/olympus-protocol/ogen/config"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/proto"
@@ -21,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"strconv"
 )
 
 type RPC struct {
@@ -56,7 +60,7 @@ func startNode() {
 	log.WithDebug()
 
 	// Create the premine address on bech32 format.
-	addr, err := testdata.PremineAddr.PublicKey().ToAddress(testdata.IntTestParams.AddrPrefix.Public)
+	addr, err := testdata.PremineAddr.PublicKey().ToAccount()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,6 +77,8 @@ func startNode() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	keystore.Close()
 
 	// Conver the validator to initialization params.
 	validators := []primitives.ValidatorInitialization{}
@@ -101,31 +107,34 @@ func startNode() {
 
 	// Get the configuration params from the testdata
 	c := testdata.Conf
+	c.LogFile = true
+	c.RPCWallet = true
 
 	// Override the data folder.
 	c.DataFolder = testdata.Node1Folder
 
 	// Create the server instance.
-	S, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, bdb, ip)
+	ctx, cancel := context.WithCancel(context.Background())
+	config.InterruptListener(log, cancel)
+	S, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Start the server
 	go S.Start()
-
-	// Open the Keystore to start generating blocks
-	S.Proposer.OpenKeystore(testdata.KeystorePass)
-	S.Proposer.Start()
-
 	// Initialize the RPC Client
 	err = rpcClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Open the Keystore to start generating blocks
+	S.Proposer.OpenKeystore(testdata.KeystorePass)
+	S.Proposer.Start()
+
 	// Wait 5 seconds to generate some blocks
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 10)
 }
 
 func rpcClient() error {
@@ -187,6 +196,21 @@ func Test_Chain_GetRawBlock(t *testing.T) {
 	assert.Equal(t, hex.EncodeToString(block), res.RawBlock)
 }
 
+func Test_Chain_GetBlockHash(t *testing.T) {
+	ctx := context.Background()
+
+	tip := S.Chain.State().Tip()
+
+	res, err := C.chain.GetBlockHash(ctx, &proto.Number{Number: uint64(tip.Height)})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.IsType(t, &proto.Hash{}, res)
+
+	assert.Equal(t, tip.Hash.String(), res.Hash)
+}
+
 func Test_Chain_GetBlock(t *testing.T) {
 	ctx := context.Background()
 	hash := S.Chain.State().Tip().Hash
@@ -201,4 +225,49 @@ func Test_Chain_GetBlock(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, block.Hash().String(), res.Hash)
+}
+
+func Test_Chain_GetAccountInfo(t *testing.T) {
+	ctx := context.Background()
+
+	account, err := testdata.PremineAddr.PublicKey().ToAccount()
+	assert.NoError(t, err)
+
+	res, err := C.chain.GetAccountInfo(ctx, &proto.Account{Account: account})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.AccountInfo{}, res)
+
+	accByte, err := testdata.PremineAddr.PublicKey().Hash()
+	assert.NoError(t, err)
+	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	accBalance := balanceMap[accByte]
+
+	assert.Equal(t, strconv.Itoa(int(accBalance/1000)), res.Balance.Confirmed)
+}
+
+func Test_Chain_GetTransaction(t *testing.T) {
+	ctx := context.Background()
+
+	//make a transaction using premine account
+	privKey, _ := testdata.PremineAddr.ToWIF()
+
+	response, err := C.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: "premineAddrAccount", Key: &proto.KeyPair{Private: privKey}})
+	assert.Nil(t, err)
+	assert.NotNil(t, response)
+	randomAddr, _ := bls.RandKey().PublicKey().ToAccount()
+	txReceipt, err := C.wallet.SendTransaction(ctx, &proto.SendTransactionInfo{Account: randomAddr, Amount: "10"})
+	assert.Nil(t, err)
+	assert.NotNil(t, txReceipt)
+	// give some time to the transaction to be added to a block
+	time.Sleep(time.Second * 20)
+	fmt.Println(txReceipt)
+
+	txInfo, err := C.chain.GetTransaction(ctx, &proto.Hash{Hash: txReceipt.Hash})
+	assert.NoError(t, err)
+	assert.NotNil(t, txInfo)
+	assert.IsType(t, &proto.Tx{}, txInfo)
+
+	assert.Equal(t, txReceipt.Hash, txInfo.Hash)
 }
