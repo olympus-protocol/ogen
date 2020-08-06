@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/bls"
 	"os"
 	"testing"
@@ -37,6 +38,11 @@ type RPC struct {
 
 var C *RPC
 var S *server.Server
+var SAddr peer.AddrInfo
+
+var B *server.Server
+
+var initParams primitives.InitializationParameters
 
 // RPC Functional test
 // 1. Start a new chain with a single node moving.
@@ -44,6 +50,9 @@ var S *server.Server
 func TestMain(m *testing.M) {
 	// Create the node server and the clients for global usage
 	startNode()
+
+	// Start secondary node
+	secondNode()
 
 	// Run the test functions.
 	os.Exit(m.Run())
@@ -92,13 +101,6 @@ func startNode() {
 		validators = append(validators, val)
 	}
 
-	// Create the initialization parameters
-	ip := primitives.InitializationParameters{
-		GenesisTime:       time.Unix(time.Now().Unix() + 15, 0),
-		PremineAddress:    addr,
-		InitialValidators: validators,
-	}
-
 	// Load the block database
 	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
@@ -118,9 +120,21 @@ func startNode() {
 	// Create the server instance.
 	ctx := context.Background()
 
-	S, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, db, ip)
+	// Create the initialization parameters
+	initParams = primitives.InitializationParameters{
+		GenesisTime:       time.Unix(time.Now().Unix()+15, 0),
+		PremineAddress:    addr,
+		InitialValidators: validators,
+	}
+
+	S, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, db, initParams)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	SAddr = peer.AddrInfo{
+		ID:    S.HostNode.GetHost().ID(),
+		Addrs: S.HostNode.GetHost().Network().ListenAddresses(),
 	}
 
 	// Start the server
@@ -136,8 +150,6 @@ func startNode() {
 	err = S.Proposer.OpenKeystore(testdata.KeystorePass)
 	err = S.Proposer.Start()
 
-	// Wait 5 seconds to generate some blocks
-	time.Sleep(time.Second * 10)
 }
 
 func rpcClient() error {
@@ -168,6 +180,47 @@ func rpcClient() error {
 		wallet:     proto.NewWalletClient(conn),
 	}
 	return nil
+}
+
+func secondNode() {
+	// Create datafolder
+	_ = os.Mkdir(testdata.Node2Folder, 0777)
+
+	// Create logger
+	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
+	if err != nil {
+		panic(err)
+	}
+	log := logger.New(logfile)
+	log.WithDebug()
+
+	// Load the block database
+	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Load the conf params
+	c := testdata.Conf
+
+	// Override the datafolder.
+	c.DataFolder = testdata.Node2Folder
+	c.RPCPort = "25001"
+	c.Port = "24131"
+
+	// Create the server instance
+	B, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, db, initParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Start the server
+	go B.Start()
+}
+
+func Test_Connections(t *testing.T) {
+	// The backup node should connect to the first node
+	err := B.HostNode.GetHost().Connect(context.TODO(), SAddr)
+	assert.NoError(t, err)
 }
 
 func Test_Chain_GetChainInfo(t *testing.T) {
