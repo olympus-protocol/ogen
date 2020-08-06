@@ -15,15 +15,15 @@ const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header            *BlockHeader          // 												= 372 bytes
-	Votes             []*MultiValidatorVote `ssz-max:"32"`   // MaxVotesPerBlock 			333 * 32 		= 10656 bytes
-	Txs               []*Tx                 `ssz-max:"9000"` // MaxTxsPerBlock				204 * 9000  	= 1836000 bytes
-	Deposits          []*Deposit            `ssz-max:"32"`   // MaxDepositsPerBlock 			308 * 32 		= 9856 bytes
-	Exits             []*Exit               `ssz-max:"32"`   // MaxExitsPerBlock     		192 * 32 		= 6144 bytes
-	VoteSlashings     []*VoteSlashing       `ssz-max:"10"`   // MaxVoteSlashingsPerBlock		666 * 10 		= 6660 bytes
-	RANDAOSlashings   []*RANDAOSlashing     `ssz-max:"20"`   // MaxRANDAOSlashingsPerBlock   152 * 20 		= 3040 bytes
-	ProposerSlashings []*ProposerSlashing   `ssz-max:"2"`    // MaxProposerSlashingsPerBlock 984 * 2 		= 1968 bytes
-	GovernanceVotes   []*GovernanceVote     `ssz-max:"128"`  // MaxGovernanceVotesPerBlock
+	Header            *BlockHeader          // 																	= 372 bytes
+	Votes             []*MultiValidatorVote `ssz-max:"2048"` // MaxVotesPerBlock 				333 * 2048 		= 681984 bytes
+	Txs               []*Tx                 `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
+	Deposits          []*Deposit            `ssz-max:"128"`  // MaxDepositsPerBlock 			308 * 128 		= 39424 bytes
+	Exits             []*Exit               `ssz-max:"128"`  // MaxExitsPerBlock     			192 * 128 		= 24576 bytes
+	VoteSlashings     []*VoteSlashing       `ssz-max:"10"`   // MaxVoteSlashingPerBlock			666 * 10 		= 6660 bytes
+	RANDAOSlashings   []*RANDAOSlashing     `ssz-max:"20"`   // MaxRANDAOSlashingPerBlock   	152 * 20 		= 3040 bytes
+	ProposerSlashings []*ProposerSlashing   `ssz-max:"2"`    // MaxProposerSlashingPerBlock 	984 * 2 		= 1968 bytes
+	GovernanceVotes   []*GovernanceVote     `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
 	Signature         [96]byte              `ssz-size:"96"`  // 96 bytes
 	RandaoSignature   [96]byte              `ssz-size:"96"`  // 96 bytes
 }

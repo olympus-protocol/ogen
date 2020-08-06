@@ -210,7 +210,6 @@ func TestState_Copy(t *testing.T) {
 
 	assert.Equal(t, len(s.ManagerReplacement), len(s2.ManagerReplacement))
 
-
 }
 
 func TestState_FromSerializable(t *testing.T) {

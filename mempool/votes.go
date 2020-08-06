@@ -56,7 +56,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 	shouldRemove = true
 	newVotes := make([]*primitives.SingleValidatorVote, 0, len(mv.individualVotes))
 	for _, v := range mv.individualVotes {
-		if uint64(len(participationBitfield) * 8) >= v.Offset {
+		if uint64(len(participationBitfield)*8) >= v.Offset {
 			return shouldRemove
 		}
 		if !bitfcheck.Get(participationBitfield, uint(v.Offset)) {
@@ -248,11 +248,11 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	votes := make([]*primitives.MultiValidatorVote, 0)
-	for _, i := range m.poolOrder {
-		v := m.pool[i]
+	for _, h := range m.poolOrder {
+		v := m.pool[h]
 		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
 			sigs := make([]*bls.Signature, 0)
-			for _, v := range m.pool[i].individualVotes {
+			for _, v := range m.pool[h].individualVotes {
 				sig, err := v.Signature()
 				if err != nil {
 					return nil, err
@@ -263,15 +263,16 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
 			vote := &primitives.MultiValidatorVote{
-				Data:                  m.pool[i].voteData,
+				Data:                  m.pool[h].voteData,
 				Sig:                   sigb,
 				ParticipationBitfield: v.participationBitfield,
 			}
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
-				// TODO we may need to ban the node here.
-				continue
+				return nil, err
 			}
-			votes = append(votes, vote)
+			if uint64(len(votes)) < p.MaxVotesPerBlock {
+				votes = append(votes, vote)
+			}
 		}
 	}
 

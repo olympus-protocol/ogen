@@ -283,9 +283,12 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// TODO: delete state before finalized
 
+		ch.log.Infof("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
 		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.FinalizedEpoch, newState.JustifiedEpoch)
 
-		// Once a block is acceped build tx index and account tx tracking
+		// TODO: add a log that shows network participation with expected.
+
+		// Once a block is accepted build tx index and account tx tracking
 
 		for i, tx := range block.Txs {
 			locator := index.TxLocator{

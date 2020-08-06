@@ -81,10 +81,9 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 
 }
 
-
 func TestSingleValidatorVote_AsMulti(t *testing.T) {
 	s := &primitives.SingleValidatorVote{
-		Data:   &primitives.VoteData{
+		Data: &primitives.VoteData{
 			Slot:            5,
 			FromEpoch:       5,
 			FromHash:        [32]byte{1, 2, 3},

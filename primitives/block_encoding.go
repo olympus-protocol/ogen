@@ -68,7 +68,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = append(dst, b.RandaoSignature[:]...)
 
 	// Field (1) 'Votes'
-	if len(b.Votes) > 32 {
+	if len(b.Votes) > 2048 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -86,7 +86,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (2) 'Txs'
-	if len(b.Txs) > 9000 {
+	if len(b.Txs) > 5000 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -97,7 +97,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (3) 'Deposits'
-	if len(b.Deposits) > 32 {
+	if len(b.Deposits) > 128 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -108,7 +108,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (4) 'Exits'
-	if len(b.Exits) > 32 {
+	if len(b.Exits) > 128 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -240,7 +240,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Votes'
 	{
 		buf = tail[o1:o2]
-		num, err := ssz.DecodeDynamicLength(buf, 32)
+		num, err := ssz.DecodeDynamicLength(buf, 2048)
 		if err != nil {
 			return err
 		}
@@ -262,7 +262,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'Txs'
 	{
 		buf = tail[o2:o3]
-		num, err := ssz.DivideInt2(len(buf), 188, 9000)
+		num, err := ssz.DivideInt2(len(buf), 188, 5000)
 		if err != nil {
 			return err
 		}
@@ -280,7 +280,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (3) 'Deposits'
 	{
 		buf = tail[o3:o4]
-		num, err := ssz.DivideInt2(len(buf), 308, 32)
+		num, err := ssz.DivideInt2(len(buf), 308, 128)
 		if err != nil {
 			return err
 		}
@@ -298,7 +298,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (4) 'Exits'
 	{
 		buf = tail[o4:o5]
-		num, err := ssz.DivideInt2(len(buf), 192, 32)
+		num, err := ssz.DivideInt2(len(buf), 192, 128)
 		if err != nil {
 			return err
 		}
@@ -446,7 +446,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Votes))
-		if num > 32 {
+		if num > 2048 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -455,14 +455,14 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 32)
+		hh.MerkleizeWithMixin(subIndx, num, 2048)
 	}
 
 	// Field (2) 'Txs'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Txs))
-		if num > 9000 {
+		if num > 5000 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -471,14 +471,14 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 9000)
+		hh.MerkleizeWithMixin(subIndx, num, 5000)
 	}
 
 	// Field (3) 'Deposits'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Deposits))
-		if num > 32 {
+		if num > 128 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -487,14 +487,14 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 32)
+		hh.MerkleizeWithMixin(subIndx, num, 128)
 	}
 
 	// Field (4) 'Exits'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Exits))
-		if num > 32 {
+		if num > 128 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -503,7 +503,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 32)
+		hh.MerkleizeWithMixin(subIndx, num, 128)
 	}
 
 	// Field (5) 'VoteSlashings'
