@@ -238,6 +238,19 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
+
+		// If the vote is not found, relay it.
+		topic, err := m.hostNode.Topic("votes")
+		b, err := vote.Marshal()
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
+		err = topic.Publish(m.ctx, b)
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
 	}
 
 	m.sortMempool()
