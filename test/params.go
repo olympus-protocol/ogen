@@ -58,7 +58,7 @@ var IntTestParams = params.ChainParams{
 	DepositAmount:                100,
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 1,
+	SlotDuration:                 20,
 	MaxVotesPerBlock:             2048,
 	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,

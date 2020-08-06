@@ -256,10 +256,8 @@ func Test_JustifiedEpochAndHash(t *testing.T) {
 
 	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, uint64(7))
 
-
 	assert.NotEqual(t, F.Chain.State().TipState().JustifiedEpochHash, chainhash.Hash{})
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, B.Chain.State().TipState().JustifiedEpoch)
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
 	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
 }
-

@@ -17,6 +17,11 @@ test_chain:
 	go test -tags chain_test -c functional/chain_test.go
 	./chain.test
 	make clean
+
+test_mempools:
+	go test -tags mempools_test -c functional/mempools_test.go
+	./mempools.test
+	make clean
 	
 clean:
 	rm -rf data_*	

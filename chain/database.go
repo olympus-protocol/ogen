@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"encoding/hex"
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -145,7 +146,7 @@ func (s *StateService) loadStateMap(txn bdb.DBViewTransaction) error {
 			return err
 		}
 
-		s.log.Debugf("calculating block state for %s with previous %s", node.Hash, node.Parent)
+		s.log.Debugf("calculating block state for %s with previous %s", hex.EncodeToString(node.Hash[:]), hex.EncodeToString(node.Parent[:]))
 
 		bl, err := txn.GetBlock(node.Hash)
 		if err != nil {

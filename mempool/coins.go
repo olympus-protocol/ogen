@@ -197,6 +197,13 @@ func (cm *CoinsMempool) relay(tx primitives.Tx) {
 	}
 }
 
+// Clear removes all elements store into the CoinsMempool
+func (cm *CoinsMempool) Clear() {
+	cm.mempool = make(map[[20]byte]*coinMempoolItem)
+	cm.balances = make(map[[20]byte]uint64)
+	return
+}
+
 // NewCoinsMempool constructs a new coins mempool.
 func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockchain, hostNode *peers.HostNode, params *params.ChainParams) (*CoinsMempool, error) {
 	topic, err := hostNode.Topic("tx")

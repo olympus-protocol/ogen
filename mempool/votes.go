@@ -2,23 +2,20 @@ package mempool
 
 import (
 	"context"
-	"github.com/olympus-protocol/ogen/peers/conflict"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
-	"github.com/prysmaticlabs/go-bitfield"
-	"math/rand"
-	"sort"
-	"sync"
-	"time"
-
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/peers/conflict"
 	"github.com/olympus-protocol/ogen/primitives"
+	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"github.com/prysmaticlabs/go-bitfield"
+	"sort"
+	"sync"
 )
 
 type mempoolVote struct {
@@ -103,37 +100,6 @@ type VoteMempool struct {
 	lastActionManager *conflict.LastActionManager
 }
 
-func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	ret := make([]primitives.SingleValidatorVote, len(vals))
-	perm := r.Perm(len(vals))
-	for i, randIndex := range perm {
-		ret[i] = vals[randIndex]
-	}
-	return ret
-}
-
-// func PickPercentVotes(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
-// 	num := int(pct * float32(len(vs)))
-// 	shuffledVotes := shuffleVotes(vs)
-// 	return shuffledVotes[:num]
-// }
-
-// func (m *VoteMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
-// 	votes := make([]primitives.SingleValidatorVote, 0)
-// 	for _, vs := range m.pool {
-// 		for _, v := range vs.individualVotes {
-// 			vh := v.Hash()
-// 			if bloom.Has(vh) {
-// 				continue
-// 			}
-
-// 			votes = append(votes, *v)
-// 		}
-// 	}
-// 	return votes
-// }
-
 // AddValidate validates, then adds the vote to the mempool.
 func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *primitives.State) error {
 	if err := state.IsVoteValid(vote.AsMulti(), m.params); err != nil {
@@ -144,8 +110,7 @@ func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *p
 	return nil
 }
 
-// sortMempool sorts the poolOrder so that the highest priority transactions come first
-// and assumes you hold the poolLock.
+// sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
 func (m *VoteMempool) sortMempool() {
 	sort.Slice(m.poolOrder, func(i, j int) bool {
 		// return if i is higher priority than j
@@ -386,6 +351,13 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 	m.notifeesLock.Lock()
 	defer m.notifeesLock.Unlock()
 	m.notifees = append(m.notifees, notifee)
+}
+
+// Clear removes all elements stored in the VoteMempool
+func (m *VoteMempool) Clear() {
+	m.pool = make(map[chainhash.Hash]*mempoolVote)
+	m.poolOrder = []chainhash.Hash{}
+	return
 }
 
 // NewVoteMempool creates a new mempool.

@@ -751,6 +751,7 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	}
 
 	err := s.IsVoteValid(v, p)
+
 	if err != nil {
 		return err
 	}

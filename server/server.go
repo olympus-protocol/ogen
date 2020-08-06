@@ -10,7 +10,6 @@ import (
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
@@ -20,6 +19,12 @@ import (
 	"github.com/olympus-protocol/ogen/wallet"
 )
 
+type Mempools struct {
+	Votes   *mempool.VoteMempool
+	Coins   *mempool.CoinsMempool
+	Actions *mempool.ActionMempool
+}
+
 // Server is the main struct that contains ogen services
 type Server struct {
 	log    *logger.Logger
@@ -28,9 +33,10 @@ type Server struct {
 
 	Chain    *chain.Blockchain
 	HostNode *peers.HostNode
-	Keystore *keystore.Keystore
 	RPC      *chainrpc.RPCServer
 	Proposer *proposer.Proposer
+
+	Mempools Mempools
 }
 
 // Start starts running the multiple ogen services.
@@ -130,6 +136,11 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		HostNode: hostnode,
 		RPC:      rpc,
 		Proposer: prop,
+		Mempools: Mempools{
+			Votes:   voteMempool,
+			Coins:   coinsMempool,
+			Actions: actionsMempool,
+		},
 	}
 	return s, nil
 }

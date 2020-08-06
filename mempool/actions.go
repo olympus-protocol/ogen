@@ -175,6 +175,17 @@ func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainPa
 	return am, nil
 }
 
+// Clear removes all elements stored in the ActionMempool
+func (am *ActionMempool) Clear() {
+	am.deposits = make(map[chainhash.Hash]*primitives.Deposit)
+	am.exits = make(map[chainhash.Hash]*primitives.Exit)
+	am.governanceVotes = make(map[chainhash.Hash]*primitives.GovernanceVote)
+	am.randaoSlashings = []*primitives.RANDAOSlashing{}
+	am.proposerSlashings = []*primitives.ProposerSlashing{}
+	am.voteSlashings = []*primitives.VoteSlashing{}
+	return
+}
+
 func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
