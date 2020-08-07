@@ -13,8 +13,7 @@ type Config struct {
 	DataFolder string
 
 	NetworkName string
-	AddNodes    []peer.AddrInfo
-	MaxPeers    int32
+	InitialNodes    []peer.AddrInfo
 	Port        string
 
 	InitConfig primitives.InitializationParameters

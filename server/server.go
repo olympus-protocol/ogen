@@ -164,9 +164,8 @@ func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.C
 func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
 	cfg := peers.Config{
 		Log:      logger,
-		AddNodes: config.AddNodes,
+		InitialNodes: config.InitialNodes,
 		Port:     config.Port,
-		MaxPeers: config.MaxPeers,
 		Path:     config.DataFolder,
 	}
 	return cfg

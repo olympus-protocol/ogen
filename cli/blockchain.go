@@ -153,8 +153,7 @@ Next generation blockchain secured by CASPER.`,
 				DataFolder: DataFolder,
 
 				NetworkName: networkName,
-				AddNodes:    addNodes,
-				MaxPeers:    int32(viper.GetUint("maxpeers")),
+				InitialNodes:    addNodes,
 				Port:        viper.GetString("port"),
 
 				InitConfig: ip,
@@ -198,7 +197,6 @@ func init() {
 
 	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
-	rootCmd.Flags().Uint16("maxpeers", 9, "Maximum number of peers to connect.")
 	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
 
 	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
