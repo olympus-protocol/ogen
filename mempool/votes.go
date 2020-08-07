@@ -203,7 +203,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
-		m.relay(vote)
+		//m.relay(vote)
 	}
 
 	m.sortMempool()
