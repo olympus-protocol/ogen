@@ -11,7 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/prysmaticlabs/go-bitfield"
 	"math/big"
-	"strconv"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -54,9 +53,7 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 
 func (vg *voterGroup) addFromBitfield(registry []*Validator, field bitfield.Bitlist, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
-		b := idx / 8
-		j := idx % 8
-		if field[b]&(1<<j) > 0 {
+		if field[idx/8]&(1<<idx%8) > 0 {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
@@ -454,7 +451,9 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	}
 
 	// previousEpochVotersMap maps validator to their assigned vote
+
 	previousEpochVotersMap := make(map[uint64]*AcceptedVoteInfo)
+	fmt.Println(len(s.PreviousEpochVotes))
 
 	for _, v := range s.PreviousEpochVotes {
 		validatorIndices, err := s.GetVoteCommittee(v.Data.Slot, p)
@@ -463,9 +462,11 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
+		fmt.Println(bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]))
 		if bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
+		fmt.Println(bytes.Equal(previousEpochBoundaryHash[:], v.Data.ToHash[:]))
 		if bytes.Equal(previousEpochBoundaryHash[:], v.Data.ToHash[:]) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
@@ -487,9 +488,9 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash
 	s.JustificationBitfield <<= 1
 
-	fmt.Println("TotalBalance: " + strconv.Itoa(int(totalBalance)))
-	fmt.Println("PreviousEpochVotersBalance: " + strconv.Itoa(int(previousEpochVotersMatchingTargetHash.totalBalance)))
-	fmt.Println("CurrentEpochVotersBalance: " + strconv.Itoa(int(currentEpochVotersMatchingTarget.totalBalance)))
+	//fmt.Println("TotalBalance: " + strconv.Itoa(int(totalBalance)))
+	//fmt.Println("PreviousEpochVotersBalance: " + strconv.Itoa(int(previousEpochVotersMatchingTargetHash.totalBalance)))
+	//fmt.Println("CurrentEpochVotersBalance: " + strconv.Itoa(int(currentEpochVotersMatchingTarget.totalBalance)))
 
 	// >2/3 voted with target of the previous epoch
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
