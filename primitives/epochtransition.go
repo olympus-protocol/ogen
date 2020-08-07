@@ -11,6 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/prysmaticlabs/go-bitfield"
 	"math/big"
+	"strconv"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
@@ -53,7 +54,9 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 
 func (vg *voterGroup) addFromBitfield(registry []*Validator, field bitfield.Bitlist, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
-		if bitfcheck.Get(field, uint(idx)) {
+		b := idx / 8
+		j := idx % 8
+		if field[b]&(1<<j) > 0 {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
@@ -484,9 +487,9 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash
 	s.JustificationBitfield <<= 1
 
-	fmt.Printf("TotalBalance %d \n", totalBalance)
-	fmt.Printf("PreviousEpochVotersBalance %d \n", previousEpochVotersMatchingTargetHash.totalBalance)
-	fmt.Printf("CurrentEpochVotersBalance %d \n", currentEpochVotersMatchingTarget.totalBalance)
+	fmt.Println("TotalBalance: " + strconv.Itoa(int(totalBalance)))
+	fmt.Println("PreviousEpochVotersBalance: " + strconv.Itoa(int(previousEpochVotersMatchingTargetHash.totalBalance)))
+	fmt.Println("CurrentEpochVotersBalance: " + strconv.Itoa(int(currentEpochVotersMatchingTarget.totalBalance)))
 
 	// >2/3 voted with target of the previous epoch
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {

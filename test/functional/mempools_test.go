@@ -121,12 +121,6 @@ func firstNode() {
 	}
 }
 
-func Test_CleanMempools(t *testing.T) {
-	F.Mempools.Votes.Clear()
-	F.Mempools.Actions.Clear()
-	F.Mempools.Coins.Clear()
-}
-
 var votes []*primitives.SingleValidatorVote
 
 // Create the votes and add it to the mempool with validation.

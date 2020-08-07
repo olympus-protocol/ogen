@@ -759,6 +759,7 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	for i, p := range v.ParticipationBitfield {
 		bl[i] = p
 	}
+
 	if v.Data.ToEpoch == s.EpochIndex {
 		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
