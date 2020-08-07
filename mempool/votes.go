@@ -283,9 +283,9 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	}
 }
 
-func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID) {
+func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 	for {
-		msg, err := topic.Next(m.ctx)
+		msg, err := sub.Next(m.ctx)
 		if err != nil {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
@@ -328,6 +328,7 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 		if err != nil {
 			m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
+
 	}
 }
 
@@ -344,16 +345,18 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 	if err != nil {
 		return nil, err
 	}
-	
-	_, err = voteTopic.Relay()
-	if err != nil {
-		return nil, err
-	}
 
 	voteSub, err := voteTopic.Subscribe()
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		_, err = voteTopic.Relay()
+		if err != nil {
+			return
+		}
+	}()
 
 	vm := &VoteMempool{
 		pool:              make(map[chainhash.Hash]*mempoolVote),
