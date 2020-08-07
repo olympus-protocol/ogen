@@ -484,6 +484,10 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	s.PreviousJustifiedEpochHash = s.JustifiedEpochHash
 	s.JustificationBitfield <<= 1
 
+	fmt.Printf("TotalBalance %d \n", totalBalance)
+	fmt.Printf("PreviousEpochVotersBalance %d \n", previousEpochVotersMatchingTargetHash.totalBalance)
+	fmt.Printf("CurrentEpochVotersBalance %d \n", currentEpochVotersMatchingTarget.totalBalance)
+
 	// >2/3 voted with target of the previous epoch
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 1 // mark
