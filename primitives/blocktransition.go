@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -498,18 +499,19 @@ func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) e
 
 // GetVoteCommittee gets the committee for a certain block.
 func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
+
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 		return assignments[min:max], nil
+
 	} else if (slot-1)/p.EpochLength == s.EpochIndex-1 {
 		assignments := s.PreviousEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
-
 		return assignments[min:max], nil
 	}
 
@@ -728,6 +730,7 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	if err != nil {
 		return err
 	}
+
 	valid := vSig.FastAggregateVerify(aggPubs, h)
 	if !valid {
 		return fmt.Errorf("aggregate signature did not validate")
@@ -750,21 +753,26 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	}
 
 	err := s.IsVoteValid(v, p)
+
 	if err != nil {
 		return err
+	}
+	bl := bitfield.NewBitlist(v.ParticipationBitfield.Len())
+	for i, p := range v.ParticipationBitfield {
+		bl[i] = p
 	}
 
 	if v.Data.ToEpoch == s.EpochIndex {
 		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
-			ParticipationBitfield: v.ParticipationBitfield,
+			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
 		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
-			ParticipationBitfield: v.ParticipationBitfield,
+			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})

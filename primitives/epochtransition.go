@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"math/big"
@@ -50,11 +50,9 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []*Validator, field []uint8, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*Validator, field bitfield.Bitlist, validatorIndices []uint64) {
 	for idx, validatorIdx := range validatorIndices {
-		b := idx / 8
-		j := idx % 8
-		if field[b]&(1<<j) > 0 {
+		if field.Get(uint(idx)) {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}
@@ -252,41 +250,11 @@ const (
 	PenaltyInactivityLeakNoVote
 )
 
-var (
-	// ErrorEpochReceiptSize is returned when an EpochReceipt exceed MaxEpochReceiptSize
-	ErrorEpochReceiptSize = errors.New("epoch receipt too big")
-)
-
-const (
-	// MaxEpochReceiptSize is the maximum amount of bytes an EpochReceipt can contain
-	MaxEpochReceiptSize = 24
-)
-
 // EpochReceipt is a balance change carried our by an epoch transition.
 type EpochReceipt struct {
 	Type      uint64
 	Amount    uint64
 	Validator uint64
-}
-
-// Marshal encodes the data.
-func (e *EpochReceipt) Marshal() ([]byte, error) {
-	b, err := e.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxEpochReceiptSize {
-		return nil, ErrorEpochReceiptSize
-	}
-	return b, nil
-}
-
-// Unmarshal decodes the data.
-func (e *EpochReceipt) Unmarshal(b []byte) error {
-	if len(b) > MaxEpochReceiptSize {
-		return ErrorEpochReceiptSize
-	}
-	return e.UnmarshalSSZ(b)
 }
 
 func (e EpochReceipt) TypeString() string {
@@ -363,7 +331,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
 			s.NextVoteEpoch(GovernanceStateVoting)
 			for i := range s.CurrentManagers {
-				bitfcheck.Set(s.ManagerReplacement, uint(i))
+				s.ManagerReplacement.Set(uint(i))
 			}
 		}
 	case GovernanceStateVoting:
@@ -390,7 +358,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 					copy(newManagers, s.CurrentManagers)
 
 					for i := range newManagers {
-						if bitfcheck.Get(s.ManagerReplacement, uint(i)) {
+						if s.ManagerReplacement.Get(uint(i)) {
 							copy(newManagers[i][:], voteData.ReplacementCandidates[i][:])
 						}
 					}
@@ -452,6 +420,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	}
 
 	// previousEpochVotersMap maps validator to their assigned vote
+
 	previousEpochVotersMap := make(map[uint64]*AcceptedVoteInfo)
 
 	for _, v := range s.PreviousEpochVotes {
@@ -471,6 +440,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
+
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 		if err != nil {
@@ -538,6 +508,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	}
 
 	if s.Slot >= 2*p.EpochLength {
+
 		for index, validator := range s.ValidatorRegistry {
 			idx := uint64(index)
 			if !validator.IsActive() {
@@ -602,8 +573,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 			rewardValidator(validator, amount, RewardInclusionDistance)
 		}
 
-		// Penalize all validators after 4 epochs and punish validators who did not
-		// vote more severely.
+		// Penalize all validators after 4 epochs and punish validators who did not vote more severely.
 		finalityDelay := s.EpochIndex - s.FinalizedEpoch
 		if finalityDelay > 4 {
 			for index := range s.ValidatorRegistry {

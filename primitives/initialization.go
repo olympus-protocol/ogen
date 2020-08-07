@@ -3,7 +3,7 @@ package primitives
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"time"
 
 	"github.com/olympus-protocol/ogen/params"

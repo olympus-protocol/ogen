@@ -28,11 +28,9 @@ import (
 type Config struct {
 	Log          *logger.Logger
 	Port         string
-	AddNodes     []peer.AddrInfo
-	MaxPeers     int32
+	InitialNodes []peer.AddrInfo
 	Path         string
 	PrivateKey   crypto.PrivKey
-	MaximumPeers int
 }
 
 const timeoutInterval = 60 * time.Second

@@ -3,8 +3,8 @@ package primitives_test
 import (
 	fuzz "github.com/google/gofuzz"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -119,21 +119,6 @@ func Test_ExitSerialize(t *testing.T) {
 	assert.NoError(t, err)
 
 	var desc primitives.Exit
-	err = desc.Unmarshal(ser)
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
-func Test_EpochReceiptSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v primitives.EpochReceipt
-	f.Fuzz(&v)
-
-	ser, err := v.Marshal()
-	assert.NoError(t, err)
-
-	var desc primitives.EpochReceipt
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
@@ -414,11 +399,6 @@ func Test_StateSerialize(t *testing.T) {
 	f.NumElements(5, 5)
 	f.Fuzz(&currManagers)
 
-	var currEpochVotes, prevEpochVotes []*primitives.AcceptedVoteInfo
-	f.NumElements(20, 20)
-	f.Fuzz(&currEpochVotes)
-	f.Fuzz(&prevEpochVotes)
-
 	var latesBlockHashes [][32]byte
 	f.NumElements(64, 64)
 	f.Fuzz(&latesBlockHashes)
@@ -430,7 +410,7 @@ func Test_StateSerialize(t *testing.T) {
 	f.Fuzz(&currEpochVoteAssign)
 	f.Fuzz(&nextPropQueue)
 
-	bl := bitfield.NewBitlist(5)
+	bl := bitfield.NewBitlist(5 * 8)
 
 	v := primitives.State{
 		CoinsState:                    cs,
@@ -449,10 +429,10 @@ func Test_StateSerialize(t *testing.T) {
 		LatestBlockHashes:             latesBlockHashes,
 		JustifiedEpoch:                justified,
 		JustifiedEpochHash:            justifiedepoch,
-		CurrentEpochVotes:             currEpochVotes,
+		CurrentEpochVotes:             fuzzAcceptedVoteInfo(10),
 		PreviousJustifiedEpoch:        previousjustepoch,
 		PreviousJustifiedEpochHash:    previousjustified,
-		PreviousEpochVotes:            prevEpochVotes,
+		PreviousEpochVotes:            fuzzAcceptedVoteInfo(10),
 		CurrentManagers:               currManagers,
 		ManagerReplacement:            bl,
 		Governance:                    gs,
@@ -531,7 +511,7 @@ func Test_StateSerializeForInitialParams(t *testing.T) {
 		},
 		VotingState:        primitives.GovernanceStateActive,
 		LastPaidSlot:       0,
-		ManagerReplacement: bitfield.NewBitlist(5),
+		ManagerReplacement: bitfield.NewBitlist(5 * 8),
 	}
 
 	activeValidators := is.GetValidatorIndicesActiveAt(0)
@@ -556,6 +536,21 @@ func Test_TransactionSerialize(t *testing.T) {
 	assert.NoError(t, err)
 
 	var desc primitives.Tx
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
+func Test_VotesSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0).NumElements(100,100)
+	var v primitives.Votes
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.Votes
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
@@ -590,4 +585,23 @@ func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
 		votes = append(votes, v)
 	}
 	return votes
+}
+
+func fuzzAcceptedVoteInfo(n int) []*primitives.AcceptedVoteInfo {
+	var avInfo []*primitives.AcceptedVoteInfo
+	for i := 0; i < n; i++ {
+		f := fuzz.New().NilChance(0)
+		d := new(primitives.VoteData)
+		var sig [96]byte
+		f.Fuzz(d)
+		f.Fuzz(&sig)
+		v := &primitives.AcceptedVoteInfo{
+			Data:                  d,
+			ParticipationBitfield: bitfield.NewBitlist(10),
+			Proposer:              0,
+			InclusionDelay:        0,
+		}
+		avInfo = append(avInfo, v)
+	}
+	return avInfo
 }
