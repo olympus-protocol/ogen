@@ -152,9 +152,9 @@ Next generation blockchain secured by CASPER.`,
 			c := &config.Config{
 				DataFolder: DataFolder,
 
-				NetworkName: networkName,
-				InitialNodes:    addNodes,
-				Port:        viper.GetString("port"),
+				NetworkName:  networkName,
+				InitialNodes: addNodes,
+				Port:         viper.GetString("port"),
 
 				InitConfig: ip,
 

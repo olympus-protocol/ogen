@@ -25,7 +25,7 @@ var PremineAddr = bls.RandKey()
 // Conf are the test configuration flags
 var Conf = config.Config{
 	NetworkName:  "integration tests net",
-	InitialNodes:     []peer.AddrInfo{},
+	InitialNodes: []peer.AddrInfo{},
 	Port:         "24126",
 	RPCProxy:     false,
 	RPCProxyPort: "8080",

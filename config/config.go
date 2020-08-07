@@ -12,9 +12,9 @@ const (
 type Config struct {
 	DataFolder string
 
-	NetworkName string
-	InitialNodes    []peer.AddrInfo
-	Port        string
+	NetworkName  string
+	InitialNodes []peer.AddrInfo
+	Port         string
 
 	InitConfig primitives.InitializationParameters
 

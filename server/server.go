@@ -163,10 +163,10 @@ func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.C
 
 func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
 	cfg := peers.Config{
-		Log:      logger,
+		Log:          logger,
 		InitialNodes: config.InitialNodes,
-		Port:     config.Port,
-		Path:     config.DataFolder,
+		Port:         config.Port,
+		Path:         config.DataFolder,
 	}
 	return cfg
 }
