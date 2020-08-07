@@ -453,6 +453,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 	// previousEpochVotersMap maps validator to their assigned vote
 
 	previousEpochVotersMap := make(map[uint64]*AcceptedVoteInfo)
+
 	fmt.Println(len(s.PreviousEpochVotes))
 
 	for _, v := range s.PreviousEpochVotes {
@@ -462,11 +463,9 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
-		fmt.Println(bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]))
 		if bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
-		fmt.Println(bytes.Equal(previousEpochBoundaryHash[:], v.Data.ToHash[:]))
 		if bytes.Equal(previousEpochBoundaryHash[:], v.Data.ToHash[:]) {
 			previousEpochVotersMatchingTargetHash.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
@@ -474,6 +473,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
+
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 		if err != nil {

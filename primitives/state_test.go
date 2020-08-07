@@ -54,23 +54,6 @@ func TestState_Copy(t *testing.T) {
 
 	valreg[0].LastActiveEpoch = 0
 
-	voteInfoSlice := []*primitives.AcceptedVoteInfo{
-		{
-			Data: &primitives.VoteData{
-				Slot:            0,
-				FromEpoch:       0,
-				FromHash:        [32]byte{},
-				ToEpoch:         0,
-				ToHash:          [32]byte{},
-				BeaconBlockHash: [32]byte{},
-				Nonce:           0,
-			},
-			ParticipationBitfield: bitfield.NewBitlist(4 * 8),
-			Proposer:              10,
-			InclusionDelay:        5,
-		},
-	}
-
 	latestBlocksSlice := [][32]byte{
 		{1, 2, 3},
 	}
@@ -89,8 +72,8 @@ func TestState_Copy(t *testing.T) {
 		NextRANDAO:                    [32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		PreviousJustifiedEpochHash:    [32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		JustifiedEpochHash:            [32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		CurrentEpochVotes:             voteInfoSlice,
-		PreviousEpochVotes:            voteInfoSlice,
+		CurrentEpochVotes:             fuzzAcceptedVoteInfo(10),
+		PreviousEpochVotes:            fuzzAcceptedVoteInfo(10),
 		ProposerQueue:                 []uint64{0, 1, 2, 3, 4, 5},
 		PreviousEpochVoteAssignments:  []uint64{0, 1, 2, 3, 4, 5},
 		CurrentEpochVoteAssignments:   []uint64{0, 1, 2, 3, 4, 5},
@@ -190,10 +173,21 @@ func TestState_Copy(t *testing.T) {
 	assert.Equal(t, s2.JustifiedEpochHash[4], uint8(5))
 
 	s.CurrentEpochVotes[0].Proposer = 6
-	assert.Equal(t, s2.CurrentEpochVotes[0].Proposer, uint64(10))
+	assert.Equal(t, s2.CurrentEpochVotes[0].Proposer, uint64(0))
 
 	s.PreviousEpochVotes[0].Proposer = 6
-	assert.Equal(t, s2.PreviousEpochVotes[0].Proposer, uint64(10))
+	assert.Equal(t, s2.PreviousEpochVotes[0].Proposer, uint64(0))
+
+	assert.Equal(t, s.CurrentEpochVotes[0].ParticipationBitfield, s2.CurrentEpochVotes[0].ParticipationBitfield)
+	assert.Equal(t, s.PreviousEpochVotes[0].ParticipationBitfield, s2.PreviousEpochVotes[0].ParticipationBitfield)
+
+	s.CurrentEpochVotes[0].ParticipationBitfield[0] = 6
+	assert.Equal(t, s2.CurrentEpochVotes[0].ParticipationBitfield[0], uint8(0))
+
+	s.PreviousEpochVotes[0].ParticipationBitfield[0] = 6
+	assert.Equal(t, s2.PreviousEpochVotes[0].ParticipationBitfield[0], uint8(0))
+
+
 
 	s.LatestBlockHashes[0][0] = 2
 	assert.Equal(t, s2.LatestBlockHashes[0][0], uint8(1))
@@ -269,11 +263,6 @@ func TestState_FromSerializable(t *testing.T) {
 	f.NumElements(5, 5)
 	f.Fuzz(&currManagers)
 
-	var currEpochVotes, prevEpochVotes []*primitives.AcceptedVoteInfo
-	f.NumElements(20, 20)
-	f.Fuzz(&currEpochVotes)
-	f.Fuzz(&prevEpochVotes)
-
 	var latesBlockHashes [][32]byte
 	f.NumElements(64, 64)
 	f.Fuzz(&latesBlockHashes)
@@ -305,10 +294,10 @@ func TestState_FromSerializable(t *testing.T) {
 		LatestBlockHashes:             latesBlockHashes,
 		JustifiedEpoch:                justified,
 		JustifiedEpochHash:            justifiedepoch,
-		CurrentEpochVotes:             currEpochVotes,
+		CurrentEpochVotes:             fuzzAcceptedVoteInfo(10),
 		PreviousJustifiedEpoch:        previousjustepoch,
 		PreviousJustifiedEpochHash:    previousjustified,
-		PreviousEpochVotes:            prevEpochVotes,
+		PreviousEpochVotes:            fuzzAcceptedVoteInfo(10),
 		CurrentManagers:               currManagers,
 		ManagerReplacement:            bitfield.NewBitlist(5 * 8),
 		VoteEpoch:                     voteepoch,
@@ -425,11 +414,6 @@ func TestState_ToSerializable(t *testing.T) {
 	f.NumElements(5, 5)
 	f.Fuzz(&currManagers)
 
-	var currEpochVotes, prevEpochVotes []*primitives.AcceptedVoteInfo
-	f.NumElements(20, 20)
-	f.Fuzz(&currEpochVotes)
-	f.Fuzz(&prevEpochVotes)
-
 	var latesBlockHashes [][32]byte
 	f.NumElements(64, 64)
 	f.Fuzz(&latesBlockHashes)
@@ -461,10 +445,10 @@ func TestState_ToSerializable(t *testing.T) {
 		LatestBlockHashes:             latesBlockHashes,
 		JustifiedEpoch:                justified,
 		JustifiedEpochHash:            justifiedepoch,
-		CurrentEpochVotes:             currEpochVotes,
+		CurrentEpochVotes:             fuzzAcceptedVoteInfo(10),
 		PreviousJustifiedEpoch:        previousjustepoch,
 		PreviousJustifiedEpochHash:    previousjustified,
-		PreviousEpochVotes:            prevEpochVotes,
+		PreviousEpochVotes:            fuzzAcceptedVoteInfo(10),
 		CurrentManagers:               currManagers,
 		ManagerReplacement:            bitfield.NewBitlist(5 * 8),
 		VoteEpoch:                     voteepoch,
