@@ -23,6 +23,8 @@ var (
 	ErrorSingleValidatorVoteSize = errors.New("single validator vote data too big")
 	// ErrorMultiValidatorVoteSize is returned when a multi validator vote data is above MaxMultiValidatorVoteSize
 	ErrorMultiValidatorVoteSize = errors.New("accepted vote data too big")
+	// ErrorVotesSize is returned when a multi validator vote data is above MaxVotesSize
+	ErrorVotesSize = errors.New("votes size data too big")
 )
 
 const (
@@ -34,7 +36,35 @@ const (
 	MaxSingleValidatorVoteSize = MaxVoteDataSize + 112
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
 	MaxMultiValidatorVoteSize = MaxVoteDataSize + 2144
+	// MaxVotesSize is the maximum size in bytes of vote data.
+	MaxVotesSize = MaxSingleValidatorVoteSize * 2048
 )
+
+type Votes struct {
+	Votes []*SingleValidatorVote `ssz-max:"2048"`
+}
+
+func (v *Votes) Marshal() ([]byte, error) {
+	b, err := v.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxVotesSize {
+		return nil, ErrorVotesSize
+	}
+	return snappy.Encode(nil, b), nil
+}
+
+func (v *Votes) Unmarshal(b []byte) error {
+	d, err := snappy.Decode(nil, b)
+	if err != nil {
+		return nil
+	}
+	if len(d) > MaxVotesSize {
+		return ErrorVotesSize
+	}
+	return v.UnmarshalSSZ(d)
+}
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
 type AcceptedVoteInfo struct {

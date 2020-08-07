@@ -22,5 +22,3 @@ func init() {
 
 	rootCmd.AddCommand(cliCmd)
 }
-
-

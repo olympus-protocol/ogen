@@ -219,7 +219,6 @@ func init() {
 	}
 }
 
-
 func initConfig() {
 	if DataFolder != "" {
 		// Use config file from the flag.

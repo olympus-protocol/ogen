@@ -114,8 +114,8 @@ func (p *Proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
 }
 
-func (p *Proposer) publishVote(vote *primitives.SingleValidatorVote) {
-	buf, err := vote.Marshal()
+func (p *Proposer) publishVotes(v primitives.Votes) {
+	buf, err := v.Marshal()
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
 		return
@@ -329,7 +329,12 @@ func (p *Proposer) VoteForBlocks() {
 
 			dataHash := data.Hash()
 
+			votes := primitives.Votes{
+				Votes: []*primitives.SingleValidatorVote{},
+			}
+
 			for i, validatorIdx := range validators {
+
 				validator := state.ValidatorRegistry[validatorIdx]
 
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
@@ -341,50 +346,24 @@ func (p *Proposer) VoteForBlocks() {
 					sig := k.Sign(dataHash[:])
 					var sigB [96]byte
 					copy(sigB[:], sig.Marshal())
-					vote := primitives.SingleValidatorVote{
+					vote := &primitives.SingleValidatorVote{
 						Data:   &data,
 						Sig:    sigB,
 						Offset: uint64(i),
 						OutOf:  uint64(len(validators)),
 					}
 
-					err = p.voteMempool.AddValidate(&vote, state)
+					err = p.voteMempool.AddValidate(vote, state)
 					if err != nil {
 						p.log.Errorf("error submitting vote: %s", err.Error())
 						continue
 					}
 
-					go p.publishVote(&vote)
+					votes.Votes = append(votes.Votes, vote)
 
-					// DO NOT UNCOMMENT: slashing test
-					//if validatorIdx == 0 {
-					//	data2 := primitives.VoteData{
-					//		Slot:            slotToVote,
-					//		FromEpoch:       state.JustifiedEpoch,
-					//		FromHash:        state.JustifiedEpochHash,
-					//		ToEpoch:         toEpoch,
-					//		ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
-					//		BeaconBlockHash: chainhash.HashH([]byte("lol")),
-					//	}
-					//
-					//	data2Hash := data2.Hash()
-					//
-					//	sig2 := k.Sign(data2Hash[:])
-					//
-					//	vote2 := primitives.SingleValidatorVote{
-					//		Data:      data2,
-					//		Signature: *sig2,
-					//		Offset:    uint32(i),
-					//		OutOf:     uint32(len(validators)),
-					//	}
-					//
-					//	m.voteMempool.Add(&vote2)
-					//
-					//	go m.publishVote(&vote2)
-					//}
 				}
 			}
-
+			go p.publishVotes(votes)
 			slotToVote++
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 		case <-p.context.Done():

@@ -499,18 +499,19 @@ func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) e
 
 // GetVoteCommittee gets the committee for a certain block.
 func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
+
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
 		return assignments[min:max], nil
+
 	} else if (slot-1)/p.EpochLength == s.EpochIndex-1 {
 		assignments := s.PreviousEpochVoteAssignments
 		slotIndex := uint64(slot % p.EpochLength)
 		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
-
 		return assignments[min:max], nil
 	}
 

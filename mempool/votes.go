@@ -295,9 +295,9 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			continue
 		}
 
-		tx := new(primitives.SingleValidatorVote)
+		votes := new(primitives.Votes)
 
-		if err := tx.Unmarshal(msg.Data); err != nil {
+		if err := votes.Unmarshal(msg.Data); err != nil {
 			m.log.Warnf("peer sent invalid vote: %s", err)
 			err = m.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
 			if err == nil {
@@ -305,30 +305,30 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			}
 			continue
 		}
+		for _, v := range votes.Votes {
+			firstSlotAllowedToInclude := v.Data.Slot + m.params.MinAttestationInclusionDelay
+			tip := m.blockchain.State().Tip()
 
-		firstSlotAllowedToInclude := tx.Data.Slot + m.params.MinAttestationInclusionDelay
-		tip := m.blockchain.State().Tip()
+			if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
+				continue
+			}
 
-		if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
-			continue
+			view, err := m.blockchain.State().GetSubView(tip.Hash)
+			if err != nil {
+				m.log.Warnf("could not get block view representing current tip: %s", err)
+				continue
+			}
+			currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
+			if err != nil {
+				m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
+				continue
+			}
+
+			err = m.AddValidate(v, currentState)
+			if err != nil {
+				m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+			}
 		}
-
-		view, err := m.blockchain.State().GetSubView(tip.Hash)
-		if err != nil {
-			m.log.Warnf("could not get block view representing current tip: %s", err)
-			continue
-		}
-		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
-		if err != nil {
-			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-			continue
-		}
-
-		err = m.AddValidate(tx, currentState)
-		if err != nil {
-			m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-		}
-
 	}
 }
 

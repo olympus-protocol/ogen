@@ -542,6 +542,21 @@ func Test_TransactionSerialize(t *testing.T) {
 	assert.Equal(t, v, desc)
 }
 
+func Test_VotesSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0).NumElements(100,100)
+	var v primitives.Votes
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.Votes
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
 func fuzzVoteSlashing(n int) []*primitives.VoteSlashing {
 	var votes []*primitives.VoteSlashing
 	for i := 0; i < n; i++ {

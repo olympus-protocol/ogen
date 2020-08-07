@@ -257,7 +257,6 @@ type EpochReceipt struct {
 	Validator uint64
 }
 
-
 func (e EpochReceipt) TypeString() string {
 	switch e.Type {
 	case RewardMatchedFromEpoch:
@@ -441,7 +440,6 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 			previousEpochVotersMap[validatorIdx] = v
 		}
 	}
-
 
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
