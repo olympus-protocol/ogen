@@ -507,9 +507,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		})
 	}
 
-	fmt.Print(s.Slot >= 2*p.EpochLength)
 	if s.Slot >= 2*p.EpochLength {
-		fmt.Print(len(s.ValidatorRegistry))
 
 		for index, validator := range s.ValidatorRegistry {
 			idx := uint64(index)
