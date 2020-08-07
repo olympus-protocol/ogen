@@ -344,6 +344,11 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 	if err != nil {
 		return nil, err
 	}
+	
+	_, err = voteTopic.Relay()
+	if err != nil {
+		return nil, err
+	}
 
 	voteSub, err := voteTopic.Subscribe()
 	if err != nil {
