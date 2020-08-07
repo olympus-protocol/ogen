@@ -250,16 +250,6 @@ const (
 	PenaltyInactivityLeakNoVote
 )
 
-var (
-	// ErrorEpochReceiptSize is returned when an EpochReceipt exceed MaxEpochReceiptSize
-	ErrorEpochReceiptSize = errors.New("epoch receipt too big")
-)
-
-const (
-	// MaxEpochReceiptSize is the maximum amount of bytes an EpochReceipt can contain
-	MaxEpochReceiptSize = 24
-)
-
 // EpochReceipt is a balance change carried our by an epoch transition.
 type EpochReceipt struct {
 	Type      uint64
@@ -267,25 +257,6 @@ type EpochReceipt struct {
 	Validator uint64
 }
 
-// Marshal encodes the data.
-func (e *EpochReceipt) Marshal() ([]byte, error) {
-	b, err := e.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxEpochReceiptSize {
-		return nil, ErrorEpochReceiptSize
-	}
-	return b, nil
-}
-
-// Unmarshal decodes the data.
-func (e *EpochReceipt) Unmarshal(b []byte) error {
-	if len(b) > MaxEpochReceiptSize {
-		return ErrorEpochReceiptSize
-	}
-	return e.UnmarshalSSZ(b)
-}
 
 func (e EpochReceipt) TypeString() string {
 	switch e.Type {
@@ -538,7 +509,10 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		})
 	}
 
+	fmt.Print(s.Slot >= 2*p.EpochLength)
 	if s.Slot >= 2*p.EpochLength {
+		fmt.Print(len(s.ValidatorRegistry))
+
 		for index, validator := range s.ValidatorRegistry {
 			idx := uint64(index)
 			if !validator.IsActive() {
