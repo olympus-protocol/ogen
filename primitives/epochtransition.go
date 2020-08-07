@@ -471,6 +471,10 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		}
 	}
 
+	fmt.Println(len(previousEpochVoters.voters))
+	fmt.Println(len(previousEpochVotersMatchingBeaconBlock.voters))
+	fmt.Println(len(previousEpochVotersMatchingTargetHash.voters))
+
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 		if err != nil {
