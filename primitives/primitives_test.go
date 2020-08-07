@@ -125,21 +125,6 @@ func Test_ExitSerialize(t *testing.T) {
 	assert.Equal(t, v, desc)
 }
 
-func Test_EpochReceiptSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v primitives.EpochReceipt
-	f.Fuzz(&v)
-
-	ser, err := v.Marshal()
-	assert.NoError(t, err)
-
-	var desc primitives.EpochReceipt
-	err = desc.Unmarshal(ser)
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
 func Test_CommunityVoteDataSerialize(t *testing.T) {
 	f := fuzz.New().NilChance(0).NumElements(5, 5)
 	var v primitives.CommunityVoteData
