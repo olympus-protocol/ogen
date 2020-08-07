@@ -115,6 +115,10 @@ func TestState_Copy(t *testing.T) {
 
 	assert.Equal(t, s2.ValidatorRegistry[0].LastActiveEpoch, uint64(0))
 
+	assert.Equal(t, len(s.ValidatorRegistry), len(s2.ValidatorRegistry))
+
+	assert.Equal(t, s.ValidatorRegistry[0].PubKey, s2.ValidatorRegistry[0].PubKey)
+
 	s.LatestValidatorRegistryChange = 6
 	assert.Equal(t, s2.LatestValidatorRegistryChange, uint64(5))
 
