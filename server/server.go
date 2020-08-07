@@ -10,7 +10,6 @@ import (
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/mempool"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
@@ -20,6 +19,12 @@ import (
 	"github.com/olympus-protocol/ogen/wallet"
 )
 
+type Mempools struct {
+	Votes   *mempool.VoteMempool
+	Coins   *mempool.CoinsMempool
+	Actions *mempool.ActionMempool
+}
+
 // Server is the main struct that contains ogen services
 type Server struct {
 	log    *logger.Logger
@@ -28,9 +33,10 @@ type Server struct {
 
 	Chain    *chain.Blockchain
 	HostNode *peers.HostNode
-	Keystore *keystore.Keystore
 	RPC      *chainrpc.RPCServer
 	Proposer *proposer.Proposer
+
+	Mempools Mempools
 }
 
 // Start starts running the multiple ogen services.
@@ -66,9 +72,9 @@ func (s *Server) Stop() error {
 // NewServer creates a server instance and initializes the ogen services.
 func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 
-	logger.Tracef("loading network parameters for %v", currParams.Name)
+	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
-	logger.Tracef("initializing bls module with params for %v", currParams.Name)
+	logger.Tracef("Initializing bls module with params for %v", currParams.Name)
 
 	err := bls.Initialize(currParams)
 	if err != nil {
@@ -130,6 +136,11 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 		HostNode: hostnode,
 		RPC:      rpc,
 		Proposer: prop,
+		Mempools: Mempools{
+			Votes:   voteMempool,
+			Coins:   coinsMempool,
+			Actions: actionsMempool,
+		},
 	}
 	return s, nil
 }
@@ -152,11 +163,10 @@ func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.C
 
 func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
 	cfg := peers.Config{
-		Log:      logger,
-		AddNodes: config.AddNodes,
-		Port:     config.Port,
-		MaxPeers: config.MaxPeers,
-		Path:     config.DataFolder,
+		Log:          logger,
+		InitialNodes: config.InitialNodes,
+		Port:         config.Port,
+		Path:         config.DataFolder,
 	}
 	return cfg
 }

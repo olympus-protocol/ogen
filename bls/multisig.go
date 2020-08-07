@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bech32"
@@ -154,8 +153,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	if idx == -1 {
 		return fmt.Errorf("could not find public key %x in multipub", pub.Marshal())
 	}
-
-	if bitfcheck.Get(m.KeysSigned, uint(idx)) {
+	if m.KeysSigned.Get(uint(idx)) {
 		return nil
 	}
 	msgI := chainhash.HashH(append(msg, pub.Marshal()...))
@@ -164,7 +162,7 @@ func (m *Multisig) Sign(secKey *SecretKey, msg []byte) error {
 	var s [96]byte
 	copy(s[:], sig.Marshal())
 	m.Signatures = append(m.Signatures, s)
-	bitfcheck.Set(m.KeysSigned, uint(idx))
+	m.KeysSigned.Set(uint(idx))
 
 	return nil
 }
@@ -186,7 +184,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
-		if bitfcheck.Get(m.KeysSigned, uint(i)) {
+		if m.KeysSigned.Get(uint(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
 			pub, err := PublicKeyFromBytes(m.PublicKey.PublicKeys[i])
 			if err != nil {

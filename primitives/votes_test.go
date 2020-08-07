@@ -2,7 +2,7 @@ package primitives_test
 
 import (
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -51,7 +51,7 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 			ToEpoch:   4,
 			ToHash:    [32]byte{5},
 		},
-		ParticipationBitfield: bitfield.NewBitlist(2 * 8),
+		ParticipationBitfield: bitfield.NewBitlist(16),
 		Proposer:              8,
 		InclusionDelay:        9,
 	}
@@ -67,7 +67,7 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 
 	assert.Equal(t, av.ParticipationBitfield, av2.ParticipationBitfield)
 
-	av.ParticipationBitfield[0] = 7
+	av.ParticipationBitfield.Set(uint(2))
 
 	assert.Equal(t, av2.ParticipationBitfield[0], uint8(0))
 

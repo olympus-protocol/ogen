@@ -134,7 +134,7 @@ const askForPeersCycle = 60 * time.Second
 
 func (cm *DiscoveryProtocol) Start() error {
 	go func() {
-		for _, addr := range cm.config.AddNodes {
+		for _, addr := range cm.config.InitialNodes {
 			if err := cm.connect(addr); err != nil {
 				cm.log.Errorf("error connecting to add node %s: %s", addr, err)
 			}
@@ -170,9 +170,6 @@ func (cm *DiscoveryProtocol) Start() error {
 func (cm *DiscoveryProtocol) connect(pi peer.AddrInfo) error {
 	cm.lastConnectLock.Lock()
 	defer cm.lastConnectLock.Unlock()
-
-	if cm.host.PeersConnected() < cm.config.MaximumPeers {
-	}
 
 	lastConnect, found := cm.lastConnect[pi.ID]
 	if !found || time.Since(lastConnect) > connectionCooldown {

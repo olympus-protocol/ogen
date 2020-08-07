@@ -5,6 +5,109 @@ import (
 	ssz "github.com/ferranbt/fastssz"
 )
 
+// MarshalSSZ ssz marshals the Votes object
+func (v *Votes) MarshalSSZ() ([]byte, error) {
+	return ssz.MarshalSSZ(v)
+}
+
+// MarshalSSZTo ssz marshals the Votes object to a target array
+func (v *Votes) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+	dst = buf
+	offset := int(4)
+
+	// Offset (0) 'Votes'
+	dst = ssz.WriteOffset(dst, offset)
+	offset += len(v.Votes) * 240
+
+	// Field (0) 'Votes'
+	if len(v.Votes) > 2048 {
+		err = ssz.ErrListTooBig
+		return
+	}
+	for ii := 0; ii < len(v.Votes); ii++ {
+		if dst, err = v.Votes[ii].MarshalSSZTo(dst); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+// UnmarshalSSZ ssz unmarshals the Votes object
+func (v *Votes) UnmarshalSSZ(buf []byte) error {
+	var err error
+	size := uint64(len(buf))
+	if size < 4 {
+		return ssz.ErrSize
+	}
+
+	tail := buf
+	var o0 uint64
+
+	// Offset (0) 'Votes'
+	if o0 = ssz.ReadOffset(buf[0:4]); o0 > size {
+		return ssz.ErrOffset
+	}
+
+	// Field (0) 'Votes'
+	{
+		buf = tail[o0:]
+		num, err := ssz.DivideInt2(len(buf), 240, 2048)
+		if err != nil {
+			return err
+		}
+		v.Votes = make([]*SingleValidatorVote, num)
+		for ii := 0; ii < num; ii++ {
+			if v.Votes[ii] == nil {
+				v.Votes[ii] = new(SingleValidatorVote)
+			}
+			if err = v.Votes[ii].UnmarshalSSZ(buf[ii*240 : (ii+1)*240]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+// SizeSSZ returns the ssz encoded size in bytes for the Votes object
+func (v *Votes) SizeSSZ() (size int) {
+	size = 4
+
+	// Field (0) 'Votes'
+	size += len(v.Votes) * 240
+
+	return
+}
+
+// HashTreeRoot ssz hashes the Votes object
+func (v *Votes) HashTreeRoot() ([32]byte, error) {
+	return ssz.HashWithDefaultHasher(v)
+}
+
+// HashTreeRootWith ssz hashes the Votes object with a hasher
+func (v *Votes) HashTreeRootWith(hh *ssz.Hasher) (err error) {
+	indx := hh.Index()
+
+	// Field (0) 'Votes'
+	{
+		subIndx := hh.Index()
+		num := uint64(len(v.Votes))
+		if num > 2048 {
+			err = ssz.ErrIncorrectListSize
+			return
+		}
+		for i := uint64(0); i < num; i++ {
+			if err = v.Votes[i].HashTreeRootWith(hh); err != nil {
+				return
+			}
+		}
+		hh.MerkleizeWithMixin(subIndx, num, 2048)
+	}
+
+	hh.Merkleize(indx)
+	return
+}
+
 // MarshalSSZ ssz marshals the AcceptedVoteInfo object
 func (a *AcceptedVoteInfo) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(a)

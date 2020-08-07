@@ -60,7 +60,10 @@ func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile
 			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash, chainFileBytesHash)
 		}
 
-		ioutil.WriteFile(path, chainFileBytes, 0644)
+		err = ioutil.WriteFile(path, chainFileBytes, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("unable to write chain file")
+		}
 
 		err = json.Unmarshal(chainFileBytes, chainFile)
 		if err != nil {
@@ -152,10 +155,9 @@ Next generation blockchain secured by CASPER.`,
 			c := &config.Config{
 				DataFolder: DataFolder,
 
-				NetworkName: networkName,
-				AddNodes:    addNodes,
-				MaxPeers:    int32(viper.GetUint("maxpeers")),
-				Port:        viper.GetString("port"),
+				NetworkName:  networkName,
+				InitialNodes: addNodes,
+				Port:         viper.GetString("port"),
 
 				InitConfig: ip,
 
@@ -173,7 +175,7 @@ Next generation blockchain secured by CASPER.`,
 			}
 
 			log.Infof("Starting Ogen v%v", config.OgenVersion)
-			log.Trace("loading log on debug mode")
+			log.Trace("Loading log on debug mode")
 			ctx, cancel := context.WithCancel(context.Background())
 
 			config.InterruptListener(log, cancel)
@@ -198,7 +200,6 @@ func init() {
 
 	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
-	rootCmd.Flags().Uint16("maxpeers", 9, "Maximum number of peers to connect.")
 	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
 
 	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
@@ -216,11 +217,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func er(msg interface{}) {
-	fmt.Println("Error:", msg)
-	os.Exit(1)
 }
 
 func initConfig() {

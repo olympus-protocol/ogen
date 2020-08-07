@@ -25,8 +25,7 @@ var PremineAddr = bls.RandKey()
 // Conf are the test configuration flags
 var Conf = config.Config{
 	NetworkName:  "integration tests net",
-	AddNodes:     []peer.AddrInfo{},
-	MaxPeers:     10,
+	InitialNodes: []peer.AddrInfo{},
 	Port:         "24126",
 	RPCProxy:     false,
 	RPCProxyPort: "8080",
@@ -56,7 +55,7 @@ var IntTestParams = params.ChainParams{
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                100,
-	UnitsPerCoin:                 1000,
+	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
 	MaxVotesPerBlock:             2048,

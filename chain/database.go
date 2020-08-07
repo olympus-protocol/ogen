@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"encoding/hex"
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/chain/index"
 	"github.com/olympus-protocol/ogen/primitives"
@@ -55,7 +56,7 @@ func (s *StateService) loadBlockIndex(txn bdb.DBViewTransaction, genesisHash cha
 	for len(queue) > 0 {
 		current := queue[0]
 
-		s.log.Debugf("loading block node %s", current)
+		s.log.Debugf("Loading block node %s", hex.EncodeToString(current[:]))
 
 		queue = queue[1:]
 
@@ -145,7 +146,7 @@ func (s *StateService) loadStateMap(txn bdb.DBViewTransaction) error {
 			return err
 		}
 
-		s.log.Debugf("calculating block state for %s with previous %s", node.Hash, node.Parent)
+		s.log.Debugf("calculating block state for %s with previous %s", hex.EncodeToString(node.Hash[:]), hex.EncodeToString(node.Parent[:]))
 
 		bl, err := txn.GetBlock(node.Hash)
 		if err != nil {
@@ -181,12 +182,12 @@ func (s *StateService) loadStateMap(txn bdb.DBViewTransaction) error {
 }
 
 func (s *StateService) loadBlockchainFromDisk(txn bdb.DBViewTransaction, genesisHash chainhash.Hash) error {
-	s.log.Info("loading block index...")
+	s.log.Info("Loading block index...")
 	err := s.loadBlockIndex(txn, genesisHash)
 	if err != nil {
 		return err
 	}
-	s.log.Info("loading justified and finalized states...")
+	s.log.Info("Loading justified and finalized states...")
 	err = s.loadJustifiedAndFinalizedStates(txn)
 	if err != nil {
 		return err
