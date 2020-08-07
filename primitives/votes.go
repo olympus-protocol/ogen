@@ -60,19 +60,15 @@ func (a *AcceptedVoteInfo) Marshal() ([]byte, error) {
 	if len(b) > MaxAcceptedVoteInfoSize {
 		return nil, ErrorAcceptedVoteDataSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxAcceptedVoteInfoSize {
+	if len(b) > MaxAcceptedVoteInfoSize {
 		return ErrorAcceptedVoteDataSize
 	}
-	return a.UnmarshalSSZ(d)
+	return a.UnmarshalSSZ(b)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
