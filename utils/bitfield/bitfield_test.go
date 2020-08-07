@@ -1,16 +1,17 @@
-package bitfcheck_test
+package bitfield_test
 
 import (
 	"github.com/olympus-protocol/ogen/utils/bitfield"
-	prysmbf "github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func Test_PrysmBitfield(t *testing.T) {
-	bf := prysmbf.NewBitlist(4 * 8)
+func Test_Bitfield(t *testing.T) {
+	bf := bitfield.NewBitlist(4 * 8)
 
-	bitfcheck.Set(bf, 32)
+	bf.Set(32)
 
-	assert.True(t, bitfcheck.Get(bf, 32))
+	assert.True(t, bf.Get(32))
+
+	assert.Equal(t, bf.Len(), uint64(32))
 }

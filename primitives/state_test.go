@@ -3,8 +3,8 @@ package primitives_test
 import (
 	"github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -186,8 +186,6 @@ func TestState_Copy(t *testing.T) {
 
 	s.PreviousEpochVotes[0].ParticipationBitfield[0] = 6
 	assert.Equal(t, s2.PreviousEpochVotes[0].ParticipationBitfield[0], uint8(0))
-
-
 
 	s.LatestBlockHashes[0][0] = 2
 	assert.Equal(t, s2.LatestBlockHashes[0][0], uint8(1))

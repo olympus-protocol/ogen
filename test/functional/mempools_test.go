@@ -5,16 +5,14 @@ package mempools_test
 import (
 	"context"
 	"encoding/hex"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/keystore"
 	"github.com/olympus-protocol/ogen/primitives"
 	"github.com/olympus-protocol/ogen/server"
 	testdata "github.com/olympus-protocol/ogen/test"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -37,8 +35,6 @@ var initParams = primitives.InitializationParameters{
 }
 
 var F *server.Server
-var FAddr peer.AddrInfo
-var B *server.Server
 
 // Mempools Test
 // 1. Create a single node instance
@@ -105,11 +101,6 @@ func firstNode() {
 	F, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, db, initParams)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	FAddr = peer.AddrInfo{
-		ID:    F.HostNode.GetHost().ID(),
-		Addrs: F.HostNode.GetHost().Network().ListenAddresses(),
 	}
 
 	// Start the server
@@ -212,7 +203,7 @@ func TestVoteAggregation(t *testing.T) {
 
 	// Mark each bitfield with the validator index
 	for _, v := range votes {
-		bitfcheck.Set(aggVote.ParticipationBitfield, uint(v.Offset))
+		aggVote.ParticipationBitfield.Set(uint(v.Offset))
 	}
 	assert.NoError(t, state.IsVoteValid(aggVote, &testdata.IntTestParams))
 }

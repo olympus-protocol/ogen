@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.

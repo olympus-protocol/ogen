@@ -225,7 +225,6 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 	return nil
 }
 
-
 // GetDeposits gets deposits from the mempool. Mutates withState.
 func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]*primitives.Deposit, *primitives.State, error) {
 	am.depositsLock.Lock()

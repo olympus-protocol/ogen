@@ -1,8 +1,8 @@
 package primitives
 
 import (
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 )
 
 // SerializableState is a serializable copy of the state

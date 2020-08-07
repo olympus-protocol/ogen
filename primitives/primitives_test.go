@@ -3,8 +3,8 @@ package primitives_test
 import (
 	fuzz "github.com/google/gofuzz"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 

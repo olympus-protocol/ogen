@@ -4,7 +4,7 @@ import (
 	"bytes"
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 

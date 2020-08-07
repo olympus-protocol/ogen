@@ -5,8 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
@@ -225,8 +224,8 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf)
-	bitfcheck.Set(participationBitfield, uint(s.Offset))
+	participationBitfield := bitfield.NewBitlist(s.OutOf + 7)
+	participationBitfield.Set(uint(s.Offset))
 	return &MultiValidatorVote{
 		Data:                  s.Data,
 		Sig:                   s.Sig,

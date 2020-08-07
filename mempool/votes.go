@@ -10,10 +10,9 @@ import (
 	"github.com/olympus-protocol/ogen/peers"
 	"github.com/olympus-protocol/ogen/peers/conflict"
 	"github.com/olympus-protocol/ogen/primitives"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
-	"github.com/prysmaticlabs/go-bitfield"
 	"sort"
 	"sync"
 )
@@ -26,7 +25,7 @@ type mempoolVote struct {
 }
 
 func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
-	if !bitfcheck.Get(mv.participationBitfield, uint(offset)) {
+	if !mv.participationBitfield.Get(uint(offset)) {
 		return nil, false
 	}
 
@@ -41,11 +40,11 @@ func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidat
 }
 
 func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
-	if bitfcheck.Get(mv.participationBitfield, uint(vote.Offset)) {
+	if mv.participationBitfield.Get(uint(vote.Offset)) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	bitfcheck.Set(mv.participationBitfield, uint(vote.Offset))
+	mv.participationBitfield.Set(uint(vote.Offset))
 	mv.participatingValidators[voter] = struct{}{}
 }
 
@@ -56,7 +55,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 		if uint64(len(participationBitfield)*8) >= v.Offset {
 			return shouldRemove
 		}
-		if !bitfcheck.Get(participationBitfield, uint(v.Offset)) {
+		if !participationBitfield.Get(uint(v.Offset)) {
 			newVotes = append(newVotes, v)
 			shouldRemove = false
 		}
@@ -72,7 +71,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   bitfield.NewBitlist(outOf),
+		participationBitfield:   bitfield.NewBitlist(outOf + 7),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),
