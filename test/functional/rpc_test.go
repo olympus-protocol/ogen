@@ -327,3 +327,236 @@ func Test_Chain_GetTransaction(t *testing.T) {
 
 	assert.Equal(t, txReceipt.Hash, txInfo.Hash)
 }
+
+func Test_Validator_GetValidatorsList(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.validators.GetValidatorsList(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.ValidatorRegistry{}, res)
+
+}
+
+func Test_Validator_GetAccountValidators(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.validators.GetAccountValidators(ctx, &proto.Account{Account: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.ValidatorRegistry{}, res)
+
+}
+
+func Test_Network_GetNetworkInfo(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.network.GetNetworkInfo(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.NetworkInfo{}, res)
+
+}
+
+func Test_network_GetPeersInfo(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.network.GetPeersInfo(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Peers{}, res)
+
+}
+
+func Test_Network_AddPeer(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.network.AddPeer(ctx, &proto.IP{Host: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+
+}
+
+func Test_Utils_StartProposer(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.utils.StartProposer(ctx, &proto.Password{Password: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+
+}
+
+func Test_Utils_StopProposer(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.utils.StopProposer(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+
+}
+
+func Test_Utils_SubmitRawData(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := c.utils.SubmitRawData(ctx, &proto.RawData{Data: args[0], Type: args[1]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+
+}
+
+func Test_Utils_GenKey(t *testing.T) {
+	ctx := context.Background()
+
+	// genkeypair
+	kp, err := C.rpcClient.genKeyPair(false)
+	assert.NoError(t, err)
+	assert.NotNil(t, kp)
+	assert.IsType(t, string(), kp)
+	//unmarshal to bls keypair
+
+	// genrawkeypair
+	rkp, err := C.rpcClient.genKeyPair(false)
+	assert.NoError(t, err)
+	assert.NotNil(t, rkp)
+	assert.IsType(t, string(), rkp)
+
+}
+
+func Test_Utils_GenValidatorKey(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := c.utils.GenValidatorKey(ctx, &proto.GenValidatorKeys{Keys: uint64(amount), Password: args[1]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.KeyPairs{}, res)
+}
+
+func Test_Utils_DecodeRawTransaction(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.utils.DecodeRawTransaction(ctx, &proto.RawData{Data: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Tx{}, res)
+}
+
+func Test_Utils_DecodeRawTransaction(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.utils.DecodeRawBlock(ctx, &proto.RawData{Data: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Block{}, res)
+}
+
+func Test_Wallet_ListWallets(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.ListWallets(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Wallets{}, res)
+}
+
+func Test_Wallet_CreateWallet(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.CreateWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.KeyPair{}, res)
+}
+
+func Test_Wallet_OpenWallet(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.OpenWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+}
+
+func Test_Wallet_CloseWallet(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.CloseWallet(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+}
+
+func Test_Wallet_ImportWallet(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Key: &proto.KeyPair{Private: args[1]}})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.KeyPair{}, res)
+}
+
+func Test_Wallet_DumpWallet(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.DumpWallet(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.KeyPair{}, res)
+}
+
+func Test_Wallet_GetBalance(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.GetBalance(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Balance{}, res)
+}
+
+func Test_Wallet_GetValidators(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.GetValidators(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.ValidatorRegistry{}, res)
+}
+
+func Test_Wallet_GetAccount(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.GetAccount(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.KeyPair{}, res)
+}
+
+func Test_Wallet_SendTransaction(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.SendTransaction(ctx, &proto.SendTransactionInfo{Account: args[0], Amount: args[1]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Hash{}, res)
+}
+
+func Test_Wallet_StartValidator(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.StartValidator(ctx, &proto.KeyPair{Private: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+}
+
+func Test_Wallet_ExitValidator(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.ExitValidator(ctx, &proto.KeyPair{Public: args[0]})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+}
