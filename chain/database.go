@@ -56,7 +56,7 @@ func (s *StateService) loadBlockIndex(txn bdb.DBViewTransaction, genesisHash cha
 	for len(queue) > 0 {
 		current := queue[0]
 
-		s.log.Debugf("Loading block node %s", current)
+		s.log.Debugf("Loading block node %s", hex.EncodeToString(current[:]))
 
 		queue = queue[1:]
 

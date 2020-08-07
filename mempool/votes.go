@@ -64,7 +64,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 
 	mv.individualVotes = newVotes
 	mv.participationBitfield = bitfield.NewBitlist(participationBitfield.Len())
-	for i, p := range participationBitfield.Bytes() {
+	for i, p := range participationBitfield {
 		mv.participationBitfield[i] = p
 	}
 	return shouldRemove
@@ -72,7 +72,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   bitfield.NewBitlist(outOf + 7),
+		participationBitfield:   bitfield.NewBitlist(outOf),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),
@@ -229,7 +229,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
 			bl := bitfield.NewBitlist(v.participationBitfield.Len())
-			for i, p := range v.participationBitfield.Bytes() {
+			for i, p := range v.participationBitfield {
 				bl[i] = p
 			}
 			vote := &primitives.MultiValidatorVote{

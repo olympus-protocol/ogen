@@ -62,7 +62,7 @@ var Mainnet = ChainParams{
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
-	EpochLength:                  5,
+	EpochLength:                  10,
 	EjectionBalance:              100, // POLIS
 	MaxBalanceChurnQuotient:      8,
 	LatestBlockRootsLength:       64,
@@ -114,7 +114,7 @@ var TestNet = ChainParams{
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
-	EpochLength:                  5,
+	EpochLength:                  10,
 	EjectionBalance:              90,
 	MaxBalanceChurnQuotient:      32,
 	LatestBlockRootsLength:       64,

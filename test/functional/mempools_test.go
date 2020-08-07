@@ -5,7 +5,6 @@ package mempools_test
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/bdb"
 	"github.com/olympus-protocol/ogen/bls"
@@ -32,7 +31,7 @@ func init() {
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
 var initParams = primitives.InitializationParameters{
-	GenesisTime:       time.Unix(time.Now().Unix()+10, 0),
+	GenesisTime:       time.Unix(time.Now().Unix(), 0),
 	PremineAddress:    premineAddr,
 	InitialValidators: []primitives.ValidatorInitialization{},
 }
@@ -42,16 +41,14 @@ var FAddr peer.AddrInfo
 var B *server.Server
 
 // Mempools Test
-// 1. Create two nodes and connect to produce some blocks.
-// 2. Stop the block producer and run the test framework over the mempools.
+// 1. Create a single node instance
+// 2. Fill
 
 func TestMain(m *testing.M) {
 	// Create the validators
 	createValidators()
 	// Run first node.
 	firstNode()
-	// Run second node.
-	secondNode()
 	// Run tests
 	os.Exit(m.Run())
 }
@@ -118,62 +115,10 @@ func firstNode() {
 	// Start the server
 	go F.Start()
 
-	// Open the keystore to start generating blocks
 	err = F.Proposer.OpenKeystore(testdata.KeystorePass)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Start the proposer
-	err = F.Proposer.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func secondNode() {
-	// Create datafolder
-	_ = os.Mkdir(testdata.Node2Folder, 0777)
-
-	// Create logger
-	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
-	if err != nil {
-		panic(err)
-	}
-	log := logger.New(logfile)
-	log.WithDebug()
-
-	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Load the conf params
-	c := testdata.Conf
-
-	// Override the datafolder.
-	c.DataFolder = testdata.Node2Folder
-	c.RPCPort = "25001"
-	c.Port = "24131"
-
-	// Create the server instance
-	B, err = server.NewServer(context.Background(), &c, log, testdata.IntTestParams, db, initParams)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Start the server
-	go B.Start()
-}
-
-func Test_Connections(t *testing.T) {
-	// The backup node should connect to the first node
-	err := B.HostNode.GetHost().Connect(context.TODO(), FAddr)
-	assert.NoError(t, err)
-}
-
-func Test_StopProposer(t *testing.T) {
-	time.Sleep(time.Second * 40)
-	F.Proposer.Stop()
 }
 
 func Test_CleanMempools(t *testing.T) {
@@ -184,17 +129,9 @@ func Test_CleanMempools(t *testing.T) {
 
 var votes []*primitives.SingleValidatorVote
 
-func getSlot() uint64 {
-	slot := time.Now().Sub(F.Chain.GenesisTime()) / (time.Duration(testdata.IntTestParams.SlotDuration) * time.Second)
-	if slot < 0 {
-		return 0
-	}
-	return uint64(slot)
-}
-
 // Create the votes and add it to the mempool with validation.
 func TestVoteMempool_AddValidate(t *testing.T) {
-	slotToVote := getSlot() + 1
+	slotToVote := F.Chain.State().TipState().Slot + 1
 
 	state, err := F.Chain.State().TipStateAtSlot(slotToVote)
 	assert.NoError(t, err)
@@ -204,7 +141,7 @@ func TestVoteMempool_AddValidate(t *testing.T) {
 	assert.NoError(t, err)
 
 	toEpoch := (slotToVote - 1) / testdata.IntTestParams.EpochLength
-	beaconBlock, found := F.Chain.State().Chain().GetNodeBySlot(slotToVote)
+	beaconBlock, found := F.Chain.State().Chain().GetNodeBySlot(slotToVote - 1)
 	if !found {
 		panic("could not find block")
 	}
@@ -239,6 +176,7 @@ func TestVoteMempool_AddValidate(t *testing.T) {
 			Offset: uint64(i),
 			OutOf:  uint64(len(votesIdx)),
 		}
+
 		votes = append(votes, v)
 		err := F.Mempools.Votes.AddValidate(v, state)
 		assert.NoError(t, err)
@@ -246,16 +184,16 @@ func TestVoteMempool_AddValidate(t *testing.T) {
 
 }
 
+var aggVote = new(primitives.MultiValidatorVote)
+
 func TestVoteAggregation(t *testing.T) {
-	slotToVote := getSlot() + 1
+	slotToVote := F.Chain.State().TipState().Slot + 1
 
 	state, err := F.Chain.State().TipStateAtSlot(slotToVote)
 	assert.NoError(t, err)
 
-	mv := new(primitives.MultiValidatorVote)
-
 	// This assumes all votes data is the same
-	mv.Data = votes[0].Data
+	aggVote.Data = votes[0].Data
 	sigs := make([]*bls.Signature, 0)
 
 	for _, v := range votes {
@@ -273,24 +211,23 @@ func TestVoteAggregation(t *testing.T) {
 	sig := bls.AggregateSignatures(sigs)
 	var sigB [96]byte
 	copy(sigB[:], sig.Marshal())
-	mv.Sig = sigB
+	aggVote.Sig = sigB
 
 	// Create a list bitfield list with the amount of validators voting
-	mv.ParticipationBitfield = bitfield.NewBitlist(uint64(len(votes)))
+	aggVote.ParticipationBitfield = bitfield.NewBitlist(uint64(len(votes)))
 
 	// Mark each bitfield with the validator index
 	for _, v := range votes {
-		bitfcheck.Set(mv.ParticipationBitfield, uint(v.Offset))
+		bitfcheck.Set(aggVote.ParticipationBitfield, uint(v.Offset))
 	}
-	assert.NoError(t, state.IsVoteValid(mv, &testdata.IntTestParams))
+	assert.NoError(t, state.IsVoteValid(aggVote, &testdata.IntTestParams))
 }
 
 func TestVoteMempool_Get(t *testing.T) {
 
-	slotToPropose := getSlot() + 1
+	slotToPropose := F.Chain.State().TipState().Slot + 2
 
 	state, err := F.Chain.State().TipStateAtSlot(slotToPropose)
-
 	assert.NoError(t, err)
 
 	slotIndex := (slotToPropose + testdata.IntTestParams.EpochLength - 1) % testdata.IntTestParams.EpochLength
@@ -299,9 +236,28 @@ func TestVoteMempool_Get(t *testing.T) {
 
 	votes, err := F.Mempools.Votes.Get(slotToPropose, state, &testdata.IntTestParams, proposerIndex)
 
+	newState, err := F.Chain.State().TipStateAtSlot(F.Chain.State().TipState().Slot + 1)
 	assert.NoError(t, err)
 
-	fmt.Println(votes)
-}
+	assert.NoError(t, newState.IsVoteValid(votes[0], &testdata.IntTestParams))
 
-// Vote Mempools Test
+	assert.NoError(t, err)
+
+	b1, err := aggVote.Marshal()
+	assert.NoError(t, err)
+
+	b2, err := votes[0].Marshal()
+	assert.NoError(t, err)
+
+	var mv1 = new(primitives.MultiValidatorVote)
+	var mv2 = new(primitives.MultiValidatorVote)
+
+	err = mv1.Unmarshal(b1)
+	assert.NoError(t, err)
+
+	err = mv2.Unmarshal(b2)
+	assert.NoError(t, err)
+
+	assert.Equal(t, aggVote, votes[0])
+
+}

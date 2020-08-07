@@ -87,5 +87,6 @@ gen_ssz:
 clean:
 	@echo Cleaning...
 	$(GOCLEAN) ./...
+	$(GOCLEAN) --testcache
 
 

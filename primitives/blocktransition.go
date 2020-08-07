@@ -756,7 +756,7 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 		return err
 	}
 	bl := bitfield.NewBitlist(v.ParticipationBitfield.Len())
-	for i, p := range v.ParticipationBitfield.Bytes() {
+	for i, p := range v.ParticipationBitfield {
 		bl[i] = p
 	}
 	if v.Data.ToEpoch == s.EpochIndex {

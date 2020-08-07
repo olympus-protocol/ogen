@@ -50,7 +50,7 @@ var IntTestParams = params.ChainParams{
 	GovernanceBudgetQuotient:     5, // 20%
 	BaseRewardPerBlock:           2600,
 	IncluderRewardQuotient:       8,
-	EpochLength:                  5,
+	EpochLength:                  10,
 	EjectionBalance:              95,
 	MaxBalanceChurnQuotient:      32,
 	LatestBlockRootsLength:       64,
@@ -58,7 +58,7 @@ var IntTestParams = params.ChainParams{
 	DepositAmount:                100,
 	UnitsPerCoin:                 1000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 20,
+	SlotDuration:                 1,
 	MaxVotesPerBlock:             2048,
 	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,

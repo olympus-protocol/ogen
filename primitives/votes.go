@@ -81,7 +81,7 @@ func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	a2 := *a
 
 	a2.ParticipationBitfield = bitfield.NewBitlist(a.ParticipationBitfield.Len())
-	for i, b := range a.ParticipationBitfield.Bytes() {
+	for i, b := range a.ParticipationBitfield {
 		a2.ParticipationBitfield[i] = b
 	}
 
@@ -225,7 +225,7 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf + 7)
+	participationBitfield := bitfield.NewBitlist(s.OutOf)
 	bitfcheck.Set(participationBitfield, uint(s.Offset))
 	return &MultiValidatorVote{
 		Data:                  s.Data,
