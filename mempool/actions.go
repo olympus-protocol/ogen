@@ -175,17 +175,6 @@ func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainPa
 	return am, nil
 }
 
-// Clear removes all elements stored in the ActionMempool
-func (am *ActionMempool) Clear() {
-	am.deposits = make(map[chainhash.Hash]*primitives.Deposit)
-	am.exits = make(map[chainhash.Hash]*primitives.Exit)
-	am.governanceVotes = make(map[chainhash.Hash]*primitives.GovernanceVote)
-	am.randaoSlashings = []*primitives.RANDAOSlashing{}
-	am.proposerSlashings = []*primitives.ProposerSlashing{}
-	am.voteSlashings = []*primitives.VoteSlashing{}
-	return
-}
-
 func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
@@ -231,24 +220,11 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 	_, ok := am.deposits[deposit.Hash()]
 	if !ok {
 		am.deposits[deposit.Hash()] = deposit
-		am.relayDeposit(deposit)
 	}
 
 	return nil
 }
 
-func (am *ActionMempool) relayDeposit(deposit *primitives.Deposit) {
-	b, err := deposit.Marshal()
-	if err != nil {
-		am.log.Error(err)
-		return
-	}
-	err = am.depositsTopic.Publish(am.ctx, b)
-	if err != nil {
-		am.log.Error(err)
-		return
-	}
-}
 
 // GetDeposits gets deposits from the mempool. Mutates withState.
 func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]*primitives.Deposit, *primitives.State, error) {
@@ -466,23 +442,9 @@ func (am *ActionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 	_, ok := am.governanceVotes[vote.Hash()]
 	if !ok {
 		am.governanceVotes[vote.Hash()] = vote
-		am.relayGovernanceVote(vote)
 	}
 
 	return nil
-}
-
-func (am *ActionMempool) relayGovernanceVote(vote *primitives.GovernanceVote) {
-	b, err := vote.Marshal()
-	if err != nil {
-		am.log.Error(err)
-		return
-	}
-	err = am.governanceTopic.Publish(am.ctx, b)
-	if err != nil {
-		am.log.Error(err)
-		return
-	}
 }
 
 func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
@@ -532,23 +494,9 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 	_, ok := am.exits[exit.Hash()]
 	if !ok {
 		am.exits[exit.Hash()] = exit
-		am.relayExit(exit)
 	}
 
 	return nil
-}
-
-func (am *ActionMempool) relayExit(exit *primitives.Exit) {
-	b, err := exit.Marshal()
-	if err != nil {
-		am.log.Error(err)
-		return
-	}
-	err = am.exitsTopic.Publish(am.ctx, b)
-	if err != nil {
-		am.log.Error(err)
-		return
-	}
 }
 
 // GetExits gets exits from the mempool. Mutates withState.

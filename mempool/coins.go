@@ -89,7 +89,6 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
-		cm.relay(item)
 	}
 	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 		return err
@@ -182,26 +181,6 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			}
 		}
 	}
-}
-
-func (cm *CoinsMempool) relay(tx primitives.Tx) {
-	b, err := tx.Marshal()
-	if err != nil {
-		cm.log.Error(err)
-		return
-	}
-	err = cm.topic.Publish(cm.ctx, b)
-	if err != nil {
-		cm.log.Error(err)
-		return
-	}
-}
-
-// Clear removes all elements store into the CoinsMempool
-func (cm *CoinsMempool) Clear() {
-	cm.mempool = make(map[[20]byte]*coinMempoolItem)
-	cm.balances = make(map[[20]byte]uint64)
-	return
 }
 
 // NewCoinsMempool constructs a new coins mempool.

@@ -203,7 +203,6 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 		m.pool[voteHash] = newMempoolVote(vote.OutOf, vote.Data)
 		m.poolOrder = append(m.poolOrder, voteHash)
 		m.pool[voteHash].add(vote, voter)
-		//m.relay(vote)
 	}
 
 	m.sortMempool()
@@ -333,31 +332,11 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 	}
 }
 
-func (m *VoteMempool) relay(vote *primitives.SingleValidatorVote) {
-	b, err := vote.Marshal()
-	if err != nil {
-		m.log.Error(err)
-		return
-	}
-	err = m.voteTopic.Publish(m.ctx, b)
-	if err != nil {
-		m.log.Error(err)
-		return
-	}
-}
-
 // Notify registers a notifee to be notified when illegal votes occur.
 func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 	m.notifeesLock.Lock()
 	defer m.notifeesLock.Unlock()
 	m.notifees = append(m.notifees, notifee)
-}
-
-// Clear removes all elements stored in the VoteMempool
-func (m *VoteMempool) Clear() {
-	m.pool = make(map[chainhash.Hash]*mempoolVote)
-	m.poolOrder = []chainhash.Hash{}
-	return
 }
 
 // NewVoteMempool creates a new mempool.
