@@ -199,7 +199,7 @@ func TestVoteAggregation(t *testing.T) {
 	aggVote.Sig = sigB
 
 	// Create a list bitfield list with the amount of validators voting
-	aggVote.ParticipationBitfield = bitfield.NewBitlist(uint64(len(votes)))
+	aggVote.ParticipationBitfield = bitfield.NewBitlist(uint64(len(votes)) + 7)
 
 	// Mark each bitfield with the validator index
 	for _, v := range votes {

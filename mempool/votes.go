@@ -351,12 +351,10 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 		return nil, err
 	}
 
-	go func() {
-		_, err = voteTopic.Relay()
-		if err != nil {
-			return
-		}
-	}()
+	_, err = voteTopic.Relay()
+	if err != nil {
+		return nil, err
+	}
 
 	vm := &VoteMempool{
 		pool:              make(map[chainhash.Hash]*mempoolVote),

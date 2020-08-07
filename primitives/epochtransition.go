@@ -471,9 +471,6 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 		}
 	}
 
-	fmt.Println(len(previousEpochVoters.voters))
-	fmt.Println(len(previousEpochVotersMatchingBeaconBlock.voters))
-	fmt.Println(len(previousEpochVotersMatchingTargetHash.voters))
 
 	for _, v := range s.CurrentEpochVotes {
 		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
@@ -606,8 +603,7 @@ func (s *State) ProcessEpochTransition(p *params.ChainParams, _ *logger.Logger) 
 			rewardValidator(validator, amount, RewardInclusionDistance)
 		}
 
-		// Penalize all validators after 4 epochs and punish validators who did not
-		// vote more severely.
+		// Penalize all validators after 4 epochs and punish validators who did not vote more severely.
 		finalityDelay := s.EpochIndex - s.FinalizedEpoch
 		if finalityDelay > 4 {
 			for index := range s.ValidatorRegistry {

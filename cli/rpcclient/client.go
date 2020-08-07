@@ -2,6 +2,8 @@ package rpcclient
 
 import (
 	"crypto/tls"
+	"fmt"
+	"os"
 
 	"github.com/olympus-protocol/ogen/chainrpc"
 	"github.com/olympus-protocol/ogen/proto"
@@ -31,6 +33,10 @@ func NewRPCClient(addr string, datadir string) *RPCClient {
 		InsecureSkipVerify: false,
 		RootCAs:            certPool,
 	})
+	if addr == "" {
+		fmt.Println("Missing address")
+		os.Exit(1)
+	}
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		panic("unable to connect to rpc server")

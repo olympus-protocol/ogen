@@ -130,6 +130,11 @@ func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainPa
 		return nil, err
 	}
 
+	_, err = depositTopic.Relay()
+	if err != nil {
+		return nil, err
+	}
+
 	exitTopic, err := hostnode.Topic("exits")
 	if err != nil {
 		return nil, err
@@ -140,12 +145,22 @@ func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainPa
 		return nil, err
 	}
 
+	_, err = exitTopic.Relay()
+	if err != nil {
+		return nil, err
+	}
+
 	governanceTopic, err := hostnode.Topic("governance")
 	if err != nil {
 		return nil, err
 	}
 
 	governanceTopicSub, err := governanceTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = governanceTopic.Relay()
 	if err != nil {
 		return nil, err
 	}

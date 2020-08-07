@@ -190,12 +190,12 @@ func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockcha
 		return nil, err
 	}
 
-	_, err = topic.Relay()
+	topicSub, err := topic.Subscribe()
 	if err != nil {
 		return nil, err
 	}
 
-	topicSub, err := topic.Subscribe()
+	_, err = topic.Relay()
 	if err != nil {
 		return nil, err
 	}

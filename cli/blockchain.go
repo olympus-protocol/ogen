@@ -60,7 +60,10 @@ func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile
 			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash, chainFileBytesHash)
 		}
 
-		ioutil.WriteFile(path, chainFileBytes, 0644)
+		err = ioutil.WriteFile(path, chainFileBytes, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("unable to write chain file")
+		}
 
 		err = json.Unmarshal(chainFileBytes, chainFile)
 		if err != nil {
@@ -216,10 +219,6 @@ func init() {
 	}
 }
 
-func er(msg interface{}) {
-	fmt.Println("Error:", msg)
-	os.Exit(1)
-}
 
 func initConfig() {
 	if DataFolder != "" {
