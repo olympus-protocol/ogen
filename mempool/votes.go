@@ -307,31 +307,36 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 		}
 
 		m.log.Debugf("received votes msg with %d votes", len(votes.Votes))
-
+		var wg sync.WaitGroup
+		wg.Add(len(votes.Votes))
 		for _, v := range votes.Votes {
-			firstSlotAllowedToInclude := v.Data.Slot + m.params.MinAttestationInclusionDelay
-			tip := m.blockchain.State().Tip()
+			go func(vote *primitives.SingleValidatorVote, wg *sync.WaitGroup) {
+				defer wg.Done()
+				firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
+				tip := m.blockchain.State().Tip()
 
-			if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
-				continue
-			}
+				if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
+					return
+				}
 
-			view, err := m.blockchain.State().GetSubView(tip.Hash)
-			if err != nil {
-				m.log.Warnf("could not get block view representing current tip: %s", err)
-				continue
-			}
-			currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
-			if err != nil {
-				m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-				continue
-			}
+				view, err := m.blockchain.State().GetSubView(tip.Hash)
+				if err != nil {
+					m.log.Warnf("could not get block view representing current tip: %s", err)
+					return
+				}
+				currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
+				if err != nil {
+					m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
+					return
+				}
 
-			err = m.AddValidate(v, currentState)
-			if err != nil {
-				m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-			}
+				err = m.AddValidate(vote, currentState)
+				if err != nil {
+					m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+				}
+			}(v, &wg)
 		}
+		wg.Wait()
 	}
 }
 
