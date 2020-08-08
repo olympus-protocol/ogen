@@ -74,10 +74,10 @@ func (c *RPCClient) closeWallet() (string, error) {
 func (c *RPCClient) importWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) < 2 {
-		return "", errors.New("Usage: importwallet <name> <wif>")
+	if len(args) < 3 {
+		return "", errors.New("Usage: importwallet <name> <wif> <password>")
 	}
-	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Key: &proto.KeyPair{Private: args[1]}})
+	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Key: &proto.KeyPair{Private: args[1]}, Password: args[2]})
 	if err != nil {
 		return "", err
 	}
