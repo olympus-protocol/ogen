@@ -112,7 +112,7 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 	if err != nil {
 		return nil, err
 	}
-	balanceStr := decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e3), 3).String()
+	balanceStr := decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e8), 8).String()
 	validators := s.getValidators(acc)
 	lock := decimal.NewFromInt(0)
 	for _, v := range validators.Validators {
@@ -122,7 +122,7 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 		}
 		lock = lock.Add(b)
 	}
-	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e3), 3).Add(lock).StringFixed(3)}, nil
+	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e8), 8).Add(lock).StringFixed(3)}, nil
 }
 
 func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
@@ -168,7 +168,7 @@ func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTran
 	if err != nil {
 		return nil, err
 	}
-	amountFixed := amount.Mul(decimal.NewFromInt(1e3)).Round(0)
+	amountFixed := amount.Mul(decimal.NewFromInt(1e8)).Round(0)
 	hash, err := s.wallet.SendToAddress(send.Account, uint64(amountFixed.IntPart()))
 	if err != nil {
 		return nil, err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/peers/conflict"
+	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -114,8 +115,8 @@ func (p *Proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
 }
 
-func (p *Proposer) publishVote(vote *primitives.SingleValidatorVote) {
-	buf, err := vote.Marshal()
+func (p *Proposer) publishVotes(v primitives.Votes) {
+	buf, err := v.Marshal()
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
 		return
@@ -149,7 +150,7 @@ func (p *Proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing()  {
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
 				blockTimer = time.NewTimer(time.Second * 10)
 				continue
@@ -216,6 +217,12 @@ func (p *Proposer) ProposeBlocks() {
 					return
 				}
 
+				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), state)
+				if err != nil {
+					p.log.Error(err)
+					return
+				}
+
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
@@ -231,6 +238,7 @@ func (p *Proposer) ProposeBlocks() {
 					RANDAOSlashings:   randaoSlashings,
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
+					GovernanceVotes:   governanceVotes,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
@@ -322,63 +330,59 @@ func (p *Proposer) VoteForBlocks() {
 
 			dataHash := data.Hash()
 
-			for i, validatorIdx := range validators {
-				validator := state.ValidatorRegistry[validatorIdx]
-
-				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
-
-					if !p.lastActionManager.ShouldRun(validator.PubKey) {
-						continue
-					}
-
-					sig := k.Sign(dataHash[:])
-					var sigB [96]byte
-					copy(sigB[:], sig.Marshal())
-					vote := primitives.SingleValidatorVote{
-						Data:   &data,
-						Sig:    sigB,
-						Offset: uint64(i),
-						OutOf:  uint64(len(validators)),
-					}
-
-					err = p.voteMempool.AddValidate(&vote, state)
-					if err != nil {
-						p.log.Errorf("error submitting vote: %s", err.Error())
-						continue
-					}
-
-					go p.publishVote(&vote)
-
-					// DO NOT UNCOMMENT: slashing test
-					//if validatorIdx == 0 {
-					//	data2 := primitives.VoteData{
-					//		Slot:            slotToVote,
-					//		FromEpoch:       state.JustifiedEpoch,
-					//		FromHash:        state.JustifiedEpochHash,
-					//		ToEpoch:         toEpoch,
-					//		ToHash:          state.GetRecentBlockHash(toEpoch*m.params.EpochLength-1, &m.params),
-					//		BeaconBlockHash: chainhash.HashH([]byte("lol")),
-					//	}
-					//
-					//	data2Hash := data2.Hash()
-					//
-					//	sig2 := k.Sign(data2Hash[:])
-					//
-					//	vote2 := primitives.SingleValidatorVote{
-					//		Data:      data2,
-					//		Signature: *sig2,
-					//		Offset:    uint32(i),
-					//		OutOf:     uint32(len(validators)),
-					//	}
-					//
-					//	m.voteMempool.Add(&vote2)
-					//
-					//	go m.publishVote(&vote2)
-					//}
-				}
+			votes := primitives.Votes{
+				Votes: []*primitives.SingleValidatorVote{},
 			}
 
+			var wg sync.WaitGroup
+			for i, validatorIdx := range validators {
+
+				wg.Add(1)
+
+				go func(index int, valIndex uint64, wg *sync.WaitGroup) {
+
+					defer wg.Done()
+
+					validator := state.ValidatorRegistry[valIndex]
+
+					if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+
+						if !p.lastActionManager.ShouldRun(validator.PubKey) {
+							return
+						}
+
+						sig := k.Sign(dataHash[:])
+
+						var sigB [96]byte
+						copy(sigB[:], sig.Marshal())
+						vote := &primitives.SingleValidatorVote{
+							Data:   &data,
+							Sig:    sigB,
+							Offset: uint64(index),
+							OutOf:  uint64(len(validators)),
+						}
+
+						err = p.voteMempool.AddValidate(vote, state)
+						if err != nil {
+							p.log.Errorf("error submitting vote: %s", err.Error())
+							return
+						}
+
+						votes.Votes = append(votes.Votes, vote)
+
+					}
+
+					return
+
+				}(i, validatorIdx, &wg)
+			}
+
+			wg.Wait()
+
+			go p.publishVotes(votes)
+
 			slotToVote++
+
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 		case <-p.context.Done():
 			p.log.Info("stopping voter")

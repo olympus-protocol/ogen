@@ -3,7 +3,7 @@ package primitives
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"time"
 
 	"github.com/olympus-protocol/ogen/params"
@@ -67,7 +67,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	s := &State{
 		CoinsState: CoinsState{
 			Balances: map[[20]byte]uint64{
-				premineAddrArr: 400 * 1000000, // 400k coins
+				premineAddrArr: 400000 * p.UnitsPerCoin,
 			},
 			Nonces: make(map[[20]byte]uint64),
 		},

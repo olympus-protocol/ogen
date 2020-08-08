@@ -5,10 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 
@@ -24,6 +22,8 @@ var (
 	ErrorSingleValidatorVoteSize = errors.New("single validator vote data too big")
 	// ErrorMultiValidatorVoteSize is returned when a multi validator vote data is above MaxMultiValidatorVoteSize
 	ErrorMultiValidatorVoteSize = errors.New("accepted vote data too big")
+	// ErrorVotesSize is returned when a multi validator vote data is above MaxVotesSize
+	ErrorVotesSize = errors.New("votes size data too big")
 )
 
 const (
@@ -35,7 +35,31 @@ const (
 	MaxSingleValidatorVoteSize = MaxVoteDataSize + 112
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
 	MaxMultiValidatorVoteSize = MaxVoteDataSize + 2144
+	// MaxVotesSize is the maximum size in bytes of vote data.
+	MaxVotesSize = MaxSingleValidatorVoteSize * 256
 )
+
+type Votes struct {
+	Votes []*SingleValidatorVote `ssz-max:"256"`
+}
+
+func (v *Votes) Marshal() ([]byte, error) {
+	b, err := v.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxVotesSize {
+		return nil, ErrorVotesSize
+	}
+	return b, nil
+}
+
+func (v *Votes) Unmarshal(b []byte) error {
+	if len(b) > MaxVotesSize {
+		return ErrorVotesSize
+	}
+	return v.UnmarshalSSZ(b)
+}
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
 type AcceptedVoteInfo struct {
@@ -61,19 +85,15 @@ func (a *AcceptedVoteInfo) Marshal() ([]byte, error) {
 	if len(b) > MaxAcceptedVoteInfoSize {
 		return nil, ErrorAcceptedVoteDataSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxAcceptedVoteInfoSize {
+	if len(b) > MaxAcceptedVoteInfoSize {
 		return ErrorAcceptedVoteDataSize
 	}
-	return a.UnmarshalSSZ(d)
+	return a.UnmarshalSSZ(b)
 }
 
 // Copy returns a copy of the AcceptedVoteInfo.
@@ -81,7 +101,7 @@ func (a *AcceptedVoteInfo) Copy() AcceptedVoteInfo {
 	a2 := *a
 
 	a2.ParticipationBitfield = bitfield.NewBitlist(a.ParticipationBitfield.Len())
-	for i, b := range a.ParticipationBitfield.Bytes() {
+	for i, b := range a.ParticipationBitfield {
 		a2.ParticipationBitfield[i] = b
 	}
 
@@ -126,19 +146,15 @@ func (v *VoteData) Marshal() ([]byte, error) {
 	if len(b) > MaxVoteDataSize {
 		return nil, ErrorVoteDataSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (v *VoteData) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxVoteDataSize {
+	if len(b) > MaxVoteDataSize {
 		return ErrorVoteDataSize
 	}
-	return v.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(b)
 }
 
 // FirstSlotValid return the first slot valid for current validator vote
@@ -225,8 +241,8 @@ func (s *SingleValidatorVote) Unmarshal(b []byte) error {
 
 // AsMulti returns the single validator vote as a multi validator vote.
 func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf)
-	bitfcheck.Set(participationBitfield, uint(s.Offset))
+	participationBitfield := bitfield.NewBitlist(s.OutOf + 7)
+	participationBitfield.Set(uint(s.Offset))
 	return &MultiValidatorVote{
 		Data:                  s.Data,
 		Sig:                   s.Sig,
@@ -261,19 +277,15 @@ func (m *MultiValidatorVote) Marshal() ([]byte, error) {
 	if len(b) > MaxMultiValidatorVoteSize {
 		return nil, ErrorMultiValidatorVoteSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (m *MultiValidatorVote) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxMultiValidatorVoteSize {
+	if len(b) > MaxMultiValidatorVoteSize {
 		return ErrorMultiValidatorVoteSize
 	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the vote.

@@ -168,7 +168,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		FromPublicKey: p,
 		Amount:        amount,
 		Nonce:         nonce,
-		Fee:           1,
+		Fee:           5000,
 	}
 
 	sigMsg := tx.SignatureMessage()

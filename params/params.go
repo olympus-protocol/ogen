@@ -68,9 +68,9 @@ var Mainnet = ChainParams{
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                100,
-	UnitsPerCoin:                 1000,
+	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 1,
+	SlotDuration:                 30,
 	MaxVotesPerBlock:             2048,
 	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,
@@ -99,7 +99,7 @@ var Mainnet = ChainParams{
 	},
 }
 
-var testnetChainFileHash, _ = chainhash.NewHashFromStr("386b77a7208407e5e84a1c3cf353da110be54dc09aeb0edefd4cb7d31a2f6cdc")
+var testnetChainFileHash, _ = chainhash.NewHashFromStr("305eb46e2c8d1a93c9c3c2f25f40c1ac9558ba94493a2b993e12d80a66700b61")
 
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
@@ -120,9 +120,9 @@ var TestNet = ChainParams{
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                100,
-	UnitsPerCoin:                 1000,
+	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 1,
+	SlotDuration:                 30,
 	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 	MaxVotesPerBlock:             2048,

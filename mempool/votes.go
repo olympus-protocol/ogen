@@ -2,23 +2,19 @@ package mempool
 
 import (
 	"context"
-	"github.com/olympus-protocol/ogen/peers/conflict"
-	bitfcheck "github.com/olympus-protocol/ogen/utils/bitfield"
-	"github.com/prysmaticlabs/go-bitfield"
-	"math/rand"
-	"sort"
-	"sync"
-	"time"
-
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/chain"
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/peers"
+	"github.com/olympus-protocol/ogen/peers/conflict"
 	"github.com/olympus-protocol/ogen/primitives"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
+	"sort"
+	"sync"
 )
 
 type mempoolVote struct {
@@ -29,7 +25,7 @@ type mempoolVote struct {
 }
 
 func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidatorVote, bool) {
-	if !bitfcheck.Get(mv.participationBitfield, uint(offset)) {
+	if !mv.participationBitfield.Get(uint(offset)) {
 		return nil, false
 	}
 
@@ -44,11 +40,11 @@ func (mv *mempoolVote) getVoteByOffset(offset uint64) (*primitives.SingleValidat
 }
 
 func (mv *mempoolVote) add(vote *primitives.SingleValidatorVote, voter uint64) {
-	if bitfcheck.Get(mv.participationBitfield, uint(vote.Offset)) {
+	if mv.participationBitfield.Get(uint(vote.Offset)) {
 		return
 	}
 	mv.individualVotes = append(mv.individualVotes, vote)
-	bitfcheck.Set(mv.participationBitfield, uint(vote.Offset))
+	mv.participationBitfield.Set(uint(vote.Offset))
 	mv.participatingValidators[voter] = struct{}{}
 }
 
@@ -59,7 +55,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 		if uint64(len(participationBitfield)*8) >= v.Offset {
 			return shouldRemove
 		}
-		if !bitfcheck.Get(participationBitfield, uint(v.Offset)) {
+		if !participationBitfield.Get(uint(v.Offset)) {
 			newVotes = append(newVotes, v)
 			shouldRemove = false
 		}
@@ -67,7 +63,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 
 	mv.individualVotes = newVotes
 	mv.participationBitfield = bitfield.NewBitlist(participationBitfield.Len())
-	for i, p := range participationBitfield.Bytes() {
+	for i, p := range participationBitfield {
 		mv.participationBitfield[i] = p
 	}
 	return shouldRemove
@@ -75,7 +71,7 @@ func (mv *mempoolVote) remove(participationBitfield bitfield.Bitlist) (shouldRem
 
 func newMempoolVote(outOf uint64, voteData *primitives.VoteData) *mempoolVote {
 	return &mempoolVote{
-		participationBitfield:   bitfield.NewBitlist(outOf),
+		participationBitfield:   bitfield.NewBitlist(outOf + 7),
 		individualVotes:         make([]*primitives.SingleValidatorVote, 0, outOf),
 		voteData:                voteData,
 		participatingValidators: make(map[uint64]struct{}),
@@ -95,43 +91,13 @@ type VoteMempool struct {
 	ctx        context.Context
 	blockchain *chain.Blockchain
 	hostNode   *peers.HostNode
+	voteTopic  *pubsub.Topic
 
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
 
 	lastActionManager *conflict.LastActionManager
 }
-
-func shuffleVotes(vals []primitives.SingleValidatorVote) []primitives.SingleValidatorVote {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	ret := make([]primitives.SingleValidatorVote, len(vals))
-	perm := r.Perm(len(vals))
-	for i, randIndex := range perm {
-		ret[i] = vals[randIndex]
-	}
-	return ret
-}
-
-// func PickPercentVotes(vs []primitives.SingleValidatorVote, pct float32) []primitives.SingleValidatorVote {
-// 	num := int(pct * float32(len(vs)))
-// 	shuffledVotes := shuffleVotes(vs)
-// 	return shuffledVotes[:num]
-// }
-
-// func (m *VoteMempool) GetVotesNotInBloom(bloom *bloom.BloomFilter) []primitives.SingleValidatorVote {
-// 	votes := make([]primitives.SingleValidatorVote, 0)
-// 	for _, vs := range m.pool {
-// 		for _, v := range vs.individualVotes {
-// 			vh := v.Hash()
-// 			if bloom.Has(vh) {
-// 				continue
-// 			}
-
-// 			votes = append(votes, *v)
-// 		}
-// 	}
-// 	return votes
-// }
 
 // AddValidate validates, then adds the vote to the mempool.
 func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *primitives.State) error {
@@ -143,8 +109,7 @@ func (m *VoteMempool) AddValidate(vote *primitives.SingleValidatorVote, state *p
 	return nil
 }
 
-// sortMempool sorts the poolOrder so that the highest priority transactions come first
-// and assumes you hold the poolLock.
+// sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
 func (m *VoteMempool) sortMempool() {
 	sort.Slice(m.poolOrder, func(i, j int) bool {
 		// return if i is higher priority than j
@@ -199,8 +164,7 @@ func (m *VoteMempool) Add(vote *primitives.SingleValidatorVote) {
 
 	m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[voter].PubKey, vote.Data.Nonce)
 
-	// slashing check... check if this vote interferes with any
-	// votes in the mempool
+	// slashing check... check if this vote interferes with any votes in the mempool
 	voteData := vote.Data
 	for h, v := range m.pool {
 		if voteHash.IsEqual(&h) {
@@ -262,10 +226,14 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 			sig := bls.AggregateSignatures(sigs)
 			var sigb [96]byte
 			copy(sigb[:], sig.Marshal())
+			bl := bitfield.NewBitlist(v.participationBitfield.Len())
+			for i, p := range v.participationBitfield {
+				bl[i] = p
+			}
 			vote := &primitives.MultiValidatorVote{
 				Data:                  m.pool[h].voteData,
 				Sig:                   sigb,
-				ParticipationBitfield: v.participationBitfield,
+				ParticipationBitfield: bl,
 			}
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
 				return nil, err
@@ -315,9 +283,9 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	}
 }
 
-func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID) {
+func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 	for {
-		msg, err := topic.Next(m.ctx)
+		msg, err := sub.Next(m.ctx)
 		if err != nil {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
@@ -327,9 +295,9 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 			continue
 		}
 
-		tx := new(primitives.SingleValidatorVote)
+		votes := new(primitives.Votes)
 
-		if err := tx.Unmarshal(msg.Data); err != nil {
+		if err := votes.Unmarshal(msg.Data); err != nil {
 			m.log.Warnf("peer sent invalid vote: %s", err)
 			err = m.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
 			if err == nil {
@@ -338,28 +306,37 @@ func (m *VoteMempool) handleSubscription(topic *pubsub.Subscription, id peer.ID)
 			continue
 		}
 
-		firstSlotAllowedToInclude := tx.Data.Slot + m.params.MinAttestationInclusionDelay
-		tip := m.blockchain.State().Tip()
+		m.log.Debugf("received votes msg with %d votes", len(votes.Votes))
+		var wg sync.WaitGroup
+		wg.Add(len(votes.Votes))
+		for _, v := range votes.Votes {
+			go func(vote *primitives.SingleValidatorVote, wg *sync.WaitGroup) {
+				defer wg.Done()
+				firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
+				tip := m.blockchain.State().Tip()
 
-		if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
-			continue
-		}
+				if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
+					return
+				}
 
-		view, err := m.blockchain.State().GetSubView(tip.Hash)
-		if err != nil {
-			m.log.Warnf("could not get block view representing current tip: %s", err)
-			continue
-		}
-		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
-		if err != nil {
-			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-			continue
-		}
+				view, err := m.blockchain.State().GetSubView(tip.Hash)
+				if err != nil {
+					m.log.Warnf("could not get block view representing current tip: %s", err)
+					return
+				}
+				currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
+				if err != nil {
+					m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
+					return
+				}
 
-		err = m.AddValidate(tx, currentState)
-		if err != nil {
-			m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+				err = m.AddValidate(vote, currentState)
+				if err != nil {
+					m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+				}
+			}(v, &wg)
 		}
+		wg.Wait()
 	}
 }
 
@@ -372,16 +349,6 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 
 // NewVoteMempool creates a new mempool.
 func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, manager *conflict.LastActionManager) (*VoteMempool, error) {
-	vm := &VoteMempool{
-		pool:              make(map[chainhash.Hash]*mempoolVote),
-		params:            p,
-		log:               log,
-		ctx:               ctx,
-		blockchain:        ch,
-		notifees:          make([]VoteSlashingNotifee, 0),
-		hostNode:          hostnode,
-		lastActionManager: manager,
-	}
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
 		return nil, err
@@ -390,6 +357,23 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 	voteSub, err := voteTopic.Subscribe()
 	if err != nil {
 		return nil, err
+	}
+
+	_, err = voteTopic.Relay()
+	if err != nil {
+		return nil, err
+	}
+
+	vm := &VoteMempool{
+		pool:              make(map[chainhash.Hash]*mempoolVote),
+		params:            p,
+		log:               log,
+		ctx:               ctx,
+		blockchain:        ch,
+		voteTopic:         voteTopic,
+		notifees:          make([]VoteSlashingNotifee, 0),
+		hostNode:          hostnode,
+		lastActionManager: manager,
 	}
 
 	go vm.handleSubscription(voteSub, hostnode.GetHost().ID())

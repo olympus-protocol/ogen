@@ -170,7 +170,6 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m 
 		DataFolder:   testdata.Node2Folder,
 		NetworkName:  "integration tests net",
 		AddNodes:     []peer.AddrInfo{hostMultiAddr},
-		MaxPeers:     10,
 		Port:         "24000",
 		RPCProxy:     false,
 		RPCProxyPort: "8080",

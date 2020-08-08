@@ -277,7 +277,7 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 	} else {
 		transactions = []string{}
 	}
-	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().CoinsState.Balances[account])).DivRound(decimal.NewFromInt(1e3), 3)
+	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().CoinsState.Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
 	lock := decimal.NewFromInt(0)
 	for _, v := range s.chain.State().TipState().ValidatorRegistry {
 		if v.PayeeAddress == account {

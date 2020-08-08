@@ -2,7 +2,7 @@ package bls_test
 
 import (
 	fuzz "github.com/google/gofuzz"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/stretchr/testify/assert"
 	"testing"
 

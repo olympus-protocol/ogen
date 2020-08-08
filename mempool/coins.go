@@ -79,11 +79,14 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 		return err
 	}
 
-	// adding a nonce rule for Ddos protection
-	txNonce := item.Nonce
-	if txNonce != state.Nonces[fpkh]+1 {
+	if item.Nonce != state.Nonces[fpkh]+1 {
 		return errors.New("invalid nonce")
 	}
+
+	if item.Fee < 5000 {
+		return errors.New("transaction doesn't include enough fee")
+	}
+
 	mpi, ok := cm.mempool[fpkh]
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
@@ -190,6 +193,11 @@ func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockcha
 	}
 
 	topicSub, err := topic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = topic.Relay()
 	if err != nil {
 		return nil, err
 	}

@@ -2,8 +2,6 @@ package primitives
 
 import (
 	"errors"
-
-	"github.com/golang/snappy"
 )
 
 const (
@@ -81,19 +79,15 @@ func (v *Validator) Marshal() ([]byte, error) {
 	if len(b) > MaxValidatorSize {
 		return nil, ErrorValidatorSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (v *Validator) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxValidatorSize {
+	if len(b) > MaxValidatorSize {
 		return ErrorValidatorSize
 	}
-	return v.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(b)
 }
 
 // Copy returns a copy of the validator.
