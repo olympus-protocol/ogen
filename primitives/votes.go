@@ -52,18 +52,14 @@ func (v *Votes) Marshal() ([]byte, error) {
 	if len(b) > MaxVotesSize {
 		return nil, ErrorVotesSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 func (v *Votes) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return nil
-	}
-	if len(d) > MaxVotesSize {
+	if len(b) > MaxVotesSize {
 		return ErrorVotesSize
 	}
-	return v.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(b)
 }
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
