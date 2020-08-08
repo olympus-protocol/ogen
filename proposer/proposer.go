@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/peers/conflict"
+	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -333,36 +334,43 @@ func (p *Proposer) VoteForBlocks() {
 				Votes: []*primitives.SingleValidatorVote{},
 			}
 
+			var wg sync.WaitGroup
 			for i, validatorIdx := range validators {
 
-				validator := state.ValidatorRegistry[validatorIdx]
+				wg.Add(1)
 
-				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+				go func(index int, valIndex uint64, wg *sync.WaitGroup) {
+					defer wg.Done()
+					validator := state.ValidatorRegistry[valIndex]
 
-					if !p.lastActionManager.ShouldRun(validator.PubKey) {
-						continue
+					if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+
+						if !p.lastActionManager.ShouldRun(validator.PubKey) {
+							return
+						}
+
+						sig := k.Sign(dataHash[:])
+						var sigB [96]byte
+						copy(sigB[:], sig.Marshal())
+						vote := &primitives.SingleValidatorVote{
+							Data:   &data,
+							Sig:    sigB,
+							Offset: uint64(index),
+							OutOf:  uint64(len(validators)),
+						}
+
+						err = p.voteMempool.AddValidate(vote, state)
+						if err != nil {
+							p.log.Errorf("error submitting vote: %s", err.Error())
+							return
+						}
+						votes.Votes = append(votes.Votes, vote)
 					}
-
-					sig := k.Sign(dataHash[:])
-					var sigB [96]byte
-					copy(sigB[:], sig.Marshal())
-					vote := &primitives.SingleValidatorVote{
-						Data:   &data,
-						Sig:    sigB,
-						Offset: uint64(i),
-						OutOf:  uint64(len(validators)),
-					}
-
-					err = p.voteMempool.AddValidate(vote, state)
-					if err != nil {
-						p.log.Errorf("error submitting vote: %s", err.Error())
-						continue
-					}
-
-					votes.Votes = append(votes.Votes, vote)
-
-				}
+				}(i, validatorIdx, &wg)
 			}
+
+			wg.Wait()
+
 			go p.publishVotes(votes)
 			slotToVote++
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
