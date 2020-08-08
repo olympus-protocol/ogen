@@ -9,7 +9,6 @@ import (
 	"github.com/olympus-protocol/ogen/params"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"sync"
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
@@ -705,40 +704,27 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		return err
 	}
 
-	var mwg sync.WaitGroup
 	for i := range v.ParticipationBitfield {
-		mwg.Add(1)
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			var swg sync.WaitGroup
-			for j := 0; j < 8; j++ {
-				swg.Add(1)
-				go func(index int, j int, wg *sync.WaitGroup) {
-					defer wg.Done()
+		for j := 0; j < 8; j++ {
+			validator := uint32((i * 8) + j)
 
-					validator := uint32((index * 8) + j)
-
-					if validator >= uint32(len(validators)) {
-						return
-					}
-
-					if v.ParticipationBitfield[index]&(1<<uint(j)) == 0 {
-						return
-					}
-
-					validatorIdx := validators[validator]
-
-					pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
-					if err != nil {
-						// TODO return error on a channel
-					}
-					aggPubs = append(aggPubs, pub)
-				}(i, j, &swg)
+			if validator >= uint32(len(validators)) {
+				continue
 			}
-			swg.Wait()
-		}(i, &mwg)
+
+			if v.ParticipationBitfield[i]&(1<<uint(j)) == 0 {
+				continue
+			}
+
+			validatorIdx := validators[validator]
+
+			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
+			if err != nil {
+				return err
+			}
+			aggPubs = append(aggPubs, pub)
+		}
 	}
-	mwg.Wait()
 
 	h := v.Data.Hash()
 	vSig, err := v.Signature()

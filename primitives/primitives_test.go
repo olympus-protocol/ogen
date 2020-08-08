@@ -543,7 +543,7 @@ func Test_TransactionSerialize(t *testing.T) {
 }
 
 func Test_VotesSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(100,100)
+	f := fuzz.New().NilChance(0).NumElements(100, 100)
 	var v primitives.Votes
 	f.Fuzz(&v)
 

@@ -340,6 +340,7 @@ func (p *Proposer) VoteForBlocks() {
 				wg.Add(1)
 
 				go func(index int, valIndex uint64, wg *sync.WaitGroup) {
+
 					defer wg.Done()
 
 					validator := state.ValidatorRegistry[valIndex]
@@ -368,15 +369,20 @@ func (p *Proposer) VoteForBlocks() {
 						}
 
 						votes.Votes = append(votes.Votes, vote)
+
 					}
+
 					return
+
 				}(i, validatorIdx, &wg)
 			}
 
 			wg.Wait()
 
 			go p.publishVotes(votes)
+
 			slotToVote++
+
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 		case <-p.context.Done():
 			p.log.Info("stopping voter")
