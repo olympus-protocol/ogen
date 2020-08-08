@@ -41,7 +41,7 @@ const (
 )
 
 type Votes struct {
-	Votes []*SingleValidatorVote `ssz-max:"2048"`
+	Votes []*SingleValidatorVote `ssz-max:"256"`
 }
 
 func (v *Votes) Marshal() ([]byte, error) {

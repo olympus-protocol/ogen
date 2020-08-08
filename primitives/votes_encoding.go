@@ -20,7 +20,7 @@ func (v *Votes) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	offset += len(v.Votes) * 240
 
 	// Field (0) 'Votes'
-	if len(v.Votes) > 2048 {
+	if len(v.Votes) > 256 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -52,7 +52,7 @@ func (v *Votes) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Votes'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 240, 2048)
+		num, err := ssz.DivideInt2(len(buf), 240, 256)
 		if err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ func (v *Votes) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(v.Votes))
-		if num > 2048 {
+		if num > 256 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -101,7 +101,7 @@ func (v *Votes) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 2048)
+		hh.MerkleizeWithMixin(subIndx, num, 256)
 	}
 
 	hh.Merkleize(indx)
