@@ -20,6 +20,7 @@ import (
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/olympus-protocol/ogen/server"
 	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/utils/bech32"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -44,6 +45,12 @@ var B *server.Server
 
 var initParams primitives.InitializationParameters
 
+//some common vars that will be used on multiple tests
+var rawTx string
+var tx *primitives.Tx
+var savedWallet bls.KeyPair
+var ogValidators []*bls.SecretKey
+
 // RPC Functional test
 // 1. Start a new chain with a single node moving.
 // 2. Use all the RPC methods trough a RPC Client and check all calls.
@@ -55,7 +62,10 @@ func TestMain(m *testing.M) {
 	secondNode()
 
 	// Run the test functions.
-	os.Exit(m.Run())
+	m.Run()
+	os.RemoveAll(testdata.Node1Folder)
+	os.RemoveAll(testdata.Node2Folder)
+	os.Exit(0)
 }
 
 func startNode() {
@@ -81,7 +91,7 @@ func startNode() {
 	}
 
 	// Generate 128 validators
-	valData, err := ks.GenerateNewValidatorKey(128, testdata.KeystorePass)
+	ogValidators, err = ks.GenerateNewValidatorKey(128, testdata.KeystorePass)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,7 +103,7 @@ func startNode() {
 
 	// Convert the validator to initialization params.
 	var validators []primitives.ValidatorInitialization
-	for _, vk := range valData {
+	for _, vk := range ogValidators {
 		val := primitives.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
@@ -334,17 +344,23 @@ func Test_Validator_GetValidatorsList(t *testing.T) {
 	res, err := C.validators.GetValidatorsList(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.ValidatorRegistry{}, res)
+	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
+	fmt.Println(len(res.Validators))
+	/*valkeys, _ := S.Keystore.GetValidatorKeys()
+	fmt.Println(len(valkeys))*/
 
 }
 
 func Test_Validator_GetAccountValidators(t *testing.T) {
 	ctx := context.Background()
 
-	res, err := C.validators.GetAccountValidators(ctx, &proto.Account{Account: args[0]})
+	account, err := testdata.PremineAddr.PublicKey().ToAccount()
+	assert.NoError(t, err)
+	res, err := C.validators.GetAccountValidators(ctx, &proto.Account{Account: account})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.ValidatorRegistry{}, res)
+	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
+	fmt.Println(len(res.Validators))
 
 }
 
@@ -355,23 +371,27 @@ func Test_Network_GetNetworkInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.NetworkInfo{}, res)
+	fmt.Println(res.ID)
+	fmt.Println(S.HostNode.GetHost().ID().String())
 
 }
 
-func Test_network_GetPeersInfo(t *testing.T) {
+func Test_Network_GetPeersInfo(t *testing.T) {
 	ctx := context.Background()
 
 	res, err := C.network.GetPeersInfo(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Peers{}, res)
+	fmt.Println(len(res.Peers))
+	fmt.Println(len(S.HostNode.GetPeerInfos()))
 
 }
 
 func Test_Network_AddPeer(t *testing.T) {
 	ctx := context.Background()
-
-	res, err := C.network.AddPeer(ctx, &proto.IP{Host: args[0]})
+	// add node
+	res, err := C.network.AddPeer(ctx, &proto.IP{Host: "/ip4/127.0.0.1/tcp/24126/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
@@ -379,37 +399,72 @@ func Test_Network_AddPeer(t *testing.T) {
 }
 
 func Test_Utils_StartProposer(t *testing.T) {
-	ctx := context.Background()
+	/*ctx := context.Background()
 
-	res, err := C.utils.StartProposer(ctx, &proto.Password{Password: args[0]})
+	res, err := C.utils.StartProposer(ctx, &proto.Password{Password: testdata.KeystorePass})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Success{}, res)
+	assert.IsType(t, &proto.Success{}, res)*/
 
 }
 
 func Test_Utils_StopProposer(t *testing.T) {
-	ctx := context.Background()
+	/*ctx := context.Background()
 
 	res, err := C.utils.StopProposer(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Success{}, res)
+	assert.IsType(t, &proto.Success{}, res)*/
 
 }
 
 func Test_Utils_SubmitRawData(t *testing.T) {
 	ctx := context.Background()
+	//create raw tx
+	// random addr
+	secondAccount := bls.RandKey()
+	secondAddr, _ := secondAccount.PublicKey().ToAccount()
+	_, data, err := bech32.Decode(secondAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	res, err := c.utils.SubmitRawData(ctx, &proto.RawData{Data: args[0], Type: args[1]})
+	var toPkh [20]byte
+	copy(toPkh[:], data)
+
+	var p [48]byte
+	copy(p[:], testdata.PremineAddr.PublicKey().Marshal())
+
+	tx = &primitives.Tx{
+		To:            toPkh,
+		FromPublicKey: p,
+		Amount:        11,
+		Nonce:         0,
+		Fee:           1,
+	}
+
+	sigMsg := tx.SignatureMessage()
+	sig := testdata.PremineAddr.Sign(sigMsg[:])
+	var s [96]byte
+	copy(s[:], sig.Marshal())
+	tx.Signature = s
+
+	byteTx, _ := tx.Marshal()
+	rawTx = hex.EncodeToString(byteTx)
+	res, err := C.utils.SubmitRawData(ctx, &proto.RawData{Data: rawTx, Type: "tx"})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
+	// give some time to the transaction to be added to a block
+	time.Sleep(time.Second * 30)
+	balance, _ := C.chain.GetAccountInfo(ctx, &proto.Account{Account: secondAddr})
+
+	assert.Equal(t, "11", balance.Balance.Confirmed)
 
 }
 
 func Test_Utils_GenKey(t *testing.T) {
-	ctx := context.Background()
+	/*ctx := context.Background()
 
 	// genkeypair
 	kp, err := C.rpcClient.genKeyPair(false)
@@ -422,35 +477,51 @@ func Test_Utils_GenKey(t *testing.T) {
 	rkp, err := C.rpcClient.genKeyPair(false)
 	assert.NoError(t, err)
 	assert.NotNil(t, rkp)
-	assert.IsType(t, string(), rkp)
+	assert.IsType(t, string(), rkp)*/
 
 }
 
 func Test_Utils_GenValidatorKey(t *testing.T) {
-	ctx := context.Background()
+	/*ctx := context.Background()
 
-	res, err := c.utils.GenValidatorKey(ctx, &proto.GenValidatorKeys{Keys: uint64(amount), Password: args[1]})
+	res, err := C.utils.GenValidatorKey(ctx, &proto.GenValidatorKeys{Keys: uint64(2), Password: testdata.KeystorePass})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.KeyPairs{}, res)
+	assert.IsType(t, &proto.KeyPairs{}, res)*/
 }
 
 func Test_Utils_DecodeRawTransaction(t *testing.T) {
 	ctx := context.Background()
 
-	res, err := C.utils.DecodeRawTransaction(ctx, &proto.RawData{Data: args[0]})
+	res, err := C.utils.DecodeRawTransaction(ctx, &proto.RawData{Data: rawTx})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Tx{}, res)
+	fmt.Println(res.Hash, res.To, res.FromPublicKey)
+	fmt.Println(tx.Hash().String(), tx.To, tx.FromPublicKey)
 }
 
-func Test_Utils_DecodeRawTransaction(t *testing.T) {
+func Test_Utils_DecodeRawBlock(t *testing.T) {
 	ctx := context.Background()
 
-	res, err := C.utils.DecodeRawBlock(ctx, &proto.RawData{Data: args[0]})
+	res, err := C.utils.DecodeRawBlock(ctx, &proto.RawData{Data: "needrawblock"})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Block{}, res)
+}
+
+func Test_Wallet_CreateWallet(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.wallet.CreateWallet(ctx, &proto.WalletReference{Name: "username", Password: "testPassword"})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.KeyPair{}, res)
+	fmt.Println(res.Private)
+	fmt.Println(res.Public)
+	keyy := bls.KeyPair{Private: res.Private, Public: res.Public}
+	fmt.Println(keyy.Public)
+	savedWallet.Public = res.Public
 }
 
 func Test_Wallet_ListWallets(t *testing.T) {
@@ -460,21 +531,14 @@ func Test_Wallet_ListWallets(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Wallets{}, res)
-}
-
-func Test_Wallet_CreateWallet(t *testing.T) {
-	ctx := context.Background()
-
-	res, err := C.wallet.CreateWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.IsType(t, &proto.KeyPair{}, res)
+	fmt.Println(res)
+	fmt.Println(len(res.Wallets))
 }
 
 func Test_Wallet_OpenWallet(t *testing.T) {
 	ctx := context.Background()
 
-	res, err := C.wallet.OpenWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
+	res, err := C.wallet.OpenWallet(ctx, &proto.WalletReference{Name: "username", Password: "testPassword"})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
@@ -487,24 +551,36 @@ func Test_Wallet_CloseWallet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
+
 }
 
 func Test_Wallet_ImportWallet(t *testing.T) {
 	ctx := context.Background()
 
-	res, err := C.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Key: &proto.KeyPair{Private: args[1]}})
+	privKey, err := testdata.PremineAddr.ToWIF()
+	assert.NoError(t, err)
+
+	res, err := C.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: "premineAcc", Key: &proto.KeyPair{Private: privKey}})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
+	fmt.Println(res.Public)
+	fmt.Println(testdata.PremineAddr.PublicKey().ToAccount())
+
 }
 
 func Test_Wallet_DumpWallet(t *testing.T) {
 	ctx := context.Background()
 
+	privKey, err := testdata.PremineAddr.ToWIF()
+	assert.NoError(t, err)
 	res, err := C.wallet.DumpWallet(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
+	fmt.Println(privKey)
+	fmt.Println(res.Private)
+	assert.Equal(t, privKey, res.Private)
 }
 
 func Test_Wallet_GetBalance(t *testing.T) {
@@ -514,6 +590,15 @@ func Test_Wallet_GetBalance(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Balance{}, res)
+	fmt.Println(res.Confirmed)
+	accByte, err := testdata.PremineAddr.PublicKey().Hash()
+	assert.NoError(t, err)
+	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	accBalance := balanceMap[accByte]
+	/*expected: "399989"
+	  actual  : "399989.999"*/
+
+	assert.Equal(t, strconv.Itoa(int(accBalance/1000)), res.Confirmed)
 }
 
 func Test_Wallet_GetValidators(t *testing.T) {
@@ -522,7 +607,12 @@ func Test_Wallet_GetValidators(t *testing.T) {
 	res, err := C.wallet.GetValidators(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.ValidatorRegistry{}, res)
+	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
+	fmt.Println(res)
+	fmt.Println(len(res.Validators))
+	/*valkeys, _ := S.Keystore.GetValidatorKeys()
+	fmt.Println(valkeys)
+	fmt.Println(len(valkeys))*/
 }
 
 func Test_Wallet_GetAccount(t *testing.T) {
@@ -532,21 +622,39 @@ func Test_Wallet_GetAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
+	fmt.Println(testdata.PremineAddr.PublicKey().ToAccount())
+	fmt.Println(testdata.PremineAddr.ToWIF())
+	fmt.Println(res.Public)
+	fmt.Println(res.Private)
 }
 
 func Test_Wallet_SendTransaction(t *testing.T) {
 	ctx := context.Background()
-
-	res, err := C.wallet.SendTransaction(ctx, &proto.SendTransactionInfo{Account: args[0], Amount: args[1]})
+	secondAccount := bls.RandKey()
+	secondAddr, _ := secondAccount.PublicKey().ToAccount()
+	res, err := C.wallet.SendTransaction(ctx, &proto.SendTransactionInfo{Account: secondAddr, Amount: "23"})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Hash{}, res)
+
+	time.Sleep(time.Second * 30)
+	secondaccByte, err := secondAccount.PublicKey().Hash()
+	assert.NoError(t, err)
+	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	secondaccBalance := balanceMap[secondaccByte]
+	assert.Equal(t, strconv.Itoa(int(secondaccBalance/1000)), "23")
+	balance, _ := C.chain.GetAccountInfo(ctx, &proto.Account{Account: secondAddr})
+
+	assert.Equal(t, "23", balance.Balance.Confirmed)
+
 }
 
 func Test_Wallet_StartValidator(t *testing.T) {
 	ctx := context.Background()
-
-	res, err := C.wallet.StartValidator(ctx, &proto.KeyPair{Private: args[0]})
+	secondAccount := ogValidators[0]
+	privKey, err := secondAccount.ToWIF()
+	assert.NoError(t, err)
+	res, err := C.wallet.StartValidator(ctx, &proto.KeyPair{Private: privKey})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
@@ -554,8 +662,9 @@ func Test_Wallet_StartValidator(t *testing.T) {
 
 func Test_Wallet_ExitValidator(t *testing.T) {
 	ctx := context.Background()
-
-	res, err := C.wallet.ExitValidator(ctx, &proto.KeyPair{Public: args[0]})
+	secondAccount := ogValidators[0]
+	secondAddr, _ := secondAccount.PublicKey().ToAccount()
+	res, err := C.wallet.ExitValidator(ctx, &proto.KeyPair{Public: secondAddr})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
