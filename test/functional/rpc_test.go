@@ -101,7 +101,7 @@ func startNode() {
 		log.Fatal(err)
 	}
 
-	// Convert the validator to initialization params.
+	// Convert the validator to initialization params. The validator will be binded to the premineAddr
 	var validators []primitives.ValidatorInitialization
 	for _, vk := range ogValidators {
 		val := primitives.ValidatorInitialization{
@@ -328,7 +328,6 @@ func Test_Chain_GetTransaction(t *testing.T) {
 	assert.NotNil(t, txReceipt)
 	// give some time to the transaction to be added to a block
 	time.Sleep(time.Second * 20)
-	fmt.Println(txReceipt)
 
 	txInfo, err := C.chain.GetTransaction(ctx, &proto.Hash{Hash: txReceipt.Hash})
 	assert.NoError(t, err)
@@ -345,10 +344,10 @@ func Test_Validator_GetValidatorsList(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
-	fmt.Println(len(res.Validators))
-	/*valkeys, _ := S.Keystore.GetValidatorKeys()
-	fmt.Println(len(valkeys))*/
-
+	// should be same length
+	valkeys, err := S.Proposer.Keystore.GetValidatorKeys()
+	assert.NoError(t, err)
+	assert.Equal(t, len(valkeys), len(res.Validators))
 }
 
 func Test_Validator_GetAccountValidators(t *testing.T) {
@@ -360,7 +359,8 @@ func Test_Validator_GetAccountValidators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
-	fmt.Println(len(res.Validators))
+	// validators from premine account should be the same that ogValidators
+	assert.Equal(t, len(ogValidators), len(res.Validators))
 
 }
 
@@ -371,9 +371,8 @@ func Test_Network_GetNetworkInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.NetworkInfo{}, res)
-	fmt.Println(res.ID)
-	fmt.Println(S.HostNode.GetHost().ID().String())
-
+	// should be same Id
+	assert.Equal(t, S.HostNode.GetHost().ID().String(), res.ID)
 }
 
 func Test_Network_GetPeersInfo(t *testing.T) {
@@ -383,9 +382,8 @@ func Test_Network_GetPeersInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Peers{}, res)
-	fmt.Println(len(res.Peers))
-	fmt.Println(len(S.HostNode.GetPeerInfos()))
-
+	//they should have the same Peers
+	assert.Equal(t, len(S.HostNode.GetPeerInfos()), len(res.Peers))
 }
 
 func Test_Network_AddPeer(t *testing.T) {
@@ -395,27 +393,24 @@ func Test_Network_AddPeer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
-
-}
-
-func Test_Utils_StartProposer(t *testing.T) {
-	/*ctx := context.Background()
-
-	res, err := C.utils.StartProposer(ctx, &proto.Password{Password: testdata.KeystorePass})
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Success{}, res)*/
-
 }
 
 func Test_Utils_StopProposer(t *testing.T) {
-	/*ctx := context.Background()
+	ctx := context.Background()
 
 	res, err := C.utils.StopProposer(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Success{}, res)*/
+	assert.IsType(t, &proto.Success{}, res)
+}
 
+func Test_Utils_StartProposer(t *testing.T) {
+	ctx := context.Background()
+
+	res, err := C.utils.StartProposer(ctx, &proto.Password{Password: testdata.KeystorePass})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
 }
 
 func Test_Utils_SubmitRawData(t *testing.T) {
@@ -463,24 +458,7 @@ func Test_Utils_SubmitRawData(t *testing.T) {
 
 }
 
-func Test_Utils_GenKey(t *testing.T) {
-	/*ctx := context.Background()
-
-	// genkeypair
-	kp, err := C.rpcClient.genKeyPair(false)
-	assert.NoError(t, err)
-	assert.NotNil(t, kp)
-	assert.IsType(t, string(), kp)
-	//unmarshal to bls keypair
-
-	// genrawkeypair
-	rkp, err := C.rpcClient.genKeyPair(false)
-	assert.NoError(t, err)
-	assert.NotNil(t, rkp)
-	assert.IsType(t, string(), rkp)*/
-
-}
-
+//not working
 func Test_Utils_GenValidatorKey(t *testing.T) {
 	/*ctx := context.Background()
 
@@ -497,17 +475,23 @@ func Test_Utils_DecodeRawTransaction(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Tx{}, res)
-	fmt.Println(res.Hash, res.To, res.FromPublicKey)
-	fmt.Println(tx.Hash().String(), tx.To, tx.FromPublicKey)
+	// compare hash, To field and FromPublicKey field
+	assert.Equal(t, tx.Hash().String(), res.Hash)
+	assert.Equal(t, hex.EncodeToString(tx.To[:]), res.To)
+	assert.Equal(t, hex.EncodeToString(tx.FromPublicKey[:]), res.FromPublicKey)
 }
 
 func Test_Utils_DecodeRawBlock(t *testing.T) {
 	ctx := context.Background()
-
-	res, err := C.utils.DecodeRawBlock(ctx, &proto.RawData{Data: "needrawblock"})
+	hash := S.Chain.State().Tip().Hash
+	block, err := S.Chain.GetRawBlock(hash)
+	assert.NoError(t, err)
+	rawBlock := hex.EncodeToString(block)
+	res, err := C.utils.DecodeRawBlock(ctx, &proto.RawData{Data: rawBlock})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Block{}, res)
+	assert.Equal(t, rawBlock, res.RawBlock)
 }
 
 func Test_Wallet_CreateWallet(t *testing.T) {
@@ -517,10 +501,7 @@ func Test_Wallet_CreateWallet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
-	fmt.Println(res.Private)
-	fmt.Println(res.Public)
-	keyy := bls.KeyPair{Private: res.Private, Public: res.Public}
-	fmt.Println(keyy.Public)
+	// save the returned pubkey
 	savedWallet.Public = res.Public
 }
 
@@ -564,9 +545,10 @@ func Test_Wallet_ImportWallet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
-	fmt.Println(res.Public)
-	fmt.Println(testdata.PremineAddr.PublicKey().ToAccount())
-
+	//public key must match
+	acc, err := testdata.PremineAddr.PublicKey().ToAccount()
+	assert.NoError(t, err)
+	assert.Equal(t, acc, res.Public)
 }
 
 func Test_Wallet_DumpWallet(t *testing.T) {
@@ -608,11 +590,8 @@ func Test_Wallet_GetValidators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
-	fmt.Println(res)
-	fmt.Println(len(res.Validators))
-	/*valkeys, _ := S.Keystore.GetValidatorKeys()
-	fmt.Println(valkeys)
-	fmt.Println(len(valkeys))*/
+	// validator length should be the same as premineAdr(because we imported that account into wallet)
+	assert.Equal(t, len(ogValidators), len(res.Validators))
 }
 
 func Test_Wallet_GetAccount(t *testing.T) {
@@ -622,10 +601,11 @@ func Test_Wallet_GetAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
-	fmt.Println(testdata.PremineAddr.PublicKey().ToAccount())
-	fmt.Println(testdata.PremineAddr.ToWIF())
-	fmt.Println(res.Public)
-	fmt.Println(res.Private)
+	// received account should be the same as premineAddr
+	acc, err := testdata.PremineAddr.PublicKey().ToAccount()
+	assert.NoError(t, err)
+
+	assert.Equal(t, acc, res.Public)
 }
 
 func Test_Wallet_SendTransaction(t *testing.T) {
