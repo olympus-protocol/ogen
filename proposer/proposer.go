@@ -350,6 +350,7 @@ func (p *Proposer) VoteForBlocks() {
 						}
 
 						sig := k.Sign(dataHash[:])
+
 						var sigB [96]byte
 						copy(sigB[:], sig.Marshal())
 						vote := &primitives.SingleValidatorVote{
@@ -364,8 +365,10 @@ func (p *Proposer) VoteForBlocks() {
 							p.log.Errorf("error submitting vote: %s", err.Error())
 							return
 						}
+
 						votes.Votes = append(votes.Votes, vote)
 					}
+					return
 				}(i, validatorIdx, &wg)
 			}
 
