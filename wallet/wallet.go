@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,8 +20,6 @@ import (
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 )
-
-var errorAlreadyExist = errors.New("the wallet you try to create already exists")
 
 // Wallet is the structure of the wallet manager.
 type Wallet struct {

@@ -79,10 +79,12 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 		return err
 	}
 
-	txNonce := item.Nonce
-
-	if txNonce != state.Nonces[fpkh]+1 {
+	if item.Nonce != state.Nonces[fpkh]+1 {
 		return errors.New("invalid nonce")
+	}
+
+	if item.Fee < 5000 {
+		return errors.New("transaction doesn't include enough fee")
 	}
 
 	mpi, ok := cm.mempool[fpkh]
