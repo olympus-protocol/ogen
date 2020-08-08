@@ -709,10 +709,12 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	for i := range v.ParticipationBitfield {
 		mwg.Add(1)
 		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
 			var swg sync.WaitGroup
 			for j := 0; j < 8; j++ {
 				swg.Add(1)
 				go func(index int, j int, wg *sync.WaitGroup) {
+					defer wg.Done()
 
 					validator := uint32((index * 8) + j)
 

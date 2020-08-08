@@ -341,6 +341,7 @@ func (p *Proposer) VoteForBlocks() {
 
 				go func(index int, valIndex uint64, wg *sync.WaitGroup) {
 					defer wg.Done()
+
 					validator := state.ValidatorRegistry[valIndex]
 
 					if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
