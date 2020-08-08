@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
 
@@ -37,7 +36,7 @@ const (
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
 	MaxMultiValidatorVoteSize = MaxVoteDataSize + 2144
 	// MaxVotesSize is the maximum size in bytes of vote data.
-	MaxVotesSize = MaxSingleValidatorVoteSize * 2048
+	MaxVotesSize = MaxSingleValidatorVoteSize * 256
 )
 
 type Votes struct {
@@ -147,19 +146,15 @@ func (v *VoteData) Marshal() ([]byte, error) {
 	if len(b) > MaxVoteDataSize {
 		return nil, ErrorVoteDataSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (v *VoteData) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxVoteDataSize {
+	if len(b) > MaxVoteDataSize {
 		return ErrorVoteDataSize
 	}
-	return v.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(b)
 }
 
 // FirstSlotValid return the first slot valid for current validator vote
@@ -282,19 +277,15 @@ func (m *MultiValidatorVote) Marshal() ([]byte, error) {
 	if len(b) > MaxMultiValidatorVoteSize {
 		return nil, ErrorMultiValidatorVoteSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (m *MultiValidatorVote) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxMultiValidatorVoteSize {
+	if len(b) > MaxMultiValidatorVoteSize {
 		return ErrorMultiValidatorVoteSize
 	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the vote.
