@@ -234,7 +234,7 @@ func newCli(rpcClient *RPCClient) *CLI {
 	}
 }
 
-func Run(host string) {
+func Run(host string, args []string) {
 	rpcClient := NewRPCClient(host, viper.GetString("datadir"))
 	cli := newCli(rpcClient)
 	cli.Run(args)

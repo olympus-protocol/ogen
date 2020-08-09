@@ -7,17 +7,22 @@ import (
 	"testing"
 )
 
+var rpcHost string
+
 func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "cli_test",
 		Short: "Mock RPC Cli",
 		Long:  `Simulates the functionality of the cli (single command only)`,
-		Run:   rpcclient.Run,
+		Run: func(cmd *cobra.Command, args []string) {
+			rpcclient.Run(rpcHost, args)
+		},
 	}
 }
 
 func Test_ChainCommands(t *testing.T) {
 	cmd := NewRootCmd()
+	cmd.Flags().StringVar(&rpcHost, "rpc_host", "127.0.0.1:24127", "IP and port of the RPC Server to connect")
 
 	cmd.SetArgs([]string{"getchaininfo"})
 	assert.NotPanics(t, func() {
