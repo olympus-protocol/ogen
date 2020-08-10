@@ -84,10 +84,16 @@ var ctrlDKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
 })
 
 // Run runs the CLI.
-func (c *CLI) Run() {
+func (c *CLI) Run(optArgs []string) {
 	color.Green("Welcome to the Ogen cli")
 	for {
-		t := prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "), ctrlCKeybind, ctrlDKeybind)
+		var t string
+		if len(optArgs) == 0 {
+			t = prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "), ctrlCKeybind, ctrlDKeybind)
+		} else {
+			t = strings.Join(optArgs, " ")
+			optArgs[0] = "exit"
+		}
 
 		args := strings.Split(t, " ")
 		if len(args) == 0 {
@@ -205,6 +211,11 @@ func (c *CLI) Run() {
 			out, err = c.rpcClient.startValidator(args[1:])
 		case "exitvalidator":
 			out, err = c.rpcClient.exitValidator(args[1:])
+
+		// Misc methods
+		case "exit":
+			return
+
 		default:
 			err = fmt.Errorf("Unknown command: %s", args[0])
 		}
@@ -223,8 +234,8 @@ func newCli(rpcClient *RPCClient) *CLI {
 	}
 }
 
-func Run(host string) {
+func Run(host string, args []string) {
 	rpcClient := NewRPCClient(host, viper.GetString("datadir"))
 	cli := newCli(rpcClient)
-	cli.Run()
+	cli.Run(args)
 }

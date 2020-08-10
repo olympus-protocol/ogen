@@ -12,7 +12,7 @@ var cliCmd = &cobra.Command{
 	Short: "Starts the integrated RPC command line.",
 	Long:  `Starts the integrated RPC command line.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		rpcclient.Run(rpcHost)
+		rpcclient.Run(rpcHost, args)
 	},
 }
 
