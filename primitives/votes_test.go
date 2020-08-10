@@ -80,38 +80,3 @@ func TestAcceptedVoteInfo_Copy(t *testing.T) {
 	assert.Equal(t, av2.InclusionDelay, uint64(9))
 
 }
-
-func TestSingleValidatorVote_AsMulti(t *testing.T) {
-	s := &primitives.SingleValidatorVote{
-		Data: &primitives.VoteData{
-			Slot:            5,
-			FromEpoch:       5,
-			FromHash:        [32]byte{1, 2, 3},
-			ToEpoch:         5,
-			ToHash:          [32]byte{1, 2, 3},
-			BeaconBlockHash: [32]byte{1, 2, 3},
-			Nonce:           5,
-		},
-		Sig:    [96]byte{1, 2, 3},
-		Offset: 56,
-		OutOf:  512,
-	}
-
-	mv := s.AsMulti()
-
-	assert.Equal(t, mv.Data, s.Data)
-
-	assert.Equal(t, mv.Sig, s.Sig)
-
-	b, err := mv.Marshal()
-	assert.NoError(t, err)
-
-	var m primitives.MultiValidatorVote
-
-	err = m.Unmarshal(b)
-
-	assert.NoError(t, err)
-
-	assert.Equal(t, mv, &m)
-
-}

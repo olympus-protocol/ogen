@@ -693,27 +693,17 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		return err
 	}
 
-	for i := range v.ParticipationBitfield {
-		for j := 0; j < 8; j++ {
-			validator := uint32((i * 8) + j)
-
-			if validator >= uint32(len(validators)) {
-				continue
-			}
-
-			if v.ParticipationBitfield[i]&(1<<uint(j)) == 0 {
-				continue
-			}
-
-			validatorIdx := validators[validator]
-
-			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
-			if err != nil {
-				return err
-			}
-			aggPubs = append(aggPubs, pub)
+	for _, validatorIdx := range validators {
+		if !v.ParticipationBitfield.Get(uint(validatorIdx)) {
+			continue
 		}
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
+		if err != nil {
+			return err
+		}
+		aggPubs = append(aggPubs, pub)
 	}
+
 
 	h := v.Data.Hash()
 	vSig, err := v.Signature()

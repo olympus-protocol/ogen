@@ -51,7 +51,9 @@ func (m *VoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *pr
 // sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
 func (m *VoteMempool) sortMempool() {
 	sort.Slice(m.poolOrder, func(i, j int) bool {
+
 		// return if i is higher priority than j
+
 		iHash := m.poolOrder[i]
 		jHash := m.poolOrder[j]
 		iData := m.pool[iHash].Data
@@ -81,7 +83,9 @@ func (m *VoteMempool) sortMempool() {
 func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
-	voteHash := vote.Data.Hash()
+	voteData := vote.Data
+	voteHash := voteData.Hash()
+
 
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
@@ -107,43 +111,62 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 		}
 	}
 
-	// Slashing check. Check if the vote is interferes with any vote on the mempool.
-
-	voteData := vote.Data
+	// Slashing check. Check if the vote interferes with any vote on the pool.
 	for h, v := range m.pool {
+
+		// If the vote data hash matches, it means is voting for same block.
 		if voteHash.IsEqual(&h) {
 			continue
 		}
 
-		if _, ok := v.participatingValidators[voter]; ok {
-			if v.voteData.IsDoubleVote(voteData) || v.voteData.IsSurroundVote(voteData) {
-				if v.voteData.IsDoubleVote(voteData) {
-					m.log.Warnf("found double vote for validator %d in vote %s and %s, reporting...", voter, vote.Data.String(), v.voteData.String())
-				}
-				if v.voteData.IsSurroundVote(voteData) {
-					m.log.Warnf("found surround vote for validator %d in vote %s and %s, reporting...", voter, vote.Data.String(), v.voteData.String())
-				}
-				conflicting, found := v.getVoteByOffset(vote.Offset)
-				if !found {
-					return
-				}
-
-				voteMulti := vote.AsMulti()
-				conflictingMulti := conflicting.AsMulti()
-				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(&primitives.VoteSlashing{
-						Vote1: voteMulti,
-						Vote2: conflictingMulti,
-					})
-				}
-				return
-			}
+		if v.Data.IsSurroundVote(voteData) {
+			m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
 		}
+
+		if v.Data.IsDoubleVote(voteData) {
+			m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+		}
+
+		for _, n := range m.notifees {
+			n.NotifyIllegalVotes(&primitives.VoteSlashing{
+				Vote1: vote,
+				Vote2: v,
+			})
+		}
+		return
+
 	}
 
 	// Check if vote is already on mempool.
-	_, ok := m.pool[voteHash]
-	if !ok {
+	// If a vote with same vote data is found, aggregate signatures and add it to the mempool
+	// Check if vote is already on mempool.
+	v, ok := m.pool[voteHash]
+	if ok {
+
+		newVote := &primitives.MultiValidatorVote{
+			Data:                  v.Data,
+			Sig:                   [96]byte{},
+			ParticipationBitfield: bitfield.NewBitlist(uint64(len(committee) * 8)),
+		}
+
+		for _, c := range committee {
+			if v.ParticipationBitfield.Get(uint(c)) || vote.ParticipationBitfield.Get(uint(c)) {
+				newVote.ParticipationBitfield.Set(uint(c))
+			}
+		}
+		sig := v.Sig
+		newSig := vote.Sig
+		newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{sig, newSig})
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
+		var voteSig [96]byte
+		copy(voteSig[:], newVoteSig.Marshal())
+		newVote.Sig = voteSig
+		m.pool[voteHash] = newVote
+
+	} else {
 		m.pool[voteHash] = vote
 		m.poolOrder = append(m.poolOrder, voteHash)
 	}
@@ -157,28 +180,8 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 	defer m.poolLock.Unlock()
 	votes := make([]*primitives.MultiValidatorVote, 0)
 	for _, h := range m.poolOrder {
-		v := m.pool[h]
-		if slot >= v.voteData.FirstSlotValid(p) && slot <= v.voteData.LastSlotValid(p) {
-			sigs := make([]*bls.Signature, 0)
-			for _, v := range m.pool[h].individualVotes {
-				sig, err := v.Signature()
-				if err != nil {
-					return nil, err
-				}
-				sigs = append(sigs, sig)
-			}
-			sig := bls.AggregateSignatures(sigs)
-			var sigb [96]byte
-			copy(sigb[:], sig.Marshal())
-			bl := bitfield.NewBitlist(v.participationBitfield.Len())
-			for i, p := range v.participationBitfield {
-				bl[i] = p
-			}
-			vote := &primitives.MultiValidatorVote{
-				Data:                  m.pool[h].voteData,
-				Sig:                   sigb,
-				ParticipationBitfield: bl,
-			}
+		vote := m.pool[h]
+		if slot >= vote.Data.FirstSlotValid(p) && slot <= vote.Data.LastSlotValid(p) {
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
 				return nil, err
 			}
@@ -208,23 +211,30 @@ func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
 func (m *VoteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
+
+	// Check for votes on the block and remove them
 	for _, v := range b.Votes {
 		voteHash := v.Data.Hash()
 
-		var shouldRemove bool
-		if vote, found := m.pool[voteHash]; found {
-			shouldRemove = vote.remove(v.ParticipationBitfield)
-		}
-		if shouldRemove {
-			delete(m.pool, voteHash)
-			m.removeFromOrder(voteHash)
-		}
-
-		if b.Header.Slot >= v.Data.LastSlotValid(m.params) {
+		// If the vote is on pool and included on the block, remove it.
+		_, ok := m.pool[voteHash]
+		if ok {
 			delete(m.pool, voteHash)
 			m.removeFromOrder(voteHash)
 		}
 	}
+
+	// Check all votes against the block slot to remove expired votes
+	for _, voteHash := range m.poolOrder {
+		v, ok := m.pool[voteHash]
+		if ok {
+			if b.Header.Slot >= v.Data.LastSlotValid(m.params) {
+				delete(m.pool, voteHash)
+				m.removeFromOrder(voteHash)
+			}
+		}
+	}
+
 }
 
 func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {

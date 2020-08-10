@@ -272,21 +272,6 @@ func Test_VoteDataSerialize(t *testing.T) {
 	assert.Equal(t, v, desc)
 }
 
-func Test_SingleValidatorVoteSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v primitives.SingleValidatorVote
-	f.Fuzz(&v)
-
-	ser, err := v.Marshal()
-	assert.NoError(t, err)
-
-	var desc primitives.SingleValidatorVote
-	err = desc.Unmarshal(ser)
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
 func Test_MultiValidatorVoteSerialize(t *testing.T) {
 	v := fuzzMultiValidatorVote(1)
 	ser, err := v[0].Marshal()
@@ -536,21 +521,6 @@ func Test_TransactionSerialize(t *testing.T) {
 	assert.NoError(t, err)
 
 	var desc primitives.Tx
-	err = desc.Unmarshal(ser)
-	assert.NoError(t, err)
-
-	assert.Equal(t, v, desc)
-}
-
-func Test_VotesSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(100, 100)
-	var v primitives.Votes
-	f.Fuzz(&v)
-
-	ser, err := v.Marshal()
-	assert.NoError(t, err)
-
-	var desc primitives.Votes
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 

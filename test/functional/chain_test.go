@@ -69,7 +69,7 @@ func createValidators() {
 	}
 
 	// Generate the validators data.
-	valDataPrimary, err := k.GenerateNewValidatorKey(8, testdata.KeystorePass)
+	valDataPrimary, err := k.GenerateNewValidatorKey(32, testdata.KeystorePass)
 	if err != nil {
 		panic(err)
 	}
