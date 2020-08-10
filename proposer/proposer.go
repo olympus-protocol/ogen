@@ -332,12 +332,12 @@ func (p *Proposer) VoteForBlocks() {
 
 			vote := &primitives.MultiValidatorVote{
 				Data:                  data,
-				ParticipationBitfield: bitfield.NewBitlist(uint64(len(state.ValidatorRegistry))),
+				ParticipationBitfield: bitfield.NewBitlist(uint64(len(validators))),
 			}
 
 			var signatures []*bls.Signature
 
-			for _, validatorIdx := range validators {
+			for i, validatorIdx := range validators {
 				validator := state.ValidatorRegistry[validatorIdx]
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
 					if !p.lastActionManager.ShouldRun(validator.PubKey) {
@@ -345,7 +345,7 @@ func (p *Proposer) VoteForBlocks() {
 					}
 					signatures = append(signatures, k.Sign(dataHash[:]))
 
-					vote.ParticipationBitfield.Set(uint(validatorIdx))
+					vote.ParticipationBitfield.Set(uint(i))
 				}
 			}
 

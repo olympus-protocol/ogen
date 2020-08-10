@@ -51,8 +51,8 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 }
 
 func (vg *voterGroup) addFromBitfield(registry []*Validator, field bitfield.Bitlist, validatorIndices []uint64) {
-	for _, validatorIdx := range validatorIndices {
-		if field.Get(uint(validatorIdx)) {
+	for i, validatorIdx := range validatorIndices {
+		if field.Get(uint(i)) {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)
 		}
 	}

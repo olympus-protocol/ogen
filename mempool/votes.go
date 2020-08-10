@@ -1,9 +1,8 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
-	"encoding/hex"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
@@ -80,8 +79,6 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	voteData := vote.Data
 	voteHash := voteData.Hash()
 
-	fmt.Printf("received vote: %s \n", hex.EncodeToString(voteHash[:]))
-
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
 
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
@@ -97,14 +94,14 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	}
 
 	// Votes participation fields should have the same length as the current state validator registry size.
-	if (vote.ParticipationBitfield.Len()) != uint64(len(currentState.ValidatorRegistry)) {
+	if (vote.ParticipationBitfield.Len()) != uint64(len(committee)) {
 		m.log.Error("wrong vote participation field size")
 		return
 	}
 
 	// Register voting action for validators included on the vote
-	for _, c := range committee {
-		if vote.ParticipationBitfield.Get(uint(c)) {
+	for i, c := range committee {
+		if vote.ParticipationBitfield.Get(uint(i)) {
 			m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[c].PubKey, vote.Data.Nonce)
 		}
 	}
@@ -142,24 +139,23 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// If a vote with same vote data is found, aggregate signatures and add it to the mempool
 	// Check if vote is already on mempool.
 	v, ok := m.pool[voteHash]
-	fmt.Println(m.pool)
-	fmt.Println(ok)
+
 	if ok {
-		fmt.Printf("vote already in mempool %s \n", v.Data.Hash().String())
 
 		// It can be possible for an already received vote to be received multiple times.
 		// It can happen for specifically during relay.
-		// To prevent check participation fields.
-		fmt.Printf("Field is equal? %v \n", v.ParticipationBitfield.Contains(vote.ParticipationBitfield))
-		if v.ParticipationBitfield.Contains(vote.ParticipationBitfield) {
+		// To prevent check the signatures.
+
+		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
+
 			newVote := &primitives.MultiValidatorVote{
 				Data:                  v.Data,
 				ParticipationBitfield: bitfield.NewBitlist(uint64(len(currentState.ValidatorRegistry))),
 			}
 
-			for _, c := range committee {
-				if v.ParticipationBitfield.Get(uint(c)) || vote.ParticipationBitfield.Get(uint(c)) {
-					newVote.ParticipationBitfield.Set(uint(c))
+			for i := range committee {
+				if v.ParticipationBitfield.Get(uint(i)) || vote.ParticipationBitfield.Get(uint(i)) {
+					newVote.ParticipationBitfield.Set(uint(i))
 				}
 			}
 

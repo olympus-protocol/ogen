@@ -692,8 +692,8 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		return err
 	}
 
-	for _, validatorIdx := range validators {
-		if !v.ParticipationBitfield.Get(uint(validatorIdx)) {
+	for i, validatorIdx := range validators {
+		if !v.ParticipationBitfield.Get(uint(i)) {
 			continue
 		}
 		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)

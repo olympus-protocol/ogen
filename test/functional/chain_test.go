@@ -59,23 +59,36 @@ func TestMain(m *testing.M) {
 }
 
 func createValidators() {
-	// Create datafolder Primary Node
+	// Create datafolders
 	_ = os.Mkdir(testdata.Node1Folder, 0777)
+	_ = os.Mkdir(testdata.Node2Folder, 0777)
 
 	// Create the keystore
-	k, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
+	k1, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
+	if err != nil {
+		panic(err)
+	}
+
+	k2, err := keystore.NewKeystore(testdata.Node2Folder, nil, testdata.KeystorePass)
 	if err != nil {
 		panic(err)
 	}
 
 	// Generate the validators data.
-	valDataPrimary, err := k.GenerateNewValidatorKey(32, testdata.KeystorePass)
+	valDataPrimary, err := k1.GenerateNewValidatorKey(32, testdata.KeystorePass)
 	if err != nil {
 		panic(err)
 	}
 
+	valDataSecondary, err := k2.GenerateNewValidatorKey(32, testdata.KeystorePass)
+	if err != nil {
+		panic(err)
+	}
+
+	valData := append(valDataPrimary, valDataSecondary...)
+
 	// Convert the validators to initialization params.
-	for _, vk := range valDataPrimary {
+	for _, vk := range valData {
 		val := primitives.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: premineAddr,
@@ -165,6 +178,18 @@ func secondNode() {
 	}
 	// Start the server
 	go B.Start()
+
+
+	// Open the keystore to start generating blocks
+	err = B.Proposer.OpenKeystore(testdata.KeystorePass)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Start the proposer
+	err = B.Proposer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type blockNotifee struct {

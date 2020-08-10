@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/utils/bitfield"
 
 	"github.com/olympus-protocol/ogen/bls"
@@ -173,8 +174,14 @@ func (v *VoteData) Copy() VoteData {
 
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() chainhash.Hash {
-	b, _ := v.Marshal()
-	return chainhash.HashH(b)
+	var dst []byte
+	dst = ssz.MarshalUint64(dst, v.Slot)
+	dst = ssz.MarshalUint64(dst, v.FromEpoch)
+	dst = append(dst, v.FromHash[:]...)
+	dst = ssz.MarshalUint64(dst, v.ToEpoch)
+	dst = append(dst, v.ToHash[:]...)
+	dst = append(dst, v.BeaconBlockHash[:]...)
+	return chainhash.HashH(dst)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.
