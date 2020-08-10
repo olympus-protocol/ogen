@@ -16,7 +16,7 @@ const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
 // Block is a block in the blockchain.
 type Block struct {
 	Header            *BlockHeader          // 																	= 372 bytes
-	Votes             []*MultiValidatorVote `ssz-max:"32"` // MaxVotesPerBlock 				333 * 2048 		= 681984 bytes
+	Votes             []*MultiValidatorVote `ssz-max:"32"`   // MaxVotesPerBlock 				333 * 2048 		= 681984 bytes
 	Txs               []*Tx                 `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
 	Deposits          []*Deposit            `ssz-max:"128"`  // MaxDepositsPerBlock 			308 * 128 		= 39424 bytes
 	Exits             []*Exit               `ssz-max:"128"`  // MaxExitsPerBlock     			192 * 128 		= 24576 bytes

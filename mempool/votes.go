@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -79,6 +80,8 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	voteData := vote.Data
 	voteHash := voteData.Hash()
 
+	fmt.Printf("received vote: %s \n", hex.EncodeToString(voteHash[:]))
+
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
 
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
@@ -109,27 +112,27 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// Slashing check. Check if the vote interferes with any vote on the pool.
 	//for h, v := range m.pool {
 
-		// If the vote data hash matches, it means is voting for same block.
+	// If the vote data hash matches, it means is voting for same block.
 	//	if voteHash.IsEqual(&h) {
 	//		continue
 	//	}
 
-		//if v.ParticipationBitfield.Overlaps(vote.ParticipationBitfield) {
-		//	if v.Data.IsSurroundVote(voteData) {
-		//		m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-		//	}
+	//if v.ParticipationBitfield.Overlaps(vote.ParticipationBitfield) {
+	//	if v.Data.IsSurroundVote(voteData) {
+	//		m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+	//	}
 
-		//	if v.Data.IsDoubleVote(voteData) {
-		//		m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
-		//	}
+	//	if v.Data.IsDoubleVote(voteData) {
+	//		m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+	//	}
 
-		//	for _, n := range m.notifees {
-		//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-		//			Vote1: vote,
-		//			Vote2: v,
-		//		})
-		//	}
-		//}
+	//	for _, n := range m.notifees {
+	//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
+	//			Vote1: vote,
+	//			Vote2: v,
+	//		})
+	//	}
+	//}
 
 	//	return
 
@@ -139,30 +142,28 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// If a vote with same vote data is found, aggregate signatures and add it to the mempool
 	// Check if vote is already on mempool.
 	v, ok := m.pool[voteHash]
+	fmt.Println(m.pool)
+	fmt.Println(ok)
 	if ok {
+		fmt.Printf("vote already in mempool %s \n", v.Data.Hash().String())
 
 		// It can be possible for an already received vote to be received multiple times.
 		// It can happen for specifically during relay.
 		// To prevent check participation fields.
+		fmt.Printf("Field is equal? %v \n", v.ParticipationBitfield.Contains(vote.ParticipationBitfield))
 		if v.ParticipationBitfield.Contains(vote.ParticipationBitfield) {
 			newVote := &primitives.MultiValidatorVote{
 				Data:                  v.Data,
-				Sig:                   [96]byte{},
 				ParticipationBitfield: bitfield.NewBitlist(uint64(len(currentState.ValidatorRegistry))),
 			}
 
 			for _, c := range committee {
-				fmt.Println(v.ParticipationBitfield.Get(uint(c)), vote.ParticipationBitfield.Get(uint(c)))
 				if v.ParticipationBitfield.Get(uint(c)) || vote.ParticipationBitfield.Get(uint(c)) {
 					newVote.ParticipationBitfield.Set(uint(c))
 				}
 			}
 
-			sig := v.Sig
-
-			newSig := vote.Sig
-
-			newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{sig, newSig})
+			newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{v.Sig, vote.Sig})
 			if err != nil {
 				m.log.Error(err)
 				return
