@@ -50,6 +50,8 @@ var rawTx string
 var tx *primitives.Tx
 var savedWallet bls.KeyPair
 var ogValidators []*bls.SecretKey
+var acc1 *bls.SecretKey
+var acc2 *bls.SecretKey
 
 // RPC Functional test
 // 1. Start a new chain with a single node moving.
@@ -648,4 +650,75 @@ func Test_Wallet_ExitValidator(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
+}
+
+// methods from the RPC, but not in the cli
+
+func Test_Wallet_ValidatorBulk(t *testing.T) {
+	ctx := context.Background()
+	acc1 = bls.RandKey()
+	secret1, err := acc1.ToWIF()
+	assert.NoError(t, err)
+	acc2 = bls.RandKey()
+	secret2, err := acc1.ToWIF()
+	assert.NoError(t, err)
+
+	res, err := C.wallet.StartValidatorBulk(ctx, &proto.KeyPairs{Keys: []string{secret1, secret2}})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+}
+
+func Test_Wallet_ExitValidatorBulk(t *testing.T) {
+	ctx := context.Background()
+	pub1, err := acc1.PublicKey().ToAccount()
+	assert.NoError(t, err)
+	pub2, err := acc1.PublicKey().ToAccount()
+	assert.NoError(t, err)
+	res, err := C.wallet.ExitValidatorBulk(ctx, &proto.KeyPairs{Keys: []string{pub1, pub2}})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Success{}, res)
+}
+
+func Test_Chain_Sync(t *testing.T) {
+	ctx := context.Background()
+	hash := S.Chain.State().Tip().Hash
+	res, err := C.chain.Sync(ctx, &proto.Hash{Hash: hash.String()})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Chain_SyncClient{}, res)
+}
+
+func Test_Chain_SubscribeBlocks(t *testing.T) {
+	ctx := context.Background()
+	res, err := C.chain.SubscribeBlocks(ctx, &proto.Empty{})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Chain_SubscribeBlocksClient{}, res)
+}
+
+func Test_Chain_SubscribeTransactions(t *testing.T) {
+	ctx := context.Background()
+	pub1, err := acc1.PublicKey().ToAccount()
+	assert.NoError(t, err)
+	pub2, err := acc1.PublicKey().ToAccount()
+	assert.NoError(t, err)
+	res, err := C.chain.SubscribeTransactions(ctx, &proto.KeyPairs{Keys: []string{pub1, pub2}})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Chain_SubscribeTransactionsClient{}, res)
+}
+
+func Test_Chain_SubscribeValidatorTransactions(t *testing.T) {
+	ctx := context.Background()
+	//validator pubkeys
+	pub1, err := ogValidators[0].PublicKey().ToAccount()
+	assert.NoError(t, err)
+	pub2, err := ogValidators[1].PublicKey().ToAccount()
+	assert.NoError(t, err)
+	res, err := C.chain.SubscribeValidatorTransactions(ctx, &proto.KeyPairs{Keys: []string{pub1, pub2}})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.IsType(t, &proto.Chain_SubscribeValidatorTransactionsClient{}, res)
 }
