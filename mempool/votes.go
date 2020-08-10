@@ -150,7 +150,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 
 			newVote := &primitives.MultiValidatorVote{
 				Data:                  v.Data,
-				ParticipationBitfield: bitfield.NewBitlist(uint64(len(currentState.ValidatorRegistry))),
+				ParticipationBitfield: bitfield.NewBitlist(uint64(len(committee))),
 			}
 
 			for i := range committee {
