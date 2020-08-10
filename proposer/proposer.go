@@ -332,7 +332,7 @@ func (p *Proposer) VoteForBlocks() {
 
 			vote := &primitives.MultiValidatorVote{
 				Data:                  data,
-				ParticipationBitfield: bitfield.NewBitlist(uint64(len(validators) * 8)),
+				ParticipationBitfield: bitfield.NewBitlist(uint64(len(state.ValidatorRegistry))),
 			}
 
 			var signatures []*bls.Signature
@@ -356,6 +356,10 @@ func (p *Proposer) VoteForBlocks() {
 			vote.Sig = voteSig
 
 			err = p.voteMempool.AddValidate(vote, state)
+			if err != nil {
+				p.log.Error("unable to submit own generated vote")
+				return
+			}
 
 			go p.publishVotes(vote)
 

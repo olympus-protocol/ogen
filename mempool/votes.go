@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"context"
+	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/bls"
@@ -57,20 +58,12 @@ func (m *VoteMempool) sortMempool() {
 		iHash := m.poolOrder[i]
 		jHash := m.poolOrder[j]
 		iData := m.pool[iHash].Data
-		iNumVotes := len(m.pool[iHash].ParticipationBitfield)
 		jData := m.pool[jHash].Data
-		jNumVotes := len(m.pool[iHash].ParticipationBitfield)
 
 		// first sort by slot
 		if iData.Slot < jData.Slot {
 			return true
 		} else if iData.Slot > jData.Slot {
-			return false
-		}
-
-		if iNumVotes > jNumVotes {
-			return true
-		} else if iNumVotes < jNumVotes {
 			return false
 		}
 
@@ -86,8 +79,8 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	voteData := vote.Data
 	voteHash := voteData.Hash()
 
-
 	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
+
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
 	if err != nil {
 		m.log.Error(err)
@@ -100,7 +93,9 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 		return
 	}
 
-	if len(vote.ParticipationBitfield) >= len(committee) {
+	// Votes participation fields should have the same length as the current state validator registry size.
+	if (vote.ParticipationBitfield.Len()) != uint64(len(currentState.ValidatorRegistry)) {
+		m.log.Error("wrong vote participation field size")
 		return
 	}
 
@@ -112,30 +107,33 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	}
 
 	// Slashing check. Check if the vote interferes with any vote on the pool.
-	for h, v := range m.pool {
+	//for h, v := range m.pool {
 
 		// If the vote data hash matches, it means is voting for same block.
-		if voteHash.IsEqual(&h) {
-			continue
-		}
+	//	if voteHash.IsEqual(&h) {
+	//		continue
+	//	}
 
-		if v.Data.IsSurroundVote(voteData) {
-			m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-		}
+		//if v.ParticipationBitfield.Overlaps(vote.ParticipationBitfield) {
+		//	if v.Data.IsSurroundVote(voteData) {
+		//		m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+		//	}
 
-		if v.Data.IsDoubleVote(voteData) {
-			m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
-		}
+		//	if v.Data.IsDoubleVote(voteData) {
+		//		m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+		//	}
 
-		for _, n := range m.notifees {
-			n.NotifyIllegalVotes(&primitives.VoteSlashing{
-				Vote1: vote,
-				Vote2: v,
-			})
-		}
-		return
+		//	for _, n := range m.notifees {
+		//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
+		//			Vote1: vote,
+		//			Vote2: v,
+		//		})
+		//	}
+		//}
 
-	}
+	//	return
+
+	//}
 
 	// Check if vote is already on mempool.
 	// If a vote with same vote data is found, aggregate signatures and add it to the mempool
@@ -143,29 +141,39 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	v, ok := m.pool[voteHash]
 	if ok {
 
-		newVote := &primitives.MultiValidatorVote{
-			Data:                  v.Data,
-			Sig:                   [96]byte{},
-			ParticipationBitfield: bitfield.NewBitlist(uint64(len(committee) * 8)),
-		}
-
-		for _, c := range committee {
-			if v.ParticipationBitfield.Get(uint(c)) || vote.ParticipationBitfield.Get(uint(c)) {
-				newVote.ParticipationBitfield.Set(uint(c))
+		// It can be possible for an already received vote to be received multiple times.
+		// It can happen for specifically during relay.
+		// To prevent check participation fields.
+		if v.ParticipationBitfield.Contains(vote.ParticipationBitfield) {
+			newVote := &primitives.MultiValidatorVote{
+				Data:                  v.Data,
+				Sig:                   [96]byte{},
+				ParticipationBitfield: bitfield.NewBitlist(uint64(len(currentState.ValidatorRegistry))),
 			}
-		}
-		sig := v.Sig
-		newSig := vote.Sig
-		newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{sig, newSig})
-		if err != nil {
-			m.log.Error(err)
-			return
-		}
-		var voteSig [96]byte
-		copy(voteSig[:], newVoteSig.Marshal())
-		newVote.Sig = voteSig
-		m.pool[voteHash] = newVote
 
+			for _, c := range committee {
+				fmt.Println(v.ParticipationBitfield.Get(uint(c)), vote.ParticipationBitfield.Get(uint(c)))
+				if v.ParticipationBitfield.Get(uint(c)) || vote.ParticipationBitfield.Get(uint(c)) {
+					newVote.ParticipationBitfield.Set(uint(c))
+				}
+			}
+
+			sig := v.Sig
+
+			newSig := vote.Sig
+
+			newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{sig, newSig})
+			if err != nil {
+				m.log.Error(err)
+				return
+			}
+
+			var voteSig [96]byte
+			copy(voteSig[:], newVoteSig.Marshal())
+
+			newVote.Sig = voteSig
+			m.pool[voteHash] = newVote
+		}
 	} else {
 		m.pool[voteHash] = vote
 		m.poolOrder = append(m.poolOrder, voteHash)
@@ -178,9 +186,13 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
+
 	votes := make([]*primitives.MultiValidatorVote, 0)
+
 	for _, h := range m.poolOrder {
+
 		vote := m.pool[h]
+
 		if slot >= vote.Data.FirstSlotValid(p) && slot <= vote.Data.LastSlotValid(p) {
 			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
 				return nil, err
@@ -189,6 +201,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 				votes = append(votes, vote)
 			}
 		}
+
 	}
 
 	return votes, nil
@@ -225,13 +238,10 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 	}
 
 	// Check all votes against the block slot to remove expired votes
-	for _, voteHash := range m.poolOrder {
-		v, ok := m.pool[voteHash]
-		if ok {
-			if b.Header.Slot >= v.Data.LastSlotValid(m.params) {
-				delete(m.pool, voteHash)
-				m.removeFromOrder(voteHash)
-			}
+	for voteHash, vote := range m.pool {
+		if b.Header.Slot >= vote.Data.LastSlotValid(m.params) {
+			delete(m.pool, voteHash)
+			m.removeFromOrder(voteHash)
 		}
 	}
 
@@ -283,7 +293,7 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 
 		err = m.AddValidate(vote, currentState)
 		if err != nil {
-			m.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+			m.log.Debugf("error adding vote to mempool: %s", err)
 		}
 	}
 }

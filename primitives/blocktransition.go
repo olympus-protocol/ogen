@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/params"
-	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -704,7 +703,6 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		aggPubs = append(aggPubs, pub)
 	}
 
-
 	h := v.Data.Hash()
 	vSig, err := v.Signature()
 	if err != nil {
@@ -737,22 +735,18 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	if err != nil {
 		return err
 	}
-	bl := bitfield.NewBitlist(v.ParticipationBitfield.Len())
-	for i, p := range v.ParticipationBitfield {
-		bl[i] = p
-	}
 
 	if v.Data.ToEpoch == s.EpochIndex {
 		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
-			ParticipationBitfield: bl,
+			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
 		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
-			ParticipationBitfield: bl,
+			ParticipationBitfield: v.ParticipationBitfield,
 			Proposer:              proposerIndex,
 			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
