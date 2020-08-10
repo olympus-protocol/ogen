@@ -57,6 +57,9 @@ var acc2 *bls.SecretKey
 // 1. Start a new chain with a single node moving.
 // 2. Use all the RPC methods trough a RPC Client and check all calls.
 func TestMain(m *testing.M) {
+	_ = os.RemoveAll(testdata.Node1Folder)
+	_ = os.RemoveAll(testdata.Node2Folder)
+
 	// Create the node server and the clients for global usage
 	startNode()
 
@@ -64,10 +67,7 @@ func TestMain(m *testing.M) {
 	secondNode()
 
 	// Run the test functions.
-	m.Run()
-	os.RemoveAll(testdata.Node1Folder)
-	os.RemoveAll(testdata.Node2Folder)
-	os.Exit(0)
+	os.Exit(m.Run())
 }
 
 func startNode() {
@@ -312,7 +312,7 @@ func Test_Chain_GetAccountInfo(t *testing.T) {
 	balanceMap := S.Chain.State().TipState().CoinsState.Balances
 	accBalance := balanceMap[accByte]
 
-	assert.Equal(t, strconv.Itoa(int(accBalance/1000)), res.Balance.Confirmed)
+	assert.Equal(t, strconv.Itoa(int(accBalance/1e8)), res.Balance.Confirmed)
 }
 
 func Test_Chain_GetTransaction(t *testing.T) {
@@ -687,7 +687,6 @@ func Test_Chain_Sync(t *testing.T) {
 	res, err := C.chain.Sync(ctx, &proto.Hash{Hash: hash.String()})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Chain_SyncClient{}, res)
 }
 
 func Test_Chain_SubscribeBlocks(t *testing.T) {
@@ -695,7 +694,6 @@ func Test_Chain_SubscribeBlocks(t *testing.T) {
 	res, err := C.chain.SubscribeBlocks(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Chain_SubscribeBlocksClient{}, res)
 }
 
 func Test_Chain_SubscribeTransactions(t *testing.T) {
@@ -707,7 +705,6 @@ func Test_Chain_SubscribeTransactions(t *testing.T) {
 	res, err := C.chain.SubscribeTransactions(ctx, &proto.KeyPairs{Keys: []string{pub1, pub2}})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Chain_SubscribeTransactionsClient{}, res)
 }
 
 func Test_Chain_SubscribeValidatorTransactions(t *testing.T) {
@@ -720,5 +717,4 @@ func Test_Chain_SubscribeValidatorTransactions(t *testing.T) {
 	res, err := C.chain.SubscribeValidatorTransactions(ctx, &proto.KeyPairs{Keys: []string{pub1, pub2}})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.Chain_SubscribeValidatorTransactionsClient{}, res)
 }
