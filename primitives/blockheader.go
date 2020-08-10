@@ -3,7 +3,6 @@ package primitives
 import (
 	"errors"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -41,19 +40,15 @@ func (b *BlockHeader) Marshal() ([]byte, error) {
 	if len(by) > MaxBlockHeaderBytes {
 		return nil, ErrorBlockHeaderSize
 	}
-	return snappy.Encode(nil, by), nil
+	return by, nil
 }
 
 // Unmarshal decodes the data.
 func (b *BlockHeader) Unmarshal(by []byte) error {
-	d, err := snappy.Decode(nil, by)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxBlockHeaderBytes {
+	if len(by) > MaxBlockHeaderBytes {
 		return ErrorBlockHeaderSize
 	}
-	return b.UnmarshalSSZ(d)
+	return b.UnmarshalSSZ(by)
 }
 
 // Hash calculates the hash of the block header.

@@ -5,109 +5,6 @@ import (
 	ssz "github.com/ferranbt/fastssz"
 )
 
-// MarshalSSZ ssz marshals the Votes object
-func (v *Votes) MarshalSSZ() ([]byte, error) {
-	return ssz.MarshalSSZ(v)
-}
-
-// MarshalSSZTo ssz marshals the Votes object to a target array
-func (v *Votes) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
-	offset := int(4)
-
-	// Offset (0) 'Votes'
-	dst = ssz.WriteOffset(dst, offset)
-	offset += len(v.Votes) * 240
-
-	// Field (0) 'Votes'
-	if len(v.Votes) > 256 {
-		err = ssz.ErrListTooBig
-		return
-	}
-	for ii := 0; ii < len(v.Votes); ii++ {
-		if dst, err = v.Votes[ii].MarshalSSZTo(dst); err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-// UnmarshalSSZ ssz unmarshals the Votes object
-func (v *Votes) UnmarshalSSZ(buf []byte) error {
-	var err error
-	size := uint64(len(buf))
-	if size < 4 {
-		return ssz.ErrSize
-	}
-
-	tail := buf
-	var o0 uint64
-
-	// Offset (0) 'Votes'
-	if o0 = ssz.ReadOffset(buf[0:4]); o0 > size {
-		return ssz.ErrOffset
-	}
-
-	// Field (0) 'Votes'
-	{
-		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 240, 256)
-		if err != nil {
-			return err
-		}
-		v.Votes = make([]*SingleValidatorVote, num)
-		for ii := 0; ii < num; ii++ {
-			if v.Votes[ii] == nil {
-				v.Votes[ii] = new(SingleValidatorVote)
-			}
-			if err = v.Votes[ii].UnmarshalSSZ(buf[ii*240 : (ii+1)*240]); err != nil {
-				return err
-			}
-		}
-	}
-	return err
-}
-
-// SizeSSZ returns the ssz encoded size in bytes for the Votes object
-func (v *Votes) SizeSSZ() (size int) {
-	size = 4
-
-	// Field (0) 'Votes'
-	size += len(v.Votes) * 240
-
-	return
-}
-
-// HashTreeRoot ssz hashes the Votes object
-func (v *Votes) HashTreeRoot() ([32]byte, error) {
-	return ssz.HashWithDefaultHasher(v)
-}
-
-// HashTreeRootWith ssz hashes the Votes object with a hasher
-func (v *Votes) HashTreeRootWith(hh *ssz.Hasher) (err error) {
-	indx := hh.Index()
-
-	// Field (0) 'Votes'
-	{
-		subIndx := hh.Index()
-		num := uint64(len(v.Votes))
-		if num > 256 {
-			err = ssz.ErrIncorrectListSize
-			return
-		}
-		for i := uint64(0); i < num; i++ {
-			if err = v.Votes[i].HashTreeRootWith(hh); err != nil {
-				return
-			}
-		}
-		hh.MerkleizeWithMixin(subIndx, num, 256)
-	}
-
-	hh.Merkleize(indx)
-	return
-}
-
 // MarshalSSZ ssz marshals the AcceptedVoteInfo object
 func (a *AcceptedVoteInfo) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(a)
@@ -137,7 +34,7 @@ func (a *AcceptedVoteInfo) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.MarshalUint64(dst, a.InclusionDelay)
 
 	// Field (1) 'ParticipationBitfield'
-	if len(a.ParticipationBitfield) > 2048 {
+	if len(a.ParticipationBitfield) > 6250 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -179,7 +76,7 @@ func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'ParticipationBitfield'
 	{
 		buf = tail[o1:]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		if err = ssz.ValidateBitlist(buf, 6250); err != nil {
 			return err
 		}
 		a.ParticipationBitfield = append(a.ParticipationBitfield, buf...)
@@ -212,7 +109,7 @@ func (a *AcceptedVoteInfo) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (1) 'ParticipationBitfield'
-	hh.PutBitlist(a.ParticipationBitfield, 2048)
+	hh.PutBitlist(a.ParticipationBitfield, 6250)
 
 	// Field (2) 'Proposer'
 	hh.PutUint64(a.Proposer)
@@ -329,96 +226,6 @@ func (v *VoteData) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	return
 }
 
-// MarshalSSZ ssz marshals the SingleValidatorVote object
-func (s *SingleValidatorVote) MarshalSSZ() ([]byte, error) {
-	return ssz.MarshalSSZ(s)
-}
-
-// MarshalSSZTo ssz marshals the SingleValidatorVote object to a target array
-func (s *SingleValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
-
-	// Field (0) 'Data'
-	if s.Data == nil {
-		s.Data = new(VoteData)
-	}
-	if dst, err = s.Data.MarshalSSZTo(dst); err != nil {
-		return
-	}
-
-	// Field (1) 'Sig'
-	dst = append(dst, s.Sig[:]...)
-
-	// Field (2) 'Offset'
-	dst = ssz.MarshalUint64(dst, s.Offset)
-
-	// Field (3) 'OutOf'
-	dst = ssz.MarshalUint64(dst, s.OutOf)
-
-	return
-}
-
-// UnmarshalSSZ ssz unmarshals the SingleValidatorVote object
-func (s *SingleValidatorVote) UnmarshalSSZ(buf []byte) error {
-	var err error
-	size := uint64(len(buf))
-	if size != 240 {
-		return ssz.ErrSize
-	}
-
-	// Field (0) 'Data'
-	if s.Data == nil {
-		s.Data = new(VoteData)
-	}
-	if err = s.Data.UnmarshalSSZ(buf[0:128]); err != nil {
-		return err
-	}
-
-	// Field (1) 'Sig'
-	copy(s.Sig[:], buf[128:224])
-
-	// Field (2) 'Offset'
-	s.Offset = ssz.UnmarshallUint64(buf[224:232])
-
-	// Field (3) 'OutOf'
-	s.OutOf = ssz.UnmarshallUint64(buf[232:240])
-
-	return err
-}
-
-// SizeSSZ returns the ssz encoded size in bytes for the SingleValidatorVote object
-func (s *SingleValidatorVote) SizeSSZ() (size int) {
-	size = 240
-	return
-}
-
-// HashTreeRoot ssz hashes the SingleValidatorVote object
-func (s *SingleValidatorVote) HashTreeRoot() ([32]byte, error) {
-	return ssz.HashWithDefaultHasher(s)
-}
-
-// HashTreeRootWith ssz hashes the SingleValidatorVote object with a hasher
-func (s *SingleValidatorVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
-	indx := hh.Index()
-
-	// Field (0) 'Data'
-	if err = s.Data.HashTreeRootWith(hh); err != nil {
-		return
-	}
-
-	// Field (1) 'Sig'
-	hh.PutBytes(s.Sig[:])
-
-	// Field (2) 'Offset'
-	hh.PutUint64(s.Offset)
-
-	// Field (3) 'OutOf'
-	hh.PutUint64(s.OutOf)
-
-	hh.Merkleize(indx)
-	return
-}
-
 // MarshalSSZ ssz marshals the MultiValidatorVote object
 func (m *MultiValidatorVote) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(m)
@@ -445,7 +252,7 @@ func (m *MultiValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	offset += len(m.ParticipationBitfield)
 
 	// Field (2) 'ParticipationBitfield'
-	if len(m.ParticipationBitfield) > 2048 {
+	if len(m.ParticipationBitfield) > 6250 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -484,7 +291,7 @@ func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'ParticipationBitfield'
 	{
 		buf = tail[o2:]
-		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
+		if err = ssz.ValidateBitlist(buf, 6250); err != nil {
 			return err
 		}
 		m.ParticipationBitfield = append(m.ParticipationBitfield, buf...)
@@ -520,7 +327,7 @@ func (m *MultiValidatorVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutBytes(m.Sig[:])
 
 	// Field (2) 'ParticipationBitfield'
-	hh.PutBitlist(m.ParticipationBitfield, 2048)
+	hh.PutBitlist(m.ParticipationBitfield, 6250)
 
 	hh.Merkleize(indx)
 	return

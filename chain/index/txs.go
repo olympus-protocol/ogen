@@ -4,7 +4,6 @@ import (
 	"errors"
 	"path"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
 )
@@ -141,19 +140,15 @@ func (t *TxLocator) Marshal() ([]byte, error) {
 	if len(b) > MaxTxLocatorSize {
 		return nil, ErrorCombinedSignatureSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (t *TxLocator) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxTxLocatorSize {
+	if len(b) > MaxTxLocatorSize {
 		return ErrorCombinedSignatureSize
 	}
-	return t.UnmarshalSSZ(d)
+	return t.UnmarshalSSZ(b)
 }
 
 // NewTxIndex returns/creates a new tx index database

@@ -18,48 +18,18 @@ var (
 	ErrorVoteDataSize = errors.New("vote data too big")
 	// ErrorAcceptedVoteDataSize is returned when a vote data is above MaxAcceptedVoteInfoSize
 	ErrorAcceptedVoteDataSize = errors.New("accepted vote data too big")
-	// ErrorSingleValidatorVoteSize is returned when a single validator vote data is above MaxSingleValidatorVoteSize
-	ErrorSingleValidatorVoteSize = errors.New("single validator vote data too big")
 	// ErrorMultiValidatorVoteSize is returned when a multi validator vote data is above MaxMultiValidatorVoteSize
 	ErrorMultiValidatorVoteSize = errors.New("accepted vote data too big")
-	// ErrorVotesSize is returned when a multi validator vote data is above MaxVotesSize
-	ErrorVotesSize = errors.New("votes size data too big")
 )
 
 const (
 	// MaxVoteDataSize is the maximum size in bytes of vote data.
 	MaxVoteDataSize = 128
 	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
-	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 2064
-	// MaxSingleValidatorVoteSize is the maximum size in bytes a single validator vote can contain.
-	MaxSingleValidatorVoteSize = MaxVoteDataSize + 112
+	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 6266
 	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
-	MaxMultiValidatorVoteSize = MaxVoteDataSize + 2144
-	// MaxVotesSize is the maximum size in bytes of vote data.
-	MaxVotesSize = MaxSingleValidatorVoteSize * 256
+	MaxMultiValidatorVoteSize = MaxVoteDataSize + 6346
 )
-
-type Votes struct {
-	Votes []*SingleValidatorVote `ssz-max:"256"`
-}
-
-func (v *Votes) Marshal() ([]byte, error) {
-	b, err := v.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxVotesSize {
-		return nil, ErrorVotesSize
-	}
-	return b, nil
-}
-
-func (v *Votes) Unmarshal(b []byte) error {
-	if len(b) > MaxVotesSize {
-		return ErrorVotesSize
-	}
-	return v.UnmarshalSSZ(b)
-}
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
 type AcceptedVoteInfo struct {
@@ -67,7 +37,8 @@ type AcceptedVoteInfo struct {
 	Data *VoteData
 
 	// ParticipationBitfield is any validator that participated in the vote.
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	// Max size is the same as the MultiValidatorVote bitlist size.
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6250"`
 
 	// Proposer is the proposer that included the attestation in a block.
 	Proposer uint64
@@ -206,61 +177,21 @@ func (v *VoteData) Hash() chainhash.Hash {
 	return chainhash.HashH(b)
 }
 
-// SingleValidatorVote is a signed vote from a validator.
-type SingleValidatorVote struct {
-	Data   *VoteData
-	Sig    [96]byte
-	Offset uint64
-	OutOf  uint64
-}
-
-// Signature returns the signature on BLS type
-func (s *SingleValidatorVote) Signature() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(s.Sig)
-}
-
-// Marshal encodes the data.
-func (s *SingleValidatorVote) Marshal() ([]byte, error) {
-	b, err := s.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxSingleValidatorVoteSize {
-		return nil, ErrorSingleValidatorVoteSize
-	}
-	return b, nil
-}
-
-// Unmarshal decodes the data.
-func (s *SingleValidatorVote) Unmarshal(b []byte) error {
-	if len(b) > MaxSingleValidatorVoteSize {
-		return ErrorSingleValidatorVoteSize
-	}
-	return s.UnmarshalSSZ(b)
-}
-
-// AsMulti returns the single validator vote as a multi validator vote.
-func (s *SingleValidatorVote) AsMulti() *MultiValidatorVote {
-	participationBitfield := bitfield.NewBitlist(s.OutOf + 7)
-	participationBitfield.Set(uint(s.Offset))
-	return &MultiValidatorVote{
-		Data:                  s.Data,
-		Sig:                   s.Sig,
-		ParticipationBitfield: participationBitfield,
-	}
-}
-
-// Hash returns the hash of the single validator vote.
-func (s *SingleValidatorVote) Hash() chainhash.Hash {
-	b, _ := s.Marshal()
-	return chainhash.HashH(b)
-}
-
 // MultiValidatorVote is a vote signed by one or many validators.
 type MultiValidatorVote struct {
-	Data                  *VoteData
-	Sig                   [96]byte
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	// Data defines the vote properties.
+	Data *VoteData
+	// Sig is the aggregated signature for all validators voting for the VoteData.
+	Sig [96]byte
+	// ParticipationBitfield is a bitlist that marks the index of the validators voting.
+	// The maximum size of the bitfield is based upon the maximum theoretical amount of validators voting.
+	// Maximum theoretical amount of validators = MaxSupply / Deposit amount = 25000000 / 100 = 250000
+	// The vote commitments define that validators should vote once per epoch.
+	// Each block should contain only (TotalValidators / EpochLength) votes.
+	// Ex. TotalValidators = 6,000, EpochLength = 5.
+	// Each block should contain only votes from (6000 / 5) =  1200 validators.
+	// This size assumes the EpochLength is set to 5 slots.
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6250"`
 }
 
 // Signature returns the signature on BLS type

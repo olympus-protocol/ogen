@@ -46,7 +46,7 @@ func (v *ValidatorHelloMessage) SignatureMessage() []byte {
 	nonceBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(nonceBytes, v.Nonce)
 
-	msg := []byte{}
+	var msg []byte
 	msg = append(msg, v.PublicKey[:]...)
 	msg = append(msg, timeBytes...)
 	msg = append(msg, nonceBytes...)
@@ -63,19 +63,15 @@ func (v *ValidatorHelloMessage) Marshal() ([]byte, error) {
 	if len(b) > MaxValidatorHelloMessageSize {
 		return nil, ErrorValidatorHelloMessageSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal deserializes the validator hello message from the reader.
 func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxValidatorHelloMessageSize {
+	if len(b) > MaxValidatorHelloMessageSize {
 		return ErrorValidatorHelloMessageSize
 	}
-	return v.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(b)
 }
 
 // MaxMessagePropagationTime is the maximum time we're expecting a message to

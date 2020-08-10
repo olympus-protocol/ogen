@@ -661,17 +661,6 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	return nil
 }
 
-func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([48]byte, error) {
-	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
-	if err != nil {
-		return [48]byte{}, err
-	}
-
-	validatorIdx := validators[v.Offset]
-
-	return s.ValidatorRegistry[validatorIdx].PubKey, nil
-}
-
 // IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
 	if v.Data == nil {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/peers/conflict"
-	"sync"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -115,7 +115,7 @@ func (p *Proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
 }
 
-func (p *Proposer) publishVotes(v primitives.Votes) {
+func (p *Proposer) publishVotes(v *primitives.MultiValidatorVote) {
 	buf, err := v.Marshal()
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
@@ -318,7 +318,7 @@ func (p *Proposer) VoteForBlocks() {
 				panic("could not find block")
 			}
 
-			data := primitives.VoteData{
+			data := &primitives.VoteData{
 				Slot:            slotToVote,
 				FromEpoch:       state.JustifiedEpoch,
 				FromHash:        state.JustifiedEpochHash,
@@ -330,56 +330,30 @@ func (p *Proposer) VoteForBlocks() {
 
 			dataHash := data.Hash()
 
-			votes := primitives.Votes{
-				Votes: []*primitives.SingleValidatorVote{},
+			vote := &primitives.MultiValidatorVote{
+				Data:                  data,
+				ParticipationBitfield: bitfield.NewBitlist(uint64(len(validators))),
 			}
 
-			var wg sync.WaitGroup
-			for i, validatorIdx := range validators {
+			var sigs []*bls.Signature
 
-				wg.Add(1)
-
-				go func(index int, valIndex uint64, wg *sync.WaitGroup) {
-
-					defer wg.Done()
-
-					validator := state.ValidatorRegistry[valIndex]
-
-					if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
-
-						if !p.lastActionManager.ShouldRun(validator.PubKey) {
-							return
-						}
-
-						sig := k.Sign(dataHash[:])
-
-						var sigB [96]byte
-						copy(sigB[:], sig.Marshal())
-						vote := &primitives.SingleValidatorVote{
-							Data:   &data,
-							Sig:    sigB,
-							Offset: uint64(index),
-							OutOf:  uint64(len(validators)),
-						}
-
-						err = p.voteMempool.AddValidate(vote, state)
-						if err != nil {
-							p.log.Errorf("error submitting vote: %s", err.Error())
-							return
-						}
-
-						votes.Votes = append(votes.Votes, vote)
-
+			for _, validatorIdx := range validators {
+				validator := state.ValidatorRegistry[validatorIdx]
+				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+					if !p.lastActionManager.ShouldRun(validator.PubKey) {
+						return
 					}
+					sigs = append(sigs, k.Sign(dataHash[:]))
 
-					return
-
-				}(i, validatorIdx, &wg)
+					vote.ParticipationBitfield.Set(uint(validatorIdx))
+				}
 			}
 
-			wg.Wait()
-
-			go p.publishVotes(votes)
+			sig := bls.AggregateSignatures(sigs)
+			var voteSig [96]byte
+			copy(voteSig[:], sig.Marshal())
+			err = p.voteMempool.AddValidate(vote, state)
+			go p.publishVotes(vote)
 
 			slotToVote++
 

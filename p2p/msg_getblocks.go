@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
 
@@ -26,19 +25,15 @@ func (m *MsgGetBlocks) Marshal() ([]byte, error) {
 	if uint64(len(b)) > m.MaxPayloadLength() {
 		return nil, ErrorSizeExceed
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal deserializes the data
 func (m *MsgGetBlocks) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if uint64(len(d)) > m.MaxPayloadLength() {
+	if uint64(len(b)) > m.MaxPayloadLength() {
 		return ErrorSizeExceed
 	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // Command returns the message topic
