@@ -107,34 +107,36 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	}
 
 	// Slashing check. Check if the vote interferes with any vote on the pool.
-	for h, v := range m.pool {
+	//for h, v := range m.pool {
 
 		// If the vote data hash matches, it means is voting for same block.
-		if voteHash.IsEqual(&h) {
-			continue
-		}
+	//	if voteHash.IsEqual(&h) {
+	//		continue
+	//	}
 
-		if v.ParticipationBitfield.Overlaps(vote.ParticipationBitfield) {
+	//	if v.ParticipationBitfield.Overlaps(vote.ParticipationBitfield) {
 
-			if v.Data.IsSurroundVote(voteData) {
-				m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-			}
+	//		if v.Data.IsSurroundVote(voteData) {
+	//			m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+	//		}
 
-			if v.Data.IsDoubleVote(voteData) {
-				m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
-			}
+	//		if v.Data.IsDoubleVote(voteData) {
+	//			m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+	//		}
 
-			for _, n := range m.notifees {
-				n.NotifyIllegalVotes(&primitives.VoteSlashing{
-					Vote1: vote,
-					Vote2: v,
-				})
-			}
-		}
+	//		for _, n := range m.notifees {
+	//			n.NotifyIllegalVotes(&primitives.VoteSlashing{
+	//				Vote1: vote,
+	//				Vote2: v,
+	//			})
+	//		}
+	//	}
 
-		return
+	//	return
 
-	}
+	//}
+
+	// TODO prevent overlapping votes
 
 	// Check if vote is already on mempool.
 	// If a vote with same vote data is found, aggregate signatures and add it to the mempool
