@@ -163,11 +163,10 @@ func (p *Proposer) ProposeBlocks() {
 			state, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
 				p.log.Error(err)
-				return
+				continue
 			}
 
 			slotIndex := (slotToPropose + p.params.EpochLength - 1) % p.params.EpochLength
-
 			proposerIndex := state.ProposerQueue[slotIndex]
 			proposer := state.ValidatorRegistry[proposerIndex]
 
@@ -182,13 +181,13 @@ func (p *Proposer) ProposeBlocks() {
 				votes, err := p.voteMempool.Get(slotToPropose, state, &p.params, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				depositTxs, state, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				coinTxs, state := p.coinsMempool.Get(p.params.MaxTxsPerBlock, state)
@@ -196,19 +195,19 @@ func (p *Proposer) ProposeBlocks() {
 				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), state)
@@ -220,7 +219,7 @@ func (p *Proposer) ProposeBlocks() {
 				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				block := primitives.Block{
@@ -262,7 +261,7 @@ func (p *Proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				go p.publishBlock(&block)

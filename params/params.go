@@ -60,10 +60,10 @@ var Mainnet = ChainParams{
 		Contract: "olctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
-	BaseRewardPerBlock:           2600,
+	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              100, // POLIS
+	EjectionBalance:              95, // POLIS
 	MaxBalanceChurnQuotient:      8,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
@@ -112,10 +112,10 @@ var TestNet = ChainParams{
 		Contract: "tlctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
-	BaseRewardPerBlock:           2600,
+	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              90,
+	EjectionBalance:              95,
 	MaxBalanceChurnQuotient:      32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,

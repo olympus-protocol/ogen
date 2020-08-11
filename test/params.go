@@ -47,7 +47,7 @@ var IntTestParams = params.ChainParams{
 		Contract: "itctr",
 	},
 	GovernanceBudgetQuotient:     5, // 20%
-	BaseRewardPerBlock:           2600,
+	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
 	EjectionBalance:              95,

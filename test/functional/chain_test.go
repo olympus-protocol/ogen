@@ -286,3 +286,9 @@ func Test_JustifiedEpochAndHash(t *testing.T) {
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
 	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
 }
+
+func Test_ValidatorRewards(t *testing.T) {
+	for _, v := range F.Chain.State().TipState().ValidatorRegistry {
+		assert.Greater(t, v.Balance, uint64(100 * 1e8))
+	}
+}
