@@ -48,10 +48,13 @@ type Proposer struct {
 	lastActionManager *conflict.LastActionManager
 }
 
-// OpenKeystore opens the keystore with the provided password
+// OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
 func (p *Proposer) OpenKeystore(password string) (err error) {
 	p.Keystore = keystore.NewKeystore(p.config.Datadir, p.log)
-
+	err = p.Keystore.OpenKeystore(password)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

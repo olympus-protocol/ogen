@@ -29,7 +29,20 @@ var generateKeysCmd = &cobra.Command{
 			panic("invalid argument: " + args[0] + "\n")
 		}
 
+		pass := args[1]
+
 		k := keystore.NewKeystore(DataFolder, nil)
+
+		// Try to create a new keystore
+		err = k.CreateKeystore(pass)
+		if err != nil {
+			// If it already exists, open it.
+			err = k.OpenKeystore(pass)
+			if err != nil {
+				panic(err)
+			}
+		}
+
 		keys, err := k.GenerateNewValidatorKey(uint64(numKeys), args[1])
 		if err != nil {
 			fmt.Printf("error generating key: %s\n", err)
@@ -46,14 +59,14 @@ var generateKeysCmd = &cobra.Command{
 		colorPubkey := color.New(color.FgGreen)
 		//colorNormal := color.New(color.Fg)
 		for i, k := range keys {
-			colorHeader.Printf("Validator #%d\n", i)
+			_, _ = colorHeader.Printf("Validator #%d\n", i)
 			kBytes := k.Marshal()
 			pkBytes := k.PublicKey().Marshal()
 			keyb := hex.EncodeToString(kBytes[:])
 			pkb := hex.EncodeToString(pkBytes[:])
-			colorSecret.Printf("Secret Key: ")
+			_, _ = colorSecret.Printf("Secret Key: ")
 			fmt.Printf("%s\n", keyb)
-			colorPubkey.Printf("Public Key: ")
+			_, _ = colorPubkey.Printf("Public Key: ")
 			fmt.Printf("%s\n", pkb)
 		}
 	},

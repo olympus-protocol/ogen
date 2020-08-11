@@ -37,7 +37,19 @@ func TestKeystore_GetValidatorKeys(t *testing.T) {
 	assert.Equal(t, len(keys), len(newKeys))
 }
 
-func Test(t *testing.T) {
+func TestKeystore_GetValidatorKey(t *testing.T) {
+	var pub [48]byte
+	copy(pub[:], keys[0].PublicKey().Marshal())
+	key, ok := k2.GetValidatorKey(pub)
+	assert.True(t, ok)
+	assert.Equal(t, keys[0], key)
+}
+
+func TestKeystore_GetValidatorKeyWithoutKey(t *testing.T) {
+	var pub [48]byte
+	copy(pub[:], bls.RandKey().PublicKey().Marshal())
+	_, ok := k2.GetValidatorKey(pub)
+	assert.False(t, ok)
 	cleanFolder2()
 }
 

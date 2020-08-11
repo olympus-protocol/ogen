@@ -39,11 +39,17 @@ var generateChainCmd = &cobra.Command{
 		if len(args) < 1 {
 			panic("please specify the keystore password")
 		}
-		k, err := keystore.NewKeystore(DataFolder, nil, args[0])
+		pass := args[0]
+
+		k := keystore.NewKeystore(DataFolder, nil)
+		defer func() {
+			_ = k.Close()
+		}()
+
+		err := k.OpenKeystore(pass)
 		if err != nil {
 			panic(err)
 		}
-		defer k.Close()
 
 		keys, err := k.GetValidatorKeys()
 		if err != nil {
