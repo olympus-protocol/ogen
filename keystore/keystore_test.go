@@ -38,12 +38,6 @@ func TestKeystore_CreateKeystoreWithAlreadyExisting(t *testing.T) {
 	assert.Equal(t, err, keystore.ErrorKeystoreExists)
 }
 
-func TestKeystore_OpenKeystoreWrongPassword(t *testing.T) {
-	err := k.OpenKeystore()
-	assert.NotNil(t, err)
-	assert.Equal(t, err, keystore.ErrorPassNoMatch)
-}
-
 func TestKeystore_OpenKeystore(t *testing.T) {
 	err := k.OpenKeystore()
 	assert.NoError(t, err)

@@ -103,7 +103,7 @@ func (c *RPCClient) genValidatorKey(args []string) (out string, err error) {
 		return out, err
 	}
 	req := &proto.GenValidatorKeys{
-		Keys:     uint64(amount),
+		Keys: uint64(amount),
 	}
 	res, err := c.utils.GenValidatorKey(ctx, req)
 	if err != nil {

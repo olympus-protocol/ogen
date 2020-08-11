@@ -18,13 +18,6 @@ func init() {
 
 var keys []*bls.SecretKey
 
-func TestKeystore_GenerateNewValidatorKeyWithWrongPassword(t *testing.T) {
-	var err error
-	keys, err = k2.GenerateNewValidatorKey(64)
-	assert.NotNil(t, err)
-	assert.Equal(t, keystore.ErrorPassNoMatch, err)
-}
-
 func TestKeystore_GenerateNewValidatorKey(t *testing.T) {
 	var err error
 	keys, err = k2.GenerateNewValidatorKey(8)

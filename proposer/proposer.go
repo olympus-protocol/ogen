@@ -365,7 +365,6 @@ func (p *Proposer) VoteForBlocks() {
 				go p.publishVotes(vote)
 			}
 
-
 			slotToVote++
 
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
