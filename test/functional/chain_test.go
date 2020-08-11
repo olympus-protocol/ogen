@@ -64,12 +64,16 @@ func createValidators() {
 	_ = os.Mkdir(testdata.Node2Folder, 0777)
 
 	// Create the keystore
-	k1, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
+	k1 := keystore.NewKeystore(testdata.Node1Folder, nil)
+
+	k2 := keystore.NewKeystore(testdata.Node2Folder, nil)
+
+	err := k1.CreateKeystore(testdata.KeystorePass)
 	if err != nil {
 		panic(err)
 	}
 
-	k2, err := keystore.NewKeystore(testdata.Node2Folder, nil, testdata.KeystorePass)
+	err = k2.CreateKeystore(testdata.KeystorePass)
 	if err != nil {
 		panic(err)
 	}

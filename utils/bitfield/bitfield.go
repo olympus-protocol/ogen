@@ -2,6 +2,7 @@ package bitfield
 
 import (
 	"math/bits"
+	"reflect"
 )
 
 type Bitlist []byte
@@ -88,6 +89,57 @@ func (b Bitlist) Contains(c Bitlist) bool {
 	return true
 }
 
+// Count returns the number of 1s in the bitlist.
+func (b Bitlist) Count() uint64 {
+	c := 0
+
+	for _, bt := range b {
+		c += bits.OnesCount8(bt)
+	}
+
+	if c > 0 {
+		c-- // Remove length bit from count.
+	}
+
+	return uint64(c)
+}
+
+// Intersect returns the bit indices of intersection between two bitlists
+func (b Bitlist) Intersect(c Bitlist) []int {
+	a := b.BitIndices()
+	e := c.BitIndices()
+
+	set := make([]int, 0)
+
+	for i := 0; i < len(a); i++ {
+		if contains(e, a[i]) {
+			set = append(set, a[i])
+		}
+	}
+
+	return set
+}
+
+// BitIndices returns an slice of int with the indexes marked on the bitlist
+func (b Bitlist) BitIndices() []int {
+	indices := make([]int, 0, b.Count())
+	for i, bt := range b {
+		if i == len(b)-1 {
+			// Clear the most significant bit (the length bit).
+			msb := uint8(bits.Len8(bt)) - 1
+			bt &^= uint8(1 << msb)
+		}
+		for j := 0; j < 8; j++ {
+			bit := byte(1 << uint(j))
+			if bt&bit == bit {
+				indices = append(indices, i*8+j)
+			}
+		}
+	}
+
+	return indices
+}
+
 // NewBitlist creates a new bitlist of size N.
 func NewBitlist(n uint64) Bitlist {
 	ret := make(Bitlist, n/8+1)
@@ -97,4 +149,14 @@ func NewBitlist(n uint64) Bitlist {
 	ret[n/8] |= i
 
 	return ret
+}
+
+func contains(a interface{}, e interface{}) bool {
+	v := reflect.ValueOf(a)
+	for i := 0; i < v.Len(); i++ {
+		if v.Index(i).Interface() == e {
+			return true
+		}
+	}
+	return false
 }

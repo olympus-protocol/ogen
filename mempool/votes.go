@@ -106,50 +106,75 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 		}
 	}
 
-	// Slashing check. Check if the vote interferes with any vote on the pool.
-	//for h, v := range m.pool {
+	// Slashing check
+	// This check iterates over all the votes on the pool.
+	// Checks if the new vote data matches any pool vote data hash.
+	// If that check fails, we should check for validators submitting twice different votes.
+	for h, v := range m.pool {
 
-	// If the vote data hash matches, it means is voting for same block.
-	//	if voteHash.IsEqual(&h) {
-	//		continue
-	//	}
+		// If the vote data hash matches, it means is voting for same block.
+		if voteHash.IsEqual(&h) {
+			continue
+		}
 
-	//	if v.ParticipationBitfield.Overlaps(vote.ParticipationBitfield) {
+		// Check if the new vote with different hash overlaps a previous marked validator vote.
+		intersect := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
+		if len(intersect) != 0 {
+			// Check if the vote matches the double vote and surround vote conditions
+			if v.Data.IsSurroundVote(voteData) {
+				m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: vote,
+						Vote2: v,
+					})
+				}
+				return
+			}
+			// If there is an intersection check if is a double vote
+			//if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
+			// If is a double or surround vote announce it and slash.
+			//	if v.Data.IsSurroundVote(voteData) {
+			//		m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+			//	}
+			//	if v.Data.IsDoubleVote(voteData) {
+			//		m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+			//	}
+			//	for _, n := range m.notifees {
+			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
+			//			Vote1: vote,
+			//			Vote2: v,
+			//		})
+			//	}
+			//	return
+			//}
+		}
+	}
 
-	//		if v.Data.IsSurroundVote(voteData) {
-	//			m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-	//		}
-
-	//		if v.Data.IsDoubleVote(voteData) {
-	//			m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
-	//		}
-
-	//		for _, n := range m.notifees {
-	//			n.NotifyIllegalVotes(&primitives.VoteSlashing{
-	//				Vote1: vote,
-	//				Vote2: v,
-	//			})
-	//		}
-	//	}
-
-	//	return
-
-	//}
-
-	// TODO prevent overlapping votes
-
-	// Check if vote is already on mempool.
-	// If a vote with same vote data is found, aggregate signatures and add it to the mempool
-	// Check if vote is already on mempool.
+	// Check if vote is already on pool.
+	// If a vote with same vote data is found we should check the signatures.
+	// If the signatures are the same it means is a duplicated vote for network (probably a relayed vote).
+	// If the signatures don't match, we should aggregate both signatures and merge the bitlists.
+	// IMPORTANT: 	We should never allow a vote that conflicts a previous vote to be added to the pool.
+	// 				That should be checked against all votes on pool comparing bitlists.
 	v, ok := m.pool[voteHash]
 
 	if ok {
 
-		// It can be possible for an already received vote to be received multiple times.
-		// It can happen for specifically during relay.
-		// To prevent check the signatures.
-
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
+
+			// Check if votes overlaps voters
+			intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
+			if len(intersection) != 0 {
+				// If the vote overlaps, that means a validator submitted the same vote multiple times.
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: vote,
+						Vote2: v,
+					})
+				}
+				return
+			}
 
 			newVote := &primitives.MultiValidatorVote{
 				Data:                  v.Data,
@@ -175,6 +200,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 			m.pool[voteHash] = newVote
 		}
 	} else {
+
 		m.pool[voteHash] = vote
 		m.poolOrder = append(m.poolOrder, voteHash)
 	}
@@ -253,10 +279,6 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 		if err != nil {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
-		}
-
-		if msg.GetFrom() == id {
-			continue
 		}
 
 		vote := new(primitives.MultiValidatorVote)

@@ -8,7 +8,6 @@ require (
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/fatih/color v1.9.0
 	github.com/ferranbt/fastssz v0.0.0-20200728110133-0b6e349af87a
-	github.com/go-test/deep v1.0.7
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.1
 	github.com/google/gofuzz v1.1.0
