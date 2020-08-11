@@ -109,7 +109,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// Slashing check. Check if the vote interferes with any vote on the pool.
 	//for h, v := range m.pool {
 
-		// If the vote data hash matches, it means is voting for same block.
+	// If the vote data hash matches, it means is voting for same block.
 	//	if voteHash.IsEqual(&h) {
 	//		continue
 	//	}

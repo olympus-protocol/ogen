@@ -46,7 +46,7 @@ var IntTestParams = params.ChainParams{
 		Multisig: "itmul",
 		Contract: "itctr",
 	},
-	GovernanceBudgetQuotient:     5, // 20%
+	GovernanceBudgetQuotient:     5,        // 20%
 	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,

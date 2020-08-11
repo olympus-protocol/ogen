@@ -59,7 +59,7 @@ var Mainnet = ChainParams{
 		Multisig: "olmul",
 		Contract: "olctr",
 	},
-	GovernanceBudgetQuotient:     5, // 20%
+	GovernanceBudgetQuotient:     5,        // 20%
 	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
@@ -111,7 +111,7 @@ var TestNet = ChainParams{
 		Multisig: "tlmul",
 		Contract: "tlctr",
 	},
-	GovernanceBudgetQuotient:     5, // 20%
+	GovernanceBudgetQuotient:     5,        // 20%
 	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,

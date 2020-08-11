@@ -50,10 +50,8 @@ type Proposer struct {
 
 // OpenKeystore opens the keystore with the provided password
 func (p *Proposer) OpenKeystore(password string) (err error) {
-	p.Keystore, err = keystore.NewKeystore(p.config.Datadir, p.log, password)
-	if err != nil {
-		return err
-	}
+	p.Keystore = keystore.NewKeystore(p.config.Datadir, p.log)
+
 	return nil
 }
 

@@ -28,11 +28,8 @@ var generateKeysCmd = &cobra.Command{
 		if err != nil {
 			panic("invalid argument: " + args[0] + "\n")
 		}
-		k, err := keystore.NewKeystore(DataFolder, nil, args[1])
-		if err != nil {
-			panic(err)
-		}
 
+		k := keystore.NewKeystore(DataFolder, nil)
 		keys, err := k.GenerateNewValidatorKey(uint64(numKeys), args[1])
 		if err != nil {
 			fmt.Printf("error generating key: %s\n", err)
