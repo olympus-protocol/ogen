@@ -15,37 +15,37 @@ func init() {
 }
 
 func TestKeystore_OpenKeystoreWithoutKeystore(t *testing.T) {
-	err := k.OpenKeystore(testdata.KeystorePass)
+	err := k.OpenKeystore()
 	assert.NotNil(t, err)
 	assert.Equal(t, keystore.ErrorNotInitialized, err)
 }
 
 func TestKeystore_CreateKeystore(t *testing.T) {
-	err := k.CreateKeystore(testdata.KeystorePass)
+	err := k.CreateKeystore()
 	assert.NoError(t, err)
 }
 
 func TestKeystore_CreateKeystoreWithKeystoreOpen(t *testing.T) {
-	err := k.CreateKeystore(testdata.KeystorePass)
+	err := k.CreateKeystore()
 	assert.NotNil(t, err)
 	assert.Equal(t, err, keystore.ErrorAlreadyOpen)
 	assert.NoError(t, k.Close())
 }
 
 func TestKeystore_CreateKeystoreWithAlreadyExisting(t *testing.T) {
-	err := k.CreateKeystore(testdata.KeystorePass)
+	err := k.CreateKeystore()
 	assert.NotNil(t, err)
 	assert.Equal(t, err, keystore.ErrorKeystoreExists)
 }
 
 func TestKeystore_OpenKeystoreWrongPassword(t *testing.T) {
-	err := k.OpenKeystore("wrong_pass")
+	err := k.OpenKeystore()
 	assert.NotNil(t, err)
 	assert.Equal(t, err, keystore.ErrorPassNoMatch)
 }
 
 func TestKeystore_OpenKeystore(t *testing.T) {
-	err := k.OpenKeystore(testdata.KeystorePass)
+	err := k.OpenKeystore()
 	assert.NoError(t, err)
 	cleanFolder1()
 }

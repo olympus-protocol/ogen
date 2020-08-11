@@ -49,9 +49,9 @@ type Proposer struct {
 }
 
 // OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
-func (p *Proposer) OpenKeystore(password string) (err error) {
+func (p *Proposer) OpenKeystore() (err error) {
 	p.Keystore = keystore.NewKeystore(p.config.Datadir, p.log)
-	err = p.Keystore.OpenKeystore(password)
+	err = p.Keystore.OpenKeystore()
 	if err != nil {
 		return err
 	}
@@ -349,19 +349,22 @@ func (p *Proposer) VoteForBlocks() {
 				}
 			}
 
-			sig := bls.AggregateSignatures(signatures)
+			if len(signatures) > 0 {
+				sig := bls.AggregateSignatures(signatures)
 
-			var voteSig [96]byte
-			copy(voteSig[:], sig.Marshal())
-			vote.Sig = voteSig
+				var voteSig [96]byte
+				copy(voteSig[:], sig.Marshal())
+				vote.Sig = voteSig
 
-			err = p.voteMempool.AddValidate(vote, state)
-			if err != nil {
-				p.log.Error("unable to submit own generated vote")
-				return
+				err = p.voteMempool.AddValidate(vote, state)
+				if err != nil {
+					p.log.Error("unable to submit own generated vote")
+					return
+				}
+
+				go p.publishVotes(vote)
 			}
 
-			go p.publishVotes(vote)
 
 			slotToVote++
 

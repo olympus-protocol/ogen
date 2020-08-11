@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 	testdata.Conf.LogFile = true
 
 	// Create datafolder
-	os.Mkdir(testdata.Node1Folder, 0777)
+	_ = os.Mkdir(testdata.Node1Folder, 0777)
 
 	// Create logger
 	logfile, err := os.Create(testdata.Node1Folder + "/log.log")
@@ -67,16 +67,22 @@ func TestMain(m *testing.M) {
 
 	// Create a keystore
 	log.Info("Creating keystore")
-	keystore, err := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
+	ks := keystore.NewKeystore(testdata.Node1Folder, log)
+
+	err = ks.CreateKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
-	validatorKeys, err := keystore.GenerateNewValidatorKey(128, testdata.KeystorePass)
+
+	validatorKeys, err := ks.GenerateNewValidatorKey(128)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Infof("Generated %v keys", len(validatorKeys))
-	keystore.Close()
+	err = ks.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 	addr, err := testdata.PremineAddr.PublicKey().ToAccount()
 	if err != nil {
 		log.Fatal(err)
@@ -97,7 +103,7 @@ func TestMain(m *testing.M) {
 		InitialValidators: validators,
 	}
 	// Load the block database
-	bdb, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,7 +113,7 @@ func TestMain(m *testing.M) {
 	config.InterruptListener(log, cancel)
 	c := testdata.Conf
 	c.DataFolder = testdata.Node1Folder
-	server1, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, bdb, ip)
+	server1, err = server.NewServer(ctx, &c, log, testdata.IntTestParams, db, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -124,14 +130,19 @@ func TestMain(m *testing.M) {
 	hostMultiAddr.Addrs = server1.HostNode.GetHost().Addrs()
 	hostMultiAddr.ID = server1.HostNode.GetHost().ID()
 	// Open the Keystore to start generating blocks
-	server1.Proposer.OpenKeystore(testdata.KeystorePass)
-	server1.Proposer.Start()
-	fmt.Println("First node ready")
+	err = server1.Proposer.OpenKeystore()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = server1.Proposer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = rpcClient()
 	go runSecondNode(server1, ip, m)
 
 	<-ctx.Done()
-	bdb.Close()
+	db.Close()
 	err = server1.Stop()
 	if err != nil {
 		log.Fatal(err)
@@ -139,7 +150,7 @@ func TestMain(m *testing.M) {
 }
 
 func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m *testing.M) {
-	os.Mkdir(testdata.Node2Folder, 0777)
+	_ = os.Mkdir(testdata.Node2Folder, 0777)
 	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
 	if err != nil {
 		panic(err)
@@ -151,25 +162,27 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m 
 
 	// Create a keystore
 	log.Info("Creating keystore")
-	keystore, err := keystore.NewKeystore(testdata.Node2Folder, log, testdata.KeystorePass)
+	ks := keystore.NewKeystore(testdata.Node2Folder, log)
 	if err != nil {
 		log.Fatal(err)
 	}
-	validatorKeys, err := keystore.GenerateNewValidatorKey(128, testdata.KeystorePass)
+	validatorKeys, err := ks.GenerateNewValidatorKey(128)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Infof("Generated %v keys", len(validatorKeys))
-	keystore.Close()
-
-	bdb, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	err = ks.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
 	secondNodeConf := &config.Config{
 		DataFolder:   testdata.Node2Folder,
 		NetworkName:  "integration tests net",
-		AddNodes:     []peer.AddrInfo{hostMultiAddr},
+		InitialNodes:     []peer.AddrInfo{hostMultiAddr},
 		Port:         "24000",
 		RPCProxy:     false,
 		RPCProxyPort: "8080",
@@ -179,13 +192,13 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m 
 		LogFile:      false,
 		Pprof:        false,
 	}
-	server2, err = server.NewServer(ctx, secondNodeConf, log, testdata.IntTestParams, bdb, ip)
+	server2, err = server.NewServer(ctx, secondNodeConf, log, testdata.IntTestParams, db, ip)
 	if err != nil {
 		log.Fatal(err)
 	}
 	go server2.Start()
-	server2.Proposer.OpenKeystore(testdata.KeystorePass)
-	server2.Proposer.Start()
+	err = server2.Proposer.OpenKeystore()
+	err = server2.Proposer.Start()
 	fmt.Println("Second node ready")
 	os.Exit(m.Run())
 	<-ctx.Done()

@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/utils/aesbls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"go.etcd.io/bbolt"
 )
@@ -45,13 +44,9 @@ func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 }
 
 // GenerateNewValidatorKey generates new validator keys and adds it to the map and database.
-func (k *Keystore) GenerateNewValidatorKey(amount uint64, password string) ([]*bls.SecretKey, error) {
+func (k *Keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
 	if !k.open {
 		return nil, ErrorNoOpen
-	}
-	err := k.checkPassword(password)
-	if err != nil {
-		return nil, ErrorPassNoMatch
 	}
 
 	keys := make([]*bls.SecretKey, amount)
@@ -59,7 +54,7 @@ func (k *Keystore) GenerateNewValidatorKey(amount uint64, password string) ([]*b
 	for i := range keys {
 		// Generate a new key
 		key := bls.RandKey()
-		err := k.addKey(key, password)
+		err := k.addKey(key)
 		if err != nil {
 			return nil, err
 		}
@@ -69,18 +64,13 @@ func (k *Keystore) GenerateNewValidatorKey(amount uint64, password string) ([]*b
 	return keys, nil
 }
 
-func (k *Keystore) addKey(priv *bls.SecretKey, password string) error {
+func (k *Keystore) addKey(priv *bls.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen
 	}
 
-	encryptedKey, err := aesbls.SimpleEncrypt(priv.Marshal(), []byte(password), k.encryptionInfo.nonce, k.encryptionInfo.salt)
-	if err != nil {
-		return err
-	}
-
-	err = k.addKeyDB(encryptedKey, priv.PublicKey().Marshal())
+	err := k.addKeyDB(priv.Marshal(), priv.PublicKey().Marshal())
 	if err != nil {
 		return err
 	}

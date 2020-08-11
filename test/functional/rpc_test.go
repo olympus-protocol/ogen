@@ -89,13 +89,13 @@ func startNode() {
 	log.Info("Creating keystore")
 	ks := keystore.NewKeystore(testdata.Node1Folder, log)
 
-	err = ks.CreateKeystore(testdata.KeystorePass)
+	err = ks.CreateKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Generate 128 validators
-	ogValidators, err = ks.GenerateNewValidatorKey(128, testdata.KeystorePass)
+	ogValidators, err = ks.GenerateNewValidatorKey(128)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func startNode() {
 	}
 
 	// Open the Keystore to start generating blocks
-	err = S.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = S.Proposer.OpenKeystore()
 	err = S.Proposer.Start()
 
 }
@@ -666,7 +666,7 @@ func Test_Wallet_ValidatorBulk(t *testing.T) {
 	secret1, err := acc1.ToWIF()
 	assert.NoError(t, err)
 	acc2 = bls.RandKey()
-	secret2, err := acc1.ToWIF()
+	secret2, err := acc2.ToWIF()
 	assert.NoError(t, err)
 
 	res, err := C.wallet.StartValidatorBulk(ctx, &proto.KeyPairs{Keys: []string{secret1, secret2}})

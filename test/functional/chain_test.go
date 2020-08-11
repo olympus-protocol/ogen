@@ -24,7 +24,10 @@ import (
 )
 
 func init() {
-	bls.Initialize(testdata.IntTestParams)
+	err := bls.Initialize(testdata.IntTestParams)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
@@ -68,23 +71,23 @@ func createValidators() {
 
 	k2 := keystore.NewKeystore(testdata.Node2Folder, nil)
 
-	err := k1.CreateKeystore(testdata.KeystorePass)
+	err := k1.CreateKeystore()
 	if err != nil {
 		panic(err)
 	}
 
-	err = k2.CreateKeystore(testdata.KeystorePass)
+	err = k2.CreateKeystore()
 	if err != nil {
 		panic(err)
 	}
 
 	// Generate the validators data.
-	valDataPrimary, err := k1.GenerateNewValidatorKey(32, testdata.KeystorePass)
+	valDataPrimary, err := k1.GenerateNewValidatorKey(32)
 	if err != nil {
 		panic(err)
 	}
 
-	valDataSecondary, err := k2.GenerateNewValidatorKey(32, testdata.KeystorePass)
+	valDataSecondary, err := k2.GenerateNewValidatorKey(32)
 	if err != nil {
 		panic(err)
 	}
@@ -138,7 +141,7 @@ func firstNode() {
 	go F.Start()
 
 	// Open the keystore to start generating blocks
-	err = F.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = F.Proposer.OpenKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -185,7 +188,7 @@ func secondNode() {
 
 
 	// Open the keystore to start generating blocks
-	err = B.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = B.Proposer.OpenKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}

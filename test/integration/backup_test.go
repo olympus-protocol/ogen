@@ -26,7 +26,10 @@ import (
 )
 
 func init() {
-	bls.Initialize(testdata.IntTestParams)
+	err := bls.Initialize(testdata.IntTestParams)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
@@ -72,12 +75,17 @@ func createValidators() {
 	var w sync.WaitGroup
 	w.Add(2)
 	go func(w *sync.WaitGroup) {
-		keystorePrimary, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
+		ks := keystore.NewKeystore(testdata.Node1Folder, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		err = ks.CreateKeystore()
 		if err != nil {
 			panic(err)
 		}
 		// Generate the validators data.
-		valDataPrimary, err := keystorePrimary.GenerateNewValidatorKey(128, testdata.KeystorePass)
+		valDataPrimary, err := ks.GenerateNewValidatorKey(128)
 		if err != nil {
 			panic(err)
 		}
@@ -94,12 +102,17 @@ func createValidators() {
 	}(&w)
 
 	go func(w *sync.WaitGroup) {
-		keystoreMover, err := keystore.NewKeystore(testdata.Node3Folder, nil, testdata.KeystorePass)
+		ks := keystore.NewKeystore(testdata.Node3Folder, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		err = ks.CreateKeystore()
 		if err != nil {
 			panic(err)
 		}
 		// Generate the validators data.
-		valDataMover, err := keystoreMover.GenerateNewValidatorKey(128, testdata.KeystorePass)
+		valDataMover, err := ks.GenerateNewValidatorKey(128)
 		if err != nil {
 			panic(err)
 		}
@@ -154,7 +167,7 @@ func firstNode() {
 	go F.Start()
 
 	// Open the keystore to start generating blocks
-	err = F.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = F.Proposer.OpenKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -214,7 +227,7 @@ func secondNode() {
 	go B.Start()
 
 	// Open the keystore to start generating blocks
-	err = B.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = B.Proposer.OpenKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -252,7 +265,7 @@ func thirdNode() {
 	go M.Start()
 
 	// Open the keystore to start generating blocks
-	err = M.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = M.Proposer.OpenKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}

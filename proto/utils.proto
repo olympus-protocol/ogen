@@ -9,11 +9,11 @@ service Utils {
 
     /** 
         Method: StartProposer 
-        Input: message Password
+        Input: message Empty
         Response: message Success
-        Description: Decrypts the Keystore and starts voting/proposing.
+        Description: Loads the Keystore into the Proposer..
     */
-    rpc StartProposer(Password) returns (Success) {
+    rpc StartProposer(Empty) returns (Success) {
         option (google.api.http) = {
             post: "/utils/startproposer"
             body: "*"
@@ -83,11 +83,6 @@ service Utils {
     }
 }
 
-message Password {
-    string password = 1;
-}
-
 message GenValidatorKeys {
-    string password = 1;
-    uint64 keys = 2;
+    uint64 keys = 1;
 }

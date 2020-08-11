@@ -13,21 +13,21 @@ var k2 = keystore.NewKeystore(testdata.Node2Folder, nil)
 
 func init() {
 	_ = os.Mkdir(testdata.Node2Folder, 0777)
-	_ = k2.CreateKeystore(testdata.KeystorePass)
+	_ = k2.CreateKeystore()
 }
 
 var keys []*bls.SecretKey
 
 func TestKeystore_GenerateNewValidatorKeyWithWrongPassword(t *testing.T) {
 	var err error
-	keys, err = k2.GenerateNewValidatorKey(64, "wrong_password")
+	keys, err = k2.GenerateNewValidatorKey(64)
 	assert.NotNil(t, err)
 	assert.Equal(t, keystore.ErrorPassNoMatch, err)
 }
 
 func TestKeystore_GenerateNewValidatorKey(t *testing.T) {
 	var err error
-	keys, err = k2.GenerateNewValidatorKey(8, testdata.KeystorePass)
+	keys, err = k2.GenerateNewValidatorKey(8)
 	assert.NoError(t, err)
 }
 

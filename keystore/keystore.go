@@ -3,11 +3,9 @@ package keystore
 import (
 	"errors"
 	"path"
-	"reflect"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/utils/aesbls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 	"github.com/olympus-protocol/ogen/utils/logger"
 	"go.etcd.io/bbolt"
@@ -17,9 +15,6 @@ var (
 
 	// ErrorNotInitialized is returned when a bucket is not properly initialized
 	ErrorNotInitialized = errors.New("the keystore is not initialized")
-
-	// ErrorLoadingEncryptionData is returned when the encryption data is null
-	ErrorLoadingEncryptionData = errors.New("encryption information is empty")
 
 	// ErrorAlreadyOpen returned when user tries to open a keystore already open.
 	ErrorAlreadyOpen = errors.New("keystore is already open")
@@ -35,23 +30,9 @@ var (
 )
 
 var (
-	// passHashKey is the key of the password hash
-	passHashKey = []byte("passhash")
-	// saltKey is the key of the encryption salt
-	saltKey = []byte("salt")
-	// nonceKey is the key of the encryption nonce
-	nonceKey = []byte("nonce")
-	// infoBucket is the bucket key for the keystore information
-	infoBucket = []byte("info")
 	// keysBucket is the bucket key for the keystore keys
 	keysBucket = []byte("keys")
 )
-
-type encryptionInfo struct {
-	nonce    [12]byte
-	salt     [8]byte
-	passhash []byte
-}
 
 // Keystore is a wrapper for the keystore database
 type Keystore struct {
@@ -67,12 +48,10 @@ type Keystore struct {
 	keys map[chainhash.Hash]*bls.SecretKey
 	// keysLock is the maps lock
 	keysLock sync.RWMutex
-	// encryptionInfo is the current loaded database encryption information
-	encryptionInfo encryptionInfo
 }
 
 // CreateKeystore will create a new keystore and initialize it.
-func (k *Keystore) CreateKeystore(password string) error {
+func (k *Keystore) CreateKeystore() error {
 	if k.open {
 		return ErrorAlreadyOpen
 	}
@@ -81,7 +60,7 @@ func (k *Keystore) CreateKeystore(password string) error {
 	if err != nil {
 		return err
 	}
-	err = k.initialize(password, db)
+	err = k.initialize(db)
 	if err != nil {
 		_ = db.Close()
 		if err == bbolt.ErrBucketExists {
@@ -93,7 +72,7 @@ func (k *Keystore) CreateKeystore(password string) error {
 }
 
 // OpenKeystore opens an already created keystore, returns error if the Keystore is previously initialized.
-func (k *Keystore) OpenKeystore(password string) error {
+func (k *Keystore) OpenKeystore() error {
 	if k.open {
 		return ErrorAlreadyOpen
 	}
@@ -102,7 +81,7 @@ func (k *Keystore) OpenKeystore(password string) error {
 	if err != nil {
 		return err
 	}
-	err = k.load(password, db)
+	err = k.load(db)
 	if err != nil {
 		_ = db.Close()
 		return err
@@ -112,65 +91,27 @@ func (k *Keystore) OpenKeystore(password string) error {
 
 // load is used to properly fill the Keystore data with the database information.
 // returns ErrorNotInitialized if the database doesn't exists or is not properly initialized.
-func (k *Keystore) load(password string, db *bbolt.DB) error {
-
-	var nonce [12]byte
-	var salt [8]byte
-	var passhash []byte
-
-	// Load the encryption data
-	err := db.View(func(tx *bbolt.Tx) error {
-
-		bkt := tx.Bucket(infoBucket)
-		if bkt == nil {
-			return ErrorNotInitialized
-		}
-
-		saltB := bkt.Get(saltKey)
-		nonceB := bkt.Get(nonceKey)
-		passhash = bkt.Get(passHashKey)
-
-		copy(salt[:], saltB)
-		copy(nonce[:], nonceB)
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// Check not null values on encryption data
-	if salt == [8]byte{} ||
-		nonce == [12]byte{} ||
-		passhash == nil {
-		return ErrorLoadingEncryptionData
-	}
-
-	// Verify that password provided matches password hash
-	equal := reflect.DeepEqual(passhash, chainhash.HashB([]byte(password)))
-	if !equal {
-		return ErrorPassNoMatch
-	}
+func (k *Keystore) load(db *bbolt.DB) error {
 
 	keysMap := make(map[chainhash.Hash]*bls.SecretKey)
 
 	// Load the keys to a memory map
-	err = db.View(func(tx *bbolt.Tx) error {
+	err := db.View(func(tx *bbolt.Tx) error {
 		bkt := tx.Bucket(keysBucket)
 		if bkt == nil {
 			return ErrorNotInitialized
 		}
 
-		err = bkt.ForEach(func(keypub, keyprv []byte) error {
+		err := bkt.ForEach(func(keypub, keyprv []byte) error {
 
 			pubHash := chainhash.HashH(keypub)
 
-			priv, err := aesbls.Decrypt(nonce, salt, keyprv, []byte(password))
+			key, err := bls.SecretKeyFromBytes(keyprv)
 			if err != nil {
 				return err
 			}
 
-			keysMap[pubHash] = priv
+			keysMap[pubHash] = key
 
 			return nil
 		})
@@ -185,11 +126,6 @@ func (k *Keystore) load(password string, db *bbolt.DB) error {
 	}
 
 	// If everything goes correctly, we add the elements to the struct
-	k.encryptionInfo = encryptionInfo{
-		nonce:    nonce,
-		salt:     salt,
-		passhash: passhash,
-	}
 	k.db = db
 	k.keys = keysMap
 	k.open = true
@@ -197,43 +133,11 @@ func (k *Keystore) load(password string, db *bbolt.DB) error {
 	return nil
 }
 
-func (k *Keystore) initialize(password string, db *bbolt.DB) error {
+func (k *Keystore) initialize(db *bbolt.DB) error {
 
-	salt, err := aesbls.RandSalt()
-	if err != nil {
-		return err
-	}
+	err := db.Update(func(tx *bbolt.Tx) error {
 
-	nonce, err := aesbls.RandNonce()
-	if err != nil {
-		return err
-	}
-
-	passhash := chainhash.HashB([]byte(password))
-
-	err = db.Update(func(tx *bbolt.Tx) error {
-
-		bkt, err := tx.CreateBucket(infoBucket)
-		if err != nil {
-			return err
-		}
-
-		err = bkt.Put(saltKey, salt[:])
-		if err != nil {
-			return err
-		}
-
-		err = bkt.Put(nonceKey, nonce[:])
-		if err != nil {
-			return err
-		}
-
-		err = bkt.Put(passHashKey, passhash[:])
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.CreateBucket(keysBucket)
+		_, err := tx.CreateBucket(keysBucket)
 		if err != nil {
 			return err
 		}
@@ -243,21 +147,7 @@ func (k *Keystore) initialize(password string, db *bbolt.DB) error {
 	if err != nil {
 		return err
 	}
-	return k.load(password, db)
-}
-
-func (k *Keystore) checkPassword(password string) error {
-
-	if !k.open {
-		return ErrorNoOpen
-	}
-
-	currPassHash := chainhash.HashB([]byte(password))
-	if equal := reflect.DeepEqual(k.encryptionInfo.passhash, currPassHash); !equal {
-		return ErrorPassNoMatch
-	}
-
-	return nil
+	return k.load(db)
 }
 
 // Close closes the keystore database
