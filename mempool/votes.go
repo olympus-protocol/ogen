@@ -122,16 +122,16 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 		intersect := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
 		if len(intersect) != 0 {
 			// Check if the vote matches the double vote and surround vote conditions
-			if v.Data.IsSurroundVote(voteData) {
-				m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(&primitives.VoteSlashing{
-						Vote1: vote,
-						Vote2: v,
-					})
-				}
-				return
-			}
+			//if v.Data.IsSurroundVote(voteData) {
+			//	m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+			//	for _, n := range m.notifees {
+			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
+			//			Vote1: vote,
+			//			Vote2: v,
+			//		})
+			//	}
+			//	return
+			//}
 			// If there is an intersection check if is a double vote
 			//if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
 			// If is a double or surround vote announce it and slash.
