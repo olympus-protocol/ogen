@@ -163,19 +163,20 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	if ok {
 
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
+			// TODO fix slashing condition
 
 			// Check if votes overlaps voters
-			intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
-			if len(intersection) != 0 {
+			//intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
+			//if len(intersection) != 0 {
 				// If the vote overlaps, that means a validator submitted the same vote multiple times.
-				for _, n := range m.notifees {
-					n.NotifyIllegalVotes(&primitives.VoteSlashing{
-						Vote1: vote,
-						Vote2: v,
-					})
-				}
-				return
-			}
+			//	for _, n := range m.notifees {
+			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
+			//			Vote1: vote,
+			//			Vote2: v,
+			//		})
+			//	}
+			//	return
+			//}
 
 			newVote := &primitives.MultiValidatorVote{
 				Data:                  v.Data,
