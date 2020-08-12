@@ -110,6 +110,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// This check iterates over all the votes on the pool.
 	// Checks if the new vote data matches any pool vote data hash.
 	// If that check fails, we should check for validators submitting twice different votes.
+	// TODO fix slashing condition
 	for h, v := range m.pool {
 
 		// If the vote data hash matches, it means is voting for same block.
