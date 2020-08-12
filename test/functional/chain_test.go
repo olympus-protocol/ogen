@@ -24,7 +24,10 @@ import (
 )
 
 func init() {
-	bls.Initialize(testdata.IntTestParams)
+	err := bls.Initialize(testdata.IntTestParams)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
@@ -59,23 +62,40 @@ func TestMain(m *testing.M) {
 }
 
 func createValidators() {
-	// Create datafolder Primary Node
+	// Create datafolders
 	_ = os.Mkdir(testdata.Node1Folder, 0777)
+	_ = os.Mkdir(testdata.Node2Folder, 0777)
 
 	// Create the keystore
-	k, err := keystore.NewKeystore(testdata.Node1Folder, nil, testdata.KeystorePass)
+	k1 := keystore.NewKeystore(testdata.Node1Folder, nil)
+
+	k2 := keystore.NewKeystore(testdata.Node2Folder, nil)
+
+	err := k1.CreateKeystore()
+	if err != nil {
+		panic(err)
+	}
+
+	err = k2.CreateKeystore()
 	if err != nil {
 		panic(err)
 	}
 
 	// Generate the validators data.
-	valDataPrimary, err := k.GenerateNewValidatorKey(8, testdata.KeystorePass)
+	valDataPrimary, err := k1.GenerateNewValidatorKey(32)
 	if err != nil {
 		panic(err)
 	}
 
+	valDataSecondary, err := k2.GenerateNewValidatorKey(32)
+	if err != nil {
+		panic(err)
+	}
+
+	valData := append(valDataPrimary, valDataSecondary...)
+
 	// Convert the validators to initialization params.
-	for _, vk := range valDataPrimary {
+	for _, vk := range valData {
 		val := primitives.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: premineAddr,
@@ -121,7 +141,7 @@ func firstNode() {
 	go F.Start()
 
 	// Open the keystore to start generating blocks
-	err = F.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = F.Proposer.OpenKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,6 +185,18 @@ func secondNode() {
 	}
 	// Start the server
 	go B.Start()
+
+
+	// Open the keystore to start generating blocks
+	err = B.Proposer.OpenKeystore()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Start the proposer
+	err = B.Proposer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type blockNotifee struct {
@@ -260,4 +292,10 @@ func Test_JustifiedEpochAndHash(t *testing.T) {
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, B.Chain.State().TipState().JustifiedEpoch)
 	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
 	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
+}
+
+func Test_ValidatorRewards(t *testing.T) {
+	for _, v := range F.Chain.State().TipState().ValidatorRegistry {
+		assert.Greater(t, v.Balance, uint64(100 * 1e8))
+	}
 }

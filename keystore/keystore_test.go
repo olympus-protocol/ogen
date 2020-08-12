@@ -1,112 +1,49 @@
 package keystore_test
 
 import (
-	"os"
-	"reflect"
-	"testing"
-
 	"github.com/olympus-protocol/ogen/keystore"
+	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
 
-var pass = "test_pass"
+var k = keystore.NewKeystore(testdata.Node1Folder, nil)
 
-func Test_KestoreCreate(t *testing.T) {
-	k, err := createKeystore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	keys, err := k.GetValidatorKeys()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(keys) != 8 {
-		t.Fatal("wrong number of keys")
-	}
-	for _, key := range keys {
-		if v := k.HasValidatorKey(key.PublicKey().Marshal()); !v {
-			t.Fatal("key not found")
-		}
-	}
-	for _, key := range keys {
-		var pub [48]byte
-		copy(pub[:], key.PublicKey().Marshal())
-		secret, ok := k.GetValidatorKey(pub)
-		if !ok {
-			t.Fatal("key not found")
-		}
-		equal := reflect.DeepEqual(secret, key)
-		if !equal {
-			t.Fatal("keys don't match")
-		}
-	}
-	clean()
+func init() {
+	_ = os.Mkdir(testdata.Node1Folder, 0777)
 }
 
-func Test_KeystoreOpen(t *testing.T) {
-	k, err := createKeystore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	k.Close()
-	k, err = keystore.NewKeystore("./", nil, pass)
-	if err != nil {
-		t.Fatal(err)
-	}
-	keys, err := k.GetValidatorKeys()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(keys) != 8 {
-		t.Fatal("wrong number of keys")
-	}
-	for _, key := range keys {
-		if v := k.HasValidatorKey(key.PublicKey().Marshal()); !v {
-			t.Fatal("key not found")
-		}
-	}
-	for _, key := range keys {
-		var pub [48]byte
-		copy(pub[:], key.PublicKey().Marshal())
-		secret, ok := k.GetValidatorKey(pub)
-		if !ok {
-			t.Fatal("key not found")
-		}
-		equal := reflect.DeepEqual(secret, key)
-		if !equal {
-			t.Fatal("keys don't match")
-		}
-	}
-	clean()
+func TestKeystore_OpenKeystoreWithoutKeystore(t *testing.T) {
+	err := k.OpenKeystore()
+	assert.NotNil(t, err)
+	assert.Equal(t, keystore.ErrorNotInitialized, err)
 }
 
-func Test_KeystoreOpenWithWrongPassword(t *testing.T) {
-	k, err := createKeystore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	k.Close()
-	_, err = keystore.NewKeystore("./", nil, "wrong_password")
-	if err == nil {
-		t.Fatal("open keystore should give an error")
-	}
-	clean()
+func TestKeystore_CreateKeystore(t *testing.T) {
+	err := k.CreateKeystore()
+	assert.NoError(t, err)
 }
 
-func createKeystore() (*keystore.Keystore, error) {
-	k, err := keystore.NewKeystore("./", nil, pass)
-	if err != nil {
-		return nil, err
-	}
-	newKeys, err := k.GenerateNewValidatorKey(8, pass)
-	if err != nil {
-		return nil, err
-	}
-	if len(newKeys) != 8 {
-		return nil, err
-	}
-	return k, err
+func TestKeystore_CreateKeystoreWithKeystoreOpen(t *testing.T) {
+	err := k.CreateKeystore()
+	assert.NotNil(t, err)
+	assert.Equal(t, err, keystore.ErrorAlreadyOpen)
+	assert.NoError(t, k.Close())
 }
 
-func clean() {
-	os.RemoveAll("./keystore.db")
+func TestKeystore_CreateKeystoreWithAlreadyExisting(t *testing.T) {
+	err := k.CreateKeystore()
+	assert.NotNil(t, err)
+	assert.Equal(t, err, keystore.ErrorKeystoreExists)
+}
+
+func TestKeystore_OpenKeystore(t *testing.T) {
+	err := k.OpenKeystore()
+	assert.NoError(t, err)
+	cleanFolder1()
+}
+
+func cleanFolder1() {
+	_ = os.RemoveAll(testdata.Node1Folder)
 }

@@ -3,7 +3,6 @@ package primitives
 import (
 	"errors"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/utils/chainhash"
 )
@@ -40,19 +39,15 @@ func (t *Tx) Marshal() ([]byte, error) {
 	if len(b) > MaxTransactionSize {
 		return nil, ErrorTxSize
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (t *Tx) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxTransactionSize {
+	if len(b) > MaxTransactionSize {
 		return ErrorTxSize
 	}
-	return t.UnmarshalSSZ(d)
+	return t.UnmarshalSSZ(b)
 }
 
 // Hash calculates the transaction hash.

@@ -68,7 +68,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = append(dst, b.RandaoSignature[:]...)
 
 	// Field (1) 'Votes'
-	if len(b.Votes) > 2048 {
+	if len(b.Votes) > 32 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -240,7 +240,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Votes'
 	{
 		buf = tail[o1:o2]
-		num, err := ssz.DecodeDynamicLength(buf, 2048)
+		num, err := ssz.DecodeDynamicLength(buf, 32)
 		if err != nil {
 			return err
 		}
@@ -446,7 +446,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Votes))
-		if num > 2048 {
+		if num > 32 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -455,7 +455,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 2048)
+		hh.MerkleizeWithMixin(subIndx, num, 32)
 	}
 
 	// Field (2) 'Txs'

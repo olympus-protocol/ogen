@@ -32,8 +32,7 @@ func (c *RPCClient) startProposer(args []string) (string, error) {
 	if len(args) < 1 {
 		return "", errors.New("Usage: startproposer <keystore_password>")
 	}
-	req := &proto.Password{Password: args[0]}
-	res, err := c.utils.StartProposer(ctx, req)
+	res, err := c.utils.StartProposer(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
@@ -96,16 +95,15 @@ func (c *RPCClient) genValidatorKey(args []string) (out string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	amount := 0
-	if len(args) < 2 {
-		return "", errors.New("Usage: genvalidatorkey <keys> <password>")
+	if len(args) < 1 {
+		return "", errors.New("Usage: genvalidatorkey <keys>")
 	}
 	amount, err = strconv.Atoi(args[0])
 	if err != nil {
 		return out, err
 	}
 	req := &proto.GenValidatorKeys{
-		Keys:     uint64(amount),
-		Password: args[1],
+		Keys: uint64(amount),
 	}
 	res, err := c.utils.GenValidatorKey(ctx, req)
 	if err != nil {

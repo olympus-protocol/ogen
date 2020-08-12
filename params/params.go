@@ -59,11 +59,11 @@ var Mainnet = ChainParams{
 		Multisig: "olmul",
 		Contract: "olctr",
 	},
-	GovernanceBudgetQuotient:     5, // 20%
-	BaseRewardPerBlock:           2600,
+	GovernanceBudgetQuotient:     5,        // 20%
+	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              100, // POLIS
+	EjectionBalance:              95, // POLIS
 	MaxBalanceChurnQuotient:      8,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
@@ -71,7 +71,7 @@ var Mainnet = ChainParams{
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 30,
-	MaxVotesPerBlock:             2048,
+	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,
@@ -111,11 +111,11 @@ var TestNet = ChainParams{
 		Multisig: "tlmul",
 		Contract: "tlctr",
 	},
-	GovernanceBudgetQuotient:     5, // 20%
-	BaseRewardPerBlock:           2600,
+	GovernanceBudgetQuotient:     5,        // 20%
+	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              90,
+	EjectionBalance:              95,
 	MaxBalanceChurnQuotient:      32,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
@@ -125,7 +125,7 @@ var TestNet = ChainParams{
 	SlotDuration:                 30,
 	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
-	MaxVotesPerBlock:             2048,
+	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,

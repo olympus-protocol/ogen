@@ -345,11 +345,8 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 		return nil, fmt.Errorf("vote-slashing: votes do not violate slashing rule")
 	}
 
-	voteParticipation1 := vs.Vote1.ParticipationBitfield
-	voteParticipation2 := vs.Vote2.ParticipationBitfield
-
-	voteCommittee1 := make(map[uint64]struct{})
 	common := make([]uint64, 0)
+	voteCommittee1 := make(map[uint64]struct{})
 
 	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot, p)
 	if err != nil {
@@ -364,61 +361,43 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 	aggPubs1 := make([]*bls.PublicKey, 0)
 	aggPubs2 := make([]*bls.PublicKey, 0)
 
-	for i := range voteParticipation1 {
-		for j := 0; j < 8; j++ {
-			validator := uint32((i * 8) + j)
+	for i, idx := range validators1 {
 
-			if validator >= uint32(len(validators1)) {
-				break
-			}
-
-			if voteParticipation1[i]&(1<<uint(j)) == 0 {
-				continue
-			}
-
-			validatorIdx := validators1[validator]
-
-			voteCommittee1[validatorIdx] = struct{}{}
-
-			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
-			if err != nil {
-				return nil, err
-			}
-			aggPubs1 = append(aggPubs1, pub)
+		if !vs.Vote1.ParticipationBitfield.Get(uint(i)) {
+			continue
 		}
+
+		voteCommittee1[idx] = struct{}{}
+
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey)
+		if err != nil {
+			return nil, err
+		}
+		aggPubs1 = append(aggPubs1, pub)
 	}
+
+	for i, idx := range validators2 {
+		if !vs.Vote2.ParticipationBitfield.Get(uint(i)) {
+			continue
+		}
+
+		if _, ok := voteCommittee1[idx]; ok {
+			common = append(common, idx)
+		}
+
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey)
+		if err != nil {
+			return nil, err
+		}
+		aggPubs2 = append(aggPubs2, pub)
+	}
+
 	v1Sig, err := vs.Vote1.Signature()
 	if err != nil {
 		return nil, err
 	}
 	if !v1Sig.FastAggregateVerify(aggPubs1, vs.Vote1.Data.Hash()) {
 		return nil, fmt.Errorf("vote-slashing: vote 1 does not validate")
-	}
-
-	for i := range voteParticipation2 {
-		for j := 0; j < 8; j++ {
-			validator := uint32((i * 8) + j)
-
-			if validator >= uint32(len(validators2)) {
-				break
-			}
-
-			if voteParticipation2[i]&(1<<uint(j)) == 0 {
-				continue
-			}
-
-			validatorIdx := validators2[validator]
-
-			if _, ok := voteCommittee1[validatorIdx]; ok {
-				common = append(common, validatorIdx)
-			}
-
-			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
-			if err != nil {
-				return nil, err
-			}
-			aggPubs2 = append(aggPubs2, pub)
-		}
 	}
 
 	if len(common) == 0 {
@@ -661,17 +640,6 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	return nil
 }
 
-func (s *State) GetValidatorForVote(v *SingleValidatorVote, p *params.ChainParams) ([48]byte, error) {
-	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
-	if err != nil {
-		return [48]byte{}, err
-	}
-
-	validatorIdx := validators[v.Offset]
-
-	return s.ValidatorRegistry[validatorIdx].PubKey, nil
-}
-
 // IsVoteValid checks if a vote is valid.
 func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
 	if v.Data == nil {
@@ -704,26 +672,15 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 		return err
 	}
 
-	for i := range v.ParticipationBitfield {
-		for j := 0; j < 8; j++ {
-			validator := uint32((i * 8) + j)
-
-			if validator >= uint32(len(validators)) {
-				continue
-			}
-
-			if v.ParticipationBitfield[i]&(1<<uint(j)) == 0 {
-				continue
-			}
-
-			validatorIdx := validators[validator]
-
-			pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
-			if err != nil {
-				return err
-			}
-			aggPubs = append(aggPubs, pub)
+	for i, validatorIdx := range validators {
+		if !v.ParticipationBitfield.Get(uint(i)) {
+			continue
 		}
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
+		if err != nil {
+			return err
+		}
+		aggPubs = append(aggPubs, pub)
 	}
 
 	h := v.Data.Hash()
@@ -758,7 +715,9 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	if err != nil {
 		return err
 	}
+
 	bl := bitfield.NewBitlist(v.ParticipationBitfield.Len())
+
 	for i, p := range v.ParticipationBitfield {
 		bl[i] = p
 	}

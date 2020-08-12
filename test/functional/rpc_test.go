@@ -87,13 +87,15 @@ func startNode() {
 
 	// Create a keystore
 	log.Info("Creating keystore")
-	ks, err := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
+	ks := keystore.NewKeystore(testdata.Node1Folder, log)
+
+	err = ks.CreateKeystore()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Generate 128 validators
-	ogValidators, err = ks.GenerateNewValidatorKey(128, testdata.KeystorePass)
+	ogValidators, err = ks.GenerateNewValidatorKey(128)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,7 +161,7 @@ func startNode() {
 	}
 
 	// Open the Keystore to start generating blocks
-	err = S.Proposer.OpenKeystore(testdata.KeystorePass)
+	err = S.Proposer.OpenKeystore()
 	err = S.Proposer.Start()
 
 }
@@ -574,15 +576,18 @@ func Test_Wallet_GetBalance(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Balance{}, res)
-	fmt.Println(res.Confirmed)
+
 	accByte, err := testdata.PremineAddr.PublicKey().Hash()
 	assert.NoError(t, err)
+
 	balanceMap := S.Chain.State().TipState().CoinsState.Balances
 	accBalance := balanceMap[accByte]
-	/*expected: "399989"
-	  actual  : "399989.999"*/
 
-	assert.Equal(t, strconv.Itoa(int(accBalance/1000)), res.Confirmed)
+	responseBalance, err := strconv.Atoi(res.Confirmed)
+	assert.NoError(t, err)
+
+
+	assert.Equal(t, accBalance, uint64(responseBalance) * 1e8)
 }
 
 func Test_Wallet_GetValidators(t *testing.T) {
@@ -592,7 +597,7 @@ func Test_Wallet_GetValidators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
-	// validator length should be the same as premineAdr(because we imported that account into wallet)
+	// validator length should be the same as PremineAddr (because we imported that account into wallet)
 	assert.Equal(t, len(ogValidators), len(res.Validators))
 }
 
@@ -603,7 +608,8 @@ func Test_Wallet_GetAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.KeyPair{}, res)
-	// received account should be the same as premineAddr
+
+	// Received account should be the same as PremineAddr
 	acc, err := testdata.PremineAddr.PublicKey().ToAccount()
 	assert.NoError(t, err)
 
@@ -660,7 +666,7 @@ func Test_Wallet_ValidatorBulk(t *testing.T) {
 	secret1, err := acc1.ToWIF()
 	assert.NoError(t, err)
 	acc2 = bls.RandKey()
-	secret2, err := acc1.ToWIF()
+	secret2, err := acc2.ToWIF()
 	assert.NoError(t, err)
 
 	res, err := C.wallet.StartValidatorBulk(ctx, &proto.KeyPairs{Keys: []string{secret1, secret2}})

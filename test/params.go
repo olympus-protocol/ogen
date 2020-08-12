@@ -46,8 +46,8 @@ var IntTestParams = params.ChainParams{
 		Multisig: "itmul",
 		Contract: "itctr",
 	},
-	GovernanceBudgetQuotient:     5, // 20%
-	BaseRewardPerBlock:           2600,
+	GovernanceBudgetQuotient:     5,        // 20%
+	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
 	EjectionBalance:              95,
@@ -58,7 +58,7 @@ var IntTestParams = params.ChainParams{
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 1,
-	MaxVotesPerBlock:             2048,
+	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,

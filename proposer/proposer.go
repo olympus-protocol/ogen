@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/bls"
 	"github.com/olympus-protocol/ogen/peers/conflict"
-	"sync"
+	"github.com/olympus-protocol/ogen/utils/bitfield"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -48,9 +48,10 @@ type Proposer struct {
 	lastActionManager *conflict.LastActionManager
 }
 
-// OpenKeystore opens the keystore with the provided password
-func (p *Proposer) OpenKeystore(password string) (err error) {
-	p.Keystore, err = keystore.NewKeystore(p.config.Datadir, p.log, password)
+// OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
+func (p *Proposer) OpenKeystore() (err error) {
+	p.Keystore = keystore.NewKeystore(p.config.Datadir, p.log)
+	err = p.Keystore.OpenKeystore()
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func (p *Proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
 }
 
-func (p *Proposer) publishVotes(v primitives.Votes) {
+func (p *Proposer) publishVotes(v *primitives.MultiValidatorVote) {
 	buf, err := v.Marshal()
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
@@ -163,11 +164,10 @@ func (p *Proposer) ProposeBlocks() {
 			state, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
 				p.log.Error(err)
-				return
+				continue
 			}
 
 			slotIndex := (slotToPropose + p.params.EpochLength - 1) % p.params.EpochLength
-
 			proposerIndex := state.ProposerQueue[slotIndex]
 			proposer := state.ValidatorRegistry[proposerIndex]
 
@@ -182,13 +182,13 @@ func (p *Proposer) ProposeBlocks() {
 				votes, err := p.voteMempool.Get(slotToPropose, state, &p.params, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				depositTxs, state, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				coinTxs, state := p.coinsMempool.Get(p.params.MaxTxsPerBlock, state)
@@ -196,19 +196,19 @@ func (p *Proposer) ProposeBlocks() {
 				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), state)
@@ -220,7 +220,7 @@ func (p *Proposer) ProposeBlocks() {
 				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), state)
 				if err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				block := primitives.Block{
@@ -262,7 +262,7 @@ func (p *Proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
-					return
+					continue
 				}
 
 				go p.publishBlock(&block)
@@ -318,7 +318,7 @@ func (p *Proposer) VoteForBlocks() {
 				panic("could not find block")
 			}
 
-			data := primitives.VoteData{
+			data := &primitives.VoteData{
 				Slot:            slotToVote,
 				FromEpoch:       state.JustifiedEpoch,
 				FromHash:        state.JustifiedEpochHash,
@@ -330,56 +330,40 @@ func (p *Proposer) VoteForBlocks() {
 
 			dataHash := data.Hash()
 
-			votes := primitives.Votes{
-				Votes: []*primitives.SingleValidatorVote{},
+			vote := &primitives.MultiValidatorVote{
+				Data:                  data,
+				ParticipationBitfield: bitfield.NewBitlist(uint64(len(validators))),
 			}
 
-			var wg sync.WaitGroup
+			var signatures []*bls.Signature
+
 			for i, validatorIdx := range validators {
-
-				wg.Add(1)
-
-				go func(index int, valIndex uint64, wg *sync.WaitGroup) {
-
-					defer wg.Done()
-
-					validator := state.ValidatorRegistry[valIndex]
-
-					if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
-
-						if !p.lastActionManager.ShouldRun(validator.PubKey) {
-							return
-						}
-
-						sig := k.Sign(dataHash[:])
-
-						var sigB [96]byte
-						copy(sigB[:], sig.Marshal())
-						vote := &primitives.SingleValidatorVote{
-							Data:   &data,
-							Sig:    sigB,
-							Offset: uint64(index),
-							OutOf:  uint64(len(validators)),
-						}
-
-						err = p.voteMempool.AddValidate(vote, state)
-						if err != nil {
-							p.log.Errorf("error submitting vote: %s", err.Error())
-							return
-						}
-
-						votes.Votes = append(votes.Votes, vote)
-
+				validator := state.ValidatorRegistry[validatorIdx]
+				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+					if !p.lastActionManager.ShouldRun(validator.PubKey) {
+						return
 					}
+					signatures = append(signatures, k.Sign(dataHash[:]))
 
-					return
-
-				}(i, validatorIdx, &wg)
+					vote.ParticipationBitfield.Set(uint(i))
+				}
 			}
 
-			wg.Wait()
+			if len(signatures) > 0 {
+				sig := bls.AggregateSignatures(signatures)
 
-			go p.publishVotes(votes)
+				var voteSig [96]byte
+				copy(voteSig[:], sig.Marshal())
+				vote.Sig = voteSig
+
+				err = p.voteMempool.AddValidate(vote, state)
+				if err != nil {
+					p.log.Error("unable to submit own generated vote")
+					return
+				}
+
+				go p.publishVotes(vote)
+			}
 
 			slotToVote++
 
