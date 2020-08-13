@@ -5,9 +5,6 @@ GOCLEAN=$(GOCMD) clean
 FOLDER_NAME= ogen-$(OGEN_VERSION)
 OGEN_VERSION=0.0.1
 
-build: 
-	$(GOBUILD) 
-
 build_cross_docker:
 	DOCKER_BUILDKIT=1 docker build --file Dockerfile --output release .
 

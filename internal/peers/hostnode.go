@@ -33,8 +33,11 @@ type Config struct {
 	PrivateKey   crypto.PrivKey
 }
 
-const timeoutInterval = 60 * time.Second
-const heartbeatInterval = 20 * time.Second
+const (
+	OgenVersion       = "0.0.1"
+	timeoutInterval   = 60 * time.Second
+	heartbeatInterval = 20 * time.Second
+)
 
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols

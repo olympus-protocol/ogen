@@ -9,7 +9,6 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
@@ -18,7 +17,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-const discoveryProtocolID = protocol.ID("/ogen/discovery/" + config.OgenVersion)
+const discoveryProtocolID = protocol.ID("/ogen/discovery/" + OgenVersion)
 
 // DiscoveryProtocol is the service to discover other peers.
 type DiscoveryProtocol struct {

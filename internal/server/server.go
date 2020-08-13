@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/peers/conflict"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/bdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
-	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/peers"
@@ -19,6 +19,26 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+type GlobalConfig struct {
+	DataFolder string
+
+	NetworkName  string
+	InitialNodes []peer.AddrInfo
+	Port         string
+
+	InitConfig primitives.InitializationParameters
+
+	RPCProxy     bool
+	RPCProxyPort string
+	RPCProxyAddr string
+	RPCPort      string
+	RPCWallet    bool
+	RPCAuthToken string
+
+	Debug   bool
+	LogFile bool
+	Pprof   bool
+}
 type Mempools struct {
 	Votes   *mempool.VoteMempool
 	Coins   *mempool.CoinsMempool
@@ -28,7 +48,7 @@ type Mempools struct {
 // Server is the main struct that contains ogen services
 type Server struct {
 	log    *logger.Logger
-	config *config.Config
+	config *GlobalConfig
 	params params.ChainParams
 
 	Chain    *chain.Blockchain
@@ -70,7 +90,7 @@ func (s *Server) Stop() error {
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *config.Config, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
@@ -145,7 +165,7 @@ func NewServer(ctx context.Context, configParams *config.Config, logger *logger.
 	return s, nil
 }
 
-func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config {
+func loadChainConfig(config *GlobalConfig, logger *logger.Logger) chain.Config {
 	cfg := chain.Config{
 		Log:     logger,
 		Datadir: config.DataFolder,
@@ -153,7 +173,7 @@ func loadChainConfig(config *config.Config, logger *logger.Logger) chain.Config 
 	return cfg
 }
 
-func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.Config {
+func loadProposerConfig(config *GlobalConfig, logger *logger.Logger) proposer.Config {
 	cfg := proposer.Config{
 		Datadir: config.DataFolder,
 		Log:     logger,
@@ -161,7 +181,7 @@ func loadProposerConfig(config *config.Config, logger *logger.Logger) proposer.C
 	return cfg
 }
 
-func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Config {
+func loadPeersManConfig(config *GlobalConfig, logger *logger.Logger) peers.Config {
 	cfg := peers.Config{
 		Log:          logger,
 		InitialNodes: config.InitialNodes,
@@ -171,7 +191,7 @@ func loadPeersManConfig(config *config.Config, logger *logger.Logger) peers.Conf
 	return cfg
 }
 
-func loadRPCConfig(config *config.Config, logger *logger.Logger) chainrpc.Config {
+func loadRPCConfig(config *GlobalConfig, logger *logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
 		DataDir:      config.DataFolder,
 		Log:          logger,

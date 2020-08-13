@@ -2,7 +2,7 @@ package testdata
 
 import (
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/internal/config"
+	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
@@ -23,7 +23,7 @@ var Node3Folder = "./data_node3"
 var PremineAddr = bls.RandKey()
 
 // Conf are the test configuration flags
-var Conf = config.Config{
+var Conf = server.GlobalConfig{
 	NetworkName:  "integration tests net",
 	InitialNodes: []peer.AddrInfo{},
 	Port:         "24126",

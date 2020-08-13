@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"io/ioutil"
 	"math/rand"
@@ -15,7 +16,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/bdb"
-	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -26,7 +26,7 @@ import (
 )
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logger, currParams params.ChainParams) error {
+func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log *logger.Logger, currParams params.ChainParams) error {
 	db, err := bdb.NewBlockDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ Next generation blockchain secured by CASPER.`,
 				rpcauth = randomAuthToken()
 			}
 
-			c := &config.Config{
+			c := &server.GlobalConfig{
 				DataFolder: DataFolder,
 
 				NetworkName:  networkName,
@@ -176,7 +176,7 @@ Next generation blockchain secured by CASPER.`,
 				Pprof:   viper.GetBool("pprof"),
 			}
 
-			log.Infof("Starting Ogen v%v", config.OgenVersion)
+			log.Infof("Starting Ogen v%v", peers.OgenVersion)
 			log.Trace("Loading log on debug mode")
 			ctx, cancel := context.WithCancel(context.Background())
 
