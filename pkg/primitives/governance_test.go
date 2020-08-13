@@ -8,6 +8,66 @@ import (
 	"testing"
 )
 
+func Test_CommunityVoteDataSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0).NumElements(5, 5)
+	var v primitives.CommunityVoteData
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.CommunityVoteData
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
+func Test_ReplacementVoteSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var v primitives.ReplacementVotes
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.ReplacementVotes
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
+func Test_CommunityVoteSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0).NumElements(5, 5)
+	var v primitives.CommunityVoteData
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.CommunityVoteData
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
+func Test_GovernanceVoteSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var v primitives.GovernanceVote
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.GovernanceVote
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
 func TestGovernanceVote_Copy(t *testing.T) {
 	v := primitives.GovernanceVote{
 		Type:          1,

@@ -1,11 +1,55 @@
 package primitives_test
 
 import (
+	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+func Test_AcceptedVoteInfoSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var v primitives.AcceptedVoteInfo
+	f.Fuzz(&v)
+	v.ParticipationBitfield = bitfield.NewBitlist(8)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.AcceptedVoteInfo
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
+func Test_VoteDataSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0)
+	var v primitives.VoteData
+	f.Fuzz(&v)
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.VoteData
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
+func Test_MultiValidatorVoteSerialize(t *testing.T) {
+	v := fuzzMultiValidatorVote(1)
+	ser, err := v[0].Marshal()
+	assert.NoError(t, err)
+
+	desc := new(primitives.MultiValidatorVote)
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v[0], desc)
+}
 
 func TestVoteData_Copy(t *testing.T) {
 	v := &primitives.VoteData{

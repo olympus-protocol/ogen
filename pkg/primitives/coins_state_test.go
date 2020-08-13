@@ -7,6 +7,29 @@ import (
 	"testing"
 )
 
+func Test_CoinStateSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0).NumElements(10000, 10000)
+	balances := map[[20]byte]uint64{}
+	nonces := map[[20]byte]uint64{}
+	f.Fuzz(&balances)
+	f.Fuzz(&nonces)
+
+	v := primitives.CoinsState{
+		Balances: balances,
+		Nonces:   nonces,
+	}
+
+	ser, err := v.Marshal()
+
+	assert.NoError(t, err)
+
+	var desc primitives.CoinsState
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+
+	assert.Equal(t, v, desc)
+}
+
 func TestCoinsState_ToSerializable(t *testing.T) {
 	f := fuzz.New().NilChance(0).NumElements(5, 20)
 

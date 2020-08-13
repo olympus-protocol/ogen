@@ -8,6 +8,28 @@ import (
 	"testing"
 )
 
+// Is not possible to test against equal states because of slice ordering. TODO find a solution
+func Test_GovernanceSerialize(t *testing.T) {
+	f := fuzz.New().NilChance(0).NumElements(5, 5)
+
+	replace := map[[20]byte]chainhash.Hash{}
+	community := map[chainhash.Hash]primitives.CommunityVoteData{}
+	f.Fuzz(&replace)
+	f.Fuzz(&community)
+
+	v := primitives.Governance{
+		ReplaceVotes:   replace,
+		CommunityVotes: community,
+	}
+
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
+
+	var desc primitives.Governance
+	err = desc.Unmarshal(ser)
+	assert.NoError(t, err)
+}
+
 func TestGovernance_ToSerializable(t *testing.T) {
 	f := fuzz.New().NilChance(0).NumElements(5, 20)
 
