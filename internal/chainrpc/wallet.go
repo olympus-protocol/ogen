@@ -10,7 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/shopspring/decimal"
 )
 

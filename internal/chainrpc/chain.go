@@ -12,7 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/shopspring/decimal"
 )
 

@@ -15,7 +15,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/logger"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

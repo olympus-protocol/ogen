@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 )
 
 func (c *RPCClient) getValidatorsList() (string, error) {

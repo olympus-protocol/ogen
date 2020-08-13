@@ -1,9 +1,9 @@
 
 syntax = "proto3";
-option go_package = "github.com/olympus-protocol/ogen/proto_def";
+option go_package = ".;proto";
 
-import "google/api/annotations.proto_def";
-import "common.proto_def";
+import "google/api/annotations.proto";
+import "common.proto";
 
 service Validators {
 

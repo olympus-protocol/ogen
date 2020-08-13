@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

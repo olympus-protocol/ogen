@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 )
 
 func (c *RPCClient) stopProposer(args []string) (string, error) {

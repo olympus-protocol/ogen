@@ -9,7 +9,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"github.com/olympus-protocol/ogen/proto"
+	"github.com/olympus-protocol/ogen/api/proto"
 )
 
 type utilsServer struct {
