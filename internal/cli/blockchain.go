@@ -3,10 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"time"
 
@@ -14,10 +16,10 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/bdb"
 	"github.com/olympus-protocol/ogen/internal/config"
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -43,8 +45,8 @@ func loadOgen(ctx context.Context, configParams *config.Config, log *logger.Logg
 	return nil
 }
 
-func getChainFile(path string, currParams params.ChainParams) (*config.ChainFile, error) {
-	chainFile := new(config.ChainFile)
+func getChainFile(path string, currParams params.ChainParams) (*primitives.ChainFile, error) {
+	chainFile := new(primitives.ChainFile)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		resp, err := http.Get(currParams.ChainFileURL)
 		if err != nil {
@@ -178,7 +180,7 @@ Next generation blockchain secured by CASPER.`,
 			log.Trace("Loading log on debug mode")
 			ctx, cancel := context.WithCancel(context.Background())
 
-			config.InterruptListener(log, cancel)
+			InterruptListener(log, cancel)
 
 			err = loadOgen(ctx, c, log, currParams)
 			if err != nil {
@@ -276,4 +278,34 @@ func randomAuthToken() string {
 		buf[i], buf[j] = buf[j], buf[i]
 	})
 	return string(buf)
+}
+
+var shutdownRequestChannel = make(chan struct{})
+
+var interruptSignals = []os.Signal{os.Interrupt}
+
+func InterruptListener(log *logger.Logger, cancel context.CancelFunc) {
+	go func() {
+		interruptChannel := make(chan os.Signal, 1)
+		signal.Notify(interruptChannel, interruptSignals...)
+		select {
+		case sig := <-interruptChannel:
+			log.Warnf("Received signal (%s).  Shutting down...",
+				sig)
+		case <-shutdownRequestChannel:
+			log.Warn("Shutdown requested.  Shutting down...")
+		}
+		cancel()
+		for {
+			select {
+			case sig := <-interruptChannel:
+				log.Warnf("Received signal (%s).  Already "+
+					"shutting down...", sig)
+
+			case <-shutdownRequestChannel:
+				log.Warn("Shutdown requested.  Already " +
+					"shutting down...")
+			}
+		}
+	}()
 }

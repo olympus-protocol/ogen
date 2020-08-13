@@ -5,7 +5,7 @@ package bls
 
 import (
 	"github.com/olympus-protocol/bls-go/bls"
-	"github.com/olympus-protocol/ogen/internal/params"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"io"
 	"math/big"
 

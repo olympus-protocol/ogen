@@ -6,10 +6,10 @@ import (
 	"errors"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/proto"
 	"github.com/shopspring/decimal"
 )

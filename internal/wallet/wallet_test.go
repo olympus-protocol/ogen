@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 var testPass = "test_password"

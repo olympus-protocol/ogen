@@ -3,8 +3,8 @@ package primitives
 import (
 	"time"
 
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 // GetGenesisBlock gets the genesis block for a certain chain parameters.

@@ -1,9 +1,9 @@
 package primitives
 
 import (
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 // ProcessSlot runs a slot transition on state, mutating it.

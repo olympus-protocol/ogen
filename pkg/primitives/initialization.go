@@ -6,10 +6,35 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"time"
 
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/params"
 )
+
+// ChainFile represents the on-disk chain file used to initialize the chain.
+type ChainFile struct {
+	Validators         []ValidatorInitialization `json:"validators"`
+	GenesisTime        uint64                               `json:"genesis_time"`
+	InitialConnections []string                             `json:"initial_connections"`
+	PremineAddress     string                               `json:"premine_address"`
+}
+
+// ToInitializationParameters converts the chain configuration file to initialization
+// parameters.
+func (cf *ChainFile) ToInitializationParameters() InitializationParameters {
+	ip := InitializationParameters{
+		InitialValidators: cf.Validators,
+		GenesisTime:       time.Unix(int64(cf.GenesisTime), 0),
+		PremineAddress:    cf.PremineAddress,
+	}
+
+	if cf.GenesisTime == 0 {
+		ip.GenesisTime = time.Unix(time.Now().Add(5*time.Second).Unix(), 0)
+	}
+
+	return ip
+}
+
 
 // ValidatorInitialization is the parameters needed to initialize validators.
 type ValidatorInitialization struct {

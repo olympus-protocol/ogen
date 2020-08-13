@@ -10,7 +10,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chain/index"
-	"github.com/olympus-protocol/ogen/internal/params"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"

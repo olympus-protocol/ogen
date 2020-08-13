@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 var (

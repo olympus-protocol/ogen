@@ -8,8 +8,8 @@ import (
 	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 
-	"github.com/olympus-protocol/ogen/internal/params"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
