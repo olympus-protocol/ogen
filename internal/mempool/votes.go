@@ -287,7 +287,7 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 
 		if err := vote.Unmarshal(msg.Data); err != nil {
 			m.log.Warnf("peer sent invalid vote: %s", err)
-			err = m.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			err = m.hostNode.BanScorePeer(msg.GetFrom(), 100)
 			if err == nil {
 				m.log.Warnf("peer %s was banned", msg.GetFrom().String())
 			}

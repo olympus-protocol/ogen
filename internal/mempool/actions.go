@@ -202,7 +202,7 @@ func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 
 		if err := tx.Unmarshal(msg.Data); err != nil {
 			am.log.Warnf("peer sent invalid deposit: %s", err)
-			err = am.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			err = am.hostNode.BanScorePeer(msg.GetFrom(), 100)
 			if err == nil {
 				am.log.Warnf("peer %s was banned", msg.GetFrom().String())
 			}
@@ -420,7 +420,7 @@ func (am *ActionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 		if err := tx.Unmarshal(msg.Data); err != nil {
 
 			am.log.Warnf("peer sent invalid governance vote: %s", err)
-			err = am.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			err = am.hostNode.BanScorePeer(msg.GetFrom(), 100)
 			if err == nil {
 				am.log.Warnf("peer %s was banned", msg.GetFrom().String())
 			}
@@ -474,7 +474,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 		if err := tx.Unmarshal(msg.Data); err != nil {
 
 			am.log.Warnf("peer sent invalid exit: %s", err)
-			err = am.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			err = am.hostNode.BanScorePeer(msg.GetFrom(), 100)
 			if err == nil {
 				am.log.Warnf("peer %s was banned", msg.GetFrom().String())
 			}

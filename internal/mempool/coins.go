@@ -163,7 +163,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		if err := tx.Unmarshal(msg.Data); err != nil {
 
 			cm.log.Warnf("peer sent invalid transaction: %s", err)
-			err = cm.hostNode.BanScorePeer(msg.GetFrom(), peers.BanLimit)
+			err = cm.hostNode.BanScorePeer(msg.GetFrom(), 100)
 			if err == nil {
 				cm.log.Warnf("peer %s was banned", msg.GetFrom().String())
 			}
