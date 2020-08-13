@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/olympus-protocol/ogen/internal/bdb"
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -70,7 +70,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockVi
 }
 
 type blockNodeAndState struct {
-	node  *index.BlockRow
+	node  *chainindex.BlockRow
 	state primitives.State
 }
 
@@ -80,9 +80,9 @@ type StateService struct {
 	log    *logger.Logger
 	lock   sync.RWMutex
 	params params.ChainParams
-	db     bdb.DB
+	db     blockdb.DB
 
-	blockIndex *index.BlockIndex
+	blockIndex *chainindex.BlockIndex
 	blockChain *Chain
 	stateMap   map[chainhash.Hash]*stateDerivedFromBlock
 
@@ -122,8 +122,8 @@ func (s *StateService) Chain() *Chain {
 	return s.blockChain
 }
 
-// Index gets the block index.
-func (s *StateService) Index() *index.BlockIndex {
+// Index gets the block chainindex.
+func (s *StateService) Index() *chainindex.BlockIndex {
 	return s.blockIndex
 }
 
@@ -141,7 +141,7 @@ func (s *StateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedS
 }
 
 // GetFinalizedHead gets the current finalized head.
-func (s *StateService) GetFinalizedHead() (*index.BlockRow, primitives.State) {
+func (s *StateService) GetFinalizedHead() (*chainindex.BlockRow, primitives.State) {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
@@ -149,7 +149,7 @@ func (s *StateService) GetFinalizedHead() (*index.BlockRow, primitives.State) {
 }
 
 // GetJustifiedHead gets the current justified head.
-func (s *StateService) GetJustifiedHead() (*index.BlockRow, primitives.State) {
+func (s *StateService) GetJustifiedHead() (*chainindex.BlockRow, primitives.State) {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
@@ -170,7 +170,7 @@ func (s *StateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 	return nil
 }
 
-func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, genesisState primitives.State) error {
+func (s *StateService) initChainState(db blockdb.DB, params params.ChainParams, genesisState primitives.State) error {
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("Loading chain state...")
 
@@ -178,14 +178,14 @@ func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, gene
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
-	err := s.db.Update(func(txn bdb.DBUpdateTransaction) error {
+	err := s.db.Update(func(txn blockdb.DBUpdateTransaction) error {
 		return txn.AddRawBlock(&genesisBlock)
 	})
 	if err != nil {
 		return err
 	}
 
-	blockIndex, err := index.InitBlocksIndex(genesisBlock)
+	blockIndex, err := chainindex.InitBlocksIndex(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (s *StateService) initChainState(db bdb.DB, params params.ChainParams, gene
 	s.blockIndex = blockIndex
 	s.blockChain = NewChain(row)
 
-	return db.Update(func(txn bdb.DBUpdateTransaction) error {
+	return db.Update(func(txn blockdb.DBUpdateTransaction) error {
 		if _, err := txn.GetBlockRow(genesisHash); err != nil {
 			if err := s.initializeDatabase(txn, row, genesisState); err != nil {
 				return err
@@ -291,7 +291,7 @@ func (s *StateService) RemoveBeforeSlot(slot uint64) {
 }
 
 // GetRowByHash gets a specific row by hash.
-func (s *StateService) GetRowByHash(h chainhash.Hash) (*index.BlockRow, bool) {
+func (s *StateService) GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool) {
 	return s.blockIndex.Get(h)
 }
 
@@ -321,7 +321,7 @@ func (s *StateService) TipStateAtSlot(slot uint64) (*primitives.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db bdb.DB) (*StateService, error) {
+func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 

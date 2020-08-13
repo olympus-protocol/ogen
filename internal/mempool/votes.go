@@ -6,9 +6,9 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/peers"
-	"github.com/olympus-protocol/ogen/internal/peers/conflict"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -23,7 +23,7 @@ type VoteMempool struct {
 	poolLock sync.Mutex
 	pool     map[chainhash.Hash]*primitives.MultiValidatorVote
 
-	// index 0 is highest prioritized, 1 is less, etc
+	// chainindex 0 is highest prioritized, 1 is less, etc
 	poolOrder []chainhash.Hash
 
 	params     *params.ChainParams
@@ -36,7 +36,7 @@ type VoteMempool struct {
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
 
-	lastActionManager *conflict.LastActionManager
+	lastActionManager *actionmanager.LastActionManager
 }
 
 // AddValidate validates, then adds the vote to the mempool.
@@ -330,7 +330,7 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, manager *conflict.LastActionManager) (*VoteMempool, error) {
+func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, manager *actionmanager.LastActionManager) (*VoteMempool, error) {
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
 		return nil, err

@@ -4,7 +4,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/spf13/cobra"
 	"go.etcd.io/bbolt"
 )
@@ -23,7 +23,7 @@ var resetCmd = &cobra.Command{
 			panic(err)
 		}
 		err = db.Update(func(tx *bbolt.Tx) error {
-			tx.DeleteBucket(bdb.BlockDBBucketKey)
+			tx.DeleteBucket(blockdb.BlockDBBucketKey)
 			return nil
 		})
 		if err != nil {

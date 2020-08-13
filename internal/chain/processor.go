@@ -3,22 +3,23 @@ package chain
 import (
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/txindex"
 	"time"
 
-	"github.com/olympus-protocol/ogen/internal/bdb"
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type blockRowAndValidator struct {
-	row       *index.BlockRow
+	row       *chainindex.BlockRow
 	validator uint64
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chainhash.Hash) error {
+func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.EpochIndex)
@@ -33,7 +34,7 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chai
 			validator: i})
 	}
 
-	getVoteCount := func(block *index.BlockRow) uint64 {
+	getVoteCount := func(block *chainindex.BlockRow) uint64 {
 		votes := uint64(0)
 		for _, target := range targets {
 			node := target.row.GetAncestorAtSlot(block.Slot)
@@ -87,7 +88,7 @@ func (ch *Blockchain) UpdateChainHead(txn bdb.DBUpdateTransaction, possible chai
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *index.BlockRow, err error) {
+func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *chainindex.BlockRow, err error) {
 	var att *primitives.MultiValidatorVote
 	att, ok := ch.state.GetLatestVote(validator)
 	if !ok {
@@ -96,7 +97,7 @@ func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *index.B
 
 	row, ok = ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
 	if !ok {
-		return nil, errors.New("couldn't find block attested to by validator in index")
+		return nil, errors.New("couldn't find block attested to by validator in chainindex")
 	}
 	return row, nil
 }
@@ -206,7 +207,7 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Debugf(msg)
 	}
 
-	return ch.db.Update(func(txn bdb.DBUpdateTransaction) error {
+	return ch.db.Update(func(txn blockdb.DBUpdateTransaction) error {
 		err = txn.AddRawBlock(block)
 		if err != nil {
 			return err
@@ -289,10 +290,10 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// TODO: add a log that shows network participation with expected.
 
-		// Once a block is accepted build tx index and account tx tracking
+		// Once a block is accepted build tx chainindex and account tx tracking
 
 		for i, tx := range block.Txs {
-			locator := index.TxLocator{
+			locator := txindex.TxLocator{
 				Hash:  tx.Hash(),
 				Block: block.Hash(),
 				Index: uint64(i),
@@ -302,12 +303,12 @@ func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
 				return err
 			}
 
-			// Add index to senders
+			// Add chainindex to senders
 			err = ch.txidx.SetTx(locator, from)
 			if err != nil {
 				return err
 			}
-			// Add index to receivers
+			// Add chainindex to receivers
 			err = ch.txidx.SetTx(locator, tx.To)
 			if err != nil {
 				return err

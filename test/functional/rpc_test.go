@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/api/proto"
-	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -116,7 +116,7 @@ func startNode() {
 	}
 
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func secondNode() {
 	log.WithDebug()
 
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -3,7 +3,7 @@ package proposer
 import (
 	"context"
 	"fmt"
-	"github.com/olympus-protocol/ogen/internal/peers/conflict"
+	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"time"
@@ -11,7 +11,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
@@ -45,7 +45,7 @@ type Proposer struct {
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
 
-	lastActionManager *conflict.LastActionManager
+	lastActionManager *actionmanager.LastActionManager
 }
 
 // OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
@@ -59,7 +59,7 @@ func (p *Proposer) OpenKeystore() (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager *conflict.LastActionManager) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager *actionmanager.LastActionManager) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -92,7 +92,7 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (p *Proposer) NewTip(_ *index.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
+func (p *Proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
 	p.voteMempool.Remove(block)
 	p.coinsMempool.RemoveByBlock(block)
 	p.actionsMempool.RemoveByBlock(block, newState)
@@ -385,7 +385,7 @@ func (p *Proposer) Start() error {
 			numOurs++
 		}
 		if ok {
-			p.lastActionManager.StartValidator(w.PubKey, func(message *conflict.ValidatorHelloMessage) *bls.Signature {
+			p.lastActionManager.StartValidator(w.PubKey, func(message *actionmanager.ValidatorHelloMessage) *bls.Signature {
 				msg := message.SignatureMessage()
 				return secKey.Sign(msg)
 			})

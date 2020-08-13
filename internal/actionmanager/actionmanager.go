@@ -1,15 +1,14 @@
-package conflict
+package actionmanager
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 
@@ -28,50 +27,6 @@ const (
 	// MaxValidatorHelloMessageSize is the maximum amount of bytes a CombinedSignature can contain.
 	MaxValidatorHelloMessageSize = 160
 )
-
-// ValidatorHelloMessage is a message sent by validators to indicate that they are coming online.
-type ValidatorHelloMessage struct {
-	PublicKey [48]byte
-	Timestamp uint64
-	Nonce     uint64
-	Signature [96]byte
-}
-
-// SignatureMessage gets the signed portion of the message.
-func (v *ValidatorHelloMessage) SignatureMessage() []byte {
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, v.Timestamp)
-
-	nonceBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(nonceBytes, v.Nonce)
-
-	var msg []byte
-	msg = append(msg, v.PublicKey[:]...)
-	msg = append(msg, timeBytes...)
-	msg = append(msg, nonceBytes...)
-
-	return msg
-}
-
-// Marshal serializes the hello message to the given writer.
-func (v *ValidatorHelloMessage) Marshal() ([]byte, error) {
-	b, err := v.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxValidatorHelloMessageSize {
-		return nil, ErrorValidatorHelloMessageSize
-	}
-	return b, nil
-}
-
-// Unmarshal deserializes the validator hello message from the reader.
-func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
-	if len(b) > MaxValidatorHelloMessageSize {
-		return ErrorValidatorHelloMessageSize
-	}
-	return v.UnmarshalSSZ(b)
-}
 
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
 // take to propagate across the network. We wait double this before allowing a
@@ -99,7 +54,7 @@ type LastActionManager struct {
 	params *params.ChainParams
 }
 
-func (l *LastActionManager) NewTip(row *index.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt) {
+func (l *LastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt) {
 	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
 
 	proposerIndex := state.ProposerQueue[slotIndex]

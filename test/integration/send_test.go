@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/api/proto"
-	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/internal/keystore"
@@ -103,7 +103,7 @@ func TestMain(m *testing.M) {
 		InitialValidators: validators,
 	}
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m 
 	if err != nil {
 		log.Fatal(err)
 	}
-	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m 
 	fmt.Println("Second node ready")
 	os.Exit(m.Run())
 	<-ctx.Done()
-	bdb.Close()
+	blockdb.Close()
 	err = server2.Stop()
 	if err != nil {
 		log.Fatal(err)

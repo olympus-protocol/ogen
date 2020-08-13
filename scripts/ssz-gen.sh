@@ -19,6 +19,6 @@ sszgen -path ./pkg/primitives/tx.go -include ./pkg/bls/multisig.go
 sszgen -path ./pkg/primitives/state.go -objs SerializableState -include ./pkg/primitives/coins.go,./pkg/primitives/validator.go,./pkg/primitives/votes.go,./pkg/primitives/governance.go
 sszgen -path ./pkg/bls/combined.go
 sszgen -path ./pkg/bls/multisig.go
-sszgen -path ./internal/chain/index/txs.go -objs TxLocator
-sszgen -path ./internal/bdb/blocknodedisk.go
-sszgen -path ./internal/peers/conflict/lastaction.go -objs ValidatorHelloMessage
+sszgen -path ./internal/txindex/txlocator.go
+sszgen -path ./internal/blockdb/blocknodedisk.go
+sszgen -path ./internal/actionmanager/validatorhello.go

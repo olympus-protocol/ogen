@@ -1,4 +1,4 @@
-package bdb
+package blockdb
 
 import (
 	"errors"
@@ -228,7 +228,7 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (*primitives.State, error
 
 var blockRowPrefix = []byte("block-row")
 
-// SetBlockRow sets a block row on disk to store the block index.
+// SetBlockRow sets a block row on disk to store the block chainindex.
 func (but *BlockDBUpdateTransaction) SetBlockRow(disk *BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
 	diskSer, err := disk.Marshal()

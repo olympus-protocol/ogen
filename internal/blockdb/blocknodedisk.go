@@ -1,4 +1,4 @@
-package bdb
+package blockdb
 
 import (
 	"errors"

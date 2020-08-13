@@ -1,15 +1,15 @@
-package index
+package chainindex
 
 import (
 	"fmt"
 	"sync"
 
-	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-// BlockRow represents a single row in the block index.
+// BlockRow represents a single row in the block chainindex.
 type BlockRow struct {
 	StateRoot chainhash.Hash
 	Height    uint64
@@ -76,14 +76,14 @@ func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
 
 var zeroHash = chainhash.Hash{}
 
-// BlockIndex is an index from hash to BlockRow.
+// BlockIndex is an chainindex from hash to BlockRow.
 type BlockIndex struct {
 	lock  sync.RWMutex
 	index map[chainhash.Hash]*BlockRow
 }
 
 // LoadBlockNode loads a block node and connects it to the parent block.
-func (i *BlockIndex) LoadBlockNode(row *bdb.BlockNodeDisk) (*BlockRow, error) {
+func (i *BlockIndex) LoadBlockNode(row *blockdb.BlockNodeDisk) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
@@ -115,7 +115,7 @@ func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
 	return row, found
 }
 
-// Get gets a block from the block index.
+// Get gets a block from the block chainindex.
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
@@ -124,7 +124,7 @@ func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 	return row, found
 }
 
-// Have checks if the block index contains a certain hash.
+// Have checks if the block chainindex contains a certain hash.
 func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 	i.lock.RLock()
 	_, ok := i.index[hash]
@@ -137,13 +137,13 @@ func (i *BlockIndex) add(row *BlockRow) error {
 	return nil
 }
 
-// Add adds a row to the block index.
+// Add adds a row to the block chainindex.
 func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[block.Header.PrevBlockHash]
 	if !found {
-		return nil, fmt.Errorf("could not add block to index: could not find parent with hash %s", block.Header.PrevBlockHash)
+		return nil, fmt.Errorf("could not add block to chainindex: could not find parent with hash %s", block.Header.PrevBlockHash)
 	}
 
 	row := &BlockRow{
@@ -167,7 +167,7 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	return row, nil
 }
 
-// InitBlocksIndex creates a new block index.
+// InitBlocksIndex creates a new block chainindex.
 func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 	headerHash := genesisBlock.Header.Hash()
 	return &BlockIndex{
@@ -183,7 +183,7 @@ func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 
 // ToBlockNodeDisk converts an in-memory representation of a block row
 // to a serializable version.
-func (br *BlockRow) ToBlockNodeDisk() *bdb.BlockNodeDisk {
+func (br *BlockRow) ToBlockNodeDisk() *blockdb.BlockNodeDisk {
 	childrenNodes := br.Children()
 	children := make([][32]byte, len(childrenNodes))
 	for i := range childrenNodes {
@@ -195,7 +195,7 @@ func (br *BlockRow) ToBlockNodeDisk() *bdb.BlockNodeDisk {
 		parent = br.Parent.Hash
 	}
 
-	return &bdb.BlockNodeDisk{
+	return &blockdb.BlockNodeDisk{
 		StateRoot: br.StateRoot,
 		Height:    br.Height,
 		Slot:      br.Slot,

@@ -1,4 +1,4 @@
-package index
+package txindex
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ func (txs *AccountTxs) Strings() []string {
 	return str
 }
 
-// TxIndex is a pseudo index that contains locators for account transactions.
+// TxIndex is a pseudo chainindex that contains locators for account transactions.
 type TxIndex struct {
 	db *bbolt.DB
 }
@@ -75,7 +75,7 @@ func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 
 var txBucketKey = []byte("txs")
 
-// GetTx returns a transaction locator from the index.
+// GetTx returns a transaction locator from the chainindex.
 func (i *TxIndex) GetTx(hash chainhash.Hash) (TxLocator, error) {
 	var loc TxLocator
 	err := i.db.View(func(tx *bbolt.Tx) error {
@@ -124,34 +124,7 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 	return nil
 }
 
-// TxLocator is a simple struct to find a database referenced to a block without building a full index
-type TxLocator struct {
-	Hash  [32]byte `ssz-size:"32"`
-	Block [32]byte `ssz-size:"32"`
-	Index uint64
-}
-
-// Marshal encodes the data.
-func (t *TxLocator) Marshal() ([]byte, error) {
-	b, err := t.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxTxLocatorSize {
-		return nil, ErrorCombinedSignatureSize
-	}
-	return b, nil
-}
-
-// Unmarshal decodes the data.
-func (t *TxLocator) Unmarshal(b []byte) error {
-	if len(b) > MaxTxLocatorSize {
-		return ErrorCombinedSignatureSize
-	}
-	return t.UnmarshalSSZ(b)
-}
-
-// NewTxIndex returns/creates a new tx index database
+// NewTxIndex returns/creates a new tx chainindex database
 func NewTxIndex(datadir string) (*TxIndex, error) {
 	db, err := bbolt.Open(path.Join(datadir, "tx.db"), 0600, nil)
 	if err != nil {

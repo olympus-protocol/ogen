@@ -3,21 +3,21 @@ package chain
 import (
 	"errors"
 
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 // ChainView is a view of a certain chain in the block tree so that block processing can access valid blocks.
 type ChainView struct {
-	tip *index.BlockRow
+	tip *chainindex.BlockRow
 
 	// effectiveTipSlot is used when the chain is being updated (excluding blocks)
 	effectiveTipSlot uint64
 }
 
 // NewChainView creates a new chain view with a certain tip
-func NewChainView(tip *index.BlockRow) ChainView {
+func NewChainView(tip *chainindex.BlockRow) ChainView {
 	return ChainView{tip, tip.Slot}
 }
 
@@ -60,6 +60,6 @@ func (s *StateService) GetSubView(tip chainhash.Hash) (ChainView, error) {
 }
 
 // Tip gets the tip of the blockchain.
-func (s *StateService) Tip() *index.BlockRow {
+func (s *StateService) Tip() *chainindex.BlockRow {
 	return s.blockChain.Tip()
 }

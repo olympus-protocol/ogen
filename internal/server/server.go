@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/internal/peers/conflict"
+	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"net/http"
 
-	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -90,7 +90,7 @@ func (s *Server) Stop() error {
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.Logger, currParams params.ChainParams, db *bdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
@@ -111,7 +111,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.L
 		return nil, err
 	}
 
-	lastActionManager, err := conflict.NewLastActionManager(ctx, hostnode, logger, ch, &currParams)
+	lastActionManager, err := actionmanager.NewLastActionManager(ctx, hostnode, logger, ch, &currParams)
 	if err != nil {
 		return nil, err
 	}

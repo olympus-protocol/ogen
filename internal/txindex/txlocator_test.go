@@ -1,9 +1,9 @@
-package index_test
+package txindex_test
 
 import (
+	"github.com/olympus-protocol/ogen/internal/txindex"
 	"testing"
 
-	"github.com/olympus-protocol/ogen/internal/chain/index"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +14,7 @@ var accounts = map[int][20]byte{
 	2: {0x1, 0x2, 0x10},
 }
 
-var locators = []index.TxLocator{
+var locators = []txindex.TxLocator{
 	{
 		Hash:  chainhash.DoubleHashH([]byte("Hash-1")),
 		Block: chainhash.DoubleHashH([]byte("Block-1")),
@@ -43,7 +43,7 @@ func Test_TxLocatorSerializing(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	var newLoc index.TxLocator
+	var newLoc txindex.TxLocator
 
 	err = newLoc.Unmarshal(ser)
 
@@ -54,7 +54,7 @@ func Test_TxLocatorSerializing(t *testing.T) {
 
 func Test_IndexStoreAndFetch(t *testing.T) {
 
-	idx, err := index.NewTxIndex("./")
+	idx, err := txindex.NewTxIndex("./")
 
 	assert.NoError(t, err)
 
@@ -87,7 +87,7 @@ func Test_IndexStoreAndFetch(t *testing.T) {
 
 	assert.Equal(t, acc2Txs.Amount, uint64(2))
 
-	assert.Equal(t, index.AccountTxs(index.AccountTxs{Amount: 0x0, Txs: []chainhash.Hash{}}), acc3Txs)
+	assert.Equal(t, txindex.AccountTxs{Amount: 0x0, Txs: []chainhash.Hash{}}, acc3Txs)
 
 	loc, err := idx.GetTx(locators[0].Hash)
 
