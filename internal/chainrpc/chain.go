@@ -9,7 +9,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -96,7 +96,7 @@ func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Number) (*prot
 func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error {
 	_, cancel := context.WithCancel(stream.Context())
 	// Define starting point
-	blockRow := new(index.BlockRow)
+	blockRow := new(chainindex.BlockRow)
 	defer cancel()
 	// If user is on tip, silently close the channel
 	if reflect.DeepEqual(in.Hash, s.chain.State().Tip().Hash.String()) {
@@ -161,7 +161,7 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
 	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
 	select {
 	case bn.blocks <- toSend:

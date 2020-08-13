@@ -3,12 +3,12 @@ package chain
 import (
 	"sync"
 
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 )
 
 type Chain struct {
 	lock  sync.RWMutex
-	chain []*index.BlockRow
+	chain []*chainindex.BlockRow
 }
 
 func (c *Chain) Height() uint64 {
@@ -18,11 +18,11 @@ func (c *Chain) Height() uint64 {
 }
 
 // SetTip sets the tip of the chain.
-func (c *Chain) SetTip(row *index.BlockRow) {
+func (c *Chain) SetTip(row *chainindex.BlockRow) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if row == nil {
-		c.chain = make([]*index.BlockRow, 0)
+		c.chain = make([]*chainindex.BlockRow, 0)
 		return
 	}
 
@@ -30,7 +30,7 @@ func (c *Chain) SetTip(row *index.BlockRow) {
 
 	// algorithm copied from btcd chainview
 	if uint64(cap(c.chain)) < needed {
-		newChain := make([]*index.BlockRow, needed, 1000+needed)
+		newChain := make([]*chainindex.BlockRow, needed, 1000+needed)
 		copy(newChain, c.chain)
 		c.chain = newChain
 	} else {
@@ -47,19 +47,19 @@ func (c *Chain) SetTip(row *index.BlockRow) {
 	}
 }
 
-func (c *Chain) Tip() *index.BlockRow {
+func (c *Chain) Tip() *chainindex.BlockRow {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return c.chain[len(c.chain)-1]
 }
 
-func (c *Chain) Genesis() *index.BlockRow {
+func (c *Chain) Genesis() *chainindex.BlockRow {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return c.chain[0]
 }
 
-func (c *Chain) Next(row *index.BlockRow) (*index.BlockRow, bool) {
+func (c *Chain) Next(row *chainindex.BlockRow) (*chainindex.BlockRow, bool) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -70,7 +70,7 @@ func (c *Chain) Next(row *index.BlockRow) (*index.BlockRow, bool) {
 	return c.chain[row.Height+1], true
 }
 
-func (c *Chain) GetNodeByHeight(height uint64) (*index.BlockRow, bool) {
+func (c *Chain) GetNodeByHeight(height uint64) (*chainindex.BlockRow, bool) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -82,7 +82,7 @@ func (c *Chain) GetNodeByHeight(height uint64) (*index.BlockRow, bool) {
 }
 
 // GetNodeBySlot returns the node at a specific slot.
-func (c *Chain) GetNodeBySlot(slot uint64) (*index.BlockRow, bool) {
+func (c *Chain) GetNodeBySlot(slot uint64) (*chainindex.BlockRow, bool) {
 	tip := c.Tip()
 	if tip == nil {
 		return nil, false
@@ -94,8 +94,8 @@ func (c *Chain) GetNodeBySlot(slot uint64) (*index.BlockRow, bool) {
 }
 
 // NewBlockchain creates a new chain.
-func NewChain(genesisBlock *index.BlockRow) *Chain {
-	chain := make([]*index.BlockRow, 1, 1000)
+func NewChain(genesisBlock *chainindex.BlockRow) *Chain {
+	chain := make([]*chainindex.BlockRow, 1, 1000)
 	chain[0] = genesisBlock
 	return &Chain{
 		chain: chain,

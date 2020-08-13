@@ -6,7 +6,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"sync"
 
-	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -81,7 +81,7 @@ func (am *ActionMempool) NotifyIllegalVotes(slashing *primitives.VoteSlashing) {
 	am.voteSlashings = append(am.voteSlashings, slashing)
 }
 
-func (am *ActionMempool) NewTip(_ *index.BlockRow, _ *primitives.Block, _ *primitives.State, _ []*primitives.EpochReceipt) {
+func (am *ActionMempool) NewTip(_ *chainindex.BlockRow, _ *primitives.Block, _ *primitives.State, _ []*primitives.EpochReceipt) {
 }
 
 func (am *ActionMempool) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
