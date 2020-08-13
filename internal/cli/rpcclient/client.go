@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/params"
-	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/shopspring/decimal"
 )
 

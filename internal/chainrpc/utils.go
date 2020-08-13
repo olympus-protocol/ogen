@@ -7,9 +7,9 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"github.com/olympus-protocol/ogen/api/proto"
 )
 
 type utilsServer struct {

@@ -27,7 +27,6 @@ coverage*
 *_test.dat
 db/blocks
 vendor/
-chain*.json
 __debug_bin
 release/
 *.tar.gz

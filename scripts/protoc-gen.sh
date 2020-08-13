@@ -1,9 +1,14 @@
 #!/bin/bash
 
+echo "Downloading annotations"
+mkdir -p api/proto_def/google/api
+curl https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto > api/proto_def/google/api/annotations.proto
+curl https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto > api/proto_def/google/api/http.proto
+
 echo "Generating protocol buffer definitions"
-#protoc -I. --proto_path=api/proto_def --go_out=plugins=grpc:./ --go_opt=paths=source_relative api/proto_def/*
+protoc --proto_path=api/proto_def --go_out=plugins=grpc,paths=source_relative:api/proto api/proto_def/*.proto
+protoc --proto_path=api/proto_def --grpc-gateway_out=logtostderr=true,paths=source_relative:api/proto api/proto_def/*.proto
+protoc --proto_path=api/proto_def --swagger_out=logtostderr=true:api/swagger api/proto_def/*.proto
 
-#protoc --proto_path=api/proto_def --go_out=api/proto --go_opt=paths=source_relative api/proto_def/*
-protoc -I/usr/local/include -I. -I"$GOPATH"/pkg/mod -I"$GOPATH"/pkg/mod/github.com/grpc-ecosystem/ --proto_path=api/proto_def --go_out=plugins=grpc,paths=source_relative:.api/proto api/proto_def/*
+rm -rf api/proto_def/google
 
-#protoc -I. --grpc-gateway_out=logtostderr=true,paths=source_relative:source_relative api/proto_def/*

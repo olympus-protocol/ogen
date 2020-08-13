@@ -14,9 +14,9 @@ import (
 // ChainFile represents the on-disk chain file used to initialize the chain.
 type ChainFile struct {
 	Validators         []ValidatorInitialization `json:"validators"`
-	GenesisTime        uint64                               `json:"genesis_time"`
-	InitialConnections []string                             `json:"initial_connections"`
-	PremineAddress     string                               `json:"premine_address"`
+	GenesisTime        uint64                    `json:"genesis_time"`
+	InitialConnections []string                  `json:"initial_connections"`
+	PremineAddress     string                    `json:"premine_address"`
 }
 
 // ToInitializationParameters converts the chain configuration file to initialization
@@ -34,7 +34,6 @@ func (cf *ChainFile) ToInitializationParameters() InitializationParameters {
 
 	return ip
 }
-
 
 // ValidatorInitialization is the parameters needed to initialize validators.
 type ValidatorInitialization struct {
