@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/olympus-protocol/ogen/internal/cli"
+	"github.com/olympus-protocol/ogen/cmd/ogen/cli"
 	_ "net/http/pprof"
 )
 

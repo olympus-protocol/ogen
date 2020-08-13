@@ -1,7 +1,7 @@
-package cli
+package main
 
 import (
-	"github.com/olympus-protocol/ogen/internal/cli/rpcclient"
+	"github.com/olympus-protocol/ogen/cmd/ogen-cli/rpcclient"
 	"github.com/spf13/cobra"
 )
 
@@ -20,5 +20,8 @@ func init() {
 
 	cliCmd.Flags().StringVar(&rpcHost, "rpc_host", "127.0.0.1:24127", "IP and port of the RPC Server to connect")
 
-	rootCmd.AddCommand(cliCmd)
+}
+
+func main() {
+	cliCmd.Execute()
 }

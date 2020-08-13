@@ -1,7 +1,7 @@
-package cli_test
+package main_test
 
 import (
-	"github.com/olympus-protocol/ogen/internal/cli/rpcclient"
+	"github.com/olympus-protocol/ogen/cmd/ogen-cli/rpcclient"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"testing"
