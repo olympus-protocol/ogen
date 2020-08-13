@@ -22,8 +22,8 @@ RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     ln -s /opt/go/bin/go /usr/bin/ && \
     export GOPATH=/root/go
 
-COPY ../scripts ./
-COPY ../scripts ./
+COPY ../build/clang_cross.sh ./
+COPY ../build/osxcross.sh ./
 
 RUN ./clang_cross.sh
 RUN ./osxcross.sh
@@ -38,20 +38,9 @@ COPY .. /build/ogen
 
 RUN cd ogen && go mod download
 
-## Linux arm
-RUN cd ogen && make clean && make pack_linux_arm
+## Build Cross-Compile
 
-## Linux amd64
-RUN cd ogen && make clean && make pack_linux_amd64
-
-## Linux arm64
-RUN cd ogen && make clean && make pack_linux_arm64
-
-## Darwin amd64
-RUN cd ogen && make clean && make pack_osx_amd64
-
-## Windows amd64
-RUN cd ogen && make clean && make pack_windows_amd64
+RUN cd ogen && ./scripts/build-cross.sh
 
 RUN mkdir /release && mv ogen/*.tar.gz /release && mv ogen/*.zip /release
 
