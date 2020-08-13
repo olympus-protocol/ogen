@@ -1,6 +1,19 @@
 package actionmanager
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"errors"
+)
+
+var (
+	// ErrorValidatorHelloMessageSize returns when serialized MaxValidatorHelloMessageSize size exceed MaxValidatorHelloMessageSize.
+	ErrorValidatorHelloMessageSize = errors.New("validator hello message too big")
+)
+
+const (
+	// MaxValidatorHelloMessageSize is the maximum amount of bytes a CombinedSignature can contain.
+	MaxValidatorHelloMessageSize = 160
+)
 
 // ValidatorHelloMessage is a message sent by validators to indicate that they are coming online.
 type ValidatorHelloMessage struct {

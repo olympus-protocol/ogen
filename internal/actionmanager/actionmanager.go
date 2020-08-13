@@ -2,7 +2,6 @@ package actionmanager
 
 import (
 	"context"
-	"errors"
 	"math/rand"
 	"sync"
 	"time"
@@ -16,16 +15,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-)
-
-var (
-	// ErrorValidatorHelloMessageSize returns when serialized MaxValidatorHelloMessageSize size exceed MaxValidatorHelloMessageSize.
-	ErrorValidatorHelloMessageSize = errors.New("validator hello message too big")
-)
-
-const (
-	// MaxValidatorHelloMessageSize is the maximum amount of bytes a CombinedSignature can contain.
-	MaxValidatorHelloMessageSize = 160
 )
 
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
