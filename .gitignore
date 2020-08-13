@@ -18,7 +18,6 @@
 .idea/
 
 # Production
-ogen
 ogen-darwin*
 ogen-windows*
 ogen-linux*
