@@ -4,14 +4,12 @@ import (
 	"context"
 	"errors"
 	"net"
-	"path"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"go.etcd.io/bbolt"
 
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 
@@ -65,32 +63,28 @@ type HostNode struct {
 	// syncProtocol handles peer syncing
 	syncProtocol *SyncProtocol
 
-	// database buckets
-	configBucket *bbolt.Bucket
-
-	// database reference
-	configDb *bbolt.DB
+	db Database
 }
 
 // NewHostNode creates a host node
 func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain) (node *HostNode, err error) {
 	ps := pstoremem.NewPeerstore()
-	netDB, err := bbolt.Open(path.Join(config.Path, "net.db"), 0600, nil)
+	db, err := NewDatabase(config.Path)
 	if err != nil {
 		return nil, err
-	}
-	configBucket, err := InitBuckets(netDB)
-	if err != nil {
-		return nil, err
-	}
-	priv, err := GetPrivKey(netDB)
-	if err != nil {
-		return nil, err
-
 	}
 
+	err = db.Initialize()
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err := db.GetPrivKey()
+	if err != nil {
+		return nil, err
+	}
 	// get saved peers
-	savedAddresses, err := GetSavedPeers(netDB)
+	savedAddresses, err := db.GetSavedPeers()
 	if err != nil {
 		config.Log.Errorf("error retrieving saved peers: %s", err)
 	}
@@ -148,8 +142,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		heartbeatInterval: heartbeatInterval,
 		log:               config.Log,
 		topics:            map[string]*pubsub.Topic{},
-		configBucket:      configBucket,
-		configDb:          netDB,
+		db:                db,
 	}
 
 	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)
@@ -286,20 +279,20 @@ func (node *HostNode) Start() error {
 // Database <-> hostNode Functions
 
 func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
-	if node.configDb == nil {
+	if node.db == nil {
 		return errors.New("no initialized db in node")
 	}
-	return SavePeer(node.configDb, pma)
+	return node.db.SavePeer(pma)
 }
 
 func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
-	if node.configDb == nil {
+	if node.db == nil {
 		return errors.New("no initialized db in node")
 	}
 	if node.host.ID() == id {
 		return errors.New("trying to ban itself")
 	}
-	banned, err := BanscorePeer(node.configDb, id, weight)
+	banned, err := node.db.BanscorePeer(id, weight)
 	if err == nil {
 		if banned {
 			// disconnect
@@ -310,8 +303,8 @@ func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
 }
 
 func (node *HostNode) IsPeerBanned(id peer.ID) (bool, error) {
-	if node.configDb == nil {
+	if node.db == nil {
 		return false, errors.New("no initialized db in node")
 	}
-	return IsPeerBanned(node.configDb, id)
+	return node.db.IsPeerBanned(id)
 }
