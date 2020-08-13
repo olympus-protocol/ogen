@@ -34,7 +34,7 @@ RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so /usr/lib/libtapi.so
 RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6 /usr/lib/libtapi.so.6
 RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6.0.1 /usr/lib/libtapi.so.6.0.1    
 
-COPY .. /build/ogen
+COPY ../. /build/ogen
 
 RUN cd ogen && go mod download
 
