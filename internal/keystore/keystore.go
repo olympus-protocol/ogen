@@ -5,9 +5,9 @@ import (
 	"path"
 	"sync"
 
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"go.etcd.io/bbolt"
 )
 

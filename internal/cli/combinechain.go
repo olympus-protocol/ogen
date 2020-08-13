@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +23,7 @@ var combineChainCmd = &cobra.Command{
 		chainFilenames := args[:len(args)-1]
 		output := args[len(args)-1]
 
-		chainFiles := make([]config.ChainFile, len(chainFilenames))
+		chainFiles := make([]primitives.ChainFile, len(chainFilenames))
 		for i := range chainFiles {
 			f, err := os.Open(chainFilenames[i])
 			if err != nil {
@@ -55,7 +54,7 @@ var combineChainCmd = &cobra.Command{
 
 		color.Green("new chain file has %d validators and %d initial connections", len(newValidators), len(newInitialPeers))
 
-		newChainFile := config.ChainFile{
+		newChainFile := primitives.ChainFile{
 			Validators:         newValidators,
 			InitialConnections: newInitialPeers,
 			GenesisTime:        chainFiles[0].GenesisTime,

@@ -10,7 +10,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"go.etcd.io/bbolt"
 
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"

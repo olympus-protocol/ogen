@@ -15,9 +15,9 @@ import (
 	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/aesbls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 

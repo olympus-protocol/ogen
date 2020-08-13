@@ -14,9 +14,9 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 )
 
 var (

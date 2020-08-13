@@ -8,7 +8,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/spf13/cobra"
@@ -64,7 +63,7 @@ var generateChainCmd = &cobra.Command{
 			}
 		}
 
-		chainFile := config.ChainFile{
+		chainFile := primitives.ChainFile{
 			Validators:         validators,
 			GenesisTime:        uint64(genesisTime.Unix()),
 			InitialConnections: connect,

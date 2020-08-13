@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/config"
-	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	"github.com/libp2p/go-libp2p-core/protocol"

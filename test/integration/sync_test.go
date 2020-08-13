@@ -16,9 +16,9 @@ import (
 	"github.com/olympus-protocol/ogen/internal/bdb"
 	"github.com/olympus-protocol/ogen/internal/config"
 	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/test"
 )
