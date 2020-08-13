@@ -18,7 +18,6 @@
 .idea/
 
 # Production
-ogen
 ogen-darwin*
 ogen-windows*
 ogen-linux*
@@ -26,24 +25,21 @@ datadir*
 coverage*
 *_test.dat
 db/blocks
-build/
 vendor/
-chain*.json
 __debug_bin
 release/
 *.tar.gz
 
 # IDE
 .vscode
-.idea/
 
 # Testing
 *.log
 **/*.b64
 tx.db
 chain/index/*.db
-chainrpc/cert/
-wallet/wallets/
+internal/chainrpc/cert/
+internal/wallet/wallets/
 keystore/*.db
 peers/*.db
 

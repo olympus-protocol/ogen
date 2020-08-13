@@ -1,0 +1,619 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "wallet.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/wallet/account": {
+      "get": {
+        "operationId": "Wallet_GetAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/balance": {
+      "get": {
+        "operationId": "Wallet_GetBalance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Balance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/close": {
+      "get": {
+        "operationId": "Wallet_CloseWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/create": {
+      "post": {
+        "operationId": "Wallet_CreateWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WalletReference"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/dump": {
+      "get": {
+        "operationId": "Wallet_DumpWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/exitvalidator/{public}": {
+      "get": {
+        "operationId": "Wallet_ExitValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "public",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "private",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/exitvalidatorbulk": {
+      "post": {
+        "operationId": "Wallet_ExitValidatorBulk",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/import": {
+      "post": {
+        "operationId": "Wallet_ImportWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ImportWalletData"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/list": {
+      "get": {
+        "operationId": "Wallet_ListWallets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Wallets"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/open": {
+      "post": {
+        "operationId": "Wallet_OpenWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WalletReference"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/sendtransaction": {
+      "post": {
+        "operationId": "Wallet_SendTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Hash"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SendTransactionInfo"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/startvalidator/{private}": {
+      "get": {
+        "operationId": "Wallet_StartValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "private",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "public",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/startvalidatorbulk": {
+      "post": {
+        "operationId": "Wallet_StartValidatorBulk",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/validators": {
+      "get": {
+        "operationId": "Wallet_GetValidators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ValidatorsRegistry"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Balance": {
+      "type": "object",
+      "properties": {
+        "confirmed": {
+          "type": "string"
+        },
+        "unconfirmed": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "string"
+        },
+        "total": {
+          "type": "string"
+        }
+      }
+    },
+    "Hash": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        }
+      }
+    },
+    "ImportWalletData": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "key": {
+          "$ref": "#/definitions/KeyPair"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "KeyPair": {
+      "type": "object",
+      "properties": {
+        "public": {
+          "type": "string"
+        },
+        "private": {
+          "type": "string"
+        }
+      }
+    },
+    "KeyPairs": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SendTransactionInfo": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      }
+    },
+    "Success": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "ValidatorRegistry": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string"
+        },
+        "public_key": {
+          "type": "string"
+        },
+        "payee_address": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "first_active_epoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "last_active_epoch": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "ValidatorsInfo": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "string",
+          "format": "int64"
+        },
+        "pending_exit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "penalty_exit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "exited": {
+          "type": "string",
+          "format": "int64"
+        },
+        "starting": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "ValidatorsRegistry": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/ValidatorsInfo"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValidatorRegistry"
+          }
+        }
+      }
+    },
+    "WalletReference": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "Wallets": {
+      "type": "object",
+      "properties": {
+        "wallets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

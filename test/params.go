@@ -2,9 +2,9 @@ package testdata
 
 import (
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 // KeystorePass is a simple string password for keystore tests
@@ -23,7 +23,7 @@ var Node3Folder = "./data_node3"
 var PremineAddr = bls.RandKey()
 
 // Conf are the test configuration flags
-var Conf = config.Config{
+var Conf = server.GlobalConfig{
 	NetworkName:  "integration tests net",
 	InitialNodes: []peer.AddrInfo{},
 	Port:         "24126",

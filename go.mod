@@ -31,7 +31,7 @@ require (
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	google.golang.org/genproto v0.0.0-20200731012542-8145dea6a485
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.25.0
 )

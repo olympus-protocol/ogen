@@ -8,20 +8,20 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/chainrpc"
-	"github.com/olympus-protocol/ogen/keystore"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/proto"
-	"github.com/olympus-protocol/ogen/server"
+	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
+	"github.com/olympus-protocol/ogen/internal/chainrpc"
+	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/olympus-protocol/ogen/utils/bech32"
-	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -116,7 +116,7 @@ func startNode() {
 	}
 
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func secondNode() {
 	log.WithDebug()
 
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -466,10 +466,10 @@ func Test_Utils_SubmitRawData(t *testing.T) {
 func Test_Utils_GenValidatorKey(t *testing.T) {
 	/*ctx := context.Background()
 
-	res, err := C.utils.GenValidatorKey(ctx, &proto.GenValidatorKeys{Keys: uint64(2), Password: testdata.KeystorePass})
+	res, err := C.utils.GenValidatorKey(ctx, &proto_def.GenValidatorKeys{Keys: uint64(2), Password: testdata.KeystorePass})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.IsType(t, &proto.KeyPairs{}, res)*/
+	assert.IsType(t, &proto_def.KeyPairs{}, res)*/
 }
 
 func Test_Utils_DecodeRawTransaction(t *testing.T) {

@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/keystore"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/server"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
+	"github.com/olympus-protocol/ogen/internal/config"
+	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/test"
-	"github.com/olympus-protocol/ogen/utils/bech32"
-	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 var s *server.Server
@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 		InitialValidators: validators,
 	}
 	// Load the block database
-	bdb, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	bdb, err := blockdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func runSecondNode(ps *server.Server, ip primitives.InitializationParameters) {
 	ctx, cancel := context.WithCancel(context.Background())
 	config.InterruptListener(log, cancel)
 
-	bdb, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	bdb, err := blockdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}

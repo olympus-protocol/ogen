@@ -7,16 +7,16 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/chain/index"
-	"github.com/olympus-protocol/ogen/keystore"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/server"
+	"github.com/olympus-protocol/ogen/internal/blockdb"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
-	"github.com/olympus-protocol/ogen/utils/chainhash"
-	"github.com/olympus-protocol/ogen/utils/logger"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -114,7 +114,7 @@ func firstNode() {
 	log.WithDebug()
 
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node1Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func secondNode() {
 	log.WithDebug()
 
 	// Load the block database
-	db, err := bdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
+	db, err := blockdb.NewBlockDB(testdata.Node2Folder, testdata.IntTestParams, log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *index.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
 	fmt.Printf("Slot %v Hash: %s Height: %v StateRoot: %s \n", row.Slot, hex.EncodeToString(row.Hash[:]), row.Height, hex.EncodeToString(row.StateRoot[:]))
 	fmt.Printf("%v Epoch Receipts \n", len(receipts))
 	for _, receipt := range receipts {
