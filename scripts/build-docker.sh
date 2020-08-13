@@ -2,5 +2,5 @@
 
 export DOCKER_BUILDKIT=1
 
-cd build && docker build --file Dockerfile --output release .
-mv release/ ../
+mkdir -p release/
+docker build --file build/Dockerfile --output release ./
