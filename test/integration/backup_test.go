@@ -5,9 +5,9 @@ package backup_test
 import (
 	"context"
 	"encoding/hex"
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/chain"
-	"github.com/olympus-protocol/ogen/chain/index"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/chain/index"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -17,12 +17,12 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/keystore"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/server"
+	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/test"
-	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 func init() {

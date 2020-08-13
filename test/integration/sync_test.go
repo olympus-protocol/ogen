@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bdb"
-	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/keystore"
-	"github.com/olympus-protocol/ogen/primitives"
-	"github.com/olympus-protocol/ogen/server"
+	"github.com/olympus-protocol/ogen/internal/bdb"
+	"github.com/olympus-protocol/ogen/internal/config"
+	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
+	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/test"
-	"github.com/olympus-protocol/ogen/utils/bech32"
-	"github.com/olympus-protocol/ogen/utils/logger"
 )
 
 var s *server.Server

@@ -1,0 +1,37 @@
+
+syntax = "proto3";
+option go_package = "github.com/olympus-protocol/ogen/proto_def";
+
+import "google/api/annotations.proto_def";
+import "common.proto_def";
+
+service Validators {
+
+    /** 
+        Method: GetValidatorList 
+        Input: message Empty
+        Response: message ValidatorsRegistry
+        Description: Returns the raw block from a block hash.
+    */
+
+    rpc GetValidatorsList(Empty) returns (ValidatorsRegistry) {
+        option (google.api.http) = {
+            get: "/validators/list"
+        };
+    }
+
+    /** 
+        Method: GetAccountValidators 
+        Input: message AccountInfo
+        Response: message ValidatorsRegistry
+        Description: Returns validators with deposits from the provided account.
+    */
+
+    rpc GetAccountValidators(Account) returns (ValidatorsRegistry) {
+        option (google.api.http) = {
+            get: "/validators/account/{account}"
+        };
+    }
+}
+
+

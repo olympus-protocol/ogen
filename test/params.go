@@ -2,9 +2,9 @@ package testdata
 
 import (
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/bls"
-	"github.com/olympus-protocol/ogen/config"
-	"github.com/olympus-protocol/ogen/params"
+	"github.com/olympus-protocol/ogen/internal/config"
+	"github.com/olympus-protocol/ogen/internal/params"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 )
 
 // KeystorePass is a simple string password for keystore tests

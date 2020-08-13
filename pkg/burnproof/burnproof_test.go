@@ -1,0 +1,1 @@
+package burnproof_test
