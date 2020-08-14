@@ -40,7 +40,7 @@ var _ LastActionManager = &lastActionManager{}
 // This is a very basic protection against slashing. Validators, on startup,
 // will broadcast a StartMessage
 type lastActionManager struct {
-	log logger.LoggerInterface
+	log logger.Logger
 
 	hostNode peers.HostNode
 	ctx      context.Context
@@ -72,7 +72,7 @@ func (l *lastActionManager) ProposerSlashingConditionViolated(slashing *primitiv
 const validatorStartTopic = "validatorStart"
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(ctx context.Context, node peers.HostNode, log logger.LoggerInterface, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
+func NewLastActionManager(ctx context.Context, node peers.HostNode, log logger.Logger, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
 	topic, err := node.Topic(validatorStartTopic)
 	if err != nil {
 		return nil, err

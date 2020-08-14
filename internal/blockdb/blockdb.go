@@ -29,7 +29,7 @@ var _ BlockDB = &blockDB{}
 
 // BlockDB is the struct wrapper for the block database.
 type blockDB struct {
-	log    logger.LoggerInterface
+	log    logger.Logger
 	db     *bbolt.DB
 	params params.ChainParams
 	lock   sync.RWMutex
@@ -50,7 +50,7 @@ type BlockDBReadTransaction struct {
 }
 
 // NewBlockDB returns a database instance with a rawBlockDatabase and BboltDB to use on the selected path.
-func NewBlockDB(pathDir string, params params.ChainParams, log logger.LoggerInterface) (BlockDB, error) {
+func NewBlockDB(pathDir string, params params.ChainParams, log logger.Logger) (BlockDB, error) {
 	db, err := bbolt.Open(path.Join(pathDir, "chain.db"), 0600, nil)
 	if err != nil {
 		return nil, err

@@ -24,7 +24,7 @@ type BlockView interface {
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested
 // slot.
-func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.LoggerInterface) ([]*EpochReceipt, error) {
+func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*EpochReceipt, error) {
 	totalReceipts := make([]*EpochReceipt, 0)
 
 	for s.Slot < requestedSlot {

@@ -20,16 +20,16 @@ type FdWriter interface {
 	Fd() uintptr
 }
 
-type LoggerInterface interface {
-	WithColor() *Logger
-	WithoutColor() *Logger
-	WithDebug() *Logger
-	WithoutDebug() *Logger
+type Logger interface {
+	WithColor() Logger
+	WithoutColor() Logger
+	WithDebug() Logger
+	WithoutDebug() Logger
 	IsDebug() bool
-	WithTimestamp() *Logger
-	WithoutTimestamp() *Logger
-	Quiet() *Logger
-	NoQuiet() *Logger
+	WithTimestamp() Logger
+	WithoutTimestamp() Logger
+	Quiet() Logger
+	NoQuiet() Logger
 	IsQuiet() bool
 	Output(depth int, prefix Prefix, data string) error
 	Fatal(v ...interface{})
@@ -46,10 +46,10 @@ type LoggerInterface interface {
 	Tracef(format string, v ...interface{})
 }
 
-var _ LoggerInterface = &Logger{}
+var _ Logger = &logger{}
 
-// Logger struct define the underlying storage for sing	le logger
-type Logger struct {
+// logger struct define the underlying storage for sing	le logger
+type logger struct {
 	mu        sync.RWMutex
 	color     bool
 	out       FdWriter
@@ -117,8 +117,8 @@ var (
 
 // New returns new Logger instance with predefined writer output and
 // automatically detect terminal coloring support
-func New(out FdWriter) LoggerInterface {
-	return &Logger{
+func New(out FdWriter) Logger {
+	return &logger{
 		color:     false,
 		out:       out,
 		timestamp: true,
@@ -126,7 +126,7 @@ func New(out FdWriter) LoggerInterface {
 }
 
 // WithColor explicitly turn on colorful features on the log
-func (l *Logger) WithColor() *Logger {
+func (l *logger) WithColor() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.color = true
@@ -134,7 +134,7 @@ func (l *Logger) WithColor() *Logger {
 }
 
 // WithoutColor explicitly turn off colorful features on the log
-func (l *Logger) WithoutColor() *Logger {
+func (l *logger) WithoutColor() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.color = false
@@ -142,7 +142,7 @@ func (l *Logger) WithoutColor() *Logger {
 }
 
 // WithDebug turn on debugging output on the log to reveal debug and trace level
-func (l *Logger) WithDebug() *Logger {
+func (l *logger) WithDebug() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.debug = true
@@ -150,7 +150,7 @@ func (l *Logger) WithDebug() *Logger {
 }
 
 // WithoutDebug turn off debugging output on the log
-func (l *Logger) WithoutDebug() *Logger {
+func (l *logger) WithoutDebug() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.debug = false
@@ -158,14 +158,14 @@ func (l *Logger) WithoutDebug() *Logger {
 }
 
 // IsDebug check the state of debugging output
-func (l *Logger) IsDebug() bool {
+func (l *logger) IsDebug() bool {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.debug
 }
 
 // WithTimestamp turn on timestamp output on the log
-func (l *Logger) WithTimestamp() *Logger {
+func (l *logger) WithTimestamp() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.timestamp = true
@@ -173,7 +173,7 @@ func (l *Logger) WithTimestamp() *Logger {
 }
 
 // WithoutTimestamp turn off timestamp output on the log
-func (l *Logger) WithoutTimestamp() *Logger {
+func (l *logger) WithoutTimestamp() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.timestamp = false
@@ -181,7 +181,7 @@ func (l *Logger) WithoutTimestamp() *Logger {
 }
 
 // Quiet turn off all log output
-func (l *Logger) Quiet() *Logger {
+func (l *logger) Quiet() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.quiet = true
@@ -189,7 +189,7 @@ func (l *Logger) Quiet() *Logger {
 }
 
 // NoQuiet turn on all log output
-func (l *Logger) NoQuiet() *Logger {
+func (l *logger) NoQuiet() Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.quiet = false
@@ -197,14 +197,14 @@ func (l *Logger) NoQuiet() *Logger {
 }
 
 // IsQuiet check for quiet state
-func (l *Logger) IsQuiet() bool {
+func (l *logger) IsQuiet() bool {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.quiet
 }
 
 // Output print the actual value
-func (l *Logger) Output(depth int, prefix Prefix, data string) error {
+func (l *logger) Output(depth int, prefix Prefix, data string) error {
 	// Check if quiet is requested, and try to return no error and be quiet
 	if l.IsQuiet() {
 		return nil
@@ -296,71 +296,71 @@ func (l *Logger) Output(depth int, prefix Prefix, data string) error {
 }
 
 // Fatal print fatal message to output and quit the application with status 1
-func (l *Logger) Fatal(v ...interface{}) {
+func (l *logger) Fatal(v ...interface{}) {
 	_ = l.Output(1, FatalPrefix, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
 // Fatalf print formatted fatal message to output and quit the application
 // with status 1
-func (l *Logger) Fatalf(format string, v ...interface{}) {
+func (l *logger) Fatalf(format string, v ...interface{}) {
 	_ = l.Output(1, FatalPrefix, fmt.Sprintf(format, v...))
 	os.Exit(1)
 }
 
 // Error print error message to output
-func (l *Logger) Error(v ...interface{}) {
+func (l *logger) Error(v ...interface{}) {
 	_ = l.Output(1, ErrorPrefix, fmt.Sprintln(v...))
 }
 
 // Errorf print formatted error message to output
-func (l *Logger) Errorf(format string, v ...interface{}) {
+func (l *logger) Errorf(format string, v ...interface{}) {
 	_ = l.Output(1, ErrorPrefix, fmt.Sprintf(format, v...))
 }
 
 // Warn print warning message to output
-func (l *Logger) Warn(v ...interface{}) {
+func (l *logger) Warn(v ...interface{}) {
 	_ = l.Output(1, WarnPrefix, fmt.Sprintln(v...))
 }
 
 // Warnf print formatted warning message to output
-func (l *Logger) Warnf(format string, v ...interface{}) {
+func (l *logger) Warnf(format string, v ...interface{}) {
 	_ = l.Output(1, WarnPrefix, fmt.Sprintf(format, v...))
 }
 
 // Info print informational message to output
-func (l *Logger) Info(v ...interface{}) {
+func (l *logger) Info(v ...interface{}) {
 	_ = l.Output(1, InfoPrefix, fmt.Sprintln(v...))
 }
 
 // Infof print formatted informational message to output
-func (l *Logger) Infof(format string, v ...interface{}) {
+func (l *logger) Infof(format string, v ...interface{}) {
 	_ = l.Output(1, InfoPrefix, fmt.Sprintf(format, v...))
 }
 
 // Debug print debug message to output if debug output enabled
-func (l *Logger) Debug(v ...interface{}) {
+func (l *logger) Debug(v ...interface{}) {
 	if l.IsDebug() {
 		_ = l.Output(1, DebugPrefix, fmt.Sprintln(v...))
 	}
 }
 
 // Debugf print formatted debug message to output if debug output enabled
-func (l *Logger) Debugf(format string, v ...interface{}) {
+func (l *logger) Debugf(format string, v ...interface{}) {
 	if l.IsDebug() {
 		_ = l.Output(1, DebugPrefix, fmt.Sprintf(format, v...))
 	}
 }
 
 // Trace print trace message to output if debug output enabled
-func (l *Logger) Trace(v ...interface{}) {
+func (l *logger) Trace(v ...interface{}) {
 	if l.IsDebug() {
 		_ = l.Output(1, TracePrefix, fmt.Sprintln(v...))
 	}
 }
 
 // Tracef print formatted trace message to output if debug output enabled
-func (l *Logger) Tracef(format string, v ...interface{}) {
+func (l *logger) Tracef(format string, v ...interface{}) {
 	if l.IsDebug() {
 		_ = l.Output(1, TracePrefix, fmt.Sprintf(format, v...))
 	}

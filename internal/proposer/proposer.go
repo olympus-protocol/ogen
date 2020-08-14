@@ -24,12 +24,12 @@ import (
 // Config is a config for the proposer.
 type Config struct {
 	Datadir string
-	Log     *logger.Logger
+	Log     logger.Logger
 }
 
 // proposer manages mining for the blockchain.
 type Proposer struct {
-	log        *logger.Logger
+	log        logger.Logger
 	config     Config
 	params     params.ChainParams
 	chain      chain.Blockchain
@@ -38,7 +38,7 @@ type Proposer struct {
 	context    context.Context
 	Stop       context.CancelFunc
 
-	voteMempool    *mempool.VoteMempool
+	voteMempool    mempool.VoteMempool
 	coinsMempool   *mempool.CoinsMempool
 	actionsMempool *mempool.ActionMempool
 	hostnode       peers.HostNode
@@ -59,7 +59,7 @@ func (p *Proposer) OpenKeystore() (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager actionmanager.LastActionManager) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager actionmanager.LastActionManager) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {

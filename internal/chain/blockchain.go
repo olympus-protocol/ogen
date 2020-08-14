@@ -14,7 +14,7 @@ import (
 
 type Config struct {
 	Datadir string
-	Log     logger.LoggerInterface
+	Log     logger.Logger
 }
 
 // Blockchain is an interface for blockchain
@@ -38,7 +38,7 @@ var _ Blockchain = &blockchain{}
 
 type blockchain struct {
 	// Initial Ogen Params
-	log         logger.LoggerInterface
+	log         logger.Logger
 	config      Config
 	genesisTime time.Time
 	params      params.ChainParams

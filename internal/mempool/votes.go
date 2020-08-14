@@ -18,8 +18,20 @@ import (
 	"sync"
 )
 
-// VoteMempool is a mempool that keeps track of votes.
-type VoteMempool struct {
+// VoteMempool is the interface of the voteMempool
+type VoteMempool interface {
+	AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error
+	sortMempool()
+	Add(vote *primitives.MultiValidatorVote)
+	Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
+	removeFromOrder(h chainhash.Hash)
+	Remove(b *primitives.Block)
+	handleSubscription(sub *pubsub.Subscription, id peer.ID)
+	Notify(notifee VoteSlashingNotifee)
+}
+
+// voteMempool is a mempool that keeps track of votes.
+type voteMempool struct {
 	poolLock sync.Mutex
 	pool     map[chainhash.Hash]*primitives.MultiValidatorVote
 
@@ -27,7 +39,7 @@ type VoteMempool struct {
 	poolOrder []chainhash.Hash
 
 	params     *params.ChainParams
-	log        *logger.Logger
+	log        logger.Logger
 	ctx        context.Context
 	blockchain chain.Blockchain
 	hostNode   peers.HostNode
@@ -39,8 +51,10 @@ type VoteMempool struct {
 	lastActionManager actionmanager.LastActionManager
 }
 
+var _ VoteMempool = &voteMempool{}
+
 // AddValidate validates, then adds the vote to the mempool.
-func (m *VoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error {
+func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error {
 	if err := state.IsVoteValid(vote, m.params); err != nil {
 		return err
 	}
@@ -50,7 +64,7 @@ func (m *VoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *pr
 }
 
 // sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
-func (m *VoteMempool) sortMempool() {
+func (m *voteMempool) sortMempool() {
 	sort.Slice(m.poolOrder, func(i, j int) bool {
 
 		// return if i is higher priority than j
@@ -73,7 +87,7 @@ func (m *VoteMempool) sortMempool() {
 }
 
 // Add adds a vote to the mempool.
-func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
+func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	voteData := vote.Data
@@ -211,7 +225,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *voteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 
@@ -236,7 +250,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 }
 
 // Assumes you already hold the poolLock mutex.
-func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
+func (m *voteMempool) removeFromOrder(h chainhash.Hash) {
 	newOrder := make([]chainhash.Hash, 0, len(m.poolOrder))
 
 	for _, vh := range m.poolOrder {
@@ -249,7 +263,7 @@ func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
 }
 
 // Remove removes mempool items that are no longer relevant.
-func (m *VoteMempool) Remove(b *primitives.Block) {
+func (m *voteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 
@@ -275,7 +289,7 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 
 }
 
-func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
+func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 	for {
 		msg, err := sub.Next(m.ctx)
 		if err != nil {
@@ -323,14 +337,14 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 }
 
 // Notify registers a notifee to be notified when illegal votes occur.
-func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
+func (m *voteMempool) Notify(notifee VoteSlashingNotifee) {
 	m.notifeesLock.Lock()
 	defer m.notifeesLock.Unlock()
 	m.notifees = append(m.notifees, notifee)
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (*VoteMempool, error) {
+func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
 		return nil, err
@@ -346,7 +360,7 @@ func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainPara
 		return nil, err
 	}
 
-	vm := &VoteMempool{
+	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
 		params:            p,
 		log:               log,

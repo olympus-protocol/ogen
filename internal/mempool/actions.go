@@ -42,7 +42,7 @@ type ActionMempool struct {
 
 	params     *params.ChainParams
 	ctx        context.Context
-	log        *logger.Logger
+	log        logger.Logger
 	blockchain chain.Blockchain
 	hostNode   peers.HostNode
 }
@@ -119,7 +119,7 @@ func (am *ActionMempool) ProposerSlashingConditionViolated(slashing *primitives.
 }
 
 // NewActionMempool constructs a new action mempool.
-func NewActionMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, blockchain chain.Blockchain, hostnode peers.HostNode) (*ActionMempool, error) {
+func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, blockchain chain.Blockchain, hostnode peers.HostNode) (*ActionMempool, error) {
 	depositTopic, err := hostnode.Topic("deposits")
 	if err != nil {
 		return nil, err

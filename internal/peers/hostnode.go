@@ -24,7 +24,7 @@ import (
 )
 
 type Config struct {
-	Log          logger.LoggerInterface
+	Log          logger.Logger
 	Port         string
 	InitialNodes []peer.AddrInfo
 	Path         string
@@ -82,7 +82,7 @@ type hostNode struct {
 
 	netMagic uint32
 
-	log logger.LoggerInterface
+	log logger.Logger
 
 	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
 	discoveryProtocol DiscoveryProtocol

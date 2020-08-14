@@ -397,7 +397,7 @@ func (s *State) CheckForVoteTransitions(p *params.ChainParams) {
 }
 
 // ProcessEpochTransition runs an epoch transition on the state.
-func (s *State) ProcessEpochTransition(p *params.ChainParams, _ logger.LoggerInterface) ([]*EpochReceipt, error) {
+func (s *State) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) ([]*EpochReceipt, error) {
 	s.CheckForVoteTransitions(p)
 
 	totalBalance := s.getActiveBalance(p)

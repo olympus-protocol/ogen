@@ -59,7 +59,7 @@ type protocolHandler struct {
 	notifees    []ConnectionManagerNotifee
 	notifeeLock sync.Mutex
 
-	log logger.LoggerInterface
+	log logger.Logger
 }
 
 // ConnectionManagerNotifee is a notifee for the connection manager.

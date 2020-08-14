@@ -40,14 +40,14 @@ type GlobalConfig struct {
 	Pprof   bool
 }
 type Mempools struct {
-	Votes   *mempool.VoteMempool
+	Votes   mempool.VoteMempool
 	Coins   *mempool.CoinsMempool
 	Actions *mempool.ActionMempool
 }
 
 // Server is the main struct that contains ogen services
 type Server struct {
-	log    *logger.Logger
+	log    logger.Logger
 	config *GlobalConfig
 	params params.ChainParams
 
@@ -90,7 +90,7 @@ func (s *Server) Stop() error {
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
@@ -165,7 +165,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.L
 	return s, nil
 }
 
-func loadChainConfig(config *GlobalConfig, logger *logger.Logger) chain.Config {
+func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 	cfg := chain.Config{
 		Log:     logger,
 		Datadir: config.DataFolder,
@@ -173,7 +173,7 @@ func loadChainConfig(config *GlobalConfig, logger *logger.Logger) chain.Config {
 	return cfg
 }
 
-func loadProposerConfig(config *GlobalConfig, logger *logger.Logger) proposer.Config {
+func loadProposerConfig(config *GlobalConfig, logger logger.Logger) proposer.Config {
 	cfg := proposer.Config{
 		Datadir: config.DataFolder,
 		Log:     logger,
@@ -181,7 +181,7 @@ func loadProposerConfig(config *GlobalConfig, logger *logger.Logger) proposer.Co
 	return cfg
 }
 
-func loadPeersManConfig(config *GlobalConfig, logger *logger.Logger) peers.Config {
+func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) peers.Config {
 	cfg := peers.Config{
 		Log:          logger,
 		InitialNodes: config.InitialNodes,
@@ -191,7 +191,7 @@ func loadPeersManConfig(config *GlobalConfig, logger *logger.Logger) peers.Confi
 	return cfg
 }
 
-func loadRPCConfig(config *GlobalConfig, logger *logger.Logger) chainrpc.Config {
+func loadRPCConfig(config *GlobalConfig, logger logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
 		DataDir:      config.DataFolder,
 		Log:          logger,

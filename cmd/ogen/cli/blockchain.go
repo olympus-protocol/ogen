@@ -26,7 +26,7 @@ import (
 )
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log *logger.Logger, currParams params.ChainParams) error {
+func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams params.ChainParams) error {
 	db, err := blockdb.NewBlockDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ var (
 		Long: `A Golang implementation of the Olympus protocol.
 Next generation blockchain secured by CASPER.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			var log *logger.Logger
+			var log logger.Logger
 
 			if viper.GetBool("log_file") {
 				logFile, err := os.OpenFile(path.Join(DataFolder, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
@@ -284,7 +284,7 @@ var shutdownRequestChannel = make(chan struct{})
 
 var interruptSignals = []os.Signal{os.Interrupt}
 
-func InterruptListener(log *logger.Logger, cancel context.CancelFunc) {
+func InterruptListener(log logger.Logger, cancel context.CancelFunc) {
 	go func() {
 		interruptChannel := make(chan os.Signal, 1)
 		signal.Notify(interruptChannel, interruptSignals...)

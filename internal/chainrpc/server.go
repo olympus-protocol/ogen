@@ -30,12 +30,12 @@ type Config struct {
 	RPCProxyPort string
 	RPCProxyAddr string
 	RPCPort      string
-	Log          *logger.Logger
+	Log          logger.Logger
 }
 
 // RPCServer struct model for the gRPC server
 type RPCServer struct {
-	log              *logger.Logger
+	log              logger.Logger
 	config           Config
 	http             *runtime.ServeMux
 	rpc              *grpc.Server
