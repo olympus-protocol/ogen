@@ -16,7 +16,7 @@ import (
 
 type walletServer struct {
 	wallet *wallet.Wallet
-	chain  *chain.Blockchain
+	chain  chain.Blockchain
 	params *params.ChainParams
 	proto.UnimplementedWalletServer
 }

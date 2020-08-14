@@ -57,8 +57,8 @@ func newCoinMempoolItem() *coinMempoolItem {
 
 // CoinsMempool represents a mempool for coin transactions.
 type CoinsMempool struct {
-	blockchain *chain.Blockchain
-	hostNode   *peers.HostNode
+	blockchain chain.Blockchain
+	hostNode   peers.HostNode
 	params     *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
@@ -186,7 +186,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch *chain.Blockchain, hostNode *peers.HostNode, params *params.ChainParams) (*CoinsMempool, error) {
+func NewCoinsMempool(ctx context.Context, log *logger.Logger, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (*CoinsMempool, error) {
 	topic, err := hostNode.Topic("tx")
 	if err != nil {
 		return nil, err

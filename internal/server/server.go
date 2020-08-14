@@ -51,8 +51,8 @@ type Server struct {
 	config *GlobalConfig
 	params params.ChainParams
 
-	Chain    *chain.Blockchain
-	HostNode *peers.HostNode
+	Chain    chain.Blockchain
+	HostNode peers.HostNode
 	RPC      *chainrpc.RPCServer
 	Proposer *proposer.Proposer
 
@@ -90,7 +90,7 @@ func (s *Server) Stop() error {
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.Logger, currParams params.ChainParams, db *blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger *logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 

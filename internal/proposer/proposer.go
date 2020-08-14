@@ -27,12 +27,12 @@ type Config struct {
 	Log     *logger.Logger
 }
 
-// Proposer manages mining for the blockchain.
+// proposer manages mining for the blockchain.
 type Proposer struct {
 	log        *logger.Logger
 	config     Config
 	params     params.ChainParams
-	chain      *chain.Blockchain
+	chain      chain.Blockchain
 	Keystore   *keystore.Keystore
 	mineActive bool
 	context    context.Context
@@ -41,11 +41,11 @@ type Proposer struct {
 	voteMempool    *mempool.VoteMempool
 	coinsMempool   *mempool.CoinsMempool
 	actionsMempool *mempool.ActionMempool
-	hostnode       *peers.HostNode
+	hostnode       peers.HostNode
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
 
-	lastActionManager *actionmanager.LastActionManager
+	lastActionManager actionmanager.LastActionManager
 }
 
 // OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
@@ -59,7 +59,7 @@ func (p *Proposer) OpenKeystore() (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager *actionmanager.LastActionManager) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager actionmanager.LastActionManager) (proposer *Proposer, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {

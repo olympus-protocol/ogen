@@ -10,7 +10,7 @@ import (
 )
 
 type networkServer struct {
-	hostnode *peers.HostNode
+	hostnode peers.HostNode
 	proto.UnimplementedNetworkServer
 }
 

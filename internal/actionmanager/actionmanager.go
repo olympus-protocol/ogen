@@ -22,13 +22,27 @@ import (
 // validator to start.
 const MaxMessagePropagationTime = 60 * time.Second
 
-// LastActionManager keeps track of the last action recorded by validators.
+// LastActionManager is an interface for lastActionManager
+type LastActionManager interface {
+	NewTip(row *chainindex.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt)
+	handleStartTopic(topic *pubsub.Subscription)
+	StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool
+	ShouldRun(val [48]byte) bool
+	shouldRun(pubSer [48]byte) bool
+	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
+	RegisterAction(by [48]byte, nonce uint64)
+	GetNonce() uint64
+}
+
+var _ LastActionManager = &lastActionManager{}
+
+// lastActionManager keeps track of the last action recorded by validators.
 // This is a very basic protection against slashing. Validators, on startup,
 // will broadcast a StartMessage
-type LastActionManager struct {
-	log *logger.Logger
+type lastActionManager struct {
+	log logger.LoggerInterface
 
-	hostNode *peers.HostNode
+	hostNode peers.HostNode
 	ctx      context.Context
 
 	nonce uint64
@@ -43,7 +57,7 @@ type LastActionManager struct {
 	params *params.ChainParams
 }
 
-func (l *LastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt) {
+func (l *lastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt) {
 	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
 
 	proposerIndex := state.ProposerQueue[slotIndex]
@@ -52,13 +66,13 @@ func (l *LastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.B
 	l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 }
 
-func (l *LastActionManager) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
+func (l *lastActionManager) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
 }
 
 const validatorStartTopic = "validatorStart"
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger.Logger, ch *chain.Blockchain, params *params.ChainParams) (*LastActionManager, error) {
+func NewLastActionManager(ctx context.Context, node peers.HostNode, log logger.LoggerInterface, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
 	topic, err := node.Topic(validatorStartTopic)
 	if err != nil {
 		return nil, err
@@ -69,7 +83,7 @@ func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger
 		return nil, err
 	}
 
-	l := &LastActionManager{
+	l := &lastActionManager{
 		hostNode:    node,
 		ctx:         ctx,
 		lastActions: make(map[[48]byte]time.Time),
@@ -86,7 +100,7 @@ func NewLastActionManager(ctx context.Context, node *peers.HostNode, log *logger
 	return l, nil
 }
 
-func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
+func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(l.ctx)
 		if err != nil {
@@ -119,7 +133,7 @@ func (l *LastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *LastActionManager) StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
+func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
 	l.lastActionsLock.RLock()
 	defer l.lastActionsLock.RUnlock()
 
@@ -143,14 +157,14 @@ func (l *LastActionManager) StartValidator(valPub [48]byte, sign func(*Validator
 	return true
 }
 
-func (l *LastActionManager) ShouldRun(val [48]byte) bool {
+func (l *lastActionManager) ShouldRun(val [48]byte) bool {
 	l.lastActionsLock.RLock()
 	defer l.lastActionsLock.RUnlock()
 
 	return l.shouldRun(val)
 }
 
-func (l *LastActionManager) shouldRun(pubSer [48]byte) bool {
+func (l *lastActionManager) shouldRun(pubSer [48]byte) bool {
 	// no actions observed
 	if _, ok := l.lastActions[pubSer]; !ok {
 		return true
@@ -167,7 +181,7 @@ func (l *LastActionManager) shouldRun(pubSer [48]byte) bool {
 }
 
 // RegisterActionAt registers an action by a validator at a certain time.
-func (l *LastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce uint64) {
+func (l *lastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce uint64) {
 	l.lastActionsLock.Lock()
 	defer l.lastActionsLock.Unlock()
 
@@ -179,10 +193,10 @@ func (l *LastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce ui
 }
 
 // RegisterAction registers an action by a validator.
-func (l *LastActionManager) RegisterAction(by [48]byte, nonce uint64) {
+func (l *lastActionManager) RegisterAction(by [48]byte, nonce uint64) {
 	l.RegisterActionAt(by, time.Now(), nonce)
 }
 
-func (l *LastActionManager) GetNonce() uint64 {
+func (l *lastActionManager) GetNonce() uint64 {
 	return l.nonce
 }

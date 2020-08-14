@@ -19,23 +19,39 @@ import (
 
 const discoveryProtocolID = protocol.ID("/ogen/discovery/" + OgenVersion)
 
-// DiscoveryProtocol is the service to discover other peers.
-type DiscoveryProtocol struct {
-	host   *HostNode
+// DiscoveryProtocol is an interface for discoveryProtocol
+type DiscoveryProtocol interface {
+	handleAddr(id peer.ID, msg p2p.Message) error
+	handleGetAddr(id peer.ID, msg p2p.Message) error
+	Start() error
+	connect(pi peer.AddrInfo) error
+	Listen(network.Network, multiaddr.Multiaddr)
+	ListenClose(network.Network, multiaddr.Multiaddr)
+	Connected(net network.Network, conn network.Conn)
+	Disconnected(net network.Network, conn network.Conn)
+	OpenedStream(network.Network, network.Stream)
+	ClosedStream(network.Network, network.Stream)
+}
+
+var _ DiscoveryProtocol = &discoveryProtocol{}
+
+// discoveryProtocol is the service to discover other peers.
+type discoveryProtocol struct {
+	host   HostNode
 	config Config
 	ctx    context.Context
-	log    *logger.Logger
+	log    logger.LoggerInterface
 
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex
 
-	protocolHandler *ProtocolHandler
+	protocolHandler ProtocolHandlerInterface
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host *HostNode, config Config) (*DiscoveryProtocol, error) {
+func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
 	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
-	dp := &DiscoveryProtocol{
+	dp := &discoveryProtocol{
 		host:            host,
 		ctx:             ctx,
 		config:          config,
@@ -64,7 +80,7 @@ func shufflePeers(peers []peer.AddrInfo) []peer.AddrInfo {
 	return peers
 }
 
-func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
+func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	msgAddr, ok := msg.(*p2p.MsgAddr)
 	if !ok {
 		return fmt.Errorf("message received is not addr")
@@ -83,11 +99,11 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		if err != nil {
 			continue
 		}
-		if p.ID == cm.host.host.ID() {
+		if p.ID == cm.host.GetHost().ID() {
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		if err := cm.host.host.Connect(ctx, *p); err != nil {
+		if err := cm.host.GetHost().Connect(ctx, *p); err != nil {
 			cm.log.Tracef("error connecting to suggested peer %s: %s", p, err)
 			cancel()
 			continue
@@ -104,7 +120,7 @@ func (cm *DiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	return nil
 }
 
-func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
+func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	_, ok := msg.(*p2p.MsgGetAddr)
 	if !ok {
 		return fmt.Errorf("message received is not get addr")
@@ -131,7 +147,7 @@ func (cm *DiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 
 const askForPeersCycle = 60 * time.Second
 
-func (cm *DiscoveryProtocol) Start() error {
+func (cm *discoveryProtocol) Start() error {
 	go func() {
 		for _, addr := range cm.config.InitialNodes {
 			if err := cm.connect(addr); err != nil {
@@ -166,7 +182,7 @@ func (cm *DiscoveryProtocol) Start() error {
 }
 
 // Connect connects to a peer.
-func (cm *DiscoveryProtocol) connect(pi peer.AddrInfo) error {
+func (cm *discoveryProtocol) connect(pi peer.AddrInfo) error {
 	cm.lastConnectLock.Lock()
 	defer cm.lastConnectLock.Unlock()
 
@@ -175,25 +191,25 @@ func (cm *DiscoveryProtocol) connect(pi peer.AddrInfo) error {
 		cm.lastConnect[pi.ID] = time.Now()
 		ctx, cancel := context.WithTimeout(cm.ctx, connectionTimeout)
 		defer cancel()
-		return cm.host.host.Connect(ctx, pi)
+		return cm.host.GetHost().Connect(ctx, pi)
 	}
 	return nil
 }
 
 // Listen is called when we start listening on a multiaddr.
-func (cm *DiscoveryProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
+func (cm *discoveryProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
 
 // ListenClose is called when we stop listening on a multiaddr.
-func (cm *DiscoveryProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
+func (cm *discoveryProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
 
 // Connected is called when we connect to a peer.
-func (cm *DiscoveryProtocol) Connected(net network.Network, conn network.Conn) {
+func (cm *discoveryProtocol) Connected(net network.Network, conn network.Conn) {
 	if conn.Stat().Direction != network.DirOutbound {
 		return
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := cm.host.host.NewStream(cm.ctx, conn.RemotePeer(), discoveryProtocolID)
+	s, err := cm.host.GetHost().NewStream(cm.ctx, conn.RemotePeer(), discoveryProtocolID)
 	if err != nil {
 		cm.log.Errorf("could not open stream for connection: %s", err)
 	}
@@ -202,10 +218,10 @@ func (cm *DiscoveryProtocol) Connected(net network.Network, conn network.Conn) {
 }
 
 // Disconnected is called when we disconnect from a peer.
-func (cm *DiscoveryProtocol) Disconnected(net network.Network, conn network.Conn) {}
+func (cm *discoveryProtocol) Disconnected(net network.Network, conn network.Conn) {}
 
 // OpenedStream is called when we open a stream.
-func (cm *DiscoveryProtocol) OpenedStream(network.Network, network.Stream) {}
+func (cm *discoveryProtocol) OpenedStream(network.Network, network.Stream) {}
 
 // ClosedStream is called when we close a stream.
-func (cm *DiscoveryProtocol) ClosedStream(network.Network, network.Stream) {}
+func (cm *discoveryProtocol) ClosedStream(network.Network, network.Stream) {}

@@ -17,7 +17,7 @@ import (
 )
 
 type chainServer struct {
-	chain *chain.Blockchain
+	chain chain.Blockchain
 	proto.UnimplementedChainServer
 }
 
@@ -145,7 +145,7 @@ type blockAndReceipts struct {
 	state    *primitives.State
 }
 
-func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
+func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	bn := blockNotifee{
 		blocks: make(chan blockAndReceipts),
 	}

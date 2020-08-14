@@ -18,9 +18,18 @@ import (
 // BlockDBBucketKey is the bucket key of the blocks on the database.
 var BlockDBBucketKey = []byte("blocksdb")
 
+// BlockDB is an interface for blockDb
+type BlockDB interface {
+	Close()
+	Update(cb func(txn DBUpdateTransaction) error) error
+	View(cb func(txn DBViewTransaction) error) error
+}
+
+var _ BlockDB = &blockDB{}
+
 // BlockDB is the struct wrapper for the block database.
-type BlockDB struct {
-	log    *logger.Logger
+type blockDB struct {
+	log    logger.LoggerInterface
 	db     *bbolt.DB
 	params params.ChainParams
 	lock   sync.RWMutex
@@ -36,17 +45,17 @@ type BlockDBUpdateTransaction struct {
 
 // BlockDBReadTransaction is a wrapper for the bbolt transaction with view privileges.
 type BlockDBReadTransaction struct {
-	db  *BlockDB
+	db  BlockDB
 	bkt *bbolt.Bucket
 }
 
 // NewBlockDB returns a database instance with a rawBlockDatabase and BboltDB to use on the selected path.
-func NewBlockDB(pathDir string, params params.ChainParams, log *logger.Logger) (*BlockDB, error) {
+func NewBlockDB(pathDir string, params params.ChainParams, log logger.LoggerInterface) (BlockDB, error) {
 	db, err := bbolt.Open(path.Join(pathDir, "chain.db"), 0600, nil)
 	if err != nil {
 		return nil, err
 	}
-	blockdb := &BlockDB{
+	blockdb := &blockDB{
 		log:    log,
 		db:     db,
 		params: params,
@@ -55,7 +64,7 @@ func NewBlockDB(pathDir string, params params.ChainParams, log *logger.Logger) (
 }
 
 // Close closes the database.
-func (bdb *BlockDB) Close() {
+func (bdb *blockDB) Close() {
 	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
 		return
 	}
@@ -65,7 +74,7 @@ func (bdb *BlockDB) Close() {
 }
 
 // Update gets a transaction for updating the database.
-func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
+func (bdb *blockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 	bdb.lock.Lock()
 	defer bdb.lock.Unlock()
 	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
@@ -90,7 +99,7 @@ func (bdb *BlockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 }
 
 // View gets a transaction for viewing the database.
-func (bdb *BlockDB) View(cb func(txn DBViewTransaction) error) error {
+func (bdb *blockDB) View(cb func(txn DBViewTransaction) error) error {
 	bdb.lock.RLock()
 	defer bdb.lock.RUnlock()
 	if atomic.LoadUint32(&bdb.requestedClose) != 0 {
@@ -299,7 +308,7 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 
 var accountPrefix = []byte("account-")
 
-var _ DB = &BlockDB{}
+var _ DB = &blockDB{}
 var _ DBUpdateTransaction = &BlockDBUpdateTransaction{}
 var _ DBViewTransaction = &BlockDBReadTransaction{}
 

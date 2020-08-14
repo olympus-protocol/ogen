@@ -120,7 +120,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain *chain.Blockchain, hostnode *peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams, p *proposer.Proposer) (*RPCServer, error) {
+func NewRPCServer(config Config, chain chain.Blockchain, hostnode peers.HostNode, wallet *wallet.Wallet, params *params.ChainParams, p *proposer.Proposer) (*RPCServer, error) {
 	txTopic, err := hostnode.Topic("tx")
 	if err != nil {
 		return nil, err

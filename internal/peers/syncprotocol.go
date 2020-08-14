@@ -23,27 +23,46 @@ import (
 
 const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
 
+// SyncProtocol is an interface for the syncProtocol
+type SyncProtocol interface {
+	Notify(notifee SyncNotifee)
+	listenForBroadcasts() error
+	handleBlock(id peer.ID, block *primitives.Block) error
+	handleBlocks(id peer.ID, rawMsg p2p.Message) error
+	handleGetBlocks(id peer.ID, rawMsg p2p.Message) error
+	handleVersion(id peer.ID, msg p2p.Message) error
+	versionMsg() *p2p.MsgVersion
+	sendVersion(id peer.ID)
+	syncing() bool
+	Listen(network.Network, multiaddr.Multiaddr)
+	ListenClose(network.Network, multiaddr.Multiaddr)
+	Connected(net network.Network, conn network.Conn)
+	Disconnected(net network.Network, conn network.Conn)
+	OpenedStream(net network.Network, stream network.Stream)
+	ClosedStream(network.Network, network.Stream)
+}
+
+var _ SyncProtocol = &syncProtocol{}
+
 // SyncProtocol handles syncing for a blockchain.
-type SyncProtocol struct {
-	host   *HostNode
+type syncProtocol struct {
+	host   HostNode
 	config Config
 	ctx    context.Context
-	log    *logger.Logger
+	log    logger.LoggerInterface
 
-	chain *chain.Blockchain
+	chain chain.Blockchain
 
-	protocolHandler *ProtocolHandler
+	protocolHandler ProtocolHandlerInterface
 
 	notifees     []SyncNotifee
 	notifeesLock sync.Mutex
 
 	// held while waiting on blocks request
-	syncMutex sync.Mutex
-	syncInfo  struct {
-		syncing     bool
-		withPeer    peer.ID
-		lastRequest time.Time
-	}
+	syncMutex   sync.Mutex
+	onSync      bool
+	withPeer    peer.ID
+	lastRequest time.Time
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -58,9 +77,9 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 }
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
-func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *chain.Blockchain) (*SyncProtocol, error) {
+func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
 	ph := newProtocolHandler(ctx, syncProtocolID, host, config)
-	sp := &SyncProtocol{
+	sp := &syncProtocol{
 		host:            host,
 		config:          config,
 		log:             config.Log,
@@ -90,13 +109,13 @@ func NewSyncProtocol(ctx context.Context, host *HostNode, config Config, chain *
 type SyncNotifee interface {
 }
 
-func (sp *SyncProtocol) Notify(notifee SyncNotifee) {
+func (sp *syncProtocol) Notify(notifee SyncNotifee) {
 	sp.notifeesLock.Lock()
 	defer sp.notifeesLock.Unlock()
 	sp.notifees = append(sp.notifees, notifee)
 }
 
-func (sp *SyncProtocol) listenForBroadcasts() error {
+func (sp *syncProtocol) listenForBroadcasts() error {
 	blockTopic, err := sp.host.Topic("blocks")
 	if err != nil {
 		return err
@@ -130,7 +149,7 @@ func (sp *SyncProtocol) listenForBroadcasts() error {
 // StaleBlockRequestTimeout is the timeout for block requests.
 const StaleBlockRequestTimeout = time.Second * 10
 
-func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
+func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	bh := block.Hash()
 	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
 		sp.log.Infof("received block with unknown parent, ignoring.")
@@ -149,12 +168,12 @@ func (sp *SyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	return nil
 }
 
-func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
+func (sp *syncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
 	// This should only be sent on a response of getblocks.
-	if !sp.syncInfo.syncing {
+	if !sp.onSync {
 		return errors.New("received non-request blocks message")
 	}
-	if id != sp.syncInfo.withPeer {
+	if id != sp.withPeer {
 		return errors.New("received block message from non-requested peer")
 	}
 	msg, ok := rawMsg.(*p2p.MsgBlocks)
@@ -171,7 +190,7 @@ func (sp *SyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
 	return nil
 }
 
-func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
+func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 	msg, ok := rawMsg.(*p2p.MsgGetBlocks)
 	if !ok {
 		return errors.New("did not receive get blocks message")
@@ -238,7 +257,7 @@ func (sp *SyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 	})
 }
 
-func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
+func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	theirVersion, ok := msg.(*p2p.MsgVersion)
 	if !ok {
 		return fmt.Errorf("did not receive version message")
@@ -258,10 +277,10 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	// If the node has more blocks, start the syncing process.
 	// The syncing process must ensure no unnecessary blocks are requested and we don't start a sync routine with other peer.
 	// We also need to check if this peer stops sending block msg.
-	if theirVersion.LastBlock > ourVersion.LastBlock && !sp.syncInfo.syncing {
-		sp.syncInfo.lastRequest = time.Now()
-		sp.syncInfo.withPeer = id
-		sp.syncInfo.syncing = true
+	if theirVersion.LastBlock > ourVersion.LastBlock && !sp.onSync {
+		sp.lastRequest = time.Now()
+		sp.withPeer = id
+		sp.onSync = true
 		go func(their *p2p.MsgVersion, ours *p2p.MsgVersion) {
 			for {
 				ours = sp.versionMsg()
@@ -279,16 +298,16 @@ func (sp *SyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 				}
 			}
 			sp.syncMutex.Lock()
-			sp.syncInfo.lastRequest = time.Now()
-			sp.syncInfo.withPeer = ""
-			sp.syncInfo.syncing = false
+			sp.lastRequest = time.Now()
+			sp.withPeer = ""
+			sp.onSync = false
 			sp.syncMutex.Unlock()
 		}(theirVersion, ourVersion)
 	}
 	return nil
 }
 
-func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
+func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
 	lastBlockHeight := sp.chain.State().Tip().Height
 	buf := make([]byte, 8)
 	rand.Read(buf)
@@ -300,7 +319,7 @@ func (sp *SyncProtocol) versionMsg() *p2p.MsgVersion {
 	return msg
 }
 
-func (sp *SyncProtocol) sendVersion(id peer.ID) {
+func (sp *syncProtocol) sendVersion(id peer.ID) {
 	if err := sp.protocolHandler.SendMessage(id, sp.versionMsg()); err != nil {
 		sp.log.Errorf("error sending version message: %s", err)
 		sp.host.DisconnectPeer(id)
@@ -308,19 +327,19 @@ func (sp *SyncProtocol) sendVersion(id peer.ID) {
 }
 
 // Listen is called when we start listening on a multipraddr.
-func (sp *SyncProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
+func (sp *syncProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
 
 // ListenClose is called when we stop listening on a multiaddr.
-func (sp *SyncProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
+func (sp *syncProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
 
 // Connected is called when we connect to a peer.
-func (sp *SyncProtocol) Connected(net network.Network, conn network.Conn) {
+func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 	if conn.Stat().Direction != network.DirOutbound {
 		return
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := sp.host.host.NewStream(sp.ctx, conn.RemotePeer(), syncProtocolID)
+	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), syncProtocolID)
 	if err != nil {
 		sp.log.Errorf("could not open stream for connection: %s", err)
 	}
@@ -331,12 +350,16 @@ func (sp *SyncProtocol) Connected(net network.Network, conn network.Conn) {
 }
 
 // Disconnected is called when we disconnect from a peer.
-func (sp *SyncProtocol) Disconnected(net network.Network, conn network.Conn) {}
+func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {}
 
 // OpenedStream is called when we open a stream.
-func (sp *SyncProtocol) OpenedStream(net network.Network, stream network.Stream) {
+func (sp *syncProtocol) OpenedStream(net network.Network, stream network.Stream) {
 	// start the sync process now
 }
 
 // ClosedStream is called when we close a stream.
-func (sp *SyncProtocol) ClosedStream(network.Network, network.Stream) {}
+func (sp *syncProtocol) ClosedStream(network.Network, network.Stream) {}
+
+func (sp *syncProtocol) syncing() bool {
+	return sp.onSync
+}

@@ -20,7 +20,35 @@ type FdWriter interface {
 	Fd() uintptr
 }
 
-// Logger struct define the underlying storage for single logger
+type LoggerInterface interface {
+	WithColor() *Logger
+	WithoutColor() *Logger
+	WithDebug() *Logger
+	WithoutDebug() *Logger
+	IsDebug() bool
+	WithTimestamp() *Logger
+	WithoutTimestamp() *Logger
+	Quiet() *Logger
+	NoQuiet() *Logger
+	IsQuiet() bool
+	Output(depth int, prefix Prefix, data string) error
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+	Error(v ...interface{})
+	Errorf(format string, v ...interface{})
+	Warn(v ...interface{})
+	Warnf(format string, v ...interface{})
+	Info(v ...interface{})
+	Infof(format string, v ...interface{})
+	Debug(v ...interface{})
+	Debugf(format string, v ...interface{})
+	Trace(v ...interface{})
+	Tracef(format string, v ...interface{})
+}
+
+var _ LoggerInterface = &Logger{}
+
+// Logger struct define the underlying storage for sing	le logger
 type Logger struct {
 	mu        sync.RWMutex
 	color     bool
@@ -89,7 +117,7 @@ var (
 
 // New returns new Logger instance with predefined writer output and
 // automatically detect terminal coloring support
-func New(out FdWriter) *Logger {
+func New(out FdWriter) LoggerInterface {
 	return &Logger{
 		color:     false,
 		out:       out,

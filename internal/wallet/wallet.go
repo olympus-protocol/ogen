@@ -26,7 +26,7 @@ type Wallet struct {
 	// Wallet manager properties
 	params        *params.ChainParams
 	log           *logger.Logger
-	chain         *chain.Blockchain
+	chain         chain.Blockchain
 	txTopic       *pubsub.Topic
 	mempool       *mempool.CoinsMempool
 	actionMempool *mempool.ActionMempool
@@ -46,7 +46,7 @@ type Wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, params *params.ChainParams, ch *chain.Blockchain, hostnode *peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (wallet *Wallet, err error) {
+func NewWallet(ctx context.Context, log *logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (wallet *Wallet, err error) {
 	var txTopic *pubsub.Topic
 	var depositTopic *pubsub.Topic
 	var exitTopic *pubsub.Topic

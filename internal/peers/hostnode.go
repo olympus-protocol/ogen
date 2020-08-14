@@ -24,7 +24,7 @@ import (
 )
 
 type Config struct {
-	Log          *logger.Logger
+	Log          logger.LoggerInterface
 	Port         string
 	InitialNodes []peer.AddrInfo
 	Path         string
@@ -37,10 +37,37 @@ const (
 	heartbeatInterval = 20 * time.Second
 )
 
+//HostNode is an interface for hostNode
+type HostNode interface {
+	SyncProtocol() SyncProtocol
+	Topic(topic string) (*pubsub.Topic, error)
+	Syncing() bool
+	GetContext() context.Context
+	GetHost() host.Host
+	GetNetMagic() uint32
+	removePeer(p peer.ID)
+	DisconnectPeer(p peer.ID) error
+	IsConnected() bool
+	PeersConnected() int
+	GetPeerList() []peer.ID
+	GetPeerInfos() []peer.AddrInfo
+	ConnectedToPeer(id peer.ID) bool
+	Notify(notifee network.Notifiee)
+	setStreamHandler(id protocol.ID, handleStream func(s network.Stream))
+	CountPeers(id protocol.ID) int
+	GetPeerDirection(id peer.ID) network.Direction
+	Start() error
+	SavePeer(pma multiaddr.Multiaddr) error
+	BanScorePeer(id peer.ID, weight int) error
+	IsPeerBanned(id peer.ID) (bool, error)
+}
+
+var _ HostNode = &hostNode{}
+
 // HostNode is the node for p2p host
 // It's the low level P2P communication layer, the App class handles high level protocols
 // The RPC communication is hanlded by App, not HostNode
-type HostNode struct {
+type hostNode struct {
 	privateKey crypto.PrivKey
 
 	host      host.Host
@@ -55,19 +82,18 @@ type HostNode struct {
 
 	netMagic uint32
 
-	log *logger.Logger
+	log logger.LoggerInterface
 
 	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
-	discoveryProtocol *DiscoveryProtocol
+	discoveryProtocol DiscoveryProtocol
 
 	// syncProtocol handles peer syncing
-	syncProtocol *SyncProtocol
-
-	db Database
+	syncProtocol SyncProtocol
+	db           Database
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchain) (node *HostNode, err error) {
+func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain) (HostNode, error) {
 	ps := pstoremem.NewPeerstore()
 	db, err := NewDatabase(config.Path)
 	if err != nil {
@@ -133,7 +159,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		return nil, err
 	}
 
-	hostNode := &HostNode{
+	node := &hostNode{
 		privateKey:        config.PrivateKey,
 		host:              h,
 		gossipSub:         g,
@@ -145,26 +171,26 @@ func NewHostNode(ctx context.Context, config Config, blockchain *chain.Blockchai
 		db:                db,
 	}
 
-	discovery, err := NewDiscoveryProtocol(ctx, hostNode, config)
+	discovery, err := NewDiscoveryProtocol(ctx, node, config)
 	if err != nil {
 		return nil, err
 	}
-	hostNode.discoveryProtocol = discovery
+	node.discoveryProtocol = discovery
 
-	syncProtocol, err := NewSyncProtocol(ctx, hostNode, config, blockchain)
+	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
 	if err != nil {
 		return nil, err
 	}
-	hostNode.syncProtocol = syncProtocol
+	node.syncProtocol = syncProtocol
 
-	return hostNode, nil
+	return node, nil
 }
 
-func (node *HostNode) SyncProtocol() *SyncProtocol {
+func (node *hostNode) SyncProtocol() SyncProtocol {
 	return node.syncProtocol
 }
 
-func (node *HostNode) Topic(topic string) (*pubsub.Topic, error) {
+func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
 	node.topicsLock.Lock()
 	defer node.topicsLock.Unlock()
 	if t, ok := node.topics[topic]; ok {
@@ -180,46 +206,50 @@ func (node *HostNode) Topic(topic string) (*pubsub.Topic, error) {
 }
 
 // Syncing returns a boolean if the chain is on sync mode
-func (node *HostNode) Syncing() bool {
-	return node.syncProtocol.syncInfo.syncing
+func (node *hostNode) Syncing() bool {
+	return node.syncProtocol.syncing()
 }
 
 // GetContext returns the context
-func (node *HostNode) GetContext() context.Context {
+func (node *hostNode) GetContext() context.Context {
 	return node.ctx
 }
 
 // GetHost returns the host
-func (node *HostNode) GetHost() host.Host {
+func (node *hostNode) GetHost() host.Host {
 	return node.host
 }
 
-func (node *HostNode) removePeer(p peer.ID) {
+func (node *hostNode) GetNetMagic() uint32 {
+	return node.netMagic
+}
+
+func (node *hostNode) removePeer(p peer.ID) {
 	node.host.Peerstore().ClearAddrs(p)
 }
 
 // DisconnectPeer disconnects a peer
-func (node *HostNode) DisconnectPeer(p peer.ID) error {
+func (node *hostNode) DisconnectPeer(p peer.ID) error {
 	return node.host.Network().ClosePeer(p)
 }
 
 // IsConnected checks if the host node is connected.
-func (node *HostNode) IsConnected() bool {
+func (node *hostNode) IsConnected() bool {
 	return node.PeersConnected() > 0
 }
 
 // PeersConnected checks how many peers are connected.
-func (node *HostNode) PeersConnected() int {
+func (node *hostNode) PeersConnected() int {
 	return len(node.host.Network().Peers())
 }
 
 // GetPeerList returns a list of all peers.
-func (node *HostNode) GetPeerList() []peer.ID {
+func (node *hostNode) GetPeerList() []peer.ID {
 	return node.host.Network().Peers()
 }
 
 // GetPeerInfos gets peer infos of connected peers.
-func (node *HostNode) GetPeerInfos() []peer.AddrInfo {
+func (node *hostNode) GetPeerInfos() []peer.AddrInfo {
 	peers := node.host.Network().Peers()
 	infos := make([]peer.AddrInfo, 0, len(peers))
 	for _, p := range peers {
@@ -231,23 +261,23 @@ func (node *HostNode) GetPeerInfos() []peer.AddrInfo {
 }
 
 // ConnectedToPeer returns true if we're connected to the peer.
-func (node *HostNode) ConnectedToPeer(id peer.ID) bool {
+func (node *hostNode) ConnectedToPeer(id peer.ID) bool {
 	connectedness := node.host.Network().Connectedness(id)
 	return connectedness == network.Connected
 }
 
 // Notify notifies a notifee for network events.
-func (node *HostNode) Notify(notifee network.Notifiee) {
+func (node *hostNode) Notify(notifee network.Notifiee) {
 	node.host.Network().Notify(notifee)
 }
 
 // setStreamHandler sets a stream handler for the host node.
-func (node *HostNode) setStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
+func (node *hostNode) setStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
 	node.host.SetStreamHandler(id, handleStream)
 }
 
 // CountPeers counts the number of peers that support the protocol.
-func (node *HostNode) CountPeers(id protocol.ID) int {
+func (node *hostNode) CountPeers(id protocol.ID) int {
 	count := 0
 	for _, n := range node.host.Peerstore().Peers() {
 		if sup, err := node.host.Peerstore().SupportsProtocols(n, string(id)); err != nil && len(sup) != 0 {
@@ -258,7 +288,7 @@ func (node *HostNode) CountPeers(id protocol.ID) int {
 }
 
 // GetPeerDirection gets the direction of the peer.
-func (node *HostNode) GetPeerDirection(id peer.ID) network.Direction {
+func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	conns := node.host.Network().ConnsToPeer(id)
 
 	if len(conns) != 1 {
@@ -268,7 +298,7 @@ func (node *HostNode) GetPeerDirection(id peer.ID) network.Direction {
 }
 
 // Start the host node and start discovering peers.
-func (node *HostNode) Start() error {
+func (node *hostNode) Start() error {
 	if err := node.discoveryProtocol.Start(); err != nil {
 		return err
 	}
@@ -278,14 +308,14 @@ func (node *HostNode) Start() error {
 
 // Database <-> hostNode Functions
 
-func (node *HostNode) SavePeer(pma multiaddr.Multiaddr) error {
+func (node *hostNode) SavePeer(pma multiaddr.Multiaddr) error {
 	if node.db == nil {
 		return errors.New("no initialized db in node")
 	}
 	return node.db.SavePeer(pma)
 }
 
-func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
+func (node *hostNode) BanScorePeer(id peer.ID, weight int) error {
 	if node.db == nil {
 		return errors.New("no initialized db in node")
 	}
@@ -302,7 +332,7 @@ func (node *HostNode) BanScorePeer(id peer.ID, weight int) error {
 	return err
 }
 
-func (node *HostNode) IsPeerBanned(id peer.ID) (bool, error) {
+func (node *hostNode) IsPeerBanned(id peer.ID) (bool, error) {
 	if node.db == nil {
 		return false, errors.New("no initialized db in node")
 	}

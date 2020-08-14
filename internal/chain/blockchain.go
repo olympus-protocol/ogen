@@ -14,12 +14,31 @@ import (
 
 type Config struct {
 	Datadir string
-	Log     *logger.Logger
+	Log     logger.LoggerInterface
 }
 
-type Blockchain struct {
+// Blockchain is an interface for blockchain
+type Blockchain interface {
+	Start() (err error)
+	Stop()
+	State() *StateService
+	GenesisTime() time.Time
+	GetBlock(h chainhash.Hash) (block *primitives.Block, err error)
+	GetRawBlock(h chainhash.Hash) (block []byte, err error)
+	GetAccountTxs(acc [20]byte) (accTxs txindex.AccountTxs, err error)
+	GetTx(h chainhash.Hash) (tx *primitives.Tx, err error)
+	GetLocatorHashes() [][32]byte
+	Notify(n BlockchainNotifee)
+	Unnotify(n BlockchainNotifee)
+	UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error
+	ProcessBlock(block *primitives.Block) error
+}
+
+var _ Blockchain = &blockchain{}
+
+type blockchain struct {
 	// Initial Ogen Params
-	log         *logger.Logger
+	log         logger.LoggerInterface
 	config      Config
 	genesisTime time.Time
 	params      params.ChainParams
@@ -37,25 +56,25 @@ type Blockchain struct {
 	notifeeLock sync.RWMutex
 }
 
-func (ch *Blockchain) Start() (err error) {
+func (ch *blockchain) Start() (err error) {
 	ch.log.Info("Starting Blockchain instance")
 	return nil
 }
 
-func (ch *Blockchain) Stop() {
+func (ch *blockchain) Stop() {
 	ch.log.Info("Stopping Blockchain instance")
 }
 
-func (ch *Blockchain) State() *StateService {
+func (ch *blockchain) State() *StateService {
 	return ch.state
 }
 
-func (ch *Blockchain) GenesisTime() time.Time {
+func (ch *blockchain) GenesisTime() time.Time {
 	return ch.genesisTime
 }
 
 // GetBlock gets a block from the database.
-func (ch *Blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err error) {
+func (ch *blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err error) {
 	return block, ch.db.View(func(txn blockdb.DBViewTransaction) error {
 		block, err = txn.GetBlock(h)
 		return err
@@ -63,7 +82,7 @@ func (ch *Blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err e
 }
 
 // GetRawBlock gets the block bytes from the database.
-func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
+func (ch *blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 	return block, ch.db.View(func(txn blockdb.DBViewTransaction) error {
 		block, err = txn.GetRawBlock(h)
 		return err
@@ -71,12 +90,12 @@ func (ch *Blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 }
 
 // GetAccountTxs gets the txid from an account.
-func (ch *Blockchain) GetAccountTxs(acc [20]byte) (accTxs txindex.AccountTxs, err error) {
+func (ch *blockchain) GetAccountTxs(acc [20]byte) (accTxs txindex.AccountTxs, err error) {
 	return ch.txidx.GetAccountTxs(acc)
 }
 
 // GetTx gets the transaction from the database and block reference.
-func (ch *Blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
+func (ch *blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
 	loc, err := ch.txidx.GetTx(h)
 	if err != nil {
 		return nil, err
@@ -89,7 +108,7 @@ func (ch *Blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (*Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
@@ -116,7 +135,7 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip p
 	if err != nil {
 		return nil, err
 	}
-	ch := &Blockchain{
+	ch := &blockchain{
 		log:         config.Log,
 		config:      config,
 		params:      params,
