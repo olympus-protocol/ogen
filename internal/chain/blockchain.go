@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/internal/txindex"
 	"sync"
 	"time"
@@ -108,7 +109,7 @@ func (ch *blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip state.InitializationParameters) (Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err

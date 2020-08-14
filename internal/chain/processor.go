@@ -22,7 +22,7 @@ type blockRowAndValidator struct {
 func (ch *blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
-	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.EpochIndex)
+	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.CurrentEpochIndex())
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
 		bl, err := ch.getLatestAttestationTarget(i)
@@ -247,7 +247,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		finalizedSlot := newState.FinalizedEpoch * ch.params.EpochLength
+		finalizedSlot := newState.CurrentFinalizedEpoch() * ch.params.EpochLength
 		finalizedHash, err := view.GetHashBySlot(finalizedSlot)
 		if err != nil {
 			return err
@@ -266,16 +266,16 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		ch.state.RemoveBeforeSlot(newState.FinalizedEpoch * ch.params.EpochLength)
+		ch.state.RemoveBeforeSlot(newState.CurrentFinalizedEpoch() * ch.params.EpochLength)
 
-		justifiedState, found := ch.state.GetStateForHash(newState.JustifiedEpochHash)
+		justifiedState, found := ch.state.GetStateForHash(newState.CurrentJustifiedEpochHash())
 		if !found {
-			return fmt.Errorf("could not find justified state with hash %s in state map", newState.JustifiedEpochHash)
+			return fmt.Errorf("could not find justified state with hash %s in state map", newState.CurrentJustifiedEpochHash())
 		}
-		if err := txn.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
+		if err := txn.SetJustifiedHead(newState.CurrentJustifiedEpochHash()); err != nil {
 			return err
 		}
-		if err := ch.state.setJustifiedHead(newState.JustifiedEpochHash, justifiedState); err != nil {
+		if err := ch.state.setJustifiedHead(newState.CurrentJustifiedEpochHash(), justifiedState); err != nil {
 			return err
 		}
 		if err := txn.SetJustifiedState(justifiedState); err != nil {
@@ -286,7 +286,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 		ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
 		ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))
-		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.FinalizedEpoch, newState.JustifiedEpoch)
+		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.CurrentFinalizedEpoch(), newState.CurrentJustifiedEpoch())
 
 		// TODO: add a log that shows network participation with expected.
 
@@ -317,7 +317,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.notifeeLock.RLock()
 		stateCopy := newState.Copy()
 		for i := range ch.notifees {
-			go i.NewTip(row, block, &stateCopy, receipts)
+			go i.NewTip(row, block, stateCopy, receipts)
 		}
 		ch.notifeeLock.RUnlock()
 		return nil

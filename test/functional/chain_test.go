@@ -13,6 +13,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
+	state2 "github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -32,10 +33,10 @@ func init() {
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
-var initParams = primitives.InitializationParameters{
+var initParams = state2.InitializationParameters{
 	GenesisTime:       time.Unix(time.Now().Unix()+30, 0),
 	PremineAddress:    premineAddr,
-	InitialValidators: []primitives.ValidatorInitialization{},
+	InitialValidators: []state2.ValidatorInitialization{},
 }
 
 var F *server.Server
@@ -96,7 +97,7 @@ func createValidators() {
 
 	// Convert the validators to initialization params.
 	for _, vk := range valData {
-		val := primitives.ValidatorInitialization{
+		val := state2.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: premineAddr,
 		}
@@ -206,7 +207,7 @@ type blockNotifee struct {
 type blockAndReceipts struct {
 	block    *primitives.Block
 	receipts []*primitives.EpochReceipt
-	state    *primitives.State
+	state    *state2.State
 }
 
 func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
@@ -222,7 +223,7 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *state2.State, receipts []*primitives.EpochReceipt) {
 	fmt.Printf("Slot %v Hash: %s Height: %v StateRoot: %s \n", row.Slot, hex.EncodeToString(row.Hash[:]), row.Height, hex.EncodeToString(row.StateRoot[:]))
 	fmt.Printf("%v Epoch Receipts \n", len(receipts))
 	for _, receipt := range receipts {

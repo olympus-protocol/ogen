@@ -1,8 +1,9 @@
-package primitives
+package state
 
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"time"
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
@@ -50,7 +51,7 @@ type InitializationParameters struct {
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
 func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (State, error) {
-	initialValidators := make([]*Validator, len(ip.InitialValidators))
+	initialValidators := make([]*primitives.Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
 		_, pkh, err := bech32.Decode(v.PayeeAddress)
@@ -70,11 +71,11 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 			return nil, fmt.Errorf("unable to decode pubkey to bytes")
 		}
 		copy(pubKey[:], pubKeyBytes)
-		initialValidators[i] = &Validator{
+		initialValidators[i] = &primitives.Validator{
 			Balance:          p.DepositAmount * p.UnitsPerCoin,
 			PubKey:           pubKey,
 			PayeeAddress:     pkhBytes,
-			Status:           StatusActive,
+			Status:           primitives.StatusActive,
 			FirstActiveEpoch: 0,
 			LastActiveEpoch:  0,
 		}
@@ -88,7 +89,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)
 
-	cs := CoinsState{
+	cs := primitives.CoinsState{
 		Balances: map[[20]byte]uint64{
 			premineAddrArr: 400000 * p.UnitsPerCoin,
 		},

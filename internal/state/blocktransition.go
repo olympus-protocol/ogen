@@ -1,4 +1,4 @@
-package primitives
+package state
 
 import (
 	"bytes"
@@ -9,15 +9,16 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
-func (s *state) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParams) error {
+func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params.ChainParams) error {
 	if vote.VoteEpoch != s.VoteEpoch {
 		return fmt.Errorf("vote not valid with vote epoch: %d (expected: %d)", vote.VoteEpoch, s.VoteEpoch)
 	}
 	switch vote.Type {
-	case EnterVotingPeriod:
+	case primitives.EnterVotingPeriod:
 		// must be during active period
 		// must have >100 POLIS
 		// must have not already voted
@@ -46,7 +47,7 @@ func (s *state) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if !vote.Valid() {
 			return fmt.Errorf("vote signature did not validate")
 		}
-	case VoteFor:
+	case primitives.VoteFor:
 		// must be during voting period
 		// must have >100 POLIS
 		// must have not already voted
@@ -78,7 +79,7 @@ func (s *state) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if !vote.Valid() {
 			return fmt.Errorf("vote signature did not validate")
 		}
-	case UpdateManagersInstantly:
+	case primitives.UpdateManagersInstantly:
 		// must be during active period
 		// must be signed by all managers
 		if s.VotingState != GovernanceStateActive {
@@ -119,7 +120,7 @@ func (s *state) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 		if !vote.Valid() {
 			return fmt.Errorf("vote signature is not valid")
 		}
-	case UpdateManagersVote:
+	case primitives.UpdateManagersVote:
 		// must be during active period
 		// must be signed by 3/5 managers
 		if len(vote.Data) != (len(s.CurrentManagers)+7)/8 {
@@ -169,7 +170,7 @@ func (s *state) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 }
 
 // ProcessGovernanceVote processes governance votes.
-func (s *state) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParams) error {
+func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params.ChainParams) error {
 	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
 		return err
 	}
@@ -186,11 +187,11 @@ func (s *state) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		return err
 	}
 	switch vote.Type {
-	case EnterVotingPeriod:
+	case primitives.EnterVotingPeriod:
 		s.Governance.ReplaceVotes[hash] = chainhash.Hash{}
 		// we check if it's above the threshold every few epochs, but not here
-	case VoteFor:
-		voteData := CommunityVoteData{
+	case primitives.VoteFor:
+		voteData := primitives.CommunityVoteData{
 			ReplacementCandidates: [][20]byte{},
 		}
 
@@ -201,12 +202,12 @@ func (s *state) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 		voteHash := voteData.Hash()
 		s.Governance.CommunityVotes[voteHash] = voteData
 		s.Governance.ReplaceVotes[hash] = voteHash
-	case UpdateManagersInstantly:
+	case primitives.UpdateManagersInstantly:
 		for i := range s.CurrentManagers {
 			copy(s.CurrentManagers[i][:], vote.Data[i*20:(i+1)*20])
 		}
 		s.NextVoteEpoch(GovernanceStateActive)
-	case UpdateManagersVote:
+	case primitives.UpdateManagersVote:
 		s.NextVoteEpoch(GovernanceStateVoting)
 	default:
 		return fmt.Errorf("unknown vote type")
@@ -216,7 +217,7 @@ func (s *state) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 }
 
 // ApplyTransactionSingle applies a transaction to the coin state.
-func (s *state) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
 	pkh, err := tx.FromPubkeyHash()
 	if err != nil {
@@ -278,7 +279,7 @@ func (s *state) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, 
 // }
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *state) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
+func (s *state) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error) {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -326,17 +327,17 @@ func (s *state) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
 }
 
 // ApplyProposerSlashing applies the proposer slashing to the state.
-func (s *state) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParams) error {
+func (s *state) ApplyProposerSlashing(ps *primitives.ProposerSlashing, p *params.ChainParams) error {
 	proposerIndex, err := s.IsProposerSlashingValid(ps)
 	if err != nil {
 		return err
 	}
 
-	return s.UpdateValidatorStatus(proposerIndex, StatusExitedWithPenalty, p)
+	return s.UpdateValidatorStatus(proposerIndex, primitives.StatusExitedWithPenalty, p)
 }
 
 // IsVoteSlashingValid checks if the vote slashing is valid.
-func (s *state) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint64, error) {
+func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.ChainParams) ([]uint64, error) {
 	if vs.Vote1.Data.Equals(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
@@ -416,14 +417,14 @@ func (s *state) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 }
 
 // ApplyVoteSlashing applies a vote slashing to the state.
-func (s *state) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error {
+func (s *state) ApplyVoteSlashing(vs *primitives.VoteSlashing, p *params.ChainParams) error {
 	common, err := s.IsVoteSlashingValid(vs, p)
 	if err != nil {
 		return err
 	}
 
 	for _, v := range common {
-		if err := s.UpdateValidatorStatus(v, StatusExitedWithPenalty, p); err != nil {
+		if err := s.UpdateValidatorStatus(v, primitives.StatusExitedWithPenalty, p); err != nil {
 			return err
 		}
 	}
@@ -432,8 +433,8 @@ func (s *state) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error
 }
 
 // IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
-func (s *state) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
-	if rs.Slot >= s.LastSlot {
+func (s *state) IsRANDAOSlashingValid(rs *primitives.RANDAOSlashing) (uint64, error) {
+	if rs.Slot >= s.Slot {
 		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
 	}
 
@@ -467,13 +468,13 @@ func (s *state) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
 }
 
 // ApplyRANDAOSlashing applies the RANDAO slashing to the state.
-func (s *state) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) error {
+func (s *state) ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing, p *params.ChainParams) error {
 	proposer, err := s.IsRANDAOSlashingValid(rs)
 	if err != nil {
 		return err
 	}
 
-	return s.UpdateValidatorStatus(proposer, StatusExitedWithPenalty, p)
+	return s.UpdateValidatorStatus(proposer, primitives.StatusExitedWithPenalty, p)
 }
 
 // GetVoteCommittee gets the committee for a certain block.
@@ -499,7 +500,7 @@ func (s *state) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, 
 }
 
 // IsExitValid checks if an exit is valid.
-func (s *state) IsExitValid(exit *Exit) error {
+func (s *state) IsExitValid(exit *primitives.Exit) error {
 	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey)
 	msgHash := chainhash.HashH([]byte(msg))
 	wPubKey, err := exit.GetWithdrawPubKey()
@@ -540,7 +541,7 @@ func (s *state) IsExitValid(exit *Exit) error {
 }
 
 // ApplyExit processes an exit request.
-func (s *state) ApplyExit(exit *Exit) error {
+func (s *state) ApplyExit(exit *primitives.Exit) error {
 	if err := s.IsExitValid(exit); err != nil {
 		return err
 	}
@@ -549,7 +550,7 @@ func (s *state) ApplyExit(exit *Exit) error {
 
 	for i, v := range s.ValidatorRegistry {
 		if bytes.Equal(v.PubKey[:], pubkeySerialized[:]) && v.IsActive() {
-			s.ValidatorRegistry[i].Status = StatusActivePendingExit
+			s.ValidatorRegistry[i].Status = primitives.StatusActivePendingExit
 			s.ValidatorRegistry[i].LastActiveEpoch = s.EpochIndex + 2
 		}
 	}
@@ -558,7 +559,7 @@ func (s *state) ApplyExit(exit *Exit) error {
 }
 
 // IsDepositValid validates signatures and ensures that a deposit is valid.
-func (s *state) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
+func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.ChainParams) error {
 	dPub, err := deposit.GetPublicKey()
 	if err != nil {
 		return err
@@ -613,7 +614,7 @@ func (s *state) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 }
 
 // ApplyDeposit applies a deposit to the state.
-func (s *state) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
+func (s *state) ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams) error {
 	if err := s.IsDepositValid(deposit, p); err != nil {
 		return err
 	}
@@ -628,11 +629,11 @@ func (s *state) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 
 	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
 
-	s.ValidatorRegistry = append(s.ValidatorRegistry, &Validator{
+	s.ValidatorRegistry = append(s.ValidatorRegistry, &primitives.Validator{
 		Balance:          p.DepositAmount * p.UnitsPerCoin,
 		PubKey:           deposit.Data.PublicKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
-		Status:           StatusStarting,
+		Status:           primitives.StatusStarting,
 		FirstActiveEpoch: s.EpochIndex + 2,
 		LastActiveEpoch:  0,
 	})
@@ -641,7 +642,7 @@ func (s *state) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 }
 
 // IsVoteValid checks if a vote is valid.
-func (s *state) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainParams) error {
 	if v.Data == nil {
 		return fmt.Errorf("vote data is empty")
 	}
@@ -697,12 +698,12 @@ func (s *state) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *state) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
-	if v.Data.Slot+p.MinAttestationInclusionDelay > s.LastSlot {
+func (s *state) ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
+	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
 
-	if v.Data.Slot+p.EpochLength <= s.LastSlot {
+	if v.Data.Slot+p.EpochLength <= s.Slot {
 		return fmt.Errorf("vote not included within 1 epoch (latest: %d, got: %d)", v.Data.Slot+p.EpochLength-1, s.Slot)
 	}
 
@@ -723,18 +724,18 @@ func (s *state) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 	}
 
 	if v.Data.ToEpoch == s.EpochIndex {
-		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &AcceptedVoteInfo{
+		s.CurrentEpochVotes = append(s.CurrentEpochVotes, &primitives.AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
-			InclusionDelay:        s.LastSlot - v.Data.Slot,
+			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	} else {
-		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
+		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &primitives.AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
-			InclusionDelay:        s.LastSlot - v.Data.Slot,
+			InclusionDelay:        s.Slot - v.Data.Slot,
 		})
 	}
 
@@ -742,7 +743,7 @@ func (s *state) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 }
 
 // GetProposerPublicKey gets the public key for the proposer of a block.
-func (s *state) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.PublicKey, error) {
+func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error) {
 	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
@@ -752,7 +753,7 @@ func (s *state) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.Publ
 }
 
 // CheckBlockSignature checks the block signature.
-func (s *state) CheckBlockSignature(b *Block, p *params.ChainParams) error {
+func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error {
 	blockHash := b.Hash()
 	blockSig, err := bls.SignatureFromBytes(b.Signature)
 	if err != nil {
@@ -785,8 +786,8 @@ func (s *state) CheckBlockSignature(b *Block, p *params.ChainParams) error {
 }
 
 // ProcessBlock runs a block transition on the state and mutates state.
-func (s *state) ProcessBlock(b *Block, p *params.ChainParams) error {
-	if b.Header.Slot != s.LastSlot {
+func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
+	if b.Header.Slot != s.Slot {
 		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
 	}
 

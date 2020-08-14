@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -34,10 +35,10 @@ func init() {
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
-var initParams = primitives.InitializationParameters{
+var initParams = state.InitializationParameters{
 	GenesisTime:       time.Unix(time.Now().Unix()+30, 0),
 	PremineAddress:    premineAddr,
-	InitialValidators: []primitives.ValidatorInitialization{},
+	InitialValidators: []state.ValidatorInitialization{},
 }
 
 var F *server.Server
@@ -91,7 +92,7 @@ func createValidators() {
 		}
 		// Convert the validators to initialization params.
 		for _, vk := range valDataPrimary {
-			val := primitives.ValidatorInitialization{
+			val := state.ValidatorInitialization{
 				PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 				PayeeAddress: premineAddr,
 			}
@@ -118,7 +119,7 @@ func createValidators() {
 		}
 		// Convert the validators to initialization params.
 		for _, vk := range valDataMover {
-			val := primitives.ValidatorInitialization{
+			val := state.ValidatorInitialization{
 				PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 				PayeeAddress: premineAddr,
 			}
@@ -294,7 +295,7 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *state.State, receipts []*primitives.EpochReceipt) {
 }
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {

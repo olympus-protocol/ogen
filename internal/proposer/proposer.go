@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"time"
@@ -92,7 +93,7 @@ func NewProposer(config Config, params params.ChainParams, chain chain.Blockchai
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (p *Proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
+func (p *Proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *state.State, _ []*primitives.EpochReceipt) {
 	p.voteMempool.Remove(block)
 	p.coinsMempool.RemoveByBlock(block)
 	p.actionsMempool.RemoveByBlock(block, newState)

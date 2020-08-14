@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"net/http"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/params"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type GlobalConfig struct {
@@ -26,7 +26,7 @@ type GlobalConfig struct {
 	InitialNodes []peer.AddrInfo
 	Port         string
 
-	InitConfig primitives.InitializationParameters
+	InitConfig state.InitializationParameters
 
 	RPCProxy     bool
 	RPCProxyPort string
@@ -90,7 +90,7 @@ func (s *Server) Stop() error {
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip state.InitializationParameters) (*Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 

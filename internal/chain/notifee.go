@@ -2,6 +2,7 @@ package chain
 
 import (
 	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
@@ -9,7 +10,7 @@ import (
 // blockchain.
 type BlockchainNotifee interface {
 	// NewTip notifies of a new tip added to the blockchain. Do not mutate state.
-	NewTip(*chainindex.BlockRow, *primitives.Block, *primitives.State, []*primitives.EpochReceipt)
+	NewTip(*chainindex.BlockRow, *primitives.Block, state.State, []*primitives.EpochReceipt)
 	ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing)
 }
 

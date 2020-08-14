@@ -1,17 +1,18 @@
-package primitives
+package state
 
 import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-func (s *state) Slot() uint64 {
+func (s *primitives.state) Slot() uint64 {
 	return s.LastSlot
 }
 
 // ProcessSlot runs a slot transition on state, mutating it.
-func (s *state) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.Hash) {
+func (s *primitives.state) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.Hash) {
 	// increase the slot number
 	s.LastSlot++
 
@@ -28,8 +29,8 @@ type BlockView interface {
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested
 // slot.
-func (s *state) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*EpochReceipt, error) {
-	totalReceipts := make([]*EpochReceipt, 0)
+func (s *primitives.state) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*primitives.EpochReceipt, error) {
+	totalReceipts := make([]*primitives.EpochReceipt, 0)
 
 	for s.LastSlot < requestedSlot {
 		// this only happens when there wasn't a block at the first slot of the epoch

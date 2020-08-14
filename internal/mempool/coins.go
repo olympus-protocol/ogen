@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"sync"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -120,7 +121,7 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *CoinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]*primitives.Tx, *primitives.State) {
+func (cm *CoinsMempool) Get(maxTransactions uint64, state state.State) ([]*primitives.Tx, state.State) {
 	cm.lock.RLock()
 	defer cm.lock.RUnlock()
 	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
@@ -170,7 +171,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			continue
 		}
 
-		currentState := cm.blockchain.State().TipState().CoinsState
+		currentState := cm.blockchain.State().TipState().CurrentCoin()
 
 		err = cm.Add(*tx, &currentState)
 		if err != nil {

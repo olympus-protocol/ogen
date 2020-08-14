@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-func (s *stateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state primitives.State) error {
+func (s *stateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error {
 	s.blockChain.SetTip(blockNode)
 
 	err := s.setFinalizedHead(blockNode.Hash, state)
@@ -109,7 +109,7 @@ func (s *stateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransac
 	return nil
 }
 
-func (s *stateService) setBlockState(hash chainhash.Hash, state primitives.State) {
+func (s *stateService) setBlockState(hash chainhash.Hash, state state.State) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

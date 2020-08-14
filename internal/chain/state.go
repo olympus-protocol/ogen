@@ -3,6 +3,7 @@ package chain
 import (
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/internal/blockdb"
@@ -15,17 +16,17 @@ import (
 
 type stateDerivedFromBlock struct {
 	firstSlot      uint64
-	firstSlotState primitives.State
+	firstSlotState state.State
 
 	lastSlot      uint64
-	lastSlotState primitives.State
+	lastSlotState state.State
 
 	totalReceipts []*primitives.EpochReceipt
 
 	lock *sync.Mutex
 }
 
-func newStateDerivedFromBlock(stateAfterProcessingBlock primitives.State) *stateDerivedFromBlock {
+func newStateDerivedFromBlock(stateAfterProcessingBlock state.State) *stateDerivedFromBlock {
 	firstSlotState := stateAfterProcessingBlock.Copy()
 	return &stateDerivedFromBlock{
 		firstSlotState: firstSlotState,
@@ -36,7 +37,7 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock primitives.State) *state
 	}
 }
 
-func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams, log logger.Logger) (primitives.State, []*primitives.EpochReceipt, error) {
+func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView, p *params.ChainParams, log logger.Logger) (state.State, []*primitives.EpochReceipt, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -72,7 +73,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockVi
 
 type blockNodeAndState struct {
 	node  *chainindex.BlockRow
-	state primitives.State
+	state state.State
 }
 
 type StateService interface {
@@ -82,25 +83,25 @@ type StateService interface {
 	SetLatestVotesIfNeeded(vals []uint64, vote *primitives.MultiValidatorVote)
 	Chain() *Chain
 	Index() *chainindex.BlockIndex
-	setFinalizedHead(finalizedHash chainhash.Hash, finalizedState primitives.State) error
-	GetFinalizedHead() (*chainindex.BlockRow, primitives.State)
-	GetJustifiedHead() (*chainindex.BlockRow, primitives.State)
-	setJustifiedHead(justifiedHash chainhash.Hash, justifiedState primitives.State) error
-	initChainState(db blockdb.DB, params params.ChainParams, genesisState primitives.State) error
-	GetStateForHash(hash chainhash.Hash) (primitives.State, bool)
-	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view primitives.BlockView, p *params.ChainParams) (primitives.State, []*primitives.EpochReceipt, error)
-	Add(block *primitives.Block) (primitives.State, []*primitives.EpochReceipt, error)
+	setFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error
+	GetFinalizedHead() (*chainindex.BlockRow, state.State)
+	GetJustifiedHead() (*chainindex.BlockRow, state.State)
+	setJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error
+	initChainState(db blockdb.DB, params params.ChainParams, genesisState state.State) error
+	GetStateForHash(hash chainhash.Hash) (state.State, bool)
+	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error)
+	Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error)
 	RemoveBeforeSlot(slot uint64)
 	GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool)
 	Height() uint64
-	TipState() primitives.State
-	TipStateAtSlot(slot uint64) (primitives.State, error)
+	TipState() state.State
+	TipStateAtSlot(slot uint64) (state.State, error)
 	GetSubView(tip chainhash.Hash) (ChainView, error)
 	Tip() *chainindex.BlockRow
-	initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state primitives.State) error
+	initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error
 	loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error
 	loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error
-	setBlockState(hash chainhash.Hash, state primitives.State)
+	setBlockState(hash chainhash.Hash, state state.State)
 	loadStateMap(txn blockdb.DBViewTransaction) error
 	loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error
 }
@@ -168,7 +169,7 @@ func (s *stateService) Index() *chainindex.BlockIndex {
 	return s.blockIndex
 }
 
-func (s *stateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedState primitives.State) error {
+func (s *stateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
@@ -182,7 +183,7 @@ func (s *stateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedS
 }
 
 // GetFinalizedHead gets the current finalized head.
-func (s *stateService) GetFinalizedHead() (*chainindex.BlockRow, primitives.State) {
+func (s *stateService) GetFinalizedHead() (*chainindex.BlockRow, state.State) {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
@@ -190,14 +191,14 @@ func (s *stateService) GetFinalizedHead() (*chainindex.BlockRow, primitives.Stat
 }
 
 // GetJustifiedHead gets the current justified head.
-func (s *stateService) GetJustifiedHead() (*chainindex.BlockRow, primitives.State) {
+func (s *stateService) GetJustifiedHead() (*chainindex.BlockRow, state.State) {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
 	return s.justifiedHead.node, s.justifiedHead.state
 }
 
-func (s *stateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedState primitives.State) error {
+func (s *stateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
@@ -211,7 +212,7 @@ func (s *stateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 	return nil
 }
 
-func (s *stateService) initChainState(db blockdb.DB, params params.ChainParams, genesisState primitives.State) error {
+func (s *stateService) initChainState(db blockdb.DB, params params.ChainParams, genesisState state.State) error {
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("Loading chain state...")
 
@@ -251,7 +252,7 @@ func (s *stateService) initChainState(db blockdb.DB, params params.ChainParams, 
 }
 
 // GetStateForHash gets the state for a certain block hash.
-func (s *stateService) GetStateForHash(hash chainhash.Hash) (primitives.State, bool) {
+func (s *stateService) GetStateForHash(hash chainhash.Hash) (state.State, bool) {
 	s.lock.RLock()
 	derivedState, found := s.stateMap[hash]
 	s.lock.RUnlock()
@@ -266,7 +267,7 @@ func (s *stateService) GetStateForHash(hash chainhash.Hash) (primitives.State, b
 var ErrTooFarInFuture = fmt.Errorf("tried to get block too far in future")
 
 // GetStateForHashAtSlot gets the state for a certain block hash at a certain slot.
-func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view primitives.BlockView, p *params.ChainParams) (primitives.State, []*primitives.EpochReceipt, error) {
+func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error) {
 	s.lock.RLock()
 	derivedState, found := s.stateMap[hash]
 	s.lock.RUnlock()
@@ -282,7 +283,7 @@ func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 }
 
 // Add adds a block to the blockchain.
-func (s *stateService) Add(block *primitives.Block) (primitives.State, []*primitives.EpochReceipt, error) {
+func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error) {
 	lastBlockHash := block.Header.PrevBlockHash
 
 	view, err := s.GetSubView(lastBlockHash)
@@ -342,12 +343,12 @@ func (s *stateService) Height() uint64 {
 }
 
 // TipState gets the state of the tip of the blockchain.
-func (s *stateService) TipState() primitives.State {
+func (s *stateService) TipState() state.State {
 	return s.stateMap[s.blockChain.Tip().Hash].firstSlotState
 }
 
 // TipStateAtSlot gets the tip state updated to a certain slot.
-func (s *stateService) TipStateAtSlot(slot uint64) (primitives.State, error) {
+func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 	tipHash := s.Tip().Hash
 	view, err := s.GetSubView(tipHash)
 	if err != nil {
@@ -362,11 +363,11 @@ func (s *stateService) TipStateAtSlot(slot uint64) (primitives.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (StateService, error) {
+func NewStateService(log logger.Logger, ip state.InitializationParameters, params params.ChainParams, db blockdb.DB) (StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 
-	genesisState, err := primitives.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
 	if err != nil {
 		return nil, err
 	}

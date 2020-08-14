@@ -1,6 +1,9 @@
-package primitives
+package state
 
-import "github.com/olympus-protocol/ogen/pkg/bitfield"
+import (
+	"github.com/olympus-protocol/ogen/pkg/bitfield"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
+)
 
 type voterGroup struct {
 	voters       map[uint64]struct{}
@@ -16,7 +19,7 @@ func (vg *voterGroup) add(id uint64, bal uint64) {
 	vg.totalBalance += bal
 }
 
-func (vg *voterGroup) addFromBitfield(registry []*Validator, field bitfield.Bitlist, validatorIndices []uint64) {
+func (vg *voterGroup) addFromBitfield(registry []*primitives.Validator, field bitfield.Bitlist, validatorIndices []uint64) {
 	for i, validatorIdx := range validatorIndices {
 		if field.Get(uint(i)) {
 			vg.add(validatorIdx, registry[validatorIdx].Balance)

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"io/ioutil"
 	"os"
 	"path"
@@ -19,7 +20,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/test"
 )
 
@@ -74,9 +74,9 @@ func TestMain(m *testing.M) {
 	}
 	keystore.Close()
 
-	validators := []primitives.ValidatorInitialization{}
+	validators := []state.ValidatorInitialization{}
 	for _, vk := range validatorKeys {
-		val := primitives.ValidatorInitialization{
+		val := state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, []byte{163, 15, 14, 86, 107, 205, 124, 126, 243, 101, 198, 2, 95, 29, 158, 221, 60, 108, 201, 78}),
 		}
@@ -84,7 +84,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Create the initialization parameters
-	ip := primitives.InitializationParameters{
+	ip := state.InitializationParameters{
 		GenesisTime:       time.Unix(1595126983, 0),
 		PremineAddress:    bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, []byte{163, 15, 14, 86, 107, 205, 124, 126, 243, 101, 198, 2, 95, 29, 158, 221, 60, 108, 201, 78}),
 		InitialValidators: validators,
@@ -106,9 +106,9 @@ func TestMain(m *testing.M) {
 	}
 	go ps.Start()
 	os.Exit(m.Run())
-	var initialValidators []primitives.ValidatorInitialization
+	var initialValidators []state.ValidatorInitialization
 	for _, sv := range s.Chain.State().TipState().ValidatorRegistry {
-		initialValidators = append(initialValidators, primitives.ValidatorInitialization{
+		initialValidators = append(initialValidators, state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(sv.PubKey),
 			PayeeAddress: bech32.Encode(testdata.IntTestParams.AddrPrefix.Public, sv.PayeeAddress[:]),
 		})
@@ -123,7 +123,7 @@ func TestMain(m *testing.M) {
 	}
 }
 
-func runSecondNode(ps *server.Server, ip primitives.InitializationParameters) {
+func runSecondNode(ps *server.Server, ip state.InitializationParameters) {
 	os.Mkdir(testdata.Node2Folder, 0777)
 	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
 	if err != nil {

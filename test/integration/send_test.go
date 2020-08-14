@@ -15,6 +15,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -87,9 +88,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	validators := []primitives.ValidatorInitialization{}
+	validators := []state.ValidatorInitialization{}
 	for _, vk := range validatorKeys {
-		val := primitives.ValidatorInitialization{
+		val := state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
 		}
@@ -97,7 +98,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Create the initialization parameters
-	ip := primitives.InitializationParameters{
+	ip := state.InitializationParameters{
 		GenesisTime:       time.Now(),
 		PremineAddress:    addr,
 		InitialValidators: validators,
@@ -119,9 +120,9 @@ func TestMain(m *testing.M) {
 	}
 	go server1.Start()
 	//os.Exit(m.Run())
-	var initialValidators []primitives.ValidatorInitialization
+	var initialValidators []state.ValidatorInitialization
 	for _, sv := range server1.Chain.State().TipState().ValidatorRegistry {
-		initialValidators = append(initialValidators, primitives.ValidatorInitialization{
+		initialValidators = append(initialValidators, state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(sv.PubKey[:]),
 			PayeeAddress: bech32.Encode(testdata.IntTestParams.AccountPrefixes.Public, sv.PayeeAddress[:]),
 		})
@@ -149,7 +150,7 @@ func TestMain(m *testing.M) {
 	}
 }
 
-func runSecondNode(ps *server.Server, ip primitives.InitializationParameters, m *testing.M) {
+func runSecondNode(ps *server.Server, ip state.InitializationParameters, m *testing.M) {
 	_ = os.Mkdir(testdata.Node2Folder, 0777)
 	logfile, err := os.Create(testdata.Node2Folder + "/log.log")
 	if err != nil {

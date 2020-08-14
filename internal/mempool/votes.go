@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/peers"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -20,10 +21,10 @@ import (
 
 // VoteMempool is the interface of the voteMempool
 type VoteMempool interface {
-	AddValidate(vote *primitives.MultiValidatorVote, state primitives.State) error
+	AddValidate(vote *primitives.MultiValidatorVote, state state.State) error
 	sortMempool()
 	Add(vote *primitives.MultiValidatorVote)
-	Get(slot uint64, s primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
+	Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
 	removeFromOrder(h chainhash.Hash)
 	Remove(b *primitives.Block)
 	handleSubscription(sub *pubsub.Subscription, id peer.ID)
@@ -54,7 +55,7 @@ type voteMempool struct {
 var _ VoteMempool = &voteMempool{}
 
 // AddValidate validates, then adds the vote to the mempool.
-func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state primitives.State) error {
+func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state state.State) error {
 	if err := state.IsVoteValid(vote, m.params); err != nil {
 		return err
 	}
@@ -225,7 +226,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *voteMempool) Get(slot uint64, s primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *voteMempool) Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	state2 "github.com/olympus-protocol/ogen/internal/state"
 	"reflect"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -142,7 +143,7 @@ type blockNotifee struct {
 type blockAndReceipts struct {
 	block    *primitives.Block
 	receipts []*primitives.EpochReceipt
-	state    *primitives.State
+	state    *state2.State
 }
 
 func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
@@ -161,7 +162,7 @@ func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *state2.State, receipts []*primitives.EpochReceipt) {
 	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
 	select {
 	case bn.blocks <- toSend:

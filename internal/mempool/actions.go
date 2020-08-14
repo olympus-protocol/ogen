@@ -3,6 +3,7 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"sync"
 
@@ -81,7 +82,7 @@ func (am *ActionMempool) NotifyIllegalVotes(slashing *primitives.VoteSlashing) {
 	am.voteSlashings = append(am.voteSlashings, slashing)
 }
 
-func (am *ActionMempool) NewTip(_ *chainindex.BlockRow, _ *primitives.Block, _ *primitives.State, _ []*primitives.EpochReceipt) {
+func (am *ActionMempool) NewTip(_ *chainindex.BlockRow, _ *primitives.Block, _ state.State, _ []*primitives.EpochReceipt) {
 }
 
 func (am *ActionMempool) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
@@ -219,7 +220,7 @@ func (am *ActionMempool) handleDepositSub(sub *pubsub.Subscription) {
 }
 
 // AddDeposit adds a deposit to the mempool.
-func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitives.State) error {
+func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state state.State) error {
 	if err := state.IsDepositValid(deposit, am.params); err != nil {
 		return err
 	}
@@ -241,7 +242,7 @@ func (am *ActionMempool) AddDeposit(deposit *primitives.Deposit, state *primitiv
 }
 
 // GetDeposits gets deposits from the mempool. Mutates withState.
-func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]*primitives.Deposit, *primitives.State, error) {
+func (am *ActionMempool) GetDeposits(num int, withState state.State) ([]*primitives.Deposit, state.State, error) {
 	am.depositsLock.Lock()
 	defer am.depositsLock.Unlock()
 	deposits := make([]*primitives.Deposit, 0, num)
@@ -265,7 +266,7 @@ func (am *ActionMempool) GetDeposits(num int, withState *primitives.State) ([]*p
 }
 
 // RemoveByBlock removes transactions that were in an accepted block.
-func (am *ActionMempool) RemoveByBlock(b *primitives.Block, tipState *primitives.State) {
+func (am *ActionMempool) RemoveByBlock(b *primitives.Block, tipState state.State) {
 	am.depositsLock.Lock()
 	newDeposits := make(map[chainhash.Hash]*primitives.Deposit)
 outer:
@@ -437,7 +438,7 @@ func (am *ActionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 }
 
 // AddGovernanceVote adds a governance vote to the mempool.
-func (am *ActionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, state *primitives.State) error {
+func (am *ActionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, state state.State) error {
 	if err := state.IsGovernanceVoteValid(vote, am.params); err != nil {
 		return err
 	}
@@ -491,7 +492,7 @@ func (am *ActionMempool) handleExitSub(sub *pubsub.Subscription) {
 }
 
 // AddExit adds a exit to the mempool.
-func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State) error {
+func (am *ActionMempool) AddExit(exit *primitives.Exit, state state.State) error {
 	if err := state.IsExitValid(exit); err != nil {
 		return err
 	}
@@ -514,7 +515,7 @@ func (am *ActionMempool) AddExit(exit *primitives.Exit, state *primitives.State)
 }
 
 // GetExits gets exits from the mempool. Mutates withState.
-func (am *ActionMempool) GetExits(num int, state *primitives.State) ([]*primitives.Exit, error) {
+func (am *ActionMempool) GetExits(num int, state state.State) ([]*primitives.Exit, error) {
 	am.exitsLock.Lock()
 	defer am.exitsLock.Unlock()
 	exits := make([]*primitives.Exit, 0, num)
@@ -538,7 +539,7 @@ func (am *ActionMempool) GetExits(num int, state *primitives.State) ([]*primitiv
 }
 
 // GetProposerSlashings gets proposer slashings from the mempool. Mutates withState.
-func (am *ActionMempool) GetProposerSlashings(num int, state *primitives.State) ([]*primitives.ProposerSlashing, error) {
+func (am *ActionMempool) GetProposerSlashings(num int, state state.State) ([]*primitives.ProposerSlashing, error) {
 	am.proposerSlashingLock.Lock()
 	defer am.proposerSlashingLock.Unlock()
 	slashings := make([]*primitives.ProposerSlashing, 0, num)
@@ -562,7 +563,7 @@ func (am *ActionMempool) GetProposerSlashings(num int, state *primitives.State) 
 }
 
 // GetVoteSlashings gets vote slashings from the mempool. Mutates withState.
-func (am *ActionMempool) GetVoteSlashings(num int, state *primitives.State) ([]*primitives.VoteSlashing, error) {
+func (am *ActionMempool) GetVoteSlashings(num int, state state.State) ([]*primitives.VoteSlashing, error) {
 	am.voteSlashingLock.Lock()
 	defer am.voteSlashingLock.Unlock()
 	slashings := make([]*primitives.VoteSlashing, 0, num)
@@ -586,7 +587,7 @@ func (am *ActionMempool) GetVoteSlashings(num int, state *primitives.State) ([]*
 }
 
 // GetRANDAOSlashings gets RANDAO slashings from the mempool. Mutates withState.
-func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([]*primitives.RANDAOSlashing, error) {
+func (am *ActionMempool) GetRANDAOSlashings(num int, state state.State) ([]*primitives.RANDAOSlashing, error) {
 	am.randaoSlashingLock.Lock()
 	defer am.randaoSlashingLock.Unlock()
 	slashings := make([]*primitives.RANDAOSlashing, 0, num)
@@ -610,7 +611,7 @@ func (am *ActionMempool) GetRANDAOSlashings(num int, state *primitives.State) ([
 }
 
 // GetGovernanceVotes gets governance votes from the mempool. Mutates state.
-func (am *ActionMempool) GetGovernanceVotes(num int, state *primitives.State) ([]*primitives.GovernanceVote, error) {
+func (am *ActionMempool) GetGovernanceVotes(num int, state state.State) ([]*primitives.GovernanceVote, error) {
 	am.governanceVoteLock.Lock()
 	defer am.governanceVoteLock.Unlock()
 	votes := make([]*primitives.GovernanceVote, 0, num)

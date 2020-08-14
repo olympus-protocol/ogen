@@ -2,10 +2,10 @@ package chain
 
 import (
 	"errors"
+	"github.com/olympus-protocol/ogen/internal/state"
 
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 // ChainView is a view of a certain chain in the block tree so that block processing can access valid blocks.
@@ -48,4 +48,4 @@ func (c *ChainView) GetLastStateRoot() (chainhash.Hash, error) {
 	return c.tip.StateRoot, nil
 }
 
-var _ primitives.BlockView = (*ChainView)(nil)
+var _ state.BlockView = (*ChainView)(nil)

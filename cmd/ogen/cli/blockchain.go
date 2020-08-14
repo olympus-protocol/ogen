@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/peers"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -45,8 +45,8 @@ func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger
 	return nil
 }
 
-func getChainFile(path string, currParams params.ChainParams) (*primitives.ChainFile, error) {
-	chainFile := new(primitives.ChainFile)
+func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile, error) {
+	chainFile := new(state.ChainFile)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		resp, err := http.Get(currParams.ChainFileURL)
 		if err != nil {

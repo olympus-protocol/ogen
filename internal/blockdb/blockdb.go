@@ -3,6 +3,7 @@ package blockdb
 import (
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"path"
 	"sync"
 	"sync/atomic"
@@ -192,7 +193,7 @@ func (brt *BlockDBReadTransaction) GetTip() (chainhash.Hash, error) {
 var finalizedStateKey = []byte("finalized-state")
 
 // SetFinalizedState sets the finalized state of the blockchain.
-func (but *BlockDBUpdateTransaction) SetFinalizedState(s primitives.State) error {
+func (but *BlockDBUpdateTransaction) SetFinalizedState(s state.State) error {
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
@@ -202,12 +203,12 @@ func (but *BlockDBUpdateTransaction) SetFinalizedState(s primitives.State) error
 }
 
 // GetFinalizedState gets the finalized state of the blockchain.
-func (brt *BlockDBReadTransaction) GetFinalizedState() (primitives.State, error) {
+func (brt *BlockDBReadTransaction) GetFinalizedState() (state.State, error) {
 	stateBytes, err := getKey(brt, finalizedStateKey)
 	if err != nil {
 		return nil, err
 	}
-	var state primitives.State
+	var state state.State
 	err = state.Unmarshal(stateBytes)
 	return state, err
 }
@@ -215,7 +216,7 @@ func (brt *BlockDBReadTransaction) GetFinalizedState() (primitives.State, error)
 var justifiedStateKey = []byte("justified-state")
 
 // SetJustifiedState sets the justified state of the blockchain.
-func (but *BlockDBUpdateTransaction) SetJustifiedState(s primitives.State) error {
+func (but *BlockDBUpdateTransaction) SetJustifiedState(s state.State) error {
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
@@ -225,12 +226,12 @@ func (but *BlockDBUpdateTransaction) SetJustifiedState(s primitives.State) error
 }
 
 // GetJustifiedState gets the justified state of the blockchain.
-func (brt *BlockDBReadTransaction) GetJustifiedState() (primitives.State, error) {
+func (brt *BlockDBReadTransaction) GetJustifiedState() (state.State, error) {
 	stateBytes, err := getKey(brt, justifiedStateKey)
 	if err != nil {
 		return nil, err
 	}
-	var state primitives.State
+	var state state.State
 	err = state.Unmarshal(stateBytes)
 	return state, err
 }
@@ -324,8 +325,8 @@ type DBViewTransaction interface {
 	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
 	GetRawBlock(hash chainhash.Hash) ([]byte, error)
 	GetTip() (chainhash.Hash, error)
-	GetFinalizedState() (primitives.State, error)
-	GetJustifiedState() (primitives.State, error)
+	GetFinalizedState() (state.State, error)
+	GetJustifiedState() (state.State, error)
 	GetBlockRow(chainhash.Hash) (*BlockNodeDisk, error)
 	GetJustifiedHead() (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
@@ -336,8 +337,8 @@ type DBViewTransaction interface {
 type DBUpdateTransaction interface {
 	AddRawBlock(block *primitives.Block) error
 	SetTip(chainhash.Hash) error
-	SetFinalizedState(primitives.State) error
-	SetJustifiedState(primitives.State) error
+	SetFinalizedState(state.State) error
+	SetJustifiedState(state.State) error
 	SetBlockRow(*BlockNodeDisk) error
 	SetJustifiedHead(chainhash.Hash) error
 	SetFinalizedHead(chainhash.Hash) error
