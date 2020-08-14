@@ -31,7 +31,7 @@ type Config struct {
 // Proposer is the interface for proposer
 type Proposer interface {
 	OpenKeystore() (err error)
-	NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState primitives.State, _ []*primitives.EpochReceipt)
+	NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt)
 	ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing)
 	ProposeBlocks()
 	VoteForBlocks()
