@@ -10,7 +10,7 @@ import (
 )
 
 // GetBalance returns the balance of the current open wallet.
-func (w *Wallet) GetBalance() (uint64, error) {
+func (w *wallet) GetBalance() (uint64, error) {
 	if !w.open {
 		return 0, errorNotOpen
 	}
@@ -24,7 +24,7 @@ func (w *Wallet) GetBalance() (uint64, error) {
 }
 
 // StartValidator signs a validator deposit with the current open wallet private key.
-func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
+func (w *wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -88,7 +88,7 @@ func (w *Wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 }
 
 // ExitValidator submits an exit transaction for a certain validator with the current wallet private key.
-func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error) {
+func (w *wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -131,7 +131,7 @@ func (w *Wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 }
 
 // SendToAddress sends an amount to an account using the current open wallet private key.
-func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error) {
+func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -190,7 +190,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	return &txHash, nil
 }
 
-func (w *Wallet) broadcastTx(payload *primitives.Tx) {
+func (w *wallet) broadcastTx(payload *primitives.Tx) {
 	buf, err := payload.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
@@ -201,7 +201,7 @@ func (w *Wallet) broadcastTx(payload *primitives.Tx) {
 	}
 }
 
-func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
+func (w *wallet) broadcastDeposit(deposit *primitives.Deposit) {
 	buf, err := deposit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
@@ -212,7 +212,7 @@ func (w *Wallet) broadcastDeposit(deposit *primitives.Deposit) {
 	}
 }
 
-func (w *Wallet) broadcastExit(exit *primitives.Exit) {
+func (w *wallet) broadcastExit(exit *primitives.Exit) {
 	buf, err := exit.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
