@@ -12,7 +12,7 @@ import (
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
-func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParams) error {
+func (s *state) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParams) error {
 	if vote.VoteEpoch != s.VoteEpoch {
 		return fmt.Errorf("vote not valid with vote epoch: %d (expected: %d)", vote.VoteEpoch, s.VoteEpoch)
 	}
@@ -169,7 +169,7 @@ func (s *State) IsGovernanceVoteValid(vote *GovernanceVote, p *params.ChainParam
 }
 
 // ProcessGovernanceVote processes governance votes.
-func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParams) error {
+func (s *state) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParams) error {
 	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func (s *State) ProcessGovernanceVote(vote *GovernanceVote, p *params.ChainParam
 }
 
 // ApplyTransactionSingle applies a transaction to the coin state.
-func (s *State) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+func (s *state) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
 	u := s.CoinsState
 	pkh, err := tx.FromPubkeyHash()
 	if err != nil {
@@ -278,7 +278,7 @@ func (s *State) ApplyTransactionSingle(tx *Tx, blockWithdrawalAddress [20]byte, 
 // }
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
-func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
+func (s *state) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -326,7 +326,7 @@ func (s *State) IsProposerSlashingValid(ps *ProposerSlashing) (uint64, error) {
 }
 
 // ApplyProposerSlashing applies the proposer slashing to the state.
-func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParams) error {
+func (s *state) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParams) error {
 	proposerIndex, err := s.IsProposerSlashingValid(ps)
 	if err != nil {
 		return err
@@ -336,7 +336,7 @@ func (s *State) ApplyProposerSlashing(ps *ProposerSlashing, p *params.ChainParam
 }
 
 // IsVoteSlashingValid checks if the vote slashing is valid.
-func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint64, error) {
+func (s *state) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]uint64, error) {
 	if vs.Vote1.Data.Equals(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
@@ -416,7 +416,7 @@ func (s *State) IsVoteSlashingValid(vs *VoteSlashing, p *params.ChainParams) ([]
 }
 
 // ApplyVoteSlashing applies a vote slashing to the state.
-func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error {
+func (s *state) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error {
 	common, err := s.IsVoteSlashingValid(vs, p)
 	if err != nil {
 		return err
@@ -432,8 +432,8 @@ func (s *State) ApplyVoteSlashing(vs *VoteSlashing, p *params.ChainParams) error
 }
 
 // IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
-func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
-	if rs.Slot >= s.Slot {
+func (s *state) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
+	if rs.Slot >= s.LastSlot {
 		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
 	}
 
@@ -467,7 +467,7 @@ func (s *State) IsRANDAOSlashingValid(rs *RANDAOSlashing) (uint64, error) {
 }
 
 // ApplyRANDAOSlashing applies the RANDAO slashing to the state.
-func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) error {
+func (s *state) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) error {
 	proposer, err := s.IsRANDAOSlashingValid(rs)
 	if err != nil {
 		return err
@@ -477,7 +477,7 @@ func (s *State) ApplyRANDAOSlashing(rs *RANDAOSlashing, p *params.ChainParams) e
 }
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
+func (s *state) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
 
 	if (slot-1)/p.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
@@ -499,7 +499,7 @@ func (s *State) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, 
 }
 
 // IsExitValid checks if an exit is valid.
-func (s *State) IsExitValid(exit *Exit) error {
+func (s *state) IsExitValid(exit *Exit) error {
 	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey)
 	msgHash := chainhash.HashH([]byte(msg))
 	wPubKey, err := exit.GetWithdrawPubKey()
@@ -540,7 +540,7 @@ func (s *State) IsExitValid(exit *Exit) error {
 }
 
 // ApplyExit processes an exit request.
-func (s *State) ApplyExit(exit *Exit) error {
+func (s *state) ApplyExit(exit *Exit) error {
 	if err := s.IsExitValid(exit); err != nil {
 		return err
 	}
@@ -558,7 +558,7 @@ func (s *State) ApplyExit(exit *Exit) error {
 }
 
 // IsDepositValid validates signatures and ensures that a deposit is valid.
-func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
+func (s *state) IsDepositValid(deposit *Deposit, params *params.ChainParams) error {
 	dPub, err := deposit.GetPublicKey()
 	if err != nil {
 		return err
@@ -613,7 +613,7 @@ func (s *State) IsDepositValid(deposit *Deposit, params *params.ChainParams) err
 }
 
 // ApplyDeposit applies a deposit to the state.
-func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
+func (s *state) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 	if err := s.IsDepositValid(deposit, p); err != nil {
 		return err
 	}
@@ -641,7 +641,7 @@ func (s *State) ApplyDeposit(deposit *Deposit, p *params.ChainParams) error {
 }
 
 // IsVoteValid checks if a vote is valid.
-func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
+func (s *state) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error {
 	if v.Data == nil {
 		return fmt.Errorf("vote data is empty")
 	}
@@ -697,12 +697,12 @@ func (s *State) IsVoteValid(v *MultiValidatorVote, p *params.ChainParams) error 
 	return nil
 }
 
-func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
-	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
+func (s *state) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
+	if v.Data.Slot+p.MinAttestationInclusionDelay > s.LastSlot {
 		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
 	}
 
-	if v.Data.Slot+p.EpochLength <= s.Slot {
+	if v.Data.Slot+p.EpochLength <= s.LastSlot {
 		return fmt.Errorf("vote not included within 1 epoch (latest: %d, got: %d)", v.Data.Slot+p.EpochLength-1, s.Slot)
 	}
 
@@ -727,14 +727,14 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 			Data:                  v.Data,
 			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
-			InclusionDelay:        s.Slot - v.Data.Slot,
+			InclusionDelay:        s.LastSlot - v.Data.Slot,
 		})
 	} else {
 		s.PreviousEpochVotes = append(s.PreviousEpochVotes, &AcceptedVoteInfo{
 			Data:                  v.Data,
 			ParticipationBitfield: bl,
 			Proposer:              proposerIndex,
-			InclusionDelay:        s.Slot - v.Data.Slot,
+			InclusionDelay:        s.LastSlot - v.Data.Slot,
 		})
 	}
 
@@ -742,7 +742,7 @@ func (s *State) ProcessVote(v *MultiValidatorVote, p *params.ChainParams, propos
 }
 
 // GetProposerPublicKey gets the public key for the proposer of a block.
-func (s *State) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.PublicKey, error) {
+func (s *state) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.PublicKey, error) {
 	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
@@ -752,7 +752,7 @@ func (s *State) GetProposerPublicKey(b *Block, p *params.ChainParams) (*bls.Publ
 }
 
 // CheckBlockSignature checks the block signature.
-func (s *State) CheckBlockSignature(b *Block, p *params.ChainParams) error {
+func (s *state) CheckBlockSignature(b *Block, p *params.ChainParams) error {
 	blockHash := b.Hash()
 	blockSig, err := bls.SignatureFromBytes(b.Signature)
 	if err != nil {
@@ -785,8 +785,8 @@ func (s *State) CheckBlockSignature(b *Block, p *params.ChainParams) error {
 }
 
 // ProcessBlock runs a block transition on the state and mutates state.
-func (s *State) ProcessBlock(b *Block, p *params.ChainParams) error {
-	if b.Header.Slot != s.Slot {
+func (s *state) ProcessBlock(b *Block, p *params.ChainParams) error {
+	if b.Header.Slot != s.LastSlot {
 		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
 	}
 

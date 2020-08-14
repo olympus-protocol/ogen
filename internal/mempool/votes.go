@@ -20,10 +20,10 @@ import (
 
 // VoteMempool is the interface of the voteMempool
 type VoteMempool interface {
-	AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error
+	AddValidate(vote *primitives.MultiValidatorVote, state primitives.State) error
 	sortMempool()
 	Add(vote *primitives.MultiValidatorVote)
-	Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
+	Get(slot uint64, s primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
 	removeFromOrder(h chainhash.Hash)
 	Remove(b *primitives.Block)
 	handleSubscription(sub *pubsub.Subscription, id peer.ID)
@@ -54,7 +54,7 @@ type voteMempool struct {
 var _ VoteMempool = &voteMempool{}
 
 // AddValidate validates, then adds the vote to the mempool.
-func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error {
+func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state primitives.State) error {
 	if err := state.IsVoteValid(vote, m.params); err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// Register voting action for validators included on the vote
 	for i, c := range committee {
 		if vote.ParticipationBitfield.Get(uint(i)) {
-			m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[c].PubKey, vote.Data.Nonce)
+			m.lastActionManager.RegisterAction(currentState.Validators()[c].PubKey, vote.Data.Nonce)
 		}
 	}
 
@@ -225,7 +225,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *voteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *voteMempool) Get(slot uint64, s primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 

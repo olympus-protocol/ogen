@@ -3,7 +3,7 @@ package chain
 // GetLocatorHashes for helping peers locate their.
 func (ch *blockchain) GetLocatorHashes() [][32]byte {
 	step := 1
-	chain := ch.State().blockChain
+	chain := ch.State().Blockchain()
 	currentHeight := int64(chain.Tip().Height)
 	var locators [][32]byte
 	for currentHeight > 0 {

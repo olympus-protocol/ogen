@@ -21,7 +21,7 @@ type Config struct {
 type Blockchain interface {
 	Start() (err error)
 	Stop()
-	State() *StateService
+	State() StateService
 	GenesisTime() time.Time
 	GetBlock(h chainhash.Hash) (block *primitives.Block, err error)
 	GetRawBlock(h chainhash.Hash) (block []byte, err error)
@@ -50,7 +50,7 @@ type blockchain struct {
 	txidx *txindex.TxIndex
 
 	// StateService
-	state *StateService
+	state StateService
 
 	notifees    map[BlockchainNotifee]struct{}
 	notifeeLock sync.RWMutex
@@ -65,7 +65,7 @@ func (ch *blockchain) Stop() {
 	ch.log.Info("Stopping Blockchain instance")
 }
 
-func (ch *blockchain) State() *StateService {
+func (ch *blockchain) State() StateService {
 	return ch.state
 }
 

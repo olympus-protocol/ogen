@@ -3,30 +3,53 @@ package mempool_test
 import (
 	"context"
 	"github.com/golang/mock/gomock"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/peers"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-var pool mempool.MockVoteMempool
-var mockNet mocknet.Mocknet
+var ctx = context.Background()
+
+var mockNet = mocknet.New(ctx)
+
+var pool mempool.VoteMempool
 
 func TestNewVoteMempool(t *testing.T) {
-	ctx := context.Background()
+
+	h, err := mockNet.GenPeer()
+	assert.NoError(t, err)
+
+	g, err := pubsub.NewGossipSub(ctx, h)
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
+
+	host := peers.NewMockHostNode(ctrl)
+	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host.EXPECT().GetHost().Return(h)
 
 	log := logger.NewMockLogger(ctrl)
 	ch := chain.NewMockBlockchain(ctrl)
-	host := peers.NewMockHostNode(ctrl)
-	host.EXPECT().Topic("votes").Return()
 	manager := actionmanager.NewMockLastActionManager(ctrl)
 
-	_, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	pool, err = mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
 	assert.NoError(t, err)
+}
+
+func TestVoteMempool_AddValidate(t *testing.T) {
+	state := primitives.NewMockState(gomock.NewController(t))
+	err := pool.AddValidate(&primitives.MultiValidatorVote{}, state)
+	assert.NoError(t, err)
+}
+
+func TestVoteMempool_Add(t *testing.T) {
+
 }

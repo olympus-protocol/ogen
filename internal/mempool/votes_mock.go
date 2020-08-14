@@ -38,7 +38,7 @@ func (m *MockVoteMempool) EXPECT() *MockVoteMempoolMockRecorder {
 }
 
 // AddValidate mocks base method
-func (m *MockVoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error {
+func (m *MockVoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state primitives.State) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddValidate", vote, state)
 	ret0, _ := ret[0].(error)
@@ -76,7 +76,7 @@ func (mr *MockVoteMempoolMockRecorder) Add(vote interface{}) *gomock.Call {
 }
 
 // Get mocks base method
-func (m *MockVoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *MockVoteMempool) Get(slot uint64, s primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", slot, s, p, proposerIndex)
 	ret0, _ := ret[0].([]*primitives.MultiValidatorVote)

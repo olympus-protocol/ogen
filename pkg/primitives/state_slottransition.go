@@ -6,12 +6,16 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
-// ProcessSlot runs a slot transition on state, mutating it.
-func (s *State) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.Hash) {
-	// increase the slot number
-	s.Slot++
+func (s *state) Slot() uint64 {
+	return s.LastSlot
+}
 
-	s.LatestBlockHashes[(s.Slot-1)%p.LatestBlockRootsLength] = previousBlockRoot
+// ProcessSlot runs a slot transition on state, mutating it.
+func (s *state) ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.Hash) {
+	// increase the slot number
+	s.LastSlot++
+
+	s.LatestBlockHashes[(s.LastSlot-1)%p.LatestBlockRootsLength] = previousBlockRoot
 }
 
 // BlockView is the view of the blockchain at a certain tip.
@@ -24,12 +28,12 @@ type BlockView interface {
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested
 // slot.
-func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*EpochReceipt, error) {
+func (s *state) ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*EpochReceipt, error) {
 	totalReceipts := make([]*EpochReceipt, 0)
 
-	for s.Slot < requestedSlot {
+	for s.LastSlot < requestedSlot {
 		// this only happens when there wasn't a block at the first slot of the epoch
-		if s.Slot/p.EpochLength > s.EpochIndex && s.Slot%p.EpochLength == 0 {
+		if s.LastSlot/p.EpochLength > s.EpochIndex && s.LastSlot%p.EpochLength == 0 {
 			receipts, err := s.ProcessEpochTransition(p, log)
 			if err != nil {
 				return nil, err
@@ -44,7 +48,7 @@ func (s *State) ProcessSlots(requestedSlot uint64, view BlockView, p *params.Cha
 
 		s.ProcessSlot(p, tip)
 
-		view.SetTipSlot(s.Slot)
+		view.SetTipSlot(s.LastSlot)
 	}
 
 	return totalReceipts, nil

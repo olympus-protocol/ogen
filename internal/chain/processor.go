@@ -60,7 +60,7 @@ func (ch *blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible 
 		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
-				ch.state.blockChain.SetTip(head)
+				ch.state.Blockchain().SetTip(head)
 
 				ch.log.Infof("setting head to %s", head.Hash)
 
@@ -95,7 +95,7 @@ func (ch *blockchain) getLatestAttestationTarget(validator uint64) (row *chainin
 		return nil, fmt.Errorf("attestation target not found")
 	}
 
-	row, ok = ch.state.blockIndex.Get(att.Data.BeaconBlockHash)
+	row, ok = ch.state.BlockIndex().Get(att.Data.BeaconBlockHash)
 	if !ok {
 		return nil, errors.New("couldn't find block attested to by validator in chainindex")
 	}
@@ -213,7 +213,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		row, err := ch.state.blockIndex.Add(*block)
+		row, err := ch.state.BlockIndex().Add(*block)
 		if err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		if err := txn.SetFinalizedHead(finalizedHash); err != nil {
 			return err
 		}
-		if err := ch.state.setFinalizedHead(finalizedHash, *finalizedState); err != nil {
+		if err := ch.state.setFinalizedHead(finalizedHash, finalizedState); err != nil {
 			return err
 		}
 		if err := txn.SetFinalizedState(finalizedState); err != nil {
@@ -275,7 +275,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		if err := txn.SetJustifiedHead(newState.JustifiedEpochHash); err != nil {
 			return err
 		}
-		if err := ch.state.setJustifiedHead(newState.JustifiedEpochHash, *justifiedState); err != nil {
+		if err := ch.state.setJustifiedHead(newState.JustifiedEpochHash, justifiedState); err != nil {
 			return err
 		}
 		if err := txn.SetJustifiedState(justifiedState); err != nil {

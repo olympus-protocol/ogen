@@ -64,10 +64,10 @@ func (mr *MockBlockchainMockRecorder) Stop() *gomock.Call {
 }
 
 // State mocks base method
-func (m *MockBlockchain) State() *StateService {
+func (m *MockBlockchain) State() StateService {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "State")
-	ret0, _ := ret[0].(*StateService)
+	ret0, _ := ret[0].(StateService)
 	return ret0
 }
 

@@ -3,7 +3,6 @@ package primitives
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"time"
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
@@ -50,7 +49,7 @@ type InitializationParameters struct {
 }
 
 // GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
-func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (*State, error) {
+func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *InitializationParameters, p *params.ChainParams) (State, error) {
 	initialValidators := make([]*Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
@@ -88,40 +87,15 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 
 	var premineAddrArr [20]byte
 	copy(premineAddrArr[:], premineAddr)
-	s := &State{
-		CoinsState: CoinsState{
-			Balances: map[[20]byte]uint64{
-				premineAddrArr: 400000 * p.UnitsPerCoin,
-			},
-			Nonces: make(map[[20]byte]uint64),
+
+	cs := CoinsState{
+		Balances: map[[20]byte]uint64{
+			premineAddrArr: 400000 * p.UnitsPerCoin,
 		},
-		ValidatorRegistry:             initialValidators,
-		LatestValidatorRegistryChange: 0,
-		RANDAO:                        chainhash.Hash{},
-		NextRANDAO:                    chainhash.Hash{},
-		Slot:                          0,
-		EpochIndex:                    0,
-		JustificationBitfield:         0,
-		JustifiedEpoch:                0,
-		FinalizedEpoch:                0,
-		LatestBlockHashes:             make([][32]byte, p.LatestBlockRootsLength),
-		JustifiedEpochHash:            genesisHash,
-		CurrentEpochVotes:             make([]*AcceptedVoteInfo, 0),
-		PreviousJustifiedEpoch:        0,
-		PreviousJustifiedEpochHash:    genesisHash,
-		PreviousEpochVotes:            make([]*AcceptedVoteInfo, 0),
-		CurrentManagers:               p.InitialManagers,
-		VoteEpoch:                     0,
-		VoteEpochStartSlot:            0,
-		VotingState:                   GovernanceStateActive,
-		LastPaidSlot:                  0,
+		Nonces: make(map[[20]byte]uint64),
 	}
-	activeValidators := s.GetValidatorIndicesActiveAt(0)
-	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
-	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
-	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)) * 8)
+
+	s := NewState(cs, initialValidators, genesisHash, p)
 
 	return s, nil
 }

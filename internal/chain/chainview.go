@@ -49,17 +49,3 @@ func (c *ChainView) GetLastStateRoot() (chainhash.Hash, error) {
 }
 
 var _ primitives.BlockView = (*ChainView)(nil)
-
-// GetSubView gets a view of the blockchain at a certain tip.
-func (s *StateService) GetSubView(tip chainhash.Hash) (ChainView, error) {
-	tipNode, found := s.blockIndex.Get(tip)
-	if !found {
-		return ChainView{}, errors.New("could not find tip node")
-	}
-	return NewChainView(tipNode), nil
-}
-
-// Tip gets the tip of the blockchain.
-func (s *StateService) Tip() *chainindex.BlockRow {
-	return s.blockChain.Tip()
-}
