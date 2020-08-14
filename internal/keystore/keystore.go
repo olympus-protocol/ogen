@@ -25,8 +25,6 @@ var (
 	// ErrorKeystoreExists returned when a user creates a new keystore over an existing keystore.
 	ErrorKeystoreExists = errors.New("cannot create new keystore, it already exists")
 
-	// ErrorPassNoMatch is returned when the keystore password don't match.
-	ErrorPassNoMatch = errors.New("the provided password doesn't match with current keystore password")
 )
 
 var (

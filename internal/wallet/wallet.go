@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,8 +22,27 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
-// Wallet is the structure of the wallet manager.
-type Wallet struct {
+// Wallet is the interface for wallet
+type Wallet interface {
+	NewWallet(name string, priv *bls.SecretKey, password string) error
+	OpenWallet(name string, password string) error
+	CloseWallet() error
+	HasWallet(name string) bool
+	GetAvailableWallets() (map[string]string, error)
+	GetAccount() (string, error)
+	GetSecret() (*bls.SecretKey, error)
+	GetPublic() (*bls.PublicKey, error)
+	GetAccountRaw() ([20]byte, error)
+	GetBalance() (uint64, error)
+	StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error)
+	ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error)
+	SendToAddress(to string, amount uint64) (*chainhash.Hash, error)
+}
+
+var _ Wallet = &wallet{}
+
+// wallet is the structure of the wallet manager.
+type wallet struct {
 	// Wallet manager properties
 	params        *params.ChainParams
 	log           logger.Logger
@@ -46,10 +66,11 @@ type Wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (wallet *Wallet, err error) {
+func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (Wallet, error) {
 	var txTopic *pubsub.Topic
 	var depositTopic *pubsub.Topic
 	var exitTopic *pubsub.Topic
+	var err error
 	if hostnode != nil {
 		txTopic, err = hostnode.Topic("tx")
 		if err != nil {
@@ -66,7 +87,7 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 			return nil, err
 		}
 	}
-	wallet = &Wallet{
+	wall := &wallet{
 		log:           log,
 		directory:     walletsDir,
 		params:        params,
@@ -79,11 +100,11 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 		ctx:           ctx,
 		actionMempool: actionMempool,
 	}
-	return wallet, nil
+	return wall, nil
 }
 
 // NewWallet creates a new wallet database.
-func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
+func (w *wallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
 	if w.open {
 		w.CloseWallet()
 	}
@@ -122,7 +143,7 @@ func (w *Wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 }
 
 // OpenWallet opens an already created wallet database.
-func (w *Wallet) OpenWallet(name string, password string) error {
+func (w *wallet) OpenWallet(name string, password string) error {
 	if w.open {
 		w.CloseWallet()
 	}
@@ -151,7 +172,7 @@ func (w *Wallet) OpenWallet(name string, password string) error {
 }
 
 // CloseWallet closes the current opened wallet.
-func (w *Wallet) CloseWallet() error {
+func (w *wallet) CloseWallet() error {
 	w.open = false
 	w.name = ""
 	w.priv = nil
@@ -162,7 +183,7 @@ func (w *Wallet) CloseWallet() error {
 }
 
 // HasWallet checks if the name matches to an existing wallet database.
-func (w *Wallet) HasWallet(name string) bool {
+func (w *wallet) HasWallet(name string) bool {
 	list, err := w.GetAvailableWallets()
 	if err != nil {
 		return false
@@ -175,7 +196,7 @@ func (w *Wallet) HasWallet(name string) bool {
 }
 
 // GetAvailableWallets returns a map of available wallets.
-func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
+func (w *wallet) GetAvailableWallets() (map[string]string, error) {
 	files := map[string]string{}
 	err := filepath.Walk(path.Join(w.directory, "wallets/"), func(path string, info os.FileInfo, err error) error {
 		if info != nil {
@@ -196,7 +217,7 @@ func (w *Wallet) GetAvailableWallets() (map[string]string, error) {
 }
 
 // GetAccount returns the current wallet account on bech32 format.
-func (w *Wallet) GetAccount() (string, error) {
+func (w *wallet) GetAccount() (string, error) {
 	if !w.open {
 		return "", errorNotOpen
 	}
@@ -204,7 +225,7 @@ func (w *Wallet) GetAccount() (string, error) {
 }
 
 // GetSecret returns the secret key of the current wallet.
-func (w *Wallet) GetSecret() (*bls.SecretKey, error) {
+func (w *wallet) GetSecret() (*bls.SecretKey, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -212,7 +233,7 @@ func (w *Wallet) GetSecret() (*bls.SecretKey, error) {
 }
 
 // GetPublic returns the public key of the current wallet.
-func (w *Wallet) GetPublic() (*bls.PublicKey, error) {
+func (w *wallet) GetPublic() (*bls.PublicKey, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -220,7 +241,7 @@ func (w *Wallet) GetPublic() (*bls.PublicKey, error) {
 }
 
 // GetAccountRaw returns the current wallet account on a bytes slice.
-func (w *Wallet) GetAccountRaw() ([20]byte, error) {
+func (w *wallet) GetAccountRaw() ([20]byte, error) {
 	if !w.open {
 		return [20]byte{}, errorNotOpen
 	}

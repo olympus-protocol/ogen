@@ -53,8 +53,8 @@ type Server struct {
 
 	Chain    chain.Blockchain
 	HostNode peers.HostNode
-	RPC      *chainrpc.RPCServer
-	Proposer *proposer.Proposer
+	RPC      chainrpc.RPCServer
+	Proposer proposer.Proposer
 
 	Mempools Mempools
 }
