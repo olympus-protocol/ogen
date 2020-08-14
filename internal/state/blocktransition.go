@@ -10,6 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"reflect"
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
@@ -641,30 +642,52 @@ func (s *state) ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams)
 	return nil
 }
 
+var (
+	// ErrorVoteEmpty returns when some information of a MultiValidatorVote is missing
+	ErrorVoteEmpty = errors.New("vote information is not complete")
+	// ErrorVoteSlot returns when the vote data slot is out of range
+	ErrorVoteSlot = errors.New("slot out of range")
+	// ErrorFromEpoch returns when the vote From Epoch doesn't match a justified epoch
+	ErrorFromEpoch = errors.New("expected from epoch to match justified epoch")
+	// ErrorJustifiedHashWrong returns when the vote justified hash doesn't match state justified hash
+	ErrorJustifiedHash = errors.New("justified block hash is wrong")
+	// ErrorFromEpochPreviousJustified returns when the from epoch slot doesn't match the previous justified epoch
+	ErrorFromEpochPreviousJustified = errors.New("expected from epoch to match previous justified epoch")
+	// ErrorFromEpochPreviousJustifiedHash returns when the from epoch hash doesn't match the previous justified epoch hash
+	ErrorFromEpochPreviousJustifiedHash = errors.New("expected from epoch hash to match previous justified epoch hash")
+	// ErrorTargetEpoch returns when the to epoch hash a wrong target
+	ErrorTargetEpoch = errors.New("vote should have target epoch of either the current epoch or the previous epoch")
+	// ErrorVoteSignature returns when the vote aggregate signature doesn't validate
+	ErrorVoteSignature = errors.New("vote aggregate signature did not validate")
+)
+
 // IsVoteValid checks if a vote is valid.
 func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainParams) error {
-	if v.Data == nil {
-		return fmt.Errorf("vote data is empty")
+
+	if v.Data == nil || v.ParticipationBitfield == nil || reflect.DeepEqual(v.Sig, [96]byte{}) {
+		return ErrorVoteEmpty
 	}
+
 	if v.Data.Slot == 0 {
-		return fmt.Errorf("slot out of range")
+		return ErrorVoteSlot
 	}
+
 	if v.Data.ToEpoch == s.EpochIndex {
 		if v.Data.FromEpoch != s.JustifiedEpoch {
-			return fmt.Errorf("expected from epoch to match justified epoch (expected: %d, got: %d)", s.JustifiedEpoch, v.Data.FromEpoch)
+			return ErrorFromEpoch
 		}
 		if !bytes.Equal(s.JustifiedEpochHash[:], v.Data.FromHash[:]) {
-			return fmt.Errorf("justified block hash is wrong (expected: %s, got: %s)", s.JustifiedEpochHash.String(), hex.EncodeToString(v.Data.FromHash[:]))
+			return ErrorJustifiedHash
 		}
 	} else if s.EpochIndex > 0 && v.Data.ToEpoch == s.EpochIndex-1 {
 		if v.Data.FromEpoch != s.PreviousJustifiedEpoch {
-			return fmt.Errorf("expected from epoch to match previous justified epoch (expected: %d, got: %d)", s.PreviousJustifiedEpoch, v.Data.FromEpoch)
+			return ErrorFromEpochPreviousJustified
 		}
 		if !bytes.Equal(s.PreviousJustifiedEpochHash[:], v.Data.FromHash[:]) {
-			return fmt.Errorf("previous justified block hash is wrong (expected: %s, got: %s)", s.PreviousJustifiedEpochHash.String(), hex.EncodeToString(v.Data.FromHash[:]))
+			return ErrorFromEpochPreviousJustifiedHash
 		}
 	} else {
-		return fmt.Errorf("vote should have target epoch of either the current epoch (%d) or the previous epoch (%d) but got %d", s.EpochIndex, s.EpochIndex-1, v.Data.ToEpoch)
+		return ErrorTargetEpoch
 	}
 
 	aggPubs := make([]*bls.PublicKey, 0)
@@ -692,7 +715,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 
 	valid := vSig.FastAggregateVerify(aggPubs, h)
 	if !valid {
-		return fmt.Errorf("aggregate signature did not validate")
+		return ErrorVoteSignature
 	}
 
 	return nil
