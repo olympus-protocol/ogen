@@ -27,7 +27,7 @@ type VoteMempool struct {
 	poolOrder []chainhash.Hash
 
 	params     *params.ChainParams
-	log        *logger.Logger
+	log        logger.LoggerInterface
 	ctx        context.Context
 	blockchain chain.Blockchain
 	hostNode   peers.HostNode
@@ -330,7 +330,7 @@ func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log *logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (*VoteMempool, error) {
+func NewVoteMempool(ctx context.Context, log logger.LoggerInterface, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (*VoteMempool, error) {
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
 		return nil, err

@@ -30,12 +30,20 @@ type Config struct {
 	RPCProxyPort string
 	RPCProxyAddr string
 	RPCPort      string
-	Log          *logger.Logger
+	Log          logger.LoggerInterface
 }
 
+//RPCServer is an interface for rpcServer
+type RPCServer interface {
+	Stop()
+	Start() error
+}
+
+var _ RPCServer = &rpcServer{}
+
 // RPCServer struct model for the gRPC server
-type RPCServer struct {
-	log              *logger.Logger
+type rpcServer struct {
+	log              logger.LoggerInterface
 	config           Config
 	http             *runtime.ServeMux
 	rpc              *grpc.Server
@@ -46,7 +54,7 @@ type RPCServer struct {
 	walletServer     *walletServer
 }
 
-func (s *RPCServer) registerServices() {
+func (s *rpcServer) registerServices() {
 	proto.RegisterChainServer(s.rpc, s.chainServer)
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
 	proto.RegisterUtilsServer(s.rpc, s.utilsServer)
@@ -56,7 +64,7 @@ func (s *RPCServer) registerServices() {
 	}
 }
 
-func (s *RPCServer) registerServicesProxy(ctx context.Context) {
+func (s *rpcServer) registerServicesProxy(ctx context.Context) {
 	certPool, err := LoadCerts(s.config.DataDir)
 	if err != nil {
 		s.log.Fatal(err)
@@ -76,13 +84,13 @@ func (s *RPCServer) registerServicesProxy(ctx context.Context) {
 }
 
 // Stop stops gRPC listener
-func (s *RPCServer) Stop() {
+func (s *rpcServer) Stop() {
 	s.log.Info("Stopping gRPC Server")
 	s.rpc.GracefulStop()
 }
 
 // Start starts gRPC listener
-func (s *RPCServer) Start() error {
+func (s *rpcServer) Start() error {
 	s.registerServices()
 	s.log.Info("Starting gRPC Server")
 	if s.config.RPCProxy {
@@ -120,7 +128,7 @@ func (s *RPCServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain chain.Blockchain, hostnode peers.HostNode, wallet wallet.Wallet, params *params.ChainParams, p proposer.Proposer) (*RPCServer, error) {
+func NewRPCServer(config Config, chain chain.Blockchain, hostnode peers.HostNode, wallet wallet.Wallet, params *params.ChainParams, p proposer.Proposer) (RPCServer, error) {
 	txTopic, err := hostnode.Topic("tx")
 	if err != nil {
 		return nil, err
@@ -144,7 +152,7 @@ func NewRPCServer(config Config, chain chain.Blockchain, hostnode peers.HostNode
 		return nil, err
 	}
 
-	return &RPCServer{
+	return &rpcServer{
 		rpc:    grpc.NewServer(grpc.Creds(creds)),
 		http:   runtime.NewServeMux(),
 		config: config,

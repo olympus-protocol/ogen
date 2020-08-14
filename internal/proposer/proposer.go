@@ -24,7 +24,7 @@ import (
 // Config is a config for the proposer.
 type Config struct {
 	Datadir string
-	Log     *logger.Logger
+	Log     logger.LoggerInterface
 }
 
 // Proposer is the interface for proposer
@@ -43,7 +43,7 @@ var _ Proposer = &proposer{}
 
 // proposer manages mining for the blockchain.
 type proposer struct {
-	log        *logger.Logger
+	log        logger.LoggerInterface
 	config     Config
 	params     params.ChainParams
 	chain      chain.Blockchain
