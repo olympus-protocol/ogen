@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	state2 "github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"reflect"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -143,7 +143,7 @@ type blockNotifee struct {
 type blockAndReceipts struct {
 	block    *primitives.Block
 	receipts []*primitives.EpochReceipt
-	state    *state2.State
+	state    state.State
 }
 
 func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
@@ -162,7 +162,7 @@ func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *state2.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
 	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
 	select {
 	case bn.blocks <- toSend:
@@ -267,7 +267,7 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 		return nil, err
 	}
 	copy(account[:], decoded)
-	nonce := s.chain.State().TipState().CoinsState.Nonces[account]
+	nonce := s.chain.State().TipState().GetCoinsState().Nonces[account]
 	txs, err := s.chain.GetAccountTxs(account)
 	if err != nil {
 		return nil, err
@@ -278,9 +278,9 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 	} else {
 		transactions = []string{}
 	}
-	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().CoinsState.Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
+	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().GetCoinsState().Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
 	lock := decimal.NewFromInt(0)
-	for _, v := range s.chain.State().TipState().ValidatorRegistry {
+	for _, v := range s.chain.State().TipState().GetValidatorRegistry() {
 		if v.PayeeAddress == account {
 			lock = lock.Add(decimal.NewFromInt(int64(v.Balance)))
 		}

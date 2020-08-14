@@ -1,6 +1,6 @@
 package primitives
 
-import "github.com/btcsuite/snappy-go"
+import "github.com/golang/snappy"
 
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
 type AccountInfo struct {

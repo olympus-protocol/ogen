@@ -117,7 +117,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// Register voting action for validators included on the vote
 	for i, c := range committee {
 		if vote.ParticipationBitfield.Get(uint(i)) {
-			m.lastActionManager.RegisterAction(currentState.Validators()[c].PubKey, vote.Data.Nonce)
+			m.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, vote.Data.Nonce)
 		}
 	}
 

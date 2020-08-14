@@ -10,4 +10,4 @@ mockgen --source internal/peers/protocolhandler.go --destination internal/peers/
 mockgen --source internal/peers/syncprotocol.go --destination internal/peers/syncprotocol_mock.go --package peers
 mockgen --source internal/actionmanager/actionmanager.go --destination internal/actionmanager/actionmanager_mock.go --package actionmanager
 mockgen --source internal/logger/log.go --destination internal/logger/log_mock.go --package logger
-mockgen --source pkg/primitives/state.go --destination pkg/primitives/state_mock.go --package primitives
+mockgen --source internal/state/interface.go --destination internal/state/interface_mock.go --package state

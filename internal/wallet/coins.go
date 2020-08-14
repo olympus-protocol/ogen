@@ -18,7 +18,7 @@ func (w *Wallet) GetBalance() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	out := w.chain.State().TipState().CoinsState.Balances[acc]
+	out := w.chain.State().TipState().GetCoinsState().Balances[acc]
 
 	return out, nil
 }
@@ -159,7 +159,7 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		return nil, err
 	}
 
-	nonce := w.chain.State().TipState().CoinsState.Nonces[acc] + 1
+	nonce := w.chain.State().TipState().GetCoinsState().Nonces[acc] + 1
 	var p [48]byte
 	copy(p[:], pub.Marshal())
 
@@ -178,8 +178,8 @@ func (w *Wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	tx.Signature = s
 
 	currentState := w.chain.State().TipState()
-
-	if err := w.mempool.Add(*tx, &currentState.CoinsState); err != nil {
+	cs := currentState.GetCoinsState()
+	if err := w.mempool.Add(*tx, &cs); err != nil {
 		return nil, err
 	}
 

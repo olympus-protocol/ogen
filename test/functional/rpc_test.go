@@ -312,7 +312,7 @@ func Test_Chain_GetAccountInfo(t *testing.T) {
 
 	accByte, err := testdata.PremineAddr.PublicKey().Hash()
 	assert.NoError(t, err)
-	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	balanceMap := S.Chain.State().TipState().GetCoinsState().Balances
 	accBalance := balanceMap[accByte]
 
 	assert.Equal(t, strconv.Itoa(int(accBalance/1e8)), res.Balance.Confirmed)
@@ -412,7 +412,7 @@ func Test_Utils_StopProposer(t *testing.T) {
 func Test_Utils_StartProposer(t *testing.T) {
 	ctx := context.Background()
 
-	res, err := C.utils.StartProposer(ctx, &proto.Password{Password: testdata.KeystorePass})
+	res, err := C.utils.StartProposer(ctx, &proto.Empty{})
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.Success{}, res)
@@ -581,7 +581,7 @@ func Test_Wallet_GetBalance(t *testing.T) {
 	accByte, err := testdata.PremineAddr.PublicKey().Hash()
 	assert.NoError(t, err)
 
-	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	balanceMap := S.Chain.State().TipState().GetCoinsState().Balances
 	accBalance := balanceMap[accByte]
 
 	responseBalance, err := strconv.Atoi(res.Confirmed)
@@ -629,7 +629,7 @@ func Test_Wallet_SendTransaction(t *testing.T) {
 	time.Sleep(time.Second * 30)
 	secondaccByte, err := secondAccount.PublicKey().Hash()
 	assert.NoError(t, err)
-	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	balanceMap := S.Chain.State().TipState().GetCoinsState().Balances
 	secondaccBalance := balanceMap[secondaccByte]
 	assert.Equal(t, strconv.Itoa(int(secondaccBalance/1000)), "23")
 	balance, _ := C.chain.GetAccountInfo(ctx, &proto.Account{Account: secondAddr})

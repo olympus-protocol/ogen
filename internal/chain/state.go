@@ -30,9 +30,9 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock state.State) *stateDeriv
 	firstSlotState := stateAfterProcessingBlock.Copy()
 	return &stateDerivedFromBlock{
 		firstSlotState: firstSlotState,
-		firstSlot:      firstSlotState.Slot(),
+		firstSlot:      firstSlotState.GetSlot(),
 		lastSlotState:  stateAfterProcessingBlock,
-		lastSlot:       stateAfterProcessingBlock.Slot(),
+		lastSlot:       stateAfterProcessingBlock.GetSlot(),
 		lock:           new(sync.Mutex),
 	}
 }
@@ -87,7 +87,7 @@ type StateService interface {
 	GetFinalizedHead() (*chainindex.BlockRow, state.State)
 	GetJustifiedHead() (*chainindex.BlockRow, state.State)
 	setJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error
-	initChainState(db blockdb.DB, params params.ChainParams, genesisState state.State) error
+	initChainState(db blockdb.DB, genesisState state.State) error
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
 	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error)
 	Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error)
@@ -212,11 +212,11 @@ func (s *stateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 	return nil
 }
 
-func (s *stateService) initChainState(db blockdb.DB, params params.ChainParams, genesisState state.State) error {
+func (s *stateService) initChainState(db blockdb.DB, genesisState state.State) error {
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("Loading chain state...")
 
-	genesisBlock := primitives.GetGenesisBlock(params)
+	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
@@ -364,7 +364,7 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 
 // NewStateService constructs a new state service.
 func NewStateService(log logger.Logger, ip state.InitializationParameters, params params.ChainParams, db blockdb.DB) (StateService, error) {
-	genesisBlock := primitives.GetGenesisBlock(params)
+	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Hash()
 
 	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
@@ -381,7 +381,7 @@ func NewStateService(log logger.Logger, ip state.InitializationParameters, param
 		latestVotes: make(map[uint64]*primitives.MultiValidatorVote),
 		db:          db,
 	}
-	err = ss.initChainState(db, params, genesisState)
+	err = ss.initChainState(db, genesisState)
 	if err != nil {
 		return nil, err
 	}

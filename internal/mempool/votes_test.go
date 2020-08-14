@@ -10,7 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/peers"
-	state2 "github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -46,8 +46,8 @@ func TestNewVoteMempool(t *testing.T) {
 }
 
 func TestVoteMempool_AddValidate(t *testing.T) {
-	state := state2.NewMockState(gomock.NewController(t))
-	err := pool.AddValidate(&primitives.MultiValidatorVote{}, state)
+	s := state.NewMockState(gomock.NewController(t))
+	err := pool.AddValidate(&primitives.MultiValidatorVote{}, s)
 	assert.NoError(t, err)
 }
 

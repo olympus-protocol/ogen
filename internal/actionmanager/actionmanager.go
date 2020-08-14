@@ -61,8 +61,8 @@ type lastActionManager struct {
 func (l *lastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt) {
 	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
 
-	proposerIndex := state.CurrentProposerQueue()[slotIndex]
-	proposer := state.Validators()[proposerIndex]
+	proposerIndex := state.GetProposerQueue()[slotIndex]
+	proposer := state.GetValidatorRegistry()[proposerIndex]
 
 	l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 }

@@ -1,4 +1,5 @@
 package state_test
+
 //
 //import (
 //	"github.com/google/gofuzz"

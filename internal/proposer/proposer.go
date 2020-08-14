@@ -93,7 +93,7 @@ func NewProposer(config Config, params params.ChainParams, chain chain.Blockchai
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (p *Proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *state.State, _ []*primitives.EpochReceipt) {
+func (p *Proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt) {
 	p.voteMempool.Remove(block)
 	p.coinsMempool.RemoveByBlock(block)
 	p.actionsMempool.RemoveByBlock(block, newState)
@@ -169,8 +169,8 @@ func (p *Proposer) ProposeBlocks() {
 			}
 
 			slotIndex := (slotToPropose + p.params.EpochLength - 1) % p.params.EpochLength
-			proposerIndex := state.ProposerQueue[slotIndex]
-			proposer := state.ValidatorRegistry[proposerIndex]
+			proposerIndex := state.GetProposerQueue()[slotIndex]
+			proposer := state.GetValidatorRegistry()[proposerIndex]
 
 			if k, found := p.Keystore.GetValidatorKey(proposer.PubKey); found {
 
@@ -321,8 +321,8 @@ func (p *Proposer) VoteForBlocks() {
 
 			data := &primitives.VoteData{
 				Slot:            slotToVote,
-				FromEpoch:       state.JustifiedEpoch,
-				FromHash:        state.JustifiedEpochHash,
+				FromEpoch:       state.GetJustifiedEpoch(),
+				FromHash:        state.GetJustifiedEpochHash(),
 				ToEpoch:         toEpoch,
 				ToHash:          state.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, &p.params),
 				BeaconBlockHash: beaconBlock.Hash,
@@ -339,7 +339,7 @@ func (p *Proposer) VoteForBlocks() {
 			var signatures []*bls.Signature
 
 			for i, validatorIdx := range validators {
-				validator := state.ValidatorRegistry[validatorIdx]
+				validator := state.GetValidatorRegistry()[validatorIdx]
 				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
 					if !p.lastActionManager.ShouldRun(validator.PubKey) {
 						return
@@ -380,7 +380,7 @@ func (p *Proposer) VoteForBlocks() {
 func (p *Proposer) Start() error {
 	numOurs := 0
 	numTotal := 0
-	for _, w := range p.chain.State().TipState().ValidatorRegistry {
+	for _, w := range p.chain.State().TipState().GetValidatorRegistry() {
 		secKey, ok := p.Keystore.GetValidatorKey(w.PubKey)
 		if ok {
 			numOurs++

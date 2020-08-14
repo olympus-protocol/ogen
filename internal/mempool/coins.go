@@ -171,7 +171,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			continue
 		}
 
-		currentState := cm.blockchain.State().TipState().CurrentCoin()
+		currentState := cm.blockchain.State().TipState().GetCoinsState()
 
 		err = cm.Add(*tx, &currentState)
 		if err != nil {

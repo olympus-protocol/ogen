@@ -13,7 +13,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
-	state2 "github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -33,10 +33,10 @@ func init() {
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
-var initParams = state2.InitializationParameters{
+var initParams = state.InitializationParameters{
 	GenesisTime:       time.Unix(time.Now().Unix()+30, 0),
 	PremineAddress:    premineAddr,
-	InitialValidators: []state2.ValidatorInitialization{},
+	InitialValidators: []state.ValidatorInitialization{},
 }
 
 var F *server.Server
@@ -97,7 +97,7 @@ func createValidators() {
 
 	// Convert the validators to initialization params.
 	for _, vk := range valData {
-		val := state2.ValidatorInitialization{
+		val := state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: premineAddr,
 		}
@@ -207,10 +207,10 @@ type blockNotifee struct {
 type blockAndReceipts struct {
 	block    *primitives.Block
 	receipts []*primitives.EpochReceipt
-	state    *state2.State
+	state    *state.State
 }
 
-func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
+func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	bn := blockNotifee{
 		blocks: make(chan blockAndReceipts),
 	}
@@ -223,13 +223,13 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *state2.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
 	fmt.Printf("Slot %v Hash: %s Height: %v StateRoot: %s \n", row.Slot, hex.EncodeToString(row.Hash[:]), row.Height, hex.EncodeToString(row.StateRoot[:]))
 	fmt.Printf("%v Epoch Receipts \n", len(receipts))
 	for _, receipt := range receipts {
 		fmt.Printf("Validator: %v Amount: %v Type: %s \n", receipt.Validator, receipt.Amount, receipt.TypeString())
 	}
-	fmt.Printf("Justificated epoch %v Finalized epoch %v \n", newState.JustifiedEpoch, newState.FinalizedEpoch)
+	fmt.Printf("Justificated epoch %v Finalized epoch %v \n", newState.GetJustifiedEpoch(), newState.GetFinalizedEpoch())
 }
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
@@ -285,18 +285,18 @@ func Test_NodesStateMatch(t *testing.T) {
 
 func Test_JustifiedEpochAndHash(t *testing.T) {
 
-	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, uint64(8))
+	assert.Equal(t, F.Chain.State().TipState().GetJustifiedEpoch(), uint64(8))
 
-	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, uint64(7))
+	assert.Equal(t, F.Chain.State().TipState().GetFinalizedEpoch(), uint64(7))
 
-	assert.NotEqual(t, F.Chain.State().TipState().JustifiedEpochHash, chainhash.Hash{})
-	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, B.Chain.State().TipState().JustifiedEpoch)
-	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
-	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
+	assert.NotEqual(t, F.Chain.State().TipState().GetJustifiedEpochHash(), chainhash.Hash{})
+	assert.Equal(t, F.Chain.State().TipState().GetJustifiedEpoch(), B.Chain.State().TipState().GetJustifiedEpoch())
+	assert.Equal(t, F.Chain.State().TipState().GetJustifiedEpochHash(), B.Chain.State().TipState().GetJustifiedEpochHash())
+	assert.Equal(t, F.Chain.State().TipState().GetFinalizedEpoch(), B.Chain.State().TipState().GetFinalizedEpoch())
 }
 
 func Test_ValidatorRewards(t *testing.T) {
-	for _, v := range F.Chain.State().TipState().ValidatorRegistry {
+	for _, v := range F.Chain.State().TipState().GetValidatorRegistry() {
 		assert.Greater(t, v.Balance, uint64(100 * 1e8))
 	}
 }

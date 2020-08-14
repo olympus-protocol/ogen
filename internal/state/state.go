@@ -425,7 +425,7 @@ func NewState(cs primitives.CoinsState, validators []*primitives.Validator, genH
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},
 		NextRANDAO:                    chainhash.Hash{},
-		Slot:                      0,
+		Slot:                          0,
 		EpochIndex:                    0,
 		JustificationBitfield:         0,
 		JustifiedEpoch:                0,
