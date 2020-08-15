@@ -16,6 +16,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sort"
 	"sync"
+	"time"
 )
 
 // VoteMempool is the interface of the voteMempool
@@ -124,7 +125,6 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// This check iterates over all the votes on the pool.
 	// Checks if the new vote data matches any pool vote data hash.
 	// If that check fails, we should check for validators submitting twice different votes.
-	// TODO fix slashing condition
 	for h, v := range m.pool {
 
 		// If the vote data hash matches, it means is voting for same block.
@@ -132,18 +132,51 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			continue
 		}
 
+		if currentState.GetSlot() >= v.Data.LastSlotValid(m.params) {
+			delete(m.pool, voteHash)
+			m.removeFromOrder(voteHash)
+			continue
+		}
+
+		var votingValidators = make(map[uint64]struct{})
+		var common []uint64
+		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
+		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
+		for i, idx := range vote1Comitte {
+			if !v.ParticipationBitfield.Get(uint(i)) {
+				continue
+			}
+			votingValidators[idx] = struct{}{}
+		}
+		for i, idx := range vote2Comitte {
+			if !vote.ParticipationBitfield.Get(uint(i)) {
+				continue
+			}
+			_, exist := votingValidators[idx]
+			if exist {
+				common = append(common, idx)
+			}
+		}
+
 		// Check if the new vote with different hash overlaps a previous marked validator vote.
-		intersect := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
-		if len(intersect) != 0 {
+		if len(common) != 0 {
 			// Check if the vote matches the double vote and surround vote conditions
 			// If there is an intersection check if is a double vote
 			if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
 				// If is a double or surround vote announce it and slash.
 				if v.Data.IsSurroundVote(voteData) {
-					m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+					m.log.Warnf("found surround vote for multivalidator, reporting...")
 				}
 				if v.Data.IsDoubleVote(voteData) {
-					m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+					m.log.Warnf("found double vote for multivalidator, reporting...")
 				}
 				for _, n := range m.notifees {
 					n.NotifyIllegalVotes(&primitives.VoteSlashing{
@@ -167,8 +200,36 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	if ok {
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
 			// Check if votes overlaps voters
-			intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
-			if len(intersection) != 0 {
+
+			var votingValidators = make(map[uint64]struct{})
+			var common []uint64
+			vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+			if err != nil {
+				m.log.Error(err)
+				return
+			}
+			vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
+			if err != nil {
+				m.log.Error(err)
+				return
+			}
+			for i, idx := range vote1Comitte {
+				if !v.ParticipationBitfield.Get(uint(i)) {
+					continue
+				}
+				votingValidators[idx] = struct{}{}
+			}
+			for i, idx := range vote2Comitte {
+				if !vote.ParticipationBitfield.Get(uint(i)) {
+					continue
+				}
+				_, exist := votingValidators[idx]
+				if exist {
+					common = append(common, idx)
+				}
+			}
+
+			if len(common) != 0 {
 				// If the vote overlaps, that means a validator submitted the same vote multiple times.
 				for _, n := range m.notifees {
 					n.NotifyIllegalVotes(&primitives.VoteSlashing{
@@ -266,14 +327,44 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		}
 	}
 
-	// Check all votes against the block slot to remove expired votes
-	for voteHash, vote := range m.pool {
-		if b.Header.Slot >= vote.Data.LastSlotValid(m.params) {
-			delete(m.pool, voteHash)
-			m.removeFromOrder(voteHash)
-		}
+}
+
+func (m *voteMempool) getCurrentSlot() uint64 {
+	slot := time.Now().Sub(m.blockchain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second)
+	if slot < 0 {
+		return 0
+	}
+	return uint64(slot)
+}
+
+func (m *voteMempool) getNextVoteTime(nextSlot uint64) time.Time {
+	return m.blockchain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(m.params.SlotDuration) / 2)
+}
+
+func (m *voteMempool) cleanVotes() {
+	slotToKeep := m.getCurrentSlot() + 1
+	if slotToKeep <= 0 {
+		slotToKeep = 1
 	}
 
+	voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToKeep)))
+
+	for {
+		select {
+		case <-voteTimer.C:
+			// Check all votes against the next voting slot
+			for voteHash, vote := range m.pool {
+				if slotToKeep >= vote.Data.LastSlotValid(m.params) {
+					delete(m.pool, voteHash)
+					m.removeFromOrder(voteHash)
+				}
+			}
+			slotToKeep++
+			voteTimer = time.NewTimer(time.Until(m.getNextVoteTime(slotToKeep)))
+		case <-m.ctx.Done():
+			return
+		}
+	}
 }
 
 func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
@@ -359,7 +450,7 @@ func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParam
 	}
 
 	go vm.handleSubscription(voteSub, hostnode.GetHost().ID())
-
+	//go vm.cleanVotes()
 	return vm, nil
 }
 

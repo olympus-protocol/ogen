@@ -340,7 +340,7 @@ func TestVoteMempoolSlashing2(t *testing.T) {
 	host.EXPECT().GetHost().Return(h)
 
 	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Warnf("found surround vote for multivalidator in vote %s ...", slashedVotes[1].Vote.Data.String())
+	log.EXPECT().Warnf("found double vote for multivalidator, reporting...")
 
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetVoteCommittee(slot, params).AnyTimes().Return(voteCommitment, nil)
@@ -434,4 +434,71 @@ func TestVoteMempoolRelayed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, goodVotes[0].Vote, votes[0])
 	assert.Equal(t, 1, len(votes))
+}
+
+func TestVoteMempoolRemove(t *testing.T) {
+
+	h, err := mockNet.GenPeer()
+	assert.NoError(t, err)
+
+	g, err := pubsub.NewGossipSub(ctx, h)
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+
+	host := peers.NewMockHostNode(ctrl)
+	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host.EXPECT().GetHost().Return(h)
+
+	log := logger.NewMockLogger(ctrl)
+
+	s := state.NewMockState(ctrl)
+	s.EXPECT().GetVoteCommittee(slot, params).AnyTimes().Return(voteCommitment, nil)
+	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
+	s.EXPECT().ProcessVote(aggVote, params, uint64(1)).Return(nil)
+
+	stateService := chain.NewMockStateService(ctrl)
+	stateService.EXPECT().TipStateAtSlot(slot+params.MinAttestationInclusionDelay).AnyTimes().Return(s, nil)
+
+	ch := chain.NewMockBlockchain(ctrl)
+	ch.EXPECT().State().AnyTimes().Return(stateService)
+
+	manager := actionmanager.NewMockLastActionManager(ctrl)
+	for _, i := range voteCommitment {
+		manager.EXPECT().RegisterAction(validators[i].PubKey, dataNonce).AnyTimes()
+	}
+
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	assert.NoError(t, err)
+
+	for _, test := range goodVotes {
+		s.EXPECT().IsVoteValid(test.Vote, params).Return(nil)
+		err := pool.AddValidate(test.Vote, s)
+		assert.NoError(t, err)
+	}
+
+	votes, err := pool.Get(slot+1, s, params, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, aggVote, votes[0])
+	assert.Equal(t, 1, len(votes))
+
+	block := &primitives.Block{
+		Header:            nil,
+		Votes:             []*primitives.MultiValidatorVote{aggVote},
+		Txs:               nil,
+		Deposits:          nil,
+		Exits:             nil,
+		VoteSlashings:     nil,
+		RANDAOSlashings:   nil,
+		ProposerSlashings: nil,
+		GovernanceVotes:   nil,
+		Signature:         [96]byte{},
+		RandaoSignature:   [96]byte{},
+	}
+
+	pool.Remove(block)
+
+	votes, err = pool.Get(slot+1, s, params, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(votes))
 }

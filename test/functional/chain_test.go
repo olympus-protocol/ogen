@@ -141,11 +141,6 @@ func firstNode() {
 	// Start the server
 	go F.Start()
 
-	// Open the keystore to start generating blocks
-	err = F.Proposer().OpenKeystore()
-	if err != nil {
-		log.Fatal(err)
-	}
 	// Start the proposer
 	err = F.Proposer().Start()
 	if err != nil {
@@ -187,11 +182,6 @@ func secondNode() {
 	// Start the server
 	go B.Start()
 
-	// Open the keystore to start generating blocks
-	err = B.Proposer().OpenKeystore()
-	if err != nil {
-		log.Fatal(err)
-	}
 	// Start the proposer
 	err = B.Proposer().Start()
 	if err != nil {

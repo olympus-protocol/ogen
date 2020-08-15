@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
+	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"net/http"
@@ -160,7 +161,9 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool, lastActionManager)
+	ks := keystore.NewKeystore(configParams.DataFolder, logger)
+
+	prop, err := proposer.NewProposer(logger, &currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
 	if err != nil {
 		return nil, err
 	}
@@ -191,14 +194,6 @@ func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 	cfg := chain.Config{
 		Log:     logger,
 		Datadir: config.DataFolder,
-	}
-	return cfg
-}
-
-func loadProposerConfig(config *GlobalConfig, logger logger.Logger) proposer.Config {
-	cfg := proposer.Config{
-		Datadir: config.DataFolder,
-		Log:     logger,
 	}
 	return cfg
 }
