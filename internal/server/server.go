@@ -41,8 +41,8 @@ type GlobalConfig struct {
 }
 type Mempools struct {
 	Votes   mempool.VoteMempool
-	Coins   *mempool.CoinsMempool
-	Actions *mempool.ActionMempool
+	Coins   mempool.CoinsMempool
+	Actions mempool.ActionMempool
 }
 
 // Server is the main struct that contains ogen services

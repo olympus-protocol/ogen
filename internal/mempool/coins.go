@@ -56,8 +56,17 @@ func newCoinMempoolItem() *coinMempoolItem {
 	}
 }
 
-// CoinsMempool represents a mempool for coin transactions.
-type CoinsMempool struct {
+// CoinsMempool is an interface for coinMempool
+type CoinsMempool interface {
+	Add(item primitives.Tx, state *primitives.CoinsState) error
+	RemoveByBlock(b *primitives.Block)
+	Get(maxTransactions uint64, state state.State) ([]*primitives.Tx, state.State)
+}
+
+var _ CoinsMempool = &coinsMempool{}
+
+// coinsMempool represents a mempool for coin transactions.
+type coinsMempool struct {
 	blockchain chain.Blockchain
 	hostNode   peers.HostNode
 	params     *params.ChainParams
@@ -72,7 +81,7 @@ type CoinsMempool struct {
 }
 
 // Add adds an item to the coins mempool.
-func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) error {
+func (cm *coinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	fpkh, err := item.FromPubkeyHash()
@@ -101,7 +110,7 @@ func (cm *CoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) er
 }
 
 // RemoveByBlock removes transactions that were in an accepted block.
-func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
+func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	for _, tx := range b.Txs {
@@ -121,7 +130,7 @@ func (cm *CoinsMempool) RemoveByBlock(b *primitives.Block) {
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *CoinsMempool) Get(maxTransactions uint64, state state.State) ([]*primitives.Tx, state.State) {
+func (cm *coinsMempool) Get(maxTransactions uint64, state state.State) ([]*primitives.Tx, state.State) {
 	cm.lock.RLock()
 	defer cm.lock.RUnlock()
 	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
@@ -151,7 +160,7 @@ outer:
 // 	}
 // }
 
-func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
+func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(cm.ctx)
 		if err != nil {
@@ -187,7 +196,7 @@ func (cm *CoinsMempool) handleSubscription(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (*CoinsMempool, error) {
+func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (CoinsMempool, error) {
 	topic, err := hostNode.Topic("tx")
 	if err != nil {
 		return nil, err
@@ -203,7 +212,7 @@ func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain
 		return nil, err
 	}
 
-	cm := &CoinsMempool{
+	cm := &coinsMempool{
 		mempool:    make(map[[20]byte]*coinMempoolItem),
 		balances:   make(map[[20]byte]uint64),
 		ctx:        ctx,

@@ -350,7 +350,7 @@ func Test_Validator_GetValidatorsList(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.IsType(t, &proto.ValidatorsRegistry{}, res)
 	// should be same length
-	valkeys, err := S.Proposer.Keystore.GetValidatorKeys()
+	valkeys, err := S.Proposer.Keystore().GetValidatorKeys()
 	assert.NoError(t, err)
 	assert.Equal(t, len(valkeys), len(res.Validators))
 }
@@ -587,8 +587,7 @@ func Test_Wallet_GetBalance(t *testing.T) {
 	responseBalance, err := strconv.Atoi(res.Confirmed)
 	assert.NoError(t, err)
 
-
-	assert.Equal(t, accBalance, uint64(responseBalance) * 1e8)
+	assert.Equal(t, accBalance, uint64(responseBalance)*1e8)
 }
 
 func Test_Wallet_GetValidators(t *testing.T) {
