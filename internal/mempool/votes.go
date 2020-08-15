@@ -10,7 +10,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/internal/state"
-	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -137,33 +136,23 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 		intersect := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
 		if len(intersect) != 0 {
 			// Check if the vote matches the double vote and surround vote conditions
-			//if v.Data.IsSurroundVote(voteData) {
-			//	m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-			//	for _, n := range m.notifees {
-			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-			//			Vote1: vote,
-			//			Vote2: v,
-			//		})
-			//	}
-			//	return
-			//}
 			// If there is an intersection check if is a double vote
-			//if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
-			// If is a double or surround vote announce it and slash.
-			//	if v.Data.IsSurroundVote(voteData) {
-			//		m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-			//	}
-			//	if v.Data.IsDoubleVote(voteData) {
-			//		m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
-			//	}
-			//	for _, n := range m.notifees {
-			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-			//			Vote1: vote,
-			//			Vote2: v,
-			//		})
-			//	}
-			//	return
-			//}
+			if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
+				// If is a double or surround vote announce it and slash.
+				if v.Data.IsSurroundVote(voteData) {
+					m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
+				}
+				if v.Data.IsDoubleVote(voteData) {
+					m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
+				}
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: vote,
+						Vote2: v,
+					})
+				}
+				return
+			}
 		}
 	}
 
@@ -176,32 +165,24 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	v, ok := m.pool[voteHash]
 
 	if ok {
-
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
-			// TODO fix slashing condition
-
 			// Check if votes overlaps voters
-			//intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
-			//if len(intersection) != 0 {
-			// If the vote overlaps, that means a validator submitted the same vote multiple times.
-			//	for _, n := range m.notifees {
-			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-			//			Vote1: vote,
-			//			Vote2: v,
-			//		})
-			//	}
-			//	return
-			//}
-
-			newVote := &primitives.MultiValidatorVote{
-				Data:                  v.Data,
-				ParticipationBitfield: bitfield.NewBitlist(uint64(len(committee))),
+			intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
+			if len(intersection) != 0 {
+				// If the vote overlaps, that means a validator submitted the same vote multiple times.
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: vote,
+						Vote2: v,
+					})
+				}
+				return
 			}
 
-			for i := range committee {
-				if v.ParticipationBitfield.Get(uint(i)) || vote.ParticipationBitfield.Get(uint(i)) {
-					newVote.ParticipationBitfield.Set(uint(i))
-				}
+			newBitfield, err := v.ParticipationBitfield.Merge(vote.ParticipationBitfield)
+			if err != nil {
+				m.log.Error(err)
+				return
 			}
 
 			newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{v.Sig, vote.Sig})
@@ -213,7 +194,12 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			var voteSig [96]byte
 			copy(voteSig[:], newVoteSig.Marshal())
 
-			newVote.Sig = voteSig
+			newVote := &primitives.MultiValidatorVote{
+				Data:                  v.Data,
+				ParticipationBitfield: newBitfield,
+				Sig:                   voteSig,
+			}
+
 			m.pool[voteHash] = newVote
 		}
 	} else {
@@ -297,7 +283,6 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
 		}
-
 		vote := new(primitives.MultiValidatorVote)
 
 		if err := vote.Unmarshal(msg.Data); err != nil {

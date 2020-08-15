@@ -19,12 +19,11 @@ import (
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 type votesTest struct {
-	Vote     *primitives.MultiValidatorVote
-	Expected error
-	Case     string
+	Vote *primitives.MultiValidatorVote
 }
 
 // ctx is the global context used for the entire test
@@ -32,9 +31,6 @@ var ctx = context.Background()
 
 // mockNet is a mock network used for PubSubs from libp2p
 var mockNet = mocknet.New(ctx)
-
-// pool is a real pool create to test production scenarios
-var pool mempool.VoteMempool
 
 // validatorKeys is a slice of signatures that match the validators index
 var validatorKeys []*bls.SecretKey
@@ -45,19 +41,20 @@ var validators []*primitives.Validator
 // genesisHash is just a random hash to set as genesis hash.
 var genesisHash chainhash.Hash
 
-// realState is a real state to compare production validations.
-var realState state.State
-
 // params are the params used on the test
 var params = &testdata.IntTestParams
 
 // voteCommitment this mocks the state expected votes by validator index.
 // For testing, we just use an slice of 50 validators, vote commitment should be 20% of the total mock registry.
-var voteCommitment = []uint64{1, 3, 5, 10, 11, 15, 30, 32, 45, 50}
+var voteCommitment = []uint64{1, 3, 5, 10, 11, 15, 30, 32, 45, 49}
 
-// tests is an slice of tests the pool should pass.
-// Since involves signature, aggregation and secret generation we can't pre-fill them.
-var tests []votesTest
+var goodVotes []votesTest
+
+var slashedVotes []votesTest
+
+var slot uint64 = 10
+var dataNonce uint64 = 10
+var aggVote *primitives.MultiValidatorVote
 
 func init() {
 	f := fuzz.New().NilChance(0)
@@ -77,111 +74,154 @@ func init() {
 		validators = append(validators, val)
 	}
 
-	realState = state.NewState(primitives.CoinsState{}, validators, genesisHash, params)
+	voteData := &primitives.VoteData{
+		Slot:            slot,
+		FromEpoch:       0,
+		FromHash:        genesisHash,
+		ToEpoch:         11,
+		ToHash:          genesisHash,
+		BeaconBlockHash: [32]byte{},
+		Nonce:           dataNonce,
+	}
 
-	tests = append(tests, votesTest{
+	voteDataSlash := &primitives.VoteData{
+		Slot:            slot,
+		FromEpoch:       0,
+		FromHash:        genesisHash,
+		ToEpoch:         11,
+		ToHash:          genesisHash,
+		BeaconBlockHash: [32]byte{1,2,3},
+		Nonce:           dataNonce,
+	}
+
+	voteDataHash := voteData.Hash()
+	voteDataSlashHash := voteDataSlash.Hash()
+
+	var sigs1 [][96]byte
+	var sigs2 [][96]byte
+	var sigsSlash1 [][96]byte
+	var sigsSlash2 [][96]byte
+
+	bf1 := bitfield.NewBitlist(uint64(len(voteCommitment)))
+	bf2 := bitfield.NewBitlist(uint64(len(voteCommitment)))
+	bfSlash := bitfield.NewBitlist(uint64(len(voteCommitment)))
+
+	for i, idx := range voteCommitment {
+
+		if i == 0 || i == 2 || i == 4 || i == 7 || i == 9 {
+
+			key := validatorKeys[idx]
+			bfSlash.Set(uint(i))
+
+			var sigB1 [96]byte
+			sig1 := key.Sign(voteDataHash[:]).Marshal()
+			copy(sigB1[:], sig1)
+			sigsSlash1 = append(sigsSlash1, sigB1)
+
+			var sigB2 [96]byte
+			sig2 := key.Sign(voteDataSlashHash[:]).Marshal()
+			copy(sigB2[:], sig2)
+			sigsSlash2 = append(sigsSlash2, sigB2)
+		}
+
+		if i < 5 {
+			key := validatorKeys[idx]
+			bf1.Set(uint(i))
+			var sigB [96]byte
+			sig := key.Sign(voteDataHash[:]).Marshal()
+			copy(sigB[:], sig)
+			sigs1 = append(sigs1, sigB)
+		} else {
+			key := validatorKeys[idx]
+			bf2.Set(uint(i))
+			var sigB [96]byte
+			sig := key.Sign(voteDataHash[:]).Marshal()
+			copy(sigB[:], sig)
+			sigs2 = append(sigs2, sigB)
+		}
+
+	}
+
+	var sigB1 [96]byte
+	var sigB2 [96]byte
+	var sigSlashB1 [96]byte
+	var sigSlashB2 [96]byte
+
+	sig1, err := bls.AggregateSignaturesBytes(sigs1)
+	if err != nil {
+		panic(err)
+	}
+	sig2, err := bls.AggregateSignaturesBytes(sigs2)
+	if err != nil {
+		panic(err)
+	}
+	sigSlash1, err := bls.AggregateSignaturesBytes(sigsSlash1)
+	if err != nil {
+		panic(err)
+	}
+	sigSlash2, err := bls.AggregateSignaturesBytes(sigsSlash2)
+	if err != nil {
+		panic(err)
+	}
+
+	copy(sigB1[:], sig1.Marshal())
+	copy(sigB2[:], sig2.Marshal())
+	copy(sigSlashB1[:], sigSlash1.Marshal())
+	copy(sigSlashB2[:], sigSlash2.Marshal())
+
+	goodVotes = append(goodVotes, votesTest{
 		Vote: &primitives.MultiValidatorVote{
-			Data:                  nil,
-			Sig:                   [96]byte{1, 2, 3},
-			ParticipationBitfield: bitfield.NewBitlist(1),
+			Data:                  voteData,
+			Sig:                   sigB1,
+			ParticipationBitfield: bf1,
 		},
-		Expected: state.ErrorVoteEmpty,
-		Case:     "Try to validate a vote with null vote data",
 	})
 
-	tests = append(tests, votesTest{
+	goodVotes = append(goodVotes, votesTest{
 		Vote: &primitives.MultiValidatorVote{
-			Data: &primitives.VoteData{
-				Slot:            1,
-				FromEpoch:       0,
-				FromHash:        [32]byte{},
-				ToEpoch:         0,
-				ToHash:          [32]byte{},
-				BeaconBlockHash: [32]byte{},
-				Nonce:           0,
-			},
-			Sig:                   [96]byte{1, 2, 3},
-			ParticipationBitfield: nil,
+			Data:                  voteData,
+			Sig:                   sigB2,
+			ParticipationBitfield: bf2,
 		},
-		Expected: state.ErrorVoteEmpty,
-		Case:     "Try to validate a vote with null bitfield information",
 	})
 
-	tests = append(tests, votesTest{
+	slashedVotes = append(slashedVotes, votesTest{
 		Vote: &primitives.MultiValidatorVote{
-			Data: &primitives.VoteData{
-				Slot:            1,
-				FromEpoch:       0,
-				FromHash:        [32]byte{},
-				ToEpoch:         0,
-				ToHash:          [32]byte{},
-				BeaconBlockHash: [32]byte{},
-				Nonce:           0,
-			},
-			Sig:                   [96]byte{},
-			ParticipationBitfield: bitfield.NewBitlist(1),
+			Data:                  voteData,
+			Sig:                   sigSlashB1,
+			ParticipationBitfield: bfSlash,
 		},
-		Expected: state.ErrorVoteEmpty,
-		Case:     "Try to validate a with null signature",
 	})
 
-	tests = append(tests, votesTest{
+	slashedVotes = append(slashedVotes, votesTest{
 		Vote: &primitives.MultiValidatorVote{
-			Data: &primitives.VoteData{
-				Slot:            0,
-				FromEpoch:       0,
-				FromHash:        [32]byte{},
-				ToEpoch:         0,
-				ToHash:          [32]byte{},
-				BeaconBlockHash: [32]byte{},
-				Nonce:           0,
-			},
-			Sig:                   [96]byte{1, 2, 3},
-			ParticipationBitfield: bitfield.NewBitlist(1),
+			Data:                  voteDataSlash,
+			Sig:                   sigSlashB2,
+			ParticipationBitfield: bfSlash,
 		},
-		Expected: state.ErrorVoteSlot,
-		Case:     "Try to validate a with a wrong slot",
 	})
 
-	tests = append(tests, votesTest{
-		Vote: &primitives.MultiValidatorVote{
-			Data: &primitives.VoteData{
-				Slot:            1,
-				FromEpoch:       1,
-				FromHash:        [32]byte{},
-				ToEpoch:         0,
-				ToHash:          [32]byte{},
-				BeaconBlockHash: [32]byte{},
-				Nonce:           0,
-			},
-			Sig:                   [96]byte{1, 2, 3},
-			ParticipationBitfield: bitfield.NewBitlist(1),
-		},
-		Expected: state.ErrorFromEpoch,
-		Case:     "Try to validate a vote that uses a wrong from epoch slot",
-	})
+	aggSig, err := bls.AggregateSignaturesBytes([][96]byte{sigB1, sigB2})
+	if err != nil {
+		panic(err)
+	}
 
-	tests = append(tests, votesTest{
-		Vote: &primitives.MultiValidatorVote{
-			Data: &primitives.VoteData{
-				Slot:            1,
-				FromEpoch:       0,
-				FromHash:        [32]byte{},
-				ToEpoch:         0,
-				ToHash:          [32]byte{},
-				BeaconBlockHash: [32]byte{},
-				Nonce:           0,
-			},
-			Sig:                   [96]byte{1, 2, 3},
-			ParticipationBitfield: bitfield.NewBitlist(1),
-		},
-		Expected: state.ErrorJustifiedHash,
-		Case:     "Try to validate a vote uses a wrong from hash",
-	})
+	var aggSigBytes [96]byte
+	copy(aggSigBytes[:], aggSig.Marshal())
 
+	mbf, err := bf1.Merge(bf2)
+	if err != nil {
+		panic(err)
+	}
+
+	aggVote = &primitives.MultiValidatorVote{
+		Data:                  voteData,
+		Sig:                   aggSigBytes,
+		ParticipationBitfield: mbf,
+	}
 }
 
-func TestNewVoteMempool(t *testing.T) {
+func TestVoteMempoolAggregation(t *testing.T) {
 
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
@@ -196,24 +236,202 @@ func TestNewVoteMempool(t *testing.T) {
 	host.EXPECT().GetHost().Return(h)
 
 	log := logger.NewMockLogger(ctrl)
+
+	s := state.NewMockState(ctrl)
+	s.EXPECT().GetVoteCommittee(slot, params).AnyTimes().Return(voteCommitment, nil)
+	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
+	s.EXPECT().ProcessVote(aggVote, params, uint64(1)).Return(nil)
+
+	stateService := chain.NewMockStateService(ctrl)
+	stateService.EXPECT().TipStateAtSlot(slot+params.MinAttestationInclusionDelay).AnyTimes().Return(s, nil)
+
 	ch := chain.NewMockBlockchain(ctrl)
+	ch.EXPECT().State().AnyTimes().Return(stateService)
+
 	manager := actionmanager.NewMockLastActionManager(ctrl)
-
-	pool, err = mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
-	assert.NoError(t, err)
-}
-
-func TestVoteMempool_AddValidate(t *testing.T) {
-	s := state.NewMockState(gomock.NewController(t))
-	s.EXPECT().GetVoteCommittee(10, params).Return(voteCommitment, nil)
-	for _, test := range tests {
-		s.EXPECT().IsVoteValid(test.Vote, params).Return(realState.IsVoteValid(test.Vote, params))
-		err := pool.AddValidate(test.Vote, s)
-		assert.Equal(t, test.Expected, err, test.Case)
+	for _, i := range voteCommitment {
+		manager.EXPECT().RegisterAction(validators[i].PubKey, dataNonce).AnyTimes()
 	}
 
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	assert.NoError(t, err)
+
+	for _, test := range goodVotes {
+		s.EXPECT().IsVoteValid(test.Vote, params).Return(nil)
+		err := pool.AddValidate(test.Vote, s)
+		assert.NoError(t, err)
+	}
+
+	votes, err := pool.Get(slot+1, s, params, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, aggVote, votes[0])
+	assert.Equal(t, 1, len(votes))
 }
 
-func TestVoteMempool_Add(t *testing.T) {
+func TestVoteMempoolSlashing1(t *testing.T) {
 
+	h, err := mockNet.GenPeer()
+	assert.NoError(t, err)
+
+	g, err := pubsub.NewGossipSub(ctx, h)
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+
+	host := peers.NewMockHostNode(ctrl)
+	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host.EXPECT().GetHost().Return(h)
+
+	log := logger.NewMockLogger(ctrl)
+
+	s := state.NewMockState(ctrl)
+	s.EXPECT().GetVoteCommittee(slot, params).AnyTimes().Return(voteCommitment, nil)
+	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
+	s.EXPECT().ProcessVote(goodVotes[0].Vote, params, uint64(1)).Return(nil)
+
+	stateService := chain.NewMockStateService(ctrl)
+	stateService.EXPECT().TipStateAtSlot(slot+params.MinAttestationInclusionDelay).AnyTimes().Return(s, nil)
+
+	ch := chain.NewMockBlockchain(ctrl)
+	ch.EXPECT().State().AnyTimes().Return(stateService)
+
+	manager := actionmanager.NewMockLastActionManager(ctrl)
+	for _, i := range voteCommitment {
+		manager.EXPECT().RegisterAction(validators[i].PubKey, dataNonce).AnyTimes()
+	}
+
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	assert.NoError(t, err)
+
+	slashNotify := mempool.NewMockVoteSlashingNotifee(ctrl)
+	slashNotify.EXPECT().NotifyIllegalVotes(&primitives.VoteSlashing{
+		Vote1: slashedVotes[0].Vote,
+		Vote2: goodVotes[0].Vote,
+	})
+	pool.Notify(slashNotify)
+
+	// First we submit the first vote twice to confirm that mempool rejects equal votes
+	s.EXPECT().IsVoteValid(goodVotes[0].Vote, params).Return(nil)
+	err = pool.AddValidate(goodVotes[0].Vote, s)
+	assert.NoError(t, err)
+
+	s.EXPECT().IsVoteValid(slashedVotes[0].Vote, params).Return(nil)
+	err = pool.AddValidate(slashedVotes[0].Vote, s)
+	assert.NoError(t, err)
+
+	votes, err := pool.Get(slot+1, s, params, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, goodVotes[0].Vote, votes[0])
+	assert.Equal(t, 1, len(votes))
+}
+
+func TestVoteMempoolSlashing2(t *testing.T) {
+
+	h, err := mockNet.GenPeer()
+	assert.NoError(t, err)
+
+	g, err := pubsub.NewGossipSub(ctx, h)
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+
+	host := peers.NewMockHostNode(ctrl)
+	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host.EXPECT().GetHost().Return(h)
+
+	log := logger.NewMockLogger(ctrl)
+	log.EXPECT().Warnf("found surround vote for multivalidator in vote %s ...", slashedVotes[1].Vote.Data.String())
+
+	s := state.NewMockState(ctrl)
+	s.EXPECT().GetVoteCommittee(slot, params).AnyTimes().Return(voteCommitment, nil)
+	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
+	s.EXPECT().ProcessVote(goodVotes[0].Vote, params, uint64(1)).Return(nil)
+
+	stateService := chain.NewMockStateService(ctrl)
+	stateService.EXPECT().TipStateAtSlot(slot+params.MinAttestationInclusionDelay).AnyTimes().Return(s, nil)
+
+	ch := chain.NewMockBlockchain(ctrl)
+	ch.EXPECT().State().AnyTimes().Return(stateService)
+
+	manager := actionmanager.NewMockLastActionManager(ctrl)
+	for _, i := range voteCommitment {
+		manager.EXPECT().RegisterAction(validators[i].PubKey, dataNonce).AnyTimes()
+	}
+
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	assert.NoError(t, err)
+
+	slashNotify := mempool.NewMockVoteSlashingNotifee(ctrl)
+	slashNotify.EXPECT().NotifyIllegalVotes(&primitives.VoteSlashing{
+		Vote1: slashedVotes[1].Vote,
+		Vote2: goodVotes[0].Vote,
+	})
+	pool.Notify(slashNotify)
+
+	// First we submit the first vote twice to confirm that mempool rejects equal votes
+	s.EXPECT().IsVoteValid(goodVotes[0].Vote, params).Return(nil)
+	err = pool.AddValidate(goodVotes[0].Vote, s)
+	assert.NoError(t, err)
+
+	s.EXPECT().IsVoteValid(slashedVotes[1].Vote, params).Return(nil)
+	err = pool.AddValidate(slashedVotes[1].Vote, s)
+	assert.NoError(t, err)
+
+	votes, err := pool.Get(slot+1, s, params, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, goodVotes[0].Vote, votes[0])
+	assert.Equal(t, 1, len(votes))
+}
+
+func TestVoteMempoolRelayed(t *testing.T) {
+
+	h, err := mockNet.GenPeer()
+	assert.NoError(t, err)
+
+	g, err := pubsub.NewGossipSub(ctx, h)
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+
+	host := peers.NewMockHostNode(ctrl)
+	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host.EXPECT().GetHost().Return(h)
+
+	log := logger.NewMockLogger(ctrl)
+
+	s := state.NewMockState(ctrl)
+	s.EXPECT().GetVoteCommittee(slot, params).AnyTimes().Return(voteCommitment, nil)
+	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
+	s.EXPECT().ProcessVote(goodVotes[0].Vote, params, uint64(1)).Return(nil)
+
+	stateService := chain.NewMockStateService(ctrl)
+	stateService.EXPECT().TipStateAtSlot(slot+params.MinAttestationInclusionDelay).AnyTimes().Return(s, nil)
+
+	ch := chain.NewMockBlockchain(ctrl)
+	ch.EXPECT().State().AnyTimes().Return(stateService)
+
+	manager := actionmanager.NewMockLastActionManager(ctrl)
+	for _, i := range voteCommitment {
+		manager.EXPECT().RegisterAction(validators[i].PubKey, dataNonce).AnyTimes()
+	}
+
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	assert.NoError(t, err)
+
+	slashNotify := mempool.NewMockVoteSlashingNotifee(ctrl)
+	pool.Notify(slashNotify)
+
+	// First we submit the first vote twice to confirm that mempool rejects equal votes
+	s.EXPECT().IsVoteValid(goodVotes[0].Vote, params).Return(nil)
+	err = pool.AddValidate(goodVotes[0].Vote, s)
+	assert.NoError(t, err)
+
+	s.EXPECT().IsVoteValid(goodVotes[0].Vote, params).Return(nil)
+	err = pool.AddValidate(goodVotes[0].Vote, s)
+	assert.NoError(t, err)
+	time.Sleep(time.Second * 1)
+	votes, err := pool.Get(slot+1, s, params, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, goodVotes[0].Vote, votes[0])
+	assert.Equal(t, 1, len(votes))
 }
