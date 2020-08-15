@@ -14,7 +14,7 @@ type BlockchainNotifee interface {
 }
 
 // Notify registers a notifee to be notified.
-func (ch *Blockchain) Notify(n BlockchainNotifee) {
+func (ch *blockchain) Notify(n BlockchainNotifee) {
 	ch.notifeeLock.Lock()
 	defer ch.notifeeLock.Unlock()
 
@@ -22,7 +22,7 @@ func (ch *Blockchain) Notify(n BlockchainNotifee) {
 }
 
 // Unnotify unregisters a notifee to be notified.
-func (ch *Blockchain) Unnotify(n BlockchainNotifee) {
+func (ch *blockchain) Unnotify(n BlockchainNotifee) {
 	ch.notifeeLock.Lock()
 	defer ch.notifeeLock.Unlock()
 

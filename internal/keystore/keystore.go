@@ -39,7 +39,7 @@ type Keystore struct {
 	// db is a reference to the bbolt database
 	db *bbolt.DB
 	// log is a reference to the global logger
-	log *logger.Logger
+	log logger.LoggerInterface
 	// datadir is the folder where the database is located
 	datadir string
 	// open prevents accessing the database when is closed
@@ -158,7 +158,7 @@ func (k *Keystore) Close() error {
 }
 
 // NewKeystore creates a new keystore instance.
-func NewKeystore(datadir string, log *logger.Logger) *Keystore {
+func NewKeystore(datadir string, log logger.LoggerInterface) *Keystore {
 	return &Keystore{
 		log:     log,
 		open:    false,

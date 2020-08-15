@@ -35,7 +35,7 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock *primitives.State) *stat
 	}
 }
 
-func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams, log *logger.Logger) (*primitives.State, []*primitives.EpochReceipt, error) {
+func (s *stateDerivedFromBlock) deriveState(slot uint64, view primitives.BlockView, p *params.ChainParams, log logger.LoggerInterface) (*primitives.State, []*primitives.EpochReceipt, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -77,7 +77,7 @@ type blockNodeAndState struct {
 // StateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
 // get rid of old states.
 type StateService struct {
-	log    *logger.Logger
+	log    logger.LoggerInterface
 	lock   sync.RWMutex
 	params params.ChainParams
 	db     blockdb.DB
@@ -321,7 +321,7 @@ func (s *StateService) TipStateAtSlot(slot uint64) (*primitives.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log *logger.Logger, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
+func NewStateService(log logger.LoggerInterface, ip primitives.InitializationParameters, params params.ChainParams, db blockdb.DB) (*StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock(params)
 	genesisHash := genesisBlock.Hash()
 

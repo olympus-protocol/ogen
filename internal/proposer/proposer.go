@@ -24,34 +24,48 @@ import (
 // Config is a config for the proposer.
 type Config struct {
 	Datadir string
-	Log     *logger.Logger
+	Log     logger.LoggerInterface
 }
 
-// Proposer manages mining for the blockchain.
-type Proposer struct {
-	log        *logger.Logger
+// Proposer is the interface for proposer
+type Proposer interface {
+	OpenKeystore() (err error)
+	NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt)
+	ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing)
+	ProposeBlocks()
+	VoteForBlocks()
+	Start() error
+	Stop()
+	Keystore() *keystore.Keystore
+}
+
+var _ Proposer = &proposer{}
+
+// proposer manages mining for the blockchain.
+type proposer struct {
+	log        logger.LoggerInterface
 	config     Config
 	params     params.ChainParams
-	chain      *chain.Blockchain
-	Keystore   *keystore.Keystore
+	chain      chain.Blockchain
+	keystore   *keystore.Keystore
 	mineActive bool
 	context    context.Context
-	Stop       context.CancelFunc
+	stop       context.CancelFunc
 
 	voteMempool    *mempool.VoteMempool
-	coinsMempool   *mempool.CoinsMempool
-	actionsMempool *mempool.ActionMempool
-	hostnode       *peers.HostNode
+	coinsMempool   mempool.CoinsMempool
+	actionsMempool mempool.ActionMempool
+	hostnode       peers.HostNode
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
 
-	lastActionManager *actionmanager.LastActionManager
+	lastActionManager actionmanager.LastActionManager
 }
 
 // OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
-func (p *Proposer) OpenKeystore() (err error) {
-	p.Keystore = keystore.NewKeystore(p.config.Datadir, p.log)
-	err = p.Keystore.OpenKeystore()
+func (p *proposer) OpenKeystore() (err error) {
+	p.keystore = keystore.NewKeystore(p.config.Datadir, p.log)
+	err = p.keystore.OpenKeystore()
 	if err != nil {
 		return err
 	}
@@ -59,7 +73,7 @@ func (p *Proposer) OpenKeystore() (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain *chain.Blockchain, hostnode *peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager *actionmanager.LastActionManager) (proposer *Proposer, err error) {
+func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -71,14 +85,14 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		cancel()
 		return nil, err
 	}
-	proposer = &Proposer{
+	prop := &proposer{
 		log:               config.Log,
 		config:            config,
 		params:            params,
 		chain:             chain,
 		mineActive:        true,
 		context:           ctx,
-		Stop:              cancel,
+		stop:              cancel,
 		voteMempool:       voteMempool,
 		coinsMempool:      coinsMempool,
 		actionsMempool:    actionsMempool,
@@ -87,18 +101,18 @@ func NewProposer(config Config, params params.ChainParams, chain *chain.Blockcha
 		voteTopic:         voteTopic,
 		lastActionManager: manager,
 	}
-	chain.Notify(proposer)
-	return proposer, nil
+	chain.Notify(prop)
+	return prop, nil
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (p *Proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
+func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
 	p.voteMempool.Remove(block)
 	p.coinsMempool.RemoveByBlock(block)
 	p.actionsMempool.RemoveByBlock(block, newState)
 }
 
-func (p *Proposer) getCurrentSlot() uint64 {
+func (p *proposer) getCurrentSlot() uint64 {
 	slot := time.Now().Sub(p.chain.GenesisTime()) / (time.Duration(p.params.SlotDuration) * time.Second)
 	if slot < 0 {
 		return 0
@@ -107,16 +121,16 @@ func (p *Proposer) getCurrentSlot() uint64 {
 }
 
 // getNextSlotTime gets the next slot time.
-func (p *Proposer) getNextBlockTime(nextSlot uint64) time.Time {
+func (p *proposer) getNextBlockTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second)
 }
 
 // getNextSlotTime gets the next slot time.
-func (p *Proposer) getNextVoteTime(nextSlot uint64) time.Time {
+func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
 }
 
-func (p *Proposer) publishVotes(v *primitives.MultiValidatorVote) {
+func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
 	buf, err := v.Marshal()
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
@@ -128,7 +142,7 @@ func (p *Proposer) publishVotes(v *primitives.MultiValidatorVote) {
 	}
 }
 
-func (p *Proposer) publishBlock(block *primitives.Block) {
+func (p *proposer) publishBlock(block *primitives.Block) {
 	buf, err := block.Marshal()
 	if err != nil {
 		p.log.Error(err)
@@ -141,9 +155,9 @@ func (p *Proposer) publishBlock(block *primitives.Block) {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (p *Proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
+func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
-func (p *Proposer) ProposeBlocks() {
+func (p *proposer) ProposeBlocks() {
 	slotToPropose := p.getCurrentSlot() + 1
 
 	blockTimer := time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -171,7 +185,7 @@ func (p *Proposer) ProposeBlocks() {
 			proposerIndex := state.ProposerQueue[slotIndex]
 			proposer := state.ValidatorRegistry[proposerIndex]
 
-			if k, found := p.Keystore.GetValidatorKey(proposer.PubKey); found {
+			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
 
 				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
 					continue
@@ -277,7 +291,7 @@ func (p *Proposer) ProposeBlocks() {
 	}
 }
 
-func (p *Proposer) VoteForBlocks() {
+func (p *proposer) VoteForBlocks() {
 	slotToVote := p.getCurrentSlot() + 1
 	if slotToVote <= 0 {
 		slotToVote = 1
@@ -339,7 +353,7 @@ func (p *Proposer) VoteForBlocks() {
 
 			for i, validatorIdx := range validators {
 				validator := state.ValidatorRegistry[validatorIdx]
-				if k, found := p.Keystore.GetValidatorKey(validator.PubKey); found {
+				if k, found := p.keystore.GetValidatorKey(validator.PubKey); found {
 					if !p.lastActionManager.ShouldRun(validator.PubKey) {
 						return
 					}
@@ -376,11 +390,11 @@ func (p *Proposer) VoteForBlocks() {
 }
 
 // Start runs the proposer.
-func (p *Proposer) Start() error {
+func (p *proposer) Start() error {
 	numOurs := 0
 	numTotal := 0
 	for _, w := range p.chain.State().TipState().ValidatorRegistry {
-		secKey, ok := p.Keystore.GetValidatorKey(w.PubKey)
+		secKey, ok := p.keystore.GetValidatorKey(w.PubKey)
 		if ok {
 			numOurs++
 		}
@@ -399,4 +413,12 @@ func (p *Proposer) Start() error {
 	go p.ProposeBlocks()
 
 	return nil
+}
+
+func (p *proposer) Stop() {
+	p.stop()
+}
+
+func (p *proposer) Keystore() *keystore.Keystore {
+	return p.keystore
 }

@@ -25,7 +25,7 @@ var (
 	walletNonceDbKey    = []byte("nonce")
 )
 
-func (w *Wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhash chainhash.Hash) error {
+func (w *wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhash chainhash.Hash) error {
 	return w.db.Update(func(tx *bbolt.Tx) error {
 		keybkt, err := tx.CreateBucket(walletKeyBucket)
 		if err != nil {
@@ -66,7 +66,7 @@ func (w *Wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhas
 	})
 }
 
-func (w *Wallet) getSecret(password string) (key *bls.SecretKey, err error) {
+func (w *wallet) getSecret(password string) (key *bls.SecretKey, err error) {
 	err = w.db.View(func(tx *bbolt.Tx) error {
 
 		infobkt := tx.Bucket(walletInfoBucket)

@@ -127,7 +127,7 @@ func Test_OpenWalletWithWrongPassword(t *testing.T) {
 	clean()
 }
 
-func createWallet(close bool) (*wallet.Wallet, error) {
+func createWallet(close bool) (wallet.Wallet, error) {
 	walletMan, err := wallet.NewWallet(context.Background(), nil, "./", &params.Mainnet, nil, nil, nil, nil)
 	if err != nil {
 		return nil, err

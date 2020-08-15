@@ -13,7 +13,7 @@ import (
 )
 
 type utilsServer struct {
-	proposer     *proposer.Proposer
+	proposer     proposer.Proposer
 	txTopic      *pubsub.Topic
 	depositTopic *pubsub.Topic
 	exitTopic    *pubsub.Topic
@@ -33,7 +33,7 @@ func (s *utilsServer) StartProposer(ctx context.Context, in *proto.Empty) (*prot
 }
 func (s *utilsServer) StopProposer(ctx context.Context, _ *proto.Empty) (*proto.Success, error) {
 	s.proposer.Stop()
-	err := s.proposer.Keystore.Close()
+	err := s.proposer.Keystore().Close()
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
@@ -45,7 +45,7 @@ func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidato
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.proposer.Keystore.GenerateNewValidatorKey(in.Keys)
+	key, err := s.proposer.Keystore().GenerateNewValidatorKey(in.Keys)
 	if err != nil {
 		return nil, err
 	}

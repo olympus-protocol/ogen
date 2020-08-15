@@ -19,7 +19,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error {
+func (ch *blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.EpochIndex)
@@ -88,7 +88,7 @@ func (ch *Blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible 
 	}
 }
 
-func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *chainindex.BlockRow, err error) {
+func (ch *blockchain) getLatestAttestationTarget(validator uint64) (row *chainindex.BlockRow, err error) {
 	var att *primitives.MultiValidatorVote
 	att, ok := ch.state.GetLatestVote(validator)
 	if !ok {
@@ -103,7 +103,7 @@ func (ch *Blockchain) getLatestAttestationTarget(validator uint64) (row *chainin
 }
 
 // ProcessBlock processes an incoming block from a peer or the miner.
-func (ch *Blockchain) ProcessBlock(block *primitives.Block) error {
+func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 	// b. get parent block
 	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
