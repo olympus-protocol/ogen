@@ -53,8 +53,8 @@ type proposer struct {
 	stop       context.CancelFunc
 
 	voteMempool    *mempool.VoteMempool
-	coinsMempool   *mempool.CoinsMempool
-	actionsMempool *mempool.ActionMempool
+	coinsMempool   mempool.CoinsMempool
+	actionsMempool mempool.ActionMempool
 	hostnode       peers.HostNode
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
@@ -73,7 +73,7 @@ func (p *proposer) OpenKeystore() (err error) {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool *mempool.CoinsMempool, actionsMempool *mempool.ActionMempool, manager actionmanager.LastActionManager) (Proposer, error) {
+func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {

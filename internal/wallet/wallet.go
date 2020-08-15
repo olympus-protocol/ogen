@@ -48,8 +48,8 @@ type wallet struct {
 	log           logger.LoggerInterface
 	chain         chain.Blockchain
 	txTopic       *pubsub.Topic
-	mempool       *mempool.CoinsMempool
-	actionMempool *mempool.ActionMempool
+	mempool       mempool.CoinsMempool
+	actionMempool mempool.ActionMempool
 	depositTopic  *pubsub.Topic
 	exitTopic     *pubsub.Topic
 	directory     string
@@ -66,7 +66,7 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log logger.LoggerInterface, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, mempool *mempool.CoinsMempool, actionMempool *mempool.ActionMempool) (Wallet, error) {
+func NewWallet(ctx context.Context, log logger.LoggerInterface, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
 	var txTopic *pubsub.Topic
 	var depositTopic *pubsub.Topic
 	var exitTopic *pubsub.Topic

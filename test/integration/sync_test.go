@@ -64,10 +64,8 @@ func TestMain(m *testing.M) {
 
 	// Create a keystore
 	log.Info("Opening keystore")
-	keystore, err := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
-	if err != nil {
-		log.Fatal(err)
-	}
+	keystore := keystore.NewKeystore(testdata.Node1Folder, log, testdata.KeystorePass)
+
 	validatorKeys, err := keystore.GetValidatorKeys()
 	if err != nil {
 		log.Fatal(err)
