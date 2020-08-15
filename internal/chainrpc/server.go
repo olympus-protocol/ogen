@@ -35,6 +35,8 @@ type Config struct {
 
 //RPCServer is an interface for rpcServer
 type RPCServer interface {
+	registerServices()
+	registerServicesProxy(ctx context.Context)
 	Stop()
 	Start() error
 }
@@ -74,12 +76,27 @@ func (s *rpcServer) registerServicesProxy(ctx context.Context) {
 		RootCAs:            certPool,
 	})
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
-	proto.RegisterChainHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
-	proto.RegisterValidatorsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
-	proto.RegisterUtilsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
-	proto.RegisterNetworkHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	err = proto.RegisterChainHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	if err != nil {
+		s.log.Fatal(err)
+	}
+	err = proto.RegisterValidatorsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	if err != nil {
+		s.log.Fatal(err)
+	}
+	err = proto.RegisterUtilsHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	if err != nil {
+		s.log.Fatal(err)
+	}
+	err = proto.RegisterNetworkHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+	if err != nil {
+		s.log.Fatal(err)
+	}
 	if s.config.RPCWallet {
-		proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+		err = proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+		if err != nil {
+			s.log.Fatal(err)
+		}
 	}
 }
 

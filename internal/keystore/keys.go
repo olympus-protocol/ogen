@@ -7,7 +7,7 @@ import (
 )
 
 // GetValidatorKey returns the private key from the specified public key or false if doesn't exists.
-func (k *Keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
+func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 
 	if !k.open {
 		return nil, false
@@ -24,7 +24,7 @@ func (k *Keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 }
 
 // GetValidatorKeys returns all keys on keystore.
-func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
+func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 
 	if !k.open {
 		return nil, ErrorNoOpen
@@ -44,7 +44,7 @@ func (k *Keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 }
 
 // GenerateNewValidatorKey generates new validator keys and adds it to the map and database.
-func (k *Keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
+func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
 	if !k.open {
 		return nil, ErrorNoOpen
 	}
@@ -64,7 +64,7 @@ func (k *Keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, err
 	return keys, nil
 }
 
-func (k *Keystore) addKey(priv *bls.SecretKey) error {
+func (k *keystore) addKey(priv *bls.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen
@@ -83,7 +83,7 @@ func (k *Keystore) addKey(priv *bls.SecretKey) error {
 	return nil
 }
 
-func (k *Keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
+func (k *keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen
@@ -96,7 +96,7 @@ func (k *Keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
 	return nil
 }
 
-func (k *Keystore) addKeyDB(encryptedKey []byte, pubkey []byte) error {
+func (k *keystore) addKeyDB(encryptedKey []byte, pubkey []byte) error {
 
 	if !k.open {
 		return ErrorNoOpen

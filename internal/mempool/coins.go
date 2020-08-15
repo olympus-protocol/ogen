@@ -60,7 +60,7 @@ func newCoinMempoolItem() *coinMempoolItem {
 type CoinsMempool interface {
 	Add(item primitives.Tx, state *primitives.CoinsState) error
 	RemoveByBlock(b *primitives.Block)
-	Get(maxTransactions uint64, state state.State) ([]*primitives.Tx, state.State)
+	Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State)
 }
 
 var _ CoinsMempool = &coinsMempool{}
@@ -130,7 +130,7 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *coinsMempool) Get(maxTransactions uint64, state state.State) ([]*primitives.Tx, state.State) {
+func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State) {
 	cm.lock.RLock()
 	defer cm.lock.RUnlock()
 	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
@@ -138,7 +138,7 @@ func (cm *coinsMempool) Get(maxTransactions uint64, state state.State) ([]*primi
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := state.ApplyTransactionSingle(tx, [20]byte{}, cm.params); err != nil {
+			if err := s.ApplyTransactionSingle(tx, [20]byte{}, cm.params); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, tx)
@@ -149,7 +149,7 @@ outer:
 	}
 
 	// we can prioritize here, but we aren't to keep it simple
-	return allTransactions, state
+	return allTransactions, s
 }
 
 // func (cm *CoinsMempool) modifyBalance(tx primitives.Tx, add bool) error {

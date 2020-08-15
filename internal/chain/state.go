@@ -96,7 +96,7 @@ type StateService interface {
 	Height() uint64
 	TipState() state.State
 	TipStateAtSlot(slot uint64) (state.State, error)
-	GetSubView(tip chainhash.Hash) (ChainView, error)
+	GetSubView(tip chainhash.Hash) (View, error)
 	Tip() *chainindex.BlockRow
 	initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error
 	loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error
@@ -389,10 +389,10 @@ func NewStateService(log logger.Logger, ip state.InitializationParameters, param
 }
 
 // GetSubView gets a view of the blockchain at a certain tip.
-func (s *stateService) GetSubView(tip chainhash.Hash) (ChainView, error) {
+func (s *stateService) GetSubView(tip chainhash.Hash) (View, error) {
 	tipNode, found := s.blockIndex.Get(tip)
 	if !found {
-		return ChainView{}, errors.New("could not find tip node")
+		return View{}, errors.New("could not find tip node")
 	}
 	return NewChainView(tipNode), nil
 }

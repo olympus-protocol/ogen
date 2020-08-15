@@ -8,8 +8,8 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-// ChainView is a view of a certain chain in the block tree so that block processing can access valid blocks.
-type ChainView struct {
+// View is a view of a certain chain in the block tree so that block processing can access valid blocks.
+type View struct {
 	tip *chainindex.BlockRow
 
 	// effectiveTipSlot is used when the chain is being updated (excluding blocks)
@@ -17,17 +17,17 @@ type ChainView struct {
 }
 
 // NewChainView creates a new chain view with a certain tip
-func NewChainView(tip *chainindex.BlockRow) ChainView {
-	return ChainView{tip, tip.Slot}
+func NewChainView(tip *chainindex.BlockRow) View {
+	return View{tip, tip.Slot}
 }
 
 // SetTipSlot sets the effective tip slot (which may be updated due to slot transitions)
-func (c *ChainView) SetTipSlot(slot uint64) {
+func (c *View) SetTipSlot(slot uint64) {
 	c.effectiveTipSlot = slot
 }
 
 // GetHashBySlot gets a hash of a block in a certain slot.
-func (c *ChainView) GetHashBySlot(slot uint64) (chainhash.Hash, error) {
+func (c *View) GetHashBySlot(slot uint64) (chainhash.Hash, error) {
 	ancestor := c.tip.GetAncestorAtSlot(slot)
 	if ancestor == nil {
 		if slot > c.effectiveTipSlot {
@@ -39,13 +39,13 @@ func (c *ChainView) GetHashBySlot(slot uint64) (chainhash.Hash, error) {
 }
 
 // Tip gets the tip of the blockchain.
-func (c *ChainView) Tip() (chainhash.Hash, error) {
+func (c *View) Tip() (chainhash.Hash, error) {
 	return c.tip.Hash, nil
 }
 
 // GetLastStateRoot gets the state root of the tip.
-func (c *ChainView) GetLastStateRoot() (chainhash.Hash, error) {
+func (c *View) GetLastStateRoot() (chainhash.Hash, error) {
 	return c.tip.StateRoot, nil
 }
 
-var _ state.BlockView = (*ChainView)(nil)
+var _ state.BlockView = (*View)(nil)

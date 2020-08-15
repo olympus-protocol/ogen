@@ -33,15 +33,23 @@ func (txs *AccountTxs) Strings() []string {
 	return str
 }
 
-// TxIndex is a pseudo chainindex that contains locators for account transactions.
-type TxIndex struct {
+type TxIndex interface {
+	GetAccountTxs(account [20]byte) (AccountTxs, error)
+	GetTx(hash chainhash.Hash) (TxLocator, error)
+	SetTx(locator TxLocator, account [20]byte) error
+}
+
+var _ TxIndex = &txIndex{}
+
+// txIndex is a pseudo chainindex that contains locators for account transactions.
+type txIndex struct {
 	db *bbolt.DB
 }
 
 var accBucketPrefix = []byte("acc-")
 
 // GetAccountTxs returns a list of transaction related to an account
-func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
+func (i *txIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 	txs := AccountTxs{
 		Amount: 0,
 		Txs:    []chainhash.Hash{},
@@ -76,7 +84,7 @@ func (i *TxIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 var txBucketKey = []byte("txs")
 
 // GetTx returns a transaction locator from the chainindex.
-func (i *TxIndex) GetTx(hash chainhash.Hash) (TxLocator, error) {
+func (i *txIndex) GetTx(hash chainhash.Hash) (TxLocator, error) {
 	var loc TxLocator
 	err := i.db.View(func(tx *bbolt.Tx) error {
 		bkt := tx.Bucket(txBucketKey)
@@ -94,7 +102,7 @@ func (i *TxIndex) GetTx(hash chainhash.Hash) (TxLocator, error) {
 }
 
 // SetTx stores a transaction locator and adds a reference to the account.
-func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
+func (i *txIndex) SetTx(locator TxLocator, account [20]byte) error {
 	err := i.db.Update(func(tx *bbolt.Tx) error {
 		txbkt, err := tx.CreateBucketIfNotExists(txBucketKey)
 		if err != nil {
@@ -125,10 +133,10 @@ func (i *TxIndex) SetTx(locator TxLocator, account [20]byte) error {
 }
 
 // NewTxIndex returns/creates a new tx chainindex database
-func NewTxIndex(datadir string) (*TxIndex, error) {
+func NewTxIndex(datadir string) (TxIndex, error) {
 	db, err := bbolt.Open(path.Join(datadir, "tx.db"), 0600, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TxIndex{db: db}, nil
+	return &txIndex{db: db}, nil
 }

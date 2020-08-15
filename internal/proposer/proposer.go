@@ -37,7 +37,7 @@ type Proposer interface {
 	VoteForBlocks()
 	Start() error
 	Stop()
-	Keystore() *keystore.Keystore
+	Keystore() keystore.Keystore
 }
 
 var _ Proposer = &proposer{}
@@ -48,7 +48,7 @@ type proposer struct {
 	config     Config
 	params     params.ChainParams
 	chain      chain.Blockchain
-	keystore   *keystore.Keystore
+	keystore   keystore.Keystore
 	mineActive bool
 	context    context.Context
 	stop       context.CancelFunc
@@ -420,6 +420,6 @@ func (p *proposer) Stop() {
 	p.stop()
 }
 
-func (p *proposer) Keystore() *keystore.Keystore {
+func (p *proposer) Keystore() keystore.Keystore {
 	return p.keystore
 }

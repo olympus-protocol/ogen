@@ -311,10 +311,10 @@ func (mr *MockStateServiceMockRecorder) TipStateAtSlot(slot interface{}) *gomock
 }
 
 // GetSubView mocks base method
-func (m *MockStateService) GetSubView(tip chainhash.Hash) (ChainView, error) {
+func (m *MockStateService) GetSubView(tip chainhash.Hash) (View, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubView", tip)
-	ret0, _ := ret[0].(ChainView)
+	ret0, _ := ret[0].(View)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

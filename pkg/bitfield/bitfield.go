@@ -12,6 +12,7 @@ var (
 	// ErrorBitlistOverlap return when two bitlist are being merged and they overlap
 	ErrorBitlistOverlaps = errors.New("bitlists overlaps, not possible to merge")
 )
+
 type Bitlist []byte
 
 // Len of the bitlist returns the number of bits available in the underlying byte array.
@@ -42,12 +43,12 @@ func (b Bitlist) Merge(c Bitlist) (Bitlist, error) {
 	}
 	nb := NewBitlist(b.Len())
 	for i := range b {
-		for j := 0; j < 8 ; j++ {
-			if b.Get(uint(i+j)) {
-				nb.Set(uint(i+j))
+		for j := 0; j < 8; j++ {
+			if b.Get(uint(i + j)) {
+				nb.Set(uint(i + j))
 			}
-			if c.Get(uint(i+j)) {
-				nb.Set(uint(i+j))
+			if c.Get(uint(i + j)) {
+				nb.Set(uint(i + j))
 			}
 		}
 	}

@@ -48,7 +48,7 @@ type blockchain struct {
 	db blockdb.DB
 
 	// Indexes
-	txidx *txindex.TxIndex
+	txidx txindex.TxIndex
 
 	// StateService
 	state StateService

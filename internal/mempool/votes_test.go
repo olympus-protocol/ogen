@@ -90,7 +90,7 @@ func init() {
 		FromHash:        genesisHash,
 		ToEpoch:         11,
 		ToHash:          genesisHash,
-		BeaconBlockHash: [32]byte{1,2,3},
+		BeaconBlockHash: [32]byte{1, 2, 3},
 		Nonce:           dataNonce,
 	}
 
