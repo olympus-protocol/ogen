@@ -201,30 +201,16 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
 			// Check if votes overlaps voters
 
-			var votingValidators = make(map[uint64]struct{})
+			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+			if err != nil {
+				m.log.Error(err)
+				return
+			}
+
 			var common []uint64
-			vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
-			if err != nil {
-				m.log.Error(err)
-				return
-			}
-			vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
-			if err != nil {
-				m.log.Error(err)
-				return
-			}
-			for i, idx := range vote1Comitte {
-				if !v.ParticipationBitfield.Get(uint(i)) {
-					continue
-				}
-				votingValidators[idx] = struct{}{}
-			}
-			for i, idx := range vote2Comitte {
-				if !vote.ParticipationBitfield.Get(uint(i)) {
-					continue
-				}
-				_, exist := votingValidators[idx]
-				if exist {
+
+			for i, idx := range votesComitte {
+				if v.ParticipationBitfield.Get(uint(i)) && vote.ParticipationBitfield.Get(uint(i)) {
 					common = append(common, idx)
 				}
 			}
