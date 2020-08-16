@@ -145,7 +145,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 		manager.EXPECT().RegisterAction(votingValidator.PubKey, uint64(0))
 
-		for j, valAtt1 := range validators1{
+		for j, valAtt1 := range validators1 {
 			if bytes.Equal(votingValidator.PubKey[:], valAtt1.PubKey[:]) {
 				bfS1att1.Set(uint(i))
 				sig := validatorKeys1[j].Sign(voteDataSlot1Hash[:])
@@ -154,7 +154,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 			}
 		}
 
-		for j, valAtt2 := range validators2{
+		for j, valAtt2 := range validators2 {
 			if bytes.Equal(votingValidator.PubKey[:], valAtt2.PubKey[:]) {
 				bfS1att2.Set(uint(i))
 				sig := validatorKeys2[j].Sign(voteDataSlot1Hash[:])
@@ -206,16 +206,15 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	slotToVote++
 
-	votesSlot1, err := pool.Get(slotToVote , s, params, 1)
+	votesSlot1, err := pool.Get(slotToVote, s, params, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(votesSlot1))
 
 	block := &primitives.Block{
-		Votes:             votesSlot1,
+		Votes: votesSlot1,
 	}
 
 	pool.Remove(block)
-
 
 	voteDataSlot2 := &primitives.VoteData{
 		Slot:            slotToVote,
@@ -244,7 +243,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 		manager.EXPECT().RegisterAction(votingValidator.PubKey, uint64(0))
 
-		for j, valAtt1 := range validators1{
+		for j, valAtt1 := range validators1 {
 			if bytes.Equal(votingValidator.PubKey[:], valAtt1.PubKey[:]) {
 				bfs2att1.Set(uint(i))
 				sig := validatorKeys1[j].Sign(voteDataSlot2Hash[:])
@@ -253,7 +252,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 			}
 		}
 
-		for j, valAtt2 := range validators2{
+		for j, valAtt2 := range validators2 {
 			if bytes.Equal(votingValidator.PubKey[:], valAtt2.PubKey[:]) {
 				bfs2att2.Set(uint(i))
 				sig := validatorKeys2[j].Sign(voteDataSlot2Hash[:])
@@ -305,12 +304,12 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	slotToVote++
 
-	votesSlot2, err := pool.Get(slotToVote , s, params, 1)
+	votesSlot2, err := pool.Get(slotToVote, s, params, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(votesSlot2))
 
 	blockS2 := &primitives.Block{
-		Votes:             votesSlot2,
+		Votes: votesSlot2,
 	}
 
 	pool.Remove(blockS2)

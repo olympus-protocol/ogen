@@ -260,7 +260,6 @@ func initConfig() {
 	}
 }
 
-
 func randomAuthToken() string {
 	rand.Seed(time.Now().UnixNano())
 	digits := "0123456789"
