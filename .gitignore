@@ -51,6 +51,6 @@ data_*/
 certs/
 
 # Binaries
-./ogen-cli
-./migration
-./ogen
+ogen-cli
+migration
+ogen
