@@ -40,7 +40,7 @@ type discoveryProtocol struct {
 	host   HostNode
 	config Config
 	ctx    context.Context
-	log    logger.LoggerInterface
+	log    logger.Logger
 
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex

@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-func (s *StateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state primitives.State) error {
+func (s *stateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error {
 	s.blockChain.SetTip(blockNode)
 
 	err := s.setFinalizedHead(blockNode.Hash, state)
@@ -31,10 +31,10 @@ func (s *StateService) initializeDatabase(txn blockdb.DBUpdateTransaction, block
 	if err := txn.SetJustifiedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := txn.SetFinalizedState(&state); err != nil {
+	if err := txn.SetFinalizedState(state); err != nil {
 		return err
 	}
-	if err := txn.SetJustifiedState(&state); err != nil {
+	if err := txn.SetJustifiedState(state); err != nil {
 		return err
 	}
 
@@ -45,7 +45,7 @@ func (s *StateService) initializeDatabase(txn blockdb.DBUpdateTransaction, block
 	return nil
 }
 
-func (s *StateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
+func (s *stateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
 	justifiedHead, err := txn.GetJustifiedHead()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (s *StateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash
 	return nil
 }
 
-func (s *StateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error {
+func (s *stateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error {
 	finalizedHead, err := txn.GetFinalizedHead()
 	if err != nil {
 		return err
@@ -99,17 +99,17 @@ func (s *StateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransac
 
 	s.log.Infof("loaded justified head: %s and finalized head %s", justifiedHead, finalizedHead)
 
-	if err := s.setFinalizedHead(finalizedHead, *finalizedState); err != nil {
+	if err := s.setFinalizedHead(finalizedHead, finalizedState); err != nil {
 		return err
 	}
-	if err := s.setJustifiedHead(justifiedHead, *justifiedState); err != nil {
+	if err := s.setJustifiedHead(justifiedHead, justifiedState); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *StateService) setBlockState(hash chainhash.Hash, state *primitives.State) {
+func (s *stateService) setBlockState(hash chainhash.Hash, state state.State) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -118,7 +118,7 @@ func (s *StateService) setBlockState(hash chainhash.Hash, state *primitives.Stat
 	s.stateMap[hash] = newStateDerivedFromBlock(state)
 }
 
-func (s *StateService) loadStateMap(txn blockdb.DBViewTransaction) error {
+func (s *stateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 	finalizedNode := s.finalizedHead.node
 
 	finalizedNodeWithChildren, err := txn.GetBlockRow(finalizedNode.Hash)
@@ -176,12 +176,12 @@ func (s *StateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 		return err
 	}
 
-	s.setJustifiedHead(justifiedHead, *justifiedHeadState)
+	s.setJustifiedHead(justifiedHead, justifiedHeadState)
 
 	return nil
 }
 
-func (s *StateService) loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
+func (s *stateService) loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
 	s.log.Info("Loading block chainindex...")
 	err := s.loadBlockIndex(txn, genesisHash)
 	if err != nil {

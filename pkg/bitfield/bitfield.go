@@ -1,8 +1,16 @@
 package bitfield
 
 import (
+	"errors"
 	"math/bits"
 	"reflect"
+)
+
+var (
+	// ErrorsBitlistSize return when comparing two bitlists and don't share the same size.
+	ErrorsBitlistSize = errors.New("bitlists doesn't have the same size")
+	// ErrorBitlistOverlap return when two bitlist are being merged and they overlap
+	ErrorBitlistOverlaps = errors.New("bitlists overlaps, not possible to merge")
 )
 
 type Bitlist []byte
@@ -24,6 +32,27 @@ func (b Bitlist) Len() uint64 {
 	return uint64(8*(len(b)-1) + msb - 1)
 }
 
+// Merge merges two bitlists with the same size, returns error if the bitlists overlaps on any bit or has different sizes
+func (b Bitlist) Merge(c Bitlist) (Bitlist, error) {
+	overlap, err := b.Overlaps(c)
+	if err != nil {
+		return nil, err
+	}
+	if overlap {
+		return nil, ErrorBitlistOverlaps
+	}
+	nb := NewBitlist(b.Len())
+	indexb := b.BitIndices()
+	indexc := c.BitIndices()
+	for _, index := range indexb {
+		nb.Set(uint(index))
+	}
+	for _, index := range indexc {
+		nb.Set(uint(index))
+	}
+	return nb, nil
+}
+
 // Set marks the specified bit
 func (b Bitlist) Set(i uint) {
 	b[i/8] |= 1 << (i % 8)
@@ -40,14 +69,14 @@ func (b Bitlist) Get(i uint) bool {
 
 // Overlaps returns true if the bitlist contains one of the bits from the provided argument
 // bitlist. This method will panic if bitlists are not the same length.
-func (b Bitlist) Overlaps(c Bitlist) bool {
+func (b Bitlist) Overlaps(c Bitlist) (bool, error) {
 	lenB, lenC := b.Len(), c.Len()
 	if lenB != lenC {
-		panic("bitlists are different lengths")
+		return false, ErrorsBitlistSize
 	}
 
 	if lenB == 0 || lenC == 0 {
-		return false
+		return false, nil
 	}
 
 	msb := uint8(bits.Len8(b[len(b)-1])) - 1
@@ -64,17 +93,17 @@ func (b Bitlist) Overlaps(c Bitlist) bool {
 		}
 
 		if (^b[i]^c[i])&c[i]&mask != 0 {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 // Contains returns true if the bitlist contains all of the bits from the provided argument
 // bitlist. This method will panic if bitlists are not the same length.
-func (b Bitlist) Contains(c Bitlist) bool {
+func (b Bitlist) Contains(c Bitlist) (bool, error) {
 	if b.Len() != c.Len() {
-		panic("bitlists are different lengths")
+		return false, ErrorsBitlistSize
 	}
 
 	// To ensure all of the bits in c are present in b, we iterate over every byte, combine
@@ -82,11 +111,11 @@ func (b Bitlist) Contains(c Bitlist) bool {
 	// are assured that a byte in c had bits not present in b.
 	for i := 0; i < len(b); i++ {
 		if b[i]^(b[i]|c[i]) != 0 {
-			return false
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
 
 // Count returns the number of 1s in the bitlist.

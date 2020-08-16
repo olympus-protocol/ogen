@@ -9,17 +9,30 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/peers"
-	"github.com/olympus-protocol/ogen/pkg/bitfield"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sort"
 	"sync"
+	"time"
 )
 
-// VoteMempool is a mempool that keeps track of votes.
-type VoteMempool struct {
+// VoteMempool is the interface of the voteMempool
+type VoteMempool interface {
+	AddValidate(vote *primitives.MultiValidatorVote, state state.State) error
+	sortMempool()
+	Add(vote *primitives.MultiValidatorVote)
+	Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
+	removeFromOrder(h chainhash.Hash)
+	Remove(b *primitives.Block)
+	handleSubscription(sub *pubsub.Subscription, id peer.ID)
+	Notify(notifee VoteSlashingNotifee)
+}
+
+// voteMempool is a mempool that keeps track of votes.
+type voteMempool struct {
 	poolLock sync.Mutex
 	pool     map[chainhash.Hash]*primitives.MultiValidatorVote
 
@@ -27,7 +40,7 @@ type VoteMempool struct {
 	poolOrder []chainhash.Hash
 
 	params     *params.ChainParams
-	log        logger.LoggerInterface
+	log        logger.Logger
 	ctx        context.Context
 	blockchain chain.Blockchain
 	hostNode   peers.HostNode
@@ -39,8 +52,10 @@ type VoteMempool struct {
 	lastActionManager actionmanager.LastActionManager
 }
 
+var _ VoteMempool = &voteMempool{}
+
 // AddValidate validates, then adds the vote to the mempool.
-func (m *VoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *primitives.State) error {
+func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state state.State) error {
 	if err := state.IsVoteValid(vote, m.params); err != nil {
 		return err
 	}
@@ -50,7 +65,7 @@ func (m *VoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state *pr
 }
 
 // sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
-func (m *VoteMempool) sortMempool() {
+func (m *voteMempool) sortMempool() {
 	sort.Slice(m.poolOrder, func(i, j int) bool {
 
 		// return if i is higher priority than j
@@ -73,7 +88,7 @@ func (m *VoteMempool) sortMempool() {
 }
 
 // Add adds a vote to the mempool.
-func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
+func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	voteData := vote.Data
@@ -102,7 +117,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// Register voting action for validators included on the vote
 	for i, c := range committee {
 		if vote.ParticipationBitfield.Get(uint(i)) {
-			m.lastActionManager.RegisterAction(currentState.ValidatorRegistry[c].PubKey, vote.Data.Nonce)
+			m.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, vote.Data.Nonce)
 		}
 	}
 
@@ -110,7 +125,6 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// This check iterates over all the votes on the pool.
 	// Checks if the new vote data matches any pool vote data hash.
 	// If that check fails, we should check for validators submitting twice different votes.
-	// TODO fix slashing condition
 	for h, v := range m.pool {
 
 		// If the vote data hash matches, it means is voting for same block.
@@ -118,37 +132,60 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 			continue
 		}
 
+		if currentState.GetSlot() >= v.Data.LastSlotValid(m.params) {
+			delete(m.pool, voteHash)
+			m.removeFromOrder(voteHash)
+			continue
+		}
+
+		var votingValidators = make(map[uint64]struct{})
+		var common []uint64
+		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
+		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
+		if err != nil {
+			m.log.Error(err)
+			return
+		}
+		for i, idx := range vote1Comitte {
+			if !v.ParticipationBitfield.Get(uint(i)) {
+				continue
+			}
+			votingValidators[idx] = struct{}{}
+		}
+		for i, idx := range vote2Comitte {
+			if !vote.ParticipationBitfield.Get(uint(i)) {
+				continue
+			}
+			_, exist := votingValidators[idx]
+			if exist {
+				common = append(common, idx)
+			}
+		}
+
 		// Check if the new vote with different hash overlaps a previous marked validator vote.
-		intersect := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
-		if len(intersect) != 0 {
+		if len(common) != 0 {
 			// Check if the vote matches the double vote and surround vote conditions
-			//if v.Data.IsSurroundVote(voteData) {
-			//	m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-			//	for _, n := range m.notifees {
-			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-			//			Vote1: vote,
-			//			Vote2: v,
-			//		})
-			//	}
-			//	return
-			//}
 			// If there is an intersection check if is a double vote
-			//if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
-			// If is a double or surround vote announce it and slash.
-			//	if v.Data.IsSurroundVote(voteData) {
-			//		m.log.Warnf("found surround vote for multivalidator in vote %s ...", vote.Data.String())
-			//	}
-			//	if v.Data.IsDoubleVote(voteData) {
-			//		m.log.Warnf("found double vote for multivalidator in vote %s ...", vote.Data.String())
-			//	}
-			//	for _, n := range m.notifees {
-			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-			//			Vote1: vote,
-			//			Vote2: v,
-			//		})
-			//	}
-			//	return
-			//}
+			if v.Data.IsSurroundVote(voteData) || v.Data.IsDoubleVote(voteData) {
+				// If is a double or surround vote announce it and slash.
+				if v.Data.IsSurroundVote(voteData) {
+					m.log.Warnf("found surround vote for multivalidator, reporting...")
+				}
+				if v.Data.IsDoubleVote(voteData) {
+					m.log.Warnf("found double vote for multivalidator, reporting...")
+				}
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: vote,
+						Vote2: v,
+					})
+				}
+				return
+			}
 		}
 	}
 
@@ -161,32 +198,38 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	v, ok := m.pool[voteHash]
 
 	if ok {
-
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
-			// TODO fix slashing condition
-
 			// Check if votes overlaps voters
-			//intersection := v.ParticipationBitfield.Intersect(vote.ParticipationBitfield)
-			//if len(intersection) != 0 {
-			// If the vote overlaps, that means a validator submitted the same vote multiple times.
-			//	for _, n := range m.notifees {
-			//		n.NotifyIllegalVotes(&primitives.VoteSlashing{
-			//			Vote1: vote,
-			//			Vote2: v,
-			//		})
-			//	}
-			//	return
-			//}
 
-			newVote := &primitives.MultiValidatorVote{
-				Data:                  v.Data,
-				ParticipationBitfield: bitfield.NewBitlist(uint64(len(committee))),
+			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+			if err != nil {
+				m.log.Error(err)
+				return
 			}
 
-			for i := range committee {
-				if v.ParticipationBitfield.Get(uint(i)) || vote.ParticipationBitfield.Get(uint(i)) {
-					newVote.ParticipationBitfield.Set(uint(i))
+			var common []uint64
+
+			for i, idx := range votesComitte {
+				if v.ParticipationBitfield.Get(uint(i)) && vote.ParticipationBitfield.Get(uint(i)) {
+					common = append(common, idx)
 				}
+			}
+
+			if len(common) != 0 {
+				// If the vote overlaps, that means a validator submitted the same vote multiple times.
+				for _, n := range m.notifees {
+					n.NotifyIllegalVotes(&primitives.VoteSlashing{
+						Vote1: vote,
+						Vote2: v,
+					})
+				}
+				return
+			}
+
+			newBitfield, err := v.ParticipationBitfield.Merge(vote.ParticipationBitfield)
+			if err != nil {
+				m.log.Error(err)
+				return
 			}
 
 			newVoteSig, err := bls.AggregateSignaturesBytes([][96]byte{v.Sig, vote.Sig})
@@ -198,7 +241,12 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 			var voteSig [96]byte
 			copy(voteSig[:], newVoteSig.Marshal())
 
-			newVote.Sig = voteSig
+			newVote := &primitives.MultiValidatorVote{
+				Data:                  v.Data,
+				ParticipationBitfield: newBitfield,
+				Sig:                   voteSig,
+			}
+
 			m.pool[voteHash] = newVote
 		}
 	} else {
@@ -211,7 +259,7 @@ func (m *VoteMempool) Add(vote *primitives.MultiValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *voteMempool) Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 
@@ -236,7 +284,7 @@ func (m *VoteMempool) Get(slot uint64, s *primitives.State, p *params.ChainParam
 }
 
 // Assumes you already hold the poolLock mutex.
-func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
+func (m *voteMempool) removeFromOrder(h chainhash.Hash) {
 	newOrder := make([]chainhash.Hash, 0, len(m.poolOrder))
 
 	for _, vh := range m.poolOrder {
@@ -249,7 +297,7 @@ func (m *VoteMempool) removeFromOrder(h chainhash.Hash) {
 }
 
 // Remove removes mempool items that are no longer relevant.
-func (m *VoteMempool) Remove(b *primitives.Block) {
+func (m *voteMempool) Remove(b *primitives.Block) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 
@@ -265,22 +313,25 @@ func (m *VoteMempool) Remove(b *primitives.Block) {
 		}
 	}
 
-	// Check all votes against the block slot to remove expired votes
-	for voteHash, vote := range m.pool {
-		if b.Header.Slot >= vote.Data.LastSlotValid(m.params) {
-			delete(m.pool, voteHash)
-			m.removeFromOrder(voteHash)
-		}
-	}
-
 }
 
-func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
+func (m *voteMempool) getCurrentSlot() uint64 {
+	slot := time.Now().Sub(m.blockchain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second)
+	if slot < 0 {
+		return 0
+	}
+	return uint64(slot)
+}
+
+func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 	for {
 		msg, err := sub.Next(m.ctx)
 		if err != nil {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
+		}
+		if msg.GetFrom() == id {
+			continue
 		}
 
 		vote := new(primitives.MultiValidatorVote)
@@ -323,14 +374,14 @@ func (m *VoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 }
 
 // Notify registers a notifee to be notified when illegal votes occur.
-func (m *VoteMempool) Notify(notifee VoteSlashingNotifee) {
+func (m *voteMempool) Notify(notifee VoteSlashingNotifee) {
 	m.notifeesLock.Lock()
 	defer m.notifeesLock.Unlock()
 	m.notifees = append(m.notifees, notifee)
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log logger.LoggerInterface, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (*VoteMempool, error) {
+func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
 	voteTopic, err := hostnode.Topic("votes")
 	if err != nil {
 		return nil, err
@@ -341,12 +392,7 @@ func NewVoteMempool(ctx context.Context, log logger.LoggerInterface, p *params.C
 		return nil, err
 	}
 
-	_, err = voteTopic.Relay()
-	if err != nil {
-		return nil, err
-	}
-
-	vm := &VoteMempool{
+	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
 		params:            p,
 		log:               log,

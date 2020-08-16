@@ -24,9 +24,6 @@ var (
 
 	// ErrorKeystoreExists returned when a user creates a new keystore over an existing keystore.
 	ErrorKeystoreExists = errors.New("cannot create new keystore, it already exists")
-
-	// ErrorPassNoMatch is returned when the keystore password don't match.
-	ErrorPassNoMatch = errors.New("the provided password doesn't match with current keystore password")
 )
 
 var (
@@ -34,12 +31,26 @@ var (
 	keysBucket = []byte("keys")
 )
 
-// Keystore is a wrapper for the keystore database
-type Keystore struct {
+type Keystore interface {
+	CreateKeystore() error
+	OpenKeystore() error
+	load(db *bbolt.DB) error
+	initialize(db *bbolt.DB) error
+	Close() error
+	GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool)
+	GetValidatorKeys() ([]*bls.SecretKey, error)
+	GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error)
+	addKey(priv *bls.SecretKey) error
+	addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error
+	addKeyDB(encryptedKey []byte, pubkey []byte) error
+}
+
+// keystore is a wrapper for the keystore database
+type keystore struct {
 	// db is a reference to the bbolt database
 	db *bbolt.DB
 	// log is a reference to the global logger
-	log logger.LoggerInterface
+	log logger.Logger
 	// datadir is the folder where the database is located
 	datadir string
 	// open prevents accessing the database when is closed
@@ -50,8 +61,10 @@ type Keystore struct {
 	keysLock sync.RWMutex
 }
 
+var _ Keystore = &keystore{}
+
 // CreateKeystore will create a new keystore and initialize it.
-func (k *Keystore) CreateKeystore() error {
+func (k *keystore) CreateKeystore() error {
 	if k.open {
 		return ErrorAlreadyOpen
 	}
@@ -72,7 +85,7 @@ func (k *Keystore) CreateKeystore() error {
 }
 
 // OpenKeystore opens an already created keystore, returns error if the Keystore is previously initialized.
-func (k *Keystore) OpenKeystore() error {
+func (k *keystore) OpenKeystore() error {
 	if k.open {
 		return ErrorAlreadyOpen
 	}
@@ -91,7 +104,7 @@ func (k *Keystore) OpenKeystore() error {
 
 // load is used to properly fill the Keystore data with the database information.
 // returns ErrorNotInitialized if the database doesn't exists or is not properly initialized.
-func (k *Keystore) load(db *bbolt.DB) error {
+func (k *keystore) load(db *bbolt.DB) error {
 
 	keysMap := make(map[chainhash.Hash]*bls.SecretKey)
 
@@ -133,7 +146,7 @@ func (k *Keystore) load(db *bbolt.DB) error {
 	return nil
 }
 
-func (k *Keystore) initialize(db *bbolt.DB) error {
+func (k *keystore) initialize(db *bbolt.DB) error {
 
 	err := db.Update(func(tx *bbolt.Tx) error {
 
@@ -151,15 +164,15 @@ func (k *Keystore) initialize(db *bbolt.DB) error {
 }
 
 // Close closes the keystore database
-func (k *Keystore) Close() error {
+func (k *keystore) Close() error {
 	k.open = false
 	k.keys = map[chainhash.Hash]*bls.SecretKey{}
 	return k.db.Close()
 }
 
 // NewKeystore creates a new keystore instance.
-func NewKeystore(datadir string, log logger.LoggerInterface) *Keystore {
-	return &Keystore{
+func NewKeystore(datadir string, log logger.Logger) Keystore {
+	return &keystore{
 		log:     log,
 		open:    false,
 		datadir: datadir,

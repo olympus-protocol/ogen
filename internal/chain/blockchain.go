@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/internal/txindex"
 	"sync"
 	"time"
@@ -14,14 +15,14 @@ import (
 
 type Config struct {
 	Datadir string
-	Log     logger.LoggerInterface
+	Log     logger.Logger
 }
 
 // Blockchain is an interface for blockchain
 type Blockchain interface {
 	Start() (err error)
 	Stop()
-	State() *StateService
+	State() StateService
 	GenesisTime() time.Time
 	GetBlock(h chainhash.Hash) (block *primitives.Block, err error)
 	GetRawBlock(h chainhash.Hash) (block []byte, err error)
@@ -38,7 +39,7 @@ var _ Blockchain = &blockchain{}
 
 type blockchain struct {
 	// Initial Ogen Params
-	log         logger.LoggerInterface
+	log         logger.Logger
 	config      Config
 	genesisTime time.Time
 	params      params.ChainParams
@@ -47,10 +48,10 @@ type blockchain struct {
 	db blockdb.DB
 
 	// Indexes
-	txidx *txindex.TxIndex
+	txidx txindex.TxIndex
 
 	// StateService
-	state *StateService
+	state StateService
 
 	notifees    map[BlockchainNotifee]struct{}
 	notifeeLock sync.RWMutex
@@ -65,7 +66,7 @@ func (ch *blockchain) Stop() {
 	ch.log.Info("Stopping Blockchain instance")
 }
 
-func (ch *blockchain) State() *StateService {
+func (ch *blockchain) State() StateService {
 	return ch.state
 }
 
@@ -108,7 +109,7 @@ func (ch *blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip primitives.InitializationParameters) (Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip state.InitializationParameters) (Blockchain, error) {
 	state, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err

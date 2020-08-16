@@ -4,12 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"io/ioutil"
 	"path"
 	"time"
 
 	"github.com/olympus-protocol/ogen/internal/keystore"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/spf13/cobra"
 )
 
@@ -54,16 +54,16 @@ var generateChainCmd = &cobra.Command{
 
 		genesisTime := time.Unix(genesisTimeString, 0)
 
-		validators := make([]primitives.ValidatorInitialization, len(keys))
+		validators := make([]state.ValidatorInitialization, len(keys))
 		for i := range validators {
 			pub := keys[i].PublicKey()
-			validators[i] = primitives.ValidatorInitialization{
+			validators[i] = state.ValidatorInitialization{
 				PubKey:       hex.EncodeToString(pub.Marshal()),
 				PayeeAddress: withdrawAddress,
 			}
 		}
 
-		chainFile := primitives.ChainFile{
+		chainFile := state.ChainFile{
 			Validators:         validators,
 			GenesisTime:        uint64(genesisTime.Unix()),
 			InitialConnections: connect,

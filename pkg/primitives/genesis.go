@@ -4,11 +4,10 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 // GetGenesisBlock gets the genesis block for a certain chain parameters.
-func GetGenesisBlock(params params.ChainParams) Block {
+func GetGenesisBlock() Block {
 	return Block{
 		Header: &BlockHeader{
 			Version:                    0,

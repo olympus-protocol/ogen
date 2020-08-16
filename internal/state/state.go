@@ -1,16 +1,18 @@
-package primitives
+package state
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 // SerializableState is a serializable copy of the state
 type SerializableState struct {
 	// CoinsState keeps if accounts balances and transactions.
-	CoinsState *CoinsStateSerializable
+	CoinsState *primitives.CoinsStateSerializable
 	// ValidatorRegistry keeps track of validators in the state.
-	ValidatorRegistry []*Validator `ssz-max:"2097152"`
+	ValidatorRegistry []*primitives.Validator `ssz-max:"2097152"`
 
 	// LatestValidatorRegistryChange keeps track of the last time the validator
 	// registry was changed. We only want to update the registry if a block was
@@ -61,7 +63,7 @@ type SerializableState struct {
 
 	// CurrentEpochVotes are votes that are being submitted where
 	// the source epoch matches justified epoch.
-	CurrentEpochVotes []*AcceptedVoteInfo `ssz-max:"2097152"`
+	CurrentEpochVotes []*primitives.AcceptedVoteInfo `ssz-max:"2097152"`
 
 	// PreviousJustifiedEpoch is the second-to-last epoch that >2/3 of validators
 	// voted for.
@@ -71,7 +73,7 @@ type SerializableState struct {
 	PreviousJustifiedEpochHash [32]byte `ssz-size:"32"`
 
 	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
-	PreviousEpochVotes []*AcceptedVoteInfo `ssz-max:"2097152"`
+	PreviousEpochVotes []*primitives.AcceptedVoteInfo `ssz-max:"2097152"`
 
 	// CurrentManagers are current managers of the governance funds.
 	CurrentManagers [][20]byte `ssz-max:"5"`
@@ -80,7 +82,7 @@ type SerializableState struct {
 	ManagerReplacement bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
 
 	// Governance represents current votes state
-	Governance *GovernanceSerializable
+	Governance *primitives.GovernanceSerializable
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
@@ -89,9 +91,9 @@ type SerializableState struct {
 	LastPaidSlot uint64
 }
 
-// StateValidatorsInfo returns the state validators information.
-type StateValidatorsInfo struct {
-	Validators  []*Validator
+// ValidatorsInfo returns the state validators information.
+type ValidatorsInfo struct {
+	Validators  []*primitives.Validator
 	Active      int64
 	PendingExit int64
 	PenaltyExit int64
@@ -109,12 +111,12 @@ const (
 	GovernanceStateVoting
 )
 
-// State is the state of consensus in the blockchain.
-type State struct {
+// state is the state of consensus in the blockchain.
+type state struct {
 	// CoinsState keeps if accounts balances and transactions.
-	CoinsState CoinsState
+	CoinsState primitives.CoinsState
 	// ValidatorRegistry keeps track of validators in the state.
-	ValidatorRegistry []*Validator
+	ValidatorRegistry []*primitives.Validator
 
 	// LatestValidatorRegistryChange keeps track of the last time the validator
 	// registry was changed. We only want to update the registry if a block was
@@ -165,7 +167,7 @@ type State struct {
 
 	// CurrentEpochVotes are votes that are being submitted where
 	// the source epoch matches justified epoch.
-	CurrentEpochVotes []*AcceptedVoteInfo
+	CurrentEpochVotes []*primitives.AcceptedVoteInfo
 
 	// PreviousJustifiedEpoch is the second-to-last epoch that >2/3 of validators
 	// voted for.
@@ -175,7 +177,7 @@ type State struct {
 	PreviousJustifiedEpochHash chainhash.Hash
 
 	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
-	PreviousEpochVotes []*AcceptedVoteInfo
+	PreviousEpochVotes []*primitives.AcceptedVoteInfo
 
 	// CurrentManagers are current managers of the governance funds.
 	CurrentManagers [][20]byte
@@ -184,7 +186,7 @@ type State struct {
 	ManagerReplacement bitfield.Bitlist
 
 	// Governance represents current votes state
-	Governance Governance
+	Governance primitives.Governance
 
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
@@ -194,10 +196,10 @@ type State struct {
 }
 
 // ToSerializable converts the struct to a serializable struct
-func (s *State) ToSerializable() SerializableState {
+func (s *state) ToSerializable() *SerializableState {
 	serCoin := s.CoinsState.ToSerializable()
 	serGov := s.Governance.ToSerializable()
-	ser := SerializableState{
+	ser := &SerializableState{
 		CoinsState:                    &serCoin,
 		ValidatorRegistry:             s.ValidatorRegistry,
 		LatestValidatorRegistryChange: s.LatestValidatorRegistryChange,
@@ -230,7 +232,7 @@ func (s *State) ToSerializable() SerializableState {
 }
 
 // FromSerializable converts the struct to a serializable struct
-func (s *State) FromSerializable(ser *SerializableState) {
+func (s *state) FromSerializable(ser *SerializableState) {
 	s.ValidatorRegistry = ser.ValidatorRegistry
 	s.LatestValidatorRegistryChange = ser.LatestValidatorRegistryChange
 	s.RANDAO = ser.RANDAO
@@ -262,7 +264,7 @@ func (s *State) FromSerializable(ser *SerializableState) {
 }
 
 // Marshal encodes the data.
-func (s *State) Marshal() ([]byte, error) {
+func (s *state) Marshal() ([]byte, error) {
 	ser := s.ToSerializable()
 	b, err := ser.MarshalSSZ()
 	if err != nil {
@@ -272,7 +274,7 @@ func (s *State) Marshal() ([]byte, error) {
 }
 
 // Unmarshal decodes the data.
-func (s *State) Unmarshal(b []byte) error {
+func (s *state) Unmarshal(b []byte) error {
 	ser := new(SerializableState)
 	err := ser.UnmarshalSSZ(b)
 	if err != nil {
@@ -284,7 +286,7 @@ func (s *State) Unmarshal(b []byte) error {
 }
 
 // GetValidatorIndicesActiveAt gets validator indices where the validator is active at a certain slot.
-func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint64 {
+func (s *state) GetValidatorIndicesActiveAt(epoch uint64) []uint64 {
 	vals := make([]uint64, 0, len(s.ValidatorRegistry))
 	for i, v := range s.ValidatorRegistry {
 		if v.IsActiveAtEpoch(epoch) {
@@ -296,8 +298,8 @@ func (s *State) GetValidatorIndicesActiveAt(epoch uint64) []uint64 {
 }
 
 // GetValidators returns the validator information at current state
-func (s *State) GetValidators() StateValidatorsInfo {
-	validators := StateValidatorsInfo{
+func (s *state) GetValidators() ValidatorsInfo {
+	validators := ValidatorsInfo{
 		Validators:  s.ValidatorRegistry,
 		Active:      int64(0),
 		PendingExit: int64(0),
@@ -307,15 +309,15 @@ func (s *State) GetValidators() StateValidatorsInfo {
 	}
 	for _, v := range s.ValidatorRegistry {
 		switch v.Status {
-		case StatusActive:
+		case primitives.StatusActive:
 			validators.Active++
-		case StatusActivePendingExit:
+		case primitives.StatusActivePendingExit:
 			validators.PendingExit++
-		case StatusExitedWithPenalty:
+		case primitives.StatusExitedWithPenalty:
 			validators.PenaltyExit++
-		case StatusExitedWithoutPenalty:
+		case primitives.StatusExitedWithoutPenalty:
 			validators.Exited++
-		case StatusStarting:
+		case primitives.StatusStarting:
 			validators.Starting++
 		}
 	}
@@ -323,11 +325,11 @@ func (s *State) GetValidators() StateValidatorsInfo {
 }
 
 // GetValidatorsForAccount returns the validator information at current state from a defined account
-func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
+func (s *state) GetValidatorsForAccount(acc []byte) ValidatorsInfo {
 	var account [20]byte
 	copy(account[:], acc)
-	validators := StateValidatorsInfo{
-		Validators:  []*Validator{},
+	validators := ValidatorsInfo{
+		Validators:  []*primitives.Validator{},
 		Active:      int64(0),
 		PendingExit: int64(0),
 		PenaltyExit: int64(0),
@@ -338,15 +340,15 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 		if v.PayeeAddress == account {
 			validators.Validators = append(validators.Validators, v)
 			switch v.Status {
-			case StatusActive:
+			case primitives.StatusActive:
 				validators.Active++
-			case StatusActivePendingExit:
+			case primitives.StatusActivePendingExit:
 				validators.PendingExit++
-			case StatusExitedWithPenalty:
+			case primitives.StatusExitedWithPenalty:
 				validators.PenaltyExit++
-			case StatusExitedWithoutPenalty:
+			case primitives.StatusExitedWithoutPenalty:
 				validators.Exited++
-			case StatusStarting:
+			case primitives.StatusStarting:
 				validators.Starting++
 			}
 		}
@@ -355,12 +357,12 @@ func (s *State) GetValidatorsForAccount(acc []byte) StateValidatorsInfo {
 }
 
 // Copy returns a copy of the state.
-func (s *State) Copy() State {
+func (s *state) Copy() State {
 	s2 := *s
 
 	s2.CoinsState = s.CoinsState.Copy()
 
-	s2.ValidatorRegistry = make([]*Validator, len(s.ValidatorRegistry))
+	s2.ValidatorRegistry = make([]*primitives.Validator, len(s.ValidatorRegistry))
 
 	for i, c := range s.ValidatorRegistry {
 		v := c.Copy()
@@ -392,13 +394,13 @@ func (s *State) Copy() State {
 		s2.LatestBlockHashes[i] = c
 	}
 
-	s2.CurrentEpochVotes = make([]*AcceptedVoteInfo, len(s.CurrentEpochVotes))
+	s2.CurrentEpochVotes = make([]*primitives.AcceptedVoteInfo, len(s.CurrentEpochVotes))
 	for i, c := range s.CurrentEpochVotes {
 		cv := c.Copy()
 		s2.CurrentEpochVotes[i] = &cv
 	}
 
-	s2.PreviousEpochVotes = make([]*AcceptedVoteInfo, len(s.PreviousEpochVotes))
+	s2.PreviousEpochVotes = make([]*primitives.AcceptedVoteInfo, len(s.PreviousEpochVotes))
 	for i, c := range s.PreviousEpochVotes {
 		cv := c.Copy()
 		s2.PreviousEpochVotes[i] = &cv
@@ -413,5 +415,38 @@ func (s *State) Copy() State {
 	}
 
 	s2.Governance = s.Governance.Copy()
-	return s2
+	return &s2
+}
+
+func NewState(cs primitives.CoinsState, validators []*primitives.Validator, genHash chainhash.Hash, p *params.ChainParams) State {
+	s := &state{
+		CoinsState:                    cs,
+		ValidatorRegistry:             validators,
+		LatestValidatorRegistryChange: 0,
+		RANDAO:                        chainhash.Hash{},
+		NextRANDAO:                    chainhash.Hash{},
+		Slot:                          0,
+		EpochIndex:                    0,
+		JustificationBitfield:         0,
+		JustifiedEpoch:                0,
+		FinalizedEpoch:                0,
+		LatestBlockHashes:             make([][32]byte, p.LatestBlockRootsLength),
+		JustifiedEpochHash:            genHash,
+		CurrentEpochVotes:             make([]*primitives.AcceptedVoteInfo, 0),
+		PreviousJustifiedEpoch:        0,
+		PreviousJustifiedEpochHash:    genHash,
+		PreviousEpochVotes:            make([]*primitives.AcceptedVoteInfo, 0),
+		CurrentManagers:               p.InitialManagers,
+		VoteEpoch:                     0,
+		VoteEpochStartSlot:            0,
+		VotingState:                   GovernanceStateActive,
+		LastPaidSlot:                  0,
+	}
+	activeValidators := s.GetValidatorIndicesActiveAt(0)
+	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
+	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)) * 8)
+	return s
 }

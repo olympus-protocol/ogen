@@ -49,7 +49,7 @@ type syncProtocol struct {
 	host   HostNode
 	config Config
 	ctx    context.Context
-	log    logger.LoggerInterface
+	log    logger.Logger
 
 	chain chain.Blockchain
 

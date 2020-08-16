@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/peers"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -26,7 +26,7 @@ import (
 )
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.LoggerInterface, currParams params.ChainParams) error {
+func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams params.ChainParams) error {
 	db, err := blockdb.NewBlockDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -45,8 +45,8 @@ func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger
 	return nil
 }
 
-func getChainFile(path string, currParams params.ChainParams) (*primitives.ChainFile, error) {
-	chainFile := new(primitives.ChainFile)
+func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile, error) {
+	chainFile := new(state.ChainFile)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		resp, err := http.Get(currParams.ChainFileURL)
 		if err != nil {
@@ -94,7 +94,7 @@ var (
 		Long: `A Golang implementation of the Olympus protocol.
 Next generation blockchain secured by CASPER.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			var log logger.LoggerInterface
+			var log logger.Logger
 
 			if viper.GetBool("log_file") {
 				logFile, err := os.OpenFile(path.Join(DataFolder, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
@@ -284,7 +284,7 @@ var shutdownRequestChannel = make(chan struct{})
 
 var interruptSignals = []os.Signal{os.Interrupt}
 
-func InterruptListener(log logger.LoggerInterface, cancel context.CancelFunc) {
+func InterruptListener(log logger.Logger, cancel context.CancelFunc) {
 	go func() {
 		interruptChannel := make(chan os.Signal, 1)
 		signal.Notify(interruptChannel, interruptSignals...)

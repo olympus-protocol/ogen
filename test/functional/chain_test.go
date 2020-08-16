@@ -13,6 +13,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -32,15 +33,15 @@ func init() {
 
 var premineAddr, _ = testdata.PremineAddr.PublicKey().ToAccount()
 
-var initParams = primitives.InitializationParameters{
+var initParams = state.InitializationParameters{
 	GenesisTime:       time.Unix(time.Now().Unix()+30, 0),
 	PremineAddress:    premineAddr,
-	InitialValidators: []primitives.ValidatorInitialization{},
+	InitialValidators: []state.ValidatorInitialization{},
 }
 
-var F *server.Server
+var F server.Server
 var FAddr peer.AddrInfo
-var B *server.Server
+var B server.Server
 
 var runUntilHeight = 51
 
@@ -96,7 +97,7 @@ func createValidators() {
 
 	// Convert the validators to initialization params.
 	for _, vk := range valData {
-		val := primitives.ValidatorInitialization{
+		val := state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: premineAddr,
 		}
@@ -133,20 +134,15 @@ func firstNode() {
 	}
 
 	FAddr = peer.AddrInfo{
-		ID:    F.HostNode.GetHost().ID(),
-		Addrs: F.HostNode.GetHost().Network().ListenAddresses(),
+		ID:    F.HostNode().GetHost().ID(),
+		Addrs: F.HostNode().GetHost().Network().ListenAddresses(),
 	}
 
 	// Start the server
 	go F.Start()
 
-	// Open the keystore to start generating blocks
-	err = F.Proposer.OpenKeystore()
-	if err != nil {
-		log.Fatal(err)
-	}
 	// Start the proposer
-	err = F.Proposer.Start()
+	err = F.Proposer().Start()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -186,14 +182,8 @@ func secondNode() {
 	// Start the server
 	go B.Start()
 
-
-	// Open the keystore to start generating blocks
-	err = B.Proposer.OpenKeystore()
-	if err != nil {
-		log.Fatal(err)
-	}
 	// Start the proposer
-	err = B.Proposer.Start()
+	err = B.Proposer().Start()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -206,10 +196,10 @@ type blockNotifee struct {
 type blockAndReceipts struct {
 	block    *primitives.Block
 	receipts []*primitives.EpochReceipt
-	state    *primitives.State
+	state    *state.State
 }
 
-func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee {
+func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	bn := blockNotifee{
 		blocks: make(chan blockAndReceipts),
 	}
@@ -222,13 +212,13 @@ func newBlockNotifee(ctx context.Context, chain *chain.Blockchain) blockNotifee 
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
 	fmt.Printf("Slot %v Hash: %s Height: %v StateRoot: %s \n", row.Slot, hex.EncodeToString(row.Hash[:]), row.Height, hex.EncodeToString(row.StateRoot[:]))
 	fmt.Printf("%v Epoch Receipts \n", len(receipts))
 	for _, receipt := range receipts {
 		fmt.Printf("Validator: %v Amount: %v Type: %s \n", receipt.Validator, receipt.Amount, receipt.TypeString())
 	}
-	fmt.Printf("Justificated epoch %v Finalized epoch %v \n", newState.JustifiedEpoch, newState.FinalizedEpoch)
+	fmt.Printf("Justificated epoch %v Finalized epoch %v \n", newState.GetJustifiedEpoch(), newState.GetFinalizedEpoch())
 }
 
 func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
@@ -236,7 +226,7 @@ func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.P
 }
 
 func logNotify() {
-	bn := newBlockNotifee(context.Background(), F.Chain)
+	bn := newBlockNotifee(context.Background(), F.Chain())
 	for {
 		select {
 		case bl := <-bn.blocks:
@@ -248,7 +238,7 @@ func logNotify() {
 
 func Test_Connections(t *testing.T) {
 	// The backup node should connect to the first node
-	err := B.HostNode.GetHost().Connect(context.TODO(), FAddr)
+	err := B.HostNode().GetHost().Connect(context.TODO(), FAddr)
 	assert.NoError(t, err)
 }
 
@@ -256,16 +246,16 @@ func Test_ReachHeight(t *testing.T) {
 	// Check until the node reaches runUntilHeight
 	// Include a stall detector.
 	stall := 0
-	height := F.Chain.State().Height()
+	height := F.Chain().State().Height()
 	for {
-		if F.Chain.State().Tip().Height >= uint64(runUntilHeight) {
+		if F.Chain().State().Tip().Height >= uint64(runUntilHeight) {
 			break
 		}
 		time.Sleep(time.Second)
-		if F.Chain.State().Height() == height {
+		if F.Chain().State().Height() == height {
 			stall++
 		} else {
-			height = F.Chain.State().Height()
+			height = F.Chain().State().Height()
 		}
 		if stall >= 30 {
 			assert.Fail(t, "proposer stalled")
@@ -275,27 +265,27 @@ func Test_ReachHeight(t *testing.T) {
 
 func Test_NodesStateMatch(t *testing.T) {
 	// Stop proposing new blocks
-	F.Proposer.Stop()
+	F.Proposer().Stop()
 
 	// State from both nodes should match.
-	assert.Equal(t, F.Chain.State().Tip().Height, B.Chain.State().Tip().Height)
-	assert.Equal(t, F.Chain.State().Tip().Hash, B.Chain.State().Tip().Hash)
+	assert.Equal(t, F.Chain().State().Tip().Height, B.Chain().State().Tip().Height)
+	assert.Equal(t, F.Chain().State().Tip().Hash, B.Chain().State().Tip().Hash)
 }
 
 func Test_JustifiedEpochAndHash(t *testing.T) {
 
-	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, uint64(8))
+	assert.Equal(t, F.Chain().State().TipState().GetJustifiedEpoch(), uint64(8))
 
-	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, uint64(7))
+	assert.Equal(t, F.Chain().State().TipState().GetFinalizedEpoch(), uint64(7))
 
-	assert.NotEqual(t, F.Chain.State().TipState().JustifiedEpochHash, chainhash.Hash{})
-	assert.Equal(t, F.Chain.State().TipState().JustifiedEpoch, B.Chain.State().TipState().JustifiedEpoch)
-	assert.Equal(t, F.Chain.State().TipState().JustifiedEpochHash, B.Chain.State().TipState().JustifiedEpochHash)
-	assert.Equal(t, F.Chain.State().TipState().FinalizedEpoch, B.Chain.State().TipState().FinalizedEpoch)
+	assert.NotEqual(t, F.Chain().State().TipState().GetJustifiedEpochHash(), chainhash.Hash{})
+	assert.Equal(t, F.Chain().State().TipState().GetJustifiedEpoch(), B.Chain().State().TipState().GetJustifiedEpoch())
+	assert.Equal(t, F.Chain().State().TipState().GetJustifiedEpochHash(), B.Chain().State().TipState().GetJustifiedEpochHash())
+	assert.Equal(t, F.Chain().State().TipState().GetFinalizedEpoch(), B.Chain().State().TipState().GetFinalizedEpoch())
 }
 
 func Test_ValidatorRewards(t *testing.T) {
-	for _, v := range F.Chain.State().TipState().ValidatorRegistry {
-		assert.Greater(t, v.Balance, uint64(100 * 1e8))
+	for _, v := range F.Chain().State().TipState().GetValidatorRegistry() {
+		assert.Greater(t, v.Balance, uint64(100*1e8))
 	}
 }

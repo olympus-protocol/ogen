@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"os"
 	"testing"
@@ -43,7 +44,7 @@ var SAddr peer.AddrInfo
 
 var B *server.Server
 
-var initParams primitives.InitializationParameters
+var initParams state.InitializationParameters
 
 //some common vars that will be used on multiple tests
 var rawTx string
@@ -106,9 +107,9 @@ func startNode() {
 	}
 
 	// Convert the validator to initialization params. The validator will be binded to the premineAddr
-	var validators []primitives.ValidatorInitialization
+	var validators []state.ValidatorInitialization
 	for _, vk := range ogValidators {
-		val := primitives.ValidatorInitialization{
+		val := state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
 		}
@@ -135,7 +136,7 @@ func startNode() {
 	ctx := context.Background()
 
 	// Create the initialization parameters
-	initParams = primitives.InitializationParameters{
+	initParams = state.InitializationParameters{
 		GenesisTime:       time.Unix(time.Now().Unix()+15, 0),
 		PremineAddress:    addr,
 		InitialValidators: validators,
@@ -311,7 +312,7 @@ func Test_Chain_GetAccountInfo(t *testing.T) {
 
 	accByte, err := testdata.PremineAddr.PublicKey().Hash()
 	assert.NoError(t, err)
-	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	balanceMap := S.Chain.State().TipState().GetCoinsState().Balances
 	accBalance := balanceMap[accByte]
 
 	assert.Equal(t, strconv.Itoa(int(accBalance/1e8)), res.Balance.Confirmed)
@@ -580,7 +581,7 @@ func Test_Wallet_GetBalance(t *testing.T) {
 	accByte, err := testdata.PremineAddr.PublicKey().Hash()
 	assert.NoError(t, err)
 
-	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	balanceMap := S.Chain.State().TipState().GetCoinsState().Balances
 	accBalance := balanceMap[accByte]
 
 	responseBalance, err := strconv.Atoi(res.Confirmed)
@@ -627,7 +628,7 @@ func Test_Wallet_SendTransaction(t *testing.T) {
 	time.Sleep(time.Second * 30)
 	secondaccByte, err := secondAccount.PublicKey().Hash()
 	assert.NoError(t, err)
-	balanceMap := S.Chain.State().TipState().CoinsState.Balances
+	balanceMap := S.Chain.State().TipState().GetCoinsState().Balances
 	secondaccBalance := balanceMap[secondaccByte]
 	assert.Equal(t, strconv.Itoa(int(secondaccBalance/1000)), "23")
 	balance, _ := C.chain.GetAccountInfo(ctx, &proto.Account{Account: secondAddr})

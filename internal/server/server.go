@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
+	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"net/http"
 
@@ -16,7 +18,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/params"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type GlobalConfig struct {
@@ -26,7 +27,7 @@ type GlobalConfig struct {
 	InitialNodes []peer.AddrInfo
 	Port         string
 
-	InitConfig primitives.InitializationParameters
+	InitConfig state.InitializationParameters
 
 	RPCProxy     bool
 	RPCProxyPort string
@@ -40,42 +41,64 @@ type GlobalConfig struct {
 	Pprof   bool
 }
 type Mempools struct {
-	Votes   *mempool.VoteMempool
+	Votes   mempool.VoteMempool
 	Coins   mempool.CoinsMempool
 	Actions mempool.ActionMempool
 }
 
+type Server interface {
+	HostNode() peers.HostNode
+	Proposer() proposer.Proposer
+	Chain() chain.Blockchain
+	Start()
+	Stop() error
+}
+
 // Server is the main struct that contains ogen services
-type Server struct {
-	log    logger.LoggerInterface
+type server struct {
+	log    logger.Logger
 	config *GlobalConfig
 	params params.ChainParams
 
-	Chain    chain.Blockchain
-	HostNode peers.HostNode
-	RPC      chainrpc.RPCServer
-	Proposer proposer.Proposer
+	ch   chain.Blockchain
+	hn   peers.HostNode
+	rpc  chainrpc.RPCServer
+	prop proposer.Proposer
 
-	Mempools Mempools
+	pools Mempools
+}
+
+var _ Server = &server{}
+
+func (s *server) HostNode() peers.HostNode {
+	return s.hn
+}
+
+func (s *server) Proposer() proposer.Proposer {
+	return s.prop
+}
+
+func (s *server) Chain() chain.Blockchain {
+	return s.ch
 }
 
 // Start starts running the multiple ogen services.
-func (s *Server) Start() {
+func (s *server) Start() {
 	if s.config.Pprof {
 		go func() {
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 	}
-	err := s.Chain.Start()
+	err := s.ch.Start()
 	if err != nil {
 		s.log.Fatal("unable to start chain instance")
 	}
-	err = s.HostNode.Start()
+	err = s.hn.Start()
 	if err != nil {
 		s.log.Fatal("unable to start host node")
 	}
 	go func() {
-		err := s.RPC.Start()
+		err := s.rpc.Start()
 		if err != nil {
 			s.log.Fatal("unable to start rpc server")
 		}
@@ -83,14 +106,14 @@ func (s *Server) Start() {
 }
 
 // Stop closes the ogen services.
-func (s *Server) Stop() error {
-	s.Chain.Stop()
-	s.RPC.Stop()
+func (s *server) Stop() error {
+	s.ch.Stop()
+	s.rpc.Stop()
 	return nil
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.LoggerInterface, currParams params.ChainParams, db blockdb.BlockDB, ip primitives.InitializationParameters) (*Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip state.InitializationParameters) (Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
@@ -138,7 +161,9 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	prop, err := proposer.NewProposer(loadProposerConfig(configParams, logger), currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool, lastActionManager)
+	ks := keystore.NewKeystore(configParams.DataFolder, logger)
+
+	prop, err := proposer.NewProposer(logger, &currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
 	if err != nil {
 		return nil, err
 	}
@@ -148,15 +173,15 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	s := &Server{
+	s := &server{
 		config: configParams,
 		log:    logger,
 
-		Chain:    ch,
-		HostNode: hostnode,
-		RPC:      rpc,
-		Proposer: prop,
-		Mempools: Mempools{
+		ch:   ch,
+		hn:   hostnode,
+		rpc:  rpc,
+		prop: prop,
+		pools: Mempools{
 			Votes:   voteMempool,
 			Coins:   coinsMempool,
 			Actions: actionsMempool,
@@ -165,7 +190,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 	return s, nil
 }
 
-func loadChainConfig(config *GlobalConfig, logger logger.LoggerInterface) chain.Config {
+func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 	cfg := chain.Config{
 		Log:     logger,
 		Datadir: config.DataFolder,
@@ -173,15 +198,7 @@ func loadChainConfig(config *GlobalConfig, logger logger.LoggerInterface) chain.
 	return cfg
 }
 
-func loadProposerConfig(config *GlobalConfig, logger logger.LoggerInterface) proposer.Config {
-	cfg := proposer.Config{
-		Datadir: config.DataFolder,
-		Log:     logger,
-	}
-	return cfg
-}
-
-func loadPeersManConfig(config *GlobalConfig, logger logger.LoggerInterface) peers.Config {
+func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) peers.Config {
 	cfg := peers.Config{
 		Log:          logger,
 		InitialNodes: config.InitialNodes,
@@ -191,7 +208,7 @@ func loadPeersManConfig(config *GlobalConfig, logger logger.LoggerInterface) pee
 	return cfg
 }
 
-func loadRPCConfig(config *GlobalConfig, logger logger.LoggerInterface) chainrpc.Config {
+func loadRPCConfig(config *GlobalConfig, logger logger.Logger) chainrpc.Config {
 	return chainrpc.Config{
 		DataDir:      config.DataFolder,
 		Log:          logger,

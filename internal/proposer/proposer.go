@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"time"
@@ -21,38 +22,30 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-// Config is a config for the proposer.
-type Config struct {
-	Datadir string
-	Log     logger.LoggerInterface
-}
-
 // Proposer is the interface for proposer
 type Proposer interface {
-	OpenKeystore() (err error)
-	NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt)
+	NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt)
 	ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing)
 	ProposeBlocks()
 	VoteForBlocks()
 	Start() error
 	Stop()
-	Keystore() *keystore.Keystore
+	Keystore() keystore.Keystore
 }
 
 var _ Proposer = &proposer{}
 
 // proposer manages mining for the blockchain.
 type proposer struct {
-	log        logger.LoggerInterface
-	config     Config
-	params     params.ChainParams
+	log        logger.Logger
+	params     *params.ChainParams
 	chain      chain.Blockchain
-	keystore   *keystore.Keystore
+	keystore   keystore.Keystore
 	mineActive bool
 	context    context.Context
 	stop       context.CancelFunc
 
-	voteMempool    *mempool.VoteMempool
+	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
 	actionsMempool mempool.ActionMempool
 	hostnode       peers.HostNode
@@ -62,18 +55,8 @@ type proposer struct {
 	lastActionManager actionmanager.LastActionManager
 }
 
-// OpenKeystore opens the keystore with the provided password returns error if the keystore doesn't exist.
-func (p *proposer) OpenKeystore() (err error) {
-	p.keystore = keystore.NewKeystore(p.config.Datadir, p.log)
-	err = p.keystore.OpenKeystore()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(config Config, params params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool *mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager) (Proposer, error) {
+func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	blockTopic, err := hostnode.Topic("blocks")
 	if err != nil {
@@ -85,10 +68,11 @@ func NewProposer(config Config, params params.ChainParams, chain chain.Blockchai
 		cancel()
 		return nil, err
 	}
+
 	prop := &proposer{
-		log:               config.Log,
-		config:            config,
+		log:               log,
 		params:            params,
+		keystore:          ks,
 		chain:             chain,
 		mineActive:        true,
 		context:           ctx,
@@ -101,12 +85,16 @@ func NewProposer(config Config, params params.ChainParams, chain chain.Blockchai
 		voteTopic:         voteTopic,
 		lastActionManager: manager,
 	}
-	chain.Notify(prop)
+
+	err = prop.keystore.OpenKeystore()
+	if err != nil {
+		return nil, err
+	}
 	return prop, nil
 }
 
 // NewTip implements the BlockchainNotifee interface.
-func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState *primitives.State, _ []*primitives.EpochReceipt) {
+func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt) {
 	p.voteMempool.Remove(block)
 	p.coinsMempool.RemoveByBlock(block)
 	p.actionsMempool.RemoveByBlock(block, newState)
@@ -175,65 +163,74 @@ func (p *proposer) ProposeBlocks() {
 			tip := p.chain.State().Tip()
 			tipHash := tip.Hash
 
-			state, err := p.chain.State().TipStateAtSlot(slotToPropose)
+			voteState, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
 				p.log.Error(err)
+				blockTimer = time.NewTimer(time.Second * 10)
 				continue
 			}
 
 			slotIndex := (slotToPropose + p.params.EpochLength - 1) % p.params.EpochLength
-			proposerIndex := state.ProposerQueue[slotIndex]
-			proposer := state.ValidatorRegistry[proposerIndex]
+			proposerIndex := voteState.GetProposerQueue()[slotIndex]
+			proposer := voteState.GetValidatorRegistry()[proposerIndex]
 
 			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
 
 				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
-				votes, err := p.voteMempool.Get(slotToPropose, state, &p.params, proposerIndex)
+				votes, err := p.voteMempool.Get(slotToPropose, voteState, p.params, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
-				depositTxs, state, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), state)
+				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
-				coinTxs, state := p.coinsMempool.Get(p.params.MaxTxsPerBlock, state)
+				coinTxs, voteState := p.coinsMempool.Get(p.params.MaxTxsPerBlock, voteState)
 
-				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), state)
+				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
-				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), state)
+				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
-				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), state)
+				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
-				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), state)
+				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					return
+					blockTimer = time.NewTimer(time.Second * 10)
+					continue
 				}
 
-				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), state)
+				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
@@ -276,6 +273,7 @@ func (p *proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
@@ -312,12 +310,12 @@ func (p *proposer) VoteForBlocks() {
 
 			s := p.chain.State()
 
-			state, err := s.TipStateAtSlot(slotToVote)
+			voteState, err := s.TipStateAtSlot(slotToVote)
 			if err != nil {
 				panic(err)
 			}
 
-			validators, err := state.GetVoteCommittee(slotToVote, &p.params)
+			validators, err := voteState.GetVoteCommittee(slotToVote, p.params)
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
 				continue
@@ -334,43 +332,48 @@ func (p *proposer) VoteForBlocks() {
 
 			data := &primitives.VoteData{
 				Slot:            slotToVote,
-				FromEpoch:       state.JustifiedEpoch,
-				FromHash:        state.JustifiedEpochHash,
+				FromEpoch:       voteState.GetJustifiedEpoch(),
+				FromHash:        voteState.GetJustifiedEpochHash(),
 				ToEpoch:         toEpoch,
-				ToHash:          state.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, &p.params),
+				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, p.params),
 				BeaconBlockHash: beaconBlock.Hash,
 				Nonce:           p.lastActionManager.GetNonce(),
 			}
 
 			dataHash := data.Hash()
 
-			vote := &primitives.MultiValidatorVote{
-				Data:                  data,
-				ParticipationBitfield: bitfield.NewBitlist(uint64(len(validators))),
-			}
-
 			var signatures []*bls.Signature
 
-			for i, validatorIdx := range validators {
-				validator := state.ValidatorRegistry[validatorIdx]
-				if k, found := p.keystore.GetValidatorKey(validator.PubKey); found {
-					if !p.lastActionManager.ShouldRun(validator.PubKey) {
-						return
-					}
-					signatures = append(signatures, k.Sign(dataHash[:]))
+			bitlistVotes := bitfield.NewBitlist(uint64(len(validators)))
 
-					vote.ParticipationBitfield.Set(uint(i))
+			for i, index := range validators {
+				votingValidator := voteState.GetValidatorRegistry()[index]
+				key, found := p.keystore.GetValidatorKey(votingValidator.PubKey)
+				if !found {
+					continue
 				}
+				//signFunc := func(message *actionmanager.ValidatorHelloMessage) *bls.Signature {
+				//	msg := message.SignatureMessage()
+				//	return key.Sign(msg)
+				//}
+				//if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
+				signatures = append(signatures, key.Sign(dataHash[:]))
+				bitlistVotes.Set(uint(i))
+				//}
 			}
-
 			if len(signatures) > 0 {
 				sig := bls.AggregateSignatures(signatures)
 
 				var voteSig [96]byte
 				copy(voteSig[:], sig.Marshal())
-				vote.Sig = voteSig
 
-				err = p.voteMempool.AddValidate(vote, state)
+				vote := &primitives.MultiValidatorVote{
+					Data:                  data,
+					ParticipationBitfield: bitlistVotes,
+					Sig:                   voteSig,
+				}
+
+				err = p.voteMempool.AddValidate(vote, voteState)
 				if err != nil {
 					p.log.Error("unable to submit own generated vote")
 					return
@@ -391,18 +394,14 @@ func (p *proposer) VoteForBlocks() {
 
 // Start runs the proposer.
 func (p *proposer) Start() error {
+	p.chain.Notify(p)
+
 	numOurs := 0
 	numTotal := 0
-	for _, w := range p.chain.State().TipState().ValidatorRegistry {
-		secKey, ok := p.keystore.GetValidatorKey(w.PubKey)
+	for _, w := range p.chain.State().TipState().GetValidatorRegistry() {
+		_, ok := p.keystore.GetValidatorKey(w.PubKey)
 		if ok {
 			numOurs++
-		}
-		if ok {
-			p.lastActionManager.StartValidator(w.PubKey, func(message *actionmanager.ValidatorHelloMessage) *bls.Signature {
-				msg := message.SignatureMessage()
-				return secKey.Sign(msg)
-			})
 		}
 		numTotal++
 	}
@@ -416,9 +415,10 @@ func (p *proposer) Start() error {
 }
 
 func (p *proposer) Stop() {
+	p.chain.Unnotify(p)
 	p.stop()
 }
 
-func (p *proposer) Keystore() *keystore.Keystore {
+func (p *proposer) Keystore() keystore.Keystore {
 	return p.keystore
 }

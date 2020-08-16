@@ -2,6 +2,7 @@ package actionmanager
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"math/rand"
 	"sync"
 	"time"
@@ -24,7 +25,7 @@ const MaxMessagePropagationTime = 60 * time.Second
 
 // LastActionManager is an interface for lastActionManager
 type LastActionManager interface {
-	NewTip(row *chainindex.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt)
+	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
 	handleStartTopic(topic *pubsub.Subscription)
 	StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool
 	ShouldRun(val [48]byte) bool
@@ -40,7 +41,7 @@ var _ LastActionManager = &lastActionManager{}
 // This is a very basic protection against slashing. Validators, on startup,
 // will broadcast a StartMessage
 type lastActionManager struct {
-	log logger.LoggerInterface
+	log logger.Logger
 
 	hostNode peers.HostNode
 	ctx      context.Context
@@ -57,11 +58,11 @@ type lastActionManager struct {
 	params *params.ChainParams
 }
 
-func (l *lastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.Block, state *primitives.State, receipts []*primitives.EpochReceipt) {
+func (l *lastActionManager) NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt) {
 	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
 
-	proposerIndex := state.ProposerQueue[slotIndex]
-	proposer := state.ValidatorRegistry[proposerIndex]
+	proposerIndex := state.GetProposerQueue()[slotIndex]
+	proposer := state.GetValidatorRegistry()[proposerIndex]
 
 	l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 }
@@ -72,7 +73,7 @@ func (l *lastActionManager) ProposerSlashingConditionViolated(slashing *primitiv
 const validatorStartTopic = "validatorStart"
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(ctx context.Context, node peers.HostNode, log logger.LoggerInterface, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
+func NewLastActionManager(ctx context.Context, node peers.HostNode, log logger.Logger, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
 	topic, err := node.Topic(validatorStartTopic)
 	if err != nil {
 		return nil, err

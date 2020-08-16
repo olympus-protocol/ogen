@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"sync"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -59,7 +60,7 @@ func newCoinMempoolItem() *coinMempoolItem {
 type CoinsMempool interface {
 	Add(item primitives.Tx, state *primitives.CoinsState) error
 	RemoveByBlock(b *primitives.Block)
-	Get(maxTransactions uint64, state *primitives.State) ([]*primitives.Tx, *primitives.State)
+	Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State)
 }
 
 var _ CoinsMempool = &coinsMempool{}
@@ -71,7 +72,7 @@ type coinsMempool struct {
 	params     *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
-	log        logger.LoggerInterface
+	log        logger.Logger
 
 	mempool  map[[20]byte]*coinMempoolItem
 	balances map[[20]byte]uint64
@@ -129,7 +130,7 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *coinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]*primitives.Tx, *primitives.State) {
+func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State) {
 	cm.lock.RLock()
 	defer cm.lock.RUnlock()
 	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
@@ -137,7 +138,7 @@ func (cm *coinsMempool) Get(maxTransactions uint64, state *primitives.State) ([]
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := state.ApplyTransactionSingle(tx, [20]byte{}, cm.params); err != nil {
+			if err := s.ApplyTransactionSingle(tx, [20]byte{}, cm.params); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, tx)
@@ -148,7 +149,7 @@ outer:
 	}
 
 	// we can prioritize here, but we aren't to keep it simple
-	return allTransactions, state
+	return allTransactions, s
 }
 
 // func (cm *CoinsMempool) modifyBalance(tx primitives.Tx, add bool) error {
@@ -179,7 +180,7 @@ func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			continue
 		}
 
-		currentState := cm.blockchain.State().TipState().CoinsState
+		currentState := cm.blockchain.State().TipState().GetCoinsState()
 
 		err = cm.Add(*tx, &currentState)
 		if err != nil {
@@ -195,7 +196,7 @@ func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log logger.LoggerInterface, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (CoinsMempool, error) {
+func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (CoinsMempool, error) {
 	topic, err := hostNode.Topic("tx")
 	if err != nil {
 		return nil, err
