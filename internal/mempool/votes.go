@@ -345,7 +345,7 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			continue
 		}
 
-		m.log.Debugf("received votes from peer %s", id.String())
+		m.log.Debugf("received votes from peer %s", msg.GetFrom().String())
 
 		firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
 		tip := m.blockchain.State().Tip()
