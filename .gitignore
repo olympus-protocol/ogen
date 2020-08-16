@@ -47,7 +47,10 @@ peers/*.db
 data/
 data_*/
 
-
-
 # Certificates
 certs/
+
+# Binaries
+./ogen-cli
+./migration
+./ogen
