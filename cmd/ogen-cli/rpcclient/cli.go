@@ -3,6 +3,7 @@ package rpcclient
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -235,7 +236,33 @@ func newCli(rpcClient *RPCClient) *CLI {
 }
 
 func Run(host string, args []string) {
-	rpcClient := NewRPCClient(host, viper.GetString("datadir"))
+	DataFolder = viper.GetString("datadir")
+	if DataFolder != "" {
+		// Use config file from the flag.
+		viper.AddConfigPath(DataFolder)
+		viper.SetConfigName("config")
+	} else {
+		configDir, err := os.UserConfigDir()
+		if err != nil {
+			panic(err)
+		}
+
+		ogenDir := path.Join(configDir, "ogen")
+
+		if _, err := os.Stat(ogenDir); os.IsNotExist(err) {
+			err = os.Mkdir(ogenDir, 0744)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		DataFolder = ogenDir
+
+		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath(ogenDir)
+		viper.SetConfigName("config")
+	}
+	rpcClient := NewRPCClient(host, DataFolder)
 	cli := newCli(rpcClient)
 	cli.Run(args)
 }

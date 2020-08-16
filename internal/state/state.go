@@ -450,3 +450,7 @@ func NewState(cs primitives.CoinsState, validators []*primitives.Validator, genH
 	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)) * 8)
 	return s
 }
+
+func NewEmptyState() State {
+	return new(state)
+}

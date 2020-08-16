@@ -176,8 +176,6 @@ func setKey(tx *BlockDBUpdateTransaction, key []byte, to []byte) error {
 	return tx.bkt.Put(key, to)
 }
 
-var latestVotePrefix = []byte("latest-vote")
-
 var tipKey = []byte("chain-tip")
 
 // SetTip sets the current best tip of the blockchain.
@@ -208,9 +206,9 @@ func (brt *BlockDBReadTransaction) GetFinalizedState() (state.State, error) {
 	if err != nil {
 		return nil, err
 	}
-	var state state.State
-	err = state.Unmarshal(stateBytes)
-	return state, err
+	s := state.NewEmptyState()
+	err = s.Unmarshal(stateBytes)
+	return s, err
 }
 
 var justifiedStateKey = []byte("justified-state")
@@ -231,9 +229,9 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (state.State, error) {
 	if err != nil {
 		return nil, err
 	}
-	var state state.State
-	err = state.Unmarshal(stateBytes)
-	return state, err
+	s := state.NewEmptyState()
+	err = s.Unmarshal(stateBytes)
+	return s, err
 }
 
 var blockRowPrefix = []byte("block-row")
@@ -306,8 +304,6 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 	err = t.UnmarshalBinary(bs)
 	return t, err
 }
-
-var accountPrefix = []byte("account-")
 
 var _ DB = &blockDB{}
 var _ DBUpdateTransaction = &BlockDBUpdateTransaction{}
