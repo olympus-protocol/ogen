@@ -236,7 +236,7 @@ func newCli(rpcClient *RPCClient) *CLI {
 }
 
 func Run(host string, args []string) {
-	DataFolder = viper.GetString("datadir")
+	DataFolder := viper.GetString("datadir")
 	if DataFolder != "" {
 		// Use config file from the flag.
 		viper.AddConfigPath(DataFolder)
