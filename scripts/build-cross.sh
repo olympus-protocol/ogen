@@ -56,9 +56,9 @@ tar -czvf ogen-$OGEN_VERSION-osx-amd64.tar.gz ./$FOLDER_NAME
 rm -r ./$FOLDER_NAME
 
 echo "Building windows_amd64"
-CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build cmd/ogen/ogen.go -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a
-CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build cmd/ogen-cli/ogen-cli.go -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a
-CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build cmd/migration/migration.go -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a
+CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a cmd/ogen/ogen.go
+CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a cmd/ogen-cli/ogen-cli.go
+CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags netgo -ldflags '-extldflags "-static -static-libstdc++"' -a cmd/migration/migration.go 
 
 mkdir $FOLDER_NAME
 mv ogen.exe ./$FOLDER_NAME
