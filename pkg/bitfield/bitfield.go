@@ -42,15 +42,13 @@ func (b Bitlist) Merge(c Bitlist) (Bitlist, error) {
 		return nil, ErrorBitlistOverlaps
 	}
 	nb := NewBitlist(b.Len())
-	for i := range b {
-		for j := 0; j < 8; j++ {
-			if b.Get(uint(i + j)) {
-				nb.Set(uint(i + j))
-			}
-			if c.Get(uint(i + j)) {
-				nb.Set(uint(i + j))
-			}
-		}
+	indexb := b.BitIndices()
+	indexc := c.BitIndices()
+	for _, index := range indexb {
+		nb.Set(uint(index))
+	}
+	for _, index := range indexc {
+		nb.Set(uint(index))
 	}
 	return nb, nil
 }

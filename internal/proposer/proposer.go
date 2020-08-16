@@ -166,6 +166,7 @@ func (p *proposer) ProposeBlocks() {
 			voteState, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
 				p.log.Error(err)
+				blockTimer = time.NewTimer(time.Second * 10)
 				continue
 			}
 
@@ -176,6 +177,7 @@ func (p *proposer) ProposeBlocks() {
 			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
 
 				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
@@ -184,12 +186,14 @@ func (p *proposer) ProposeBlocks() {
 				votes, err := p.voteMempool.Get(slotToPropose, voteState, p.params, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
 				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
@@ -198,30 +202,35 @@ func (p *proposer) ProposeBlocks() {
 				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
 				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
 				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
 				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					return
+					blockTimer = time.NewTimer(time.Second * 10)
+					continue
 				}
 
 				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
@@ -264,6 +273,7 @@ func (p *proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 10)
 					continue
 				}
 
@@ -347,8 +357,8 @@ func (p *proposer) VoteForBlocks() {
 				//	return key.Sign(msg)
 				//}
 				//if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
-					signatures = append(signatures, key.Sign(dataHash[:]))
-					bitlistVotes.Set(uint(i))
+				signatures = append(signatures, key.Sign(dataHash[:]))
+				bitlistVotes.Set(uint(i))
 				//}
 			}
 			if len(signatures) > 0 {

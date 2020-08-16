@@ -337,36 +337,6 @@ func (m *voteMempool) getCurrentSlot() uint64 {
 	return uint64(slot)
 }
 
-func (m *voteMempool) getNextVoteTime(nextSlot uint64) time.Time {
-	return m.blockchain.GenesisTime().Add(time.Duration(nextSlot*m.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(m.params.SlotDuration) / 2)
-}
-
-func (m *voteMempool) cleanVotes() {
-	slotToKeep := m.getCurrentSlot() + 1
-	if slotToKeep <= 0 {
-		slotToKeep = 1
-	}
-
-	voteTimer := time.NewTimer(time.Until(m.getNextVoteTime(slotToKeep)))
-
-	for {
-		select {
-		case <-voteTimer.C:
-			// Check all votes against the next voting slot
-			for voteHash, vote := range m.pool {
-				if slotToKeep >= vote.Data.LastSlotValid(m.params) {
-					delete(m.pool, voteHash)
-					m.removeFromOrder(voteHash)
-				}
-			}
-			slotToKeep++
-			voteTimer = time.NewTimer(time.Until(m.getNextVoteTime(slotToKeep)))
-		case <-m.ctx.Done():
-			return
-		}
-	}
-}
-
 func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 	for {
 		msg, err := sub.Next(m.ctx)
@@ -374,6 +344,10 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			m.log.Warnf("error getting next message in votes topic: %s", err)
 			return
 		}
+		if msg.GetFrom() == id {
+			continue
+		}
+
 		vote := new(primitives.MultiValidatorVote)
 
 		if err := vote.Unmarshal(msg.Data); err != nil {
@@ -432,11 +406,6 @@ func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParam
 		return nil, err
 	}
 
-	_, err = voteTopic.Relay()
-	if err != nil {
-		return nil, err
-	}
-
 	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
 		params:            p,
@@ -450,7 +419,7 @@ func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParam
 	}
 
 	go vm.handleSubscription(voteSub, hostnode.GetHost().ID())
-	//go vm.cleanVotes()
+
 	return vm, nil
 }
 

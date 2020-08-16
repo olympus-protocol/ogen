@@ -28,3 +28,21 @@ func TestBitlist_Intersect(t *testing.T) {
 	intersect := a.Intersect(b)
 	assert.Equal(t, intersect, []int{5})
 }
+
+func TestBitlist_Merge(t *testing.T) {
+	a := bitfield.NewBitlist(50000)
+	b := bitfield.NewBitlist(50000)
+
+	a.Set(10)
+	a.Set(5)
+	b.Set(300)
+	b.Set(700)
+
+	merge, err := a.Merge(b)
+	assert.NoError(t, err)
+	assert.True(t, merge.Get(uint(10)))
+	assert.True(t, merge.Get(uint(5)))
+	assert.True(t, merge.Get(uint(300)))
+	assert.True(t, merge.Get(uint(700)))
+
+}
