@@ -71,10 +71,3 @@ func (p *PublicKey) Hash() ([20]byte, error) {
 	copy(hBytes[:], h[:])
 	return hBytes, nil
 }
-
-// Type returns the type of the public key.
-func (p *PublicKey) Type() FunctionalSignatureType {
-	return TypeSingle
-}
-
-var _ FunctionalPublicKey = &PublicKey{}

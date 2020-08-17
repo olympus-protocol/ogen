@@ -3,6 +3,7 @@ package bls
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 
@@ -12,10 +13,17 @@ import (
 )
 
 var (
-	// MaxMultiPubSize is the maximum amount of bytes a Multipub key can contain. 32 public keys.
-	MaxMultiPubSize = (32 * 48) + 8
+	// ErrorMultipubSize returned when the Multipub size exceed MaxMultiPubSize
+	ErrorMultipubSize = errors.New("multipub size is too large")
+	// ErrorMultisigSize returned when the Multisig size exceed MaxMultiPubSize
+	ErrorMultisigSize = errors.New("multisig size is too large")
+)
+
+const (
+	// MaxMultipubSize is the maximum amount of bytes a Multipub key can contain. 32 public keys.
+	MaxMultipubSize = (32 * 48) + 8
 	// MaxMultisigSize is the maximum amount of bytes a Multisig can contain. 32 public keys and 32 signatures.
-	MaxMultisigSize = MaxMultiPubSize + (96 * 32) + 33
+	MaxMultisigSize = MaxMultipubSize + (96 * 32) + 5 + 8
 )
 
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
@@ -25,13 +33,22 @@ type Multipub struct {
 }
 
 // Marshal encodes the data.
-func (m *Multipub) Marshal() []byte {
-	b, _ := m.MarshalSSZ()
-	return b
+func (m *Multipub) Marshal() ([]byte, error) {
+	b, err := m.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxMultipubSize {
+		return nil, ErrorMultipubSize
+	}
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (m *Multipub) Unmarshal(b []byte) error {
+	if len(b) > MaxMultipubSize {
+		return ErrorMultipubSize
+	}
 	return m.UnmarshalSSZ(b)
 }
 
@@ -58,11 +75,6 @@ func (m *Multipub) Copy() *Multipub {
 	}
 
 	return &newM
-}
-
-// Type returns the type of the multipub.
-func (m *Multipub) Type() FunctionalSignatureType {
-	return TypeMulti
 }
 
 // PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
@@ -112,16 +124,26 @@ func (m *Multipub) ToBech32(prefixes params.AccountPrefixes) string {
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"5"`
 }
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	return m.MarshalSSZ()
+	b, err := m.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > MaxMultisigSize {
+		return nil, ErrorMultisigSize
+	}
+	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (m *Multisig) Unmarshal(b []byte) error {
+	if len(b) > MaxMultisigSize {
+		return ErrorMultisigSize
+	}
 	return m.UnmarshalSSZ(b)
 }
 
@@ -135,7 +157,7 @@ func NewMultisig(multipub *Multipub) *Multisig {
 }
 
 // GetPublicKey gets the public key included in the signature.
-func (m *Multisig) GetPublicKey() (FunctionalPublicKey, error) {
+func (m *Multisig) GetPublicKey() (*Multipub, error) {
 	return m.PublicKey, nil
 }
 
@@ -206,13 +228,8 @@ func (m *Multisig) Verify(msg []byte) bool {
 	return aggSig.AggregateVerify(activePubsKeys, msgs)
 }
 
-// Type returns the type of the multisig.
-func (m *Multisig) Type() FunctionalSignatureType {
-	return TypeMulti
-}
-
 // Copy copies the signature.
-func (m *Multisig) Copy() FunctionalSignature {
+func (m *Multisig) Copy() *Multisig {
 	newMultisig := &Multisig{}
 	newMultisig.Signatures = make([][96]byte, len(m.Signatures))
 	for i := range newMultisig.Signatures {
@@ -222,10 +239,10 @@ func (m *Multisig) Copy() FunctionalSignature {
 	pub := m.PublicKey.Copy()
 	newMultisig.PublicKey = pub
 
-	newMultisig.KeysSigned = m.KeysSigned
+	newMultisig.KeysSigned = bitfield.NewBitlist(m.KeysSigned.Len())
+	for i, b := range m.KeysSigned {
+		newMultisig.KeysSigned[i] = b
+	}
 
 	return newMultisig
 }
-
-var _ FunctionalSignature = &Multisig{}
-var _ FunctionalPublicKey = &Multipub{}

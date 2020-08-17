@@ -64,11 +64,6 @@ func (c *CombinedSignature) Pub() (*PublicKey, error) {
 	return PublicKeyFromBytes(c.P)
 }
 
-// GetPublicKey gets the functional public key.
-func (c *CombinedSignature) GetPublicKey() (FunctionalPublicKey, error) {
-	return PublicKeyFromBytes(c.P)
-}
-
 // Sign signs a message using the secret key.
 func (c *CombinedSignature) Sign(sk *SecretKey, msg []byte) error {
 	expectedPub := sk.PublicKey()
@@ -99,17 +94,10 @@ func (c *CombinedSignature) Verify(msg []byte) bool {
 	return sig.Verify(msg, pub)
 }
 
-// Type returns the signature type.
-func (c *CombinedSignature) Type() FunctionalSignatureType {
-	return TypeSingle
-}
-
 // Copy copies the combined signature.
-func (c *CombinedSignature) Copy() FunctionalSignature {
+func (c *CombinedSignature) Copy() *CombinedSignature {
 	newCs := new(CombinedSignature)
 	copy(newCs.P[:], c.P[:])
 	copy(newCs.S[:], c.S[:])
 	return newCs
 }
-
-var _ FunctionalSignature = &CombinedSignature{}

@@ -28,10 +28,11 @@ func Test_MultipubSerialize(t *testing.T) {
 	f := fuzz.New().NilChance(0).NumElements(32, 32)
 	var v bls.Multipub
 	f.Fuzz(&v)
-	ser := v.Marshal()
+	ser, err := v.Marshal()
+	assert.NoError(t, err)
 
 	var desc bls.Multipub
-	err := desc.Unmarshal(ser)
+	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
 	assert.Equal(t, v, desc)

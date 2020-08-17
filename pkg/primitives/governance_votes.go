@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	"bytes"
 	"errors"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -120,21 +119,10 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type          uint64
-	Data          [100]byte
-	FunctionalSig [144]byte
-	VoteEpoch     uint64
-}
-
-// Signature returns the governance vote bls signature.
-func (g *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
-	buf := bytes.NewBuffer([]byte{})
-	buf.Write(g.FunctionalSig[:])
-	sig, err := bls.ReadFunctionalSignature(buf)
-	if err != nil {
-		return nil, err
-	}
-	return sig, nil
+	Type      uint64
+	Data      [100]byte
+	Signature [144]byte
+	VoteEpoch uint64
 }
 
 // Marshal encodes the data.
@@ -160,17 +148,26 @@ func (g *GovernanceVote) Unmarshal(b []byte) error {
 // Valid returns a boolean that checks for validity of the vote.
 func (g *GovernanceVote) Valid() bool {
 	sigHash := g.SignatureHash()
-	sig, err := g.Signature()
+	combinedSig := new(bls.CombinedSignature)
+	err := combinedSig.Unmarshal(g.Signature[:])
 	if err != nil {
 		return false
 	}
-	return sig.Verify(sigHash[:])
+	pub, err := combinedSig.Pub()
+	if err != nil {
+		return false
+	}
+	sig, err := combinedSig.Sig()
+	if err != nil {
+		return false
+	}
+	return sig.Verify(sigHash[:], pub)
 }
 
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := g.Copy()
-	cp.FunctionalSig = [144]byte{}
+	cp.Signature = [144]byte{}
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
@@ -186,6 +183,6 @@ func (g *GovernanceVote) Copy() *GovernanceVote {
 	newGv := *g
 	newGv.Data = [100]byte{}
 	copy(newGv.Data[:], g.Data[:])
-	newGv.FunctionalSig = g.FunctionalSig
+	newGv.Signature = g.Signature
 	return &newGv
 }

@@ -27,14 +27,13 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		if len(vote.Data) != 0 {
-			return fmt.Errorf("expected EnterVotingPeriod vote to have no data")
-		}
-		sig, err := vote.Signature()
+		sig := vote.Signature
+		var combinedSig = new(bls.CombinedSignature)
+		err := combinedSig.Unmarshal(sig[:])
 		if err != nil {
 			return err
 		}
-		pubKey, err := sig.GetPublicKey()
+		pubKey, err := combinedSig.Pub()
 		if err != nil {
 			return err
 		}
@@ -59,11 +58,13 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
 		}
-		sig, err := vote.Signature()
+		sig := vote.Signature
+		var combinedSig = new(bls.CombinedSignature)
+		err := combinedSig.Unmarshal(sig[:])
 		if err != nil {
 			return err
 		}
-		pubKey, err := sig.GetPublicKey()
+		pubKey, err := combinedSig.Pub()
 		if err != nil {
 			return err
 		}
@@ -89,7 +90,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
 		}
-		sig, err := vote.Signature()
+		sig := vote.Signature
 		if err != nil {
 			return err
 		}

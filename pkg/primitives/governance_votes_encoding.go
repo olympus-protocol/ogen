@@ -268,8 +268,8 @@ func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (1) 'Data'
 	dst = append(dst, g.Data[:]...)
 
-	// Field (2) 'FunctionalSig'
-	dst = append(dst, g.FunctionalSig[:]...)
+	// Field (2) 'Signature'
+	dst = append(dst, g.Signature[:]...)
 
 	// Field (3) 'VoteEpoch'
 	dst = ssz.MarshalUint64(dst, g.VoteEpoch)
@@ -291,8 +291,8 @@ func (g *GovernanceVote) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Data'
 	copy(g.Data[:], buf[8:108])
 
-	// Field (2) 'FunctionalSig'
-	copy(g.FunctionalSig[:], buf[108:252])
+	// Field (2) 'Signature'
+	copy(g.Signature[:], buf[108:252])
 
 	// Field (3) 'VoteEpoch'
 	g.VoteEpoch = ssz.UnmarshallUint64(buf[252:260])
@@ -321,8 +321,8 @@ func (g *GovernanceVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	// Field (1) 'Data'
 	hh.PutBytes(g.Data[:])
 
-	// Field (2) 'FunctionalSig'
-	hh.PutBytes(g.FunctionalSig[:])
+	// Field (2) 'Signature'
+	hh.PutBytes(g.Signature[:])
 
 	// Field (3) 'VoteEpoch'
 	hh.PutUint64(g.VoteEpoch)
