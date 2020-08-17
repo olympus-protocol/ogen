@@ -2,6 +2,7 @@ package primitives_test
 
 import (
 	"github.com/google/gofuzz"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/stretchr/testify/assert"
@@ -70,10 +71,13 @@ func Test_GovernanceVoteSerialize(t *testing.T) {
 
 func TestGovernanceVote_Copy(t *testing.T) {
 	v := primitives.GovernanceVote{
-		Type:          1,
-		Data:          [100]byte{1, 2, 3},
-		FunctionalSig: [144]byte{1, 2, 3},
-		VoteEpoch:     1,
+		Type: 1,
+		Data: [100]byte{1, 2, 3},
+		CombinedSig: &bls.CombinedSignature{
+			S: [96]byte{1, 2, 3},
+			P: [48]byte{1, 2, 3},
+		},
+		VoteEpoch: 1,
 	}
 
 	v2 := v.Copy()
@@ -84,8 +88,8 @@ func TestGovernanceVote_Copy(t *testing.T) {
 	v.Data[0] = 2
 	assert.Equal(t, v2.Data[0], uint8(1))
 
-	v.FunctionalSig[0] = 2
-	assert.Equal(t, v2.FunctionalSig[0], uint8(1))
+	v.CombinedSig.S[0] = 2
+	assert.Equal(t, v2.CombinedSig.S[0], uint8(1))
 
 	v.VoteEpoch = 2
 	assert.Equal(t, v2.VoteEpoch, uint64(1))

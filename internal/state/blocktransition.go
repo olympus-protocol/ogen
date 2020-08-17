@@ -27,13 +27,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		sig := vote.Signature
-		var combinedSig = new(bls.CombinedSignature)
-		err := combinedSig.Unmarshal(sig[:])
-		if err != nil {
-			return err
-		}
-		pubKey, err := combinedSig.Pub()
+		sig := vote.CombinedSig
+		pubKey, err := sig.Pub()
 		if err != nil {
 			return err
 		}
@@ -44,7 +39,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
 			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
-		if !vote.Valid() {
+		if !vote.ValidCombined() {
 			return fmt.Errorf("vote signature did not validate")
 		}
 	case primitives.VoteFor:
@@ -58,13 +53,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
 		}
-		sig := vote.Signature
-		var combinedSig = new(bls.CombinedSignature)
-		err := combinedSig.Unmarshal(sig[:])
-		if err != nil {
-			return err
-		}
-		pubKey, err := combinedSig.Pub()
+		sig := vote.CombinedSig
+		pubKey, err := sig.Pub()
 		if err != nil {
 			return err
 		}
@@ -78,7 +68,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if _, ok := s.Governance.ReplaceVotes[pkh]; ok {
 			return fmt.Errorf("found existing vote for same public key hash")
 		}
-		if !vote.Valid() {
+		if !vote.ValidCombined() {
 			return fmt.Errorf("vote signature did not validate")
 		}
 	case primitives.UpdateManagersInstantly:
@@ -90,23 +80,16 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
 		}
-		sig := vote.Signature
-		if err != nil {
-			return err
-		}
+		sig := vote.Multisig
 		pub, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
-		mp, ok := pub.(*bls.Multipub)
-		if !ok {
-			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
-		}
-		if mp.NumNeeded != 5 {
+		if pub.NumNeeded != 5 {
 			return fmt.Errorf("expected 5 signatures needed")
 		}
-		for i := range mp.PublicKeys {
-			pub, err := bls.PublicKeyFromBytes(mp.PublicKeys[i])
+		for i := range pub.PublicKeys {
+			pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i])
 			if err != nil {
 				return err
 			}
@@ -119,7 +102,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 			}
 		}
 
-		if !vote.Valid() {
+		if !vote.ValidMultisig() {
 			return fmt.Errorf("vote signature is not valid")
 		}
 	case primitives.UpdateManagersVote:
@@ -131,24 +114,17 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		sig, err := vote.Signature()
-		if err != nil {
-			return err
-		}
+		sig := vote.Multisig
 		// must include multisig signed by 5/5 managers
 		pub, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
-		mp, ok := pub.(*bls.Multipub)
-		if !ok {
-			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
-		}
-		if mp.NumNeeded >= 3 {
+		if pub.NumNeeded >= 3 {
 			return fmt.Errorf("expected 3 signatures needed")
 		}
-		for i := range mp.PublicKeys {
-			pub, err := bls.PublicKeyFromBytes(mp.PublicKeys[i])
+		for i := range pub.PublicKeys {
+			pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i])
 			if err != nil {
 				return err
 			}
@@ -161,7 +137,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 			}
 		}
 
-		if !vote.Valid() {
+		if !vote.ValidMultisig() {
 			return fmt.Errorf("vote signature is not valid")
 		}
 	default:
@@ -176,11 +152,8 @@ func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params
 	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
 		return err
 	}
-	sig, err := vote.Signature()
-	if err != nil {
-		return err
-	}
-	votePub, err := sig.GetPublicKey()
+	sig := vote.CombinedSig
+	votePub, err := sig.Pub()
 	if err != nil {
 		return err
 	}

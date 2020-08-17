@@ -20,7 +20,7 @@ func Test_CombinedSignatureCopy(t *testing.T) {
 	comb.P = newPub
 	comb.S = newSig
 
-	pub, err := comb2.GetPublicKey()
+	pub, err := comb2.Pub()
 	assert.NoError(t, err)
 
 	var copyNewPub [48]byte

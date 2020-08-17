@@ -119,10 +119,11 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type      uint64
-	Data      [100]byte
-	Signature [144]byte
-	VoteEpoch uint64
+	Type        uint64
+	Data        [100]byte
+	CombinedSig *bls.CombinedSignature
+	Multisig    *bls.Multisig
+	VoteEpoch   uint64
 }
 
 // Marshal encodes the data.
@@ -145,29 +146,31 @@ func (g *GovernanceVote) Unmarshal(b []byte) error {
 	return g.UnmarshalSSZ(b)
 }
 
-// Valid returns a boolean that checks for validity of the vote.
-func (g *GovernanceVote) Valid() bool {
+// ValidCombined returns a boolean that checks for validity of the vote in case it uses a combined signature
+func (g *GovernanceVote) ValidCombined() bool {
 	sigHash := g.SignatureHash()
-	combinedSig := new(bls.CombinedSignature)
-	err := combinedSig.Unmarshal(g.Signature[:])
+	pub, err := g.CombinedSig.Pub()
 	if err != nil {
 		return false
 	}
-	pub, err := combinedSig.Pub()
-	if err != nil {
-		return false
-	}
-	sig, err := combinedSig.Sig()
+	sig, err := g.CombinedSig.Sig()
 	if err != nil {
 		return false
 	}
 	return sig.Verify(sigHash[:], pub)
 }
 
+// ValidMultisig returns a boolean that checks for validity of the vote in case it uses a multi signature
+func (g *GovernanceVote) ValidMultisig() bool {
+	sigHash := g.SignatureHash()
+	return g.Multisig.Verify(sigHash[:])
+}
+
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := g.Copy()
-	cp.Signature = [144]byte{}
+	g.CombinedSig = nil
+	g.Multisig = nil
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
@@ -183,6 +186,11 @@ func (g *GovernanceVote) Copy() *GovernanceVote {
 	newGv := *g
 	newGv.Data = [100]byte{}
 	copy(newGv.Data[:], g.Data[:])
-	newGv.Signature = g.Signature
+	if newGv.CombinedSig != nil {
+		newGv.CombinedSig = g.CombinedSig.Copy()
+	}
+	if newGv.Multisig != nil {
+		newGv.Multisig = g.Multisig.Copy()
+	}
 	return &newGv
 }
