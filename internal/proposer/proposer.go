@@ -88,6 +88,12 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 
 	err = prop.keystore.OpenKeystore()
 	if err != nil {
+		if err == keystore.ErrorNotInitialized {
+			err = prop.keystore.CreateKeystore()
+			if err != nil {
+				return nil, err
+			}
+		}
 		return nil, err
 	}
 	return prop, nil
