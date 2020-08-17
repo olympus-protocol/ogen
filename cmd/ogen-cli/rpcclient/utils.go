@@ -26,12 +26,9 @@ func (c *RPCClient) stopProposer(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) startProposer(args []string) (string, error) {
+func (c *RPCClient) startProposer([]string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	if len(args) < 1 {
-		return "", errors.New("Usage: startproposer <keystore_password>")
-	}
 	res, err := c.utils.StartProposer(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
