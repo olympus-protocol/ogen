@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"sync"
 
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -190,17 +191,23 @@ func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (
 }
 
 func (s *walletServer) StartValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
-	for i := range keys.Keys {
-		var privKeyBytes [32]byte
-		privKeyDecode, err := hex.DecodeString(keys.Keys[i])
-		if err != nil {
-			return nil, err
-		}
-		copy(privKeyBytes[:], privKeyDecode)
-		_, err = s.wallet.StartValidator(privKeyBytes)
-		if err != nil {
-			return nil, err
-		}
+	var wg sync.WaitGroup
+	for _, key := range keys.Keys {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, keyStr string) {
+			var privKeyBytes [32]byte
+			privKeyDecode, err := hex.DecodeString(keyStr)
+			if err != nil {
+				return
+			}
+			copy(privKeyBytes[:], privKeyDecode)
+
+			_, err = s.wallet.StartValidator(privKeyBytes)
+			if err != nil {
+				return
+			}
+		}(&wg, key)
+
 	}
 	return &proto.Success{Success: true}, nil
 }

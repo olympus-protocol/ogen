@@ -23,11 +23,11 @@ type chainServer struct {
 }
 
 func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
-	state := s.chain.State()
-	validators := state.TipState().GetValidators()
+	st := s.chain.State()
+	validators := st.TipState().GetValidators()
 	return &proto.ChainInfo{
-		BlockHash:   state.Tip().Hash.String(),
-		BlockHeight: state.Height(),
+		BlockHash:   st.Tip().Hash.String(),
+		BlockHeight: st.Height(),
 		Validators: &proto.ValidatorsInfo{
 			Active:      validators.Active,
 			PendingExit: validators.PendingExit,
