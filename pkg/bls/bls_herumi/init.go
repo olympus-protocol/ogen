@@ -23,9 +23,3 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 	MaxCost:     1 << 19, // 500 kb is cache max size
 	BufferItems: 64,
 })
-
-var sigCache, _ = ristretto.NewCache(&ristretto.Config{
-	NumCounters: maxKeys,
-	MaxCost:     1 << 19, // 500 kb is cache max size
-	BufferItems: 64,
-})

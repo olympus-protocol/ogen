@@ -13,6 +13,7 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/google/gofuzz v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
+	github.com/kilic/bls12-381 v0.0.0-20200731194930-64c428e1bff5
 	github.com/libp2p/go-libp2p v0.10.2
 	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
