@@ -3,6 +3,7 @@ package actionmanager
 import (
 	"context"
 	"github.com/olympus-protocol/ogen/internal/state"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"math/rand"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ const MaxMessagePropagationTime = 60 * time.Second
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
 	handleStartTopic(topic *pubsub.Subscription)
-	StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool
+	StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) bls_interface.Signature) bool
 	ShouldRun(val [48]byte) bool
 	shouldRun(pubSer [48]byte) bool
 	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
@@ -116,17 +117,17 @@ func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 			return
 		}
 
-		sig, err := bls.SignatureFromBytes(validatorHello.Signature)
+		sig, err := bls.CurrImplementation.SignatureFromBytes(validatorHello.Signature[:])
 		if err != nil {
 			l.log.Warnf("invalid signature: %s", err)
 		}
 
-		pub, err := bls.PublicKeyFromBytes(validatorHello.PublicKey)
+		pub, err := bls.CurrImplementation.PublicKeyFromBytes(validatorHello.PublicKey[:])
 		if err != nil {
 			l.log.Warnf("invalid pubkey: %s", err)
 		}
 
-		if !sig.Verify(validatorHello.SignatureMessage(), pub) {
+		if !sig.Verify(pub, validatorHello.SignatureMessage()) {
 			l.log.Warnf("validator hello signature did not verify")
 			return
 		}
@@ -134,7 +135,7 @@ func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) *bls.Signature) bool {
+func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) bls_interface.Signature) bool {
 	l.lastActionsLock.RLock()
 	defer l.lastActionsLock.RUnlock()
 

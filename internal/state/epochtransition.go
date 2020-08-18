@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -246,7 +246,7 @@ func (s *state) CheckForVoteTransitions(p *params.ChainParams) {
 		totalBlockReward := p.BaseRewardPerBlock * 60 * 60 * 24 * 30 / p.SlotDuration
 		perGroup := totalBlockReward / 10
 
-		multipub := bls.PublicKeyHashesToMultisigHash(s.CurrentManagers, 5)
+		multipub := multisig.PublicKeyHashesToMultisigHash(s.CurrentManagers, 5)
 		s.CoinsState.Balances[multipub] += perGroup
 		if len(s.CurrentManagers) != len(p.GovernancePercentages) {
 			return

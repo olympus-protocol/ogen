@@ -2,7 +2,7 @@ package primitives_test
 
 import (
 	"github.com/google/gofuzz"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +73,7 @@ func TestGovernanceVote_Copy(t *testing.T) {
 	v := primitives.GovernanceVote{
 		Type: 1,
 		Data: [100]byte{1, 2, 3},
-		CombinedSig: &bls.CombinedSignature{
+		CombinedSig: &multisig.CombinedSignature{
 			S: [96]byte{1, 2, 3},
 			P: [48]byte{1, 2, 3},
 		},

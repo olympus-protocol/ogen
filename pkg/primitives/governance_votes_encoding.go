@@ -3,7 +3,7 @@ package primitives
 
 import (
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 )
 
 // MarshalSSZ ssz marshals the CommunityVoteDataInfo object
@@ -272,7 +272,7 @@ func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (2) 'CombinedSig'
 	if g.CombinedSig == nil {
-		g.CombinedSig = new(bls.CombinedSignature)
+		g.CombinedSig = new(multisig.CombinedSignature)
 	}
 	if dst, err = g.CombinedSig.MarshalSSZTo(dst); err != nil {
 		return
@@ -281,7 +281,7 @@ func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Offset (3) 'Multisig'
 	dst = ssz.WriteOffset(dst, offset)
 	if g.Multisig == nil {
-		g.Multisig = new(bls.Multisig)
+		g.Multisig = new(multisig.Multisig)
 	}
 	offset += g.Multisig.SizeSSZ()
 
@@ -315,7 +315,7 @@ func (g *GovernanceVote) UnmarshalSSZ(buf []byte) error {
 
 	// Field (2) 'CombinedSig'
 	if g.CombinedSig == nil {
-		g.CombinedSig = new(bls.CombinedSignature)
+		g.CombinedSig = new(multisig.CombinedSignature)
 	}
 	if err = g.CombinedSig.UnmarshalSSZ(buf[108:252]); err != nil {
 		return err
@@ -333,7 +333,7 @@ func (g *GovernanceVote) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o3:]
 		if g.Multisig == nil {
-			g.Multisig = new(bls.Multisig)
+			g.Multisig = new(multisig.Multisig)
 		}
 		if err = g.Multisig.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -348,7 +348,7 @@ func (g *GovernanceVote) SizeSSZ() (size int) {
 
 	// Field (3) 'Multisig'
 	if g.Multisig == nil {
-		g.Multisig = new(bls.Multisig)
+		g.Multisig = new(multisig.Multisig)
 	}
 	size += g.Multisig.SizeSSZ()
 

@@ -2,8 +2,8 @@ package primitives
 
 import (
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
-	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -121,8 +121,8 @@ const (
 type GovernanceVote struct {
 	Type        uint64
 	Data        [100]byte
-	CombinedSig *bls.CombinedSignature
-	Multisig    *bls.Multisig
+	CombinedSig *multisig.CombinedSignature
+	Multisig    *multisig.Multisig
 	VoteEpoch   uint64
 }
 
@@ -157,7 +157,7 @@ func (g *GovernanceVote) ValidCombined() bool {
 	if err != nil {
 		return false
 	}
-	return sig.Verify(sigHash[:], pub)
+	return sig.Verify(pub, sigHash[:])
 }
 
 // ValidMultisig returns a boolean that checks for validity of the vote in case it uses a multi signature

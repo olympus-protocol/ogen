@@ -3,7 +3,7 @@ package primitives
 
 import (
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 )
 
 // MarshalSSZ ssz marshals the TxMulti object
@@ -31,7 +31,7 @@ func (t *TxMulti) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Offset (4) 'Signature'
 	dst = ssz.WriteOffset(dst, offset)
 	if t.Signature == nil {
-		t.Signature = new(bls.Multisig)
+		t.Signature = new(multisig.Multisig)
 	}
 	offset += t.Signature.SizeSSZ()
 
@@ -75,7 +75,7 @@ func (t *TxMulti) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o4:]
 		if t.Signature == nil {
-			t.Signature = new(bls.Multisig)
+			t.Signature = new(multisig.Multisig)
 		}
 		if err = t.Signature.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -90,7 +90,7 @@ func (t *TxMulti) SizeSSZ() (size int) {
 
 	// Field (4) 'Signature'
 	if t.Signature == nil {
-		t.Signature = new(bls.Multisig)
+		t.Signature = new(multisig.Multisig)
 	}
 	size += t.Signature.SizeSSZ()
 

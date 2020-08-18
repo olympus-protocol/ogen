@@ -2,8 +2,8 @@ package primitives
 
 import (
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
-	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -17,7 +17,7 @@ var (
 
 const (
 	// MaxTransactionSize is the maximum size of the transaction information with a single transfer payload
-	MaxTransactionMultiSize = bls.MaxMultisigSize + 20 + 8 + 8 + 8
+	MaxTransactionMultiSize = multisig.MaxMultisigSize + 20 + 8 + 8 + 8
 )
 
 // TxMulti represents a transaction on the blockchain using a multi signature
@@ -26,7 +26,7 @@ type TxMulti struct {
 	Amount    uint64
 	Nonce     uint64
 	Fee       uint64
-	Signature *bls.Multisig
+	Signature *multisig.Multisig
 }
 
 // Marshal encodes the data.

@@ -77,7 +77,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if prefix != s.params.AccountPrefixes.Private {
 		return nil, errors.New("wrong wallet format for current network")
 	}
-	blsPriv, err := bls.SecretKeyFromBytes(priv)
+	blsPriv, err := bls.CurrImplementation.SecretKeyFromBytes(priv)
 	if err != nil {
 		return nil, err
 	}

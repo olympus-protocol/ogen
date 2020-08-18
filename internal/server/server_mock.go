@@ -6,6 +6,9 @@ package server
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	chain "github.com/olympus-protocol/ogen/internal/chain"
+	peers "github.com/olympus-protocol/ogen/internal/peers"
+	proposer "github.com/olympus-protocol/ogen/internal/proposer"
 	reflect "reflect"
 )
 
@@ -30,6 +33,48 @@ func NewMockServer(ctrl *gomock.Controller) *MockServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockServer) EXPECT() *MockServerMockRecorder {
 	return m.recorder
+}
+
+// HostNode mocks base method
+func (m *MockServer) HostNode() peers.HostNode {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HostNode")
+	ret0, _ := ret[0].(peers.HostNode)
+	return ret0
+}
+
+// HostNode indicates an expected call of HostNode
+func (mr *MockServerMockRecorder) HostNode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HostNode", reflect.TypeOf((*MockServer)(nil).HostNode))
+}
+
+// Proposer mocks base method
+func (m *MockServer) Proposer() proposer.Proposer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Proposer")
+	ret0, _ := ret[0].(proposer.Proposer)
+	return ret0
+}
+
+// Proposer indicates an expected call of Proposer
+func (mr *MockServerMockRecorder) Proposer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Proposer", reflect.TypeOf((*MockServer)(nil).Proposer))
+}
+
+// Chain mocks base method
+func (m *MockServer) Chain() chain.Blockchain {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Chain")
+	ret0, _ := ret[0].(chain.Blockchain)
+	return ret0
+}
+
+// Chain indicates an expected call of Chain
+func (mr *MockServerMockRecorder) Chain() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Chain", reflect.TypeOf((*MockServer)(nil).Chain))
 }
 
 // Start mocks base method
