@@ -224,35 +224,35 @@ func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress
 }
 
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
-// func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
-// 	u := s.CoinsState
-// 	pkh, err := tx.FromPubkeyHash()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if u.Balances[pkh] < tx.Amount+tx.Fee {
-// 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
-// 	}
+func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+	u := s.GetCoinsState()
+	pkh, err := tx.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+	}
 
-// 	if u.Nonces[pkh] >= tx.Nonce {
-// 		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
-// 	}
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+	}
 
-// 	if err := tx.VerifySig(); err != nil {
-// 		return err
-// 	}
+	if err := tx.VerifySig(); err != nil {
+		return err
+	}
 
-// 	u.Balances[pkh] -= tx.Amount + tx.Fee
-// 	u.Balances[tx.To] += tx.Amount
-// 	u.Balances[blockWithdrawalAddress] += tx.Fee
-// 	u.Nonces[pkh] = tx.Nonce
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
 
-// 	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
-// 		delete(s.Governance.ReplaceVotes, pkh)
-// 	}
+	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		delete(s.Governance.ReplaceVotes, pkh)
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
 func (s *state) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error) {

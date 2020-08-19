@@ -206,6 +206,8 @@ func (p *proposer) ProposeBlocks() {
 
 				coinTxs, voteState := p.coinsMempool.Get(p.params.MaxTxsPerBlock, voteState)
 
+				coinTxMulti := p.coinsMempool.GetMulti(p.params.MaxTxsMultiPerBlock, voteState)
+
 				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
@@ -251,6 +253,7 @@ func (p *proposer) ProposeBlocks() {
 					},
 					Votes:             votes,
 					Txs:               coinTxs,
+					TxsMulti:          coinTxMulti,
 					Deposits:          depositTxs,
 					Exits:             exitTxs,
 					RANDAOSlashings:   randaoSlashings,

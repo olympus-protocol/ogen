@@ -271,6 +271,20 @@ func (mr *MockStateMockRecorder) ApplyTransactionSingle(tx, blockWithdrawalAddre
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyTransactionSingle", reflect.TypeOf((*MockState)(nil).ApplyTransactionSingle), tx, blockWithdrawalAddress, p)
 }
 
+// ApplyTransactionMulti mocks base method
+func (m *MockState) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyTransactionMulti", tx, blockWithdrawalAddress, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyTransactionMulti indicates an expected call of ApplyTransactionMulti
+func (mr *MockStateMockRecorder) ApplyTransactionMulti(tx, blockWithdrawalAddress, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyTransactionMulti", reflect.TypeOf((*MockState)(nil).ApplyTransactionMulti), tx, blockWithdrawalAddress, p)
+}
+
 // IsProposerSlashingValid mocks base method
 func (m *MockState) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error) {
 	m.ctrl.T.Helper()

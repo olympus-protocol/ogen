@@ -26,6 +26,7 @@ type State interface {
 	IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params.ChainParams) error
 	ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params.ChainParams) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error
+	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
 	ApplyProposerSlashing(ps *primitives.ProposerSlashing, p *params.ChainParams) error
 	IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.ChainParams) ([]uint64, error)
