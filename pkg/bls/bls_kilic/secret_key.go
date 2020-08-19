@@ -2,10 +2,10 @@ package bls_kilic
 
 import (
 	"crypto/rand"
+	"errors"
 	bls12 "github.com/kilic/bls12-381"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-	"io"
 	"math/big"
 )
 
@@ -14,12 +14,9 @@ type bls12SecretKey struct {
 }
 
 // RandKey creates a new private key using a random method provided as an io.Reader.
-func (k KilicImplementation) RandKey(r io.Reader) (bls_interface.SecretKey, error) {
-	s, err := rand.Int(r, bls_interface.RFieldModulus)
-	if err != nil {
-		return nil, err
-	}
-	return &bls12SecretKey{s}, nil
+func (k KilicImplementation) RandKey() bls_interface.SecretKey {
+	s, _ := rand.Int(rand.Reader, bls_interface.RFieldModulus)
+	return &bls12SecretKey{s}
 }
 
 // PublicKey obtains the public key corresponding to the BLS secret key.
@@ -50,4 +47,12 @@ func (s *bls12SecretKey) Marshal() []byte {
 // ToWIF converts the private key to a Bech32 encoded string.
 func (s *bls12SecretKey) ToWIF() (string, error) {
 	return bech32.Encode(bls_interface.Prefix.Private, s.Marshal()), nil
+}
+
+func (k KilicImplementation) SecretKeyFromBytes(priv []byte) (bls_interface.SecretKey, error) {
+	sk := new(big.Int).SetBytes(priv[:])
+	if bls_interface.RFieldModulus.Cmp(sk) < 0 {
+		return nil, errors.New("invalid private key")
+	}
+	return &bls12SecretKey{p: sk}, nil
 }

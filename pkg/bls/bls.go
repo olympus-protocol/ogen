@@ -3,6 +3,7 @@ package bls
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/bls_blst"
 	"github.com/olympus-protocol/ogen/pkg/bls/bls_herumi"
+	"github.com/olympus-protocol/ogen/pkg/bls/bls_kilic"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
@@ -15,6 +16,8 @@ func Initialize(p params.ChainParams, lib string) error {
 		CurrImplementation = bls_herumi.HerumiImplementation{}
 	case "blst":
 		CurrImplementation = bls_blst.BlstImplementation{}
+	case "kilic":
+		CurrImplementation = bls_kilic.KilicImplementation{}
 	default:
 		CurrImplementation = bls_herumi.HerumiImplementation{}
 	}

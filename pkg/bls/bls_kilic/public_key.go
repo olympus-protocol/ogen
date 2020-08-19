@@ -5,6 +5,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/pkg/errors"
 )
 
 // PublicKey used in the BLS signature scheme.
@@ -17,10 +18,6 @@ func (p *PublicKey) Marshal() []byte {
 	return bls12.NewG1().ToCompressed(p.p)
 }
 
-func (p *PublicKey) Point() *bls12.PointG1 {
-	return p.p
-}
-
 // Copy the public key to a new pointer reference.
 func (p *PublicKey) Copy() bls_interface.PublicKey {
 	np := &PublicKey{p: new(bls12.PointG1).Set(p.p)}
@@ -29,7 +26,7 @@ func (p *PublicKey) Copy() bls_interface.PublicKey {
 
 // Aggregate two public keys.
 func (p *PublicKey) Aggregate(p2 bls_interface.PublicKey) bls_interface.PublicKey {
-	// TODO fix aggregate
+	bls12.NewG1().Add(p.p, p.p, p2.(*PublicKey).p)
 	return p
 }
 
@@ -48,4 +45,15 @@ func (p *PublicKey) ToAccount() (string, error) {
 	h := chainhash.HashH(p.Marshal())
 	copy(out[:], h[:20])
 	return bech32.Encode(bls_interface.Prefix.Public, out), nil
+}
+
+// PublicKeyFromBytes creates a BLS public key from a  LittleEndian byte slice.
+func (k KilicImplementation) PublicKeyFromBytes(pub []byte) (bls_interface.PublicKey, error) {
+	g1Elems := bls12.NewG1()
+	p, err := g1Elems.FromCompressed(pub[:])
+	if err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal bytes into public key")
+	}
+	pubkey := &PublicKey{p: p}
+	return pubkey, nil
 }

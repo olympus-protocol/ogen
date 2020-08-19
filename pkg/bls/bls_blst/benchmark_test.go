@@ -1,30 +1,11 @@
 package bls_blst
 
 import (
-	"github.com/olympus-protocol/bls-go/bls"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func BenchmarkPairing(b *testing.B) {
-	require.NoError(b, bls.Init(bls.BLS12_381))
-	newGt := &bls.GT{}
-	newG1 := &bls.G1{}
-	newG2 := &bls.G2{}
-
-	newGt.SetInt64(10)
-	hash := chainhash.HashH([]byte{})
-	require.NoError(b, newG1.HashAndMapTo(hash[:]))
-	require.NoError(b, newG2.HashAndMapTo(hash[:]))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		bls.Pairing(newGt, newG1, newG2)
-	}
-
-}
 func BenchmarkSignature_Verify(b *testing.B) {
 	impl := BlstImplementation{}
 	sk := impl.RandKey()
@@ -53,7 +34,7 @@ func BenchmarkSignature_AggregateVerify(b *testing.B) {
 		sigs = append(sigs, sig)
 		msgs = append(msgs, msg)
 	}
-	aggregated := impl.Aggregate(sigs)
+	aggregated := impl.AggregateSignatures(sigs)
 
 	b.ResetTimer()
 	b.ReportAllocs()
