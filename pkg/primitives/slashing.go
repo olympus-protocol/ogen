@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"errors"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
 	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -70,13 +71,13 @@ type RANDAOSlashing struct {
 }
 
 // GetValidatorPubkey returns the validator bls public key.
-func (r *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
-	return bls.PublicKeyFromBytes(r.ValidatorPubkey)
+func (r *RANDAOSlashing) GetValidatorPubkey() (bls_interface.PublicKey, error) {
+	return bls.CurrImplementation.PublicKeyFromBytes(r.ValidatorPubkey[:])
 }
 
 // GetRandaoReveal returns the bls signature of the randao reveal.
-func (r *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(r.RandaoReveal)
+func (r *RANDAOSlashing) GetRandaoReveal() (bls_interface.Signature, error) {
+	return bls.CurrImplementation.SignatureFromBytes(r.RandaoReveal[:])
 }
 
 // Marshal encodes the data.
@@ -115,23 +116,23 @@ type ProposerSlashing struct {
 }
 
 // GetValidatorPubkey returns the slashing bls validator public key.
-func (ps *ProposerSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
-	return bls.PublicKeyFromBytes(ps.ValidatorPublicKey)
+func (p *ProposerSlashing) GetValidatorPubkey() (bls_interface.PublicKey, error) {
+	return bls.CurrImplementation.PublicKeyFromBytes(p.ValidatorPublicKey[:])
 }
 
 // GetSignature1 returns the slashing first bls validator signature.
-func (ps *ProposerSlashing) GetSignature1() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(ps.Signature1)
+func (p *ProposerSlashing) GetSignature1() (bls_interface.Signature, error) {
+	return bls.CurrImplementation.SignatureFromBytes(p.Signature1[:])
 }
 
 // GetSignature2 returns the slashing second bls validator signature.
-func (ps *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(ps.Signature2)
+func (p *ProposerSlashing) GetSignature2() (bls_interface.Signature, error) {
+	return bls.CurrImplementation.SignatureFromBytes(p.Signature2[:])
 }
 
 // Marshal encodes the data.
-func (ps *ProposerSlashing) Marshal() ([]byte, error) {
-	b, err := ps.MarshalSSZ()
+func (p *ProposerSlashing) Marshal() ([]byte, error) {
+	b, err := p.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +143,7 @@ func (ps *ProposerSlashing) Marshal() ([]byte, error) {
 }
 
 // Unmarshal decodes the data.
-func (ps *ProposerSlashing) Unmarshal(b []byte) error {
+func (p *ProposerSlashing) Unmarshal(b []byte) error {
 	d, err := snappy.Decode(nil, b)
 	if err != nil {
 		return err
@@ -150,11 +151,11 @@ func (ps *ProposerSlashing) Unmarshal(b []byte) error {
 	if len(d) > MaxProposerSlashingSize {
 		return ErrorProposerSlashingSize
 	}
-	return ps.UnmarshalSSZ(d)
+	return p.UnmarshalSSZ(d)
 }
 
 // Hash calculates the hash of the proposer slashing.
-func (ps *ProposerSlashing) Hash() chainhash.Hash {
-	b, _ := ps.Marshal()
+func (p *ProposerSlashing) Hash() chainhash.Hash {
+	b, _ := p.Marshal()
 	return chainhash.HashH(b)
 }

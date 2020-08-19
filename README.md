@@ -9,7 +9,7 @@
 
 Ogen is the main implementation of the Olympus protocol.
 
-## Dependencies
+## Requirements
 
 * Go: <https://golang.org/dl/>
 * C++ Compiler
@@ -17,7 +17,7 @@ Ogen is the main implementation of the Olympus protocol.
 ## Building
 
 ```bash
-make build
+./scripts/build.sh
 ```
 
 ## Documentation

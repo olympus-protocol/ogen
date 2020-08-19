@@ -24,6 +24,7 @@ type ChainParams struct {
 	MaxBalanceChurnQuotient      uint64
 	MaxVotesPerBlock             uint64
 	MaxTxsPerBlock               uint64
+	MaxTxsMultiPerBlock          uint64
 	LatestBlockRootsLength       uint64
 	MinAttestationInclusionDelay uint64
 	DepositAmount                uint64
@@ -73,6 +74,7 @@ var Mainnet = ChainParams{
 	SlotDuration:                 30,
 	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,
+	MaxTxsMultiPerBlock:          128,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,
 	MaxRANDAOSlashingsPerBlock:   20,
@@ -127,6 +129,7 @@ var TestNet = ChainParams{
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,
+	MaxTxsMultiPerBlock:          128,
 	MaxDepositsPerBlock:          128,
 	MaxExitsPerBlock:             128,
 	MaxRANDAOSlashingsPerBlock:   20,

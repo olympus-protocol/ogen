@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -27,14 +28,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		if len(vote.Data) != 0 {
-			return fmt.Errorf("expected EnterVotingPeriod vote to have no data")
-		}
-		sig, err := vote.Signature()
-		if err != nil {
-			return err
-		}
-		pubKey, err := sig.GetPublicKey()
+		sig := vote.CombinedSig
+		pubKey, err := sig.Pub()
 		if err != nil {
 			return err
 		}
@@ -45,7 +40,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
 			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
 		}
-		if !vote.Valid() {
+		if !vote.ValidCombined() {
 			return fmt.Errorf("vote signature did not validate")
 		}
 	case primitives.VoteFor:
@@ -59,11 +54,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
 		}
-		sig, err := vote.Signature()
-		if err != nil {
-			return err
-		}
-		pubKey, err := sig.GetPublicKey()
+		sig := vote.CombinedSig
+		pubKey, err := sig.Pub()
 		if err != nil {
 			return err
 		}
@@ -77,7 +69,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if _, ok := s.Governance.ReplaceVotes[pkh]; ok {
 			return fmt.Errorf("found existing vote for same public key hash")
 		}
-		if !vote.Valid() {
+		if !vote.ValidCombined() {
 			return fmt.Errorf("vote signature did not validate")
 		}
 	case primitives.UpdateManagersInstantly:
@@ -89,23 +81,16 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if len(vote.Data) != len(p.GovernancePercentages)*20 {
 			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
 		}
-		sig, err := vote.Signature()
-		if err != nil {
-			return err
-		}
+		sig := vote.Multisig
 		pub, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
-		mp, ok := pub.(*bls.Multipub)
-		if !ok {
-			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
-		}
-		if mp.NumNeeded != 5 {
+		if pub.NumNeeded != 5 {
 			return fmt.Errorf("expected 5 signatures needed")
 		}
-		for i := range mp.PublicKeys {
-			pub, err := bls.PublicKeyFromBytes(mp.PublicKeys[i])
+		for i := range pub.PublicKeys {
+			pub, err := bls.CurrImplementation.PublicKeyFromBytes(pub.PublicKeys[i][:])
 			if err != nil {
 				return err
 			}
@@ -118,7 +103,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 			}
 		}
 
-		if !vote.Valid() {
+		if !vote.ValidMultisig() {
 			return fmt.Errorf("vote signature is not valid")
 		}
 	case primitives.UpdateManagersVote:
@@ -130,24 +115,17 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		sig, err := vote.Signature()
-		if err != nil {
-			return err
-		}
+		sig := vote.Multisig
 		// must include multisig signed by 5/5 managers
 		pub, err := sig.GetPublicKey()
 		if err != nil {
 			return err
 		}
-		mp, ok := pub.(*bls.Multipub)
-		if !ok {
-			return fmt.Errorf("expected UpdateManagersInstantly to have a multisig")
-		}
-		if mp.NumNeeded >= 3 {
+		if pub.NumNeeded >= 3 {
 			return fmt.Errorf("expected 3 signatures needed")
 		}
-		for i := range mp.PublicKeys {
-			pub, err := bls.PublicKeyFromBytes(mp.PublicKeys[i])
+		for i := range pub.PublicKeys {
+			pub, err := bls.CurrImplementation.PublicKeyFromBytes(pub.PublicKeys[i][:])
 			if err != nil {
 				return err
 			}
@@ -160,7 +138,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 			}
 		}
 
-		if !vote.Valid() {
+		if !vote.ValidMultisig() {
 			return fmt.Errorf("vote signature is not valid")
 		}
 	default:
@@ -175,11 +153,8 @@ func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params
 	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
 		return err
 	}
-	sig, err := vote.Signature()
-	if err != nil {
-		return err
-	}
-	votePub, err := sig.GetPublicKey()
+	sig := vote.CombinedSig
+	votePub, err := sig.Pub()
 	if err != nil {
 		return err
 	}
@@ -249,35 +224,35 @@ func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress
 }
 
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
-// func (s *State) ApplyTransactionMulti(tx *TransferMultiPayload, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
-// 	u := s.CoinsState
-// 	pkh, err := tx.FromPubkeyHash()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if u.Balances[pkh] < tx.Amount+tx.Fee {
-// 		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
-// 	}
+func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+	u := s.GetCoinsState()
+	pkh, err := tx.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
+	if u.Balances[pkh] < tx.Amount+tx.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", u.Balances[pkh], tx.Amount)
+	}
 
-// 	if u.Nonces[pkh] >= tx.Nonce {
-// 		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
-// 	}
+	if u.Nonces[pkh] >= tx.Nonce {
+		return fmt.Errorf("nonce is too small (already processed: %d, trying: %d)", u.Nonces[pkh], tx.Nonce)
+	}
 
-// 	if err := tx.VerifySig(); err != nil {
-// 		return err
-// 	}
+	if err := tx.VerifySig(); err != nil {
+		return err
+	}
 
-// 	u.Balances[pkh] -= tx.Amount + tx.Fee
-// 	u.Balances[tx.To] += tx.Amount
-// 	u.Balances[blockWithdrawalAddress] += tx.Fee
-// 	u.Nonces[pkh] = tx.Nonce
+	u.Balances[pkh] -= tx.Amount + tx.Fee
+	u.Balances[tx.To] += tx.Amount
+	u.Balances[blockWithdrawalAddress] += tx.Fee
+	u.Nonces[pkh] = tx.Nonce
 
-// 	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
-// 		delete(s.Governance.ReplaceVotes, pkh)
-// 	}
+	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+		delete(s.Governance.ReplaceVotes, pkh)
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
 func (s *state) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error) {
@@ -303,11 +278,11 @@ func (s *state) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64
 	if err != nil {
 		return 0, err
 	}
-	if !s1.Verify(h1[:], pub) {
+	if !s1.Verify(pub, h1[:]) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 1")
 	}
 
-	if !s2.Verify(h2[:], pub) {
+	if !s2.Verify(pub, h2[:]) {
 		return 0, fmt.Errorf("proposer-slashing: signature does not validate for block header 2")
 	}
 
@@ -360,8 +335,8 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 		return nil, err
 	}
 
-	aggPubs1 := make([]*bls.PublicKey, 0)
-	aggPubs2 := make([]*bls.PublicKey, 0)
+	aggPubs1 := make([]bls_interface.PublicKey, 0)
+	aggPubs2 := make([]bls_interface.PublicKey, 0)
 
 	for i, idx := range validators1 {
 
@@ -371,7 +346,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 
 		voteCommittee1[idx] = struct{}{}
 
-		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey)
+		pub, err := bls.CurrImplementation.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
 		if err != nil {
 			return nil, err
 		}
@@ -387,7 +362,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 			common = append(common, idx)
 		}
 
-		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey)
+		pub, err := bls.CurrImplementation.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
 		if err != nil {
 			return nil, err
 		}
@@ -448,7 +423,7 @@ func (s *state) IsRANDAOSlashingValid(rs *primitives.RANDAOSlashing) (uint64, er
 	if err != nil {
 		return 0, err
 	}
-	if !sig.Verify(slotHash[:], pub) {
+	if !sig.Verify(pub, slotHash[:]) {
 		return 0, fmt.Errorf("randao-slashing: RANDAO reveal does not verify")
 	}
 
@@ -512,7 +487,7 @@ func (s *state) IsExitValid(exit *primitives.Exit) error {
 	if err != nil {
 		return err
 	}
-	valid := sig.Verify(msgHash[:], wPubKey)
+	valid := sig.Verify(wPubKey, msgHash[:])
 	if !valid {
 		return fmt.Errorf("exit signature is not valid")
 	}
@@ -583,7 +558,7 @@ func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.Chain
 	if err != nil {
 		return err
 	}
-	valid := dSig.Verify(depositHash[:], dPub)
+	valid := dSig.Verify(dPub, depositHash[:])
 	if !valid {
 		return errors.New("deposit signature is not valid")
 	}
@@ -606,7 +581,7 @@ func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.Chain
 	if err != nil {
 		return err
 	}
-	valid = dataSig.Verify(pubkeyHash[:], dataPub)
+	valid = dataSig.Verify(dataPub, pubkeyHash[:])
 	if !valid {
 		return errors.New("proof-of-possession is not valid")
 	}
@@ -690,7 +665,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 		return ErrorTargetEpoch
 	}
 
-	aggPubs := make([]*bls.PublicKey, 0)
+	aggPubs := make([]bls_interface.PublicKey, 0)
 	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 	if err != nil {
 		return err
@@ -700,7 +675,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 		if !v.ParticipationBitfield.Get(uint(i)) {
 			continue
 		}
-		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey)
+		pub, err := bls.CurrImplementation.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey[:])
 		if err != nil {
 			return err
 		}
@@ -766,19 +741,19 @@ func (s *state) ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainPar
 }
 
 // GetProposerPublicKey gets the public key for the proposer of a block.
-func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error) {
+func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (bls_interface.PublicKey, error) {
 	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 	proposer := s.ValidatorRegistry[proposerIndex]
 
-	return bls.PublicKeyFromBytes(proposer.PubKey)
+	return bls.CurrImplementation.PublicKeyFromBytes(proposer.PubKey[:])
 }
 
 // CheckBlockSignature checks the block signature.
 func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error {
 	blockHash := b.Hash()
-	blockSig, err := bls.SignatureFromBytes(b.Signature)
+	blockSig, err := bls.CurrImplementation.SignatureFromBytes(b.Signature[:])
 	if err != nil {
 		return err
 	}
@@ -788,19 +763,19 @@ func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) 
 		return err
 	}
 
-	randaoSig, err := bls.SignatureFromBytes(b.RandaoSignature)
+	randaoSig, err := bls.CurrImplementation.SignatureFromBytes(b.RandaoSignature[:])
 	if err != nil {
 		return err
 	}
 
-	valid := blockSig.Verify(blockHash[:], validatorPub)
+	valid := blockSig.Verify(validatorPub, blockHash[:])
 	if !valid {
 		return errors.New("error validating signature for block")
 	}
 
 	slotHash := chainhash.HashH([]byte(fmt.Sprintf("%d", b.Header.Slot)))
 
-	valid = randaoSig.Verify(slotHash[:], validatorPub)
+	valid = randaoSig.Verify(validatorPub, slotHash[:])
 	if !valid {
 		return errors.New("error validating RANDAO signature for block")
 	}

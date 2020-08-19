@@ -141,12 +141,12 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		blockSig, err := bls.SignatureFromBytes(block.Signature)
+		blockSig, err := bls.CurrImplementation.SignatureFromBytes(block.Signature[:])
 		if err != nil {
 			return err
 		}
 
-		otherSig, err := bls.SignatureFromBytes(otherBlock.Signature)
+		otherSig, err := bls.CurrImplementation.SignatureFromBytes(otherBlock.Signature[:])
 		if err != nil {
 			return err
 		}

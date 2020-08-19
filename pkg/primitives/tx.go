@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"errors"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -58,7 +59,7 @@ func (t *Tx) Hash() chainhash.Hash {
 
 // FromPubkeyHash calculates the hash of the from public key.
 func (t Tx) FromPubkeyHash() ([20]byte, error) {
-	pub, err := bls.PublicKeyFromBytes(t.FromPublicKey)
+	pub, err := bls.CurrImplementation.PublicKeyFromBytes(t.FromPublicKey[:])
 	if err != nil {
 		return [20]byte{}, nil
 	}
@@ -74,13 +75,13 @@ func (t Tx) SignatureMessage() chainhash.Hash {
 }
 
 // GetSignature returns the bls signature of the transaction.
-func (t Tx) GetSignature() (*bls.Signature, error) {
-	return bls.SignatureFromBytes(t.Signature)
+func (t Tx) GetSignature() (bls_interface.Signature, error) {
+	return bls.CurrImplementation.SignatureFromBytes(t.Signature[:])
 }
 
 // GetPublic returns the bls public key of the transaction.
-func (t Tx) GetPublic() (*bls.PublicKey, error) {
-	return bls.PublicKeyFromBytes(t.FromPublicKey)
+func (t Tx) GetPublic() (bls_interface.PublicKey, error) {
+	return bls.CurrImplementation.PublicKeyFromBytes(t.FromPublicKey[:])
 }
 
 // VerifySig verifies the signatures is valid.
@@ -100,7 +101,7 @@ func (t *Tx) VerifySig() error {
 		return err
 	}
 
-	valid := sig.Verify(sigMsg[:], pub)
+	valid := sig.Verify(pub, sigMsg[:])
 
 	if !valid {
 		return ErrorInvalidSignature

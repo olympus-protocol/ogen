@@ -3,6 +3,7 @@ package keystore_test
 import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -16,7 +17,7 @@ func init() {
 	_ = k2.CreateKeystore()
 }
 
-var keys []*bls.SecretKey
+var keys []bls_interface.SecretKey
 
 func TestKeystore_GenerateNewValidatorKey(t *testing.T) {
 	var err error
@@ -40,7 +41,7 @@ func TestKeystore_GetValidatorKey(t *testing.T) {
 
 func TestKeystore_GetValidatorKeyWithoutKey(t *testing.T) {
 	var pub [48]byte
-	copy(pub[:], bls.RandKey().PublicKey().Marshal())
+	copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
 	_, ok := k2.GetValidatorKey(pub)
 	assert.False(t, ok)
 	cleanFolder2()

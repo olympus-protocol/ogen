@@ -132,7 +132,7 @@ func createWallet(close bool) (wallet.Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	priv, err := bls.SecretKeyFromBytes(serTestPriv)
+	priv, err := bls.CurrImplementation.SecretKeyFromBytes(serTestPriv)
 	if err != nil {
 		return nil, err
 	}

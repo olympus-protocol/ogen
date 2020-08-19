@@ -20,7 +20,7 @@ var Node2Folder = "./data_node2"
 var Node3Folder = "./data_node3"
 
 // PremineAddr a random bls key to use as premine addr
-var PremineAddr = bls.RandKey()
+var PremineAddr = bls.CurrImplementation.RandKey()
 
 // Conf are the test configuration flags
 var Conf = server.GlobalConfig{

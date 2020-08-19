@@ -2,12 +2,13 @@ package keystore
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"go.etcd.io/bbolt"
 )
 
 // GetValidatorKey returns the private key from the specified public key or false if doesn't exists.
-func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
+func (k *keystore) GetValidatorKey(pubkey [48]byte) (bls_interface.SecretKey, bool) {
 
 	if !k.open {
 		return nil, false
@@ -24,7 +25,7 @@ func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 }
 
 // GetValidatorKeys returns all keys on keystore.
-func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
+func (k *keystore) GetValidatorKeys() ([]bls_interface.SecretKey, error) {
 
 	if !k.open {
 		return nil, ErrorNoOpen
@@ -34,7 +35,7 @@ func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 
 	k.keysLock.Lock()
 
-	var keys []*bls.SecretKey
+	var keys []bls_interface.SecretKey
 
 	for _, k := range k.keys {
 		keys = append(keys, k)
@@ -44,16 +45,16 @@ func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 }
 
 // GenerateNewValidatorKey generates new validator keys and adds it to the map and database.
-func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
+func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]bls_interface.SecretKey, error) {
 	if !k.open {
 		return nil, ErrorNoOpen
 	}
 
-	keys := make([]*bls.SecretKey, amount)
+	keys := make([]bls_interface.SecretKey, amount)
 
 	for i := range keys {
 		// Generate a new key
-		key := bls.RandKey()
+		key := bls.CurrImplementation.RandKey()
 		err := k.addKey(key)
 		if err != nil {
 			return nil, err
@@ -64,7 +65,7 @@ func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, err
 	return keys, nil
 }
 
-func (k *keystore) addKey(priv *bls.SecretKey) error {
+func (k *keystore) addKey(priv bls_interface.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen
@@ -83,7 +84,7 @@ func (k *keystore) addKey(priv *bls.SecretKey) error {
 	return nil
 }
 
-func (k *keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
+func (k *keystore) addKeyMap(hash chainhash.Hash, key bls_interface.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen

@@ -36,20 +36,6 @@ func (m *MockProposer) EXPECT() *MockProposerMockRecorder {
 	return m.recorder
 }
 
-// OpenKeystore mocks base method
-func (m *MockProposer) OpenKeystore() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OpenKeystore")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// OpenKeystore indicates an expected call of OpenKeystore
-func (mr *MockProposerMockRecorder) OpenKeystore() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenKeystore", reflect.TypeOf((*MockProposer)(nil).OpenKeystore))
-}
-
 // NewTip mocks base method
 func (m *MockProposer) NewTip(arg0 *chainindex.BlockRow, block *primitives.Block, newState state.State, arg3 []*primitives.EpochReceipt) {
 	m.ctrl.T.Helper()

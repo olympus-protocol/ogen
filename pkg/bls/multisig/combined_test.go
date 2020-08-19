@@ -1,17 +1,18 @@
-package bls_test
+package multisig_test
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func Test_CombinedSignatureCopy(t *testing.T) {
-	rand := bls.RandKey()
-	comb := bls.NewCombinedSignature(rand.PublicKey(), rand.Sign([]byte("test")))
+	rand := bls.CurrImplementation.RandKey()
+	comb := multisig.NewCombinedSignature(rand.PublicKey(), rand.Sign([]byte("test")))
 	comb2 := comb.Copy()
 
-	newKey := bls.RandKey()
+	newKey := bls.CurrImplementation.RandKey()
 
 	var newPub [48]byte
 	copy(newPub[:], newKey.PublicKey().Marshal())
@@ -20,7 +21,7 @@ func Test_CombinedSignatureCopy(t *testing.T) {
 	comb.P = newPub
 	comb.S = newSig
 
-	pub, err := comb2.GetPublicKey()
+	pub, err := comb2.Pub()
 	assert.NoError(t, err)
 
 	var copyNewPub [48]byte

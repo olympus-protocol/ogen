@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"os"
 	"path"
@@ -24,14 +25,14 @@ import (
 
 // Wallet is the interface for wallet
 type Wallet interface {
-	NewWallet(name string, priv *bls.SecretKey, password string) error
+	NewWallet(name string, priv bls_interface.SecretKey, password string) error
 	OpenWallet(name string, password string) error
 	CloseWallet() error
 	HasWallet(name string) bool
 	GetAvailableWallets() (map[string]string, error)
 	GetAccount() (string, error)
-	GetSecret() (*bls.SecretKey, error)
-	GetPublic() (*bls.PublicKey, error)
+	GetSecret() (bls_interface.SecretKey, error)
+	GetPublic() (bls_interface.PublicKey, error)
 	GetAccountRaw() ([20]byte, error)
 	GetBalance() (uint64, error)
 	StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error)
@@ -59,8 +60,8 @@ type wallet struct {
 	db         *bbolt.DB
 	name       string
 	open       bool
-	priv       *bls.SecretKey
-	pub        *bls.PublicKey
+	priv       bls_interface.SecretKey
+	pub        bls_interface.PublicKey
 	accountRaw [20]byte
 	account    string
 }
@@ -104,14 +105,14 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 }
 
 // NewWallet creates a new wallet database.
-func (w *wallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
+func (w *wallet) NewWallet(name string, priv bls_interface.SecretKey, password string) error {
 	if w.open {
 		w.CloseWallet()
 	}
 	passhash := chainhash.HashH([]byte(password))
-	var secret *bls.SecretKey
+	var secret bls_interface.SecretKey
 	if priv == nil {
-		secret = bls.RandKey()
+		secret = bls.CurrImplementation.RandKey()
 	} else {
 		secret = priv
 	}
@@ -225,7 +226,7 @@ func (w *wallet) GetAccount() (string, error) {
 }
 
 // GetSecret returns the secret key of the current wallet.
-func (w *wallet) GetSecret() (*bls.SecretKey, error) {
+func (w *wallet) GetSecret() (bls_interface.SecretKey, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -233,7 +234,7 @@ func (w *wallet) GetSecret() (*bls.SecretKey, error) {
 }
 
 // GetPublic returns the public key of the current wallet.
-func (w *wallet) GetPublic() (*bls.PublicKey, error) {
+func (w *wallet) GetPublic() (bls_interface.PublicKey, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}

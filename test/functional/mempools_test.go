@@ -36,8 +36,8 @@ var initParams = primitives.InitializationParameters{
 	InitialValidators: []primitives.ValidatorInitialization{},
 }
 
-var valDataPrimary []*bls.SecretKey
-var newValidator *bls.SecretKey
+var valDataPrimary []bls_interface.SecretKey
+var newValidator bls_interface.SecretKey
 
 var F *server.Server
 var B *server.Server
@@ -226,7 +226,7 @@ func TestVoteAggregation(t *testing.T) {
 
 	// This assumes all votes data is the same
 	aggVote.Data = votes[0].Data
-	sigs := make([]*bls.Signature, 0)
+	sigs := make([]bls_interface.Signature, 0)
 
 	for _, v := range votes {
 		// Test vote validity without aggregation
