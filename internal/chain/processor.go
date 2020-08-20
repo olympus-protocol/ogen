@@ -184,7 +184,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 	if len(receipts) > 0 {
 		msg := "\nEpoch Receipts\n----------\n"
-		receiptTypes := make(map[string]uint64)
+		receiptTypes := make(map[string]int64)
 
 		for _, r := range receipts {
 			if _, ok := receiptTypes[r.TypeString()]; !ok {

@@ -355,7 +355,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 		s.ValidatorRegistry[index].Balance += reward
 		receipts = append(receipts, &primitives.EpochReceipt{
 			Validator: index,
-			Amount:    reward,
+			Amount:    int64(reward),
 			Type:      why,
 		})
 	}
@@ -367,7 +367,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 		s.ValidatorRegistry[index].Balance -= penalty
 		receipts = append(receipts, &primitives.EpochReceipt{
 			Validator: index,
-			Amount:    -penalty,
+			Amount:    -int64(penalty),
 			Type:      why,
 		})
 	}
