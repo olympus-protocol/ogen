@@ -1,6 +1,6 @@
 package chain
 
-// GetLocatorHashes for helping peers locate their.
+// GetLocatorHashes for helping hostnode locate their.
 func (ch *blockchain) GetLocatorHashes() [][32]byte {
 	step := 1
 	chain := ch.State().Blockchain()

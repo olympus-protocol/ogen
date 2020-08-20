@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
@@ -55,38 +56,74 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 	}
 	switch data.Type {
 	case "tx":
+
 		tx := new(primitives.Tx)
+
 		err := tx.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
-		err = s.txTopic.Publish(ctx, dataBytes)
+
+		msg := p2p.MsgTx{Data: tx}
+
+		buf, err := msg.Marshal()
 		if err != nil {
 			return nil, err
 		}
+
+		err = s.txTopic.Publish(ctx, buf)
+		if err != nil {
+			return nil, err
+		}
+
 		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
+
 	case "deposit":
+
 		deposit := new(primitives.Deposit)
+
 		err := deposit.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
-		err = s.depositTopic.Publish(ctx, dataBytes)
+
+		msg := p2p.MsgDeposit{Data: deposit}
+
+		buf, err := msg.Marshal()
 		if err != nil {
 			return nil, err
 		}
+
+		err = s.depositTopic.Publish(ctx, buf)
+		if err != nil {
+			return nil, err
+		}
+
 		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
+
 	case "exit":
+
 		exit := new(primitives.Exit)
+
 		err := exit.Unmarshal(dataBytes)
 		if err != nil {
 			return nil, errors.New("unable to decode raw data")
 		}
-		err = s.exitTopic.Publish(ctx, dataBytes)
+
+		msg := p2p.MsgExit{Data: exit}
+
+		buf, err := msg.Marshal()
 		if err != nil {
 			return nil, err
 		}
+
+		err = s.exitTopic.Publish(ctx, buf)
+		if err != nil {
+			return nil, err
+		}
+
 		return &proto.Success{Success: true, Data: exit.Hash().String()}, nil
+
 	default:
 		return &proto.Success{Success: false, Error: "unknown raw data type"}, nil
 	}

@@ -10,8 +10,6 @@ import (
 )
 
 var (
-	// ErrorMessageHeaderSize returns when a MessageHeader size exceed MaxMessageHeaderSize
-	ErrorMessageHeaderSize = errors.New("message header too big")
 	// ErrorChecksum returned when the message header checksum doesn't match.
 	ErrorChecksum = errors.New("message checksum don't match")
 	// ErrorAnnLength returned when the header length doesn't match the message length.
@@ -25,6 +23,22 @@ var (
 const (
 	// MaxMessageHeaderSize is the maximum bytes a MessageHeader can contain
 	MaxMessageHeaderSize = 60
+	// MsgBlockCmd is a single block element
+	MsgBlockCmd = "block"
+	// MsgTxCmd is a single tx element
+	MsgTxCmd = "tx"
+	// MsgDepositCmd is a single deposit element
+	MsgDepositCmd = "deposit"
+	// MsgVoteCmd is a single vote element
+	MsgVoteCmd = "vote"
+	// MsgValidatorStart is a validator hello element
+	MsgValidatorStartCmd = "validator_hello"
+	// MsgExitCmd is a exit element
+	MsgExitCmd = "exit"
+	// MsgGovernanceCmd is a exit element
+	MsgGovernanceCmd = "governance_vote"
+	// MsgTxMultiCmd is a exit element
+	MsgTxMultiCmd = "tx_multi"
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
 	// MsgGetAddrCmd ask node for address
@@ -76,6 +90,22 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
+	case MsgBlockCmd:
+		msg = &MsgBlock{}
+	case MsgTxCmd:
+		msg = &MsgTx{}
+	case MsgTxMultiCmd:
+		msg = &MsgTxMulti{}
+	case MsgDepositCmd:
+		msg = &MsgDeposit{}
+	case MsgVoteCmd:
+		msg = &MsgVote{}
+	case MsgExitCmd:
+		msg = &MsgExit{}
+	case MsgValidatorStartCmd:
+		msg = &MsgValidatorStart{}
+	case MsgGovernanceCmd:
+		msg = &MsgGovernance{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

@@ -7,12 +7,13 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sort"
@@ -44,7 +45,7 @@ type voteMempool struct {
 	log        logger.Logger
 	ctx        context.Context
 	blockchain chain.Blockchain
-	hostNode   peers.HostNode
+	hostNode   hostnode.HostNode
 	voteTopic  *pubsub.Topic
 
 	notifees     []VoteSlashingNotifee
@@ -387,8 +388,8 @@ func (m *voteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
-	voteTopic, err := hostnode.Topic("votes")
+func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
+	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
 	if err != nil {
 		return nil, err
 	}

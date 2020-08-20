@@ -1,10 +1,10 @@
-package peers_test
+package hostnode_test
 
 //
 //import (
 //	"github.com/libp2p/go-libp2p-core/peer"
 //	"github.com/multiformats/go-multiaddr"
-//	"github.com/olympus-protocol/ogen/internal/peers"
+//	"github.com/olympus-protocol/ogen/internal/hostnode"
 //	"github.com/stretchr/testify/assert"
 //	"go.etcd.io/bbolt"
 //	"path"
@@ -19,7 +19,7 @@ package peers_test
 //
 //func TestInitDb(t *testing.T) {
 //	pathDir, _ := filepath.Abs("")
-//	db, err := peers.NewDatabase(pathDir)
+//	db, err := hostnode.NewDatabase(pathDir)
 //	if err == nil {
 //		err := db.Initialize()
 //		assert.Nil(t, err)
@@ -30,9 +30,9 @@ package peers_test
 //	pathDir, _ := filepath.Abs("")
 //	netDB, err := bbolt.Open(path.Join(pathDir, "net.db"), 0600, nil)
 //	if err == nil {
-//		_, err := peers.InitBuckets(netDB)
+//		_, err := hostnode.InitBuckets(netDB)
 //		assert.Nil(t, err)
-//		priv, err := peers.GetPrivKey(netDB)
+//		priv, err := hostnode.GetPrivKey(netDB)
 //		assert.Nil(t, err)
 //		assert.NotNil(t, priv)
 //		defer netDB.Close()
@@ -43,7 +43,7 @@ package peers_test
 //	pathDir, _ := filepath.Abs("")
 //	netDB, err := bbolt.Open(path.Join(pathDir, "net.db"), 0600, nil)
 //	if err == nil {
-//		_, err := peers.InitBuckets(netDB)
+//		_, err := hostnode.InitBuckets(netDB)
 //		assert.Nil(t, err)
 //
 //		peer1, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWPzn8FgE4hbvmTvwdDRCZ2zz69mumw17fsPquPscjTWPS")
@@ -51,12 +51,12 @@ package peers_test
 //		peer2, err := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/24126/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1")
 //		assert.Nil(t, err)
 //
-//		err = peers.SavePeer(netDB, peer1)
+//		err = hostnode.SavePeer(netDB, peer1)
 //		assert.Nil(t, err)
-//		err = peers.SavePeer(netDB, peer2)
+//		err = hostnode.SavePeer(netDB, peer2)
 //		assert.Nil(t, err)
 //
-//		savedAddresses, err := peers.GetSavedPeers(netDB)
+//		savedAddresses, err := hostnode.GetSavedPeers(netDB)
 //		assert.Nil(t, err)
 //		assert.Equal(t, len(savedAddresses), 2)
 //
@@ -68,13 +68,13 @@ package peers_test
 //	pathDir, _ := filepath.Abs("")
 //	netDB, err := bbolt.Open(path.Join(pathDir, "net.db"), 0600, nil)
 //	if err == nil {
-//		_, err := peers.InitBuckets(netDB)
+//		_, err := hostnode.InitBuckets(netDB)
 //		assert.Nil(t, err)
 //
 //		peer1, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWPzn8FgE4hbvmTvwdDRCZ2zz69mumw17fsPquPscjTWPS")
 //		assert.Nil(t, err)
 //
-//		err = peers.SavePeer(netDB, peer1)
+//		err = hostnode.SavePeer(netDB, peer1)
 //		assert.Nil(t, err)
 //
 //		peerId, err := peer.AddrInfoFromP2pAddr(peer1)
@@ -82,23 +82,23 @@ package peers_test
 //		assert.NotNil(t, peerId)
 //
 //		for i := 0; i < 5; i++ {
-//			_, err = peers.BanscorePeer(netDB, peerId.ID, banLimit/5)
+//			_, err = hostnode.BanscorePeer(netDB, peerId.ID, banLimit/5)
 //			assert.NoError(t, err)
 //		}
 //
-//		isBanned, err := peers.IsPeerBanned(netDB, peerId.ID)
+//		isBanned, err := hostnode.IsPeerBanned(netDB, peerId.ID)
 //
 //		assert.NoError(t, err)
 //
 //		assert.Equal(t, isBanned, true)
 //
 //		// add same peer, and different peer with same ip address. In both cases it should not work, since it's an ip ban
-//		err = peers.SavePeer(netDB, peer1)
+//		err = hostnode.SavePeer(netDB, peer1)
 //		assert.NoError(t, err)
 //
 //		peer2, err := multiaddr.NewMultiaddr("/ip4/10.0.2.15/tcp/25000/p2p/12D3KooWCnt52MYKVLn6fhKCoKy6HsNejEtxUt9MUwcpj1LYU2N1")
 //		assert.NoError(t, err)
-//		err = peers.SavePeer(netDB, peer2)
+//		err = hostnode.SavePeer(netDB, peer2)
 //		assert.NoError(t, err)
 //
 //		//remove ip from banList, it's just a test

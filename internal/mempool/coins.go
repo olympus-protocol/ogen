@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -101,7 +102,7 @@ var _ CoinsMempool = &coinsMempool{}
 // coinsMempool represents a mempool for coin transactions.
 type coinsMempool struct {
 	blockchain chain.Blockchain
-	hostNode   peers.HostNode
+	hostNode   hostnode.HostNode
 	params     *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
@@ -317,12 +318,12 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (CoinsMempool, error) {
-	topic, err := hostNode.Topic("tx")
+func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode hostnode.HostNode, params *params.ChainParams) (CoinsMempool, error) {
+	topic, err := hostNode.Topic(p2p.MsgTxCmd)
 	if err != nil {
 		return nil, err
 	}
-	topicMulti, err := hostNode.Topic("tx_multi")
+	topicMulti, err := hostNode.Topic(p2p.MsgTxMultiCmd)
 	if err != nil {
 		return nil, err
 	}

@@ -12,9 +12,9 @@ import (
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -47,7 +47,7 @@ type Mempools struct {
 }
 
 type Server interface {
-	HostNode() peers.HostNode
+	HostNode() hostnode.HostNode
 	Proposer() proposer.Proposer
 	Chain() chain.Blockchain
 	Start()
@@ -61,7 +61,7 @@ type server struct {
 	params params.ChainParams
 
 	ch   chain.Blockchain
-	hn   peers.HostNode
+	hn   hostnode.HostNode
 	rpc  chainrpc.RPCServer
 	prop proposer.Proposer
 
@@ -70,7 +70,7 @@ type server struct {
 
 var _ Server = &server{}
 
-func (s *server) HostNode() peers.HostNode {
+func (s *server) HostNode() hostnode.HostNode {
 	return s.hn
 }
 
@@ -129,7 +129,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	hostnode, err := peers.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch)
+	hostnode, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch)
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +198,8 @@ func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 	return cfg
 }
 
-func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) peers.Config {
-	cfg := peers.Config{
+func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) hostnode.Config {
+	cfg := hostnode.Config{
 		Log:          logger,
 		InitialNodes: config.InitialNodes,
 		Port:         config.Port,

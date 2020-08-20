@@ -3,13 +3,14 @@ package chainrpc
 import (
 	"context"
 	"crypto/tls"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"net"
 	"net/http"
 	"path"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/peers"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
@@ -145,18 +146,18 @@ func (s *rpcServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain chain.Blockchain, hostnode peers.HostNode, wallet wallet.Wallet, params *params.ChainParams, p proposer.Proposer) (RPCServer, error) {
-	txTopic, err := hostnode.Topic("tx")
+func NewRPCServer(config Config, chain chain.Blockchain, hostnode hostnode.HostNode, wallet wallet.Wallet, params *params.ChainParams, p proposer.Proposer) (RPCServer, error) {
+	txTopic, err := hostnode.Topic(p2p.MsgTxCmd)
 	if err != nil {
 		return nil, err
 	}
 
-	depositTopic, err := hostnode.Topic("deposits")
+	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
 	if err != nil {
 		return nil, err
 	}
 
-	exitTopic, err := hostnode.Topic("exits")
+	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
 	if err != nil {
 		return nil, err
 	}

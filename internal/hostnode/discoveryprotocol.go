@@ -1,4 +1,4 @@
-package peers
+package hostnode
 
 import (
 	"context"
@@ -35,7 +35,7 @@ type DiscoveryProtocol interface {
 
 var _ DiscoveryProtocol = &discoveryProtocol{}
 
-// discoveryProtocol is the service to discover other peers.
+// discoveryProtocol is the service to discover other hostnode.
 type discoveryProtocol struct {
 	host   HostNode
 	config Config

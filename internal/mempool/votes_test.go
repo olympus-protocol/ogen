@@ -9,9 +9,9 @@ import (
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -95,7 +95,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	host := peers.NewMockHostNode(ctrl)
+	host := hostnode.NewMockHostNode(ctrl)
 	host.EXPECT().Topic("votes").Return(g.Join("votes"))
 	host.EXPECT().GetHost().Return(h)
 

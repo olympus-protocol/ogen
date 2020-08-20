@@ -63,7 +63,7 @@ func (mr *MockLastActionManagerMockRecorder) handleStartTopic(topic interface{})
 }
 
 // StartValidator mocks base method
-func (m *MockLastActionManager) StartValidator(valPub [48]byte, sign func(*ValidatorHelloMessage) bls_interface.Signature) bool {
+func (m *MockLastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) bls_interface.Signature) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartValidator", valPub, sign)
 	ret0, _ := ret[0].(bool)

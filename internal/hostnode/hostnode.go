@@ -1,4 +1,4 @@
-package peers
+package hostnode
 
 import (
 	"context"
@@ -109,10 +109,10 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	if err != nil {
 		return nil, err
 	}
-	// get saved peers
+	// get saved hostnode
 	savedAddresses, err := db.GetSavedPeers()
 	if err != nil {
-		config.Log.Errorf("error retrieving saved peers: %s", err)
+		config.Log.Errorf("error retrieving saved hostnode: %s", err)
 	}
 
 	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
@@ -238,17 +238,17 @@ func (node *hostNode) IsConnected() bool {
 	return node.PeersConnected() > 0
 }
 
-// PeersConnected checks how many peers are connected.
+// PeersConnected checks how many hostnode are connected.
 func (node *hostNode) PeersConnected() int {
 	return len(node.host.Network().Peers())
 }
 
-// GetPeerList returns a list of all peers.
+// GetPeerList returns a list of all hostnode.
 func (node *hostNode) GetPeerList() []peer.ID {
 	return node.host.Network().Peers()
 }
 
-// GetPeerInfos gets peer infos of connected peers.
+// GetPeerInfos gets peer infos of connected hostnode.
 func (node *hostNode) GetPeerInfos() []peer.AddrInfo {
 	peers := node.host.Network().Peers()
 	infos := make([]peer.AddrInfo, 0, len(peers))
@@ -276,7 +276,7 @@ func (node *hostNode) setStreamHandler(id protocol.ID, handleStream func(s netwo
 	node.host.SetStreamHandler(id, handleStream)
 }
 
-// CountPeers counts the number of peers that support the protocol.
+// CountPeers counts the number of hostnode that support the protocol.
 func (node *hostNode) CountPeers(id protocol.ID) int {
 	count := 0
 	for _, n := range node.host.Peerstore().Peers() {
@@ -297,7 +297,7 @@ func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	return conns[0].Stat().Direction
 }
 
-// Start the host node and start discovering peers.
+// Start the host node and start discovering hostnode.
 func (node *hostNode) Start() error {
 	if err := node.discoveryProtocol.Start(); err != nil {
 		return err

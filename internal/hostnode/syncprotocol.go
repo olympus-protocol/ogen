@@ -1,6 +1,7 @@
-package peers
+package hostnode
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -116,7 +117,7 @@ func (sp *syncProtocol) Notify(notifee SyncNotifee) {
 }
 
 func (sp *syncProtocol) listenForBroadcasts() error {
-	blockTopic, err := sp.host.Topic("blocks")
+	blockTopic, err := sp.host.Topic(p2p.MsgBlockCmd)
 	if err != nil {
 		return err
 	}
@@ -127,9 +128,22 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 	}
 
 	go listenToTopic(sp.ctx, blockSub, func(data []byte, id peer.ID) {
-		var block primitives.Block
-
 		if id == sp.host.GetHost().ID() {
+			return
+		}
+
+		buf := bytes.NewBuffer(data)
+
+		msg, err := p2p.ReadMessage(buf, sp.host.GetNetMagic())
+
+		if err != nil {
+			sp.log.Errorf("error decoding msg from peer %s: %s", id, err)
+			return
+		}
+
+		block, ok := msg.(*p2p.MsgBlock)
+		if !ok {
+			sp.log.Errorf("wrong message type on block subscription from peer %s: %s", id, err)
 			return
 		}
 
@@ -138,7 +152,7 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 			return
 		}
 
-		if err := sp.handleBlock(id, &block); err != nil {
+		if err := sp.handleBlock(id, block.Data); err != nil {
 			sp.log.Errorf("error handling incoming block from peer: %s", err)
 		}
 	})

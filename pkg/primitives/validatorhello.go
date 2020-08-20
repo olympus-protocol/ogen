@@ -1,4 +1,4 @@
-package actionmanager
+package primitives
 
 import (
 	"encoding/binary"

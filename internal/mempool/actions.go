@@ -5,14 +5,15 @@ import (
 	"context"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
 
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -64,7 +65,7 @@ type actionMempool struct {
 	ctx        context.Context
 	log        logger.Logger
 	blockchain chain.Blockchain
-	hostNode   peers.HostNode
+	hostNode   hostnode.HostNode
 }
 
 func (am *actionMempool) NotifyIllegalVotes(slashing *primitives.VoteSlashing) {
@@ -139,8 +140,8 @@ func (am *actionMempool) ProposerSlashingConditionViolated(slashing *primitives.
 }
 
 // NewActionMempool constructs a new action mempool.
-func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, blockchain chain.Blockchain, hostnode peers.HostNode) (ActionMempool, error) {
-	depositTopic, err := hostnode.Topic("deposits")
+func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, blockchain chain.Blockchain, hostnode hostnode.HostNode) (ActionMempool, error) {
+	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +156,7 @@ func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainPar
 		return nil, err
 	}
 
-	exitTopic, err := hostnode.Topic("exits")
+	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainPar
 		return nil, err
 	}
 
-	governanceTopic, err := hostnode.Topic("governance")
+	governanceTopic, err := hostnode.Topic(p2p.MsgGovernanceCmd)
 	if err != nil {
 		return nil, err
 	}

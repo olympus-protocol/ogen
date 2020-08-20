@@ -1,4 +1,4 @@
-package peers
+package hostnode
 
 import (
 	"crypto/rand"
@@ -17,7 +17,7 @@ import (
 var configBucketKey = []byte("config")
 var privKeyDbKey = []byte("privkey")
 
-var peersDbKey = []byte("peers")
+var peersDbKey = []byte("hostnode")
 var bansDbKey = []byte("bans")
 var ipDbKey = []byte("ips")
 var scoresDbKey = []byte("scores")
@@ -100,7 +100,7 @@ func (d *database) Initialize() (err error) {
 	return
 }
 
-// SavePeer stores a peer to the node peers database.
+// SavePeer stores a peer to the node hostnode database.
 func (d *database) SavePeer(pma multiaddr.Multiaddr) error {
 	// get peerID from multiaddr
 	peerID, err := peer.AddrInfoFromP2pAddr(pma)
@@ -305,7 +305,7 @@ func (d *database) IsIPBanned(ip string) (bool, bool, error) {
 	return isBanned, shouldDelete, err
 }
 
-// GetSavedPeers returns a list of already known peers.
+// GetSavedPeers returns a list of already known hostnode.
 func (d *database) GetSavedPeers() (savedAddresses []multiaddr.Multiaddr, err error) {
 	// retrieve the saved addresses
 	err = d.db.Update(func(tx *bbolt.Tx) error {
