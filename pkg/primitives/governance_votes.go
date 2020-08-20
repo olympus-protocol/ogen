@@ -1,10 +1,9 @@
 package primitives
 
 import (
-	"bytes"
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
-	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -120,21 +119,11 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type          uint64
-	Data          [100]byte
-	FunctionalSig [144]byte
-	VoteEpoch     uint64
-}
-
-// Signature returns the governance vote bls signature.
-func (g *GovernanceVote) Signature() (bls.FunctionalSignature, error) {
-	buf := bytes.NewBuffer([]byte{})
-	buf.Write(g.FunctionalSig[:])
-	sig, err := bls.ReadFunctionalSignature(buf)
-	if err != nil {
-		return nil, err
-	}
-	return sig, nil
+	Type        uint64
+	Data        [100]byte
+	CombinedSig *multisig.CombinedSignature
+	Multisig    *multisig.Multisig
+	VoteEpoch   uint64
 }
 
 // Marshal encodes the data.
@@ -157,20 +146,31 @@ func (g *GovernanceVote) Unmarshal(b []byte) error {
 	return g.UnmarshalSSZ(b)
 }
 
-// Valid returns a boolean that checks for validity of the vote.
-func (g *GovernanceVote) Valid() bool {
+// ValidCombined returns a boolean that checks for validity of the vote in case it uses a combined signature
+func (g *GovernanceVote) ValidCombined() bool {
 	sigHash := g.SignatureHash()
-	sig, err := g.Signature()
+	pub, err := g.CombinedSig.Pub()
 	if err != nil {
 		return false
 	}
-	return sig.Verify(sigHash[:])
+	sig, err := g.CombinedSig.Sig()
+	if err != nil {
+		return false
+	}
+	return sig.Verify(pub, sigHash[:])
+}
+
+// ValidMultisig returns a boolean that checks for validity of the vote in case it uses a multi signature
+func (g *GovernanceVote) ValidMultisig() bool {
+	sigHash := g.SignatureHash()
+	return g.Multisig.Verify(sigHash[:])
 }
 
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := g.Copy()
-	cp.FunctionalSig = [144]byte{}
+	g.CombinedSig = nil
+	g.Multisig = nil
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
@@ -186,6 +186,11 @@ func (g *GovernanceVote) Copy() *GovernanceVote {
 	newGv := *g
 	newGv.Data = [100]byte{}
 	copy(newGv.Data[:], g.Data[:])
-	newGv.FunctionalSig = g.FunctionalSig
+	if newGv.CombinedSig != nil {
+		newGv.CombinedSig = g.CombinedSig.Copy()
+	}
+	if newGv.Multisig != nil {
+		newGv.Multisig = g.Multisig.Copy()
+	}
 	return &newGv
 }

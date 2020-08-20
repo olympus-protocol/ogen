@@ -34,7 +34,7 @@ var generateWalletCmd = &cobra.Command{
 		default:
 			net = &params.Mainnet
 		}
-		err = bls.Initialize(*net)
+		err = bls.Initialize(*net, "blst")
 		if err != nil {
 			panic(err)
 		}

@@ -2,7 +2,7 @@ package state
 
 import (
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -26,6 +26,7 @@ type State interface {
 	IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params.ChainParams) error
 	ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params.ChainParams) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error
+	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
 	ApplyProposerSlashing(ps *primitives.ProposerSlashing, p *params.ChainParams) error
 	IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.ChainParams) ([]uint64, error)
@@ -39,7 +40,7 @@ type State interface {
 	ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams) error
 	IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainParams) error
 	ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error
-	GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error)
+	GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (bls_interface.PublicKey, error)
 	CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error
 	ProcessBlock(b *primitives.Block, p *params.ChainParams) error
 	ToSerializable() *SerializableState

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"strconv"
 	"time"
 
@@ -59,10 +60,10 @@ func (c *RPCClient) submitRawData(args []string) (string, error) {
 }
 
 func (c *RPCClient) genKeyPair(raw bool) (string, error) {
-	blsKeyPair := bls.RandKey()
-	var res bls.KeyPair
+	blsKeyPair := bls.CurrImplementation.RandKey()
+	var res bls_interface.KeyPair
 	if raw {
-		res = bls.KeyPair{
+		res = bls_interface.KeyPair{
 			Public:  hex.EncodeToString(blsKeyPair.PublicKey().Marshal()),
 			Private: hex.EncodeToString(blsKeyPair.Marshal()),
 		}
@@ -75,7 +76,7 @@ func (c *RPCClient) genKeyPair(raw bool) (string, error) {
 		if err != nil {
 			return "", errors.New("unable to encode private key to bech32")
 		}
-		res = bls.KeyPair{
+		res = bls_interface.KeyPair{
 			Public:  addr,
 			Private: wif,
 		}

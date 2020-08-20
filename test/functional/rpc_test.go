@@ -50,9 +50,9 @@ var initParams state.InitializationParameters
 var rawTx string
 var tx *primitives.Tx
 var savedWallet bls.KeyPair
-var ogValidators []*bls.SecretKey
-var acc1 *bls.SecretKey
-var acc2 *bls.SecretKey
+var ogValidators []bls_interface.SecretKey
+var acc1 bls_interface.SecretKey
+var acc2 bls_interface.SecretKey
 
 // RPC Functional test
 // 1. Start a new chain with a single node moving.

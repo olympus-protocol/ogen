@@ -7,6 +7,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -205,6 +206,8 @@ func (p *proposer) ProposeBlocks() {
 
 				coinTxs, voteState := p.coinsMempool.Get(p.params.MaxTxsPerBlock, voteState)
 
+				coinTxMulti := p.coinsMempool.GetMulti(p.params.MaxTxsMultiPerBlock, voteState)
+
 				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
@@ -250,6 +253,7 @@ func (p *proposer) ProposeBlocks() {
 					},
 					Votes:             votes,
 					Txs:               coinTxs,
+					TxsMulti:          coinTxMulti,
 					Deposits:          depositTxs,
 					Exits:             exitTxs,
 					RANDAOSlashings:   randaoSlashings,
@@ -348,7 +352,7 @@ func (p *proposer) VoteForBlocks() {
 
 			dataHash := data.Hash()
 
-			var signatures []*bls.Signature
+			var signatures []bls_interface.Signature
 
 			bitlistVotes := bitfield.NewBitlist(uint64(len(validators)))
 
@@ -358,7 +362,7 @@ func (p *proposer) VoteForBlocks() {
 				if !found {
 					continue
 				}
-				//signFunc := func(message *actionmanager.ValidatorHelloMessage) *bls.Signature {
+				//signFunc := func(message *actionmanager.ValidatorHelloMessage) bls_interface.Signature {
 				//	msg := message.SignatureMessage()
 				//	return key.Sign(msg)
 				//}
@@ -368,7 +372,7 @@ func (p *proposer) VoteForBlocks() {
 				//}
 			}
 			if len(signatures) > 0 {
-				sig := bls.AggregateSignatures(signatures)
+				sig := bls.CurrImplementation.AggregateSignatures(signatures)
 
 				var voteSig [96]byte
 				copy(voteSig[:], sig.Marshal())

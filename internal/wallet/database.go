@@ -3,10 +3,10 @@ package wallet
 import (
 	"bytes"
 	"errors"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"reflect"
 
 	"github.com/olympus-protocol/ogen/pkg/aesbls"
-	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"go.etcd.io/bbolt"
 )
@@ -66,7 +66,7 @@ func (w *wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhas
 	})
 }
 
-func (w *wallet) getSecret(password string) (key *bls.SecretKey, err error) {
+func (w *wallet) getSecret(password string) (key bls_interface.SecretKey, err error) {
 	err = w.db.View(func(tx *bbolt.Tx) error {
 
 		infobkt := tx.Bucket(walletInfoBucket)

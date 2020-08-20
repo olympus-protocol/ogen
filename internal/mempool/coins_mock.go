@@ -74,3 +74,31 @@ func (mr *MockCoinsMempoolMockRecorder) Get(maxTransactions, s interface{}) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCoinsMempool)(nil).Get), maxTransactions, s)
 }
+
+// AddMulti mocks base method
+func (m *MockCoinsMempool) AddMulti(item primitives.TxMulti, state *primitives.CoinsState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddMulti", item, state)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddMulti indicates an expected call of AddMulti
+func (mr *MockCoinsMempoolMockRecorder) AddMulti(item, state interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMulti", reflect.TypeOf((*MockCoinsMempool)(nil).AddMulti), item, state)
+}
+
+// GetMulti mocks base method
+func (m *MockCoinsMempool) GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMulti", maxTransactions, s)
+	ret0, _ := ret[0].([]*primitives.TxMulti)
+	return ret0
+}
+
+// GetMulti indicates an expected call of GetMulti
+func (mr *MockCoinsMempoolMockRecorder) GetMulti(maxTransactions, s interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMulti", reflect.TypeOf((*MockCoinsMempool)(nil).GetMulti), maxTransactions, s)
+}

@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha512"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"io"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -13,7 +14,7 @@ import (
 )
 
 // Decrypt uses aes decryption to decrypt an encrypted bls private key using a nonce and a salt.
-func Decrypt(nonce [12]byte, salt [8]byte, encryptedKey []byte, key []byte) (*bls.SecretKey, error) {
+func Decrypt(nonce [12]byte, salt [8]byte, encryptedKey []byte, key []byte) (bls_interface.SecretKey, error) {
 	encryptionKey := pbkdf2.Key(key, salt[:], 20000, 32, sha512.New)
 
 	block, err := aes.NewCipher(encryptionKey)
@@ -31,7 +32,7 @@ func Decrypt(nonce [12]byte, salt [8]byte, encryptedKey []byte, key []byte) (*bl
 		return nil, errors.Wrap(err, "could not decrypt master key")
 	}
 
-	secKey, err := bls.SecretKeyFromBytes(blsKeyBytes)
+	secKey, err := bls.CurrImplementation.SecretKeyFromBytes(blsKeyBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to deserialize bls private key")
 	}

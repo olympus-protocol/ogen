@@ -7,7 +7,7 @@ package state
 import (
 	gomock "github.com/golang/mock/gomock"
 	logger "github.com/olympus-protocol/ogen/internal/logger"
-	bls "github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	params "github.com/olympus-protocol/ogen/pkg/params"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
@@ -271,6 +271,20 @@ func (mr *MockStateMockRecorder) ApplyTransactionSingle(tx, blockWithdrawalAddre
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyTransactionSingle", reflect.TypeOf((*MockState)(nil).ApplyTransactionSingle), tx, blockWithdrawalAddress, p)
 }
 
+// ApplyTransactionMulti mocks base method
+func (m *MockState) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyTransactionMulti", tx, blockWithdrawalAddress, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyTransactionMulti indicates an expected call of ApplyTransactionMulti
+func (mr *MockStateMockRecorder) ApplyTransactionMulti(tx, blockWithdrawalAddress, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyTransactionMulti", reflect.TypeOf((*MockState)(nil).ApplyTransactionMulti), tx, blockWithdrawalAddress, p)
+}
+
 // IsProposerSlashingValid mocks base method
 func (m *MockState) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -458,10 +472,10 @@ func (mr *MockStateMockRecorder) ProcessVote(v, p, proposerIndex interface{}) *g
 }
 
 // GetProposerPublicKey mocks base method
-func (m *MockState) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error) {
+func (m *MockState) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (bls_interface.PublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProposerPublicKey", b, p)
-	ret0, _ := ret[0].(*bls.PublicKey)
+	ret0, _ := ret[0].(bls_interface.PublicKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

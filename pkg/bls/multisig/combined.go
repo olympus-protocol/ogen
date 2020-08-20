@@ -1,8 +1,11 @@
-package bls
+package multisig
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 )
 
 var (
@@ -42,7 +45,7 @@ func (c *CombinedSignature) Unmarshal(b []byte) error {
 }
 
 // NewCombinedSignature creates a new combined signature
-func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
+func NewCombinedSignature(pub bls_interface.PublicKey, sig bls_interface.Signature) *CombinedSignature {
 	var s [96]byte
 	var p [48]byte
 	copy(s[:], sig.Marshal())
@@ -55,28 +58,23 @@ func NewCombinedSignature(pub *PublicKey, sig *Signature) *CombinedSignature {
 }
 
 // Sig outputs the bundled signature.
-func (c *CombinedSignature) Sig() (*Signature, error) {
-	return SignatureFromBytes(c.S)
+func (c *CombinedSignature) Sig() (bls_interface.Signature, error) {
+	return bls.CurrImplementation.SignatureFromBytes(c.S[:])
 }
 
 // Pub outputs the bundled public key.
-func (c *CombinedSignature) Pub() (*PublicKey, error) {
-	return PublicKeyFromBytes(c.P)
-}
-
-// GetPublicKey gets the functional public key.
-func (c *CombinedSignature) GetPublicKey() (FunctionalPublicKey, error) {
-	return PublicKeyFromBytes(c.P)
+func (c *CombinedSignature) Pub() (bls_interface.PublicKey, error) {
+	return bls.CurrImplementation.PublicKeyFromBytes(c.P[:])
 }
 
 // Sign signs a message using the secret key.
-func (c *CombinedSignature) Sign(sk *SecretKey, msg []byte) error {
+func (c *CombinedSignature) Sign(sk bls_interface.SecretKey, msg []byte) error {
 	expectedPub := sk.PublicKey()
 	pub, err := c.Pub()
 	if err != nil {
 		return err
 	}
-	if !expectedPub.Equals(pub) {
+	if !bytes.Equal(expectedPub.Marshal(), pub.Marshal()) {
 		return fmt.Errorf("expected key for %x, but got %x", c.P, expectedPub.Marshal())
 	}
 	var s [96]byte
@@ -96,20 +94,13 @@ func (c *CombinedSignature) Verify(msg []byte) bool {
 	if err != nil {
 		return false
 	}
-	return sig.Verify(msg, pub)
-}
-
-// Type returns the signature type.
-func (c *CombinedSignature) Type() FunctionalSignatureType {
-	return TypeSingle
+	return sig.Verify(pub, msg)
 }
 
 // Copy copies the combined signature.
-func (c *CombinedSignature) Copy() FunctionalSignature {
+func (c *CombinedSignature) Copy() *CombinedSignature {
 	newCs := new(CombinedSignature)
 	copy(newCs.P[:], c.P[:])
 	copy(newCs.S[:], c.S[:])
 	return newCs
 }
-
-var _ FunctionalSignature = &CombinedSignature{}
