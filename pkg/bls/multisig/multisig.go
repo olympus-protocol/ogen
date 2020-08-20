@@ -11,7 +11,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 var (
@@ -117,19 +116,19 @@ func (m *Multipub) Hash() ([20]byte, error) {
 }
 
 // ToBech32 returns the bech32 address.
-func (m *Multipub) ToBech32(prefixes params.AccountPrefixes) (string, error) {
+func (m *Multipub) ToBech32() (string, error) {
 	pkh, err := m.Hash()
 	if err != nil {
 		return "", err
 	}
-	return bech32.Encode(prefixes.Multisig, pkh[:])
+	return bech32.Encode(bls_interface.Prefix.Public, pkh[:])
 }
 
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"5"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"40"`
 }
 
 // Marshal encodes the data.

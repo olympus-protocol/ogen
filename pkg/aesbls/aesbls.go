@@ -12,9 +12,13 @@ import (
 )
 
 var (
-	ErrorCipher      = errors.New("error creating the encryption cypher")
-	ErrorGCM         = errors.New("error loading the gcm cypher, nonce or salt information may be wrong")
-	ErrorDecrypt     = errors.New("unable to decrypt key with key provided")
+	// ErrorCipher returned when an error ocurred creating the aes cipher
+	ErrorCipher = errors.New("error creating the encryption cypher")
+	// ErrorGCM returned when the aes cipher has errors initializing the gcm.
+	ErrorGCM = errors.New("error loading the gcm cypher, nonce or salt information may be wrong")
+	// ErrorDecrypt returned when the cipher is not able to decrypt the with the provided key
+	ErrorDecrypt = errors.New("unable to decrypt key with key provided")
+	// ErrorDeserialize returned when the decrypted information can't be deserialized as a secret key
 	ErrorDeserialize = errors.New("unable to deserialize the bls encoded key")
 )
 

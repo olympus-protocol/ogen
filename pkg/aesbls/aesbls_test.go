@@ -1,7 +1,6 @@
 package aesbls_test
 
 import (
-	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -9,13 +8,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/aesbls"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 )
-
-func init() {
-	err := bls.Initialize(testdata.TestParams, "herumi")
-	if err != nil {
-		panic(err)
-	}
-}
 
 var encKey = []byte("test")
 var encKeyWrong = []byte("test2")

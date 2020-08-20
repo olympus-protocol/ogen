@@ -7,8 +7,9 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
-var CurrImplementation Implementation
+var CurrImplementation Implementation = bls_herumi.HerumiImplementation{}
 
+// Initialize overrides current implementation with a new implementation
 func Initialize(p params.ChainParams, lib string) error {
 	switch lib {
 	case "herumi":

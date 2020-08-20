@@ -2,12 +2,11 @@ package multisig_test
 
 import (
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-	multisig2 "github.com/olympus-protocol/ogen/pkg/bls/multisig"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 func TestCorrectnessMultisig(t *testing.T) {
@@ -20,30 +19,29 @@ func TestCorrectnessMultisig(t *testing.T) {
 	}
 
 	// create 10-of-20 multipub
-	multiPub := multisig2.NewMultipub(publicKeys, 10)
-	multisig := multisig2.NewMultisig(multiPub)
+	multiPub := multisig.NewMultipub(publicKeys, 10)
+	ms := multisig.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 
 	for i := 0; i < 9; i++ {
-		assert.NoError(t, multisig.Sign(secretKeys[i], msg))
+		assert.NoError(t, ms.Sign(secretKeys[i], msg))
 	}
 
-	assert.False(t, multisig.Verify(msg))
+	assert.False(t, ms.Verify(msg))
 
-	assert.NoError(t, multisig.Sign(secretKeys[9], msg))
+	assert.NoError(t, ms.Sign(secretKeys[9], msg))
 
-	assert.True(t, multisig.Verify(msg))
+	assert.True(t, ms.Verify(msg))
 
 	for i := 10; i < 20; i++ {
-		assert.NoError(t, multisig.Sign(secretKeys[i], msg))
+		assert.NoError(t, ms.Sign(secretKeys[i], msg))
 	}
 
-	assert.True(t, multisig.Verify(msg))
+	assert.True(t, ms.Verify(msg))
 
-	multiPub.ToBech32(params.AccountPrefixes{
-		Multisig: "olmul",
-	})
+	//_, err := multiPub.ToBech32()
+	//assert.NoError(t, err)
 }
 
 func TestMultisigSerializeSign(t *testing.T) {
@@ -56,20 +54,20 @@ func TestMultisigSerializeSign(t *testing.T) {
 	}
 
 	// create 10-of-20 multipub
-	multiPub := multisig2.NewMultipub(publicKeys, 10)
-	multisig := multisig2.NewMultisig(multiPub)
+	multiPub := multisig.NewMultipub(publicKeys, 10)
+	ms := multisig.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 
 	for i := 0; i < 10; i++ {
-		assert.NoError(t, multisig.Sign(secretKeys[i], msg))
+		assert.NoError(t, ms.Sign(secretKeys[i], msg))
 	}
 
-	multiBytes, err := multisig.Marshal()
+	multiBytes, err := ms.Marshal()
 
 	assert.NoError(t, err)
 
-	newMulti := new(multisig2.Multisig)
+	newMulti := new(multisig.Multisig)
 
 	assert.NoError(t, newMulti.Unmarshal(multiBytes))
 

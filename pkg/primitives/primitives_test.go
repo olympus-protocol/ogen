@@ -36,22 +36,3 @@ func fuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
 	}
 	return votes
 }
-
-func fuzzAcceptedVoteInfo(n int) []*primitives.AcceptedVoteInfo {
-	var avInfo []*primitives.AcceptedVoteInfo
-	for i := 0; i < n; i++ {
-		f := fuzz.New().NilChance(0)
-		d := new(primitives.VoteData)
-		var sig [96]byte
-		f.Fuzz(d)
-		f.Fuzz(&sig)
-		v := &primitives.AcceptedVoteInfo{
-			Data:                  d,
-			ParticipationBitfield: bitfield.NewBitlist(10),
-			Proposer:              0,
-			InclusionDelay:        0,
-		}
-		avInfo = append(avInfo, v)
-	}
-	return avInfo
-}
