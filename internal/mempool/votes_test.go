@@ -42,7 +42,7 @@ var validatorsGlobal []*primitives.Validator
 var genesisHash chainhash.Hash
 
 // params are the params used on the test
-var param = &testdata.IntTestParams
+var param = &testdata.TestParams
 
 var slot1Commiters = []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99}
 var slot2Commiters = []uint64{20, 21, 22, 23, 24, 25, 26, 27, 28, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
@@ -113,7 +113,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	manager := actionmanager.NewMockLastActionManager(ctrl)
 
-	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.TestParams, ch, host, manager)
 	assert.NoError(t, err)
 
 	// This test will try to replicate a chain with 100 validators and 2 proposers moving for 1 epoch.
