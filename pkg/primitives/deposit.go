@@ -32,21 +32,11 @@ type Deposit struct {
 
 // Marshal encodes the data.
 func (d *Deposit) Marshal() ([]byte, error) {
-	b, err := d.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxDepositSize {
-		return nil, ErrorDepositSize
-	}
-	return b, nil
+	return d.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (d *Deposit) Unmarshal(b []byte) error {
-	if len(b) > MaxDepositSize {
-		return ErrorDepositSize
-	}
 	return d.UnmarshalSSZ(b)
 }
 

@@ -11,7 +11,6 @@ require (
 	github.com/ferranbt/fastssz v0.0.0-20200728110133-0b6e349af87a
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.2
-	github.com/golang/snappy v0.0.1
 	github.com/google/gofuzz v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/libp2p/go-libp2p v0.10.2

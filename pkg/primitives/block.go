@@ -3,7 +3,6 @@ package primitives
 import (
 	"errors"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -31,26 +30,12 @@ type Block struct {
 
 // Marshal encodes the block.
 func (b *Block) Marshal() ([]byte, error) {
-	bb, err := b.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(bb) > MaxBlockSize {
-		return nil, ErrorBlockSize
-	}
-	return snappy.Encode(nil, bb), nil
+	return b.MarshalSSZ()
 }
 
 // Unmarshal decodes the block.
 func (b *Block) Unmarshal(bb []byte) error {
-	d, err := snappy.Decode(nil, bb)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxBlockSize {
-		return ErrorBlockSize
-	}
-	return b.UnmarshalSSZ(d)
+	return b.UnmarshalSSZ(bb)
 }
 
 // Hash calculates the hash of the block.

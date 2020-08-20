@@ -31,21 +31,11 @@ type TxMulti struct {
 
 // Marshal encodes the data.
 func (t *TxMulti) Marshal() ([]byte, error) {
-	b, err := t.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxTransactionMultiSize {
-		return nil, ErrorTxMultiSize
-	}
-	return b, nil
+	return t.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (t *TxMulti) Unmarshal(b []byte) error {
-	if len(b) > MaxTransactionMultiSize {
-		return ErrorTxMultiSize
-	}
 	return t.UnmarshalSSZ(b)
 }
 

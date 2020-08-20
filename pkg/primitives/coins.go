@@ -1,7 +1,5 @@
 package primitives
 
-import "github.com/golang/snappy"
-
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
 type AccountInfo struct {
 	Account [20]byte
@@ -27,17 +25,13 @@ func (u *CoinsState) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal deserialize the bytes to struct
 func (u *CoinsState) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
 	us := new(CoinsStateSerializable)
-	err = us.UnmarshalSSZ(d)
+	err := us.UnmarshalSSZ(b)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
@@ -15,26 +14,12 @@ type MsgBlocks struct {
 
 // Marshal serializes the data to bytes
 func (m *MsgBlocks) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if uint64(len(b)) > m.MaxPayloadLength() {
-		return nil, ErrorSizeExceed
-	}
-	return snappy.Encode(nil, b), nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal deserializes the data
 func (m *MsgBlocks) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if uint64(len(d)) > m.MaxPayloadLength() {
-		return ErrorSizeExceed
-	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // Command returns the message topic

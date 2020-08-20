@@ -77,7 +77,7 @@ func TestVoteSlashing(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "d4ea547d0bb42381d8f316f832c20162e5786b21a51bea1190a0aa4b8c967d1c", d.Hash().String())
+	assert.Equal(t, "2a52023c2044d323e42eb5e00e9febf03afa319617f1c3bf2610ab1d0ff39902", d.Hash().String())
 
 }
 
@@ -192,7 +192,7 @@ func TestProposerSlashing(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "f25ac0a1176b5b29b5932cb7069f7697e2dc03b181b0bf2b9b93a8da484c601a", d.Hash().String())
+	assert.Equal(t, "69711352beebcd5e8b820be5fe37616df65ab4816e5e9436c712198c08eaf377", d.Hash().String())
 
 	sigDecode, _ := hex.DecodeString("ae09507041b2ccb9e3b3f9cda71ffae3dc8b2c83f331ebdc98cc4269c56bd4db05706bf317c8877608bc751b36d9af380c5fea6bc804d2080940b3910acc8f222fc4b59166630d8a3b31eba539325c2c60aaaa0408e986241cb462fad8652bdc")
 	sigBls, _ := bls.CurrImplementation.SignatureFromBytes(sigDecode)

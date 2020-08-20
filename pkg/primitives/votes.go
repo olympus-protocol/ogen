@@ -209,21 +209,11 @@ func (m *MultiValidatorVote) Signature() (bls_interface.Signature, error) {
 
 // Marshal encodes the data.
 func (m *MultiValidatorVote) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxMultiValidatorVoteSize {
-		return nil, ErrorMultiValidatorVoteSize
-	}
-	return b, nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (m *MultiValidatorVote) Unmarshal(b []byte) error {
-	if len(b) > MaxMultiValidatorVoteSize {
-		return ErrorMultiValidatorVoteSize
-	}
 	return m.UnmarshalSSZ(b)
 }
 

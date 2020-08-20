@@ -4,7 +4,6 @@ import (
 	"errors"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
@@ -35,26 +34,12 @@ type VoteSlashing struct {
 
 // Marshal encodes the data.
 func (v *VoteSlashing) Marshal() ([]byte, error) {
-	b, err := v.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxVoteSlashingSize {
-		return nil, ErrorVoteSlashingSize
-	}
-	return snappy.Encode(nil, b), nil
+	return v.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (v *VoteSlashing) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxVoteSlashingSize {
-		return ErrorVoteSlashingSize
-	}
-	return v.UnmarshalSSZ(d)
+	return v.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the slashing.
@@ -82,21 +67,11 @@ func (r *RANDAOSlashing) GetRandaoReveal() (bls_interface.Signature, error) {
 
 // Marshal encodes the data.
 func (r *RANDAOSlashing) Marshal() ([]byte, error) {
-	b, err := r.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxRandaoSlashingSize {
-		return nil, ErrorRandaoSlashingSize
-	}
-	return b, nil
+	return r.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (r *RANDAOSlashing) Unmarshal(b []byte) error {
-	if len(b) > MaxRandaoSlashingSize {
-		return ErrorRandaoSlashingSize
-	}
 	return r.UnmarshalSSZ(b)
 }
 
@@ -132,26 +107,12 @@ func (p *ProposerSlashing) GetSignature2() (bls_interface.Signature, error) {
 
 // Marshal encodes the data.
 func (p *ProposerSlashing) Marshal() ([]byte, error) {
-	b, err := p.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxProposerSlashingSize {
-		return nil, ErrorProposerSlashingSize
-	}
-	return snappy.Encode(nil, b), nil
+	return p.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (p *ProposerSlashing) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxProposerSlashingSize {
-		return ErrorProposerSlashingSize
-	}
-	return p.UnmarshalSSZ(d)
+	return p.UnmarshalSSZ(b)
 }
 
 // Hash calculates the hash of the proposer slashing.

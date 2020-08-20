@@ -33,21 +33,11 @@ type BlockHeader struct {
 
 // Marshal encodes the data.
 func (b *BlockHeader) Marshal() ([]byte, error) {
-	by, err := b.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(by) > MaxBlockHeaderBytes {
-		return nil, ErrorBlockHeaderSize
-	}
-	return by, nil
+	return b.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (b *BlockHeader) Unmarshal(by []byte) error {
-	if len(by) > MaxBlockHeaderBytes {
-		return ErrorBlockHeaderSize
-	}
 	return b.UnmarshalSSZ(by)
 }
 

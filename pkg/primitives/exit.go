@@ -38,21 +38,11 @@ func (e *Exit) GetSignature() (bls_interface.Signature, error) {
 
 // Marshal encodes the data.
 func (e *Exit) Marshal() ([]byte, error) {
-	b, err := e.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxExitSize {
-		return nil, ErrorExitSize
-	}
-	return b, nil
+	return e.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (e *Exit) Unmarshal(b []byte) error {
-	if len(b) > MaxExitSize {
-		return ErrorExitSize
-	}
 	return e.UnmarshalSSZ(b)
 }
 

@@ -128,21 +128,11 @@ type GovernanceVote struct {
 
 // Marshal encodes the data.
 func (g *GovernanceVote) Marshal() ([]byte, error) {
-	b, err := g.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxGovernanceVoteSize {
-		return nil, ErrorGovernanceVoteSize
-	}
-	return b, nil
+	return g.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (g *GovernanceVote) Unmarshal(b []byte) error {
-	if len(b) > MaxGovernanceVoteSize {
-		return ErrorGovernanceVoteSize
-	}
 	return g.UnmarshalSSZ(b)
 }
 
