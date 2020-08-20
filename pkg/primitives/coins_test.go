@@ -8,13 +8,13 @@ import (
 )
 
 func Test_CoinStateSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(10000, 10000)
+	f := fuzz.New().NilChance(0).NumElements(10, 10)
 	balances := map[[20]byte]uint64{}
 	nonces := map[[20]byte]uint64{}
 	f.Fuzz(&balances)
 	f.Fuzz(&nonces)
 
-	v := primitives.CoinsState{
+	v := &primitives.CoinsState{
 		Balances: balances,
 		Nonces:   nonces,
 	}
@@ -23,7 +23,7 @@ func Test_CoinStateSerialize(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	var desc primitives.CoinsState
+	desc := new(primitives.CoinsState)
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
@@ -73,6 +73,8 @@ func TestCoinsState_ToSerializable(t *testing.T) {
 
 	assert.Equal(t, noncesSumMap, noncesSumSlice)
 	assert.Equal(t, balancesSumMap, balancesSumSlice)
+
+	assert.Equal(t, balancesSumMap, cs.GetTotal())
 }
 
 func TestCoinsState_FromSerializable(t *testing.T) {
@@ -119,6 +121,8 @@ func TestCoinsState_FromSerializable(t *testing.T) {
 
 	assert.Equal(t, noncesSumMap, noncesSumSlice)
 	assert.Equal(t, balancesSumMap, balancesSumSlice)
+
+	assert.Equal(t, balancesSumMap, cs.GetTotal())
 }
 
 func TestCoinsState_Copy(t *testing.T) {
