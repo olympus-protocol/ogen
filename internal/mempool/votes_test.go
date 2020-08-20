@@ -41,7 +41,7 @@ var validatorsGlobal []*primitives.Validator
 var genesisHash chainhash.Hash
 
 // params are the params used on the test
-var params = &testdata.IntTestParams
+var param = &testdata.IntTestParams
 
 var slot1Commiters = []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99}
 var slot2Commiters = []uint64{20, 21, 22, 23, 24, 25, 26, 27, 28, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
@@ -194,10 +194,10 @@ func TestVoteMempoolAggregation(t *testing.T) {
 		ParticipationBitfield: bfS1Aggr,
 	}
 
-	s.EXPECT().IsVoteValid(voteSlot1att1, params).Return(nil)
-	s.EXPECT().IsVoteValid(voteSlot1att2, params).Return(nil)
-	s.EXPECT().GetVoteCommittee(voteDataSlot1.Slot, params).AnyTimes().Return(slot1Commiters, nil)
-	s.EXPECT().ProcessVote(voteSlot1AggVote, params, uint64(1)).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot1att1, param).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot1att2, param).Return(nil)
+	s.EXPECT().GetVoteCommittee(voteDataSlot1.Slot, param).AnyTimes().Return(slot1Commiters, nil)
+	s.EXPECT().ProcessVote(voteSlot1AggVote, param, uint64(1)).Return(nil)
 
 	err = pool.AddValidate(voteSlot1att1, s)
 	assert.NoError(t, err)
@@ -206,7 +206,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	slotToVote++
 
-	votesSlot1, err := pool.Get(slotToVote, s, params, 1)
+	votesSlot1, err := pool.Get(slotToVote, s, param, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(votesSlot1))
 
@@ -292,10 +292,10 @@ func TestVoteMempoolAggregation(t *testing.T) {
 		ParticipationBitfield: bfs2aggr,
 	}
 
-	s.EXPECT().IsVoteValid(voteSlot2att1, params).Return(nil)
-	s.EXPECT().IsVoteValid(voteSlot2att2, params).Return(nil)
-	s.EXPECT().GetVoteCommittee(voteDataSlot2.Slot, params).AnyTimes().Return(slot2Commiters, nil)
-	s.EXPECT().ProcessVote(voteSlot2AggVote, params, uint64(1)).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot2att1, param).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot2att2, param).Return(nil)
+	s.EXPECT().GetVoteCommittee(voteDataSlot2.Slot, param).AnyTimes().Return(slot2Commiters, nil)
+	s.EXPECT().ProcessVote(voteSlot2AggVote, param, uint64(1)).Return(nil)
 
 	err = pool.AddValidate(voteSlot2att1, s)
 	assert.NoError(t, err)
@@ -304,7 +304,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	slotToVote++
 
-	votesSlot2, err := pool.Get(slotToVote, s, params, 1)
+	votesSlot2, err := pool.Get(slotToVote, s, param, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(votesSlot2))
 
