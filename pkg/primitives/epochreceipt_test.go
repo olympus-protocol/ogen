@@ -14,10 +14,10 @@ func TestEpochReceipt(t *testing.T) {
 	}
 
 	str := e.String()
-	assert.Equal(t,"Reward: Validator 50: voted for correct from epoch for 0.100000 POLIS", str)
+	assert.Equal(t, "Reward: Validator 50: voted for correct from epoch for 0.100000 POLIS", str)
 	e.Amount = -100
 	str = e.String()
-	assert.Equal(t,  "Penalty: Validator 50: voted for correct from epoch for -0.100000 POLIS", str)
+	assert.Equal(t, "Penalty: Validator 50: voted for correct from epoch for -0.100000 POLIS", str)
 
 	assert.Equal(t, "voted for correct from epoch", e.TypeString())
 	e.Type = primitives.PenaltyMissingFromEpoch

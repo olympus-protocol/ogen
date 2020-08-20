@@ -209,3 +209,38 @@ func fuzzDepositData() *primitives.DepositData {
 	d.ProofOfPossession = sig
 	return d
 }
+
+// fuzzBlock returns a Block slice
+// If correct is true will return correctly serializable structs
+// If complete is true will return information with no nil pointers.
+func fuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
+	var v []*primitives.Block
+	for i := 0; i < n; i++ {
+		b := &primitives.Block{
+			Header:            fuzzBlockHeader(1)[0],
+			Votes:             fuzzMultiValidatorVote(32, true, true),
+			Txs:               nil,
+			TxsMulti:          nil,
+			Deposits:          fuzzDeposit(128, true),
+			Exits:             nil,
+			VoteSlashings:     fuzzVoteSlashing(10, true, true),
+			RANDAOSlashings:   fuzzRANDAOSlashing(20),
+			ProposerSlashings: fuzzProposerSlashing(2, true),
+			GovernanceVotes:   nil,
+		}
+
+		var sig [96]byte
+		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+
+		b.Signature = sig
+		b.RandaoSignature = sig
+		if !correct {
+			b.Votes = fuzzMultiValidatorVote(50, true, true)
+		}
+		if !complete {
+			b.Header = nil
+		}
+		v = append(v, b)
+	}
+	return v
+}

@@ -18,21 +18,11 @@ func (m *MsgGetBlocks) HashStopH() *chainhash.Hash {
 
 // Marshal serializes the data to bytes
 func (m *MsgGetBlocks) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if uint64(len(b)) > m.MaxPayloadLength() {
-		return nil, ErrorSizeExceed
-	}
-	return b, nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal deserializes the data
 func (m *MsgGetBlocks) Unmarshal(b []byte) error {
-	if uint64(len(b)) > m.MaxPayloadLength() {
-		return ErrorSizeExceed
-	}
 	return m.UnmarshalSSZ(b)
 }
 
