@@ -7,6 +7,18 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+// fuzzBlockHeader return a slice with n BlockHeader structs.
+func fuzzBlockHeader(n int) []*primitives.BlockHeader {
+	var v []*primitives.BlockHeader
+	f := fuzz.New().NilChance(0)
+	for i := 0; i < n; i++ {
+		d := new(primitives.BlockHeader)
+		f.Fuzz(&d)
+		v = append(v, d)
+	}
+	return v
+}
+
 // fuzzVoteData simply creates a slice with VoteData
 func fuzzVoteData(n int) []*primitives.VoteData {
 	var v []*primitives.VoteData
@@ -72,6 +84,61 @@ func fuzzValidator(n int) []*primitives.Validator {
 		d := new(primitives.Validator)
 		f.Fuzz(&d)
 		v = append(v, d)
+	}
+	return v
+}
+
+// fuzzVoteSlashing creates a slice of VoteSlashing
+// If correct is true will return correctly serializable structs
+// If complete is true will return information with no nil pointers.
+func fuzzVoteSlashing(n int, correct bool, complete bool) []*primitives.VoteSlashing {
+	var v []*primitives.VoteSlashing
+	for i := 0; i < n; i++ {
+		d := &primitives.VoteSlashing{
+			Vote1: fuzzMultiValidatorVote(1, correct, complete)[0],
+			Vote2: fuzzMultiValidatorVote(1, correct, complete)[0],
+		}
+		v = append(v, d)
+	}
+	return v
+}
+
+// fuzzRANDAOSlashing creates a slice of RANDAOSlashing
+func fuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
+	f := fuzz.New().NilChance(0)
+	var v []*primitives.RANDAOSlashing
+	for i := 0; i < n; i++ {
+		d := new(primitives.RANDAOSlashing)
+		f.Fuzz(d)
+		var sig [96]byte
+		var pub [48]byte
+		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		d.RandaoReveal = sig
+		d.ValidatorPubkey = pub
+		v = append(v, d)
+	}
+	return v
+}
+
+// fuzzProposerSlashing creates a slice of ProposerSlashing
+// If complete is true will return information with no nil pointers.
+func fuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
+	f := fuzz.New().NilChance(0)
+	var v []*primitives.ProposerSlashing
+	for i := 0; i < n; i++ {
+		d := new(primitives.ProposerSlashing)
+		f.Fuzz(d)
+		var sig [96]byte
+		var pub [48]byte
+		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		d.Signature1 = sig
+		d.Signature2 = sig
+		if !complete {
+			d.BlockHeader1 = nil
+			d.BlockHeader2 = nil
+		}
 	}
 	return v
 }
