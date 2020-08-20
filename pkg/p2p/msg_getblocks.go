@@ -12,7 +12,7 @@ type MsgGetBlocks struct {
 
 // HashStopH returns the HashStop data as a hash struct
 func (m *MsgGetBlocks) HashStopH() *chainhash.Hash {
-	h, _ := chainhash.NewHash(m.HashStop)
+	h, _ := chainhash.NewHash(m.HashStop[:])
 	return h
 }
 

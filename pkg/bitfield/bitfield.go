@@ -67,8 +67,7 @@ func (b Bitlist) Get(i uint) bool {
 	return false
 }
 
-// Overlaps returns true if the bitlist contains one of the bits from the provided argument
-// bitlist. This method will panic if bitlists are not the same length.
+// Overlaps returns true if the bitlist contains one of the bits from the provided argument bitlist.
 func (b Bitlist) Overlaps(c Bitlist) (bool, error) {
 	lenB, lenC := b.Len(), c.Len()
 	if lenB != lenC {
@@ -99,8 +98,7 @@ func (b Bitlist) Overlaps(c Bitlist) (bool, error) {
 	return false, nil
 }
 
-// Contains returns true if the bitlist contains all of the bits from the provided argument
-// bitlist. This method will panic if bitlists are not the same length.
+// Contains returns true if the bitlist contains all of the bits from the provided argument bitlist.
 func (b Bitlist) Contains(c Bitlist) (bool, error) {
 	if b.Len() != c.Len() {
 		return false, ErrorsBitlistSize

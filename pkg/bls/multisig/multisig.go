@@ -117,8 +117,11 @@ func (m *Multipub) Hash() ([20]byte, error) {
 }
 
 // ToBech32 returns the bech32 address.
-func (m *Multipub) ToBech32(prefixes params.AccountPrefixes) string {
-	pkh, _ := m.Hash()
+func (m *Multipub) ToBech32(prefixes params.AccountPrefixes) (string, error) {
+	pkh, err := m.Hash()
+	if err != nil {
+		return "", err
+	}
 	return bech32.Encode(prefixes.Multisig, pkh[:])
 }
 

@@ -24,8 +24,12 @@ var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStr
 // typically represents the double sha256 of data.
 type Hash [HashSize]byte
 
-// String returns the Hash as a hexadecimal string.
+// String returns the Hash as the hexadecimal string of the byte-reversed
+// hash.
 func (hash Hash) String() string {
+	for i := 0; i < HashSize/2; i++ {
+		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
+	}
 	return hex.EncodeToString(hash[:])
 }
 
@@ -34,9 +38,9 @@ func (hash Hash) String() string {
 //
 // NOTE: It is generally cheaper to just slice the hash directly thereby reusing
 // the same bytes rather than calling this method.
-func (hash *Hash) CloneBytes() [32]byte {
-	newHash := [32]byte{}
-	copy(newHash[:], hash[:])
+func (hash *Hash) CloneBytes() []byte {
+	newHash := make([]byte, HashSize)
+	copy(newHash, hash[:])
 
 	return newHash
 }
@@ -49,7 +53,7 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
 			HashSize)
 	}
-	copy(hash[:], newHash[:])
+	copy(hash[:], newHash)
 
 	return nil
 }
@@ -67,9 +71,9 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 
 // NewHash returns a new Hash from a byte slice.  An error is returned if
 // the number of bytes passed in is not HashSize.
-func NewHash(newHash [32]byte) (*Hash, error) {
+func NewHash(newHash []byte) (*Hash, error) {
 	var sh Hash
-	err := sh.SetBytes(newHash[:])
+	err := sh.SetBytes(newHash)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +112,17 @@ func Decode(dst *Hash, src string) error {
 	}
 
 	// Hex decode the source bytes to a temporary destination.
-	_, err := hex.Decode(dst[HashSize-hex.DecodedLen(len(srcBytes)):], srcBytes)
+	var reversedHash Hash
+	_, err := hex.Decode(reversedHash[HashSize-hex.DecodedLen(len(srcBytes)):], srcBytes)
 	if err != nil {
 		return err
 	}
+
+	// Reverse copy from the temporary hash to destination.  Because the
+	// temporary was zeroed, the written result will be correctly padded.
+	for i, b := range reversedHash[:HashSize/2] {
+		dst[i], dst[HashSize-1-i] = reversedHash[HashSize-1-i], b
+	}
+
 	return nil
 }

@@ -63,7 +63,7 @@ func (i *txIndex) GetAccountTxs(account [20]byte) (AccountTxs, error) {
 			kb := [32]byte{}
 			copy(kb[:], k)
 			txs.Amount++
-			h, err := chainhash.NewHash(kb)
+			h, err := chainhash.NewHash(kb[:])
 			if err != nil {
 				return err
 			}

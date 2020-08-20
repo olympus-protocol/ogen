@@ -13,11 +13,11 @@ func (ch *blockchain) GetLocatorHashes() [][32]byte {
 		}
 		currentHeight -= int64(step)
 		step *= 2
-		locators = append(locators, row.Hash.CloneBytes())
+		locators = append(locators, row.Hash)
 		if len(locators) == 63 {
 			break
 		}
 	}
-	locators = append(locators, chain.Genesis().Hash.CloneBytes())
+	locators = append(locators, chain.Genesis().Hash)
 	return locators
 }
