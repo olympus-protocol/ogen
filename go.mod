@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
+	github.com/cjrd/allocate v0.0.0-20191115010018-022b87fe59fc
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/fatih/color v1.9.0
 	github.com/ferranbt/fastssz v0.0.0-20200728110133-0b6e349af87a
@@ -17,6 +18,7 @@ require (
 	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-pubsub v0.3.3
+	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr v0.2.2
