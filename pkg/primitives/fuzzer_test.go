@@ -175,3 +175,37 @@ func fuzzCoinStateSerializable(n int) *primitives.CoinsStateSerializable {
 
 	return scs
 }
+
+func fuzzDeposit(n int, complete bool) []*primitives.Deposit {
+	var v []*primitives.Deposit
+	for i := 0; i < n; i++ {
+		d := &primitives.Deposit{
+			Data: fuzzDepositData(),
+		}
+		var sig [96]byte
+		var pub [48]byte
+		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		d.PublicKey = pub
+		d.Signature = sig
+		if !complete {
+			d.Data = nil
+		}
+		v = append(v, d)
+	}
+	return v
+}
+
+// fuzzDepositData returns a DepositData struct
+func fuzzDepositData() *primitives.DepositData {
+	f := fuzz.New().NilChance(0)
+	d := new(primitives.DepositData)
+	f.Fuzz(d)
+	var sig [96]byte
+	var pub [48]byte
+	copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+	copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+	d.PublicKey = pub
+	d.ProofOfPossession = sig
+	return d
+}
