@@ -63,3 +63,15 @@ func fuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.Mu
 	}
 	return v
 }
+
+// fuzzValidator creates a slice of Validator
+func fuzzValidator(n int) []*primitives.Validator {
+	var v []*primitives.Validator
+	f := fuzz.New().NilChance(0)
+	for i := 0; i < n; i++ {
+		d := new(primitives.Validator)
+		f.Fuzz(&d)
+		v = append(v, d)
+	}
+	return v
+}
