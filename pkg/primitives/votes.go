@@ -161,7 +161,7 @@ func (v *VoteData) IsSurroundVote(v2 *VoteData) bool {
 // Equals checks if vote data equals another vote data.
 func (v *VoteData) Equals(other *VoteData) bool {
 	if v.Slot != other.Slot || v.FromEpoch != other.FromEpoch || v.ToEpoch != other.ToEpoch ||
-		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || bytes.Equal(v.ToHash[:], other.ToHash[:]) || bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) || v.Nonce != other.Nonce {
+		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || !bytes.Equal(v.ToHash[:], other.ToHash[:]) || !bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) || v.Nonce != other.Nonce {
 		return false
 	}
 

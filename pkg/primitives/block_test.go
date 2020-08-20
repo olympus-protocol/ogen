@@ -42,11 +42,11 @@ func Test_BlockSerialize(t *testing.T) {
 
 	v := primitives.Block{
 		Header:            blockheader,
-		Votes:             fuzzMultiValidatorVote(32),
+		Votes:             nil,
 		Txs:               txs,
 		Deposits:          deposits,
 		Exits:             exits,
-		VoteSlashings:     fuzzVoteSlashing(10),
+		VoteSlashings:     nil,
 		RANDAOSlashings:   randaoSlash,
 		ProposerSlashings: proposerSlash,
 		GovernanceVotes:   governanceVotes,
