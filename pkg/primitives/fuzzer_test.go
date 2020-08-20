@@ -142,3 +142,36 @@ func fuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
 	}
 	return v
 }
+
+// fuzzCoinState returns a CoinState with n balances and nonces
+func fuzzCoinState(n int) *primitives.CoinsState {
+	f := fuzz.New().NilChance(0).NumElements(n, n)
+	balances := map[[20]byte]uint64{}
+	nonces := map[[20]byte]uint64{}
+	f.Fuzz(&balances)
+	f.Fuzz(&nonces)
+
+	v := &primitives.CoinsState{
+		Balances: balances,
+		Nonces:   nonces,
+	}
+	return v
+}
+
+// fuzzCoinState returns a CoinState with n balances and nonces
+func fuzzCoinStateSerializable(n int) *primitives.CoinsStateSerializable {
+	f := fuzz.New().NilChance(0).NumElements(n, n)
+
+	var balances []*primitives.AccountInfo
+	var nonces []*primitives.AccountInfo
+
+	f.Fuzz(&balances)
+	f.Fuzz(&nonces)
+
+	scs := &primitives.CoinsStateSerializable{
+		Balances: balances,
+		Nonces:   nonces,
+	}
+
+	return scs
+}
