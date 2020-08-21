@@ -1,19 +1,9 @@
 package primitives
 
 import (
-	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-var (
-	// ErrorReplacementsVoteSize is returned when a ReplacementVotes exceed MaxReplacementVoteSize
-	ErrorReplacementsVoteSize = errors.New("replacement vote size too big")
-	// ErrorGovernanceVote is returned when a GovernanceVote exceed MaxGovernanceVoteSize
-	ErrorGovernanceVoteSize = errors.New("governance vote size too big")
-	// ErrorCommunityVoteData is returned when a CommunityVoteData exceed MaxCommunityVoteDataSize
-	ErrorCommunityVoteDataSize = errors.New("community vote size too big")
 )
 
 const (
@@ -39,21 +29,11 @@ type ReplacementVotes struct {
 
 // Marshal encodes the data.
 func (r *ReplacementVotes) Marshal() ([]byte, error) {
-	b, err := r.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxReplacementsVoteSize {
-		return nil, ErrorReplacementsVoteSize
-	}
-	return b, nil
+	return r.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (r *ReplacementVotes) Unmarshal(b []byte) error {
-	if len(b) > MaxReplacementsVoteSize {
-		return ErrorReplacementsVoteSize
-	}
 	return r.UnmarshalSSZ(b)
 }
 
@@ -64,21 +44,11 @@ type CommunityVoteData struct {
 
 // Marshal encodes the data.
 func (c *CommunityVoteData) Marshal() ([]byte, error) {
-	b, err := c.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxCommunityVoteDataSize {
-		return nil, ErrorCommunityVoteDataSize
-	}
-	return b, nil
+	return c.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (c *CommunityVoteData) Unmarshal(b []byte) error {
-	if len(b) > MaxCommunityVoteDataSize {
-		return ErrorCommunityVoteDataSize
-	}
 	return c.UnmarshalSSZ(b)
 }
 

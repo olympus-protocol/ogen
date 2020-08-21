@@ -36,9 +36,9 @@ func TestExit(t *testing.T) {
 	e.WithdrawPubkey = pub
 	e.ValidatorPubkey = pub
 
-	getValPub, _ :=  e.GetValidatorPubKey()
-	getWithPub, _ :=  e.GetWithdrawPubKey()
-	getSig, _ :=  e.GetSignature()
+	getValPub, _ := e.GetValidatorPubKey()
+	getWithPub, _ := e.GetWithdrawPubKey()
+	getSig, _ := e.GetSignature()
 
 	assert.Equal(t, pubBls, getValPub)
 	assert.Equal(t, pubBls, getWithPub)

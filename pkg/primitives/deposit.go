@@ -7,7 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-
 // MaxDepositSize is the maximum amount of bytes a deposit can contain.
 const MaxDepositSize = MaxDepositDataSize + 48 + 96
 

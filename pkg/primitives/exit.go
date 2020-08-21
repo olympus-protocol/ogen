@@ -7,7 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-
 // MaxExitSize is the maximum amount of bytes an exit can contain.
 const MaxExitSize = 192
 

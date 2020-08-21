@@ -4,6 +4,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
@@ -287,4 +288,45 @@ func FuzzExits(n int) []*primitives.Exit {
 		v = append(v, d)
 	}
 	return v
+}
+
+// FuzzGovernanceVote returns a slice of GovernanceVotes
+// If valid is true object on slice have valid signatures.
+// If multisig is true objects include multisignatures instead of combined signatures.
+func FuzzGovernanceVote(n int, valid bool, multisig bool) []*primitives.GovernanceVote {
+	var v []*primitives.GovernanceVote
+	return v
+}
+
+// FuzzGovernanceState returns a Governance state struct
+func FuzzGovernanceState() *primitives.Governance {
+	f := fuzz.New().NilChance(0).NumElements(5, 5)
+
+	replace := map[[20]byte]chainhash.Hash{}
+	community := map[chainhash.Hash]primitives.CommunityVoteData{}
+	f.Fuzz(&replace)
+	f.Fuzz(&community)
+
+	g := &primitives.Governance{
+		ReplaceVotes:   replace,
+		CommunityVotes: community,
+	}
+	return g
+}
+
+// FuzzGovernanceStateSerializable returns a GovernanceSerializable state struct
+func FuzzGovernanceStateSerializable() *primitives.GovernanceSerializable {
+	f := fuzz.New().NilChance(0).NumElements(5, 20)
+
+	var replace []*primitives.ReplacementVotes
+	var community []*primitives.CommunityVoteDataInfo
+
+	f.Fuzz(&replace)
+	f.Fuzz(&community)
+
+	sgs := &primitives.GovernanceSerializable{
+		ReplaceVotes:   replace,
+		CommunityVotes: community,
+	}
+	return sgs
 }
