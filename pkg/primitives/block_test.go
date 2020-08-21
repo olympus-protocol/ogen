@@ -9,7 +9,7 @@ import (
 
 func TestBlock(t *testing.T) {
 	correct := testdata.FuzzBlock(10, true, true)
-	for  _, b := range correct {
+	for _, b := range correct {
 		ser, err := b.Marshal()
 		assert.NoError(t, err)
 
@@ -21,14 +21,14 @@ func TestBlock(t *testing.T) {
 	}
 
 	incorrect := testdata.FuzzBlock(10, false, true)
-	for  _, b := range incorrect {
+	for _, b := range incorrect {
 		_, err := b.Marshal()
 		assert.NotNil(t, err)
 
 	}
 
 	nilpointers := testdata.FuzzBlock(10, true, false)
-	for  _, b := range nilpointers {
+	for _, b := range nilpointers {
 		assert.NotPanics(t, func() {
 			data, err := b.Marshal()
 			assert.NoError(t, err)

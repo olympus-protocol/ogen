@@ -227,7 +227,7 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 			Txs:               []*primitives.Tx{},
 			TxsMulti:          []*primitives.TxMulti{},
 			Deposits:          FuzzDeposit(128, true),
-			Exits:             []*primitives.Exit{},
+			Exits:             FuzzExits(128),
 			VoteSlashings:     FuzzVoteSlashing(10, true, true),
 			RANDAOSlashings:   FuzzRANDAOSlashing(20),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
@@ -263,6 +263,27 @@ func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
 		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
 		d.Signature = sig
 		d.PublicKey = pub
+		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzExits return an slice of Exits
+// If correct is true will return correctly serializable structs
+// If complete is true will return information with no nil pointers.
+func FuzzExits(n int) []*primitives.Exit {
+	var v []*primitives.Exit
+	for i := 0; i < n; i++ {
+		var sig [96]byte
+		var pub [48]byte
+		pubBls := bls.CurrImplementation.RandKey().PublicKey()
+		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(pub[:], pubBls.Marshal())
+		d := &primitives.Exit{
+			ValidatorPubkey: pub,
+			Signature:       sig,
+			WithdrawPubkey:  pub,
+		}
 		v = append(v, d)
 	}
 	return v

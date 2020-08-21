@@ -1,15 +1,12 @@
 package primitives
 
 import (
-	"errors"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-// ErrorExitSize returned when the exit size is above MaxExitSize
-var ErrorExitSize = errors.New("error size is to big")
 
 // MaxExitSize is the maximum amount of bytes an exit can contain.
 const MaxExitSize = 192

@@ -130,7 +130,7 @@ func TestProposerSlashing(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
-		desc := new(primitives.VoteSlashing)
+		desc := new(primitives.ProposerSlashing)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)
 
