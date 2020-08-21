@@ -4,6 +4,8 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -292,9 +294,33 @@ func FuzzExits(n int) []*primitives.Exit {
 
 // FuzzGovernanceVote returns a slice of GovernanceVotes
 // If valid is true object on slice have valid signatures.
-// If multisig is true objects include multisignatures instead of combined signatures.
-func FuzzGovernanceVote(n int, valid bool, multisig bool) []*primitives.GovernanceVote {
+// If ms is true objects include multisignatures instead of combined signatures.
+func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
+	f := fuzz.New().NilChance(0)
 	var v []*primitives.GovernanceVote
+	for i := 0; i < n; i++ {
+
+		d := new(primitives.GovernanceVote)
+		f.Fuzz(d)
+
+		secretKeys := make([]bls_interface.SecretKey, 10)
+		publicKeys := make([]bls_interface.PublicKey, 10)
+
+		for i := range secretKeys {
+			secretKeys[i] = bls.CurrImplementation.RandKey()
+			publicKeys[i] = secretKeys[i].PublicKey()
+		}
+
+		mp := multisig.NewMultipub(publicKeys, 5)
+		ms := multisig.NewMultisig(mp)
+
+		for i := 0; i < 5; i++ {
+			msg := d.SignatureHash()
+			_ = ms.Sign(secretKeys[i], msg[:])
+		}
+		d.Multisig = ms
+		v = append(v, d)
+	}
 	return v
 }
 
@@ -329,4 +355,28 @@ func FuzzGovernanceStateSerializable() *primitives.GovernanceSerializable {
 		CommunityVotes: community,
 	}
 	return sgs
+}
+
+// FuzzReplacementVote returns a slice of n ReplacementVotes
+func FuzzReplacementVote(n int) []*primitives.ReplacementVotes {
+	f := fuzz.New().NilChance(0)
+	var v []*primitives.ReplacementVotes
+	for i := 0; i < n; i++ {
+		d := new(primitives.ReplacementVotes)
+		f.Fuzz(d)
+		v = append(v, d)
+	}
+	return v
+}
+
+// CommunityVoteData returns a slice of n CommunityVoteData
+func FuzzCommunityVoteData(n int) []*primitives.CommunityVoteData {
+	f := fuzz.New().NilChance(0).NumElements(5, 5)
+	var v []*primitives.CommunityVoteData
+	for i := 0; i < n; i++ {
+		d := new(primitives.CommunityVoteData)
+		f.Fuzz(d)
+		v = append(v, d)
+	}
+	return v
 }

@@ -3,7 +3,6 @@ package multisig
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	bls "github.com/olympus-protocol/ogen/pkg/bls"
@@ -11,13 +10,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-var (
-	// ErrorMultipubSize returned when the Multipub size exceed MaxMultiPubSize
-	ErrorMultipubSize = errors.New("multipub size is too large")
-	// ErrorMultisigSize returned when the Multisig size exceed MaxMultiPubSize
-	ErrorMultisigSize = errors.New("multisig size is too large")
 )
 
 const (
@@ -35,21 +27,11 @@ type Multipub struct {
 
 // Marshal encodes the data.
 func (m *Multipub) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxMultipubSize {
-		return nil, ErrorMultipubSize
-	}
-	return b, nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (m *Multipub) Unmarshal(b []byte) error {
-	if len(b) > MaxMultipubSize {
-		return ErrorMultipubSize
-	}
 	return m.UnmarshalSSZ(b)
 }
 
@@ -69,13 +51,13 @@ func NewMultipub(pubs []bls_interface.PublicKey, numNeeded uint64) *Multipub {
 
 // Copy returns a copy of the multipub.
 func (m *Multipub) Copy() *Multipub {
-	newM := *m
+	newM := &Multipub{}
 	newM.PublicKeys = make([][48]byte, len(m.PublicKeys))
 	for i := range newM.PublicKeys {
 		newM.PublicKeys[i] = m.PublicKeys[i]
 	}
-
-	return &newM
+	newM.NumNeeded = m.NumNeeded
+	return newM
 }
 
 // PublicKeyHashesToMultisigHash returns the hash of multiple publickey hashes
@@ -128,26 +110,16 @@ func (m *Multipub) ToBech32() (string, error) {
 type Multisig struct {
 	PublicKey  *Multipub
 	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"40"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"32"`
 }
 
 // Marshal encodes the data.
 func (m *Multisig) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxMultisigSize {
-		return nil, ErrorMultisigSize
-	}
-	return b, nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (m *Multisig) Unmarshal(b []byte) error {
-	if len(b) > MaxMultisigSize {
-		return ErrorMultisigSize
-	}
 	return m.UnmarshalSSZ(b)
 }
 
@@ -156,7 +128,7 @@ func NewMultisig(multipub *Multipub) *Multisig {
 	return &Multisig{
 		PublicKey:  multipub,
 		Signatures: [][96]byte{},
-		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys) * 8)),
+		KeysSigned: bitfield.NewBitlist(uint64(len(multipub.PublicKeys))),
 	}
 }
 

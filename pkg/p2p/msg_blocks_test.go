@@ -9,7 +9,7 @@ import (
 
 func TestMsgBlocks(t *testing.T) {
 	v := new(p2p.MsgBlocks)
-	v.Blocks = testdata.FuzzBlock(32, true, true)
+	v.Blocks = testdata.FuzzBlock(2, true, true)
 
 	ser, err := v.Marshal()
 	assert.NoError(t, err)

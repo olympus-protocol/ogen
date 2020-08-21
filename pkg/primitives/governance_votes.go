@@ -89,11 +89,10 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type        uint64
-	Data        [100]byte
-	CombinedSig *multisig.CombinedSignature
-	Multisig    *multisig.Multisig
-	VoteEpoch   uint64
+	Type      uint64
+	Data      [100]byte
+	Multisig  *multisig.Multisig
+	VoteEpoch uint64
 }
 
 // Marshal encodes the data.
@@ -106,22 +105,8 @@ func (g *GovernanceVote) Unmarshal(b []byte) error {
 	return g.UnmarshalSSZ(b)
 }
 
-// ValidCombined returns a boolean that checks for validity of the vote in case it uses a combined signature
-func (g *GovernanceVote) ValidCombined() bool {
-	sigHash := g.SignatureHash()
-	pub, err := g.CombinedSig.Pub()
-	if err != nil {
-		return false
-	}
-	sig, err := g.CombinedSig.Sig()
-	if err != nil {
-		return false
-	}
-	return sig.Verify(pub, sigHash[:])
-}
-
-// ValidMultisig returns a boolean that checks for validity of the vote in case it uses a multi signature
-func (g *GovernanceVote) ValidMultisig() bool {
+// Valid returns a boolean that checks for validity of the vote
+func (g *GovernanceVote) Valid() bool {
 	sigHash := g.SignatureHash()
 	return g.Multisig.Verify(sigHash[:])
 }
@@ -129,7 +114,6 @@ func (g *GovernanceVote) ValidMultisig() bool {
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := g.Copy()
-	g.CombinedSig = nil
 	g.Multisig = nil
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
@@ -143,14 +127,14 @@ func (g *GovernanceVote) Hash() chainhash.Hash {
 
 // Copy copies the governance vote.
 func (g *GovernanceVote) Copy() *GovernanceVote {
-	newGv := *g
-	newGv.Data = [100]byte{}
-	copy(newGv.Data[:], g.Data[:])
-	if newGv.CombinedSig != nil {
-		newGv.CombinedSig = g.CombinedSig.Copy()
+	newGv := &GovernanceVote{
+		Type:      g.Type,
+		VoteEpoch: g.VoteEpoch,
+		Data:      [100]byte{},
 	}
-	if newGv.Multisig != nil {
+	copy(newGv.Data[:], g.Data[:])
+	if g.Multisig != nil {
 		newGv.Multisig = g.Multisig.Copy()
 	}
-	return &newGv
+	return newGv
 }

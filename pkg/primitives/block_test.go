@@ -8,7 +8,7 @@ import (
 )
 
 func TestBlock(t *testing.T) {
-	correct := testdata.FuzzBlock(10, true, true)
+	correct := testdata.FuzzBlock(2, true, true)
 	for _, b := range correct {
 		ser, err := b.Marshal()
 		assert.NoError(t, err)
@@ -20,14 +20,14 @@ func TestBlock(t *testing.T) {
 		assert.Equal(t, b, desc)
 	}
 
-	incorrect := testdata.FuzzBlock(10, false, true)
+	incorrect := testdata.FuzzBlock(2, false, true)
 	for _, b := range incorrect {
 		_, err := b.Marshal()
 		assert.NotNil(t, err)
 
 	}
 
-	nilpointers := testdata.FuzzBlock(10, true, false)
+	nilpointers := testdata.FuzzBlock(2, true, false)
 	for _, b := range nilpointers {
 		assert.NotPanics(t, func() {
 			data, err := b.Marshal()
