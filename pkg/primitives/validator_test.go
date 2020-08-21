@@ -2,12 +2,13 @@ package primitives_test
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestValidator(t *testing.T) {
-	v := fuzzValidator(10)
+	v := testdata.FuzzValidator(10)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)

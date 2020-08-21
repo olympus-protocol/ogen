@@ -10,7 +10,7 @@ import (
 )
 
 func TestVoteData(t *testing.T) {
-	v := fuzzVoteData(10)
+	v := testdata.FuzzVoteData(10)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestVoteData(t *testing.T) {
 func TestAcceptedVoteInfo(t *testing.T) {
 
 	// Test correct AcceptedVoteInfo
-	correct := fuzzAcceptedVoteInfo(10, true, true)
+	correct := testdata.FuzzAcceptedVoteInfo(10, true, true)
 
 	for _, c := range correct {
 		data, err := c.Marshal()
@@ -104,7 +104,7 @@ func TestAcceptedVoteInfo(t *testing.T) {
 	}
 
 	// Test wrong sized data
-	incorrect := fuzzAcceptedVoteInfo(10, false, true)
+	incorrect := testdata.FuzzAcceptedVoteInfo(10, false, true)
 
 	for _, c := range incorrect {
 		_, err := c.Marshal()
@@ -113,7 +113,7 @@ func TestAcceptedVoteInfo(t *testing.T) {
 
 	// Test marshal/unmarshal not panic accessing a nil pointer
 	// Should create all data to null values
-	nildata := fuzzAcceptedVoteInfo(10, true, false)
+	nildata := testdata.FuzzAcceptedVoteInfo(10, true, false)
 
 	for _, c := range nildata {
 		assert.NotPanics(t, func() {
@@ -178,7 +178,7 @@ func TestAcceptedVoteInfo(t *testing.T) {
 
 func TestMultiValidatorVote(t *testing.T) {
 	// Test correct AcceptedVoteInfo
-	correct := fuzzMultiValidatorVote(10, true, true)
+	correct := testdata.FuzzMultiValidatorVote(10, true, true)
 
 	for _, c := range correct {
 		data, err := c.Marshal()
@@ -192,7 +192,7 @@ func TestMultiValidatorVote(t *testing.T) {
 	}
 
 	// Test wrong sized data
-	incorrect := fuzzMultiValidatorVote(10, false, true)
+	incorrect := testdata.FuzzMultiValidatorVote(10, false, true)
 
 	for _, c := range incorrect {
 		_, err := c.Marshal()
@@ -201,7 +201,7 @@ func TestMultiValidatorVote(t *testing.T) {
 
 	// Test marshal/unmarshal not panic accessing a nil pointer
 	// Should create all data to null values
-	nildata := fuzzMultiValidatorVote(10, true, false)
+	nildata := testdata.FuzzMultiValidatorVote(10, true, false)
 
 	for _, c := range nildata {
 		assert.NotPanics(t, func() {

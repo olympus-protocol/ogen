@@ -2,12 +2,6 @@ package primitives
 
 import (
 	"encoding/binary"
-	"errors"
-)
-
-var (
-	// ErrorValidatorHelloMessageSize returns when serialized MaxValidatorHelloMessageSize size exceed MaxValidatorHelloMessageSize.
-	ErrorValidatorHelloMessageSize = errors.New("validator hello message too big")
 )
 
 const (
@@ -41,20 +35,10 @@ func (v *ValidatorHelloMessage) SignatureMessage() []byte {
 
 // Marshal serializes the hello message to the given writer.
 func (v *ValidatorHelloMessage) Marshal() ([]byte, error) {
-	b, err := v.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxValidatorHelloMessageSize {
-		return nil, ErrorValidatorHelloMessageSize
-	}
-	return b, nil
+	return v.MarshalSSZ()
 }
 
 // Unmarshal deserializes the validator hello message from the reader.
 func (v *ValidatorHelloMessage) Unmarshal(b []byte) error {
-	if len(b) > MaxValidatorHelloMessageSize {
-		return ErrorValidatorHelloMessageSize
-	}
 	return v.UnmarshalSSZ(b)
 }

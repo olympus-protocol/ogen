@@ -21,7 +21,7 @@ func (m *MsgBlock) Unmarshal(b []byte) error {
 
 // Command returns the message topic
 func (m *MsgBlock) Command() string {
-	return MsgBlocksCmd
+	return MsgBlockCmd
 }
 
 // MaxPayloadLength returns the maximum size of the MsgBlock message.

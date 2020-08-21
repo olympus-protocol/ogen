@@ -2,12 +2,13 @@ package primitives_test
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestBlockHeader(t *testing.T) {
-	v := fuzzBlockHeader(10)
+	v := testdata.FuzzBlockHeader(10)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)

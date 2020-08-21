@@ -341,16 +341,21 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			continue
 		}
 
-		vote := new(primitives.MultiValidatorVote)
+		buf := bytes.NewBuffer(msg.Data)
 
-		if err := vote.Unmarshal(msg.Data); err != nil {
-			m.log.Warnf("peer sent invalid vote: %s", err)
-			err = m.hostNode.BanScorePeer(msg.GetFrom(), 100)
-			if err == nil {
-				m.log.Warnf("peer %s was banned", msg.GetFrom().String())
-			}
-			continue
+		voteRead, err := p2p.ReadMessage(buf, m.hostNode.GetNetMagic())
+		if err != nil {
+			m.log.Warnf("unable to decode message: %s", err)
+			return
 		}
+
+		voteMsg, ok := voteRead.(*p2p.MsgVote)
+		if !ok {
+			m.log.Warnf("peer sent wrong message on vote subscription")
+			return
+		}
+
+		vote := voteMsg.Data
 
 		m.log.Debugf("received votes from peer %s", msg.GetFrom().String())
 

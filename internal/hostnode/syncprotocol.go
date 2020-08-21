@@ -236,7 +236,7 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 
 	sp.log.Debugf("found first common block %s", firstCommon.Hash)
 
-	blocksToSend := make([]*primitives.Block, 0, 500)
+	blocksToSend := make([]*primitives.Block, 0, p2p.MaxBlocksPerMsg)
 
 	if firstCommon.Hash.IsEqual(locatorHashesGenHash) {
 		fc, ok := sp.chain.State().Chain().Next(firstCommon)

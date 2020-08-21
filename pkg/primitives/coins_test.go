@@ -2,12 +2,13 @@ package primitives_test
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func Test_CoinStateSerialize(t *testing.T) {
-	v := fuzzCoinState(10)
+	v := testdata.FuzzCoinState(10)
 
 	ser, err := v.Marshal()
 
@@ -21,7 +22,7 @@ func Test_CoinStateSerialize(t *testing.T) {
 }
 
 func TestCoinsState_ToSerializable(t *testing.T) {
-	cs := fuzzCoinState(10)
+	cs := testdata.FuzzCoinState(10)
 
 	scs := cs.ToSerializable()
 
@@ -57,7 +58,7 @@ func TestCoinsState_ToSerializable(t *testing.T) {
 }
 
 func TestCoinsState_FromSerializable(t *testing.T) {
-	scs := fuzzCoinStateSerializable(10)
+	scs := testdata.FuzzCoinStateSerializable(10)
 
 	cs := new(primitives.CoinsState)
 	cs.FromSerializable(scs)
@@ -94,7 +95,7 @@ func TestCoinsState_FromSerializable(t *testing.T) {
 }
 
 func TestCoinsState_Copy(t *testing.T) {
-	cs := fuzzCoinState(10)
+	cs := testdata.FuzzCoinState(10)
 	key := [20]byte{1, 2, 3}
 
 	cs.Balances[key] = 10

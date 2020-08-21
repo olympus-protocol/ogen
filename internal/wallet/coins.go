@@ -180,7 +180,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	currentState := w.chain.State().TipState()
 	cs := currentState.GetCoinsState()
-	if err := w.mempool.Add(*tx, &cs); err != nil {
+	if err := w.mempool.Add(tx, &cs); err != nil {
 		return nil, err
 	}
 

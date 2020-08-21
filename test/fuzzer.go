@@ -1,4 +1,4 @@
-package primitives_test
+package testdata
 
 import (
 	fuzz "github.com/google/gofuzz"
@@ -7,8 +7,8 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-// fuzzBlockHeader return a slice with n BlockHeader structs.
-func fuzzBlockHeader(n int) []*primitives.BlockHeader {
+// FuzzBlockHeader return a slice with n BlockHeader structs.
+func FuzzBlockHeader(n int) []*primitives.BlockHeader {
 	var v []*primitives.BlockHeader
 	f := fuzz.New().NilChance(0)
 	for i := 0; i < n; i++ {
@@ -19,8 +19,8 @@ func fuzzBlockHeader(n int) []*primitives.BlockHeader {
 	return v
 }
 
-// fuzzVoteData simply creates a slice with VoteData
-func fuzzVoteData(n int) []*primitives.VoteData {
+// FuzzVoteData simply creates a slice with VoteData
+func FuzzVoteData(n int) []*primitives.VoteData {
 	var v []*primitives.VoteData
 	f := fuzz.New().NilChance(0)
 	for i := 0; i < n; i++ {
@@ -31,10 +31,10 @@ func fuzzVoteData(n int) []*primitives.VoteData {
 	return v
 }
 
-// fuzzAcceptedVoteInfo return a slice with n AcceptedVoteInfo structs.
+// FuzzAcceptedVoteInfo return a slice with n AcceptedVoteInfo structs.
 // If correct is true will return correctly serializable structs
 // If complete is true will return information with no nil pointers.
-func fuzzAcceptedVoteInfo(n int, correct bool, complete bool) []*primitives.AcceptedVoteInfo {
+func FuzzAcceptedVoteInfo(n int, correct bool, complete bool) []*primitives.AcceptedVoteInfo {
 	var v []*primitives.AcceptedVoteInfo
 	for i := 0; i < n; i++ {
 		i := new(primitives.AcceptedVoteInfo)
@@ -52,10 +52,10 @@ func fuzzAcceptedVoteInfo(n int, correct bool, complete bool) []*primitives.Acce
 	return v
 }
 
-// fuzzMultiValidatorVote creates a slice of MultiValidatorVote
+// FuzzMultiValidatorVote creates a slice of MultiValidatorVote
 // If correct is true will return correctly serializable structs
 // If complete is true will return information with no nil pointers.
-func fuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.MultiValidatorVote {
+func FuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.MultiValidatorVote {
 	var v []*primitives.MultiValidatorVote
 	f := fuzz.New().NilChance(0)
 	for i := 0; i < n; i++ {
@@ -76,8 +76,8 @@ func fuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.Mu
 	return v
 }
 
-// fuzzValidator creates a slice of Validator
-func fuzzValidator(n int) []*primitives.Validator {
+// FuzzValidator creates a slice of Validator
+func FuzzValidator(n int) []*primitives.Validator {
 	var v []*primitives.Validator
 	f := fuzz.New().NilChance(0)
 	for i := 0; i < n; i++ {
@@ -88,23 +88,23 @@ func fuzzValidator(n int) []*primitives.Validator {
 	return v
 }
 
-// fuzzVoteSlashing creates a slice of VoteSlashing
+// FuzzVoteSlashing creates a slice of VoteSlashing
 // If correct is true will return correctly serializable structs
 // If complete is true will return information with no nil pointers.
-func fuzzVoteSlashing(n int, correct bool, complete bool) []*primitives.VoteSlashing {
+func FuzzVoteSlashing(n int, correct bool, complete bool) []*primitives.VoteSlashing {
 	var v []*primitives.VoteSlashing
 	for i := 0; i < n; i++ {
 		d := &primitives.VoteSlashing{
-			Vote1: fuzzMultiValidatorVote(1, correct, complete)[0],
-			Vote2: fuzzMultiValidatorVote(1, correct, complete)[0],
+			Vote1: FuzzMultiValidatorVote(1, correct, complete)[0],
+			Vote2: FuzzMultiValidatorVote(1, correct, complete)[0],
 		}
 		v = append(v, d)
 	}
 	return v
 }
 
-// fuzzRANDAOSlashing creates a slice of RANDAOSlashing
-func fuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
+// FuzzRANDAOSlashing creates a slice of RANDAOSlashing
+func FuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
 	f := fuzz.New().NilChance(0)
 	var v []*primitives.RANDAOSlashing
 	for i := 0; i < n; i++ {
@@ -121,30 +121,33 @@ func fuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
 	return v
 }
 
-// fuzzProposerSlashing creates a slice of ProposerSlashing
+// FuzzProposerSlashing creates a slice of ProposerSlashing
 // If complete is true will return information with no nil pointers.
-func fuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
-	f := fuzz.New().NilChance(0)
+func FuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
 	var v []*primitives.ProposerSlashing
 	for i := 0; i < n; i++ {
-		d := new(primitives.ProposerSlashing)
-		f.Fuzz(d)
+		d := &primitives.ProposerSlashing{
+			BlockHeader1: FuzzBlockHeader(1)[0],
+			BlockHeader2: FuzzBlockHeader(1)[0],
+		}
 		var sig [96]byte
 		var pub [48]byte
 		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
 		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
 		d.Signature1 = sig
 		d.Signature2 = sig
+		d.ValidatorPublicKey = pub
 		if !complete {
 			d.BlockHeader1 = nil
 			d.BlockHeader2 = nil
 		}
+		v = append(v, d)
 	}
 	return v
 }
 
-// fuzzCoinState returns a CoinState with n balances and nonces
-func fuzzCoinState(n int) *primitives.CoinsState {
+// FuzzCoinState returns a CoinState with n balances and nonces
+func FuzzCoinState(n int) *primitives.CoinsState {
 	f := fuzz.New().NilChance(0).NumElements(n, n)
 	balances := map[[20]byte]uint64{}
 	nonces := map[[20]byte]uint64{}
@@ -158,8 +161,8 @@ func fuzzCoinState(n int) *primitives.CoinsState {
 	return v
 }
 
-// fuzzCoinState returns a CoinState with n balances and nonces
-func fuzzCoinStateSerializable(n int) *primitives.CoinsStateSerializable {
+// FuzzCoinStateSerializable returns a CoinState with n balances and nonces
+func FuzzCoinStateSerializable(n int) *primitives.CoinsStateSerializable {
 	f := fuzz.New().NilChance(0).NumElements(n, n)
 
 	var balances []*primitives.AccountInfo
@@ -176,11 +179,13 @@ func fuzzCoinStateSerializable(n int) *primitives.CoinsStateSerializable {
 	return scs
 }
 
-func fuzzDeposit(n int, complete bool) []*primitives.Deposit {
+// FuzzDeposit creates a slice of Deposits.
+// If complete is true it will create deposits with not nil pointers
+func FuzzDeposit(n int, complete bool) []*primitives.Deposit {
 	var v []*primitives.Deposit
 	for i := 0; i < n; i++ {
 		d := &primitives.Deposit{
-			Data: fuzzDepositData(),
+			Data: FuzzDepositData(),
 		}
 		var sig [96]byte
 		var pub [48]byte
@@ -196,8 +201,8 @@ func fuzzDeposit(n int, complete bool) []*primitives.Deposit {
 	return v
 }
 
-// fuzzDepositData returns a DepositData struct
-func fuzzDepositData() *primitives.DepositData {
+// FuzzDepositData returns a DepositData struct
+func FuzzDepositData() *primitives.DepositData {
 	f := fuzz.New().NilChance(0)
 	d := new(primitives.DepositData)
 	f.Fuzz(d)
@@ -210,23 +215,23 @@ func fuzzDepositData() *primitives.DepositData {
 	return d
 }
 
-// fuzzBlock returns a Block slice
+// FuzzBlock returns a Block slice
 // If correct is true will return correctly serializable structs
 // If complete is true will return information with no nil pointers.
-func fuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
+func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 	var v []*primitives.Block
 	for i := 0; i < n; i++ {
 		b := &primitives.Block{
-			Header:            fuzzBlockHeader(1)[0],
-			Votes:             fuzzMultiValidatorVote(32, true, true),
-			Txs:               nil,
-			TxsMulti:          nil,
-			Deposits:          fuzzDeposit(128, true),
-			Exits:             nil,
-			VoteSlashings:     fuzzVoteSlashing(10, true, true),
-			RANDAOSlashings:   fuzzRANDAOSlashing(20),
-			ProposerSlashings: fuzzProposerSlashing(2, true),
-			GovernanceVotes:   nil,
+			Header:            FuzzBlockHeader(1)[0],
+			Votes:             FuzzMultiValidatorVote(32, true, true),
+			Txs:               []*primitives.Tx{},
+			TxsMulti:          []*primitives.TxMulti{},
+			Deposits:          FuzzDeposit(128, true),
+			Exits:             []*primitives.Exit{},
+			VoteSlashings:     FuzzVoteSlashing(10, true, true),
+			RANDAOSlashings:   FuzzRANDAOSlashing(20),
+			ProposerSlashings: FuzzProposerSlashing(2, true),
+			GovernanceVotes:   []*primitives.GovernanceVote{},
 		}
 
 		var sig [96]byte
@@ -235,7 +240,7 @@ func fuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 		b.Signature = sig
 		b.RandaoSignature = sig
 		if !correct {
-			b.Votes = fuzzMultiValidatorVote(50, true, true)
+			b.Votes = FuzzMultiValidatorVote(50, true, true)
 		}
 		if !complete {
 			b.Header = nil

@@ -4,12 +4,13 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDeposit(t *testing.T) {
-	v := fuzzDeposit(10, true)
+	v := testdata.FuzzDeposit(10, true)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -21,7 +22,7 @@ func TestDeposit(t *testing.T) {
 		assert.Equal(t, c, desc)
 	}
 
-	nildata := fuzzDeposit(10, false)
+	nildata := testdata.FuzzDeposit(10, false)
 
 	for _, c := range nildata {
 		assert.NotPanics(t, func() {
@@ -70,7 +71,7 @@ func TestDeposit(t *testing.T) {
 }
 
 func TestDepositData(t *testing.T) {
-	d := fuzzDepositData()
+	d := testdata.FuzzDepositData()
 	ser, err := d.Marshal()
 	assert.NoError(t, err)
 

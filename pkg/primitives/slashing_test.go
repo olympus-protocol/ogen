@@ -5,12 +5,13 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestVoteSlashing(t *testing.T) {
-	v := fuzzVoteSlashing(10, true, true)
+	v := testdata.FuzzVoteSlashing(10, true, true)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -22,14 +23,14 @@ func TestVoteSlashing(t *testing.T) {
 		assert.Equal(t, c, desc)
 	}
 
-	incorrect := fuzzVoteSlashing(10, false, true)
+	incorrect := testdata.FuzzVoteSlashing(10, false, true)
 
 	for _, c := range incorrect {
 		_, err := c.Marshal()
 		assert.NotNil(t, err)
 	}
 
-	nildata := fuzzVoteSlashing(10, true, false)
+	nildata := testdata.FuzzVoteSlashing(10, true, false)
 
 	for _, c := range nildata {
 		assert.NotPanics(t, func() {
@@ -82,7 +83,7 @@ func TestVoteSlashing(t *testing.T) {
 }
 
 func TestRANDAOSlashing(t *testing.T) {
-	v := fuzzRANDAOSlashing(10)
+	v := testdata.FuzzRANDAOSlashing(10)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -124,7 +125,7 @@ func TestRANDAOSlashing(t *testing.T) {
 }
 
 func TestProposerSlashing(t *testing.T) {
-	v := fuzzProposerSlashing(10, true)
+	v := testdata.FuzzProposerSlashing(10, true)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -136,7 +137,7 @@ func TestProposerSlashing(t *testing.T) {
 		assert.Equal(t, c, desc)
 	}
 
-	nildata := fuzzProposerSlashing(10, false)
+	nildata := testdata.FuzzProposerSlashing(10, false)
 
 	for _, c := range nildata {
 		assert.NotPanics(t, func() {
