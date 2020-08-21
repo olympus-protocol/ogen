@@ -5,7 +5,9 @@ import (
 	"math/big"
 )
 
-var Prefix params.AccountPrefixes
+// Prefix is a global variable for prefixes used for account bech32 encoding.
+// Set to mainnet if not override by the Initialize function.
+var Prefix params.AccountPrefixes = params.Mainnet.AccountPrefixes
 
 // KeyPair is an interface struct to serve keypairs
 type KeyPair struct {

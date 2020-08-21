@@ -72,21 +72,11 @@ func (v *Validator) IsActiveAtEpoch(epoch uint64) bool {
 
 // Marshal encodes the data.
 func (v *Validator) Marshal() ([]byte, error) {
-	b, err := v.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxValidatorSize {
-		return nil, ErrorValidatorSize
-	}
-	return b, nil
+	return v.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (v *Validator) Unmarshal(b []byte) error {
-	if len(b) > MaxValidatorSize {
-		return ErrorValidatorSize
-	}
 	return v.UnmarshalSSZ(b)
 }
 

@@ -1,16 +1,18 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -21,7 +23,7 @@ type coinMempoolItemMulti struct {
 	balanceSpent uint64
 }
 
-func (cmi *coinMempoolItemMulti) add(item primitives.TxMulti, maxAmount uint64) error {
+func (cmi *coinMempoolItemMulti) add(item *primitives.TxMulti, maxAmount uint64) error {
 	txNonce := item.Nonce
 	txAmount := item.Amount
 	txFee := item.Fee
@@ -36,7 +38,7 @@ func (cmi *coinMempoolItemMulti) add(item primitives.TxMulti, maxAmount uint64) 
 	}
 
 	cmi.balanceSpent += txAmount + txFee
-	cmi.transactions[txNonce] = &item
+	cmi.transactions[txNonce] = item
 
 	return nil
 }
@@ -52,7 +54,7 @@ type coinMempoolItem struct {
 	balanceSpent uint64
 }
 
-func (cmi *coinMempoolItem) add(item primitives.Tx, maxAmount uint64) error {
+func (cmi *coinMempoolItem) add(item *primitives.Tx, maxAmount uint64) error {
 	txNonce := item.Nonce
 	txAmount := item.Amount
 	txFee := item.Fee
@@ -67,7 +69,7 @@ func (cmi *coinMempoolItem) add(item primitives.Tx, maxAmount uint64) error {
 	}
 
 	cmi.balanceSpent += txAmount + txFee
-	cmi.transactions[txNonce] = &item
+	cmi.transactions[txNonce] = item
 
 	return nil
 }
@@ -89,10 +91,10 @@ func newCoinMempoolItem() *coinMempoolItem {
 
 // CoinsMempool is an interface for coinMempool
 type CoinsMempool interface {
-	Add(item primitives.Tx, state *primitives.CoinsState) error
+	Add(item *primitives.Tx, state *primitives.CoinsState) error
 	RemoveByBlock(b *primitives.Block)
 	Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State)
-	AddMulti(item primitives.TxMulti, state *primitives.CoinsState) error
+	AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error
 	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
 }
 
@@ -101,7 +103,7 @@ var _ CoinsMempool = &coinsMempool{}
 // coinsMempool represents a mempool for coin transactions.
 type coinsMempool struct {
 	blockchain chain.Blockchain
-	hostNode   peers.HostNode
+	hostNode   hostnode.HostNode
 	params     *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
@@ -115,7 +117,7 @@ type coinsMempool struct {
 }
 
 // AddMulti adds an item to the coins mempool.
-func (cm *coinsMempool) AddMulti(item primitives.TxMulti, state *primitives.CoinsState) error {
+func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	fpkh, err := item.FromPubkeyHash()
@@ -144,7 +146,7 @@ func (cm *coinsMempool) AddMulti(item primitives.TxMulti, state *primitives.Coin
 }
 
 // Add adds an item to the coins mempool.
-func (cm *coinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) error {
+func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) error {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	fpkh, err := item.FromPubkeyHash()
@@ -254,21 +256,23 @@ func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 			return
 		}
 
-		tx := new(primitives.Tx)
+		buf := bytes.NewBuffer(msg.Data)
 
-		if err := tx.Unmarshal(msg.Data); err != nil {
+		txMsg, err := p2p.ReadMessage(buf, cm.hostNode.GetNetMagic())
+		if err != nil {
+			cm.log.Warnf("unable to decode message: %s", err)
+			return
+		}
 
-			cm.log.Warnf("peer sent invalid transaction: %s", err)
-			err = cm.hostNode.BanScorePeer(msg.GetFrom(), 100)
-			if err == nil {
-				cm.log.Warnf("peer %s was banned", msg.GetFrom().String())
-			}
-			continue
+		tx, ok := txMsg.(*p2p.MsgTx)
+		if !ok {
+			cm.log.Warnf("peer sent wrong message on message subscription")
+			return
 		}
 
 		currentState := cm.blockchain.State().TipState().GetCoinsState()
 
-		err = cm.Add(*tx, &currentState)
+		err = cm.Add(tx.Data, &currentState)
 		if err != nil {
 			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 			if err.Error() == "invalid nonce" {
@@ -289,21 +293,23 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 			return
 		}
 
-		tx := new(primitives.TxMulti)
+		buf := bytes.NewBuffer(msg.Data)
 
-		if err := tx.Unmarshal(msg.Data); err != nil {
+		txMultiMsg, err := p2p.ReadMessage(buf, cm.hostNode.GetNetMagic())
+		if err != nil {
+			cm.log.Warnf("unable to decode message: %s", err)
+			return
+		}
 
-			cm.log.Warnf("peer sent invalid transaction: %s", err)
-			err = cm.hostNode.BanScorePeer(msg.GetFrom(), 100)
-			if err == nil {
-				cm.log.Warnf("peer %s was banned", msg.GetFrom().String())
-			}
-			continue
+		txMulti, ok := txMultiMsg.(*p2p.MsgTxMulti)
+		if !ok {
+			cm.log.Warnf("peer sent wrong message on tx multi subscription")
+			return
 		}
 
 		currentState := cm.blockchain.State().TipState().GetCoinsState()
 
-		err = cm.AddMulti(*tx, &currentState)
+		err = cm.AddMulti(txMulti.Data, &currentState)
 		if err != nil {
 			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 			if err.Error() == "invalid nonce" {
@@ -317,25 +323,24 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode peers.HostNode, params *params.ChainParams) (CoinsMempool, error) {
-	topic, err := hostNode.Topic("tx")
-	if err != nil {
-		return nil, err
-	}
-	topicMulti, err := hostNode.Topic("tx_multi")
-	if err != nil {
-		return nil, err
-	}
-	topicSub, err := topic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-	topicMultiSub, err := topicMulti.Subscribe()
+func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode hostnode.HostNode, params *params.ChainParams) (CoinsMempool, error) {
+
+	topic, err := hostNode.Topic(p2p.MsgTxCmd)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = topic.Relay()
+	topicMulti, err := hostNode.Topic(p2p.MsgTxMultiCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	topicSub, err := topic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	topicMultiSub, err := topicMulti.Subscribe()
 	if err != nil {
 		return nil, err
 	}

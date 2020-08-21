@@ -18,7 +18,7 @@ const (
 // EpochReceipt is a balance change carried our by an epoch transition.
 type EpochReceipt struct {
 	Type      uint64
-	Amount    uint64
+	Amount    int64
 	Validator uint64
 }
 

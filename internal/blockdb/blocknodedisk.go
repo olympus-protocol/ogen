@@ -2,8 +2,6 @@ package blockdb
 
 import (
 	"errors"
-
-	"github.com/golang/snappy"
 )
 
 // ErrorBlockNodeSize returned when a blocknode size is above MaxBlockNodeSize
@@ -24,24 +22,10 @@ type BlockNodeDisk struct {
 
 // Marshal encodes de data
 func (b *BlockNodeDisk) Marshal() ([]byte, error) {
-	by, err := b.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(by) > MaxBlockNodeSize {
-		return nil, ErrorBlockNodeSize
-	}
-	return snappy.Encode(nil, by), nil
+	return b.MarshalSSZ()
 }
 
 // Unmarshal decodes the data
 func (b *BlockNodeDisk) Unmarshal(by []byte) error {
-	d, err := snappy.Decode(nil, by)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxBlockNodeSize {
-		return ErrorBlockNodeSize
-	}
-	return b.UnmarshalSSZ(d)
+	return b.UnmarshalSSZ(by)
 }

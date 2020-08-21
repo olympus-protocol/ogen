@@ -1,14 +1,8 @@
 package primitives
 
 import (
-	"errors"
-
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
-
-// ErrorBlockSize returns when the decompresed size of the block exceed MaxBlockSize
-var ErrorBlockSize = errors.New("the block size is too big")
 
 // MaxBlockSize defines the maximum bytes on a block object.
 const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
@@ -18,39 +12,25 @@ type Block struct {
 	Header            *BlockHeader          // 																	= 372 bytes
 	Votes             []*MultiValidatorVote `ssz-max:"32"`   // MaxVotesPerBlock 				32 * 6474 		= 207168 bytes
 	Txs               []*Tx                 `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
-	TxsMulti          []*TxMulti            `ssz-max:"128"`  // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
+	TxsMulti          []*TxMulti            `ssz-max:"128"`  // MaxTxsPerBlock
 	Deposits          []*Deposit            `ssz-max:"128"`  // MaxDepositsPerBlock 			308 * 128 		= 39424 bytes
 	Exits             []*Exit               `ssz-max:"128"`  // MaxExitsPerBlock     			192 * 128 		= 24576 bytes
 	VoteSlashings     []*VoteSlashing       `ssz-max:"10"`   // MaxVoteSlashingPerBlock			666 * 10 		= 6660 bytes
 	RANDAOSlashings   []*RANDAOSlashing     `ssz-max:"20"`   // MaxRANDAOSlashingPerBlock   	152 * 20 		= 3040 bytes
 	ProposerSlashings []*ProposerSlashing   `ssz-max:"2"`    // MaxProposerSlashingPerBlock 	984 * 2 		= 1968 bytes
 	GovernanceVotes   []*GovernanceVote     `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
-	Signature         [96]byte              `ssz-size:"96"`  // 96 bytes
-	RandaoSignature   [96]byte              `ssz-size:"96"`  // 96 bytes
+	Signature         [96]byte              `ssz-size:"96"`  // 												= 96 bytes
+	RandaoSignature   [96]byte              `ssz-size:"96"`  // 												= 96 bytes
 }
 
 // Marshal encodes the block.
 func (b *Block) Marshal() ([]byte, error) {
-	bb, err := b.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(bb) > MaxBlockSize {
-		return nil, ErrorBlockSize
-	}
-	return snappy.Encode(nil, bb), nil
+	return b.MarshalSSZ()
 }
 
 // Unmarshal decodes the block.
 func (b *Block) Unmarshal(bb []byte) error {
-	d, err := snappy.Decode(nil, bb)
-	if err != nil {
-		return err
-	}
-	if len(d) > MaxBlockSize {
-		return ErrorBlockSize
-	}
-	return b.UnmarshalSSZ(d)
+	return b.UnmarshalSSZ(bb)
 }
 
 // Hash calculates the hash of the block.

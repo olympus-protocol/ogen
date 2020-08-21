@@ -5,12 +5,21 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha512"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-	"io"
-
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/pbkdf2"
+)
+
+var (
+	// ErrorCipher returned when an error ocurred creating the aes cipher
+	ErrorCipher = errors.New("error creating the encryption cypher")
+	// ErrorGCM returned when the aes cipher has errors initializing the gcm.
+	ErrorGCM = errors.New("error loading the gcm cypher, nonce or salt information may be wrong")
+	// ErrorDecrypt returned when the cipher is not able to decrypt the with the provided key
+	ErrorDecrypt = errors.New("unable to decrypt key with key provided")
+	// ErrorDeserialize returned when the decrypted information can't be deserialized as a secret key
+	ErrorDeserialize = errors.New("unable to deserialize the bls encoded key")
 )
 
 // Decrypt uses aes decryption to decrypt an encrypted bls private key using a nonce and a salt.
@@ -19,22 +28,22 @@ func Decrypt(nonce [12]byte, salt [8]byte, encryptedKey []byte, key []byte) (bls
 
 	block, err := aes.NewCipher(encryptionKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating cipher")
+		return nil, ErrorCipher
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating GCM")
+		return nil, ErrorGCM
 	}
 
 	blsKeyBytes, err := aesgcm.Open(nil, nonce[:], encryptedKey, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not decrypt master key")
+		return nil, ErrorDecrypt
 	}
 
 	secKey, err := bls.CurrImplementation.SecretKeyFromBytes(blsKeyBytes)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to deserialize bls private key")
+		return nil, ErrorDeserialize
 	}
 	return secKey, nil
 }
@@ -45,12 +54,12 @@ func SimpleEncrypt(secret []byte, key []byte, nonce [12]byte, salt [8]byte) (enc
 
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating cipher")
+		return nil, ErrorCipher
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating GCM")
+		return nil, ErrorGCM
 	}
 
 	return aesgcm.Seal(nil, nonce[:], secret, nil), nil
@@ -58,45 +67,36 @@ func SimpleEncrypt(secret []byte, key []byte, nonce [12]byte, salt [8]byte) (enc
 
 // Encrypt encrypts a bls private key and returns a random nonce and a salt.
 func Encrypt(secret []byte, key []byte) (nonce [12]byte, salt [8]byte, encryptedKey []byte, err error) {
-	salt, err = RandSalt()
-	if err != nil {
-		return [12]byte{}, [8]byte{}, nil, err
-	}
+	salt = RandSalt()
+
 	encKey := pbkdf2.Key(key, salt[:], 20000, 32, sha512.New)
+
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
-		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error creating cipher")
+		return [12]byte{}, [8]byte{}, nil, ErrorCipher
 	}
-	nonce, err = RandNonce()
-	if err != nil {
-		return [12]byte{}, [8]byte{}, nil, err
-	}
-	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
-		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error reading from random")
-	}
+
+	nonce = RandNonce()
+
 	aesgcm, err := cipher.NewGCM(block)
+
 	if err != nil {
-		return [12]byte{}, [8]byte{}, nil, errors.Wrap(err, "error creating GCM")
+		return [12]byte{}, [8]byte{}, nil, ErrorGCM
 	}
+
 	return nonce, salt, aesgcm.Seal(nil, nonce[:], secret, nil), nil
 }
 
 // RandSalt generates a random salt from random reader.
-func RandSalt() ([8]byte, error) {
+func RandSalt() [8]byte {
 	var salt [8]byte
-	_, err := rand.Read(salt[:])
-	if err != nil {
-		return [8]byte{}, err
-	}
-	return salt, nil
+	_, _ = rand.Read(salt[:])
+	return salt
 }
 
 // RandNonce generates a random nonce from random reader.
-func RandNonce() ([12]byte, error) {
+func RandNonce() [12]byte {
 	var nonce [12]byte
-	_, err := rand.Read(nonce[:])
-	if err != nil {
-		return [12]byte{}, err
-	}
-	return nonce, nil
+	_, _ = rand.Read(nonce[:])
+	return nonce
 }

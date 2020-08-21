@@ -6,46 +6,33 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-// MarshalSSZ ssz marshals the MsgBlocks object
-func (m *MsgBlocks) MarshalSSZ() ([]byte, error) {
+// MarshalSSZ ssz marshals the MsgBlock object
+func (m *MsgBlock) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(m)
 }
 
-// MarshalSSZTo ssz marshals the MsgBlocks object to a target array
-func (m *MsgBlocks) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+// MarshalSSZTo ssz marshals the MsgBlock object to a target array
+func (m *MsgBlock) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(4)
 
-	// Offset (0) 'Blocks'
+	// Offset (0) 'Data'
 	dst = ssz.WriteOffset(dst, offset)
-	for ii := 0; ii < len(m.Blocks); ii++ {
-		offset += 4
-		offset += m.Blocks[ii].SizeSSZ()
+	if m.Data == nil {
+		m.Data = new(primitives.Block)
 	}
+	offset += m.Data.SizeSSZ()
 
-	// Field (0) 'Blocks'
-	if len(m.Blocks) > 32 {
-		err = ssz.ErrListTooBig
+	// Field (0) 'Data'
+	if dst, err = m.Data.MarshalSSZTo(dst); err != nil {
 		return
-	}
-	{
-		offset = 4 * len(m.Blocks)
-		for ii := 0; ii < len(m.Blocks); ii++ {
-			dst = ssz.WriteOffset(dst, offset)
-			offset += m.Blocks[ii].SizeSSZ()
-		}
-	}
-	for ii := 0; ii < len(m.Blocks); ii++ {
-		if dst, err = m.Blocks[ii].MarshalSSZTo(dst); err != nil {
-			return
-		}
 	}
 
 	return
 }
 
-// UnmarshalSSZ ssz unmarshals the MsgBlocks object
-func (m *MsgBlocks) UnmarshalSSZ(buf []byte) error {
+// UnmarshalSSZ ssz unmarshals the MsgBlock object
+func (m *MsgBlock) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 4 {
@@ -55,71 +42,49 @@ func (m *MsgBlocks) UnmarshalSSZ(buf []byte) error {
 	tail := buf
 	var o0 uint64
 
-	// Offset (0) 'Blocks'
+	// Offset (0) 'Data'
 	if o0 = ssz.ReadOffset(buf[0:4]); o0 > size {
 		return ssz.ErrOffset
 	}
 
-	// Field (0) 'Blocks'
+	// Field (0) 'Data'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DecodeDynamicLength(buf, 32)
-		if err != nil {
-			return err
+		if m.Data == nil {
+			m.Data = new(primitives.Block)
 		}
-		m.Blocks = make([]*primitives.Block, num)
-		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
-			if m.Blocks[indx] == nil {
-				m.Blocks[indx] = new(primitives.Block)
-			}
-			if err = m.Blocks[indx].UnmarshalSSZ(buf); err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
+		if err = m.Data.UnmarshalSSZ(buf); err != nil {
 			return err
 		}
 	}
 	return err
 }
 
-// SizeSSZ returns the ssz encoded size in bytes for the MsgBlocks object
-func (m *MsgBlocks) SizeSSZ() (size int) {
+// SizeSSZ returns the ssz encoded size in bytes for the MsgBlock object
+func (m *MsgBlock) SizeSSZ() (size int) {
 	size = 4
 
-	// Field (0) 'Blocks'
-	for ii := 0; ii < len(m.Blocks); ii++ {
-		size += 4
-		size += m.Blocks[ii].SizeSSZ()
+	// Field (0) 'Data'
+	if m.Data == nil {
+		m.Data = new(primitives.Block)
 	}
+	size += m.Data.SizeSSZ()
 
 	return
 }
 
-// HashTreeRoot ssz hashes the MsgBlocks object
-func (m *MsgBlocks) HashTreeRoot() ([32]byte, error) {
+// HashTreeRoot ssz hashes the MsgBlock object
+func (m *MsgBlock) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(m)
 }
 
-// HashTreeRootWith ssz hashes the MsgBlocks object with a hasher
-func (m *MsgBlocks) HashTreeRootWith(hh *ssz.Hasher) (err error) {
+// HashTreeRootWith ssz hashes the MsgBlock object with a hasher
+func (m *MsgBlock) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
-	// Field (0) 'Blocks'
-	{
-		subIndx := hh.Index()
-		num := uint64(len(m.Blocks))
-		if num > 32 {
-			err = ssz.ErrIncorrectListSize
-			return
-		}
-		for i := uint64(0); i < num; i++ {
-			if err = m.Blocks[i].HashTreeRootWith(hh); err != nil {
-				return
-			}
-		}
-		hh.MerkleizeWithMixin(subIndx, num, 32)
+	// Field (0) 'Data'
+	if err = m.Data.HashTreeRootWith(hh); err != nil {
+		return
 	}
 
 	hh.Merkleize(indx)

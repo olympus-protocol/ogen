@@ -1,29 +1,20 @@
 package primitives_test
 
 import (
-	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func Test_CoinStateSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(10000, 10000)
-	balances := map[[20]byte]uint64{}
-	nonces := map[[20]byte]uint64{}
-	f.Fuzz(&balances)
-	f.Fuzz(&nonces)
-
-	v := primitives.CoinsState{
-		Balances: balances,
-		Nonces:   nonces,
-	}
+	v := testdata.FuzzCoinState(10)
 
 	ser, err := v.Marshal()
 
 	assert.NoError(t, err)
 
-	var desc primitives.CoinsState
+	desc := new(primitives.CoinsState)
 	err = desc.Unmarshal(ser)
 	assert.NoError(t, err)
 
@@ -31,32 +22,21 @@ func Test_CoinStateSerialize(t *testing.T) {
 }
 
 func TestCoinsState_ToSerializable(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(5, 20)
-
-	var balances map[[20]byte]uint64
-	var nonces map[[20]byte]uint64
-
-	f.Fuzz(&balances)
-	f.Fuzz(&nonces)
-
-	cs := primitives.CoinsState{
-		Balances: balances,
-		Nonces:   nonces,
-	}
+	cs := testdata.FuzzCoinState(10)
 
 	scs := cs.ToSerializable()
 
-	assert.Equal(t, len(scs.Nonces), len(nonces))
-	assert.Equal(t, len(scs.Balances), len(balances))
+	assert.Equal(t, len(scs.Nonces), 10)
+	assert.Equal(t, len(scs.Balances), 10)
 
 	noncesSumMap := uint64(0)
 	balancesSumMap := uint64(0)
 
-	for _, v := range balances {
+	for _, v := range cs.Balances {
 		balancesSumMap += v
 	}
 
-	for _, v := range nonces {
+	for _, v := range cs.Nonces {
 		noncesSumMap += v
 	}
 
@@ -73,27 +53,18 @@ func TestCoinsState_ToSerializable(t *testing.T) {
 
 	assert.Equal(t, noncesSumMap, noncesSumSlice)
 	assert.Equal(t, balancesSumMap, balancesSumSlice)
+
+	assert.Equal(t, balancesSumMap, cs.GetTotal())
 }
 
 func TestCoinsState_FromSerializable(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(5, 20)
-
-	var balances []*primitives.AccountInfo
-	var nonces []*primitives.AccountInfo
-
-	f.Fuzz(&balances)
-	f.Fuzz(&nonces)
-
-	scs := &primitives.CoinsStateSerializable{
-		Balances: balances,
-		Nonces:   nonces,
-	}
+	scs := testdata.FuzzCoinStateSerializable(10)
 
 	cs := new(primitives.CoinsState)
 	cs.FromSerializable(scs)
 
-	assert.Equal(t, len(cs.Nonces), len(nonces))
-	assert.Equal(t, len(cs.Balances), len(balances))
+	assert.Equal(t, len(cs.Nonces), 10)
+	assert.Equal(t, len(cs.Balances), 10)
 
 	noncesSumMap := uint64(0)
 	balancesSumMap := uint64(0)
@@ -109,36 +80,26 @@ func TestCoinsState_FromSerializable(t *testing.T) {
 	noncesSumSlice := uint64(0)
 	balancesSumSlice := uint64(0)
 
-	for _, v := range nonces {
+	for _, v := range scs.Nonces {
 		noncesSumSlice += v.Info
 	}
 
-	for _, v := range balances {
+	for _, v := range scs.Balances {
 		balancesSumSlice += v.Info
 	}
 
 	assert.Equal(t, noncesSumMap, noncesSumSlice)
 	assert.Equal(t, balancesSumMap, balancesSumSlice)
+
+	assert.Equal(t, balancesSumMap, cs.GetTotal())
 }
 
 func TestCoinsState_Copy(t *testing.T) {
-	f := fuzz.New().NilChance(0).NumElements(5, 20)
-
-	var balances map[[20]byte]uint64
-	var nonces map[[20]byte]uint64
-
+	cs := testdata.FuzzCoinState(10)
 	key := [20]byte{1, 2, 3}
 
-	f.Fuzz(&balances)
-	f.Fuzz(&nonces)
-
-	balances[key] = 10
-	nonces[key] = 10
-
-	cs := primitives.CoinsState{
-		Balances: balances,
-		Nonces:   nonces,
-	}
+	cs.Balances[key] = 10
+	cs.Nonces[key] = 10
 
 	cs2 := cs.Copy()
 

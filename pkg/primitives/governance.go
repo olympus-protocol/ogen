@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -24,17 +23,13 @@ func (g *Governance) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return snappy.Encode(nil, b), nil
+	return b, nil
 }
 
 // Unmarshal deserialize the bytes to a struct
 func (g *Governance) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
 	gs := new(GovernanceSerializable)
-	err = gs.UnmarshalSSZ(d)
+	err := gs.UnmarshalSSZ(b)
 	if err != nil {
 		return err
 	}

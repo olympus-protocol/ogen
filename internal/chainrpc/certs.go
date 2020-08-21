@@ -94,28 +94,37 @@ open:
 
 // GenerateCerts will generate a CA and a certificate for the gRPC tls transport and https.
 func GenerateCerts(dataFolder string) error {
-	os.Mkdir(path.Join(dataFolder, "cert"), 0777)
+	_ = os.Mkdir(path.Join(dataFolder, "cert"), 0777)
+
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return err
 	}
+
 	caBytes, err := x509.CreateCertificate(rand.Reader, baseCA, baseCA, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
 		return err
 	}
+
 	caFile, err := os.Create(path.Join(dataFolder, "cert", CA))
 	if err != nil {
 		return err
 	}
-	pem.Encode(caFile, &pem.Block{
+
+	err = pem.Encode(caFile, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: caBytes,
 	})
+	if err != nil {
+		return err
+	}
+
 	caPriv, err := os.Create(path.Join(dataFolder, "cert", CaKey))
 	if err != nil {
 		return err
 	}
-	pem.Encode(caPriv, &pem.Block{
+
+	err = pem.Encode(caPriv, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
 	})
@@ -124,6 +133,7 @@ func GenerateCerts(dataFolder string) error {
 	certData.IPAddresses = []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
 	certData.SubjectKeyId = []byte{1, 2, 3, 4, 6}
 	certData.IsCA = false
+
 	certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return err
@@ -138,18 +148,27 @@ func GenerateCerts(dataFolder string) error {
 	if err != nil {
 		return err
 	}
-	pem.Encode(certFile, &pem.Block{
+
+	err = pem.Encode(certFile, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: certBytes,
 	})
+	if err != nil {
+		return err
+	}
 
 	certKey, err := os.Create(path.Join(dataFolder, "cert", CertKey))
 	if err != nil {
 		return err
 	}
-	pem.Encode(certKey, &pem.Block{
+
+	err = pem.Encode(certKey, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
 	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

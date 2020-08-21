@@ -7,12 +7,13 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sort"
@@ -44,7 +45,7 @@ type voteMempool struct {
 	log        logger.Logger
 	ctx        context.Context
 	blockchain chain.Blockchain
-	hostNode   peers.HostNode
+	hostNode   hostnode.HostNode
 	voteTopic  *pubsub.Topic
 
 	notifees     []VoteSlashingNotifee
@@ -340,16 +341,21 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			continue
 		}
 
-		vote := new(primitives.MultiValidatorVote)
+		buf := bytes.NewBuffer(msg.Data)
 
-		if err := vote.Unmarshal(msg.Data); err != nil {
-			m.log.Warnf("peer sent invalid vote: %s", err)
-			err = m.hostNode.BanScorePeer(msg.GetFrom(), 100)
-			if err == nil {
-				m.log.Warnf("peer %s was banned", msg.GetFrom().String())
-			}
-			continue
+		voteRead, err := p2p.ReadMessage(buf, m.hostNode.GetNetMagic())
+		if err != nil {
+			m.log.Warnf("unable to decode message: %s", err)
+			return
 		}
+
+		voteMsg, ok := voteRead.(*p2p.MsgVote)
+		if !ok {
+			m.log.Warnf("peer sent wrong message on vote subscription")
+			return
+		}
+
+		vote := voteMsg.Data
 
 		m.log.Debugf("received votes from peer %s", msg.GetFrom().String())
 
@@ -387,8 +393,8 @@ func (m *voteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
-	voteTopic, err := hostnode.Topic("votes")
+func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
+	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
 	if err != nil {
 		return nil, err
 	}

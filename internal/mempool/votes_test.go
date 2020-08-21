@@ -9,14 +9,15 @@ import (
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -42,7 +43,7 @@ var validatorsGlobal []*primitives.Validator
 var genesisHash chainhash.Hash
 
 // params are the params used on the test
-var param = &testdata.IntTestParams
+var param = &testdata.TestParams
 
 var slot1Commiters = []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99}
 var slot2Commiters = []uint64{20, 21, 22, 23, 24, 25, 26, 27, 28, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
@@ -95,8 +96,8 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	host := peers.NewMockHostNode(ctrl)
-	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host := hostnode.NewMockHostNode(ctrl)
+	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
 
 	log := logger.NewMockLogger(ctrl)
@@ -113,7 +114,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	manager := actionmanager.NewMockLastActionManager(ctrl)
 
-	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.IntTestParams, ch, host, manager)
+	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.TestParams, ch, host, manager)
 	assert.NoError(t, err)
 
 	// This test will try to replicate a chain with 100 validators and 2 proposers moving for 1 epoch.

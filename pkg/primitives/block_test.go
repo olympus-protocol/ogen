@@ -1,64 +1,46 @@
 package primitives_test
 
 import (
-	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func Test_BlockSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
+func TestBlock(t *testing.T) {
+	correct := testdata.FuzzBlock(2, true, true)
+	for _, b := range correct {
+		ser, err := b.Marshal()
+		assert.NoError(t, err)
 
-	blockheader := new(primitives.BlockHeader)
-	sig := [96]byte{}
-	rsig := [96]byte{}
+		desc := new(primitives.Block)
+		err = desc.Unmarshal(ser)
+		assert.NoError(t, err)
 
-	f.Fuzz(blockheader)
-	f.Fuzz(&sig)
-	f.Fuzz(&rsig)
-
-	f.NumElements(32, 32)
-	var deposits []*primitives.Deposit
-	var exits []*primitives.Exit
-	f.Fuzz(&deposits)
-	f.Fuzz(&exits)
-
-	f.NumElements(1000, 1000)
-	var txs []*primitives.Tx
-	f.Fuzz(&txs)
-
-	f.NumElements(20, 20)
-	var randaoSlash []*primitives.RANDAOSlashing
-	f.Fuzz(&randaoSlash)
-
-	f.NumElements(2, 2)
-	var proposerSlash []*primitives.ProposerSlashing
-	f.Fuzz(&proposerSlash)
-
-	f.NumElements(128, 128)
-	var governanceVotes []*primitives.GovernanceVote
-	f.Fuzz(&governanceVotes)
-
-	v := primitives.Block{
-		Header:            blockheader,
-		Votes:             fuzzMultiValidatorVote(32),
-		Txs:               txs,
-		Deposits:          deposits,
-		Exits:             exits,
-		VoteSlashings:     fuzzVoteSlashing(10),
-		RANDAOSlashings:   randaoSlash,
-		ProposerSlashings: proposerSlash,
-		GovernanceVotes:   governanceVotes,
-		Signature:         sig,
-		RandaoSignature:   rsig,
+		assert.Equal(t, b, desc)
 	}
 
-	ser, err := v.Marshal()
-	assert.NoError(t, err)
-	var desc primitives.Block
-	err = desc.Unmarshal(ser)
-	assert.NoError(t, err)
+	incorrect := testdata.FuzzBlock(2, false, true)
+	for _, b := range incorrect {
+		_, err := b.Marshal()
+		assert.NotNil(t, err)
 
-	assert.Equal(t, v, desc)
+	}
+
+	nilpointers := testdata.FuzzBlock(2, true, false)
+	for _, b := range nilpointers {
+		assert.NotPanics(t, func() {
+			data, err := b.Marshal()
+			assert.NoError(t, err)
+
+			n := new(primitives.Block)
+			err = n.Unmarshal(data)
+			assert.NoError(t, err)
+
+			assert.Equal(t, b, n)
+
+			assert.Equal(t, uint64(0), n.Header.Slot)
+		})
+
+	}
 }

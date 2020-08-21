@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -179,7 +180,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	currentState := w.chain.State().TipState()
 	cs := currentState.GetCoinsState()
-	if err := w.mempool.Add(*tx, &cs); err != nil {
+	if err := w.mempool.Add(tx, &cs); err != nil {
 		return nil, err
 	}
 
@@ -202,7 +203,8 @@ func (w *wallet) broadcastTx(payload *primitives.Tx) {
 }
 
 func (w *wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	buf, err := deposit.Marshal()
+	msg := p2p.MsgDeposit{Data: deposit}
+	buf, err := msg.Marshal()
 	if err != nil {
 		w.log.Errorf("error encoding transaction: %s", err)
 		return

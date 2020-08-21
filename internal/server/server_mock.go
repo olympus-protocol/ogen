@@ -7,7 +7,7 @@ package server
 import (
 	gomock "github.com/golang/mock/gomock"
 	chain "github.com/olympus-protocol/ogen/internal/chain"
-	peers "github.com/olympus-protocol/ogen/internal/peers"
+	hostnode "github.com/olympus-protocol/ogen/internal/hostnode"
 	proposer "github.com/olympus-protocol/ogen/internal/proposer"
 	reflect "reflect"
 )
@@ -36,10 +36,10 @@ func (m *MockServer) EXPECT() *MockServerMockRecorder {
 }
 
 // HostNode mocks base method
-func (m *MockServer) HostNode() peers.HostNode {
+func (m *MockServer) HostNode() hostnode.HostNode {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HostNode")
-	ret0, _ := ret[0].(peers.HostNode)
+	ret0, _ := ret[0].(hostnode.HostNode)
 	return ret0
 }
 

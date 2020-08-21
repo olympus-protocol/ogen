@@ -33,21 +33,11 @@ type Tx struct {
 
 // Marshal encodes the data.
 func (t *Tx) Marshal() ([]byte, error) {
-	b, err := t.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxTransactionSize {
-		return nil, ErrorTxSize
-	}
-	return b, nil
+	return t.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (t *Tx) Unmarshal(b []byte) error {
-	if len(b) > MaxTransactionSize {
-		return ErrorTxSize
-	}
 	return t.UnmarshalSSZ(b)
 }
 

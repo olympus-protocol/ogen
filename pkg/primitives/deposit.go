@@ -1,18 +1,10 @@
 package primitives
 
 import (
-	"errors"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-var (
-	// ErrorDepositSize returned when the deposit size is above MaxDepositLength
-	ErrorDepositSize = errors.New("deposit size is too big")
-	// ErrorDepositDataSize returned when the deposit data size is above MaxDepositDataSize
-	ErrorDepositDataSize = errors.New("deposit data size is too big")
 )
 
 // MaxDepositSize is the maximum amount of bytes a deposit can contain.
@@ -32,21 +24,11 @@ type Deposit struct {
 
 // Marshal encodes the data.
 func (d *Deposit) Marshal() ([]byte, error) {
-	b, err := d.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxDepositSize {
-		return nil, ErrorDepositSize
-	}
-	return b, nil
+	return d.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (d *Deposit) Unmarshal(b []byte) error {
-	if len(b) > MaxDepositSize {
-		return ErrorDepositSize
-	}
 	return d.UnmarshalSSZ(b)
 }
 
@@ -83,21 +65,11 @@ type DepositData struct {
 
 // Marshal encodes the data.
 func (d *DepositData) Marshal() ([]byte, error) {
-	b, err := d.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxDepositDataSize {
-		return nil, ErrorDepositDataSize
-	}
-	return b, nil
+	return d.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (d *DepositData) Unmarshal(b []byte) error {
-	if len(b) > MaxDepositDataSize {
-		return ErrorDepositDataSize
-	}
 	return d.UnmarshalSSZ(b)
 }
 

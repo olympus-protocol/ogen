@@ -95,5 +95,5 @@ func (p *PublicKey) ToAccount() (string, error) {
 	out := make([]byte, 20)
 	h := chainhash.HashH(p.Marshal())
 	copy(out[:], h[:20])
-	return bech32.Encode(bls_interface.Prefix.Public, out), nil
+	return bech32.Encode(bls_interface.Prefix.Public, out)
 }

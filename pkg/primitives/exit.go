@@ -1,15 +1,11 @@
 package primitives
 
 import (
-	"errors"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
-
-// ErrorExitSize returned when the exit size is above MaxExitSize
-var ErrorExitSize = errors.New("error size is to big")
 
 // MaxExitSize is the maximum amount of bytes an exit can contain.
 const MaxExitSize = 192
@@ -38,21 +34,11 @@ func (e *Exit) GetSignature() (bls_interface.Signature, error) {
 
 // Marshal encodes the data.
 func (e *Exit) Marshal() ([]byte, error) {
-	b, err := e.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxExitSize {
-		return nil, ErrorExitSize
-	}
-	return b, nil
+	return e.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (e *Exit) Unmarshal(b []byte) error {
-	if len(b) > MaxExitSize {
-		return ErrorExitSize
-	}
 	return e.UnmarshalSSZ(b)
 }
 

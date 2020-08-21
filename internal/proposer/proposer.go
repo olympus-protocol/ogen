@@ -8,16 +8,17 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -49,7 +50,7 @@ type proposer struct {
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
 	actionsMempool mempool.ActionMempool
-	hostnode       peers.HostNode
+	hostnode       hostnode.HostNode
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
 
@@ -57,14 +58,14 @@ type proposer struct {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Blockchain, hostnode peers.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
+func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	blockTopic, err := hostnode.Topic("blocks")
+	blockTopic, err := hostnode.Topic(p2p.MsgBlockCmd)
 	if err != nil {
 		cancel()
 		return nil, err
 	}
-	voteTopic, err := hostnode.Topic("votes")
+	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
 	if err != nil {
 		cancel()
 		return nil, err
@@ -126,7 +127,8 @@ func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
-	buf, err := v.Marshal()
+	msg := p2p.MsgVote{Data: v}
+	buf, err := msg.Marshal()
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
 		return

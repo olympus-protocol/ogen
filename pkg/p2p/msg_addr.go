@@ -1,9 +1,5 @@
 package p2p
 
-import (
-	"github.com/golang/snappy"
-)
-
 // MaxAddrPerMsg defines the maximum address that can be added into an addr message.
 const MaxAddrPerMsg = 32
 
@@ -14,26 +10,12 @@ type MsgAddr struct {
 
 // Marshal serializes the data to bytes
 func (m *MsgAddr) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if uint64(len(b)) > m.MaxPayloadLength() {
-		return nil, ErrorSizeExceed
-	}
-	return snappy.Encode(nil, b), nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal deserializes the data
 func (m *MsgAddr) Unmarshal(b []byte) error {
-	d, err := snappy.Decode(nil, b)
-	if err != nil {
-		return err
-	}
-	if uint64(len(d)) > m.MaxPayloadLength() {
-		return ErrorSizeExceed
-	}
-	return m.UnmarshalSSZ(d)
+	return m.UnmarshalSSZ(b)
 }
 
 // Command returns the message topic

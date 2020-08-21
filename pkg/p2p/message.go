@@ -10,8 +10,6 @@ import (
 )
 
 var (
-	// ErrorMessageHeaderSize returns when a MessageHeader size exceed MaxMessageHeaderSize
-	ErrorMessageHeaderSize = errors.New("message header too big")
 	// ErrorChecksum returned when the message header checksum doesn't match.
 	ErrorChecksum = errors.New("message checksum don't match")
 	// ErrorAnnLength returned when the header length doesn't match the message length.
@@ -25,6 +23,22 @@ var (
 const (
 	// MaxMessageHeaderSize is the maximum bytes a MessageHeader can contain
 	MaxMessageHeaderSize = 60
+	// MsgBlockCmd is a single block element
+	MsgBlockCmd = "block"
+	// MsgTxCmd is a single tx element
+	MsgTxCmd = "tx"
+	// MsgDepositCmd is a single deposit element
+	MsgDepositCmd = "deposit"
+	// MsgVoteCmd is a single vote element
+	MsgVoteCmd = "vote"
+	// MsgValidatorStart is a validator hello element
+	MsgValidatorStartCmd = "validator_hello"
+	// MsgExitCmd is a exit element
+	MsgExitCmd = "exit"
+	// MsgGovernanceCmd is a exit element
+	MsgGovernanceCmd = "governance_vote"
+	// MsgTxMultiCmd is a exit element
+	MsgTxMultiCmd = "tx_multi"
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
 	// MsgGetAddrCmd ask node for address
@@ -55,21 +69,11 @@ type MessageHeader struct {
 
 // Marshal serializes the data to bytes
 func (m *MessageHeader) Marshal() ([]byte, error) {
-	b, err := m.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxMessageHeaderSize {
-		return nil, ErrorMessageHeaderSize
-	}
-	return b, nil
+	return m.MarshalSSZ()
 }
 
 // Unmarshal deserializes the data
 func (m *MessageHeader) Unmarshal(b []byte) error {
-	if len(b) > MaxMessageHeaderSize {
-		return ErrorMessageHeaderSize
-	}
 	return m.UnmarshalSSZ(b)
 }
 
@@ -86,6 +90,22 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
+	case MsgBlockCmd:
+		msg = &MsgBlock{}
+	case MsgTxCmd:
+		msg = &MsgTx{}
+	case MsgTxMultiCmd:
+		msg = &MsgTxMulti{}
+	case MsgDepositCmd:
+		msg = &MsgDeposit{}
+	case MsgVoteCmd:
+		msg = &MsgVote{}
+	case MsgExitCmd:
+		msg = &MsgExit{}
+	case MsgValidatorStartCmd:
+		msg = &MsgValidatorStart{}
+	case MsgGovernanceCmd:
+		msg = &MsgGovernance{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}
@@ -94,35 +114,41 @@ func makeEmptyMessage(command string) (Message, error) {
 
 // ReadMessage decodes the message from reader
 func ReadMessage(r io.Reader, net uint32) (Message, error) {
+
 	headerBuf := make([]byte, 60)
 	_, err := io.ReadFull(r, headerBuf)
 	if err != nil {
 		return nil, err
 	}
+
 	header, err := readHeader(headerBuf, net)
 	if err != nil {
 		return nil, err
 	}
+
 	cmdB := bytes.Trim(header.Command[:], "\x00")
 	cmd := string(cmdB)
+
 	msg, err := makeEmptyMessage(cmd)
 	if err != nil {
 		return nil, err
 	}
+
 	msgB := make([]byte, header.Length)
 	_, err = io.ReadFull(r, msgB)
 	if err != nil {
 		return nil, err
 	}
+
 	var checksum [4]byte
 	copy(checksum[:], chainhash.DoubleHashB(msgB)[0:4])
 	if header.Checksum != checksum {
 		return nil, ErrorChecksum
 	}
-
 	if header.Length != uint64(len(msgB)) {
 		return nil, ErrorAnnLength
 	}
+
 	err = msg.Unmarshal(msgB)
 	if err != nil {
 		return nil, err
@@ -130,55 +156,69 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 	if header.Length > msg.MaxPayloadLength() {
 		return nil, ErrorSizeExceed
 	}
+
 	return msg, nil
 }
 
-func readHeader(h []byte, net uint32) (MessageHeader, error) {
-	var header MessageHeader
+func readHeader(h []byte, net uint32) (*MessageHeader, error) {
+	header := new(MessageHeader)
+
 	err := header.Unmarshal(h)
 	if err != nil {
-		return MessageHeader{}, err
+		return nil, err
 	}
+
 	if header.Magic != uint64(net) {
-		return MessageHeader{}, ErrorNetMismatch
+		return nil, ErrorNetMismatch
 	}
+
 	return header, nil
 }
 
 // WriteMessage writes the message to writer
 func WriteMessage(w io.Writer, msg Message, net uint32) error {
+
 	ser, err := msg.Marshal()
 	if err != nil {
 		return err
 	}
+
 	var checksum [4]byte
 	copy(checksum[:], chainhash.DoubleHashB(ser)[0:4])
+
 	hb, err := writeHeader(msg, net, uint64(len(ser)), checksum)
 	if err != nil {
 		return err
 	}
-	buf := []byte{}
+
+	var buf []byte
 	buf = append(buf, hb...)
 	buf = append(buf, ser...)
+
 	_, err = w.Write(buf)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func writeHeader(msg Message, net uint32, length uint64, checksum [4]byte) ([]byte, error) {
+
 	cmd := [40]byte{}
-	copy(cmd[:], []byte(msg.Command()))
+	copy(cmd[:], msg.Command())
+
 	header := MessageHeader{
 		Magic:    uint64(net),
 		Command:  cmd,
 		Length:   length,
 		Checksum: checksum,
 	}
+
 	ser, err := header.Marshal()
 	if err != nil {
 		return nil, err
 	}
+
 	return ser, nil
 }

@@ -3,6 +3,7 @@ package wallet
 import (
 	"context"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"os"
 	"path"
@@ -13,8 +14,8 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/internal/peers"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -67,23 +68,23 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode peers.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
+func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
 	var txTopic *pubsub.Topic
 	var depositTopic *pubsub.Topic
 	var exitTopic *pubsub.Topic
 	var err error
 	if hostnode != nil {
-		txTopic, err = hostnode.Topic("tx")
+		txTopic, err = hostnode.Topic(p2p.MsgTxCmd)
 		if err != nil {
 			return nil, err
 		}
 
-		depositTopic, err = hostnode.Topic("deposits")
+		depositTopic, err = hostnode.Topic(p2p.MsgDepositCmd)
 		if err != nil {
 			return nil, err
 		}
 
-		exitTopic, err = hostnode.Topic("exits")
+		exitTopic, err = hostnode.Topic(p2p.MsgExitCmd)
 		if err != nil {
 			return nil, err
 		}

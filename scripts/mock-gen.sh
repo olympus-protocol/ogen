@@ -12,11 +12,11 @@ mockgen --source internal/logger/log.go --destination internal/logger/log_mock.g
 mockgen --source internal/mempool/actions.go --destination internal/mempool/actions_mock.go --package mempool
 mockgen --source internal/mempool/coins.go --destination internal/mempool/coins_mock.go --package mempool
 mockgen --source internal/mempool/votes.go --destination internal/mempool/votes_mock.go --package mempool
-mockgen --source internal/peers/database.go --destination internal/peers/database_mock.go --package peers
-mockgen --source internal/peers/discoveryprotocol.go --destination internal/peers/discoveryprotocol_mock.go --package peers
-mockgen --source internal/peers/hostnode.go --destination internal/peers/hostnode_mock.go --package peers
-mockgen --source internal/peers/protocolhandler.go --destination internal/peers/protocolhandler_mock.go --package peers
-mockgen --source internal/peers/syncprotocol.go --destination internal/peers/syncprotocol_mock.go --package peers
+mockgen --source internal/hostnode/database.go --destination internal/hostnode/database_mock.go --package hostnode
+mockgen --source internal/hostnode/discoveryprotocol.go --destination internal/hostnode/discoveryprotocol_mock.go --package hostnode
+mockgen --source internal/hostnode/hostnode.go --destination internal/hostnode/hostnode_mock.go --package hostnode
+mockgen --source internal/hostnode/protocolhandler.go --destination internal/hostnode/protocolhandler_mock.go --package hostnode
+mockgen --source internal/hostnode/syncprotocol.go --destination internal/hostnode/syncprotocol_mock.go --package hostnode
 mockgen --source internal/proposer/proposer.go --destination internal/proposer/proposer_mock.go --package proposer
 mockgen --source internal/server/server.go --destination internal/server/server_mock.go --package server
 mockgen --source internal/state/interface.go --destination internal/state/interface_mock.go --package state

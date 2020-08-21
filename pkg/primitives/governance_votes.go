@@ -1,19 +1,9 @@
 package primitives
 
 import (
-	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-var (
-	// ErrorReplacementsVoteSize is returned when a ReplacementVotes exceed MaxReplacementVoteSize
-	ErrorReplacementsVoteSize = errors.New("replacement vote size too big")
-	// ErrorGovernanceVote is returned when a GovernanceVote exceed MaxGovernanceVoteSize
-	ErrorGovernanceVoteSize = errors.New("governance vote size too big")
-	// ErrorCommunityVoteData is returned when a CommunityVoteData exceed MaxCommunityVoteDataSize
-	ErrorCommunityVoteDataSize = errors.New("community vote size too big")
 )
 
 const (
@@ -39,21 +29,11 @@ type ReplacementVotes struct {
 
 // Marshal encodes the data.
 func (r *ReplacementVotes) Marshal() ([]byte, error) {
-	b, err := r.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxReplacementsVoteSize {
-		return nil, ErrorReplacementsVoteSize
-	}
-	return b, nil
+	return r.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (r *ReplacementVotes) Unmarshal(b []byte) error {
-	if len(b) > MaxReplacementsVoteSize {
-		return ErrorReplacementsVoteSize
-	}
 	return r.UnmarshalSSZ(b)
 }
 
@@ -64,21 +44,11 @@ type CommunityVoteData struct {
 
 // Marshal encodes the data.
 func (c *CommunityVoteData) Marshal() ([]byte, error) {
-	b, err := c.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxCommunityVoteDataSize {
-		return nil, ErrorCommunityVoteDataSize
-	}
-	return b, nil
+	return c.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (c *CommunityVoteData) Unmarshal(b []byte) error {
-	if len(b) > MaxCommunityVoteDataSize {
-		return ErrorCommunityVoteDataSize
-	}
 	return c.UnmarshalSSZ(b)
 }
 
@@ -119,49 +89,24 @@ const (
 
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
-	Type        uint64
-	Data        [100]byte
-	CombinedSig *multisig.CombinedSignature
-	Multisig    *multisig.Multisig
-	VoteEpoch   uint64
+	Type      uint64
+	Data      [100]byte
+	Multisig  *multisig.Multisig
+	VoteEpoch uint64
 }
 
 // Marshal encodes the data.
 func (g *GovernanceVote) Marshal() ([]byte, error) {
-	b, err := g.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) > MaxGovernanceVoteSize {
-		return nil, ErrorGovernanceVoteSize
-	}
-	return b, nil
+	return g.MarshalSSZ()
 }
 
 // Unmarshal decodes the data.
 func (g *GovernanceVote) Unmarshal(b []byte) error {
-	if len(b) > MaxGovernanceVoteSize {
-		return ErrorGovernanceVoteSize
-	}
 	return g.UnmarshalSSZ(b)
 }
 
-// ValidCombined returns a boolean that checks for validity of the vote in case it uses a combined signature
-func (g *GovernanceVote) ValidCombined() bool {
-	sigHash := g.SignatureHash()
-	pub, err := g.CombinedSig.Pub()
-	if err != nil {
-		return false
-	}
-	sig, err := g.CombinedSig.Sig()
-	if err != nil {
-		return false
-	}
-	return sig.Verify(pub, sigHash[:])
-}
-
-// ValidMultisig returns a boolean that checks for validity of the vote in case it uses a multi signature
-func (g *GovernanceVote) ValidMultisig() bool {
+// Valid returns a boolean that checks for validity of the vote
+func (g *GovernanceVote) Valid() bool {
 	sigHash := g.SignatureHash()
 	return g.Multisig.Verify(sigHash[:])
 }
@@ -169,7 +114,6 @@ func (g *GovernanceVote) ValidMultisig() bool {
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	cp := g.Copy()
-	g.CombinedSig = nil
 	g.Multisig = nil
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
@@ -183,14 +127,14 @@ func (g *GovernanceVote) Hash() chainhash.Hash {
 
 // Copy copies the governance vote.
 func (g *GovernanceVote) Copy() *GovernanceVote {
-	newGv := *g
-	newGv.Data = [100]byte{}
-	copy(newGv.Data[:], g.Data[:])
-	if newGv.CombinedSig != nil {
-		newGv.CombinedSig = g.CombinedSig.Copy()
+	newGv := &GovernanceVote{
+		Type:      g.Type,
+		VoteEpoch: g.VoteEpoch,
+		Data:      [100]byte{},
 	}
-	if newGv.Multisig != nil {
+	copy(newGv.Data[:], g.Data[:])
+	if g.Multisig != nil {
 		newGv.Multisig = g.Multisig.Copy()
 	}
-	return &newGv
+	return newGv
 }

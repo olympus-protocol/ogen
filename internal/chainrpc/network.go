@@ -6,11 +6,11 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/api/proto"
-	"github.com/olympus-protocol/ogen/internal/peers"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 )
 
 type networkServer struct {
-	hostnode peers.HostNode
+	hostnode hostnode.HostNode
 	proto.UnimplementedNetworkServer
 }
 

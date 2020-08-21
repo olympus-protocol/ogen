@@ -59,5 +59,5 @@ func (s *bls12SecretKey) Marshal() []byte {
 
 // ToWIF converts the private key to a Bech32 encoded string.
 func (s *bls12SecretKey) ToWIF() (string, error) {
-	return bech32.Encode(bls_interface.Prefix.Private, s.Marshal()), nil
+	return bech32.Encode(bls_interface.Prefix.Private, s.Marshal())
 }

@@ -16,6 +16,22 @@ func Test_Bitlist(t *testing.T) {
 	assert.Equal(t, bf.Len(), uint64(32))
 }
 
+func TestBitlist_Contains(t *testing.T) {
+	a := bitfield.NewBitlist(50000)
+	b := bitfield.NewBitlist(50000)
+	c := bitfield.NewBitlist(10)
+
+	a.Set(10)
+	b.Set(10)
+
+	contains, err := a.Contains(b)
+	assert.NoError(t, err)
+	assert.True(t, contains)
+
+	_, err = a.Contains(c)
+	assert.Equal(t, bitfield.ErrorsBitlistSize, err)
+}
+
 func TestBitlist_Intersect(t *testing.T) {
 	a := bitfield.NewBitlist(50000)
 	b := bitfield.NewBitlist(50000)
@@ -32,11 +48,13 @@ func TestBitlist_Intersect(t *testing.T) {
 func TestBitlist_Merge(t *testing.T) {
 	a := bitfield.NewBitlist(50000)
 	b := bitfield.NewBitlist(50000)
+	c := bitfield.NewBitlist(50000)
 
 	a.Set(10)
 	a.Set(5)
 	b.Set(300)
 	b.Set(700)
+	c.Set(10)
 
 	merge, err := a.Merge(b)
 	assert.NoError(t, err)
@@ -45,4 +63,6 @@ func TestBitlist_Merge(t *testing.T) {
 	assert.True(t, merge.Get(uint(300)))
 	assert.True(t, merge.Get(uint(700)))
 
+	_, err = a.Merge(c)
+	assert.Equal(t, bitfield.ErrorBitlistOverlaps, err)
 }

@@ -1,23 +1,48 @@
 package primitives_test
 
 import (
-	fuzz "github.com/google/gofuzz"
+	"encoding/hex"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func Test_ExitSerialize(t *testing.T) {
-	f := fuzz.New().NilChance(0)
-	var v primitives.Exit
-	f.Fuzz(&v)
+func TestExit(t *testing.T) {
+	v := testdata.FuzzExits(10)
+	for _, e := range v {
+		ser, err := e.Marshal()
+		assert.NoError(t, err)
 
-	ser, err := v.Marshal()
-	assert.NoError(t, err)
+		desc := new(primitives.Exit)
+		err = desc.Unmarshal(ser)
+		assert.NoError(t, err)
 
-	var desc primitives.Exit
-	err = desc.Unmarshal(ser)
-	assert.NoError(t, err)
+		assert.Equal(t, e, desc)
+	}
 
-	assert.Equal(t, v, desc)
+	e := new(primitives.Exit)
+
+	sigDecode, _ := hex.DecodeString("ae09507041b2ccb9e3b3f9cda71ffae3dc8b2c83f331ebdc98cc4269c56bd4db05706bf317c8877608bc751b36d9af380c5fea6bc804d2080940b3910acc8f222fc4b59166630d8a3b31eba539325c2c60aaaa0408e986241cb462fad8652bdc")
+	sigBls, _ := bls.CurrImplementation.SignatureFromBytes(sigDecode)
+	pubDecode, _ := hex.DecodeString("8509d515b24c5a728b26a1b03b023238616dc62d1760f07b90b37407c3535f3fcf4f412dcffa400e4f2b142285c18157")
+	pubBls, _ := bls.CurrImplementation.PublicKeyFromBytes(pubDecode)
+	var sig [96]byte
+	var pub [48]byte
+	copy(sig[:], sigBls.Marshal())
+	copy(pub[:], pubBls.Marshal())
+	e.Signature = sig
+	e.WithdrawPubkey = pub
+	e.ValidatorPubkey = pub
+
+	getValPub, _ := e.GetValidatorPubKey()
+	getWithPub, _ := e.GetWithdrawPubKey()
+	getSig, _ := e.GetSignature()
+
+	assert.Equal(t, pubBls, getValPub)
+	assert.Equal(t, pubBls, getWithPub)
+	assert.Equal(t, sigBls, getSig)
+
+	assert.Equal(t, "85905f74d2e0cfca376e590ce6ed22d83dc939733472290365df407ac8ee00da", e.Hash().String())
 }
