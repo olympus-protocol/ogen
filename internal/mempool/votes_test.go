@@ -17,6 +17,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -96,7 +97,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	host := hostnode.NewMockHostNode(ctrl)
-	host.EXPECT().Topic("votes").Return(g.Join("votes"))
+	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
 
 	log := logger.NewMockLogger(ctrl)

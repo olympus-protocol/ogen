@@ -249,3 +249,21 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 	}
 	return v
 }
+
+// FuzzValidatorHello returns a slice of ValidatorHelloMessage
+func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
+	f := fuzz.New().NilChance(0)
+	var v []*primitives.ValidatorHelloMessage
+	for i := 0; i < n; i++ {
+		d := new(primitives.ValidatorHelloMessage)
+		f.Fuzz(d)
+		var sig [96]byte
+		var pub [48]byte
+		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		d.Signature = sig
+		d.PublicKey = pub
+		v = append(v, d)
+	}
+	return v
+}

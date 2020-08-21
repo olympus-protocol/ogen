@@ -1,13 +1,8 @@
 package primitives
 
 import (
-	"errors"
-
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
-
-// ErrorBlockSize returns when the decompresed size of the block exceed MaxBlockSize
-var ErrorBlockSize = errors.New("the block size is too big")
 
 // MaxBlockSize defines the maximum bytes on a block object.
 const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
