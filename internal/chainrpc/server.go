@@ -190,6 +190,7 @@ func NewRPCServer(config Config, chain chain.Blockchain, hostnode hostnode.HostN
 			depositTopic: depositTopic,
 			exitTopic:    exitTopic,
 			proposer:     p,
+			hostnode:     hostnode,
 		},
 		walletServer: &walletServer{
 			wallet: wallet,

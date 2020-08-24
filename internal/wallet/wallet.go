@@ -49,6 +49,7 @@ type wallet struct {
 	params        *params.ChainParams
 	log           logger.Logger
 	chain         chain.Blockchain
+	hostnode      hostnode.HostNode
 	txTopic       *pubsub.Topic
 	mempool       mempool.CoinsMempool
 	actionMempool mempool.ActionMempool
@@ -96,6 +97,7 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 		open:          false,
 		chain:         ch,
 		txTopic:       txTopic,
+		hostnode:      hostnode,
 		depositTopic:  depositTopic,
 		exitTopic:     exitTopic,
 		mempool:       mempool,

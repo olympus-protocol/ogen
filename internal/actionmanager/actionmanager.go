@@ -157,14 +157,14 @@ func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitive
 	copy(sig[:], signature.Marshal())
 	validatorHello.Signature = sig
 
-	msg := p2p.MsgValidatorStart{Data: validatorHello}
-
-	buf, err := msg.Marshal()
+	msg := &p2p.MsgValidatorStart{Data: validatorHello}
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, l.hostNode.GetNetMagic())
 	if err != nil {
 		return false
 	}
 
-	err = l.startTopic.Publish(l.ctx, buf)
+	err = l.startTopic.Publish(l.ctx, buf.Bytes())
 
 	if err != nil {
 		return false

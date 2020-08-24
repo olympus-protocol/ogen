@@ -1,9 +1,11 @@
 package chainrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -15,6 +17,7 @@ import (
 
 type utilsServer struct {
 	proposer     proposer.Proposer
+	hostnode     hostnode.HostNode
 	txTopic      *pubsub.Topic
 	depositTopic *pubsub.Topic
 	exitTopic    *pubsub.Topic
@@ -64,14 +67,15 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 			return nil, errors.New("unable to decode raw data")
 		}
 
-		msg := p2p.MsgTx{Data: tx}
+		msg := &p2p.MsgTx{Data: tx}
 
-		buf, err := msg.Marshal()
+		buf := bytes.NewBuffer([]byte{})
+		err = p2p.WriteMessage(buf, msg, s.hostnode.GetNetMagic())
 		if err != nil {
 			return nil, err
 		}
 
-		err = s.txTopic.Publish(ctx, buf)
+		err = s.txTopic.Publish(ctx, buf.Bytes())
 		if err != nil {
 			return nil, err
 		}
@@ -87,14 +91,15 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 			return nil, errors.New("unable to decode raw data")
 		}
 
-		msg := p2p.MsgDeposit{Data: deposit}
+		msg := &p2p.MsgDeposit{Data: deposit}
 
-		buf, err := msg.Marshal()
+		buf := bytes.NewBuffer([]byte{})
+		err = p2p.WriteMessage(buf, msg, s.hostnode.GetNetMagic())
 		if err != nil {
 			return nil, err
 		}
 
-		err = s.depositTopic.Publish(ctx, buf)
+		err = s.depositTopic.Publish(ctx, buf.Bytes())
 		if err != nil {
 			return nil, err
 		}
@@ -110,14 +115,15 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 			return nil, errors.New("unable to decode raw data")
 		}
 
-		msg := p2p.MsgExit{Data: exit}
+		msg := &p2p.MsgExit{Data: exit}
 
-		buf, err := msg.Marshal()
+		buf := bytes.NewBuffer([]byte{})
+		err = p2p.WriteMessage(buf, msg, s.hostnode.GetNetMagic())
 		if err != nil {
 			return nil, err
 		}
 
-		err = s.exitTopic.Publish(ctx, buf)
+		err = s.exitTopic.Publish(ctx, buf.Bytes())
 		if err != nil {
 			return nil, err
 		}

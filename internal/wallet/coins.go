@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
@@ -192,35 +193,40 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 }
 
 func (w *wallet) broadcastTx(payload *primitives.Tx) {
-	buf, err := payload.Marshal()
+	msg := &p2p.MsgTx{Data: payload}
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
 	if err != nil {
-		w.log.Errorf("error encoding transaction: %s", err)
+		w.log.Errorf("error encoding tx: %s", err)
 		return
 	}
-	if err := w.txTopic.Publish(w.ctx, buf); err != nil {
+	if err := w.txTopic.Publish(w.ctx, buf.Bytes()); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
 
 func (w *wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	msg := p2p.MsgDeposit{Data: deposit}
-	buf, err := msg.Marshal()
+	msg := &p2p.MsgDeposit{Data: deposit}
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
 	if err != nil {
-		w.log.Errorf("error encoding transaction: %s", err)
+		w.log.Errorf("error encoding tx: %s", err)
 		return
 	}
-	if err := w.depositTopic.Publish(w.ctx, buf); err != nil {
+	if err := w.depositTopic.Publish(w.ctx, buf.Bytes()); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
 
 func (w *wallet) broadcastExit(exit *primitives.Exit) {
-	buf, err := exit.Marshal()
+	msg := &p2p.MsgExit{Data: exit}
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
 	if err != nil {
-		w.log.Errorf("error encoding transaction: %s", err)
+		w.log.Errorf("error encoding tx: %s", err)
 		return
 	}
-	if err := w.exitTopic.Publish(w.ctx, buf); err != nil {
+	if err := w.exitTopic.Publish(w.ctx, buf.Bytes()); err != nil {
 		w.log.Errorf("error broadcasting transaction: %s", err)
 	}
 }
