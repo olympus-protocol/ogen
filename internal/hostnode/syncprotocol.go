@@ -147,11 +147,6 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 			return
 		}
 
-		if err := block.Unmarshal(data); err != nil {
-			sp.log.Errorf("error decoding block from peer %s: %s", id, err)
-			return
-		}
-
 		if err := sp.handleBlock(id, block.Data); err != nil {
 			sp.log.Errorf("error handling incoming block from peer: %s", err)
 		}
