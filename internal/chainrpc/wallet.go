@@ -97,11 +97,7 @@ func (s *walletServer) DumpWallet(context.Context, *proto.Empty) (*proto.KeyPair
 	if err != nil {
 		return nil, err
 	}
-	wif, err := priv.ToWIF()
-	if err != nil {
-		return nil, err
-	}
-	return &proto.KeyPair{Private: wif}, nil
+	return &proto.KeyPair{Private: priv.ToWIF()}, nil
 }
 
 func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance, error) {

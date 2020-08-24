@@ -20,7 +20,7 @@ type SecretKey interface {
 	PublicKey() PublicKey
 	Sign(msg []byte) Signature
 	Marshal() []byte
-	ToWIF() (string, error)
+	ToWIF() string
 }
 
 // PublicKey represents a BLS public key.
@@ -29,7 +29,7 @@ type PublicKey interface {
 	Copy() PublicKey
 	Aggregate(p2 PublicKey) PublicKey
 	Hash() ([20]byte, error)
-	ToAccount() (string, error)
+	ToAccount() string
 }
 
 // Signature represents a BLS signature.

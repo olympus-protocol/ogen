@@ -103,7 +103,7 @@ func (m *Multipub) ToBech32() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bech32.Encode(bls_interface.Prefix.Public, pkh[:])
+	return bech32.Encode(bls_interface.Prefix.Public, pkh[:]), nil
 }
 
 // Multisig represents an m-of-n multisig.
