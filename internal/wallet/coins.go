@@ -21,7 +21,6 @@ func (w *wallet) GetBalance() (uint64, error) {
 		return 0, err
 	}
 	out := w.chain.State().TipState().GetCoinsState().Balances[acc]
-
 	return out, nil
 }
 

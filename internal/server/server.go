@@ -119,7 +119,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 
 	logger.Tracef("Initializing bls module with params for %v", currParams.Name)
 
-	err := bls.Initialize(currParams, "blst")
+	err := bls.Initialize(currParams, "herumi")
 	if err != nil {
 		return nil, err
 	}

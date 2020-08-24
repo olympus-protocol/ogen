@@ -59,8 +59,6 @@ func (p *PublicKey) Hash() ([20]byte, error) {
 
 // ToAccount converts the public key to a Bech32 address.
 func (p *PublicKey) ToAccount() string {
-	out := make([]byte, 20)
-	h := chainhash.HashH(p.Marshal())
-	copy(out[:], h[:20])
-	return bech32.Encode(bls_interface.Prefix.Public, out)
+	hash, _ := p.Hash()
+	return bech32.Encode(bls_interface.Prefix.Public, hash[:])
 }
