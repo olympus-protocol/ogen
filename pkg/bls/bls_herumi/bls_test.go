@@ -150,32 +150,20 @@ func TestCopyPubkey(t *testing.T) {
 // 	}
 // }
 
-// func TestPubKeyHash(t *testing.T) {
-// 	pubKeyBytes, err := hex.DecodeString("b77abbbf316558e0b4c3d1aa9e0692a25d19e856e3f763dcb6476f7f5fe50d82a69227eaef718aa66b13bfe131388e8e")
-// 	if err != nil {
-// 		t.Fatal("unable to get decode public string")
-// 	}
-// 	var serPubKey [48]byte
-// 	buf := bytes.NewBuffer(serPubKey[:0])
-// 	buf.Write(pubKeyBytes)
-// 	pubKey, err := bls.DeserializePublicKey(serPubKey)
-// 	if err != nil {
-// 		t.Fatal("unable to get deserialize public key")
-// 	}
-// 	encPub, err := pubKey.ToBech32(params.Mainnet.AddressPrefixes, false)
-// 	if err != nil {
-// 		t.Fatal("unable to get public bech32")
-// 	}
-// 	equal := reflect.DeepEqual(encPub, "olpub1yne583dks9ptymxya4dkakkx0sd2kyz58umv42wrt9vfq3xlkqgsh0xff2")
-// 	if !equal {
-// 		t.Fatal("pubKeyHashes doesn't match")
-// 	}
-// 	encPubContract, err := pubKey.ToBech32(params.Mainnet.AddressPrefixes, true)
-// 	if err != nil {
-// 		t.Fatal("unable to get public bech32")
-// 	}
-// 	equal = reflect.DeepEqual(encPubContract, "ctpub1rdden82dqeks8ajkgxajwfaxe52zdjmpxkvc3decrl98kk8xghcqq3dz88")
-// 	if !equal {
-// 		t.Fatal("pubKeyHashes doesn't match")
-// 	}
-// }
+//func TestPubKeyHash(t *testing.T) {
+//	imlp := bls_herumi.HerumiImplementation{}
+//	pubKeyBytes, err := hex.DecodeString("b77abbbf316558e0b4c3d1aa9e0692a25d19e856e3f763dcb6476f7f5fe50d82a69227eaef718aa66b13bfe131388e8e")
+//	if err != nil {
+//		t.Fatal("unable to get decode public string")
+//	}
+//	pubKey, err := imlp.PublicKeyFromBytes(pubKeyBytes)
+//	if err != nil {
+//		t.Fatal("unable to get deserialize public key")
+//	}
+//	encPub := pubKey.ToAccount()
+//
+//	equal := reflect.DeepEqual(encPub, "tlpub1yne583dks9ptymxya4dkakkx0sd2kyz58umv42wrt9vfq3xlkqgsh0xff2")
+//	if !equal {
+//		t.Fatal("pubKeyHashes doesn't match")
+//	}
+//}
