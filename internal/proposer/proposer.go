@@ -1,6 +1,7 @@
 package proposer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
@@ -127,26 +128,27 @@ func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
-	msg := p2p.MsgVote{Data: v}
-	buf, err := msg.Marshal()
+	msg := &p2p.MsgVote{Data: v}
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, p.hostnode.GetNetMagic())
 	if err != nil {
 		p.log.Errorf("error encoding vote: %s", err)
 		return
 	}
-
-	if err := p.voteTopic.Publish(p.context, buf); err != nil {
+	if err := p.voteTopic.Publish(p.context, buf.Bytes()); err != nil {
 		p.log.Errorf("error publishing vote: %s", err)
 	}
 }
 
 func (p *proposer) publishBlock(block *primitives.Block) {
-	buf, err := block.Marshal()
+	msg := &p2p.MsgBlock{Data: block}
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, p.hostnode.GetNetMagic())
 	if err != nil {
-		p.log.Error(err)
+		p.log.Errorf("error encoding vote: %s", err)
 		return
 	}
-
-	if err := p.blockTopic.Publish(p.context, buf); err != nil {
+	if err := p.blockTopic.Publish(p.context, buf.Bytes()); err != nil {
 		p.log.Errorf("error publishing block: %s", err)
 	}
 }

@@ -1,7 +1,3 @@
-// Copyright (c) 2017 The btcsuite developers
-// Use of this source code is governed by an ISC
-// license that can be found in the LICENSE file.
-
 package bech32
 
 import (
@@ -9,175 +5,247 @@ import (
 	"strings"
 )
 
+// charset is the sequence of ascii characters that make up the bech32
+// alphabet.  Each character represents a 5-bit squashed byte.
+// q = 0b00000, p = 0b00001, z = 0b00010, and so on.
 const charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
-var gen = []int{0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3}
+// inverseCharset is a mapping of 8-bit ascii characters to the charset
+// positions.  Both uppercase and lowercase ascii are mapped to the 5-bit
+// position values.
+var inverseCharset = [256]int8{
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	15, -1, 10, 17, 21, 20, 26, 30, 7, 5, -1, -1, -1, -1, -1, -1,
+	-1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31, 27, 19, -1,
+	1, 0, 3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1,
+	-1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31, 27, 19, -1,
+	1, 0, 3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1}
 
-// Decode decodes a bech32 encoded string, returning the human-readable
-// part and the data part excluding the checksum.
-func Decode(bech string) (string, []byte, error) {
-	// The maximum allowed length for a bech32 string is 90. It must also
-	// be at least 8 characters, since it needs a non-empty HRP, a
-	// separator, and a 6 character checksum.
-	if len(bech) < 8 || len(bech) > 90 {
-		return "", nil, fmt.Errorf("invalid bech32 string length %d",
-			len(bech))
-	}
-	// Only	ASCII characters between 33 and 126 are allowed.
-	for i := 0; i < len(bech); i++ {
-		if bech[i] < 33 || bech[i] > 126 {
-			return "", nil, fmt.Errorf("invalid character in "+
-				"string: '%c'", bech[i])
+// Bytes8to5 extends a byte slice into a longer, padded byte slice of 5-bit elements
+// where the high 3 bits are all 0.
+func Bytes8to5(input []byte) []byte {
+	// no way to triger an error going from 8 to 5
+	output, _ := ByteSquasher(input, 8, 5)
+	return output
+}
+
+// Bytes5to8 goes from squashed bytes to full height bytes
+func Bytes5to8(input []byte) ([]byte, error) {
+	return ByteSquasher(input, 5, 8)
+}
+
+// ByteSquasher squashes full-width (8-bit) bytes into "squashed" 5-bit bytes,
+// and vice versa.  It can operate on other widths but in this package only
+// goes 5 to 8 and back again.  It can return an error if the squashed input
+// you give it isn't actually squashed, or if there is padding (trailing q characters)
+// when going from 5 to 8
+func ByteSquasher(input []byte, inputWidth, outputWidth uint32) ([]byte, error) {
+	var bitstash, accumulator uint32
+	var output []byte
+	maxOutputValue := uint32((1 << outputWidth) - 1)
+	for i, c := range input {
+		if c>>inputWidth != 0 {
+			return nil, fmt.Errorf("byte %d (%x) high bits set", i, c)
+		}
+		accumulator = (accumulator << inputWidth) | uint32(c)
+		bitstash += inputWidth
+		for bitstash >= outputWidth {
+			bitstash -= outputWidth
+			output = append(output,
+				byte((accumulator>>bitstash)&maxOutputValue))
 		}
 	}
-
-	// The characters must be either all lowercase or all uppercase.
-	lower := strings.ToLower(bech)
-	upper := strings.ToUpper(bech)
-	if bech != lower && bech != upper {
-		return "", nil, fmt.Errorf("string not all lowercase or all " +
-			"uppercase")
-	}
-
-	// We'll work with the lowercase string from now on.
-	bech = lower
-
-	// The string is invalid if the last '1' is non-existent, it is the
-	// first character of the string (no human-readable part) or one of the
-	// last 6 characters of the string (since checksum cannot contain '1'),
-	// or if the string is more than 90 characters in total.
-	one := strings.LastIndexByte(bech, '1')
-	if one < 1 || one+7 > len(bech) {
-		return "", nil, fmt.Errorf("invalid index of 1")
-	}
-
-	// The human-readable part is everything before the last '1'.
-	hrp := bech[:one]
-	data := bech[one+1:]
-
-	// Each character corresponds to the byte with value of the index in
-	// 'charset'.
-	decoded, err := toBytes(data)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed converting data to bytes: "+
-			"%v", err)
-	}
-
-	if !bech32VerifyChecksum(hrp, decoded) {
-		moreInfo := ""
-		checksum := bech[len(bech)-6:]
-		expected, err := toChars(bech32Checksum(hrp,
-			decoded[:len(decoded)-6]))
-		if err == nil {
-			moreInfo = fmt.Sprintf("Expected %v, got %v.",
-				expected, checksum)
+	// pad if going from 8 to 5
+	if inputWidth == 8 && outputWidth == 5 {
+		if bitstash != 0 {
+			output = append(output,
+				byte((accumulator << (outputWidth - bitstash) & maxOutputValue)))
 		}
-		return "", nil, fmt.Errorf("checksum failed. " + moreInfo)
+	} else if bitstash >= inputWidth ||
+		((accumulator<<(outputWidth-bitstash))&maxOutputValue) != 0 {
+		// no pad from 5 to 8 allowed
+		return nil, fmt.Errorf(
+			"invalid padding from %d to %d bits", inputWidth, outputWidth)
 	}
-
-	// We exclude the last 6 bytes, which is the checksum.
-	return hrp, decoded[:len(decoded)-6], nil
+	return output, nil
 }
 
-// Encode encodes a byte slice into a bech32 string with the
-// human-readable part hrb. Note that the bytes must each encode 5 bits
-// (base32).
-func Encode(hrp string, data []byte) (string, error) {
-	// Calculate the checksum of the data and append it at the end.
-	checksum := bech32Checksum(hrp, data)
-	combined := append(data, checksum...)
-
-	// The resulting bech32 string is the concatenation of the hrp, the
-	// separator 1, data and checksum. Everything after the separator is
-	// represented using the specified charset.
-	dataChars, err := toChars(combined)
-	if err != nil {
-		return "", fmt.Errorf("unable to convert data bytes to chars: "+
-			"%v", err)
-	}
-	return hrp + "1" + dataChars, nil
-}
-
-// toBytes converts each character in the string 'chars' to the value of the
-// index of the correspoding character in 'charset'.
-func toBytes(chars string) ([]byte, error) {
-	decoded := make([]byte, 0, len(chars))
-	for i := 0; i < len(chars); i++ {
-		index := strings.IndexByte(charset, chars[i])
-		if index < 0 {
-			return nil, fmt.Errorf("invalid character not part of "+
-				"charset: %v", chars[i])
+// SquashedBytesToString swaps 5-bit bytes with a string of the corresponding letters
+func SquashedBytesToString(input []byte) (string, error) {
+	var s string
+	for i, c := range input {
+		if c&0xe0 != 0 {
+			return "", fmt.Errorf("high bits set at position %d: %x", i, c)
 		}
-		decoded = append(decoded, byte(index))
+		s += string(charset[c])
 	}
-	return decoded, nil
+	return s, nil
 }
 
-// toChars converts the byte slice 'data' to a string where each byte in 'data'
-// encodes the index of a character in 'charset'.
-func toChars(data []byte) (string, error) {
-	result := make([]byte, 0, len(data))
-	for _, b := range data {
-		if int(b) >= len(charset) {
-			return "", fmt.Errorf("invalid data byte: %v", b)
+// StringToSquashedBytes uses the inverseCharset to switch from the characters
+// back to 5-bit squashed bytes.
+func StringToSquashedBytes(input string) ([]byte, error) {
+	b := make([]byte, len(input))
+	for i, c := range input {
+		if inverseCharset[c] == -1 {
+			return nil, fmt.Errorf("contains invalid character %s", string(c))
 		}
-		result = append(result, charset[b])
+		b[i] = byte(inverseCharset[c])
 	}
-	return string(result), nil
+	return b, nil
 }
 
-// For more details on the checksum calculation, please refer to BIP 173.
-func bech32Checksum(hrp string, data []byte) []byte {
-	// Convert the bytes to list of integers, as this is needed for the
-	// checksum calculation.
-	integers := make([]int, len(data))
-	for i, b := range data {
-		integers[i] = int(b)
-	}
-	values := append(bech32HrpExpand(hrp), integers...)
-	values = append(values, []int{0, 0, 0, 0, 0, 0}...)
-	polymod := bech32Polymod(values) ^ 1
-	var res []byte
-	for i := 0; i < 6; i++ {
-		res = append(res, byte((polymod>>uint(5*(5-i)))&31))
-	}
-	return res
-}
+// PolyMod takes a byte slice and returns the 32-bit BCH checksum.
+// Note that the input bytes to PolyMod need to be squashed to 5-bits tall
+// before being used in this function.  And this function will not error,
+// but instead return an unusable checksum, if you give it full-height bytes.
+func PolyMod(values []byte) uint32 {
 
-// For more details on the polymod calculation, please refer to BIP 173.
-func bech32Polymod(values []int) int {
-	chk := 1
+	// magic generator uint32s
+	gen := []uint32{
+		0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3,
+	}
+
+	// start with 1
+	chk := uint32(1)
+
 	for _, v := range values {
-		b := chk >> 25
-		chk = (chk&0x1ffffff)<<5 ^ v
-		for i := 0; i < 5; i++ {
-			if (b>>uint(i))&1 == 1 {
-				chk ^= gen[i]
+		top := chk >> 25
+		chk = (chk&0x1ffffff)<<5 ^ uint32(v)
+		for i, g := range gen {
+			if (top>>uint8(i))&1 == 1 {
+				chk ^= g
 			}
 		}
 	}
+
 	return chk
 }
 
-// For more details on HRP expansion, please refer to BIP 173.
-func bech32HrpExpand(hrp string) []int {
-	v := make([]int, 0, len(hrp)*2+1)
-	for i := 0; i < len(hrp); i++ {
-		v = append(v, int(hrp[i]>>5))
+// HRPExpand turns the human redable part into 5bit-bytes for later processing
+func HRPExpand(input string) []byte {
+	output := make([]byte, (len(input)*2)+1)
+
+	// first half is the input string shifted down 5 bits.
+	// not much is going on there in terms of data / entropy
+	for i, c := range input {
+		output[i] = uint8(c) >> 5
 	}
-	v = append(v, 0)
-	for i := 0; i < len(hrp); i++ {
-		v = append(v, int(hrp[i]&31))
+	// then there's a 0 byte separator
+	// don't need to set 0 byte in the middle, as it starts out that way
+
+	// second half is the input string, with the top 3 bits zeroed.
+	// most of the data / entropy will live here.
+	for i, c := range input {
+		output[i+len(input)+1] = uint8(c) & 0x1f
 	}
-	return v
+	return output
 }
 
-// For more details on the checksum verification, please refer to BIP 173.
-func bech32VerifyChecksum(hrp string, data []byte) bool {
-	integers := make([]int, len(data))
-	for i, b := range data {
-		integers[i] = int(b)
+// create checksum makes a 6-shortbyte checksum from the HRP and data parts
+func CreateChecksum(hrp string, data []byte) []byte {
+	values := append(HRPExpand(hrp), data...)
+	// put 6 zero bytes on at the end
+	values = append(values, make([]byte, 6)...)
+	//get checksum for whole slice
+
+	// flip the LSB of the checksum data after creating it
+	checksum := PolyMod(values) ^ 1
+
+	for i := 0; i < 6; i++ {
+		// note that this is NOT the same as converting 8 to 5
+		// this is it's own expansion to 6 bytes from 4, chopping
+		// off the MSBs.
+		values[(len(values)-6)+i] = byte(checksum>>(5*(5-uint32(i)))) & 0x1f
 	}
-	concat := append(bech32HrpExpand(hrp), integers...)
-	return bech32Polymod(concat) == 1
+
+	return values[len(values)-6:]
+}
+
+func VerifyChecksum(hrp string, data []byte) bool {
+	values := append(HRPExpand(hrp), data...)
+	checksum := PolyMod(values)
+	// make sure it's 1 (from the LSB flip in CreateChecksum
+	return checksum == 1
+}
+
+// Encode takes regular bytes of data, and an hrp prefix, and returns the
+// bech32 encoded string.
+func Encode(hrp string, data []byte) string {
+	fiveData := Bytes8to5(data)
+	return EncodeSquashed(hrp, fiveData)
+}
+
+// EncodeSquashed takes the hrp prefix, as well as byte data that has already
+// been squashed to 5-bits high, and returns the bech32 encoded string.
+// It does not return an error; if you give it non-squashed data it will return
+// an empty string.
+func EncodeSquashed(hrp string, data []byte) string {
+	combined := append(data, CreateChecksum(hrp, data)...)
+
+	// Should be squashed, return empty string if it's not.
+	dataString, err := SquashedBytesToString(combined)
+	if err != nil {
+		return ""
+	}
+	return hrp + "1" + dataString
+}
+
+// Decode takes a bech32 encoded string and returns the hrp and the full-height
+// data.  Can error out for various reasons, mostly problems in the string given.
+func Decode(adr string) (string, []byte, error) {
+	hrp, squashedData, err := DecodeSquashed(adr)
+	if err != nil {
+		return hrp, nil, err
+	}
+	data, err := Bytes5to8(squashedData)
+	if err != nil {
+		return hrp, nil, err
+	}
+	return hrp, data, nil
+}
+
+// DecodeSquashed is the same as Decode, but will return squashed 5-bit high
+// data.
+func DecodeSquashed(adr string) (string, []byte, error) {
+
+	// make an all lowercase and all uppercase version of the input string
+	lowAdr := strings.ToLower(adr)
+	highAdr := strings.ToUpper(adr)
+
+	// if there's mixed case, that's not OK
+	if adr != lowAdr && adr != highAdr {
+		return "", nil, fmt.Errorf("mixed case address")
+	}
+
+	// default to lowercase
+	adr = lowAdr
+
+	// find the last "1" and split there
+	splitLoc := strings.LastIndex(adr, "1")
+	if splitLoc == -1 {
+		return "", nil, fmt.Errorf("1 separator not present in address")
+	}
+
+	// hrp comes before the split
+	hrp := adr[0:splitLoc]
+
+	// get squashed data
+	data, err := StringToSquashedBytes(adr[splitLoc+1:])
+	if err != nil {
+		return hrp, nil, err
+	}
+
+	// make sure checksum works
+	sumOK := VerifyChecksum(hrp, data)
+	if !sumOK {
+		return hrp, nil, fmt.Errorf("Checksum invalid")
+	}
+
+	// chop off checksum to return only payload
+	data = data[:len(data)-6]
+
+	return hrp, data, nil
 }

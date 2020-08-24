@@ -49,6 +49,7 @@ type wallet struct {
 	params        *params.ChainParams
 	log           logger.Logger
 	chain         chain.Blockchain
+	hostnode      hostnode.HostNode
 	txTopic       *pubsub.Topic
 	mempool       mempool.CoinsMempool
 	actionMempool mempool.ActionMempool
@@ -96,6 +97,7 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 		open:          false,
 		chain:         ch,
 		txTopic:       txTopic,
+		hostnode:      hostnode,
 		depositTopic:  depositTopic,
 		exitTopic:     exitTopic,
 		mempool:       mempool,
@@ -129,10 +131,7 @@ func (w *wallet) NewWallet(name string, priv bls_interface.SecretKey, password s
 	w.priv = secret
 	w.open = true
 	w.pub = secret.PublicKey()
-	w.account, err = w.pub.ToAccount()
-	if err != nil {
-		return err
-	}
+	w.account = w.pub.ToAccount()
 	w.accountRaw, err = w.pub.Hash()
 	if err != nil {
 		return err
@@ -161,10 +160,7 @@ func (w *wallet) OpenWallet(name string, password string) error {
 	}
 	w.priv = secret
 	w.pub = secret.PublicKey()
-	w.account, err = w.pub.ToAccount()
-	if err != nil {
-		return err
-	}
+	w.account = w.pub.ToAccount()
 	w.accountRaw, err = w.pub.Hash()
 	if err != nil {
 		return err
