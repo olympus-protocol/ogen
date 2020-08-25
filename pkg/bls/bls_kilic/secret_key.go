@@ -1,41 +1,36 @@
-package bls_blst
+package bls_kilic
 
 import (
-	"errors"
+	"crypto/rand"
+	bls12 "github.com/kilic/bls12-381"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-	blst "github.com/supranational/blst/bindings/go"
+	"math/big"
 )
 
 // bls12SecretKey used in the BLS signature scheme.
 type bls12SecretKey struct {
-	p *blst.SecretKey
+	p *big.Int
 }
 
 // RandKey creates a new private key using a random method provided as an io.Reader.
-func (b BlstImplementation) RandKey() bls_interface.SecretKey {
-	// Generate 32 bytes of randomness
-	var ikm [32]byte
-	_, err := bls_interface.NewGenerator().Read(ikm[:])
-	if err != nil {
-		return nil
-	}
-	return &bls12SecretKey{blst.KeyGen(ikm[:])}
+func (b KilicImplementation) RandKey() bls_interface.SecretKey {
+	k, _ := rand.Int(rand.Reader, bls_interface.RFieldModulus)
+	return &bls12SecretKey{p: k}
 }
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
-func (b BlstImplementation) SecretKeyFromBytes(privKey []byte) (bls_interface.SecretKey, error) {
-	secKey := new(blst.SecretKey).Deserialize(privKey)
-	if secKey == nil {
-		return nil, errors.New("could not unmarshal bytes into secret key")
-	}
-
-	return &bls12SecretKey{p: secKey}, nil
+func (b KilicImplementation) SecretKeyFromBytes(privKey []byte) (bls_interface.SecretKey, error) {
+	// TODO make sure point is valid on curve
+	p := new(big.Int)
+	p.SetBytes(privKey)
+	return &bls12SecretKey{p: p}, nil
 }
 
 // PublicKey obtains the public key corresponding to the BLS secret key.
 func (s *bls12SecretKey) PublicKey() bls_interface.PublicKey {
-	return &PublicKey{p: new(blstPublicKey).From(s.p)}
+	p := &bls12.PointG1{}
+	return &PublicKey{p: bls12.NewG1().MulScalar(p, &bls12.G1One, s.p)}
 }
 
 // Sign a message using a secret key - in a beacon/validator client.
@@ -47,14 +42,15 @@ func (s *bls12SecretKey) PublicKey() bls_interface.PublicKey {
 // In ETH2.0 specification:
 // def Sign(SK: int, message: Bytes) -> BLSSignature
 func (s *bls12SecretKey) Sign(msg []byte) bls_interface.Signature {
-	signature := new(blstSignature).Sign(s.p, msg, dst)
-	return &Signature{s: signature}
+	g2 := bls12.NewG2()
+	p, _ := g2.HashToCurve(msg, dst)
+	g2.MulScalar(p, p, s.p)
+	return &Signature{s: p}
 }
 
 // Marshal a secret key into a LittleEndian byte slice.
 func (s *bls12SecretKey) Marshal() []byte {
-	keyBytes := s.p.Serialize()
-	return keyBytes
+	return s.p.Bytes()
 }
 
 // ToWIF converts the private key to a Bech32 encoded string.

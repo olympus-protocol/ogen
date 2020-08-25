@@ -2,7 +2,6 @@ package bls_herumi_test
 
 import (
 	"bytes"
-	"github.com/olympus-protocol/ogen/pkg/bls/bls_blst"
 	"github.com/olympus-protocol/ogen/pkg/bls/bls_herumi"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func TestAggregateSignatures(t *testing.T) {
 }
 
 func TestVerifyAggregate(t *testing.T) {
-	impl := bls_blst.BlstImplementation{}
+	impl := bls_herumi.HerumiImplementation{}
 
 	s0 := impl.RandKey()
 	s1 := impl.RandKey()
@@ -83,7 +82,7 @@ func TestVerifyAggregate(t *testing.T) {
 }
 
 func TestSerializeDeserializeSignature(t *testing.T) {
-	impl := bls_blst.BlstImplementation{}
+	impl := bls_herumi.HerumiImplementation{}
 
 	k := impl.RandKey()
 	p := k.PublicKey()

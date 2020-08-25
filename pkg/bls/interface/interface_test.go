@@ -1,8 +1,8 @@
 package bls_interface_test
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls/bls_blst"
 	"github.com/olympus-protocol/ogen/pkg/bls/bls_herumi"
+	"github.com/olympus-protocol/ogen/pkg/bls/bls_kilic"
 	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
@@ -63,8 +63,8 @@ func TestHerumi(t *testing.T) {
 	}
 }
 
-func TestBlst(t *testing.T) {
-	impl := bls_blst.BlstImplementation{}
+func TestKilic(t *testing.T) {
+	impl := bls_kilic.KilicImplementation{}
 
 	for _, pair := range testVectors.Pairs {
 		k, err := impl.SecretKeyFromBytes(pair.Private)

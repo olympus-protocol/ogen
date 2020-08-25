@@ -26,7 +26,7 @@ func (c *RPCClient) listWallets() (string, error) {
 func (c *RPCClient) createWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if len(args) < 1 {
+	if len(args) < 2 {
 		return "", errors.New("Usage: createwallet <name> <password>")
 	}
 	res, err := c.wallet.CreateWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
