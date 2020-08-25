@@ -34,12 +34,12 @@ func BenchmarkSignature_AggregateVerify(b *testing.B) {
 		sigs = append(sigs, sig)
 		msgs = append(msgs, msg)
 	}
-	//aggregated := impl.AggregateSignatures(sigs)
+	aggregated := impl.AggregateSignatures(sigs)
 
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		//	require.Equal(b, true, aggregated.AggregateVerify(pks, msgs))
+		require.Equal(b, true, aggregated.AggregateVerify(pks, msgs))
 	}
 }
 

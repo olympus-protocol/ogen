@@ -1,32 +1,18 @@
 package bls_kilic
 
 import (
-	"fmt"
 	bls12 "github.com/kilic/bls12-381"
 	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 )
 
-//
-//import (
-//	"errors"
-//	bls12 "github.com/kilic/bls12-381"
-//	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-//	blst "github.com/supranational/blst/bindings/go"
-//)
-//
 var dst = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_")
 
-//
-//const scalarBytes = 32
-//const randBitsEntropy = 64
-//
 // Signature used in the BLS signature scheme.
 type Signature struct {
 	s *bls12.PointG2
 }
 
-//
-//// SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
+// SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
 func (b KilicImplementation) SignatureFromBytes(sig []byte) (bls_interface.Signature, error) {
 	p, err := bls12.NewG2().FromCompressed(sig)
 	if err != nil {
@@ -46,16 +32,13 @@ func (b KilicImplementation) SignatureFromBytes(sig []byte) (bls_interface.Signa
 // def Verify(PK: BLSPubkey, message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) Verify(pubKey bls_interface.PublicKey, msg []byte) bool {
 	e := bls12.NewEngine()
-	g2 := bls12.NewG2()
-	ps, err := g2.HashToCurve(msg, dst)
-	if err != nil {
-		fmt.Println(err)
-	}
-	sigWithHash := &bls12.PointG2{}
-	g2.Add(sigWithHash, ps, s.s)
-	e.AddPairInv(pubKey.(*PublicKey).p, sigWithHash)
-	res := e.Result()
-	return res.IsOne()
+	// TODO handle error
+	ps, _ := bls12.NewG2().HashToCurve(msg, dst)
+	g1Neg := &bls12.PointG1{}
+	bls12.NewG1().Neg(g1Neg, &bls12.G1One)
+	e.AddPair(g1Neg, s.s)
+	e.AddPair(pubKey.(*PublicKey).p, ps)
+	return e.Check()
 }
 
 // AggregateVerify verifies each public key against its respective message.
@@ -72,21 +55,23 @@ func (s *Signature) Verify(pubKey bls_interface.PublicKey, msg []byte) bool {
 // In ETH2.0 specification:
 // def AggregateVerify(pairs: Sequence[PK: BLSPubkey, message: Bytes], signature: BLSSignature) -> boo
 func (s *Signature) AggregateVerify(pubKeys []bls_interface.PublicKey, msgs [][32]byte) bool {
-	//size := len(pubKeys)
-	//if size == 0 {
-	//	return false
-	//}
-	//if size != len(msgs) {
-	//	return false
-	//}
-	//msgSlices := make([][]byte, len(msgs))
-	//rawKeys := make([]*blstPublicKey, len(msgs))
-	//for i := 0; i < size; i++ {
-	//	msgSlices[i] = msgs[i][:]
-	//	rawKeys[i] = pubKeys[i].(*PublicKey).p
-	//}
-	//return s.s.AggregateVerify(rawKeys, msgSlices, dst)
-	return false
+	size := len(pubKeys)
+	if size == 0 {
+		return false
+	}
+	if size != len(msgs) {
+		return false
+	}
+	e := bls12.NewEngine()
+	g1Neg := &bls12.PointG1{}
+	bls12.NewG1().Neg(g1Neg, &bls12.G1One)
+	e.AddPair(g1Neg, s.s)
+	for i := 0; i < size; i++ {
+		// TODO handle error
+		ps, _ := bls12.NewG2().HashToCurve(msgs[i][:], dst)
+		e.AddPair(pubKeys[i].(*PublicKey).p, ps)
+	}
+	return e.Check()
 }
 
 // FastAggregateVerify verifies all the provided public keys with their aggregated signature.
@@ -100,93 +85,57 @@ func (s *Signature) AggregateVerify(pubKeys []bls_interface.PublicKey, msgs [][3
 // In ETH2.0 specification:
 // def FastAggregateVerify(PKs: Sequence[BLSPubkey], message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) FastAggregateVerify(pubKeys []bls_interface.PublicKey, msg [32]byte) bool {
-	//if len(pubKeys) == 0 {
-	//	return false
-	//}
-	//rawKeys := make([]*blstPublicKey, len(pubKeys))
-	//for i := 0; i < len(pubKeys); i++ {
-	//	rawKeys[i] = pubKeys[i].(*PublicKey).p
-	//}
-	//
-	//return s.s.FastAggregateVerify(rawKeys, msg[:], dst)
-	return false
+	size := len(pubKeys)
+	if size == 0 {
+		return false
+	}
+	e := bls12.NewEngine()
+	g1Neg := &bls12.PointG1{}
+	// TODO handle error
+	ps, _ := bls12.NewG2().HashToCurve(msg[:], dst)
+	bls12.NewG1().Neg(g1Neg, &bls12.G1One)
+	e.AddPair(g1Neg, s.s)
+	for i := 0; i < size; i++ {
+		e.AddPair(pubKeys[i].(*PublicKey).p, ps)
+	}
+	return e.Check()
 }
 
+// NewAggregateSignature creates a blank aggregate signature.
+func (b KilicImplementation) NewAggregateSignature() bls_interface.Signature {
+	// TODO handle error
+	p, _ := bls12.NewG2().HashToCurve([]byte{'m', 'o', 'c', 'k'}, dst)
+	return &Signature{s: p}
+}
+
+// AggregateSignatures converts a list of signatures into a single, aggregated sig.
+func (b KilicImplementation) AggregateSignatures(sigs []bls_interface.Signature) bls_interface.Signature {
+	if len(sigs) == 0 {
+		return nil
+	}
+	g2 := bls12.NewG2()
+	sig := &bls12.PointG2{}
+	for i := 0; i < len(sigs); i++ {
+		g2.Add(sig, sig, sigs[i].(*Signature).s)
+	}
+	return &Signature{s: sig}
+}
+
+// Aggregate is an alias for AggregateSignatures, defined to conform to BLS specification.
 //
-//// NewAggregateSignature creates a blank aggregate signature.
-//func (b KilicImplementation) NewAggregateSignature() bls_interface.Signature {
-//	sig := blst.HashToG2([]byte{'m', 'o', 'c', 'k'}, dst).ToAffine()
-//	return &Signature{s: sig}
-//}
+// In IETF draft BLS specification:
+// Aggregate(signature_1, ..., signature_n) -> signature: an
+//      aggregation algorithm that compresses a collection of signatures
+//      into a single signature.
 //
-//// AggregateSignatures converts a list of signatures into a single, aggregated sig.
-//func (b KilicImplementation) AggregateSignatures(sigs []bls_interface.Signature) bls_interface.Signature {
-//	if len(sigs) == 0 {
-//		return nil
-//	}
-//	rawSigs := make([]*blstSignature, len(sigs))
-//	for i := 0; i < len(sigs); i++ {
-//		rawSigs[i] = sigs[i].(*Signature).s
-//	}
+// In ETH2.0 specification:
+// def Aggregate(signatures: Sequence[BLSSignature]) -> BLSSignature
 //
-//	signature := new(blstAggregateSignature).Aggregate(rawSigs)
-//	if signature == nil {
-//		return nil
-//	}
-//	return &Signature{s: signature.ToAffine()}
-//}
-//
-//// Aggregate is an alias for AggregateSignatures, defined to conform to BLS specification.
-////
-//// In IETF draft BLS specification:
-//// Aggregate(signature_1, ..., signature_n) -> signature: an
-////      aggregation algorithm that compresses a collection of signatures
-////      into a single signature.
-////
-//// In ETH2.0 specification:
-//// def Aggregate(signatures: Sequence[BLSSignature]) -> BLSSignature
-////
-//// Deprecated: Use AggregateSignatures.
-//func (b KilicImplementation) Aggregate(sigs []bls_interface.Signature) bls_interface.Signature {
-//	return b.AggregateSignatures(sigs)
-//}
-//
-//// VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
-//// This method provides a safe way to verify multiple signatures at once. We pick a number randomly from 1 to max
-//// uint64 and then multiply the signature by it. We continue doing this for all signatures and its respective pubkeys.
-//// S* = S_1 * r_1 + S_2 * r_2 + ... + S_n * r_n
-//// P'_{i,j} = P_{i,j} * r_i
-//// e(S*, G) = \prod_{i=1}^n \prod_{j=1}^{m_i} e(P'_{i,j}, M_{i,j})
-//// Using this we can verify multiple signatures safely.
-//func (b KilicImplementation) VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []bls_interface.PublicKey) (bool, error) {
-//	if len(sigs) == 0 || len(pubKeys) == 0 {
-//		return false, nil
-//	}
-//	rawSigs := new(blst.P2Affine).BatchUncompress(sigs)
-//
-//	length := len(sigs)
-//	if length != len(pubKeys) || length != len(msgs) {
-//		return false, errors.New("provided signatures, pubkeys and messages have differing lengths")
-//	}
-//	mulP1Aff := make([]*blst.P1Affine, length)
-//	rawMsgs := make([]blst.Message, length)
-//
-//	for i := 0; i < length; i++ {
-//		mulP1Aff[i] = pubKeys[i].(*PublicKey).p
-//		rawMsgs[i] = msgs[i][:]
-//	}
-//	// Secure source of RNG
-//	randGen := bls_interface.NewGenerator()
-//
-//	randFunc := func(scalar *blst.Scalar) {
-//		var rbytes [scalarBytes]byte
-//		randGen.Read(rbytes[:])
-//		scalar.FromBEndian(rbytes[:])
-//	}
-//	dummySig := new(blst.P2Affine)
-//	return dummySig.MultipleAggregateVerify(rawSigs, mulP1Aff, rawMsgs, dst, randFunc, randBitsEntropy), nil
-//}
-//
+// Deprecated: Use AggregateSignatures.
+func (b KilicImplementation) Aggregate(sigs []bls_interface.Signature) bls_interface.Signature {
+	return b.AggregateSignatures(sigs)
+}
+
 // Marshal a signature into a LittleEndian byte slice.
 func (s *Signature) Marshal() []byte {
 	return bls12.NewG2().ToCompressed(s.s)
@@ -198,9 +147,3 @@ func (s *Signature) Copy() bls_interface.Signature {
 	p.Set(s.s)
 	return &Signature{s: p}
 }
-
-//// VerifyCompressed verifies that the compressed signature and pubkey
-//// are valid from the message provided.
-//func VerifyCompressed(signature []byte, pub []byte, msg []byte) bool {
-//	return new(blstSignature).VerifyCompressed(signature, pub, msg, dst)
-//}

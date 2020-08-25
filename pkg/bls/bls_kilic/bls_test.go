@@ -3,6 +3,7 @@ package bls_kilic_test
 import (
 	"bytes"
 	"github.com/olympus-protocol/ogen/pkg/bls/bls_kilic"
+	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -27,56 +28,56 @@ func TestBasicSignature(t *testing.T) {
 }
 
 func TestAggregateSignatures(t *testing.T) {
-	//s0 := impl.RandKey()
-	//s1 := impl.RandKey()
-	//s2 := impl.RandKey()
+	s0 := impl.RandKey()
+	s1 := impl.RandKey()
+	s2 := impl.RandKey()
 
-	//p0 := s0.PublicKey()
-	//p1 := s1.PublicKey()
-	//p2 := s2.PublicKey()
+	p0 := s0.PublicKey()
+	p1 := s1.PublicKey()
+	p2 := s2.PublicKey()
 
-	//msg := chainhash.HashH([]byte("test!"))
+	msg := chainhash.HashH([]byte("test!"))
 
-	//sig0 := s0.Sign(msg[:])
-	//sig1 := s1.Sign(msg[:])
-	//sig2 := s2.Sign(msg[:])
+	sig0 := s0.Sign(msg[:])
+	sig1 := s1.Sign(msg[:])
+	sig2 := s2.Sign(msg[:])
 
-	//aggregateSig := impl.AggregateSignatures([]bls_interface.Signature{sig0, sig1, sig2})
+	aggregateSig := impl.AggregateSignatures([]bls_interface.Signature{sig0, sig1, sig2})
 
-	//valid := aggregateSig.FastAggregateVerify([]bls_interface.PublicKey{p0, p1, p2}, msg)
+	valid := aggregateSig.FastAggregateVerify([]bls_interface.PublicKey{p0, p1, p2}, msg)
 
-	//assert.True(t, valid)
+	assert.True(t, valid)
 
 }
 
 func TestVerifyAggregate(t *testing.T) {
 
-	//s0 := impl.RandKey()
-	//s1 := impl.RandKey()
-	//s2 := impl.RandKey()
+	s0 := impl.RandKey()
+	s1 := impl.RandKey()
+	s2 := impl.RandKey()
 
-	//p0 := s0.PublicKey()
-	//p1 := s1.PublicKey()
-	//p2 := s2.PublicKey()
+	p0 := s0.PublicKey()
+	p1 := s1.PublicKey()
+	p2 := s2.PublicKey()
 
-	//msg0 := [32]byte{0x1}
-	//msg1 := [32]byte{0x2}
-	//msg2 := [32]byte{0x3}
+	msg0 := [32]byte{0x1}
+	msg1 := [32]byte{0x2}
+	msg2 := [32]byte{0x3}
 
-	//sig0 := s0.Sign(msg0[:])
+	sig0 := s0.Sign(msg0[:])
 
-	//sig1 := s1.Sign(msg1[:])
+	sig1 := s1.Sign(msg1[:])
 
-	//sig2 := s2.Sign(msg2[:])
+	sig2 := s2.Sign(msg2[:])
 
-	//var sigs [][]byte
-	//sigs = append(sigs, sig0.Marshal())
-	//sigs = append(sigs, sig1.Marshal())
-	//sigs = append(sigs, sig2.Marshal())
+	var sigs [][]byte
+	sigs = append(sigs, sig0.Marshal())
+	sigs = append(sigs, sig1.Marshal())
+	sigs = append(sigs, sig2.Marshal())
 
-	//valid, err := impl.VerifyMultipleSignatures(sigs, [][32]byte{msg0, msg1, msg2}, []bls_interface.PublicKey{p0, p1, p2})
-	//assert.NoError(t, err)
-	//assert.True(t, valid)
+	valid, err := impl.VerifyMultipleSignatures(sigs, [][32]byte{msg0, msg1, msg2}, []bls_interface.PublicKey{p0, p1, p2})
+	assert.NoError(t, err)
+	assert.True(t, valid)
 }
 
 func TestSerializeDeserializeSignature(t *testing.T) {
