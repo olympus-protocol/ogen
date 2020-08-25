@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 
-	//"encoding/hex"
-	"fmt"
 	"github.com/golang/mock/gomock"
 	fuzz "github.com/google/gofuzz"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
@@ -47,15 +45,16 @@ var param = &testdata.TestParams
 // init params used on the test
 var stateParams state.InitializationParameters
 
+//bc hold the initialized blockchain
+var bc chain.Blockchain
+
 func init() {
 	f := fuzz.New().NilChance(0)
 	f.Fuzz(&genesisHash)
 	priv := testdata.PremineAddr
 
 	addrByte, _ := priv.PublicKey().Hash()
-	addr, err := testdata.PremineAddr.PublicKey().ToAccount()
-	fmt.Println(addr)
-	fmt.Println(err)
+	addr := testdata.PremineAddr.PublicKey().ToAccount()
 
 	for i := 0; i < 100; i++ {
 		if i < 50 {
@@ -90,9 +89,6 @@ func init() {
 	stateParams.InitialValidators = []state.ValidatorInitialization{}
 	// Convert the validators to initialization params.
 	for _, vk := range validatorKeys1 {
-		/*pub, err := bech32.Encode(testdata.TestParams.AccountPrefixes.Public, vk.PublicKey().Marshal())
-		fmt.Println(pub)
-		fmt.Println(err)*/
 		val := state.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
@@ -106,13 +102,20 @@ func TestBlockchain_New(t *testing.T) {
 	//f := fuzz.New().NilChance(0)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
+	log.EXPECT().Info(gomock.Any()).AnyTimes()
 	db := blockdb.NewMockBlockDB(ctrl)
+	db.EXPECT().Update(gomock.Any()).Times(4)
 	var c chain.Config
 	c.Log = log
 	c.Datadir = testdata.Conf.DataFolder
-	fmt.Println(len(stateParams.InitialValidators))
-	bc, err := chain.NewBlockchain(c, *param, db, stateParams)
+	var err error
+	bc, err = chain.NewBlockchain(c, *param, db, stateParams)
 	assert.NoError(t, err)
-	fmt.Println(bc)
+	assert.NotNil(t, bc)
+	err = bc.Start()
+	assert.NoError(t, err)
+}
+
+func TestBLockchain_Start(t *testing.T) {
 
 }
