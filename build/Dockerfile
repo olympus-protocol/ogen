@@ -22,18 +22,6 @@ RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     ln -s /opt/go/bin/go /usr/bin/ && \
     export GOPATH=/root/go
 
-COPY ./build/clang_cross.sh ./
-COPY ./build/osxcross.sh ./
-
-RUN ./clang_cross.sh
-RUN ./osxcross.sh
-
-## osxcross path and lib symlink
-ENV PATH="/usr/x86_64-apple-darwin/osxcross/bin/:${PATH}"
-RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so /usr/lib/libtapi.so
-RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6 /usr/lib/libtapi.so.6
-RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6.0.1 /usr/lib/libtapi.so.6.0.1    
-
 COPY .. /build/ogen
 
 RUN cd ogen && go mod download
