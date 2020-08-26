@@ -34,10 +34,9 @@ var generateWalletCmd = &cobra.Command{
 		default:
 			net = &params.Mainnet
 		}
-		err = bls.Initialize(*net, "kilic")
-		if err != nil {
-			panic(err)
-		}
+
+		bls.Initialize(*net)
+
 		w, err := wallet.NewWallet(context.Background(), nil, DataFolder, net, nil, nil, nil, nil)
 		if err != nil {
 			panic(err)

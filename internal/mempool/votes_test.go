@@ -15,7 +15,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -31,8 +30,8 @@ var ctx = context.Background()
 var mockNet = mocknet.New(ctx)
 
 // validatorKeys is a slice of signatures that match the validators index
-var validatorKeys1 []bls_interface.SecretKey
-var validatorKeys2 []bls_interface.SecretKey
+var validatorKeys1 []*bls.SecretKey
+var validatorKeys2 []*bls.SecretKey
 
 // validators are the initial validators on the realState
 var validators1 []*primitives.Validator
@@ -57,8 +56,8 @@ func init() {
 
 	for i := 0; i < 100; i++ {
 		if i < 50 {
-			key := bls.CurrImplementation.RandKey()
-			validatorKeys1 = append(validatorKeys1, bls.CurrImplementation.RandKey())
+			key := bls.RandKey()
+			validatorKeys1 = append(validatorKeys1, bls.RandKey())
 			val := &primitives.Validator{
 				Balance:          100 * 1e8,
 				PayeeAddress:     [20]byte{},
@@ -69,8 +68,8 @@ func init() {
 			copy(val.PubKey[:], key.PublicKey().Marshal())
 			validators1 = append(validators1, val)
 		} else {
-			key := bls.CurrImplementation.RandKey()
-			validatorKeys2 = append(validatorKeys2, bls.CurrImplementation.RandKey())
+			key := bls.RandKey()
+			validatorKeys2 = append(validatorKeys2, bls.RandKey())
 			val := &primitives.Validator{
 				Balance:          100 * 1e8,
 				PayeeAddress:     [20]byte{},
@@ -136,9 +135,9 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	bfS1att2 := bitfield.NewBitlist(uint64(len(slot1Commiters)))
 	bfS1Aggr := bitfield.NewBitlist(uint64(len(slot1Commiters)))
 
-	var sigsS1Att1 []bls_interface.Signature
-	var sigsS1Att2 []bls_interface.Signature
-	var sigsS1Aggr []bls_interface.Signature
+	var sigsS1Att1 []*bls.Signature
+	var sigsS1Att2 []*bls.Signature
+	var sigsS1Aggr []*bls.Signature
 
 	for i, val := range slot1Commiters {
 		bfS1Aggr.Set(uint(i))
@@ -170,9 +169,9 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	var SigS1Att2 [96]byte
 	var SigS1Aggr [96]byte
 
-	sigS1Att1 := bls.CurrImplementation.AggregateSignatures(sigsS1Att1)
-	sigS1Att2 := bls.CurrImplementation.AggregateSignatures(sigsS1Att2)
-	sigS1Aggr := bls.CurrImplementation.AggregateSignatures(sigsS1Aggr)
+	sigS1Att1 := bls.AggregateSignatures(sigsS1Att1)
+	sigS1Att2 := bls.AggregateSignatures(sigsS1Att2)
+	sigS1Aggr := bls.AggregateSignatures(sigsS1Aggr)
 
 	copy(SigS1Att1[:], sigS1Att1.Marshal())
 	copy(SigS1Att2[:], sigS1Att2.Marshal())
@@ -234,9 +233,9 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	bfs2att2 := bitfield.NewBitlist(uint64(len(slot1Commiters)))
 	bfs2aggr := bitfield.NewBitlist(uint64(len(slot1Commiters)))
 
-	var sigsS2Att1 []bls_interface.Signature
-	var sigsS2Att2 []bls_interface.Signature
-	var sigsS2Aggr []bls_interface.Signature
+	var sigsS2Att1 []*bls.Signature
+	var sigsS2Att2 []*bls.Signature
+	var sigsS2Aggr []*bls.Signature
 
 	for i, val := range slot2Commiters {
 		bfs2aggr.Set(uint(i))
@@ -268,9 +267,9 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	var SigS2Att2 [96]byte
 	var SigS2Aggr [96]byte
 
-	sigS2Att1 := bls.CurrImplementation.AggregateSignatures(sigsS2Att1)
-	sigS2Att2 := bls.CurrImplementation.AggregateSignatures(sigsS2Att2)
-	sigS2Aggr := bls.CurrImplementation.AggregateSignatures(sigsS2Aggr)
+	sigS2Att1 := bls.AggregateSignatures(sigsS2Att1)
+	sigS2Att2 := bls.AggregateSignatures(sigsS2Att2)
+	sigS2Aggr := bls.AggregateSignatures(sigsS2Aggr)
 
 	copy(SigS2Att1[:], sigS2Att1.Marshal())
 	copy(SigS2Att2[:], sigS2Att2.Marshal())

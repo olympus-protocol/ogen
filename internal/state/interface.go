@@ -2,7 +2,7 @@ package state
 
 import (
 	"github.com/olympus-protocol/ogen/internal/logger"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -40,7 +40,7 @@ type State interface {
 	ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams) error
 	IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainParams) error
 	ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error
-	GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (bls_interface.PublicKey, error)
+	GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error)
 	CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error
 	ProcessBlock(b *primitives.Block, p *params.ChainParams) error
 	ToSerializable() *SerializableState

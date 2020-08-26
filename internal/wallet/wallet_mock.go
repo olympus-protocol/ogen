@@ -6,7 +6,7 @@ package wallet
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
@@ -36,7 +36,7 @@ func (m *MockWallet) EXPECT() *MockWalletMockRecorder {
 }
 
 // NewWallet mocks base method
-func (m *MockWallet) NewWallet(name string, priv bls_interface.SecretKey, password string) error {
+func (m *MockWallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewWallet", name, priv, password)
 	ret0, _ := ret[0].(error)
@@ -122,10 +122,10 @@ func (mr *MockWalletMockRecorder) GetAccount() *gomock.Call {
 }
 
 // GetSecret mocks base method
-func (m *MockWallet) GetSecret() (bls_interface.SecretKey, error) {
+func (m *MockWallet) GetSecret() (*bls.SecretKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecret")
-	ret0, _ := ret[0].(bls_interface.SecretKey)
+	ret0, _ := ret[0].(*bls.SecretKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -137,10 +137,10 @@ func (mr *MockWalletMockRecorder) GetSecret() *gomock.Call {
 }
 
 // GetPublic mocks base method
-func (m *MockWallet) GetPublic() (bls_interface.PublicKey, error) {
+func (m *MockWallet) GetPublic() (*bls.PublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPublic")
-	ret0, _ := ret[0].(bls_interface.PublicKey)
+	ret0, _ := ret[0].(*bls.PublicKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

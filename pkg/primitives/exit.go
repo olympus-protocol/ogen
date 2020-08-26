@@ -1,8 +1,6 @@
 package primitives
 
 import (
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
@@ -18,18 +16,18 @@ type Exit struct {
 }
 
 // GetWithdrawPubKey returns the withdraw bls public key
-func (e *Exit) GetWithdrawPubKey() (bls_interface.PublicKey, error) {
-	return bls.CurrImplementation.PublicKeyFromBytes(e.WithdrawPubkey[:])
+func (e *Exit) GetWithdrawPubKey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(e.WithdrawPubkey[:])
 }
 
 // GetValidatorPubKey returns the validator bls public key
-func (e *Exit) GetValidatorPubKey() (bls_interface.PublicKey, error) {
-	return bls.CurrImplementation.PublicKeyFromBytes(e.ValidatorPubkey[:])
+func (e *Exit) GetValidatorPubKey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(e.ValidatorPubkey[:])
 }
 
 // GetSignature returns the exit bls signature.
-func (e *Exit) GetSignature() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(e.Signature[:])
+func (e *Exit) GetSignature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(e.Signature[:])
 }
 
 // Marshal encodes the data.

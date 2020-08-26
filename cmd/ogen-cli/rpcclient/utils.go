@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"strconv"
 	"time"
 
@@ -60,15 +59,15 @@ func (c *RPCClient) submitRawData(args []string) (string, error) {
 }
 
 func (c *RPCClient) genKeyPair(raw bool) (string, error) {
-	blsKeyPair := bls.CurrImplementation.RandKey()
-	var res bls_interface.KeyPair
+	blsKeyPair := bls.RandKey()
+	var res *bls.KeyPair
 	if raw {
-		res = bls_interface.KeyPair{
+		res = &bls.KeyPair{
 			Public:  hex.EncodeToString(blsKeyPair.PublicKey().Marshal()),
 			Private: hex.EncodeToString(blsKeyPair.Marshal()),
 		}
 	} else {
-		res = bls_interface.KeyPair{
+		res = &bls.KeyPair{
 			Public:  blsKeyPair.PublicKey().ToAccount(),
 			Private: blsKeyPair.ToWIF(),
 		}

@@ -35,7 +35,7 @@ func (w *wallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposi
 	}
 	pub := priv.PublicKey()
 
-	validatorPriv, err := bls.CurrImplementation.SecretKeyFromBytes(validatorPrivBytes[:])
+	validatorPriv, err := bls.SecretKeyFromBytes(validatorPrivBytes[:])
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (w *wallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, erro
 		return nil, err
 	}
 
-	validatorPub, err := bls.CurrImplementation.PublicKeyFromBytes(validatorPubKey[:])
+	validatorPub, err := bls.PublicKeyFromBytes(validatorPubKey[:])
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,6 @@ require (
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr v0.2.2
 	github.com/multiformats/go-multiaddr-net v0.1.5
-	github.com/olympus-protocol/bls-go v0.0.0-20200725150328-addb4319c37f
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/rs/cors v1.7.0
@@ -31,7 +30,6 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/supranational/blst v0.1.2-alpha.1
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381

@@ -8,7 +8,6 @@ import (
 	"github.com/cjrd/allocate"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -94,7 +93,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 			return fmt.Errorf("expected 5 signatures needed")
 		}
 		for i := range pub.PublicKeys {
-			pub, err := bls.CurrImplementation.PublicKeyFromBytes(pub.PublicKeys[i][:])
+			pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i][:])
 			if err != nil {
 				return err
 			}
@@ -128,7 +127,7 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 			return fmt.Errorf("expected 3 signatures needed")
 		}
 		for i := range pub.PublicKeys {
-			pub, err := bls.CurrImplementation.PublicKeyFromBytes(pub.PublicKeys[i][:])
+			pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i][:])
 			if err != nil {
 				return err
 			}
@@ -349,8 +348,8 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 		return nil, err
 	}
 
-	aggPubs1 := make([]bls_interface.PublicKey, 0)
-	aggPubs2 := make([]bls_interface.PublicKey, 0)
+	aggPubs1 := make([]*bls.PublicKey, 0)
+	aggPubs2 := make([]*bls.PublicKey, 0)
 
 	for i, idx := range validators1 {
 
@@ -360,7 +359,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 
 		voteCommittee1[idx] = struct{}{}
 
-		pub, err := bls.CurrImplementation.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
 		if err != nil {
 			return nil, err
 		}
@@ -376,7 +375,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 			common = append(common, idx)
 		}
 
-		pub, err := bls.CurrImplementation.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
 		if err != nil {
 			return nil, err
 		}
@@ -694,7 +693,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 		return ErrorTargetEpoch
 	}
 
-	aggPubs := make([]bls_interface.PublicKey, 0)
+	aggPubs := make([]*bls.PublicKey, 0)
 	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
 	if err != nil {
 		return err
@@ -704,7 +703,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 		if !v.ParticipationBitfield.Get(uint(i)) {
 			continue
 		}
-		pub, err := bls.CurrImplementation.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey[:])
+		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[validatorIdx].PubKey[:])
 		if err != nil {
 			return err
 		}
@@ -774,7 +773,7 @@ func (s *state) ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainPar
 }
 
 // GetProposerPublicKey gets the public key for the proposer of a block.
-func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (bls_interface.PublicKey, error) {
+func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error) {
 	err := allocate.Zero(b)
 	if err != nil {
 		return nil, err
@@ -784,7 +783,7 @@ func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams)
 	proposerIndex := s.ProposerQueue[slotIndex]
 	proposer := s.ValidatorRegistry[proposerIndex]
 
-	return bls.CurrImplementation.PublicKeyFromBytes(proposer.PubKey[:])
+	return bls.PublicKeyFromBytes(proposer.PubKey[:])
 }
 
 // CheckBlockSignature checks the block signature.
@@ -794,7 +793,7 @@ func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) 
 		return err
 	}
 	blockHash := b.Hash()
-	blockSig, err := bls.CurrImplementation.SignatureFromBytes(b.Signature[:])
+	blockSig, err := bls.SignatureFromBytes(b.Signature[:])
 	if err != nil {
 		return err
 	}
@@ -804,7 +803,7 @@ func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) 
 		return err
 	}
 
-	randaoSig, err := bls.CurrImplementation.SignatureFromBytes(b.RandaoSignature[:])
+	randaoSig, err := bls.SignatureFromBytes(b.RandaoSignature[:])
 	if err != nil {
 		return err
 	}

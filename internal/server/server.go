@@ -119,10 +119,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 
 	logger.Tracef("Initializing bls module with params for %v", currParams.Name)
 
-	err := bls.Initialize(currParams, "kilic")
-	if err != nil {
-		return nil, err
-	}
+	bls.Initialize(currParams)
 
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {

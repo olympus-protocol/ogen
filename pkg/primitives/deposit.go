@@ -1,8 +1,6 @@
 package primitives
 
 import (
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
@@ -33,13 +31,13 @@ func (d *Deposit) Unmarshal(b []byte) error {
 }
 
 // GetPublicKey returns the bls public key of the deposit.
-func (d *Deposit) GetPublicKey() (bls_interface.PublicKey, error) {
-	return bls.CurrImplementation.PublicKeyFromBytes(d.PublicKey[:])
+func (d *Deposit) GetPublicKey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(d.PublicKey[:])
 }
 
 // GetSignature returns the bls signature of the deposit.
-func (d *Deposit) GetSignature() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(d.Signature[:])
+func (d *Deposit) GetSignature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(d.Signature[:])
 }
 
 // Hash calculates the hash of the deposit
@@ -74,11 +72,11 @@ func (d *DepositData) Unmarshal(b []byte) error {
 }
 
 // GetPublicKey returns the bls public key of the deposit data.
-func (d *DepositData) GetPublicKey() (bls_interface.PublicKey, error) {
-	return bls.CurrImplementation.PublicKeyFromBytes(d.PublicKey[:])
+func (d *DepositData) GetPublicKey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(d.PublicKey[:])
 }
 
 // GetSignature returns the bls signature of the deposit data.
-func (d *DepositData) GetSignature() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(d.ProofOfPossession[:])
+func (d *DepositData) GetSignature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(d.ProofOfPossession[:])
 }

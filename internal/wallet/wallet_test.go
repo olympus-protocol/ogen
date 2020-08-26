@@ -133,7 +133,7 @@ package wallet_test
 //	if err != nil {
 //		return nil, err
 //	}
-//	priv, err := bls.CurrImplementation.SecretKeyFromBytes(serTestPriv)
+//	priv, err := bls.SecretKeyFromBytes(serTestPriv)
 //	if err != nil {
 //		return nil, err
 //	}

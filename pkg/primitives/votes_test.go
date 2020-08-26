@@ -237,7 +237,7 @@ func TestMultiValidatorVote(t *testing.T) {
 		ParticipationBitfield: bitfield.NewBitlist(6242),
 	}
 	var sig [96]byte
-	copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+	copy(sig[:], bls.NewAggregateSignature().Marshal())
 	d.Sig = sig
 
 	assert.Equal(t, "338b990ea2f32883b985719870e637de3781d49fb605eb1cf5afa0a499456961", d.Hash().String())

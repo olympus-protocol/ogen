@@ -1,20 +1,8 @@
 package primitives
 
 import (
-	"errors"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
-
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-var (
-	// ErrorRandaoSlashingSize returns when the randao slashing is above MaxRandaoSlashingSize
-	ErrorRandaoSlashingSize = errors.New("randao slashing too big")
-	// ErrorProposerSlashingSize returns when the randao slashing is above MaxRandaoSlashingSize
-	ErrorProposerSlashingSize = errors.New("proposer slashing too big")
-	// ErrorVoteSlashingSize returns when the vote slashing is above MaxVoteSlashingSize
-	ErrorVoteSlashingSize = errors.New("proposer slashing too big")
 )
 
 const (
@@ -56,13 +44,13 @@ type RANDAOSlashing struct {
 }
 
 // GetValidatorPubkey returns the validator bls public key.
-func (r *RANDAOSlashing) GetValidatorPubkey() (bls_interface.PublicKey, error) {
-	return bls.CurrImplementation.PublicKeyFromBytes(r.ValidatorPubkey[:])
+func (r *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(r.ValidatorPubkey[:])
 }
 
 // GetRandaoReveal returns the bls signature of the randao reveal.
-func (r *RANDAOSlashing) GetRandaoReveal() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(r.RandaoReveal[:])
+func (r *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(r.RandaoReveal[:])
 }
 
 // Marshal encodes the data.
@@ -91,18 +79,18 @@ type ProposerSlashing struct {
 }
 
 // GetValidatorPubkey returns the slashing bls validator public key.
-func (p *ProposerSlashing) GetValidatorPubkey() (bls_interface.PublicKey, error) {
-	return bls.CurrImplementation.PublicKeyFromBytes(p.ValidatorPublicKey[:])
+func (p *ProposerSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+	return bls.PublicKeyFromBytes(p.ValidatorPublicKey[:])
 }
 
 // GetSignature1 returns the slashing first bls validator signature.
-func (p *ProposerSlashing) GetSignature1() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(p.Signature1[:])
+func (p *ProposerSlashing) GetSignature1() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(p.Signature1[:])
 }
 
 // GetSignature2 returns the slashing second bls validator signature.
-func (p *ProposerSlashing) GetSignature2() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(p.Signature2[:])
+func (p *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(p.Signature2[:])
 }
 
 // Marshal encodes the data.

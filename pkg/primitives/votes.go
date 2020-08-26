@@ -7,7 +7,6 @@ import (
 	"fmt"
 	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -203,8 +202,8 @@ type MultiValidatorVote struct {
 }
 
 // Signature returns the signature on BLS type
-func (m *MultiValidatorVote) Signature() (bls_interface.Signature, error) {
-	return bls.CurrImplementation.SignatureFromBytes(m.Sig[:])
+func (m *MultiValidatorVote) Signature() (*bls.Signature, error) {
+	return bls.SignatureFromBytes(m.Sig[:])
 }
 
 // Marshal encodes the data.

@@ -11,7 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -233,17 +232,17 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 				m.log.Error(err)
 				return
 			}
-			sig1, err := bls.CurrImplementation.SignatureFromBytes(v.Sig[:])
+			sig1, err := bls.SignatureFromBytes(v.Sig[:])
 			if err != nil {
 				m.log.Error(err)
 				return
 			}
-			sig2, err := bls.CurrImplementation.SignatureFromBytes(vote.Sig[:])
+			sig2, err := bls.SignatureFromBytes(vote.Sig[:])
 			if err != nil {
 				m.log.Error(err)
 				return
 			}
-			newVoteSig := bls.CurrImplementation.AggregateSignatures([]bls_interface.Signature{sig1, sig2})
+			newVoteSig := bls.AggregateSignatures([]*bls.Signature{sig1, sig2})
 
 			var voteSig [96]byte
 			copy(voteSig[:], newVoteSig.Marshal())

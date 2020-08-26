@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"errors"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"path"
 	"sync"
 
@@ -38,11 +37,11 @@ type Keystore interface {
 	load(db *bbolt.DB) error
 	initialize(db *bbolt.DB) error
 	Close() error
-	GetValidatorKey(pubkey [48]byte) (bls_interface.SecretKey, bool)
-	GetValidatorKeys() ([]bls_interface.SecretKey, error)
-	GenerateNewValidatorKey(amount uint64) ([]bls_interface.SecretKey, error)
-	addKey(priv bls_interface.SecretKey) error
-	addKeyMap(hash chainhash.Hash, key bls_interface.SecretKey) error
+	GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool)
+	GetValidatorKeys() ([]*bls.SecretKey, error)
+	GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error)
+	addKey(priv *bls.SecretKey) error
+	addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error
 	addKeyDB(encryptedKey []byte, pubkey []byte) error
 }
 
@@ -57,7 +56,7 @@ type keystore struct {
 	// open prevents accessing the database when is closed
 	open bool
 	// keys is a memory map for access the keys faster
-	keys map[chainhash.Hash]bls_interface.SecretKey
+	keys map[chainhash.Hash]*bls.SecretKey
 	// keysLock is the maps lock
 	keysLock sync.RWMutex
 }
@@ -107,7 +106,7 @@ func (k *keystore) OpenKeystore() error {
 // returns ErrorNotInitialized if the database doesn't exists or is not properly initialized.
 func (k *keystore) load(db *bbolt.DB) error {
 
-	keysMap := make(map[chainhash.Hash]bls_interface.SecretKey)
+	keysMap := make(map[chainhash.Hash]*bls.SecretKey)
 
 	// Load the keys to a memory map
 	err := db.View(func(tx *bbolt.Tx) error {
@@ -120,7 +119,7 @@ func (k *keystore) load(db *bbolt.DB) error {
 
 			pubHash := chainhash.HashH(keypub)
 
-			key, err := bls.CurrImplementation.SecretKeyFromBytes(keyprv)
+			key, err := bls.SecretKeyFromBytes(keyprv)
 			if err != nil {
 				return err
 			}
@@ -167,7 +166,7 @@ func (k *keystore) initialize(db *bbolt.DB) error {
 // Close closes the keystore database
 func (k *keystore) Close() error {
 	k.open = false
-	k.keys = map[chainhash.Hash]bls_interface.SecretKey{}
+	k.keys = map[chainhash.Hash]*bls.SecretKey{}
 	return k.db.Close()
 }
 
