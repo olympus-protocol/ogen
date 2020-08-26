@@ -29,12 +29,16 @@ const (
 	MsgTxCmd = "tx"
 	// MsgDepositCmd is a single deposit element
 	MsgDepositCmd = "deposit"
+	// MsgDepositCmd is a deposit slice element
+	MsgDepositsCmd = "deposits"
 	// MsgVoteCmd is a single vote element
 	MsgVoteCmd = "vote"
 	// MsgValidatorStart is a validator hello element
 	MsgValidatorStartCmd = "validator_hello"
 	// MsgExitCmd is a exit element
 	MsgExitCmd = "exit"
+	// MsgExitsCmd is a exit slice element
+	MsgExitsCmd = "exist"
 	// MsgGovernanceCmd is a exit element
 	MsgGovernanceCmd = "governance_vote"
 	// MsgTxMultiCmd is a exit element

@@ -5,7 +5,6 @@ package mempools_test
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -363,8 +362,7 @@ func TestActionMempool_ExitDeposits(t *testing.T) {
 	pub := priv.PublicKey()
 
 	validatorPub := valDataPrimary[0].PublicKey()
-	msg := fmt.Sprintf("exit %x", validatorPub.Marshal())
-	msgHash := chainhash.HashH([]byte(msg))
+	msgHash := chainhash.HashH([]byte(validatorPub.Marshal()))
 
 	sig := priv.Sign(msgHash[:])
 	var valp, withp [48]byte

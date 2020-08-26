@@ -498,8 +498,7 @@ func (s *state) IsExitValid(exit *primitives.Exit) error {
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("exit %x", exit.ValidatorPubkey)
-	msgHash := chainhash.HashH([]byte(msg))
+	msgHash := chainhash.HashH(exit.ValidatorPubkey[:])
 	wPubKey, err := exit.GetWithdrawPubKey()
 	if err != nil {
 		return err

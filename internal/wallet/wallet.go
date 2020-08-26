@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"os"
 	"path"
 	"path/filepath"
@@ -35,8 +34,10 @@ type Wallet interface {
 	GetPublic() (*bls.PublicKey, error)
 	GetAccountRaw() ([20]byte, error)
 	GetBalance() (uint64, error)
-	StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error)
-	ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error)
+	StartValidatorBulk(k []*bls.SecretKey) (bool, error)
+	ExitValidatorBulk(k []*bls.PublicKey) (bool, error)
+	StartValidator(validatorPrivBytes *bls.SecretKey) (bool, error)
+	ExitValidator(validatorPubKey *bls.PublicKey) (bool, error)
 	SendToAddress(to string, amount uint64) (*chainhash.Hash, error)
 }
 
@@ -52,10 +53,15 @@ type wallet struct {
 	txTopic       *pubsub.Topic
 	mempool       mempool.CoinsMempool
 	actionMempool mempool.ActionMempool
+
 	depositTopic  *pubsub.Topic
-	exitTopic     *pubsub.Topic
-	directory     string
-	ctx           context.Context
+	depositsTopic *pubsub.Topic
+
+	exitTopic  *pubsub.Topic
+	exitsTopic *pubsub.Topic
+
+	directory string
+	ctx       context.Context
 
 	// Open wallet information
 	db         *bbolt.DB
@@ -71,7 +77,9 @@ type wallet struct {
 func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
 	var txTopic *pubsub.Topic
 	var depositTopic *pubsub.Topic
+	var depositsTopic *pubsub.Topic
 	var exitTopic *pubsub.Topic
+	var exitsTopic *pubsub.Topic
 	var err error
 	if hostnode != nil {
 		txTopic, err = hostnode.Topic(p2p.MsgTxCmd)
@@ -84,7 +92,17 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 			return nil, err
 		}
 
+		depositsTopic, err = hostnode.Topic(p2p.MsgDepositsCmd)
+		if err != nil {
+			return nil, err
+		}
+
 		exitTopic, err = hostnode.Topic(p2p.MsgExitCmd)
+		if err != nil {
+			return nil, err
+		}
+
+		exitsTopic, err = hostnode.Topic(p2p.MsgExitsCmd)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +116,9 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 		txTopic:       txTopic,
 		hostnode:      hostnode,
 		depositTopic:  depositTopic,
+		depositsTopic: depositsTopic,
 		exitTopic:     exitTopic,
+		exitsTopic:    exitsTopic,
 		mempool:       mempool,
 		ctx:           ctx,
 		actionMempool: actionMempool,

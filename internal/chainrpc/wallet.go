@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"sync"
 
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -22,54 +21,74 @@ type walletServer struct {
 	proto.UnimplementedWalletServer
 }
 
-func (s *walletServer) ListWallets(context.Context, *proto.Empty) (*proto.Wallets, error) {
+func (s *walletServer) ListWallets(ctx context.Context, _ *proto.Empty) (*proto.Wallets, error) {
+	defer ctx.Done()
+
 	files, err := s.wallet.GetAvailableWallets()
 	if err != nil {
 		return nil, err
 	}
+
 	var walletFiles []string
+
 	for k := range files {
 		walletFiles = append(walletFiles, k)
 	}
+
 	return &proto.Wallets{Wallets: walletFiles}, nil
 }
 func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.KeyPair, error) {
+	defer ctx.Done()
+
 	err := s.wallet.NewWallet(ref.Name, nil, ref.Password)
 	if err != nil {
 		return nil, err
 	}
+
 	pubKey, err := s.wallet.GetAccount()
 	if err != nil {
 		return nil, err
 	}
+
 	return &proto.KeyPair{Public: pubKey}, nil
 }
 
 func (s *walletServer) OpenWallet(ctx context.Context, ref *proto.WalletReference) (*proto.Success, error) {
+	defer ctx.Done()
+
 	ok := s.wallet.HasWallet(ref.Name)
 	if !ok {
 		return nil, errors.New("the is no wallet with the current name specified")
 	}
+
 	err := s.wallet.OpenWallet(ref.Name, ref.Password)
+
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
+
 	return &proto.Success{Success: true}, nil
 }
 
-func (s *walletServer) CloseWallet(context.Context, *proto.Empty) (*proto.Success, error) {
+func (s *walletServer) CloseWallet(ctx context.Context, _ *proto.Empty) (*proto.Success, error) {
+	defer ctx.Done()
+
 	err := s.wallet.CloseWallet()
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
+
 	return &proto.Success{Success: true}, nil
 }
 
 func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletData) (*proto.KeyPair, error) {
+	defer ctx.Done()
+
 	name := in.Name
 	if name == "" {
 		return nil, errors.New("please specify a name for the wallet")
 	}
+
 	prefix, priv, err := bech32.Decode(in.Key.Private)
 	if err != nil {
 		return nil, err
@@ -77,38 +96,49 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if prefix != s.params.AccountPrefixes.Private {
 		return nil, errors.New("wrong wallet format for current network")
 	}
+
 	blsPriv, err := bls.SecretKeyFromBytes(priv)
 	if err != nil {
 		return nil, err
 	}
+
 	err = s.wallet.NewWallet(name, blsPriv, in.Password)
 	if err != nil {
 		return nil, err
 	}
+
 	acc, err := s.wallet.GetAccount()
 	if err != nil {
 		return nil, err
 	}
+
 	return &proto.KeyPair{Public: acc}, nil
 }
 
-func (s *walletServer) DumpWallet(context.Context, *proto.Empty) (*proto.KeyPair, error) {
+func (s *walletServer) DumpWallet(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
+	defer ctx.Done()
+
 	priv, err := s.wallet.GetSecret()
 	if err != nil {
 		return nil, err
 	}
+
 	return &proto.KeyPair{Private: priv.ToWIF()}, nil
 }
 
-func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance, error) {
+func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.Balance, error) {
+	defer ctx.Done()
+
 	acc, err := s.wallet.GetAccountRaw()
 	if err != nil {
 		return nil, err
 	}
+
 	balance, err := s.wallet.GetBalance()
 	if err != nil {
 		return nil, err
 	}
+
 	balanceStr := decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e8), 8).String()
 	validators := s.getValidators(acc)
 	lock := decimal.NewFromInt(0)
@@ -119,14 +149,18 @@ func (s *walletServer) GetBalance(context.Context, *proto.Empty) (*proto.Balance
 		}
 		lock = lock.Add(b)
 	}
+
 	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e8), 8).Add(lock).StringFixed(3)}, nil
 }
 
 func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
+	defer ctx.Done()
+
 	acc, err := s.wallet.GetAccountRaw()
 	if err != nil {
 		return nil, err
 	}
+
 	return s.getValidators(acc), nil
 }
 
@@ -152,89 +186,169 @@ func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
 	}}
 }
 
-func (s *walletServer) GetAccount(context.Context, *proto.Empty) (*proto.KeyPair, error) {
+func (s *walletServer) GetAccount(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
+	defer ctx.Done()
+
 	account, err := s.wallet.GetAccount()
 	if err != nil {
 		return nil, err
 	}
+
 	return &proto.KeyPair{Public: account}, nil
 }
 
 func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTransactionInfo) (*proto.Hash, error) {
+	defer ctx.Done()
+
 	amount, err := decimal.NewFromString(send.Amount)
 	if err != nil {
 		return nil, err
 	}
+
 	amountFixed := amount.Mul(decimal.NewFromInt(1e8)).Round(0)
 	hash, err := s.wallet.SendToAddress(send.Account, uint64(amountFixed.IntPart()))
 	if err != nil {
 		return nil, err
 	}
+
 	return &proto.Hash{Hash: hash.String()}, nil
 }
 func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
-	var privKeyBytes [32]byte
-	privKeyDecode, err := hex.DecodeString(key.Private)
+	defer ctx.Done()
+
+	privKeyBytes, err := hex.DecodeString(key.Private)
 	if err != nil {
-		return nil, err
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
 	}
-	copy(privKeyBytes[:], privKeyDecode)
-	_, err = s.wallet.StartValidator(privKeyBytes)
+
+	privKeyBls, err := bls.SecretKeyFromBytes(privKeyBytes)
 	if err != nil {
-		return nil, err
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
 	}
-	return &proto.Success{Success: true}, nil
+
+	success, err := s.wallet.StartValidator(privKeyBls)
+	if err != nil {
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+	return &proto.Success{
+		Success: success,
+	}, nil
 }
 
 func (s *walletServer) StartValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
-	var wg sync.WaitGroup
-	for _, key := range keys.Keys {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, keyStr string) {
-			var privKeyBytes [32]byte
-			privKeyDecode, err := hex.DecodeString(keyStr)
-			if err != nil {
-				return
-			}
-			copy(privKeyBytes[:], privKeyDecode)
+	defer ctx.Done()
 
-			_, err = s.wallet.StartValidator(privKeyBytes)
-			if err != nil {
-				return
-			}
-		}(&wg, key)
+	keysStr := keys.Keys
+	blsKeys := make([]*bls.SecretKey, len(keysStr))
 
+	for i := range blsKeys {
+		privKeyDecode, err := hex.DecodeString(keysStr[i])
+		if err != nil {
+			return &proto.Success{
+				Success: false,
+				Error:   err.Error(),
+				Data:    "",
+			}, nil
+		}
+		key, err := bls.SecretKeyFromBytes(privKeyDecode)
+		if err != nil {
+			return &proto.Success{
+				Success: false,
+				Error:   err.Error(),
+				Data:    "",
+			}, nil
+		}
+		blsKeys[i] = key
 	}
-	return &proto.Success{Success: true}, nil
+
+	success, err := s.wallet.StartValidatorBulk(blsKeys)
+	if err != nil {
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+			Data:    "",
+		}, nil
+	}
+	return &proto.Success{
+		Success: success,
+	}, nil
 }
 
 func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
-	var pubKeyBytes [48]byte
-	pubKeyDecode, err := hex.DecodeString(key.Public)
+	defer ctx.Done()
+
+	pubKeyBytes, err := hex.DecodeString(key.Public)
 	if err != nil {
-		return nil, err
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+			Data:    "",
+		}, nil
 	}
-	copy(pubKeyBytes[:], pubKeyDecode)
-	_, err = s.wallet.ExitValidator(pubKeyBytes)
+
+	pubKeyBls, err := bls.PublicKeyFromBytes(pubKeyBytes)
 	if err != nil {
-		return &proto.Success{Success: false, Error: err.Error()}, nil
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+			Data:    "",
+		}, nil
 	}
-	return &proto.Success{Success: true}, nil
+
+	success, err := s.wallet.ExitValidator(pubKeyBls)
+	if err != nil {
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+			Data:    "",
+		}, nil
+	}
+	return &proto.Success{
+		Success: success,
+	}, nil
 }
 
 func (s *walletServer) ExitValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
-	for i := range keys.Keys {
-		var pubKeyBytes [48]byte
-		pubKeyDecode, err := hex.DecodeString(keys.Keys[i])
-		if err != nil {
-			return nil, err
-		}
-		copy(pubKeyBytes[:], pubKeyDecode)
-		_, err = s.wallet.ExitValidator(pubKeyBytes)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
+	defer ctx.Done()
 
+	keysStr := keys.Keys
+	blsKeys := make([]*bls.PublicKey, len(keysStr))
+
+	for i := range blsKeys {
+		pubKeyBytes, err := hex.DecodeString(keysStr[i])
+		if err != nil {
+			return &proto.Success{
+				Success: false,
+				Error:   err.Error(),
+			}, nil
+		}
+		key, err := bls.PublicKeyFromBytes(pubKeyBytes)
+		if err != nil {
+			return &proto.Success{
+				Success: false,
+				Error:   err.Error(),
+			}, nil
+		}
+		blsKeys[i] = key
 	}
-	return &proto.Success{Success: true}, nil
+
+	success, err := s.wallet.ExitValidatorBulk(blsKeys)
+	if err != nil {
+		return &proto.Success{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+	return &proto.Success{
+		Success: success,
+	}, nil
 }
