@@ -24,7 +24,7 @@ func (m *MsgExits) Unmarshal(b []byte) error {
 
 // Command returns the message topic
 func (m *MsgExits) Command() string {
-	return MsgExitCmd
+	return MsgExitsCmd
 }
 
 // MaxPayloadLength returns the maximum size of the MsgDeposit message.

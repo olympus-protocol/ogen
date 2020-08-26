@@ -38,7 +38,7 @@ const (
 	// MsgExitCmd is a exit element
 	MsgExitCmd = "exit"
 	// MsgExitsCmd is a exit slice element
-	MsgExitsCmd = "exist"
+	MsgExitsCmd = "exits"
 	// MsgGovernanceCmd is a exit element
 	MsgGovernanceCmd = "governance_vote"
 	// MsgTxMultiCmd is a exit element
@@ -102,10 +102,14 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgTxMulti{}
 	case MsgDepositCmd:
 		msg = &MsgDeposit{}
+	case MsgDepositsCmd:
+		msg = &MsgDeposits{}
 	case MsgVoteCmd:
 		msg = &MsgVote{}
 	case MsgExitCmd:
 		msg = &MsgExit{}
+	case MsgExitsCmd:
+		msg = &MsgExits{}
 	case MsgValidatorStartCmd:
 		msg = &MsgValidatorStart{}
 	case MsgGovernanceCmd:
