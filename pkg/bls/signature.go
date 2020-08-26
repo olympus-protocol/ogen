@@ -67,9 +67,3 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 func (s *Signature) Marshal() []byte {
 	return bls12.NewG2().ToCompressed(s.s)
 }
-
-// Copy returns a full deep copy of a signature.
-func (s *Signature) Copy() *Signature {
-	np := *s.s
-	return &Signature{s: &np}
-}

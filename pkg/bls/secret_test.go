@@ -1,7 +1,9 @@
 package bls_test
 
 import (
+	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -75,3 +77,18 @@ func TestSerialize(t *testing.T) {
 	_, err := bls.SecretKeyFromBytes(b)
 	assert.NoError(t, err)
 }
+
+func TestSecretKey_ToWIF(t *testing.T) {
+
+	bls.Initialize(testdata.TestParams)
+
+	secBytes, err := hex.DecodeString("28291cbbfaba8ca4d350a7a7f59cac06f7cb2a346e396389d30b0a6c5b59ec73")
+	assert.NoError(t, err)
+
+	sec, err := bls.SecretKeyFromBytes(secBytes)
+	assert.NoError(t, err)
+
+	wif := sec.ToWIF()
+	assert.Equal(t, "itprv19q53ewl6h2x2f56s57nlt89vqmmuk235dcuk8zwnpv9xck6ea3esywcazn", wif)
+}
+

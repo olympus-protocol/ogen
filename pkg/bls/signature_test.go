@@ -31,6 +31,12 @@ func TestAggregateVerify(t *testing.T) {
 	assert.True(t, aggSig.AggregateVerify(pubkeys, msgs))
 }
 
+func TestAggregateFails(t *testing.T) {
+	sigs := make([]*bls.Signature, 0, 100)
+	aggSig := bls.AggregateSignatures(sigs)
+	assert.Nil(t, aggSig)
+}
+
 func TestFastAggregateVerify(t *testing.T) {
 	pubkeys := make([]*bls.PublicKey, 0, 100)
 	sigs := make([]*bls.Signature, 0, 100)
@@ -44,6 +50,24 @@ func TestFastAggregateVerify(t *testing.T) {
 	}
 	aggSig := bls.AggregateSignatures(sigs)
 	assert.Equal(t, true, aggSig.FastAggregateVerify(pubkeys, msg))
+}
+
+func TestAggregateFail(t *testing.T) {
+	pubkeys := make([]*bls.PublicKey, 0, 100)
+	sigs := make([]*bls.Signature, 0, 100)
+	msg := [][32]byte{{1,2,3}}
+	for i := 0; i < 100; i++ {
+		priv := bls.RandKey()
+		pub := priv.PublicKey()
+		sig := priv.Sign([]byte{1,2,3})
+		pubkeys = append(pubkeys, pub)
+		sigs = append(sigs, sig)
+	}
+	aggSig := bls.AggregateSignatures(sigs)
+	// Empty public keys slice
+	assert.False(t, aggSig.AggregateVerify([]*bls.PublicKey{}, msg) )
+	// Mismatch between PubKeys and Msg
+	assert.False(t, aggSig.AggregateVerify(pubkeys, msg) )
 }
 
 func TestFastAggregateVerify_ReturnsFalseOnEmptyPubKeyList(t *testing.T) {
