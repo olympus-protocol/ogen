@@ -100,11 +100,6 @@ func AggregateSignatures(sigs []*Signature) *Signature {
 	return &Signature{s: sig}
 }
 
-// VerifyMultipleSignatures verifies multiple signatures for distinct messages securely.
-func VerifyMultipleSignatures(sigs []*Signature, msgs [][32]byte, pubKeys []*PublicKey) (bool, error) {
-	return false, nil
-}
-
 // NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() *Signature {
 	p, _ := bls12381.NewG2().HashToCurve([]byte{'m', 'o', 'c', 'k'}, dst)

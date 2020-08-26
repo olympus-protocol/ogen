@@ -46,24 +46,6 @@ func TestFastAggregateVerify(t *testing.T) {
 	assert.Equal(t, true, aggSig.FastAggregateVerify(pubkeys, msg))
 }
 
-func TestMultipleSignatureVerification(t *testing.T) {
-	pubkeys := make([]*bls.PublicKey, 0, 100)
-	sigs := make([]*bls.Signature, 0, 100)
-	var msgs [][32]byte
-	for i := 0; i < 100; i++ {
-		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
-		priv := bls.RandKey()
-		pub := priv.PublicKey()
-		sig := priv.Sign(msg[:])
-		pubkeys = append(pubkeys, pub)
-		sigs = append(sigs, sig)
-		msgs = append(msgs, msg)
-	}
-	verify, err := bls.VerifyMultipleSignatures(sigs, msgs, pubkeys)
-	assert.NoError(t, err)
-	assert.Equal(t, true, verify, "Signature did not verify")
-}
-
 func TestFastAggregateVerify_ReturnsFalseOnEmptyPubKeyList(t *testing.T) {
 	var pubkeys []*bls.PublicKey
 	msg := [32]byte{'h', 'e', 'l', 'l', 'o'}
