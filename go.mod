@@ -8,7 +8,7 @@ require (
 	github.com/cjrd/allocate v0.0.0-20191115010018-022b87fe59fc
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/fatih/color v1.9.0
-	github.com/ferranbt/fastssz v0.0.0-20200728110133-0b6e349af87a
+	github.com/ferranbt/fastssz v0.0.0-20200826142241-3a913c5a1313
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.2
 	github.com/google/gofuzz v1.1.0

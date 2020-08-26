@@ -91,4 +91,3 @@ func TestSecretKey_ToWIF(t *testing.T) {
 	wif := sec.ToWIF()
 	assert.Equal(t, "itprv19q53ewl6h2x2f56s57nlt89vqmmuk235dcuk8zwnpv9xck6ea3esywcazn", wif)
 }
-
