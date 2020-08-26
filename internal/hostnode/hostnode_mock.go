@@ -233,15 +233,15 @@ func (mr *MockHostNodeMockRecorder) Notify(notifee interface{}) *gomock.Call {
 }
 
 // setStreamHandler mocks base method
-func (m *MockHostNode) setStreamHandler(id protocol.ID, handleStream func(network.Stream)) {
+func (m *MockHostNode) SetStreamHandler(id protocol.ID, handleStream func(network.Stream)) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "setStreamHandler", id, handleStream)
+	m.ctrl.Call(m, "SetStreamHandler", id, handleStream)
 }
 
 // setStreamHandler indicates an expected call of setStreamHandler
-func (mr *MockHostNodeMockRecorder) setStreamHandler(id, handleStream interface{}) *gomock.Call {
+func (mr *MockHostNodeMockRecorder) SetStreamHandler(id, handleStream interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "setStreamHandler", reflect.TypeOf((*MockHostNode)(nil).setStreamHandler), id, handleStream)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStreamHandler", reflect.TypeOf((*MockHostNode)(nil).SetStreamHandler), id, handleStream)
 }
 
 // CountPeers mocks base method

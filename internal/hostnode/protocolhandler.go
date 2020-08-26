@@ -80,7 +80,7 @@ func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, conf
 		log:              config.Log,
 	}
 
-	host.setStreamHandler(id, ph.handleStream)
+	host.SetStreamHandler(id, ph.handleStream)
 	host.Notify(ph)
 
 	return ph

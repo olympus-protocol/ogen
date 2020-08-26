@@ -53,7 +53,7 @@ type HostNode interface {
 	GetPeerInfos() []peer.AddrInfo
 	ConnectedToPeer(id peer.ID) bool
 	Notify(notifee network.Notifiee)
-	setStreamHandler(id protocol.ID, handleStream func(s network.Stream))
+	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	CountPeers(id protocol.ID) int
 	GetPeerDirection(id peer.ID) network.Direction
 	Start() error
@@ -272,7 +272,7 @@ func (node *hostNode) Notify(notifee network.Notifiee) {
 }
 
 // setStreamHandler sets a stream handler for the host node.
-func (node *hostNode) setStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
+func (node *hostNode) SetStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
 	node.host.SetStreamHandler(id, handleStream)
 }
 
