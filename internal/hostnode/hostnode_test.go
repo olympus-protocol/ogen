@@ -7,10 +7,14 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
 func TestHostNode_New(t *testing.T) {
+	// Create datafolder
+	_ = os.Mkdir(testdata.Node1Folder, 0777)
+
 	//f := fuzz.New().NilChance(0)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
