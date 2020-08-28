@@ -1,6 +1,7 @@
 package chain_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -159,7 +160,7 @@ func TestBlockchain_Instance(t *testing.T) {
 
 	var priv bls_interface.SecretKey
 	for _, element := range validatorKeys1 {
-		if element.PublicKey() == valPub {
+		if bytes.Equal(element.PublicKey().Marshal(), valPub.Marshal()) {
 			priv = element
 		}
 	}
