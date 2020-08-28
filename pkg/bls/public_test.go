@@ -8,6 +8,44 @@ import (
 	"testing"
 )
 
+func TestPublicKey_Cache(t *testing.T) {
+	pub := bls.RandKey().PublicKey()
+	pubBytes := pub.Marshal()
+
+	pub1, err := bls.PublicKeyFromBytes(pubBytes)
+	assert.NoError(t, err)
+
+	pub2, err := bls.PublicKeyFromBytes(pubBytes)
+	assert.NoError(t, err)
+
+	assert.Equal(t, pub1, pub2)
+}
+
+func TestPublicKey_Hash(t *testing.T) {
+	pubBytes, err := hex.DecodeString("8817994e67c131ed73d6ff851013be76322dccdeb78755bb341768b7e76ccd9a7982bcfd19d923a2c1f1556a45163695")
+	assert.NoError(t, err)
+
+	pub, err := bls.PublicKeyFromBytes(pubBytes)
+	assert.NoError(t, err)
+
+	hash, err := pub.Hash()
+	assert.NoError(t, err)
+	assert.Equal(t, "a47fad160040ba7b1b54b35dc74b1993664b522c", hex.EncodeToString(hash[:]))
+}
+
+func TestPublicKey_ToAccount(t *testing.T) {
+	bls.Initialize(testdata.TestParams)
+
+	pubBytes, err := hex.DecodeString("8817994e67c131ed73d6ff851013be76322dccdeb78755bb341768b7e76ccd9a7982bcfd19d923a2c1f1556a45163695")
+	assert.NoError(t, err)
+
+	pub, err := bls.PublicKeyFromBytes(pubBytes)
+	assert.NoError(t, err)
+
+	acc := pub.ToAccount()
+	assert.Equal(t, "itpub153l669sqgza8kx65kdwuwjcejdnyk53v3nq49a", acc)
+}
+
 func TestPublicKeyFromBytes(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -66,42 +104,4 @@ func TestPublicKey_Copy(t *testing.T) {
 	pubkeyB.Aggregate(bls.RandKey().PublicKey())
 
 	assert.Equal(t, pubkeyA.Marshal(), pubkeyBytes, "Pubkey was mutated after copy")
-}
-
-func TestPublicKey_Cache(t *testing.T) {
-	pub := bls.RandKey().PublicKey()
-	pubBytes := pub.Marshal()
-
-	pub1, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	pub2, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	assert.Equal(t, pub1, pub2)
-}
-
-func TestPublicKey_Hash(t *testing.T) {
-	pubBytes, err := hex.DecodeString("8817994e67c131ed73d6ff851013be76322dccdeb78755bb341768b7e76ccd9a7982bcfd19d923a2c1f1556a45163695")
-	assert.NoError(t, err)
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	hash, err := pub.Hash()
-	assert.NoError(t, err)
-	assert.Equal(t, "a47fad160040ba7b1b54b35dc74b1993664b522c", hex.EncodeToString(hash[:]))
-}
-
-func TestPublicKey_ToAccount(t *testing.T) {
-	bls.Initialize(testdata.TestParams)
-
-	pubBytes, err := hex.DecodeString("8817994e67c131ed73d6ff851013be76322dccdeb78755bb341768b7e76ccd9a7982bcfd19d923a2c1f1556a45163695")
-	assert.NoError(t, err)
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	acc := pub.ToAccount()
-	assert.Equal(t, "itpub153l669sqgza8kx65kdwuwjcejdnyk53v3nq49a", acc)
 }

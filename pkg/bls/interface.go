@@ -44,6 +44,12 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 	BufferItems: 64,
 })
 
+var engine *bls12381.Engine
+
+func init() {
+	engine = bls12381.NewEngine()
+}
+
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
 func SecretKeyFromBytes(privKey []byte) (*SecretKey, error) {
 	if len(privKey) != 32 {
@@ -110,4 +116,8 @@ func NewAggregateSignature() *Signature {
 func RandKey() *SecretKey {
 	k, _ := rand.Int(rand.Reader, curveOrder)
 	return &SecretKey{p: k}
+}
+
+func Engine() *bls12381.Engine {
+	return engine
 }

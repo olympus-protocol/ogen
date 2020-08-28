@@ -28,9 +28,8 @@ func (s *SecretKey) PublicKey() *PublicKey {
 // In ETH2.0 specification:
 // def Sign(SK: int, message: Bytes) -> BLSSignature
 func (s *SecretKey) Sign(msg []byte) *Signature {
-	g2 := bls12.NewG2()
-	p, _ := g2.HashToCurve(msg, dst)
-	g2.MulScalar(p, p, s.p)
+	p, _ := bls12.NewG2().HashToCurve(msg, dst)
+	bls12.NewG2().MulScalar(p, p, s.p)
 	return &Signature{s: p}
 }
 
