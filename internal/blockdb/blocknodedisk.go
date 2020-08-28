@@ -1,15 +1,5 @@
 package blockdb
 
-import (
-	"errors"
-)
-
-// ErrorBlockNodeSize returned when a blocknode size is above MaxBlockNodeSize
-var ErrorBlockNodeSize = errors.New("blocknode size is too big")
-
-// MaxBlockNodeSize is the maximum amount of bytes a BlockNodeDisk can be
-const MaxBlockNodeSize = 2160
-
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {
 	StateRoot [32]byte `ssz-size:"32"`
