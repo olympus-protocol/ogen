@@ -3,6 +3,7 @@ package chain_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/golang/mock/gomock"
 	fuzz "github.com/google/gofuzz"
@@ -98,12 +99,17 @@ func init() {
 	stateParams.PremineAddress = addr
 }
 
-func TestBlockchain_New(t *testing.T) {
+// create a blockchain instance and test its methods
+func TestBlockchain_Instance(t *testing.T) {
 	//f := fuzz.New().NilChance(0)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Info(gomock.Any()).AnyTimes()
+	log.EXPECT().Info("Loading chain state...").Times(1)
+	log.EXPECT().Info("Starting Blockchain instance").Times(1)
+	log.EXPECT().Warn(gomock.Any()).AnyTimes()
+
 	db := blockdb.NewMockBlockDB(ctrl)
+	db.EXPECT().View(gomock.Any()).AnyTimes()
 	db.EXPECT().Update(gomock.Any()).Times(4)
 	var c chain.Config
 	c.Log = log
@@ -114,8 +120,57 @@ func TestBlockchain_New(t *testing.T) {
 	assert.NotNil(t, bc)
 	err = bc.Start()
 	assert.NoError(t, err)
-}
 
-func TestBLockchain_Start(t *testing.T) {
+	/*genTime := bc.GenesisTime()
+	assert.Equal(t, stateParams.GenesisTime, genTime)*/
+
+	//block-related methods
+	block := primitives.GetGenesisBlock()
+	genesisHash = block.Hash()
+
+	//get signature
+	currState, erro := bc.State().GetStateForHash(genesisHash)
+	fmt.Println(currState, erro)
+
+	b := primitives.Block{
+		Header: &primitives.BlockHeader{
+			Version:                    0,
+			Nonce:                      0,
+			TxMerkleRoot:               chainhash.Hash{},
+			VoteMerkleRoot:             chainhash.Hash{},
+			DepositMerkleRoot:          chainhash.Hash{},
+			ExitMerkleRoot:             chainhash.Hash{},
+			VoteSlashingMerkleRoot:     chainhash.Hash{},
+			RANDAOSlashingMerkleRoot:   chainhash.Hash{},
+			ProposerSlashingMerkleRoot: chainhash.Hash{},
+			GovernanceVotesMerkleRoot:  chainhash.Hash{},
+			PrevBlockHash:              genesisHash,
+			Timestamp:                  uint64(time.Now().Unix()),
+			Slot:                       1,
+			StateRoot:                  chainhash.Hash{},
+			FeeAddress:                 [20]byte{},
+		},
+		Txs: []*primitives.Tx{},
+	}
+	valPub, err := currState.GetProposerPublicKey(&b, param)
+	assert.NoError(t, err)
+
+	fmt.Println(valPub, err)
+
+	var priv bls_interface.SecretKey
+	for _, element := range validatorKeys1 {
+		if element.PublicKey() == valPub {
+			priv = element
+		}
+	}
+	bH := b.Hash()
+	fmt.Println(bH)
+	sig := priv.Sign(bH[:])
+	var ds [96]byte
+	copy(ds[:], sig.Marshal())
+	b.Signature = ds
+
+	err = bc.ProcessBlock(&b)
+	fmt.Println(err)
 
 }

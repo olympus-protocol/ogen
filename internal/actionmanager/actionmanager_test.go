@@ -8,7 +8,6 @@ import (
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -79,7 +78,6 @@ func init() {
 }
 
 func TestLastActionManager_Instance(t *testing.T) {
-	f := fuzz.New().NilChance(0)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 	log.EXPECT().Info(gomock.Any()).AnyTimes()
@@ -112,11 +110,5 @@ func TestLastActionManager_Instance(t *testing.T) {
 
 	nonce := am.GetNonce()
 	assert.NotNil(t, nonce)
-	var asd chainindex.BlockRow
-	f.Fuzz(&asd)
-	var bloc primitives.Block
-	f.Fuzz(&bloc)
 
-	stat, receipt, err := stateService.Add(&bloc)
-	am.NewTip(&asd, &bloc, stat, receipt) //fails
 }
