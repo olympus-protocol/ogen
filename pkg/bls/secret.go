@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-var curveOrder, _ = new(big.Int).SetString("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16)
+var RFieldModulus, _ = new(big.Int).SetString("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10)
 
 // SecretKey used in the BLS signature scheme.
 type SecretKey struct {
@@ -35,7 +35,9 @@ func (s *SecretKey) Sign(msg []byte) *Signature {
 
 // Marshal a secret key into a LittleEndian byte slice.
 func (s *SecretKey) Marshal() []byte {
-	return s.p.Bytes()
+	var b [32]byte
+	copy(b[:], s.p.Bytes())
+	return b[:]
 }
 
 // ToWIF converts the private key to a Bech32 encoded string.

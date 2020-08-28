@@ -40,7 +40,9 @@ func TestKeystore_GetValidatorKey(t *testing.T) {
 
 func TestKeystore_GetValidatorKeyWithoutKey(t *testing.T) {
 	var pub [48]byte
-	copy(pub[:], bls.RandKey().PublicKey().Marshal())
+	k, err := bls.RandKey()
+	assert.NoError(t, err)
+	copy(pub[:], k.PublicKey().Marshal())
 	_, ok := k2.GetValidatorKey(pub)
 	assert.False(t, ok)
 	cleanFolder2()

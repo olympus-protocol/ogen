@@ -9,6 +9,32 @@ import (
 	"testing"
 )
 
+
+func TestRandKey(t *testing.T) {
+	for i := 0; i < 50000; i++ {
+		r, err := bls.RandKey()
+		assert.NoError(t, err)
+		mar := r.Marshal()
+		_, err = bls.SecretKeyFromBytes(mar)
+		assert.NoError(t, err)
+	}
+}
+
+func TestRandKeyWithSign(t *testing.T) {
+	for i := 0; i < 2000; i++ {
+		r, err := bls.RandKey()
+		if err != nil {
+			assert.NoError(t, err)
+		}
+		sig := r.Sign([]byte("a"))
+		assert.True(t, sig.Verify(r.PublicKey(), []byte("a")))
+		mar := r.Marshal()
+		_, err = bls.SecretKeyFromBytes(mar)
+		assert.NoError(t, err)
+
+	}
+}
+
 func TestSecretKey_ToWIF(t *testing.T) {
 
 	bls.Initialize(testdata.TestParams)
@@ -24,7 +50,9 @@ func TestSecretKey_ToWIF(t *testing.T) {
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
-	b := bls.RandKey().Marshal()
+	k, err := bls.RandKey()
+	assert.NoError(t, err)
+	b := k.Marshal()
 	var b32 [32]byte
 	copy(b32[:], b)
 	pk, err := bls.SecretKeyFromBytes(b32[:])
@@ -42,22 +70,22 @@ func TestSecretKeyFromBytes(t *testing.T) {
 	}{
 		{
 			name: "Nil",
-			err:  bls.ErrorSecSize,
+			err:  bls.ErrorSecUnmarshal,
 		},
 		{
 			name:  "Empty",
 			input: []byte{},
-			err:   bls.ErrorSecSize,
+			err:   bls.ErrorSecUnmarshal,
 		},
 		{
 			name:  "Short",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSecSize,
+			err:   bls.ErrorSecUnmarshal,
 		},
 		{
 			name:  "Long",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSecSize,
+			err:   bls.ErrorSecUnmarshal,
 		},
 		{
 			name:  "Bad",
@@ -85,9 +113,10 @@ func TestSecretKeyFromBytes(t *testing.T) {
 
 func TestSerialize(t *testing.T) {
 
-	rk := bls.RandKey()
+	rk, err := bls.RandKey()
+	assert.NoError(t, err)
 	b := rk.Marshal()
 
-	_, err := bls.SecretKeyFromBytes(b)
+	_, err = bls.SecretKeyFromBytes(b)
 	assert.NoError(t, err)
 }

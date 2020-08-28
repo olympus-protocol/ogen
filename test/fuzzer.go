@@ -114,8 +114,9 @@ func FuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.RandKey().PublicKey().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.RandaoReveal = sig
 		d.ValidatorPubkey = pub
 		v = append(v, d)
@@ -134,8 +135,9 @@ func FuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
 		}
 		var sig [96]byte
 		var pub [48]byte
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.RandKey().PublicKey().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature1 = sig
 		d.Signature2 = sig
 		d.ValidatorPublicKey = pub
@@ -191,8 +193,9 @@ func FuzzDeposit(n int, complete bool) []*primitives.Deposit {
 		}
 		var sig [96]byte
 		var pub [48]byte
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.RandKey().PublicKey().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.PublicKey = pub
 		d.Signature = sig
 		if !complete {
@@ -210,8 +213,9 @@ func FuzzDepositData() *primitives.DepositData {
 	f.Fuzz(d)
 	var sig [96]byte
 	var pub [48]byte
+	k, _ := bls.RandKey()
 	copy(sig[:], bls.NewAggregateSignature().Marshal())
-	copy(pub[:], bls.RandKey().PublicKey().Marshal())
+	copy(pub[:], k.PublicKey().Marshal())
 	d.PublicKey = pub
 	d.ProofOfPossession = sig
 	return d
@@ -261,8 +265,9 @@ func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.RandKey().PublicKey().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature = sig
 		d.PublicKey = pub
 		v = append(v, d)
@@ -278,9 +283,9 @@ func FuzzExits(n int) []*primitives.Exit {
 	for i := 0; i < n; i++ {
 		var sig [96]byte
 		var pub [48]byte
-		pubBls := bls.RandKey().PublicKey()
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], pubBls.Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d := &primitives.Exit{
 			ValidatorPubkey: pub,
 			Signature:       sig,
@@ -306,7 +311,7 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 		publicKeys := make([]*bls.PublicKey, 10)
 
 		for i := range secretKeys {
-			secretKeys[i] = bls.RandKey()
+			secretKeys[i], _ = bls.RandKey()
 			publicKeys[i] = secretKeys[i].PublicKey()
 		}
 

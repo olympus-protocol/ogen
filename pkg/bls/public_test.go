@@ -9,7 +9,10 @@ import (
 )
 
 func TestPublicKey_Cache(t *testing.T) {
-	pub := bls.RandKey().PublicKey()
+	k, err := bls.RandKey()
+	assert.NoError(t, err)
+
+	pub := k.PublicKey()
 	pubBytes := pub.Marshal()
 
 	pub1, err := bls.PublicKeyFromBytes(pubBytes)
@@ -96,12 +99,13 @@ func TestPublicKeyFromBytes(t *testing.T) {
 }
 
 func TestPublicKey_Copy(t *testing.T) {
-
-	pubkeyA := bls.RandKey().PublicKey()
+	k, err := bls.RandKey()
+	assert.NoError(t, err)
+	pubkeyA := k.PublicKey()
 	pubkeyBytes := pubkeyA.Marshal()
 
 	pubkeyB := pubkeyA.Copy()
-	pubkeyB.Aggregate(bls.RandKey().PublicKey())
+	pubkeyB.Aggregate(k.PublicKey())
 
 	assert.Equal(t, pubkeyA.Marshal(), pubkeyBytes, "Pubkey was mutated after copy")
 }

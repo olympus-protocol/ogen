@@ -133,8 +133,12 @@ func (w *wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	}
 	passhash := chainhash.HashH([]byte(password))
 	var secret *bls.SecretKey
+	var err error
 	if priv == nil {
-		secret = bls.RandKey()
+		secret, err = bls.RandKey()
+		if err != nil {
+			return err
+		}
 	} else {
 		secret = priv
 	}

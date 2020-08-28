@@ -7,7 +7,8 @@ import (
 )
 
 func TestSignVerify(t *testing.T) {
-	priv := bls.RandKey()
+	priv, err := bls.RandKey()
+	assert.NoError(t, err)
 	pub := priv.PublicKey()
 	msg := []byte("hello")
 	sig := priv.Sign(msg)
@@ -20,7 +21,8 @@ func TestAggregateVerify(t *testing.T) {
 	var msgs [][32]byte
 	for i := 0; i < 100; i++ {
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
-		priv := bls.RandKey()
+		priv, err := bls.RandKey()
+		assert.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
@@ -36,7 +38,9 @@ func TestFastAggregateVerify(t *testing.T) {
 	sigs := make([]*bls.Signature, 0, 100)
 	msg := [32]byte{'h', 'e', 'l', 'l', 'o'}
 	for i := 0; i < 100; i++ {
-		priv := bls.RandKey()
+		priv, err := bls.RandKey()
+		assert.NoError(t, err)
+
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
@@ -111,7 +115,8 @@ func TestAggregateFail(t *testing.T) {
 	sigs := make([]*bls.Signature, 0, 100)
 	msg := [][32]byte{{1, 2, 3}}
 	for i := 0; i < 100; i++ {
-		priv := bls.RandKey()
+		priv, err := bls.RandKey()
+		assert.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign([]byte{1, 2, 3})
 		pubkeys = append(pubkeys, pub)

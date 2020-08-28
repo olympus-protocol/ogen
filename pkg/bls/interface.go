@@ -10,8 +10,6 @@ import (
 )
 
 var (
-	// ErrorSecSize returned when the secret bytes doesn't match the length
-	ErrorSecSize = errors.New("secret key should be 32 bytes")
 	// ErrorSecUnmarshal returned when the secret key is not valid
 	ErrorSecUnmarshal = errors.New("secret key bytes are not on curve")
 	// ErrorPubSize returned when the public key bytes doesn't match the length
@@ -52,12 +50,8 @@ func init() {
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
 func SecretKeyFromBytes(privKey []byte) (*SecretKey, error) {
-	if len(privKey) != 32 {
-		return nil, ErrorSecSize
-	}
-	p := new(big.Int)
-	p.SetBytes(privKey)
-	if p.Cmp(curveOrder) != -1 {
+	p := new(big.Int).SetBytes(privKey)
+	if p.Cmp(RFieldModulus) != -1 {
 		return nil, ErrorSecUnmarshal
 	}
 	return &SecretKey{p: p}, nil
@@ -113,9 +107,12 @@ func NewAggregateSignature() *Signature {
 }
 
 // RandKey creates a new private key using a random input.
-func RandKey() *SecretKey {
-	k, _ := rand.Int(rand.Reader, curveOrder)
-	return &SecretKey{p: k}
+func RandKey() (*SecretKey, error) {
+	k, err := rand.Int(rand.Reader, RFieldModulus)
+	if err != nil {
+		return nil, err
+	}
+	return &SecretKey{k}, nil
 }
 
 func Engine() *bls12381.Engine {
