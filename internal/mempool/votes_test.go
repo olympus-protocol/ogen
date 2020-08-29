@@ -56,10 +56,7 @@ func init() {
 
 	for i := 0; i < 100; i++ {
 		if i < 50 {
-			key, err := bls.RandKey()
-			if err != nil {
-				panic(err)
-			}
+			key := bls.RandKey()
 			validatorKeys1 = append(validatorKeys1, key)
 			val := &primitives.Validator{
 				Balance:          100 * 1e8,
@@ -71,10 +68,7 @@ func init() {
 			copy(val.PubKey[:], key.PublicKey().Marshal())
 			validators1 = append(validators1, val)
 		} else {
-			key, err := bls.RandKey()
-			if err != nil {
-				panic(err)
-			}
+			key := bls.RandKey()
 			validatorKeys2 = append(validatorKeys2, key)
 			val := &primitives.Validator{
 				Balance:          100 * 1e8,

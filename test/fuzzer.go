@@ -114,7 +114,7 @@ func FuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
-		k, _ := bls.RandKey()
+		k := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.RandaoReveal = sig
@@ -135,7 +135,7 @@ func FuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
 		}
 		var sig [96]byte
 		var pub [48]byte
-		k, _ := bls.RandKey()
+		k := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature1 = sig
@@ -193,7 +193,7 @@ func FuzzDeposit(n int, complete bool) []*primitives.Deposit {
 		}
 		var sig [96]byte
 		var pub [48]byte
-		k, _ := bls.RandKey()
+		k := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.PublicKey = pub
@@ -213,7 +213,7 @@ func FuzzDepositData() *primitives.DepositData {
 	f.Fuzz(d)
 	var sig [96]byte
 	var pub [48]byte
-	k, _ := bls.RandKey()
+	k := bls.RandKey()
 	copy(sig[:], bls.NewAggregateSignature().Marshal())
 	copy(pub[:], k.PublicKey().Marshal())
 	d.PublicKey = pub
@@ -265,7 +265,7 @@ func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
-		k, _ := bls.RandKey()
+		k := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature = sig
@@ -283,7 +283,7 @@ func FuzzExits(n int) []*primitives.Exit {
 	for i := 0; i < n; i++ {
 		var sig [96]byte
 		var pub [48]byte
-		k, _ := bls.RandKey()
+		k := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d := &primitives.Exit{
@@ -311,7 +311,7 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 		publicKeys := make([]*bls.PublicKey, 10)
 
 		for i := range secretKeys {
-			secretKeys[i], _ = bls.RandKey()
+			secretKeys[i] = bls.RandKey()
 			publicKeys[i] = secretKeys[i].PublicKey()
 		}
 

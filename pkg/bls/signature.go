@@ -1,36 +1,40 @@
 package bls
 
 import (
-	bls12 "github.com/kilic/bls12-381"
+	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 )
-
-var dst = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_")
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
-	s *bls12.PointG2
-}
-
-// Marshal a signature into a LittleEndian byte slice.
-func (s *Signature) Marshal() []byte {
-	return bls12.NewG2().ToCompressed(s.s)
-}
-
-// Copy returns a full deep copy of a signature.
-func (s *Signature) Copy() *Signature {
-	np := *s.s
-	return &Signature{s: &np}
+	s *bls12.Sign
 }
 
 // Verify a bls signature given a public key, a message.
+//
+// In IETF draft BLS specification:
+// Verify(PK, message, signature) -> VALID or INVALID: a verification
+//      algorithm that outputs VALID if signature is a valid signature of
+//      message under public key PK, and INVALID otherwise.
+//
+// In ETH2.0 specification:
+// def Verify(PK: BLSPubkey, message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
-	ps, _ := bls12.NewG2().HashToCurve(msg, dst)
-	engine.AddPairInv(&bls12.G1One, s.s)
-	engine.AddPair(pubKey.p, ps)
-	return engine.Result().IsOne()
+	return s.s.VerifyByte(pubKey.p, msg)
 }
 
 // AggregateVerify verifies each public key against its respective message.
+// This is vulnerable to rogue public-key attack. Each user must
+// provide a proof-of-knowledge of the public key.
+//
+// In IETF draft BLS specification:
+// AggregateVerify((PK_1, message_1), ..., (PK_n, message_n),
+//      signature) -> VALID or INVALID: an aggregate verification
+//      algorithm that outputs VALID if signature is a valid aggregated
+//      signature for a collection of public keys and messages, and
+//      outputs INVALID otherwise.
+//
+// In ETH2.0 specification:
+// def AggregateVerify(pairs: Sequence[PK: BLSPubkey, message: Bytes], signature: BLSSignature) -> boo
 func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool {
 	size := len(pubKeys)
 	if size == 0 {
@@ -39,25 +43,44 @@ func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool 
 	if size != len(msgs) {
 		return false
 	}
-	engine.AddPairInv(&bls12.G1One, s.s)
+	msgSlices := make([]byte, 0, 32*len(msgs))
+	rawKeys := make([]bls12.PublicKey, 0, len(pubKeys))
 	for i := 0; i < size; i++ {
-		g2 := bls12.NewG2()
-		ps, _ := g2.HashToCurve(msgs[i][:], dst)
-		engine.AddPair(pubKeys[i].p, ps)
+		msgSlices = append(msgSlices, msgs[i][:]...)
+		rawKeys = append(rawKeys, *(pubKeys[i].p))
 	}
-	return engine.Result().IsOne()
+	// Use "NoCheck" because we do not care if the messages are unique or not.
+	return s.s.AggregateVerifyNoCheck(rawKeys, msgSlices)
 }
 
 // FastAggregateVerify verifies all the provided public keys with their aggregated signature.
+//
+// In IETF draft BLS specification:
+// FastAggregateVerify(PK_1, ..., PK_n, message, signature) -> VALID
+//      or INVALID: a verification algorithm for the aggregate of multiple
+//      signatures on the same message.  This function is faster than
+//      AggregateVerify.
+//
+// In ETH2.0 specification:
+// def FastAggregateVerify(PKs: Sequence[BLSPubkey], message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool {
-	size := len(pubKeys)
-	if size == 0 {
+	if len(pubKeys) == 0 {
 		return false
 	}
-	ps, _ := bls12.NewG2().HashToCurve(msg[:], dst)
-	engine.AddPairInv(&bls12.G1One, s.s)
-	for _, pub := range pubKeys {
-		engine.AddPair(pub.p, ps)
+	rawKeys := make([]bls12.PublicKey, len(pubKeys))
+	for i := 0; i < len(pubKeys); i++ {
+		rawKeys[i] = *(pubKeys[i].p)
 	}
-	return engine.Result().IsOne()
+
+	return s.s.FastAggregateVerify(rawKeys, msg[:])
+}
+
+// Marshal a signature into a LittleEndian byte slice.
+func (s *Signature) Marshal() []byte {
+	return s.s.Serialize()
+}
+
+// Copy returns a full deep copy of a signature.
+func (s *Signature) Copy() *Signature {
+	return &Signature{s: &*s.s}
 }

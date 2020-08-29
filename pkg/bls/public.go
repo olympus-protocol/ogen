@@ -1,19 +1,27 @@
 package bls
 
 import (
-	"github.com/kilic/bls12-381"
+	"github.com/dgraph-io/ristretto"
+	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
+var maxKeys = int64(100000)
+var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
+	NumCounters: maxKeys,
+	MaxCost:     1 << 22, // ~4mb is cache max size
+	BufferItems: 64,
+})
+
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
-	p *bls12381.PointG1
+	p *bls12.PublicKey
 }
 
 // Marshal a public key into a LittleEndian byte slice.
 func (p *PublicKey) Marshal() []byte {
-	return bls12381.NewG1().ToCompressed(p.p)
+	return p.p.Serialize()
 }
 
 // Copy the public key to a new pointer reference.
@@ -24,7 +32,8 @@ func (p *PublicKey) Copy() *PublicKey {
 
 // Aggregate two public keys.
 func (p *PublicKey) Aggregate(p2 *PublicKey) *PublicKey {
-	return &PublicKey{p: bls12381.NewG1().Add(p.p, p.p, p2.p)}
+	p.p.Add(p2.p)
+	return p
 }
 
 // Hash calculates the hash of the public key.

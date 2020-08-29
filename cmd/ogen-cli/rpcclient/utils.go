@@ -59,10 +59,7 @@ func (c *RPCClient) submitRawData(args []string) (string, error) {
 }
 
 func (c *RPCClient) genKeyPair(raw bool) (string, error) {
-	blsKeyPair, err := bls.RandKey()
-	if err != nil {
-		return "", err
-	}
+	blsKeyPair := bls.RandKey()
 
 	var res *bls.KeyPair
 	if raw {

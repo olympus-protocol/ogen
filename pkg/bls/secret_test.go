@@ -1,63 +1,17 @@
 package bls_test
 
 import (
-	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-
-func TestRandKey(t *testing.T) {
-	for i := 0; i < 50000; i++ {
-		r, err := bls.RandKey()
-		assert.NoError(t, err)
-		mar := r.Marshal()
-		_, err = bls.SecretKeyFromBytes(mar)
-		assert.NoError(t, err)
-	}
-}
-
-func TestRandKeyWithSign(t *testing.T) {
-	for i := 0; i < 2000; i++ {
-		r, err := bls.RandKey()
-		if err != nil {
-			assert.NoError(t, err)
-		}
-		sig := r.Sign([]byte("a"))
-		assert.True(t, sig.Verify(r.PublicKey(), []byte("a")))
-		mar := r.Marshal()
-		_, err = bls.SecretKeyFromBytes(mar)
-		assert.NoError(t, err)
-
-	}
-}
-
-func TestSecretKey_ToWIF(t *testing.T) {
-
-	bls.Initialize(testdata.TestParams)
-
-	secBytes, err := hex.DecodeString("28291cbbfaba8ca4d350a7a7f59cac06f7cb2a346e396389d30b0a6c5b59ec73")
-	assert.NoError(t, err)
-
-	sec, err := bls.SecretKeyFromBytes(secBytes)
-	assert.NoError(t, err)
-
-	wif := sec.ToWIF()
-	assert.Equal(t, "itprv19q53ewl6h2x2f56s57nlt89vqmmuk235dcuk8zwnpv9xck6ea3esywcazn", wif)
-}
-
 func TestMarshalUnmarshal(t *testing.T) {
-	k, err := bls.RandKey()
-	assert.NoError(t, err)
-	b := k.Marshal()
-	var b32 [32]byte
-	copy(b32[:], b)
-	pk, err := bls.SecretKeyFromBytes(b32[:])
+	b := bls.RandKey().Marshal()
+	pk, err := bls.SecretKeyFromBytes(b)
 	require.NoError(t, err)
-	pk2, err := bls.SecretKeyFromBytes(b32[:])
+	pk2, err := bls.SecretKeyFromBytes(b)
 	require.NoError(t, err)
 	assert.Equal(t, pk.Marshal(), pk2.Marshal())
 }
@@ -70,22 +24,22 @@ func TestSecretKeyFromBytes(t *testing.T) {
 	}{
 		{
 			name: "Nil",
-			err:  bls.ErrorSecUnmarshal,
+			err:  bls.ErrorSecSize,
 		},
 		{
 			name:  "Empty",
 			input: []byte{},
-			err:   bls.ErrorSecUnmarshal,
+			err:   bls.ErrorSecSize,
 		},
 		{
 			name:  "Short",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSecUnmarshal,
+			err:   bls.ErrorSecSize,
 		},
 		{
 			name:  "Long",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSecUnmarshal,
+			err:   bls.ErrorSecSize,
 		},
 		{
 			name:  "Bad",
@@ -102,7 +56,7 @@ func TestSecretKeyFromBytes(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			res, err := bls.SecretKeyFromBytes(test.input)
 			if test.err != nil {
-				assert.Equal(t, test.err, err)
+				assert.Error(t, test.err, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, test.input, res.Marshal())
@@ -112,11 +66,9 @@ func TestSecretKeyFromBytes(t *testing.T) {
 }
 
 func TestSerialize(t *testing.T) {
-
-	rk, err := bls.RandKey()
-	assert.NoError(t, err)
+	rk := bls.RandKey()
 	b := rk.Marshal()
 
-	_, err = bls.SecretKeyFromBytes(b)
+	_, err := bls.SecretKeyFromBytes(b)
 	assert.NoError(t, err)
 }

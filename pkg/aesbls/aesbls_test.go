@@ -14,8 +14,7 @@ var encKeyWrong = []byte("test2")
 
 func Test_EncryptDecrypt(t *testing.T) {
 
-	rand, err := bls.RandKey()
-	assert.NoError(t, err)
+	rand := bls.RandKey()
 
 	keyBytes := rand.Marshal()
 	nonce, salt, cipher, err := aesbls.Encrypt(keyBytes, encKey)
@@ -34,8 +33,7 @@ func Test_EncryptDecrypt(t *testing.T) {
 }
 
 func Test_SimpleEncryptDecrypt(t *testing.T) {
-	rand, err := bls.RandKey()
-	assert.NoError(t, err)
+	rand := bls.RandKey()
 
 	keyBytes := rand.Marshal()
 

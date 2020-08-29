@@ -135,10 +135,7 @@ func (w *wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	var secret *bls.SecretKey
 	var err error
 	if priv == nil {
-		secret, err = bls.RandKey()
-		if err != nil {
-			return err
-		}
+		secret = bls.RandKey()
 	} else {
 		secret = priv
 	}

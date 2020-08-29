@@ -1,53 +1,11 @@
 package bls_test
 
 import (
-	"encoding/hex"
+	"bytes"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-func TestPublicKey_Cache(t *testing.T) {
-	k, err := bls.RandKey()
-	assert.NoError(t, err)
-
-	pub := k.PublicKey()
-	pubBytes := pub.Marshal()
-
-	pub1, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	pub2, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	assert.Equal(t, pub1, pub2)
-}
-
-func TestPublicKey_Hash(t *testing.T) {
-	pubBytes, err := hex.DecodeString("8817994e67c131ed73d6ff851013be76322dccdeb78755bb341768b7e76ccd9a7982bcfd19d923a2c1f1556a45163695")
-	assert.NoError(t, err)
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	hash, err := pub.Hash()
-	assert.NoError(t, err)
-	assert.Equal(t, "a47fad160040ba7b1b54b35dc74b1993664b522c", hex.EncodeToString(hash[:]))
-}
-
-func TestPublicKey_ToAccount(t *testing.T) {
-	bls.Initialize(testdata.TestParams)
-
-	pubBytes, err := hex.DecodeString("8817994e67c131ed73d6ff851013be76322dccdeb78755bb341768b7e76ccd9a7982bcfd19d923a2c1f1556a45163695")
-	assert.NoError(t, err)
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	acc := pub.ToAccount()
-	assert.Equal(t, "itpub153l669sqgza8kx65kdwuwjcejdnyk53v3nq49a", acc)
-}
 
 func TestPublicKeyFromBytes(t *testing.T) {
 	tests := []struct {
@@ -57,22 +15,22 @@ func TestPublicKeyFromBytes(t *testing.T) {
 	}{
 		{
 			name: "Nil",
-			err:  bls.ErrorPubSize,
+			err:  bls.ErrorPubKeySize,
 		},
 		{
 			name:  "Empty",
 			input: []byte{},
-			err:   bls.ErrorPubSize,
+			err:   bls.ErrorPubKeySize,
 		},
 		{
 			name:  "Short",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorPubSize,
+			err:   bls.ErrorPubKeySize,
 		},
 		{
 			name:  "Long",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorPubSize,
+			err:   bls.ErrorPubKeySize,
 		},
 		{
 			name:  "Bad",
@@ -99,13 +57,13 @@ func TestPublicKeyFromBytes(t *testing.T) {
 }
 
 func TestPublicKey_Copy(t *testing.T) {
-	k, err := bls.RandKey()
-	assert.NoError(t, err)
-	pubkeyA := k.PublicKey()
+	pubkeyA := bls.RandKey().PublicKey()
 	pubkeyBytes := pubkeyA.Marshal()
 
 	pubkeyB := pubkeyA.Copy()
-	pubkeyB.Aggregate(k.PublicKey())
+	pubkeyB.Aggregate(bls.RandKey().PublicKey())
 
-	assert.Equal(t, pubkeyA.Marshal(), pubkeyBytes, "Pubkey was mutated after copy")
+	if !bytes.Equal(pubkeyA.Marshal(), pubkeyBytes) {
+		t.Fatal("Pubkey was mutated after copy")
+	}
 }
