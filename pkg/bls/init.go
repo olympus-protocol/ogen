@@ -48,7 +48,7 @@ func PublicKeyFromBytes(pubKey []byte) (*PublicKey, error) {
 	if len(pubKey) != 48 {
 		return nil, ErrorPubKeySize
 	}
- 	if cv, ok := pubkeyCache.Get(string(pubKey)); ok {
+	if cv, ok := pubkeyCache.Get(string(pubKey)); ok {
 		return cv.(*PublicKey).Copy(), nil
 	}
 	p := &bls12.PublicKey{}

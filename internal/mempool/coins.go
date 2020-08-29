@@ -289,7 +289,7 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(cm.ctx)
 		if err != nil {
-			cm.log.Warnf("error getting next message in coins topic: %s", err)
+			cm.log.Warnf("error getting next message in coins multi topic: %s", err)
 			return
 		}
 

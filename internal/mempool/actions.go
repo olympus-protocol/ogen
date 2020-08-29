@@ -256,7 +256,7 @@ func (am *actionMempool) handleDepositBulkSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
 		if err != nil {
-			am.log.Warnf("error getting next message in deposits topic: %s", err)
+			am.log.Warnf("error getting next message in deposits bulk topic: %s", err)
 			return
 		}
 
@@ -479,7 +479,7 @@ func (am *actionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
 		if err != nil {
-			am.log.Warnf("error getting next message in exits topic: %s", err)
+			am.log.Warnf("error getting next message in governance topic: %s", err)
 			return
 		}
 
@@ -565,7 +565,7 @@ func (am *actionMempool) handleExitBulkSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
 		if err != nil {
-			am.log.Warnf("error getting next message in exits topic: %s", err)
+			am.log.Warnf("error getting next message in exits bulk topic: %s", err)
 			return
 		}
 
