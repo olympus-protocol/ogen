@@ -305,36 +305,6 @@
           "Chain"
         ]
       }
-    },
-    "/chain/tx/{hash}": {
-      "get": {
-        "operationId": "Chain_GetTransaction",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/Tx"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "hash",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Chain"
-        ]
-      }
     }
   },
   "definitions": {
@@ -350,12 +320,6 @@
         "nonce": {
           "type": "string",
           "format": "uint64"
-        },
-        "txs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       }
     },
@@ -494,35 +458,6 @@
           "type": "string"
         },
         "type": {
-          "type": "string"
-        }
-      }
-    },
-    "Tx": {
-      "type": "object",
-      "properties": {
-        "hash": {
-          "type": "string"
-        },
-        "to": {
-          "type": "string"
-        },
-        "from_public_key": {
-          "type": "string"
-        },
-        "amount": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "nonce": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "fee": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "signature": {
           "type": "string"
         }
       }

@@ -150,8 +150,6 @@ func (c *CLI) Run(optArgs []string) {
 			out, err = c.rpcClient.getBlock(args[1:])
 		case "getaccountinfo":
 			out, err = c.rpcClient.getAccountInfo(args[1:])
-		case "gettransaction":
-			out, err = c.rpcClient.getTransaction(args[1:])
 
 		// Validator methods
 		case "getvalidatorslist":
