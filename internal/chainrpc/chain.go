@@ -269,16 +269,6 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 	}
 	copy(account[:], decoded)
 	nonce := s.chain.State().TipState().GetCoinsState().Nonces[account]
-	txs, err := s.chain.GetAccountTxs(account)
-	if err != nil {
-		return nil, err
-	}
-	var transactions []string
-	if len(txs.Txs) > 0 {
-		transactions = txs.Strings()
-	} else {
-		transactions = []string{}
-	}
 	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().GetCoinsState().Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
 	lock := decimal.NewFromInt(0)
 	for _, v := range s.chain.State().TipState().GetValidatorRegistry() {
@@ -293,32 +283,10 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 	}
 	accInfo := &proto.AccountInfo{
 		Account: data.Account,
-		Txs:     transactions,
 		Balance: balance,
 		Nonce:   nonce,
 	}
 	return accInfo, nil
-}
-
-func (s *chainServer) GetTransaction(ctx context.Context, h *proto.Hash) (*proto.Tx, error) {
-	txid, err := chainhash.NewHashFromStr(h.Hash)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := s.chain.GetTx(*txid)
-	if err != nil {
-		return nil, err
-	}
-	txParse := &proto.Tx{
-		Hash:          tx.Hash().String(),
-		To:            hex.EncodeToString(tx.To[:]),
-		FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
-		Amount:        tx.Amount,
-		Nonce:         tx.Nonce,
-		Fee:           tx.Fee,
-		Signature:     hex.EncodeToString(tx.Signature[:]),
-	}
-	return txParse, nil
 }
 
 var _ proto.ChainServer = &chainServer{}

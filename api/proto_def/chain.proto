@@ -73,19 +73,6 @@ service Chain {
     }
 
     /** 
-        Method: GetTransaction 
-        Input: message Account
-        Response: message AccountInfo
-        Description: Returns the current account information
-    */
-
-    rpc GetTransaction(Hash) returns (Tx) {
-        option (google.api.http) = {
-            get: "/chain/tx/{hash}"
-        };
-    }
-
-    /** 
         Method: Sync 
         Input: message Hash
         Response: message RawData
@@ -154,7 +141,6 @@ message AccountInfo {
     string account = 1;
     Balance balance = 2;
     uint64 nonce = 3;
-    repeated string txs = 4;
 }
 
 
