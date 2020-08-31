@@ -365,14 +365,14 @@ func (p *proposer) VoteForBlocks() {
 				if !found {
 					continue
 				}
-				//signFunc := func(message *actionmanager.ValidatorHelloMessage) *bls.Signature {
-				//	msg := message.SignatureMessage()
-				//	return key.Sign(msg)
-				//}
-				//if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
-				signatures = append(signatures, key.Sign(dataHash[:]))
-				bitlistVotes.Set(uint(i))
-				//}
+				signFunc := func(message *primitives.ValidatorHelloMessage) *bls.Signature {
+					msg := message.SignatureMessage()
+						return key.Sign(msg)
+				}
+				if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
+					signatures = append(signatures, key.Sign(dataHash[:]))
+					bitlistVotes.Set(uint(i))
+				}
 			}
 			if len(signatures) > 0 {
 				sig := bls.AggregateSignatures(signatures)

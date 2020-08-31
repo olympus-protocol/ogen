@@ -103,6 +103,10 @@ func (s *server) Start() {
 			s.log.Fatal("unable to start rpc server")
 		}
 	}()
+	err = s.prop.Start()
+	if err != nil {
+		s.log.Fatal("unable to start proposer")
+	}
 }
 
 // Stop closes the ogen services.
