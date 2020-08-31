@@ -2,13 +2,10 @@ package chain_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	"fmt"
-
 	"github.com/golang/mock/gomock"
 	fuzz "github.com/google/gofuzz"
-	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -19,15 +16,10 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
 )
-
-// ctx is the global context used for the entire test
-var ctx = context.Background()
-
-// mockNet is a mock network used for PubSubs from libp2p
-var mockNet = mocknet.New(ctx)
 
 // validatorKeys is a slice of signatures that match the validators index
 var validatorKeys1 []bls_interface.SecretKey
@@ -107,11 +99,11 @@ func TestBlockchain_Instance(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	log.EXPECT().Info("Loading chain state...").Times(1)
 	log.EXPECT().Info("Starting Blockchain instance").Times(1)
-	log.EXPECT().Warn(gomock.Any()).AnyTimes()
+	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
 
 	db := blockdb.NewMockBlockDB(ctrl)
 	db.EXPECT().View(gomock.Any()).AnyTimes()
-	db.EXPECT().Update(gomock.Any()).Times(4)
+	db.EXPECT().Update(gomock.Any()).Return(nil).AnyTimes()
 	var c chain.Config
 	c.Log = log
 	c.Datadir = testdata.Conf.DataFolder
@@ -122,16 +114,15 @@ func TestBlockchain_Instance(t *testing.T) {
 	err = bc.Start()
 	assert.NoError(t, err)
 
-	/*genTime := bc.GenesisTime()
-	assert.Equal(t, stateParams.GenesisTime, genTime)*/
+	genTime := bc.GenesisTime()
+	assert.NotNil(t, genTime)
 
 	//block-related methods
-	block := primitives.GetGenesisBlock()
-	genesisHash = block.Hash()
+	genblock := primitives.GetGenesisBlock()
+	genesisHash = genblock.Hash()
 
-	//get signature
-	currState, erro := bc.State().GetStateForHash(genesisHash)
-	fmt.Println(currState, erro)
+	//get signature of genesis hash
+	currState, _ := bc.State().GetStateForHash(genesisHash)
 
 	b := primitives.Block{
 		Header: &primitives.BlockHeader{
@@ -153,25 +144,33 @@ func TestBlockchain_Instance(t *testing.T) {
 		},
 		Txs: []*primitives.Tx{},
 	}
+	// sign the block with the next validator
 	valPub, err := currState.GetProposerPublicKey(&b, param)
 	assert.NoError(t, err)
-
-	fmt.Println(valPub, err)
-
 	var priv bls_interface.SecretKey
 	for _, element := range validatorKeys1 {
 		if bytes.Equal(element.PublicKey().Marshal(), valPub.Marshal()) {
 			priv = element
 		}
 	}
-	bH := b.Hash()
-	fmt.Println(bH)
-	sig := priv.Sign(bH[:])
-	var ds [96]byte
-	copy(ds[:], sig.Marshal())
-	b.Signature = ds
+	assert.NotNil(t, priv)
+	randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", 1)))
+	randaoSig := priv.Sign(randaoHash[:])
 
+	bH := b.Hash()
+	blockSig := priv.Sign(bH[:])
+	var ds [96]byte
+	var rs [96]byte
+	copy(ds[:], blockSig.Marshal())
+	copy(rs[:], randaoSig.Marshal())
+	b.Signature = ds
+	b.RandaoSignature = rs
+
+	// ProcessBlock
 	err = bc.ProcessBlock(&b)
-	fmt.Println(err)
+	assert.NoError(t, err)
+
+	err = os.Remove("./tx.db")
+	assert.NoError(t, err)
 
 }

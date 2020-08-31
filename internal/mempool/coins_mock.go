@@ -35,7 +35,7 @@ func (m *MockCoinsMempool) EXPECT() *MockCoinsMempoolMockRecorder {
 }
 
 // Add mocks base method
-func (m *MockCoinsMempool) Add(item primitives.Tx, state *primitives.CoinsState) error {
+func (m *MockCoinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", item, state)
 	ret0, _ := ret[0].(error)
@@ -76,7 +76,7 @@ func (mr *MockCoinsMempoolMockRecorder) Get(maxTransactions, s interface{}) *gom
 }
 
 // AddMulti mocks base method
-func (m *MockCoinsMempool) AddMulti(item primitives.TxMulti, state *primitives.CoinsState) error {
+func (m *MockCoinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddMulti", item, state)
 	ret0, _ := ret[0].(error)
