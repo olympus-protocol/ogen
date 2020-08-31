@@ -11,7 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
@@ -22,8 +21,8 @@ import (
 )
 
 // validatorKeys is a slice of signatures that match the validators index
-var validatorKeys1 []bls_interface.SecretKey
-var validatorKeys2 []bls_interface.SecretKey
+var validatorKeys1 []*bls.SecretKey
+var validatorKeys2 []*bls.SecretKey
 
 // validators are the initial validators on the realState
 var validators1 []*primitives.Validator
@@ -52,8 +51,8 @@ func init() {
 
 	for i := 0; i < 100; i++ {
 		if i < 50 {
-			key := bls.CurrImplementation.RandKey()
-			validatorKeys1 = append(validatorKeys1, bls.CurrImplementation.RandKey())
+			key := bls.RandKey()
+			validatorKeys1 = append(validatorKeys1, bls.RandKey())
 			val := &primitives.Validator{
 				Balance:          100 * 1e8,
 				PayeeAddress:     addrByte,
@@ -64,8 +63,8 @@ func init() {
 			copy(val.PubKey[:], key.PublicKey().Marshal())
 			validators1 = append(validators1, val)
 		} else {
-			key := bls.CurrImplementation.RandKey()
-			validatorKeys2 = append(validatorKeys2, bls.CurrImplementation.RandKey())
+			key := bls.RandKey()
+			validatorKeys2 = append(validatorKeys2, bls.RandKey())
 			val := &primitives.Validator{
 				Balance:          100 * 1e8,
 				PayeeAddress:     addrByte,
@@ -147,7 +146,7 @@ func TestBlockchain_Instance(t *testing.T) {
 	// sign the block with the next validator
 	valPub, err := currState.GetProposerPublicKey(&b, param)
 	assert.NoError(t, err)
-	var priv bls_interface.SecretKey
+	var priv *bls.SecretKey
 	for _, element := range validatorKeys1 {
 		if bytes.Equal(element.PublicKey().Marshal(), valPub.Marshal()) {
 			priv = element
