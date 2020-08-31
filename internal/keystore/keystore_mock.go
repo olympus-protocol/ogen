@@ -6,7 +6,7 @@ package keystore
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	bbolt "go.etcd.io/bbolt"
 	reflect "reflect"

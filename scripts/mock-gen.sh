@@ -20,5 +20,4 @@ mockgen --source internal/hostnode/syncprotocol.go --destination internal/hostno
 mockgen --source internal/proposer/proposer.go --destination internal/proposer/proposer_mock.go --package proposer
 mockgen --source internal/server/server.go --destination internal/server/server_mock.go --package server
 mockgen --source internal/state/interface.go --destination internal/state/interface_mock.go --package state
-mockgen --source internal/txindex/txindex.go --destination internal/txindex/txindex_mock.go --package txindex
 mockgen --source internal/wallet/wallet.go --destination internal/wallet/wallet_mock.go --package wallet

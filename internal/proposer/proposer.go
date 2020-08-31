@@ -367,7 +367,7 @@ func (p *proposer) VoteForBlocks() {
 				}
 				signFunc := func(message *primitives.ValidatorHelloMessage) *bls.Signature {
 					msg := message.SignatureMessage()
-						return key.Sign(msg)
+					return key.Sign(msg)
 				}
 				if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
 					signatures = append(signatures, key.Sign(dataHash[:]))

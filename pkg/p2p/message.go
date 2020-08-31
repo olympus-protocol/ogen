@@ -21,8 +21,6 @@ var (
 )
 
 const (
-	// MaxMessageHeaderSize is the maximum bytes a MessageHeader can contain
-	MaxMessageHeaderSize = 60
 	// MsgBlockCmd is a single block element
 	MsgBlockCmd = "block"
 	// MsgTxCmd is a single tx element

@@ -9,7 +9,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chainindex "github.com/olympus-protocol/ogen/internal/chainindex"
 	state "github.com/olympus-protocol/ogen/internal/state"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
 	time "time"

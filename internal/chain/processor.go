@@ -3,7 +3,6 @@ package chain
 import (
 	"errors"
 	"fmt"
-	"github.com/olympus-protocol/ogen/internal/txindex"
 	"time"
 
 	"github.com/olympus-protocol/ogen/internal/blockdb"
@@ -290,30 +289,6 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 		// TODO: add a log that shows network participation with expected.
 
-		// Once a block is accepted build tx chainindex and account tx tracking
-
-		for i, tx := range block.Txs {
-			locator := txindex.TxLocator{
-				Hash:  tx.Hash(),
-				Block: block.Hash(),
-				Index: uint64(i),
-			}
-			from, err := tx.FromPubkeyHash()
-			if err != nil {
-				return err
-			}
-
-			// Add chainindex to senders
-			err = ch.txidx.SetTx(locator, from)
-			if err != nil {
-				return err
-			}
-			// Add chainindex to receivers
-			err = ch.txidx.SetTx(locator, tx.To)
-			if err != nil {
-				return err
-			}
-		}
 		ch.notifeeLock.RLock()
 		stateCopy := newState.Copy()
 		for i := range ch.notifees {
