@@ -9,7 +9,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chainindex "github.com/olympus-protocol/ogen/internal/chainindex"
 	state "github.com/olympus-protocol/ogen/internal/state"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
 	time "time"
@@ -63,7 +63,7 @@ func (mr *MockLastActionManagerMockRecorder) handleStartTopic(topic interface{})
 }
 
 // StartValidator mocks base method
-func (m *MockLastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) bls_interface.Signature) bool {
+func (m *MockLastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartValidator", valPub, sign)
 	ret0, _ := ret[0].(bool)

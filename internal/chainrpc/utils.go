@@ -24,22 +24,6 @@ type utilsServer struct {
 	proto.UnimplementedUtilsServer
 }
 
-func (s *utilsServer) StartProposer(ctx context.Context, in *proto.Empty) (*proto.Success, error) {
-	err := s.proposer.Start()
-	if err != nil {
-		return &proto.Success{Success: false, Error: err.Error()}, nil
-	}
-	return &proto.Success{Success: true}, nil
-}
-func (s *utilsServer) StopProposer(ctx context.Context, _ *proto.Empty) (*proto.Success, error) {
-	s.proposer.Stop()
-	err := s.proposer.Keystore().Close()
-	if err != nil {
-		return &proto.Success{Success: false, Error: err.Error()}, nil
-	}
-	return &proto.Success{Success: true}, nil
-}
-
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
 	key, err := s.proposer.Keystore().GenerateNewValidatorKey(in.Keys)
 	if err != nil {

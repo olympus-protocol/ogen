@@ -1,10 +1,13 @@
-package bls_interface
+package bls
 
 import (
 	"crypto/rand"
 	"encoding/binary"
 	mrand "math/rand"
 )
+
+// Rand is alias for underlying random generator.
+type Rand = mrand.Rand
 
 type source struct{}
 
@@ -27,9 +30,6 @@ func (s *source) Uint64() (val uint64) {
 	}
 	return
 }
-
-// Rand is alias for underlying random generator.
-type Rand = mrand.Rand
 
 // NewGenerator returns a new generator that uses random values from crypto/rand as a source
 // (cryptographically secure random number generator).

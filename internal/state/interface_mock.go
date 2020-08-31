@@ -7,7 +7,7 @@ package state
 import (
 	gomock "github.com/golang/mock/gomock"
 	logger "github.com/olympus-protocol/ogen/internal/logger"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	params "github.com/olympus-protocol/ogen/pkg/params"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
@@ -472,10 +472,10 @@ func (mr *MockStateMockRecorder) ProcessVote(v, p, proposerIndex interface{}) *g
 }
 
 // GetProposerPublicKey mocks base method
-func (m *MockState) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (bls_interface.PublicKey, error) {
+func (m *MockState) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProposerPublicKey", b, p)
-	ret0, _ := ret[0].(bls_interface.PublicKey)
+	ret0, _ := ret[0].(*bls.PublicKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

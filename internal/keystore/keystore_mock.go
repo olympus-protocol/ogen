@@ -6,7 +6,7 @@ package keystore
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	bbolt "go.etcd.io/bbolt"
 	reflect "reflect"
@@ -106,10 +106,10 @@ func (mr *MockKeystoreMockRecorder) Close() *gomock.Call {
 }
 
 // GetValidatorKey mocks base method
-func (m *MockKeystore) GetValidatorKey(pubkey [48]byte) (bls_interface.SecretKey, bool) {
+func (m *MockKeystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorKey", pubkey)
-	ret0, _ := ret[0].(bls_interface.SecretKey)
+	ret0, _ := ret[0].(*bls.SecretKey)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -121,10 +121,10 @@ func (mr *MockKeystoreMockRecorder) GetValidatorKey(pubkey interface{}) *gomock.
 }
 
 // GetValidatorKeys mocks base method
-func (m *MockKeystore) GetValidatorKeys() ([]bls_interface.SecretKey, error) {
+func (m *MockKeystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorKeys")
-	ret0, _ := ret[0].([]bls_interface.SecretKey)
+	ret0, _ := ret[0].([]*bls.SecretKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -136,10 +136,10 @@ func (mr *MockKeystoreMockRecorder) GetValidatorKeys() *gomock.Call {
 }
 
 // GenerateNewValidatorKey mocks base method
-func (m *MockKeystore) GenerateNewValidatorKey(amount uint64) ([]bls_interface.SecretKey, error) {
+func (m *MockKeystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateNewValidatorKey", amount)
-	ret0, _ := ret[0].([]bls_interface.SecretKey)
+	ret0, _ := ret[0].([]*bls.SecretKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -151,7 +151,7 @@ func (mr *MockKeystoreMockRecorder) GenerateNewValidatorKey(amount interface{}) 
 }
 
 // addKey mocks base method
-func (m *MockKeystore) addKey(priv bls_interface.SecretKey) error {
+func (m *MockKeystore) addKey(priv *bls.SecretKey) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "addKey", priv)
 	ret0, _ := ret[0].(error)
@@ -165,7 +165,7 @@ func (mr *MockKeystoreMockRecorder) addKey(priv interface{}) *gomock.Call {
 }
 
 // addKeyMap mocks base method
-func (m *MockKeystore) addKeyMap(hash chainhash.Hash, key bls_interface.SecretKey) error {
+func (m *MockKeystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "addKeyMap", hash, key)
 	ret0, _ := ret[0].(error)

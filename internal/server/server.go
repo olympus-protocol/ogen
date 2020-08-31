@@ -103,6 +103,10 @@ func (s *server) Start() {
 			s.log.Fatal("unable to start rpc server")
 		}
 	}()
+	err = s.prop.Start()
+	if err != nil {
+		s.log.Fatal("unable to start proposer")
+	}
 }
 
 // Stop closes the ogen services.
@@ -119,10 +123,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 
 	logger.Tracef("Initializing bls module with params for %v", currParams.Name)
 
-	err := bls.Initialize(currParams, "blst")
-	if err != nil {
-		return nil, err
-	}
+	bls.Initialize(currParams)
 
 	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
 	if err != nil {

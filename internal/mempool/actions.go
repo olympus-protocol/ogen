@@ -40,13 +40,15 @@ var _ ActionMempool = &actionMempool{}
 // ActionMempool keeps track of actions to be added to the blockchain
 // such as deposits, withdrawals, slashings, etc.
 type actionMempool struct {
-	depositsLock  sync.Mutex
-	deposits      map[chainhash.Hash]*primitives.Deposit
-	depositsTopic *pubsub.Topic
+	depositsLock       sync.Mutex
+	deposits           map[chainhash.Hash]*primitives.Deposit
+	depositsTopic      *pubsub.Topic
+	depositsSliceTopic *pubsub.Topic
 
-	exitsLock  sync.Mutex
-	exits      map[chainhash.Hash]*primitives.Exit
-	exitsTopic *pubsub.Topic
+	exitsLock       sync.Mutex
+	exits           map[chainhash.Hash]*primitives.Exit
+	exitsTopic      *pubsub.Topic
+	exitsSliceTopic *pubsub.Topic
 
 	voteSlashingLock sync.Mutex
 	voteSlashings    []*primitives.VoteSlashing
@@ -146,7 +148,17 @@ func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainPar
 		return nil, err
 	}
 
+	depositSliceTopic, err := hostnode.Topic(p2p.MsgDepositsCmd)
+	if err != nil {
+		return nil, err
+	}
+
 	depositTopicSub, err := depositTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	depositSliceTopicSub, err := depositSliceTopic.Subscribe()
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +168,17 @@ func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainPar
 		return nil, err
 	}
 
+	exitSliceTopic, err := hostnode.Topic(p2p.MsgExitsCmd)
+	if err != nil {
+		return nil, err
+	}
+
 	exitTopicSub, err := exitTopic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	exitSliceTopicSub, err := exitSliceTopic.Subscribe()
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +212,9 @@ func NewActionMempool(ctx context.Context, log logger.Logger, p *params.ChainPar
 	blockchain.Notify(am)
 
 	go am.handleDepositSub(depositTopicSub)
+	go am.handleDepositBulkSub(depositSliceTopicSub)
 	go am.handleExitSub(exitTopicSub)
+	go am.handleExitBulkSub(exitSliceTopicSub)
 	go am.handleGovernanceSub(governanceTopicSub)
 
 	return am, nil
@@ -225,6 +249,40 @@ func (am *actionMempool) handleDepositSub(sub *pubsub.Subscription) {
 		if err != nil {
 			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
+	}
+}
+
+func (am *actionMempool) handleDepositBulkSub(sub *pubsub.Subscription) {
+	for {
+		msg, err := sub.Next(am.ctx)
+		if err != nil {
+			am.log.Warnf("error getting next message in deposits bulk topic: %s", err)
+			return
+		}
+
+		buf := bytes.NewBuffer(msg.Data)
+
+		depositMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
+
+		if err != nil {
+			am.log.Warnf("unable to decode message: %s", err)
+			return
+		}
+
+		deposit, ok := depositMsg.(*p2p.MsgDeposits)
+		if !ok {
+			am.log.Warnf("peer sent wrong message on deposit subscription")
+			return
+		}
+
+		currentState := am.blockchain.State().TipState()
+		for _, d := range deposit.Data {
+			err = am.AddDeposit(d, currentState)
+			if err != nil {
+				am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+			}
+		}
+
 	}
 }
 
@@ -421,7 +479,7 @@ func (am *actionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
 	for {
 		msg, err := sub.Next(am.ctx)
 		if err != nil {
-			am.log.Warnf("error getting next message in exits topic: %s", err)
+			am.log.Warnf("error getting next message in governance topic: %s", err)
 			return
 		}
 
@@ -500,6 +558,38 @@ func (am *actionMempool) handleExitSub(sub *pubsub.Subscription) {
 		if err != nil {
 			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 		}
+	}
+}
+
+func (am *actionMempool) handleExitBulkSub(sub *pubsub.Subscription) {
+	for {
+		msg, err := sub.Next(am.ctx)
+		if err != nil {
+			am.log.Warnf("error getting next message in exits bulk topic: %s", err)
+			return
+		}
+
+		buf := bytes.NewBuffer(msg.Data)
+
+		exitMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
+		if err != nil {
+			am.log.Warnf("unable to decode exit message: %s", err)
+			return
+		}
+
+		exit, ok := exitMsg.(*p2p.MsgExits)
+		if !ok {
+			am.log.Warnf("peer sent wrong message on exit subscription")
+		}
+
+		currentState := am.blockchain.State().TipState()
+		for _, e := range exit.Data {
+			err = am.AddExit(e, currentState)
+			if err != nil {
+				am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
+			}
+		}
+
 	}
 }
 

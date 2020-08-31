@@ -176,7 +176,10 @@ func (s *stateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 		return err
 	}
 
-	s.setJustifiedHead(justifiedHead, justifiedHeadState)
+	err = s.setJustifiedHead(justifiedHead, justifiedHeadState)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

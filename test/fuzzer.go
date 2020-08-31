@@ -4,7 +4,6 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -66,7 +65,7 @@ func FuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.Mu
 		f.Fuzz(&d)
 		d.ParticipationBitfield = bitfield.NewBitlist(6242)
 		var sig [96]byte
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		d.Sig = sig
 		if !correct {
 			d.ParticipationBitfield = bitfield.NewBitlist(50000)
@@ -115,8 +114,9 @@ func FuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		k := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.RandaoReveal = sig
 		d.ValidatorPubkey = pub
 		v = append(v, d)
@@ -135,8 +135,9 @@ func FuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
 		}
 		var sig [96]byte
 		var pub [48]byte
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		k := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature1 = sig
 		d.Signature2 = sig
 		d.ValidatorPublicKey = pub
@@ -192,8 +193,9 @@ func FuzzDeposit(n int, complete bool) []*primitives.Deposit {
 		}
 		var sig [96]byte
 		var pub [48]byte
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		k := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.PublicKey = pub
 		d.Signature = sig
 		if !complete {
@@ -211,8 +213,9 @@ func FuzzDepositData() *primitives.DepositData {
 	f.Fuzz(d)
 	var sig [96]byte
 	var pub [48]byte
-	copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
-	copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+	k := bls.RandKey()
+	copy(sig[:], bls.NewAggregateSignature().Marshal())
+	copy(pub[:], k.PublicKey().Marshal())
 	d.PublicKey = pub
 	d.ProofOfPossession = sig
 	return d
@@ -238,7 +241,7 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 		}
 
 		var sig [96]byte
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
 
 		b.Signature = sig
 		b.RandaoSignature = sig
@@ -262,8 +265,9 @@ func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
-		copy(pub[:], bls.CurrImplementation.RandKey().PublicKey().Marshal())
+		k := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature = sig
 		d.PublicKey = pub
 		v = append(v, d)
@@ -279,9 +283,9 @@ func FuzzExits(n int) []*primitives.Exit {
 	for i := 0; i < n; i++ {
 		var sig [96]byte
 		var pub [48]byte
-		pubBls := bls.CurrImplementation.RandKey().PublicKey()
-		copy(sig[:], bls.CurrImplementation.NewAggregateSignature().Marshal())
-		copy(pub[:], pubBls.Marshal())
+		k := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
 		d := &primitives.Exit{
 			ValidatorPubkey: pub,
 			Signature:       sig,
@@ -303,11 +307,11 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 		d := new(primitives.GovernanceVote)
 		f.Fuzz(d)
 
-		secretKeys := make([]bls_interface.SecretKey, 10)
-		publicKeys := make([]bls_interface.PublicKey, 10)
+		secretKeys := make([]*bls.SecretKey, 10)
+		publicKeys := make([]*bls.PublicKey, 10)
 
 		for i := range secretKeys {
-			secretKeys[i] = bls.CurrImplementation.RandKey()
+			secretKeys[i] = bls.RandKey()
 			publicKeys[i] = secretKeys[i].PublicKey()
 		}
 

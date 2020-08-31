@@ -5,7 +5,6 @@ package mempools_test
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -36,8 +35,8 @@ var initParams = primitives.InitializationParameters{
 	InitialValidators: []primitives.ValidatorInitialization{},
 }
 
-var valDataPrimary []bls_interface.SecretKey
-var newValidator bls_interface.SecretKey
+var valDataPrimary []*bls.SecretKey
+var newValidator *bls.SecretKey
 
 var F *server.Server
 var B *server.Server
@@ -226,7 +225,7 @@ func TestVoteAggregation(t *testing.T) {
 
 	// This assumes all votes data is the same
 	aggVote.Data = votes[0].Data
-	sigs := make([]bls_interface.Signature, 0)
+	sigs := make([]*bls.Signature, 0)
 
 	for _, v := range votes {
 		// Test vote validity without aggregation
@@ -363,8 +362,7 @@ func TestActionMempool_ExitDeposits(t *testing.T) {
 	pub := priv.PublicKey()
 
 	validatorPub := valDataPrimary[0].PublicKey()
-	msg := fmt.Sprintf("exit %x", validatorPub.Marshal())
-	msgHash := chainhash.HashH([]byte(msg))
+	msgHash := chainhash.HashH([]byte(validatorPub.Marshal()))
 
 	sig := priv.Sign(msgHash[:])
 	var valp, withp [48]byte

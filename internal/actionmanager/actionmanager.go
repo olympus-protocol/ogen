@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"github.com/olympus-protocol/ogen/internal/state"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"math/rand"
 	"sync"
@@ -30,7 +29,7 @@ const MaxMessagePropagationTime = 60 * time.Second
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
 	handleStartTopic(topic *pubsub.Subscription)
-	StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) bls_interface.Signature) bool
+	StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool
 	ShouldRun(val [48]byte) bool
 	shouldRun(pubSer [48]byte) bool
 	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
@@ -122,12 +121,12 @@ func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 			return
 		}
 
-		sig, err := bls.CurrImplementation.SignatureFromBytes(validatorHello.Data.Signature[:])
+		sig, err := bls.SignatureFromBytes(validatorHello.Data.Signature[:])
 		if err != nil {
 			l.log.Warnf("invalid signature: %s", err)
 		}
 
-		pub, err := bls.CurrImplementation.PublicKeyFromBytes(validatorHello.Data.PublicKey[:])
+		pub, err := bls.PublicKeyFromBytes(validatorHello.Data.PublicKey[:])
 		if err != nil {
 			l.log.Warnf("invalid pubkey: %s", err)
 		}
@@ -140,7 +139,7 @@ func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) bls_interface.Signature) bool {
+func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
 	l.lastActionsLock.RLock()
 	defer l.lastActionsLock.RUnlock()
 

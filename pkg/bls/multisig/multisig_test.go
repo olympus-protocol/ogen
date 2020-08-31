@@ -1,7 +1,6 @@
 package multisig_test
 
 import (
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -10,11 +9,11 @@ import (
 )
 
 func TestCorrectnessMultisig(t *testing.T) {
-	secretKeys := make([]bls_interface.SecretKey, 20)
-	publicKeys := make([]bls_interface.PublicKey, 20)
-
+	secretKeys := make([]*bls.SecretKey, 20)
+	publicKeys := make([]*bls.PublicKey, 20)
+	var err error
 	for i := range secretKeys {
-		secretKeys[i] = bls.CurrImplementation.RandKey()
+		secretKeys[i] = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
@@ -54,11 +53,11 @@ func TestCorrectnessMultisig(t *testing.T) {
 }
 
 func TestMultisigSerializeSign(t *testing.T) {
-	secretKeys := make([]bls_interface.SecretKey, 20)
-	publicKeys := make([]bls_interface.PublicKey, 20)
-
+	secretKeys := make([]*bls.SecretKey, 20)
+	publicKeys := make([]*bls.PublicKey, 20)
+	var err error
 	for i := range secretKeys {
-		secretKeys[i] = bls.CurrImplementation.RandKey()
+		secretKeys[i] = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
@@ -84,10 +83,10 @@ func TestMultisigSerializeSign(t *testing.T) {
 }
 
 func TestMultipubCopy(t *testing.T) {
-	secretKeys := make([]bls_interface.SecretKey, 20)
-	publicKeys := make([]bls_interface.PublicKey, 20)
+	secretKeys := make([]*bls.SecretKey, 20)
+	publicKeys := make([]*bls.PublicKey, 20)
 	for i := range secretKeys {
-		secretKeys[i] = bls.CurrImplementation.RandKey()
+		secretKeys[i] = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
@@ -103,10 +102,10 @@ func TestMultipubCopy(t *testing.T) {
 }
 
 func TestMultisigCopy(t *testing.T) {
-	secretKeys := make([]bls_interface.SecretKey, 20)
-	publicKeys := make([]bls_interface.PublicKey, 20)
+	secretKeys := make([]*bls.SecretKey, 20)
+	publicKeys := make([]*bls.PublicKey, 20)
 	for i := range secretKeys {
-		secretKeys[i] = bls.CurrImplementation.RandKey()
+		secretKeys[i] = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 

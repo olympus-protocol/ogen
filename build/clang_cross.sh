@@ -1,4 +1,4 @@
-#!/bin/sh
+-#!/bin/sh
 
 set -eu
 curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-"$INSTALL_LLVM_VERSION"/clang+llvm-"$INSTALL_LLVM_VERSION"-x86_64-linux-gnu-ubuntu-18.04.tar.xz \

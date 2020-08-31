@@ -2,7 +2,6 @@ package chain
 
 import (
 	"github.com/olympus-protocol/ogen/internal/state"
-	"github.com/olympus-protocol/ogen/internal/txindex"
 	"sync"
 	"time"
 
@@ -26,8 +25,6 @@ type Blockchain interface {
 	GenesisTime() time.Time
 	GetBlock(h chainhash.Hash) (block *primitives.Block, err error)
 	GetRawBlock(h chainhash.Hash) (block []byte, err error)
-	GetAccountTxs(acc [20]byte) (accTxs txindex.AccountTxs, err error)
-	GetTx(h chainhash.Hash) (tx *primitives.Tx, err error)
 	GetLocatorHashes() [][32]byte
 	Notify(n BlockchainNotifee)
 	Unnotify(n BlockchainNotifee)
@@ -46,9 +43,6 @@ type blockchain struct {
 
 	// DB
 	db blockdb.DB
-
-	// Indexes
-	txidx txindex.TxIndex
 
 	// StateService
 	state StateService
@@ -90,27 +84,9 @@ func (ch *blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 	})
 }
 
-// GetAccountTxs gets the txid from an account.
-func (ch *blockchain) GetAccountTxs(acc [20]byte) (accTxs txindex.AccountTxs, err error) {
-	return ch.txidx.GetAccountTxs(acc)
-}
-
-// GetTx gets the transaction from the database and block reference.
-func (ch *blockchain) GetTx(h chainhash.Hash) (tx *primitives.Tx, err error) {
-	loc, err := ch.txidx.GetTx(h)
-	if err != nil {
-		return nil, err
-	}
-	block, err := ch.GetBlock(loc.Block)
-	if err != nil {
-		return nil, err
-	}
-	return block.Txs[loc.Index], nil
-}
-
 // NewBlockchain constructs a new blockchain.
 func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip state.InitializationParameters) (Blockchain, error) {
-	state, err := NewStateService(config.Log, ip, params, db)
+	s, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +108,6 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip s
 	if err != nil {
 		return nil, err
 	}
-	txidx, err := txindex.NewTxIndex(config.Datadir)
 	if err != nil {
 		return nil, err
 	}
@@ -140,13 +115,12 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip s
 		log:         config.Log,
 		config:      config,
 		params:      params,
-		txidx:       txidx,
 		db:          db,
-		state:       state,
+		state:       s,
 		notifees:    make(map[BlockchainNotifee]struct{}),
 		genesisTime: genesisTime,
 	}
 	return ch, db.Update(func(txn blockdb.DBUpdateTransaction) error {
-		return ch.UpdateChainHead(txn, state.Tip().Hash)
+		return ch.UpdateChainHead(txn, s.Tip().Hash)
 	})
 }

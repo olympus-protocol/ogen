@@ -6,9 +6,8 @@ package wallet
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
-	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
 )
 
@@ -36,7 +35,7 @@ func (m *MockWallet) EXPECT() *MockWalletMockRecorder {
 }
 
 // NewWallet mocks base method
-func (m *MockWallet) NewWallet(name string, priv bls_interface.SecretKey, password string) error {
+func (m *MockWallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewWallet", name, priv, password)
 	ret0, _ := ret[0].(error)
@@ -122,10 +121,10 @@ func (mr *MockWalletMockRecorder) GetAccount() *gomock.Call {
 }
 
 // GetSecret mocks base method
-func (m *MockWallet) GetSecret() (bls_interface.SecretKey, error) {
+func (m *MockWallet) GetSecret() (*bls.SecretKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecret")
-	ret0, _ := ret[0].(bls_interface.SecretKey)
+	ret0, _ := ret[0].(*bls.SecretKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -137,10 +136,10 @@ func (mr *MockWalletMockRecorder) GetSecret() *gomock.Call {
 }
 
 // GetPublic mocks base method
-func (m *MockWallet) GetPublic() (bls_interface.PublicKey, error) {
+func (m *MockWallet) GetPublic() (*bls.PublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPublic")
-	ret0, _ := ret[0].(bls_interface.PublicKey)
+	ret0, _ := ret[0].(*bls.PublicKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -181,11 +180,41 @@ func (mr *MockWalletMockRecorder) GetBalance() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalance", reflect.TypeOf((*MockWallet)(nil).GetBalance))
 }
 
+// StartValidatorBulk mocks base method
+func (m *MockWallet) StartValidatorBulk(k []*bls.SecretKey) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartValidatorBulk", k)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartValidatorBulk indicates an expected call of StartValidatorBulk
+func (mr *MockWalletMockRecorder) StartValidatorBulk(k interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartValidatorBulk", reflect.TypeOf((*MockWallet)(nil).StartValidatorBulk), k)
+}
+
+// ExitValidatorBulk mocks base method
+func (m *MockWallet) ExitValidatorBulk(k []*bls.PublicKey) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExitValidatorBulk", k)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExitValidatorBulk indicates an expected call of ExitValidatorBulk
+func (mr *MockWalletMockRecorder) ExitValidatorBulk(k interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExitValidatorBulk", reflect.TypeOf((*MockWallet)(nil).ExitValidatorBulk), k)
+}
+
 // StartValidator mocks base method
-func (m *MockWallet) StartValidator(validatorPrivBytes [32]byte) (*primitives.Deposit, error) {
+func (m *MockWallet) StartValidator(validatorPrivBytes *bls.SecretKey) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartValidator", validatorPrivBytes)
-	ret0, _ := ret[0].(*primitives.Deposit)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -197,10 +226,10 @@ func (mr *MockWalletMockRecorder) StartValidator(validatorPrivBytes interface{})
 }
 
 // ExitValidator mocks base method
-func (m *MockWallet) ExitValidator(validatorPubKey [48]byte) (*primitives.Exit, error) {
+func (m *MockWallet) ExitValidator(validatorPubKey *bls.PublicKey) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExitValidator", validatorPubKey)
-	ret0, _ := ret[0].(*primitives.Exit)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

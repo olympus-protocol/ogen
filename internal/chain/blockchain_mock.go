@@ -7,7 +7,6 @@ package chain
 import (
 	gomock "github.com/golang/mock/gomock"
 	blockdb "github.com/olympus-protocol/ogen/internal/blockdb"
-	txindex "github.com/olympus-protocol/ogen/internal/txindex"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
@@ -119,36 +118,6 @@ func (m *MockBlockchain) GetRawBlock(h chainhash.Hash) ([]byte, error) {
 func (mr *MockBlockchainMockRecorder) GetRawBlock(h interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawBlock", reflect.TypeOf((*MockBlockchain)(nil).GetRawBlock), h)
-}
-
-// GetAccountTxs mocks base method
-func (m *MockBlockchain) GetAccountTxs(acc [20]byte) (txindex.AccountTxs, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccountTxs", acc)
-	ret0, _ := ret[0].(txindex.AccountTxs)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAccountTxs indicates an expected call of GetAccountTxs
-func (mr *MockBlockchainMockRecorder) GetAccountTxs(acc interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountTxs", reflect.TypeOf((*MockBlockchain)(nil).GetAccountTxs), acc)
-}
-
-// GetTx mocks base method
-func (m *MockBlockchain) GetTx(h chainhash.Hash) (*primitives.Tx, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTx", h)
-	ret0, _ := ret[0].(*primitives.Tx)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTx indicates an expected call of GetTx
-func (mr *MockBlockchainMockRecorder) GetTx(h interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTx", reflect.TypeOf((*MockBlockchain)(nil).GetTx), h)
 }
 
 // GetLocatorHashes mocks base method

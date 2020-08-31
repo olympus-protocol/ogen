@@ -5,8 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
-	bls "github.com/olympus-protocol/ogen/pkg/bls"
-	bls_interface "github.com/olympus-protocol/ogen/pkg/bls/interface"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -36,7 +35,7 @@ func (m *Multipub) Unmarshal(b []byte) error {
 }
 
 // NewMultipub constructs a new multi-pubkey.
-func NewMultipub(pubs []bls_interface.PublicKey, numNeeded uint64) *Multipub {
+func NewMultipub(pubs []*bls.PublicKey, numNeeded uint64) *Multipub {
 	var pubsB [][48]byte
 	for _, p := range pubs {
 		var pub [48]byte
@@ -84,7 +83,7 @@ func (m *Multipub) Hash() ([20]byte, error) {
 	pubkeyHashes := make([][20]byte, len(m.PublicKeys))
 
 	for i, p := range m.PublicKeys {
-		pub, err := bls.CurrImplementation.PublicKeyFromBytes(p[:])
+		pub, err := bls.PublicKeyFromBytes(p[:])
 		if err != nil {
 			return [20]byte{}, err
 		}
@@ -103,7 +102,7 @@ func (m *Multipub) ToBech32() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bech32.Encode(bls_interface.Prefix.Public, pkh[:]), nil
+	return bech32.Encode(bls.Prefix.Public, pkh[:]), nil
 }
 
 // Multisig represents an m-of-n multisig.
@@ -138,7 +137,7 @@ func (m *Multisig) GetPublicKey() (*Multipub, error) {
 }
 
 // Sign signs a multisig through a secret key.
-func (m *Multisig) Sign(secKey bls_interface.SecretKey, msg []byte) error {
+func (m *Multisig) Sign(secKey *bls.SecretKey, msg []byte) error {
 	pub := secKey.PublicKey()
 
 	idx := -1
@@ -174,21 +173,21 @@ func (m *Multisig) Verify(msg []byte) bool {
 	if len(m.Signatures) < int(m.PublicKey.NumNeeded) {
 		return false
 	}
-	var sigs []bls_interface.Signature
+	var sigs []*bls.Signature
 	for _, sigBytes := range m.Signatures {
-		sig, err := bls.CurrImplementation.SignatureFromBytes(sigBytes[:])
+		sig, err := bls.SignatureFromBytes(sigBytes[:])
 		if err != nil {
 			return false
 		}
 		sigs = append(sigs, sig)
 	}
-	aggSig := bls.CurrImplementation.AggregateSignatures(sigs)
+	aggSig := bls.AggregateSignatures(sigs)
 	activePubs := make([][48]byte, 0)
-	activePubsKeys := make([]bls_interface.PublicKey, 0)
+	activePubsKeys := make([]*bls.PublicKey, 0)
 	for i := range m.PublicKey.PublicKeys {
 		if m.KeysSigned.Get(uint(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])
-			pub, err := bls.CurrImplementation.PublicKeyFromBytes(m.PublicKey.PublicKeys[i][:])
+			pub, err := bls.PublicKeyFromBytes(m.PublicKey.PublicKeys[i][:])
 			if err != nil {
 				return false
 			}
