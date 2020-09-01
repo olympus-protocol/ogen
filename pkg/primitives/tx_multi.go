@@ -8,9 +8,6 @@ import (
 )
 
 var (
-	// ErrorTxMultiSize returned when the tx size is above MaxTransactionSingleSize
-	ErrorTxMultiSize = errors.New("tx multi size too big")
-
 	// ErrorMultiInvalidSignature returned when a tx signature is invalid.
 	ErrorMultiInvalidSignature = errors.New("invalid tx multi signature")
 )
