@@ -43,8 +43,8 @@ type State interface {
 	GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error)
 	CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error
 	ProcessBlock(b *primitives.Block, p *params.ChainParams) error
-	ToSerializable() *SerializableState
-	FromSerializable(ser *SerializableState)
+	ToSerializable() *primitives.SerializableState
+	FromSerializable(ser *primitives.SerializableState)
 	Marshal() ([]byte, error)
 	Unmarshal(b []byte) error
 	GetValidatorIndicesActiveAt(epoch uint64) []uint64

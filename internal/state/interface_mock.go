@@ -515,10 +515,10 @@ func (mr *MockStateMockRecorder) ProcessBlock(b, p interface{}) *gomock.Call {
 }
 
 // ToSerializable mocks base method
-func (m *MockState) ToSerializable() *SerializableState {
+func (m *MockState) ToSerializable() *primitives.SerializableState {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ToSerializable")
-	ret0, _ := ret[0].(*SerializableState)
+	ret0, _ := ret[0].(*primitives.SerializableState)
 	return ret0
 }
 
@@ -529,7 +529,7 @@ func (mr *MockStateMockRecorder) ToSerializable() *gomock.Call {
 }
 
 // FromSerializable mocks base method
-func (m *MockState) FromSerializable(ser *SerializableState) {
+func (m *MockState) FromSerializable(ser *primitives.SerializableState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "FromSerializable", ser)
 }
