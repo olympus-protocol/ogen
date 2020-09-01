@@ -237,7 +237,7 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (state.State, error) {
 var blockRowPrefix = []byte("block-row")
 
 // SetBlockRow sets a block row on disk to store the block chainindex.
-func (but *BlockDBUpdateTransaction) SetBlockRow(disk *BlockNodeDisk) error {
+func (but *BlockDBUpdateTransaction) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
 	diskSer, err := disk.Marshal()
 	if err != nil {
@@ -247,13 +247,13 @@ func (but *BlockDBUpdateTransaction) SetBlockRow(disk *BlockNodeDisk) error {
 }
 
 // GetBlockRow gets the block row on disk.
-func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*BlockNodeDisk, error) {
+func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
 	key := append(blockRowPrefix, c[:]...)
 	diskSer, err := getKey(brt, key)
 	if err != nil {
 		return nil, err
 	}
-	d := new(BlockNodeDisk)
+	d := new(primitives.BlockNodeDisk)
 	err = d.Unmarshal(diskSer)
 	return d, err
 }
@@ -323,7 +323,7 @@ type DBViewTransaction interface {
 	GetTip() (chainhash.Hash, error)
 	GetFinalizedState() (state.State, error)
 	GetJustifiedState() (state.State, error)
-	GetBlockRow(chainhash.Hash) (*BlockNodeDisk, error)
+	GetBlockRow(chainhash.Hash) (*primitives.BlockNodeDisk, error)
 	GetJustifiedHead() (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
 	GetGenesisTime() (time.Time, error)
@@ -335,7 +335,7 @@ type DBUpdateTransaction interface {
 	SetTip(chainhash.Hash) error
 	SetFinalizedState(state.State) error
 	SetJustifiedState(state.State) error
-	SetBlockRow(*BlockNodeDisk) error
+	SetBlockRow(*primitives.BlockNodeDisk) error
 	SetJustifiedHead(chainhash.Hash) error
 	SetFinalizedHead(chainhash.Hash) error
 	SetGenesisTime(time.Time) error

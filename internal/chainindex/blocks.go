@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -83,7 +82,7 @@ type BlockIndex struct {
 }
 
 // LoadBlockNode loads a block node and connects it to the parent block.
-func (i *BlockIndex) LoadBlockNode(row *blockdb.BlockNodeDisk) (*BlockRow, error) {
+func (i *BlockIndex) LoadBlockNode(row *primitives.BlockNodeDisk) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
@@ -183,7 +182,7 @@ func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 
 // ToBlockNodeDisk converts an in-memory representation of a block row
 // to a serializable version.
-func (br *BlockRow) ToBlockNodeDisk() *blockdb.BlockNodeDisk {
+func (br *BlockRow) ToBlockNodeDisk() *primitives.BlockNodeDisk {
 	childrenNodes := br.Children()
 	children := make([][32]byte, len(childrenNodes))
 	for i := range childrenNodes {
@@ -195,7 +194,7 @@ func (br *BlockRow) ToBlockNodeDisk() *blockdb.BlockNodeDisk {
 		parent = br.Parent.Hash
 	}
 
-	return &blockdb.BlockNodeDisk{
+	return &primitives.BlockNodeDisk{
 		StateRoot: br.StateRoot,
 		Height:    br.Height,
 		Slot:      br.Slot,

@@ -1,4 +1,4 @@
-package blockdb
+package primitives
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {

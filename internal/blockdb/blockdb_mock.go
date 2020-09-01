@@ -238,10 +238,10 @@ func (mr *MockDBViewTransactionMockRecorder) GetJustifiedState() *gomock.Call {
 }
 
 // GetBlockRow mocks base method
-func (m *MockDBViewTransaction) GetBlockRow(arg0 chainhash.Hash) (*BlockNodeDisk, error) {
+func (m *MockDBViewTransaction) GetBlockRow(arg0 chainhash.Hash) (*primitives.BlockNodeDisk, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBlockRow", arg0)
-	ret0, _ := ret[0].(*BlockNodeDisk)
+	ret0, _ := ret[0].(*primitives.BlockNodeDisk)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -377,7 +377,7 @@ func (mr *MockDBUpdateTransactionMockRecorder) SetJustifiedState(arg0 interface{
 }
 
 // SetBlockRow mocks base method
-func (m *MockDBUpdateTransaction) SetBlockRow(arg0 *BlockNodeDisk) error {
+func (m *MockDBUpdateTransaction) SetBlockRow(arg0 *primitives.BlockNodeDisk) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetBlockRow", arg0)
 	ret0, _ := ret[0].(error)
@@ -508,10 +508,10 @@ func (mr *MockDBUpdateTransactionMockRecorder) GetJustifiedState() *gomock.Call 
 }
 
 // GetBlockRow mocks base method
-func (m *MockDBUpdateTransaction) GetBlockRow(arg0 chainhash.Hash) (*BlockNodeDisk, error) {
+func (m *MockDBUpdateTransaction) GetBlockRow(arg0 chainhash.Hash) (*primitives.BlockNodeDisk, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBlockRow", arg0)
-	ret0, _ := ret[0].(*BlockNodeDisk)
+	ret0, _ := ret[0].(*primitives.BlockNodeDisk)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
