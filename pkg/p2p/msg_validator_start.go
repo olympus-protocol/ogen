@@ -24,7 +24,7 @@ func (m *MsgValidatorStart) Command() string {
 	return MsgValidatorStartCmd
 }
 
-// MaxPayloadLength returns the maximum size of the MsgTx message.
+// MaxPayloadLength returns the maximum size of the MsgValidatorStart message.
 func (m *MsgValidatorStart) MaxPayloadLength() uint64 {
 	return primitives.MaxValidatorHelloMessageSize
 }

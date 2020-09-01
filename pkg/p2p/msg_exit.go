@@ -24,7 +24,7 @@ func (m *MsgExit) Command() string {
 	return MsgExitCmd
 }
 
-// MaxPayloadLength returns the maximum size of the MsgDeposit message.
+// MaxPayloadLength returns the maximum size of the MsgExit message.
 func (m *MsgExit) MaxPayloadLength() uint64 {
 	return primitives.MaxExitSize
 }

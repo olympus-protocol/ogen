@@ -27,7 +27,7 @@ func (m *MsgDeposits) Command() string {
 	return MsgDepositsCmd
 }
 
-// MaxPayloadLength returns the maximum size of the MsgDeposit message.
+// MaxPayloadLength returns the maximum size of the MsgDeposits message.
 func (m *MsgDeposits) MaxPayloadLength() uint64 {
 	return primitives.MaxDepositSize * MaxDeposits
 }

@@ -377,7 +377,7 @@ func FuzzReplacementVote(n int) []*primitives.ReplacementVotes {
 	return v
 }
 
-// CommunityVoteData returns a slice of n CommunityVoteData
+// FuzzCommunityVoteData returns a slice of n CommunityVoteData
 func FuzzCommunityVoteData(n int) []*primitives.CommunityVoteData {
 	f := fuzz.New().NilChance(0).NumElements(5, 5)
 	var v []*primitives.CommunityVoteData
@@ -385,6 +385,32 @@ func FuzzCommunityVoteData(n int) []*primitives.CommunityVoteData {
 		d := new(primitives.CommunityVoteData)
 		f.Fuzz(d)
 		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzTx returns a slice of n Tx
+func FuzzTx(n int) []*primitives.Tx {
+	f := fuzz.New().NilChance(0)
+	var v []*primitives.Tx
+	for i := 0; i < n; i++ {
+		d := new(primitives.Tx)
+		f.Fuzz(d)
+		k := bls.RandKey()
+		pubBytes := k.PublicKey().Marshal()
+		copy(d.FromPublicKey[:], pubBytes)
+		msg := d.SignatureMessage()
+		sig := k.Sign(msg[:])
+		copy(d.Signature[:], sig.Marshal())
+		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzTx returns a slice of n Tx
+func FuzzTxMulti(n int) []*primitives.TxMulti {
+	var v []*primitives.TxMulti
+	for i := 0; i < n; i++ {
 	}
 	return v
 }

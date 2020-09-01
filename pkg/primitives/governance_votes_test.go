@@ -78,7 +78,7 @@ func TestGovernanceVote(t *testing.T) {
 
 	g := &primitives.GovernanceVote{
 		Type:      10,
-		Data:      [100]byte{1,2,3,4,5,6},
+		Data:      [100]byte{1, 2, 3, 4, 5, 6},
 		Multisig:  nil,
 		VoteEpoch: 10,
 	}
