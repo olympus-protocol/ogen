@@ -57,7 +57,6 @@ func TestCorrectnessMultisig(t *testing.T) {
 	pub, err := ms.GetPublicKey()
 	assert.NoError(t, err)
 
-
 	assert.Equal(t, desc, pub)
 }
 

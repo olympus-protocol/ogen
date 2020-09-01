@@ -320,8 +320,12 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 
 		for i := 0; i < 5; i++ {
 			msg := d.SignatureHash()
-			_ = ms.Sign(secretKeys[i], msg[:])
+			err := ms.Sign(secretKeys[i], msg[:])
+			if err != nil {
+				panic(err)
+			}
 		}
+
 		d.Multisig = ms
 		v = append(v, d)
 	}

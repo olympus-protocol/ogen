@@ -4,9 +4,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-
-
-
 // MaxBlockSize defines the maximum bytes on a block object.
 const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
 

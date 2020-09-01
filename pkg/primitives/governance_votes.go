@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"encoding/binary"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -113,10 +114,11 @@ func (g *GovernanceVote) Valid() bool {
 
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
-	cp := g.Copy()
-	g.Multisig = nil
-	b, _ := cp.Marshal()
-	return chainhash.HashH(b)
+	buf := make([]byte, 116)
+	copy(buf[:], g.Data[:])
+	binary.LittleEndian.PutUint64(buf, g.Type)
+	binary.LittleEndian.PutUint64(buf, g.VoteEpoch)
+	return chainhash.HashH(buf)
 }
 
 // Hash calculates the hash of the governance vote.

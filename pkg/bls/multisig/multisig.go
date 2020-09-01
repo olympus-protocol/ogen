@@ -166,6 +166,7 @@ func (m *Multisig) Sign(secKey *bls.SecretKey, msg []byte) error {
 
 // Verify verifies a multisig message.
 func (m *Multisig) Verify(msg []byte) bool {
+
 	if uint(len(m.PublicKey.PublicKeys)) > uint(len(m.KeysSigned))*8 {
 		return false
 	}
