@@ -267,6 +267,7 @@ func (p *proposer) ProposeBlocks() {
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
 				block.Header.TxMerkleRoot = block.TransactionMerkleRoot()
+				block.Header.TxMultiMerkleRoot = block.TransactionMultiMerkleRoot()
 				block.Header.DepositMerkleRoot = block.DepositMerkleRoot()
 				block.Header.ExitMerkleRoot = block.ExitMerkleRoot()
 				block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()

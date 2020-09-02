@@ -13,7 +13,7 @@ func (b *Block) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the Block object to a target array
 func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(600)
+	offset := int(632)
 
 	// Field (0) 'Header'
 	if b.Header == nil {
@@ -62,7 +62,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (8) 'ProposerSlashings'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(b.ProposerSlashings) * 984
+	offset += len(b.ProposerSlashings) * 1048
 
 	// Offset (9) 'GovernanceVotes'
 	dst = ssz.WriteOffset(dst, offset)
@@ -211,7 +211,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (b *Block) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 600 {
+	if size < 632 {
 		return ssz.ErrSize
 	}
 
@@ -222,60 +222,60 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	if b.Header == nil {
 		b.Header = new(BlockHeader)
 	}
-	if err = b.Header.UnmarshalSSZ(buf[0:372]); err != nil {
+	if err = b.Header.UnmarshalSSZ(buf[0:404]); err != nil {
 		return err
 	}
 
 	// Offset (1) 'Votes'
-	if o1 = ssz.ReadOffset(buf[372:376]); o1 > size {
+	if o1 = ssz.ReadOffset(buf[404:408]); o1 > size {
 		return ssz.ErrOffset
 	}
 
 	// Offset (2) 'Txs'
-	if o2 = ssz.ReadOffset(buf[376:380]); o2 > size || o1 > o2 {
+	if o2 = ssz.ReadOffset(buf[408:412]); o2 > size || o1 > o2 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (3) 'TxsMulti'
-	if o3 = ssz.ReadOffset(buf[380:384]); o3 > size || o2 > o3 {
+	if o3 = ssz.ReadOffset(buf[412:416]); o3 > size || o2 > o3 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (4) 'Deposits'
-	if o4 = ssz.ReadOffset(buf[384:388]); o4 > size || o3 > o4 {
+	if o4 = ssz.ReadOffset(buf[416:420]); o4 > size || o3 > o4 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (5) 'Exits'
-	if o5 = ssz.ReadOffset(buf[388:392]); o5 > size || o4 > o5 {
+	if o5 = ssz.ReadOffset(buf[420:424]); o5 > size || o4 > o5 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (6) 'VoteSlashings'
-	if o6 = ssz.ReadOffset(buf[392:396]); o6 > size || o5 > o6 {
+	if o6 = ssz.ReadOffset(buf[424:428]); o6 > size || o5 > o6 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (7) 'RANDAOSlashings'
-	if o7 = ssz.ReadOffset(buf[396:400]); o7 > size || o6 > o7 {
+	if o7 = ssz.ReadOffset(buf[428:432]); o7 > size || o6 > o7 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (8) 'ProposerSlashings'
-	if o8 = ssz.ReadOffset(buf[400:404]); o8 > size || o7 > o8 {
+	if o8 = ssz.ReadOffset(buf[432:436]); o8 > size || o7 > o8 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (9) 'GovernanceVotes'
-	if o9 = ssz.ReadOffset(buf[404:408]); o9 > size || o8 > o9 {
+	if o9 = ssz.ReadOffset(buf[436:440]); o9 > size || o8 > o9 {
 		return ssz.ErrOffset
 	}
 
 	// Field (10) 'Signature'
-	copy(b.Signature[:], buf[408:504])
+	copy(b.Signature[:], buf[440:536])
 
 	// Field (11) 'RandaoSignature'
-	copy(b.RandaoSignature[:], buf[504:600])
+	copy(b.RandaoSignature[:], buf[536:632])
 
 	// Field (1) 'Votes'
 	{
@@ -418,7 +418,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (8) 'ProposerSlashings'
 	{
 		buf = tail[o8:o9]
-		num, err := ssz.DivideInt2(len(buf), 984, 2)
+		num, err := ssz.DivideInt2(len(buf), 1048, 2)
 		if err != nil {
 			return err
 		}
@@ -427,7 +427,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 			if b.ProposerSlashings[ii] == nil {
 				b.ProposerSlashings[ii] = new(ProposerSlashing)
 			}
-			if err = b.ProposerSlashings[ii].UnmarshalSSZ(buf[ii*984 : (ii+1)*984]); err != nil {
+			if err = b.ProposerSlashings[ii].UnmarshalSSZ(buf[ii*1048 : (ii+1)*1048]); err != nil {
 				return err
 			}
 		}
@@ -459,7 +459,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the Block object
 func (b *Block) SizeSSZ() (size int) {
-	size = 600
+	size = 632
 
 	// Field (1) 'Votes'
 	for ii := 0; ii < len(b.Votes); ii++ {
@@ -492,7 +492,7 @@ func (b *Block) SizeSSZ() (size int) {
 	size += len(b.RANDAOSlashings) * 152
 
 	// Field (8) 'ProposerSlashings'
-	size += len(b.ProposerSlashings) * 984
+	size += len(b.ProposerSlashings) * 1048
 
 	// Field (9) 'GovernanceVotes'
 	for ii := 0; ii < len(b.GovernanceVotes); ii++ {

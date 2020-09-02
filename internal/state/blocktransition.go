@@ -838,6 +838,7 @@ func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 
 	voteMerkleRoot := b.VotesMerkleRoot()
 	transactionMerkleRoot := b.TransactionMerkleRoot()
+	transactionMultiMerkleRoot := b.TransactionMultiMerkleRoot()
 	depositMerkleRoot := b.DepositMerkleRoot()
 	exitMerkleRoot := b.ExitMerkleRoot()
 	voteSlashingMerkleRoot := b.VoteSlashingRoot()
@@ -847,6 +848,10 @@ func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 
 	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
+	}
+
+	if !bytes.Equal(transactionMultiMerkleRoot[:], b.Header.TxMultiMerkleRoot[:]) {
+		return fmt.Errorf("expected transaction multi merkle root to be %s but got %s", hex.EncodeToString(transactionMultiMerkleRoot[:]), hex.EncodeToString(b.Header.TxMultiMerkleRoot[:]))
 	}
 
 	if !bytes.Equal(voteMerkleRoot[:], b.Header.VoteMerkleRoot[:]) {

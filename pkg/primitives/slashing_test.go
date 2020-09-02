@@ -193,7 +193,7 @@ func TestProposerSlashing(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "69711352beebcd5e8b820be5fe37616df65ab4816e5e9436c712198c08eaf377", d.Hash().String())
+	assert.Equal(t, "7c45d3357e791e8a122862efe490022d4ae4ef3ae3e5e5062b86c0d1d3a12cde", d.Hash().String())
 
 	sigDecode, _ := hex.DecodeString("ae09507041b2ccb9e3b3f9cda71ffae3dc8b2c83f331ebdc98cc4269c56bd4db05706bf317c8877608bc751b36d9af380c5fea6bc804d2080940b3910acc8f222fc4b59166630d8a3b31eba539325c2c60aaaa0408e986241cb462fad8652bdc")
 	sigBls, _ := bls.SignatureFromBytes(sigDecode)

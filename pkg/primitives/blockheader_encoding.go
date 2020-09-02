@@ -23,40 +23,43 @@ func (b *BlockHeader) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (2) 'TxMerkleRoot'
 	dst = append(dst, b.TxMerkleRoot[:]...)
 
-	// Field (3) 'VoteMerkleRoot'
+	// Field (3) 'TxMultiMerkleRoot'
+	dst = append(dst, b.TxMultiMerkleRoot[:]...)
+
+	// Field (4) 'VoteMerkleRoot'
 	dst = append(dst, b.VoteMerkleRoot[:]...)
 
-	// Field (4) 'DepositMerkleRoot'
+	// Field (5) 'DepositMerkleRoot'
 	dst = append(dst, b.DepositMerkleRoot[:]...)
 
-	// Field (5) 'ExitMerkleRoot'
+	// Field (6) 'ExitMerkleRoot'
 	dst = append(dst, b.ExitMerkleRoot[:]...)
 
-	// Field (6) 'VoteSlashingMerkleRoot'
+	// Field (7) 'VoteSlashingMerkleRoot'
 	dst = append(dst, b.VoteSlashingMerkleRoot[:]...)
 
-	// Field (7) 'RANDAOSlashingMerkleRoot'
+	// Field (8) 'RANDAOSlashingMerkleRoot'
 	dst = append(dst, b.RANDAOSlashingMerkleRoot[:]...)
 
-	// Field (8) 'ProposerSlashingMerkleRoot'
+	// Field (9) 'ProposerSlashingMerkleRoot'
 	dst = append(dst, b.ProposerSlashingMerkleRoot[:]...)
 
-	// Field (9) 'GovernanceVotesMerkleRoot'
+	// Field (10) 'GovernanceVotesMerkleRoot'
 	dst = append(dst, b.GovernanceVotesMerkleRoot[:]...)
 
-	// Field (10) 'PrevBlockHash'
+	// Field (11) 'PrevBlockHash'
 	dst = append(dst, b.PrevBlockHash[:]...)
 
-	// Field (11) 'Timestamp'
+	// Field (12) 'Timestamp'
 	dst = ssz.MarshalUint64(dst, b.Timestamp)
 
-	// Field (12) 'Slot'
+	// Field (13) 'Slot'
 	dst = ssz.MarshalUint64(dst, b.Slot)
 
-	// Field (13) 'StateRoot'
+	// Field (14) 'StateRoot'
 	dst = append(dst, b.StateRoot[:]...)
 
-	// Field (14) 'FeeAddress'
+	// Field (15) 'FeeAddress'
 	dst = append(dst, b.FeeAddress[:]...)
 
 	return
@@ -66,7 +69,7 @@ func (b *BlockHeader) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (b *BlockHeader) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 372 {
+	if size != 404 {
 		return ssz.ErrSize
 	}
 
@@ -79,48 +82,51 @@ func (b *BlockHeader) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'TxMerkleRoot'
 	copy(b.TxMerkleRoot[:], buf[16:48])
 
-	// Field (3) 'VoteMerkleRoot'
-	copy(b.VoteMerkleRoot[:], buf[48:80])
+	// Field (3) 'TxMultiMerkleRoot'
+	copy(b.TxMultiMerkleRoot[:], buf[48:80])
 
-	// Field (4) 'DepositMerkleRoot'
-	copy(b.DepositMerkleRoot[:], buf[80:112])
+	// Field (4) 'VoteMerkleRoot'
+	copy(b.VoteMerkleRoot[:], buf[80:112])
 
-	// Field (5) 'ExitMerkleRoot'
-	copy(b.ExitMerkleRoot[:], buf[112:144])
+	// Field (5) 'DepositMerkleRoot'
+	copy(b.DepositMerkleRoot[:], buf[112:144])
 
-	// Field (6) 'VoteSlashingMerkleRoot'
-	copy(b.VoteSlashingMerkleRoot[:], buf[144:176])
+	// Field (6) 'ExitMerkleRoot'
+	copy(b.ExitMerkleRoot[:], buf[144:176])
 
-	// Field (7) 'RANDAOSlashingMerkleRoot'
-	copy(b.RANDAOSlashingMerkleRoot[:], buf[176:208])
+	// Field (7) 'VoteSlashingMerkleRoot'
+	copy(b.VoteSlashingMerkleRoot[:], buf[176:208])
 
-	// Field (8) 'ProposerSlashingMerkleRoot'
-	copy(b.ProposerSlashingMerkleRoot[:], buf[208:240])
+	// Field (8) 'RANDAOSlashingMerkleRoot'
+	copy(b.RANDAOSlashingMerkleRoot[:], buf[208:240])
 
-	// Field (9) 'GovernanceVotesMerkleRoot'
-	copy(b.GovernanceVotesMerkleRoot[:], buf[240:272])
+	// Field (9) 'ProposerSlashingMerkleRoot'
+	copy(b.ProposerSlashingMerkleRoot[:], buf[240:272])
 
-	// Field (10) 'PrevBlockHash'
-	copy(b.PrevBlockHash[:], buf[272:304])
+	// Field (10) 'GovernanceVotesMerkleRoot'
+	copy(b.GovernanceVotesMerkleRoot[:], buf[272:304])
 
-	// Field (11) 'Timestamp'
-	b.Timestamp = ssz.UnmarshallUint64(buf[304:312])
+	// Field (11) 'PrevBlockHash'
+	copy(b.PrevBlockHash[:], buf[304:336])
 
-	// Field (12) 'Slot'
-	b.Slot = ssz.UnmarshallUint64(buf[312:320])
+	// Field (12) 'Timestamp'
+	b.Timestamp = ssz.UnmarshallUint64(buf[336:344])
 
-	// Field (13) 'StateRoot'
-	copy(b.StateRoot[:], buf[320:352])
+	// Field (13) 'Slot'
+	b.Slot = ssz.UnmarshallUint64(buf[344:352])
 
-	// Field (14) 'FeeAddress'
-	copy(b.FeeAddress[:], buf[352:372])
+	// Field (14) 'StateRoot'
+	copy(b.StateRoot[:], buf[352:384])
+
+	// Field (15) 'FeeAddress'
+	copy(b.FeeAddress[:], buf[384:404])
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BlockHeader object
 func (b *BlockHeader) SizeSSZ() (size int) {
-	size = 372
+	size = 404
 	return
 }
 
@@ -142,40 +148,43 @@ func (b *BlockHeader) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	// Field (2) 'TxMerkleRoot'
 	hh.PutBytes(b.TxMerkleRoot[:])
 
-	// Field (3) 'VoteMerkleRoot'
+	// Field (3) 'TxMultiMerkleRoot'
+	hh.PutBytes(b.TxMultiMerkleRoot[:])
+
+	// Field (4) 'VoteMerkleRoot'
 	hh.PutBytes(b.VoteMerkleRoot[:])
 
-	// Field (4) 'DepositMerkleRoot'
+	// Field (5) 'DepositMerkleRoot'
 	hh.PutBytes(b.DepositMerkleRoot[:])
 
-	// Field (5) 'ExitMerkleRoot'
+	// Field (6) 'ExitMerkleRoot'
 	hh.PutBytes(b.ExitMerkleRoot[:])
 
-	// Field (6) 'VoteSlashingMerkleRoot'
+	// Field (7) 'VoteSlashingMerkleRoot'
 	hh.PutBytes(b.VoteSlashingMerkleRoot[:])
 
-	// Field (7) 'RANDAOSlashingMerkleRoot'
+	// Field (8) 'RANDAOSlashingMerkleRoot'
 	hh.PutBytes(b.RANDAOSlashingMerkleRoot[:])
 
-	// Field (8) 'ProposerSlashingMerkleRoot'
+	// Field (9) 'ProposerSlashingMerkleRoot'
 	hh.PutBytes(b.ProposerSlashingMerkleRoot[:])
 
-	// Field (9) 'GovernanceVotesMerkleRoot'
+	// Field (10) 'GovernanceVotesMerkleRoot'
 	hh.PutBytes(b.GovernanceVotesMerkleRoot[:])
 
-	// Field (10) 'PrevBlockHash'
+	// Field (11) 'PrevBlockHash'
 	hh.PutBytes(b.PrevBlockHash[:])
 
-	// Field (11) 'Timestamp'
+	// Field (12) 'Timestamp'
 	hh.PutUint64(b.Timestamp)
 
-	// Field (12) 'Slot'
+	// Field (13) 'Slot'
 	hh.PutUint64(b.Slot)
 
-	// Field (13) 'StateRoot'
+	// Field (14) 'StateRoot'
 	hh.PutBytes(b.StateRoot[:])
 
-	// Field (14) 'FeeAddress'
+	// Field (15) 'FeeAddress'
 	hh.PutBytes(b.FeeAddress[:])
 
 	hh.Merkleize(indx)

@@ -24,6 +24,7 @@ func TestBlockHeader(t *testing.T) {
 		Version:                    2,
 		Nonce:                      10,
 		TxMerkleRoot:               [32]byte{1, 2, 3},
+		TxMultiMerkleRoot:          [32]byte{1, 2, 3},
 		VoteMerkleRoot:             [32]byte{1, 2, 3},
 		DepositMerkleRoot:          [32]byte{1, 2, 3},
 		ExitMerkleRoot:             [32]byte{1, 2, 3},
@@ -38,5 +39,5 @@ func TestBlockHeader(t *testing.T) {
 		FeeAddress:                 [20]byte{1, 2, 3},
 	}
 
-	assert.Equal(t, "389c413d5320cf637292adbd8f91fe7690b9433388312fdcc7eac32df626d730", d.Hash().String())
+	assert.Equal(t, "0008629105773acde8709cd3ddd0e6c9b6477c239ee56dec05a3d77dbbd685f4", d.Hash().String())
 }

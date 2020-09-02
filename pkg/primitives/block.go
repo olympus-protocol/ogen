@@ -114,6 +114,25 @@ func merkleRootTxs(txs []*Tx) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
+// TransactionMultiMerkleRoot calculates the merkle root of the TxsMulti in the block.
+func (b *Block) TransactionMultiMerkleRoot() chainhash.Hash {
+	return merkleRootTxsMulti(b.TxsMulti)
+}
+
+func merkleRootTxsMulti(txs []*TxMulti) chainhash.Hash {
+	if len(txs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(txs) == 1 {
+		return txs[0].Hash()
+	}
+	mid := len(txs) / 2
+	h1 := merkleRootTxsMulti(txs[:mid])
+	h2 := merkleRootTxsMulti(txs[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
 // VotesMerkleRoot calculates the merkle root of the Votes in the block.
 func (b *Block) VotesMerkleRoot() chainhash.Hash {
 	return merkleRootVotes(b.Votes)

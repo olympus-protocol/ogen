@@ -17,6 +17,7 @@ type BlockHeader struct {
 	Version                    uint64
 	Nonce                      uint64
 	TxMerkleRoot               [32]byte `ssz-size:"32"`
+	TxMultiMerkleRoot          [32]byte `ssz-size:"32"`
 	VoteMerkleRoot             [32]byte `ssz-size:"32"`
 	DepositMerkleRoot          [32]byte `ssz-size:"32"`
 	ExitMerkleRoot             [32]byte `ssz-size:"32"`
