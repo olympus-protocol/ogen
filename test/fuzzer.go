@@ -409,8 +409,32 @@ func FuzzTx(n int) []*primitives.Tx {
 
 // FuzzTx returns a slice of n Tx
 func FuzzTxMulti(n int) []*primitives.TxMulti {
+	f := fuzz.New().NilChance(0)
 	var v []*primitives.TxMulti
 	for i := 0; i < n; i++ {
+		d := new(primitives.TxMulti)
+		f.Fuzz(d)
+
+		secretKeys := make([]*bls.SecretKey, 10)
+		publicKeys := make([]*bls.PublicKey, 10)
+
+		for i := range secretKeys {
+			secretKeys[i] = bls.RandKey()
+			publicKeys[i] = secretKeys[i].PublicKey()
+		}
+
+		mp := multisig.NewMultipub(publicKeys, 5)
+		ms := multisig.NewMultisig(mp)
+
+		for i := 0; i < 5; i++ {
+			msg := d.SignatureMessage()
+			err := ms.Sign(secretKeys[i], msg[:])
+			if err != nil {
+				panic(err)
+			}
+		}
+		d.Signature = ms
+		v = append(v, d)
 	}
 	return v
 }

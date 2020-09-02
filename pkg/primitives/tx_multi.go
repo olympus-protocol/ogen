@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"encoding/binary"
 	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 
@@ -49,10 +50,12 @@ func (t TxMulti) FromPubkeyHash() ([20]byte, error) {
 
 // SignatureMessage gets the message the needs to be signed.
 func (t TxMulti) SignatureMessage() chainhash.Hash {
-	cp := t
-	cp.Signature = nil
-	b, _ := cp.Marshal()
-	return chainhash.HashH(b)
+	buf := make([]byte, 44)
+	copy(buf[:], t.To[:])
+	binary.LittleEndian.PutUint64(buf, t.Nonce)
+	binary.LittleEndian.PutUint64(buf, t.Amount)
+	binary.LittleEndian.PutUint64(buf, t.Fee)
+	return chainhash.HashH(buf)
 }
 
 // VerifySig verifies the signatures is valid.
