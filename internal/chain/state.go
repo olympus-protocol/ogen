@@ -354,12 +354,12 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, &s.params)
+	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, &s.params)
 	if err != nil {
 		return nil, err
 	}
 
-	return state, nil
+	return st, nil
 }
 
 // NewStateService constructs a new state service.

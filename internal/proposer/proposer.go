@@ -164,7 +164,7 @@ func (p *proposer) ProposeBlocks() {
 		select {
 		case <-blockTimer.C:
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
+				p.log.Infof("blockchain not synced... trying to propose in 10 seconds")
 				blockTimer = time.NewTimer(time.Second * 10)
 				continue
 			}
@@ -318,7 +318,7 @@ func (p *proposer) VoteForBlocks() {
 			p.log.Infof("sending votes for slot %d", slotToVote)
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 10)
-				p.log.Infof("blockchain not synced... trying to mine in 10 seconds")
+				p.log.Infof("blockchain not synced... trying to vote in 10 seconds")
 				continue
 			}
 
