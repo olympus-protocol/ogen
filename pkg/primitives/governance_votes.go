@@ -11,7 +11,7 @@ const (
 	// MaxReplacementsVoteSize is the maximum amount of bytes a ReplacementVotes can have
 	MaxReplacementsVoteSize = 52
 	// MaxGovernanceVoteSize is the maximum amount of bytes a GovernanceVote can have
-	MaxGovernanceVoteSize = 260
+	MaxGovernanceVoteSize = 116 + multisig.MaxMultisigSize
 	// MaxCommunityVoteDataSize is the maximum amount of bytes a CommunityVoteData can have
 	MaxCommunityVoteDataSize = 104
 )
