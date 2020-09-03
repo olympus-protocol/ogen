@@ -16,12 +16,10 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
 
-// ProtocolHandlerInterface is an interface for the ProtocolHandler
-type ProtocolHandlerInterface interface {
+// ProtocolHandler is an interface for the ProtocolHandler
+type ProtocolHandler interface {
 	RegisterHandler(messageName string, handler MessageHandler) error
 	receiveMessages(id peer.ID, r io.Reader)
-	sendMessages(id peer.ID, w io.Writer)
-	handleStream(s network.Stream)
 	SendMessage(toPeer peer.ID, msg p2p.Message) error
 	Listen(network.Network, multiaddr.Multiaddr)
 	ListenClose(network.Network, multiaddr.Multiaddr)
@@ -31,9 +29,10 @@ type ProtocolHandlerInterface interface {
 	ClosedStream(network.Network, network.Stream)
 	Notify(n ConnectionManagerNotifee)
 	StopNotify(n ConnectionManagerNotifee)
+	HandleStream(s network.Stream)
 }
 
-var _ ProtocolHandlerInterface = &protocolHandler{}
+var _ ProtocolHandler = &protocolHandler{}
 
 // MessageHandler is a handler for a specific message.
 type MessageHandler func(id peer.ID, msg p2p.Message) error
@@ -69,7 +68,7 @@ type ConnectionManagerNotifee interface {
 }
 
 // newProtocolHandler constructs a new protocol handler for a specific protocol ID.
-func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, config Config) ProtocolHandlerInterface {
+func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, config Config) ProtocolHandler {
 	ph := &protocolHandler{
 		ID:               id,
 		host:             host,
@@ -80,7 +79,7 @@ func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, conf
 		log:              config.Log,
 	}
 
-	host.setStreamHandler(id, ph.handleStream)
+	host.SetStreamHandler(id, ph.HandleStream)
 	host.Notify(ph)
 
 	return ph
@@ -178,7 +177,7 @@ func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
 	}()
 }
 
-func (p *protocolHandler) handleStream(s network.Stream) {
+func (p *protocolHandler) HandleStream(s network.Stream) {
 	p.sendMessages(s.Conn().RemotePeer(), s)
 
 	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)

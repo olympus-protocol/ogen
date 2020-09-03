@@ -14,31 +14,31 @@ import (
 	reflect "reflect"
 )
 
-// MockProtocolHandlerInterface is a mock of ProtocolHandlerInterface interface
-type MockProtocolHandlerInterface struct {
+// MockProtocolHandler is a mock of ProtocolHandler interface
+type MockProtocolHandler struct {
 	ctrl     *gomock.Controller
-	recorder *MockProtocolHandlerInterfaceMockRecorder
+	recorder *MockProtocolHandlerMockRecorder
 }
 
-// MockProtocolHandlerInterfaceMockRecorder is the mock recorder for MockProtocolHandlerInterface
-type MockProtocolHandlerInterfaceMockRecorder struct {
-	mock *MockProtocolHandlerInterface
+// MockProtocolHandlerMockRecorder is the mock recorder for MockProtocolHandler
+type MockProtocolHandlerMockRecorder struct {
+	mock *MockProtocolHandler
 }
 
-// NewMockProtocolHandlerInterface creates a new mock instance
-func NewMockProtocolHandlerInterface(ctrl *gomock.Controller) *MockProtocolHandlerInterface {
-	mock := &MockProtocolHandlerInterface{ctrl: ctrl}
-	mock.recorder = &MockProtocolHandlerInterfaceMockRecorder{mock}
+// NewMockProtocolHandler creates a new mock instance
+func NewMockProtocolHandler(ctrl *gomock.Controller) *MockProtocolHandler {
+	mock := &MockProtocolHandler{ctrl: ctrl}
+	mock.recorder = &MockProtocolHandlerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockProtocolHandlerInterface) EXPECT() *MockProtocolHandlerInterfaceMockRecorder {
+func (m *MockProtocolHandler) EXPECT() *MockProtocolHandlerMockRecorder {
 	return m.recorder
 }
 
 // RegisterHandler mocks base method
-func (m *MockProtocolHandlerInterface) RegisterHandler(messageName string, handler MessageHandler) error {
+func (m *MockProtocolHandler) RegisterHandler(messageName string, handler MessageHandler) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterHandler", messageName, handler)
 	ret0, _ := ret[0].(error)
@@ -46,49 +46,25 @@ func (m *MockProtocolHandlerInterface) RegisterHandler(messageName string, handl
 }
 
 // RegisterHandler indicates an expected call of RegisterHandler
-func (mr *MockProtocolHandlerInterfaceMockRecorder) RegisterHandler(messageName, handler interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) RegisterHandler(messageName, handler interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterHandler", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).RegisterHandler), messageName, handler)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterHandler", reflect.TypeOf((*MockProtocolHandler)(nil).RegisterHandler), messageName, handler)
 }
 
 // receiveMessages mocks base method
-func (m *MockProtocolHandlerInterface) receiveMessages(id peer.ID, r io.Reader) {
+func (m *MockProtocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "receiveMessages", id, r)
 }
 
 // receiveMessages indicates an expected call of receiveMessages
-func (mr *MockProtocolHandlerInterfaceMockRecorder) receiveMessages(id, r interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) receiveMessages(id, r interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "receiveMessages", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).receiveMessages), id, r)
-}
-
-// sendMessages mocks base method
-func (m *MockProtocolHandlerInterface) sendMessages(id peer.ID, w io.Writer) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "sendMessages", id, w)
-}
-
-// sendMessages indicates an expected call of sendMessages
-func (mr *MockProtocolHandlerInterfaceMockRecorder) sendMessages(id, w interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "sendMessages", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).sendMessages), id, w)
-}
-
-// handleStream mocks base method
-func (m *MockProtocolHandlerInterface) handleStream(s network.Stream) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "handleStream", s)
-}
-
-// handleStream indicates an expected call of handleStream
-func (mr *MockProtocolHandlerInterfaceMockRecorder) handleStream(s interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleStream", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).handleStream), s)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "receiveMessages", reflect.TypeOf((*MockProtocolHandler)(nil).receiveMessages), id, r)
 }
 
 // SendMessage mocks base method
-func (m *MockProtocolHandlerInterface) SendMessage(toPeer peer.ID, msg p2p.Message) error {
+func (m *MockProtocolHandler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMessage", toPeer, msg)
 	ret0, _ := ret[0].(error)
@@ -96,105 +72,117 @@ func (m *MockProtocolHandlerInterface) SendMessage(toPeer peer.ID, msg p2p.Messa
 }
 
 // SendMessage indicates an expected call of SendMessage
-func (mr *MockProtocolHandlerInterfaceMockRecorder) SendMessage(toPeer, msg interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) SendMessage(toPeer, msg interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).SendMessage), toPeer, msg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockProtocolHandler)(nil).SendMessage), toPeer, msg)
 }
 
 // Listen mocks base method
-func (m *MockProtocolHandlerInterface) Listen(arg0 network.Network, arg1 multiaddr.Multiaddr) {
+func (m *MockProtocolHandler) Listen(arg0 network.Network, arg1 multiaddr.Multiaddr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Listen", arg0, arg1)
 }
 
 // Listen indicates an expected call of Listen
-func (mr *MockProtocolHandlerInterfaceMockRecorder) Listen(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) Listen(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Listen", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).Listen), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Listen", reflect.TypeOf((*MockProtocolHandler)(nil).Listen), arg0, arg1)
 }
 
 // ListenClose mocks base method
-func (m *MockProtocolHandlerInterface) ListenClose(arg0 network.Network, arg1 multiaddr.Multiaddr) {
+func (m *MockProtocolHandler) ListenClose(arg0 network.Network, arg1 multiaddr.Multiaddr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ListenClose", arg0, arg1)
 }
 
 // ListenClose indicates an expected call of ListenClose
-func (mr *MockProtocolHandlerInterfaceMockRecorder) ListenClose(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) ListenClose(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenClose", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).ListenClose), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenClose", reflect.TypeOf((*MockProtocolHandler)(nil).ListenClose), arg0, arg1)
 }
 
 // Connected mocks base method
-func (m *MockProtocolHandlerInterface) Connected(net network.Network, conn network.Conn) {
+func (m *MockProtocolHandler) Connected(net network.Network, conn network.Conn) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Connected", net, conn)
 }
 
 // Connected indicates an expected call of Connected
-func (mr *MockProtocolHandlerInterfaceMockRecorder) Connected(net, conn interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) Connected(net, conn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connected", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).Connected), net, conn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connected", reflect.TypeOf((*MockProtocolHandler)(nil).Connected), net, conn)
 }
 
 // Disconnected mocks base method
-func (m *MockProtocolHandlerInterface) Disconnected(net network.Network, conn network.Conn) {
+func (m *MockProtocolHandler) Disconnected(net network.Network, conn network.Conn) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Disconnected", net, conn)
 }
 
 // Disconnected indicates an expected call of Disconnected
-func (mr *MockProtocolHandlerInterfaceMockRecorder) Disconnected(net, conn interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) Disconnected(net, conn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Disconnected", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).Disconnected), net, conn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Disconnected", reflect.TypeOf((*MockProtocolHandler)(nil).Disconnected), net, conn)
 }
 
 // OpenedStream mocks base method
-func (m *MockProtocolHandlerInterface) OpenedStream(arg0 network.Network, arg1 network.Stream) {
+func (m *MockProtocolHandler) OpenedStream(arg0 network.Network, arg1 network.Stream) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "OpenedStream", arg0, arg1)
 }
 
 // OpenedStream indicates an expected call of OpenedStream
-func (mr *MockProtocolHandlerInterfaceMockRecorder) OpenedStream(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) OpenedStream(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenedStream", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).OpenedStream), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenedStream", reflect.TypeOf((*MockProtocolHandler)(nil).OpenedStream), arg0, arg1)
 }
 
 // ClosedStream mocks base method
-func (m *MockProtocolHandlerInterface) ClosedStream(arg0 network.Network, arg1 network.Stream) {
+func (m *MockProtocolHandler) ClosedStream(arg0 network.Network, arg1 network.Stream) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ClosedStream", arg0, arg1)
 }
 
 // ClosedStream indicates an expected call of ClosedStream
-func (mr *MockProtocolHandlerInterfaceMockRecorder) ClosedStream(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) ClosedStream(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClosedStream", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).ClosedStream), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClosedStream", reflect.TypeOf((*MockProtocolHandler)(nil).ClosedStream), arg0, arg1)
 }
 
 // Notify mocks base method
-func (m *MockProtocolHandlerInterface) Notify(n ConnectionManagerNotifee) {
+func (m *MockProtocolHandler) Notify(n ConnectionManagerNotifee) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Notify", n)
 }
 
 // Notify indicates an expected call of Notify
-func (mr *MockProtocolHandlerInterfaceMockRecorder) Notify(n interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) Notify(n interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).Notify), n)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockProtocolHandler)(nil).Notify), n)
 }
 
 // StopNotify mocks base method
-func (m *MockProtocolHandlerInterface) StopNotify(n ConnectionManagerNotifee) {
+func (m *MockProtocolHandler) StopNotify(n ConnectionManagerNotifee) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "StopNotify", n)
 }
 
 // StopNotify indicates an expected call of StopNotify
-func (mr *MockProtocolHandlerInterfaceMockRecorder) StopNotify(n interface{}) *gomock.Call {
+func (mr *MockProtocolHandlerMockRecorder) StopNotify(n interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopNotify", reflect.TypeOf((*MockProtocolHandlerInterface)(nil).StopNotify), n)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopNotify", reflect.TypeOf((*MockProtocolHandler)(nil).StopNotify), n)
+}
+
+// HandleStream mocks base method
+func (m *MockProtocolHandler) HandleStream(s network.Stream) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "HandleStream", s)
+}
+
+// HandleStream indicates an expected call of HandleStream
+func (mr *MockProtocolHandlerMockRecorder) HandleStream(s interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleStream", reflect.TypeOf((*MockProtocolHandler)(nil).HandleStream), s)
 }
 
 // MockConnectionManagerNotifee is a mock of ConnectionManagerNotifee interface

@@ -27,20 +27,13 @@ const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
 // SyncProtocol is an interface for the syncProtocol
 type SyncProtocol interface {
 	Notify(notifee SyncNotifee)
-	listenForBroadcasts() error
-	handleBlock(id peer.ID, block *primitives.Block) error
-	handleBlocks(id peer.ID, rawMsg p2p.Message) error
-	handleGetBlocks(id peer.ID, rawMsg p2p.Message) error
-	handleVersion(id peer.ID, msg p2p.Message) error
-	versionMsg() *p2p.MsgVersion
-	sendVersion(id peer.ID)
-	syncing() bool
 	Listen(network.Network, multiaddr.Multiaddr)
 	ListenClose(network.Network, multiaddr.Multiaddr)
 	Connected(net network.Network, conn network.Conn)
 	Disconnected(net network.Network, conn network.Conn)
 	OpenedStream(net network.Network, stream network.Stream)
 	ClosedStream(network.Network, network.Stream)
+	Syncing() bool
 }
 
 var _ SyncProtocol = &syncProtocol{}
@@ -54,7 +47,7 @@ type syncProtocol struct {
 
 	chain chain.Blockchain
 
-	protocolHandler ProtocolHandlerInterface
+	protocolHandler ProtocolHandler
 
 	notifees     []SyncNotifee
 	notifeesLock sync.Mutex
@@ -353,7 +346,7 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 		sp.log.Errorf("could not open stream for connection: %s", err)
 	}
 
-	sp.protocolHandler.handleStream(s)
+	sp.protocolHandler.HandleStream(s)
 
 	sp.sendVersion(conn.RemotePeer())
 }
@@ -362,13 +355,11 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {}
 
 // OpenedStream is called when we open a stream.
-func (sp *syncProtocol) OpenedStream(net network.Network, stream network.Stream) {
-	// start the sync process now
-}
+func (sp *syncProtocol) OpenedStream(net network.Network, stream network.Stream) {}
 
 // ClosedStream is called when we close a stream.
 func (sp *syncProtocol) ClosedStream(network.Network, network.Stream) {}
 
-func (sp *syncProtocol) syncing() bool {
+func (sp *syncProtocol) Syncing() bool {
 	return sp.onSync
 }

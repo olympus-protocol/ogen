@@ -138,18 +138,3 @@ func (mr *MockDatabaseMockRecorder) GetPrivKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivKey", reflect.TypeOf((*MockDatabase)(nil).GetPrivKey))
 }
-
-// extractIP mocks base method
-func (m *MockDatabase) extractIP(pma multiaddr.Multiaddr) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "extractIP", pma)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// extractIP indicates an expected call of extractIP
-func (mr *MockDatabaseMockRecorder) extractIP(pma interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "extractIP", reflect.TypeOf((*MockDatabase)(nil).extractIP), pma)
-}

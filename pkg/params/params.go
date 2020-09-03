@@ -18,6 +18,7 @@ type ChainParams struct {
 	DefaultP2PPort               string
 	GenesisHash                  chainhash.Hash
 	AccountPrefixes              AccountPrefixes
+	NetMagic                     uint32
 	GovernanceBudgetQuotient     uint64
 	EpochLength                  uint64
 	EjectionBalance              uint64
@@ -54,6 +55,7 @@ type ChainParams struct {
 var Mainnet = ChainParams{
 	Name:           "mainnet",
 	DefaultP2PPort: "24126",
+	NetMagic:       333999,
 	AccountPrefixes: AccountPrefixes{
 		Public:   "olpub",
 		Private:  "olprv",
@@ -107,6 +109,7 @@ var testnetChainFileHash, _ = chainhash.NewHashFromStr("951dda391eef42176dd5ddab
 var TestNet = ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "25126",
+	NetMagic:       222999,
 	AccountPrefixes: AccountPrefixes{
 		Public:   "tlpub",
 		Private:  "tlprv",

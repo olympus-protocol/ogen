@@ -7,10 +7,7 @@ package hostnode
 import (
 	gomock "github.com/golang/mock/gomock"
 	network "github.com/libp2p/go-libp2p-core/network"
-	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
-	p2p "github.com/olympus-protocol/ogen/pkg/p2p"
-	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
 )
 
@@ -47,116 +44,6 @@ func (m *MockSyncProtocol) Notify(notifee SyncNotifee) {
 func (mr *MockSyncProtocolMockRecorder) Notify(notifee interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockSyncProtocol)(nil).Notify), notifee)
-}
-
-// listenForBroadcasts mocks base method
-func (m *MockSyncProtocol) listenForBroadcasts() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "listenForBroadcasts")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// listenForBroadcasts indicates an expected call of listenForBroadcasts
-func (mr *MockSyncProtocolMockRecorder) listenForBroadcasts() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "listenForBroadcasts", reflect.TypeOf((*MockSyncProtocol)(nil).listenForBroadcasts))
-}
-
-// handleBlock mocks base method
-func (m *MockSyncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "handleBlock", id, block)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// handleBlock indicates an expected call of handleBlock
-func (mr *MockSyncProtocolMockRecorder) handleBlock(id, block interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleBlock", reflect.TypeOf((*MockSyncProtocol)(nil).handleBlock), id, block)
-}
-
-// handleBlocks mocks base method
-func (m *MockSyncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "handleBlocks", id, rawMsg)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// handleBlocks indicates an expected call of handleBlocks
-func (mr *MockSyncProtocolMockRecorder) handleBlocks(id, rawMsg interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleBlocks", reflect.TypeOf((*MockSyncProtocol)(nil).handleBlocks), id, rawMsg)
-}
-
-// handleGetBlocks mocks base method
-func (m *MockSyncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "handleGetBlocks", id, rawMsg)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// handleGetBlocks indicates an expected call of handleGetBlocks
-func (mr *MockSyncProtocolMockRecorder) handleGetBlocks(id, rawMsg interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleGetBlocks", reflect.TypeOf((*MockSyncProtocol)(nil).handleGetBlocks), id, rawMsg)
-}
-
-// handleVersion mocks base method
-func (m *MockSyncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "handleVersion", id, msg)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// handleVersion indicates an expected call of handleVersion
-func (mr *MockSyncProtocolMockRecorder) handleVersion(id, msg interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleVersion", reflect.TypeOf((*MockSyncProtocol)(nil).handleVersion), id, msg)
-}
-
-// versionMsg mocks base method
-func (m *MockSyncProtocol) versionMsg() *p2p.MsgVersion {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "versionMsg")
-	ret0, _ := ret[0].(*p2p.MsgVersion)
-	return ret0
-}
-
-// versionMsg indicates an expected call of versionMsg
-func (mr *MockSyncProtocolMockRecorder) versionMsg() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "versionMsg", reflect.TypeOf((*MockSyncProtocol)(nil).versionMsg))
-}
-
-// sendVersion mocks base method
-func (m *MockSyncProtocol) sendVersion(id peer.ID) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "sendVersion", id)
-}
-
-// sendVersion indicates an expected call of sendVersion
-func (mr *MockSyncProtocolMockRecorder) sendVersion(id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "sendVersion", reflect.TypeOf((*MockSyncProtocol)(nil).sendVersion), id)
-}
-
-// syncing mocks base method
-func (m *MockSyncProtocol) syncing() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "syncing")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// syncing indicates an expected call of syncing
-func (mr *MockSyncProtocolMockRecorder) syncing() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "syncing", reflect.TypeOf((*MockSyncProtocol)(nil).syncing))
 }
 
 // Listen mocks base method
@@ -229,6 +116,20 @@ func (m *MockSyncProtocol) ClosedStream(arg0 network.Network, arg1 network.Strea
 func (mr *MockSyncProtocolMockRecorder) ClosedStream(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClosedStream", reflect.TypeOf((*MockSyncProtocol)(nil).ClosedStream), arg0, arg1)
+}
+
+// Syncing mocks base method
+func (m *MockSyncProtocol) Syncing() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Syncing")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Syncing indicates an expected call of Syncing
+func (mr *MockSyncProtocolMockRecorder) Syncing() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Syncing", reflect.TypeOf((*MockSyncProtocol)(nil).Syncing))
 }
 
 // MockSyncNotifee is a mock of SyncNotifee interface

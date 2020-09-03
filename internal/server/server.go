@@ -130,7 +130,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	hostnode, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch)
+	hostnode, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, currParams.NetMagic)
 	if err != nil {
 		return nil, err
 	}

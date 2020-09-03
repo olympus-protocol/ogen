@@ -124,18 +124,6 @@ func (mr *MockHostNodeMockRecorder) GetNetMagic() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetMagic", reflect.TypeOf((*MockHostNode)(nil).GetNetMagic))
 }
 
-// removePeer mocks base method
-func (m *MockHostNode) removePeer(p peer.ID) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "removePeer", p)
-}
-
-// removePeer indicates an expected call of removePeer
-func (mr *MockHostNodeMockRecorder) removePeer(p interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "removePeer", reflect.TypeOf((*MockHostNode)(nil).removePeer), p)
-}
-
 // DisconnectPeer mocks base method
 func (m *MockHostNode) DisconnectPeer(p peer.ID) error {
 	m.ctrl.T.Helper()
@@ -232,18 +220,6 @@ func (mr *MockHostNodeMockRecorder) Notify(notifee interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockHostNode)(nil).Notify), notifee)
 }
 
-// setStreamHandler mocks base method
-func (m *MockHostNode) setStreamHandler(id protocol.ID, handleStream func(network.Stream)) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "setStreamHandler", id, handleStream)
-}
-
-// setStreamHandler indicates an expected call of setStreamHandler
-func (mr *MockHostNodeMockRecorder) setStreamHandler(id, handleStream interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "setStreamHandler", reflect.TypeOf((*MockHostNode)(nil).setStreamHandler), id, handleStream)
-}
-
 // CountPeers mocks base method
 func (m *MockHostNode) CountPeers(id protocol.ID) int {
 	m.ctrl.T.Helper()
@@ -327,4 +303,16 @@ func (m *MockHostNode) IsPeerBanned(id peer.ID) (bool, error) {
 func (mr *MockHostNodeMockRecorder) IsPeerBanned(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerBanned", reflect.TypeOf((*MockHostNode)(nil).IsPeerBanned), id)
+}
+
+// SetStreamHandler mocks base method
+func (m *MockHostNode) SetStreamHandler(id protocol.ID, handleStream func(network.Stream)) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetStreamHandler", id, handleStream)
+}
+
+// SetStreamHandler indicates an expected call of SetStreamHandler
+func (mr *MockHostNodeMockRecorder) SetStreamHandler(id, handleStream interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStreamHandler", reflect.TypeOf((*MockHostNode)(nil).SetStreamHandler), id, handleStream)
 }

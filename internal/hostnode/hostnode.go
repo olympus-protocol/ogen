@@ -37,7 +37,7 @@ const (
 	heartbeatInterval = 20 * time.Second
 )
 
-//HostNode is an interface for hostNode
+// HostNode is an interface for hostNode
 type HostNode interface {
 	SyncProtocol() SyncProtocol
 	Topic(topic string) (*pubsub.Topic, error)
@@ -45,7 +45,6 @@ type HostNode interface {
 	GetContext() context.Context
 	GetHost() host.Host
 	GetNetMagic() uint32
-	removePeer(p peer.ID)
 	DisconnectPeer(p peer.ID) error
 	IsConnected() bool
 	PeersConnected() int
@@ -53,13 +52,13 @@ type HostNode interface {
 	GetPeerInfos() []peer.AddrInfo
 	ConnectedToPeer(id peer.ID) bool
 	Notify(notifee network.Notifiee)
-	setStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	CountPeers(id protocol.ID) int
 	GetPeerDirection(id peer.ID) network.Direction
 	Start() error
 	SavePeer(pma multiaddr.Multiaddr) error
 	BanScorePeer(id peer.ID, weight int) error
 	IsPeerBanned(id peer.ID) (bool, error)
+	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 }
 
 var _ HostNode = &hostNode{}
@@ -93,7 +92,7 @@ type hostNode struct {
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain) (HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32) (HostNode, error) {
 	ps := pstoremem.NewPeerstore()
 	db, err := NewDatabase(config.Path)
 	if err != nil {
@@ -169,6 +168,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		log:               config.Log,
 		topics:            map[string]*pubsub.Topic{},
 		db:                db,
+		netMagic:          netMagic,
 	}
 
 	discovery, err := NewDiscoveryProtocol(ctx, node, config)
@@ -207,7 +207,7 @@ func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
 
 // Syncing returns a boolean if the chain is on sync mode
 func (node *hostNode) Syncing() bool {
-	return node.syncProtocol.syncing()
+	return node.syncProtocol.Syncing()
 }
 
 // GetContext returns the context
@@ -271,8 +271,8 @@ func (node *hostNode) Notify(notifee network.Notifiee) {
 	node.host.Network().Notify(notifee)
 }
 
-// setStreamHandler sets a stream handler for the host node.
-func (node *hostNode) setStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
+// SetStreamHandler sets a stream handler for the host node.
+func (node *hostNode) SetStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
 	node.host.SetStreamHandler(id, handleStream)
 }
 

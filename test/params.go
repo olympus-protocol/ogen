@@ -36,6 +36,7 @@ var Conf = server.GlobalConfig{
 var TestParams = params.ChainParams{
 	Name:           "testnet",
 	DefaultP2PPort: "25126",
+	NetMagic:       111999,
 	AccountPrefixes: params.AccountPrefixes{
 		Public:   "itpub",
 		Private:  "itprv",

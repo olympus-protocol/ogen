@@ -7,9 +7,7 @@ package hostnode
 import (
 	gomock "github.com/golang/mock/gomock"
 	network "github.com/libp2p/go-libp2p-core/network"
-	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
-	p2p "github.com/olympus-protocol/ogen/pkg/p2p"
 	reflect "reflect"
 )
 
@@ -36,34 +34,6 @@ func (m *MockDiscoveryProtocol) EXPECT() *MockDiscoveryProtocolMockRecorder {
 	return m.recorder
 }
 
-// handleAddr mocks base method
-func (m *MockDiscoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "handleAddr", id, msg)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// handleAddr indicates an expected call of handleAddr
-func (mr *MockDiscoveryProtocolMockRecorder) handleAddr(id, msg interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleAddr", reflect.TypeOf((*MockDiscoveryProtocol)(nil).handleAddr), id, msg)
-}
-
-// handleGetAddr mocks base method
-func (m *MockDiscoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "handleGetAddr", id, msg)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// handleGetAddr indicates an expected call of handleGetAddr
-func (mr *MockDiscoveryProtocolMockRecorder) handleGetAddr(id, msg interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleGetAddr", reflect.TypeOf((*MockDiscoveryProtocol)(nil).handleGetAddr), id, msg)
-}
-
 // Start mocks base method
 func (m *MockDiscoveryProtocol) Start() error {
 	m.ctrl.T.Helper()
@@ -76,20 +46,6 @@ func (m *MockDiscoveryProtocol) Start() error {
 func (mr *MockDiscoveryProtocolMockRecorder) Start() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockDiscoveryProtocol)(nil).Start))
-}
-
-// connect mocks base method
-func (m *MockDiscoveryProtocol) connect(pi peer.AddrInfo) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "connect", pi)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// connect indicates an expected call of connect
-func (mr *MockDiscoveryProtocolMockRecorder) connect(pi interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "connect", reflect.TypeOf((*MockDiscoveryProtocol)(nil).connect), pi)
 }
 
 // Listen mocks base method

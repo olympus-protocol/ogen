@@ -21,10 +21,7 @@ const discoveryProtocolID = protocol.ID("/ogen/discovery/" + OgenVersion)
 
 // DiscoveryProtocol is an interface for discoveryProtocol
 type DiscoveryProtocol interface {
-	handleAddr(id peer.ID, msg p2p.Message) error
-	handleGetAddr(id peer.ID, msg p2p.Message) error
 	Start() error
-	connect(pi peer.AddrInfo) error
 	Listen(network.Network, multiaddr.Multiaddr)
 	ListenClose(network.Network, multiaddr.Multiaddr)
 	Connected(net network.Network, conn network.Conn)
@@ -45,7 +42,7 @@ type discoveryProtocol struct {
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex
 
-	protocolHandler ProtocolHandlerInterface
+	protocolHandler ProtocolHandler
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
@@ -214,7 +211,7 @@ func (cm *discoveryProtocol) Connected(net network.Network, conn network.Conn) {
 		cm.log.Errorf("could not open stream for connection: %s", err)
 	}
 
-	cm.protocolHandler.handleStream(s)
+	cm.protocolHandler.HandleStream(s)
 }
 
 // Disconnected is called when we disconnect from a peer.
