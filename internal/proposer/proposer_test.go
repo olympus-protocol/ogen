@@ -175,6 +175,7 @@ func TestProposer_Object(t *testing.T) {
 	err = prop.Start()
 	assert.NoError(t, err)
 
+	// TODO: Find a way to test the routimes within a timer, otherwise they will run indefinitely
 	//prop.ProposeBlocks()
 	//prop.Stop()
 
