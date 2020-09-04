@@ -12,13 +12,15 @@ import (
 )
 
 func TestHostNode_New(t *testing.T) {
-	// Create datafolder
-	_ = os.Mkdir(testdata.Node1Folder, 0777)
+
+	err := os.Mkdir(testdata.Node1Folder, 0777)
+	assert.Nil(t, err)
 
 	//f := fuzz.New().NilChance(0)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 	log.EXPECT().Info(gomock.Any()).AnyTimes()
+	log.EXPECT().Infof("binding to address: %s", gomock.Any())
 
 	/*h, err := mockNet.GenPeer()
 	assert.NoError(t, err)*/
@@ -38,5 +40,6 @@ func TestHostNode_New(t *testing.T) {
 	host, err := hostnode.NewHostNode(ctx, c, bc)
 	assert.NoError(t, err)
 	assert.NotNil(t, host)
+	cleanFolder1()
 
 }

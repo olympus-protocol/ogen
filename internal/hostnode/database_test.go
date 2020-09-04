@@ -68,7 +68,7 @@ func TestDatabase_IsIPBanned(t *testing.T) {
 }
 
 func TestDatabase_GetSavedPeers(t *testing.T) {
-	// added 1 correct peer and banned aonther one in previous tests, so it should have 1 element saved
+	// added 1 correct peer and banned another one in previous tests, so it should have 1 element saved
 	savedAddresses, err := db.GetSavedPeers()
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(savedAddresses))

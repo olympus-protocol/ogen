@@ -169,7 +169,6 @@ func TestBlockchain_Instance(t *testing.T) {
 	err = bc.ProcessBlock(&b)
 	assert.NoError(t, err)
 
-	err = os.Remove("./tx.db")
-	assert.NoError(t, err)
+	_ = os.Remove("./tx.db")
 
 }

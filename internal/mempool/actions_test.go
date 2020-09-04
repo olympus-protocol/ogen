@@ -83,9 +83,12 @@ func TestActionMempool_New(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	host := hostnode.NewMockHostNode(ctrl)
-	host.EXPECT().Topic(p2p.MsgDepositCmd).Return(g.Join(p2p.MsgVoteCmd))
+	host.EXPECT().Topic(p2p.MsgDepositCmd).Return(g.Join(p2p.MsgDepositCmd))
+	host.EXPECT().Topic(p2p.MsgExitsCmd).Return(g.Join(p2p.MsgExitsCmd))
 	host.EXPECT().Topic(p2p.MsgExitCmd).Return(g.Join(p2p.MsgExitCmd))
 	host.EXPECT().Topic(p2p.MsgGovernanceCmd).Return(g.Join(p2p.MsgGovernanceCmd))
+	host.EXPECT().Topic(p2p.MsgDepositsCmd).Return(g.Join(p2p.MsgDepositsCmd))
+
 	host.EXPECT().GetHost().Return(h)
 
 	log := logger.NewMockLogger(ctrl)
