@@ -96,7 +96,12 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		Nonces: make(map[[20]byte]uint64),
 	}
 
-	s := NewState(cs, initialValidators, genesisHash, p)
+	gs := primitives.Governance{
+		ReplaceVotes:   make(map[[20]byte]chainhash.Hash),
+		CommunityVotes: make(map[chainhash.Hash]primitives.CommunityVoteData),
+	}
+
+	s := NewState(cs, gs, initialValidators, genesisHash, p)
 
 	return s, nil
 }

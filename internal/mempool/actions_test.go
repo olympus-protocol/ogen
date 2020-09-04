@@ -59,7 +59,13 @@ func TestNilPointer(t *testing.T) {
 		Signature: ds,
 		//Data: depositData,
 	}
-	mState := state.NewState(cs, validatorsGlobal, genesisHash, param)
+
+	gs := primitives.Governance{
+		ReplaceVotes:   make(map[[20]byte]chainhash.Hash),
+		CommunityVotes: make(map[chainhash.Hash]primitives.CommunityVoteData),
+	}
+
+	mState := state.NewState(cs, gs, validatorsGlobal, genesisHash, param)
 	assert.NotPanics(t, func() {
 		_ = mState.IsDepositValid(deposit, param)
 	})

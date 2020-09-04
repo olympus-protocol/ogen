@@ -334,9 +334,10 @@ func (s *state) Copy() State {
 	return &s2
 }
 
-func NewState(cs primitives.CoinsState, validators []*primitives.Validator, genHash chainhash.Hash, p *params.ChainParams) State {
+func NewState(cs primitives.CoinsState, gs primitives.Governance, validators []*primitives.Validator, genHash chainhash.Hash, p *params.ChainParams) State {
 	s := &state{
 		CoinsState:                    cs,
+		Governance:                    gs,
 		ValidatorRegistry:             validators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},

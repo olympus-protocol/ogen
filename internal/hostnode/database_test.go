@@ -4,10 +4,15 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"path/filepath"
 	"testing"
 )
 
+func init() {
+	_ = os.Remove("./test")
+	_ = os.MkdirAll("./test", 0777)
+}
 func TestDatabase(t *testing.T) {
 
 	pathDir, _ := filepath.Abs("./test")
