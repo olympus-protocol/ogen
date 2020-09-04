@@ -8,12 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 // params are the params used on the test
 var param = &testdata.TestParams
 
-func TestBlockDB_New(t *testing.T) {
+func TestBlockDB_Instance(t *testing.T) {
 	err := os.Mkdir(testdata.Node1Folder, 0777)
 	assert.NoError(t, err)
 
@@ -25,6 +26,21 @@ func TestBlockDB_New(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
+
+	// testing the database by Saving a time and then retrieving it
+	testTime := time.Now()
+	err = db.Update(func(tx blockdb.DBUpdateTransaction) error {
+		err = tx.SetGenesisTime(testTime)
+		return err
+	})
+	assert.NoError(t, err)
+	var savedTime time.Time
+	err = db.View(func(tx blockdb.DBViewTransaction) error {
+		savedTime, err = tx.GetGenesisTime()
+		return err
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, testTime.Unix(), savedTime.Unix())
 
 	_ = os.RemoveAll(testdata.Node1Folder)
 }
