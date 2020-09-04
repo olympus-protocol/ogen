@@ -50,7 +50,7 @@ func TestHostNode(t *testing.T) {
 
 	cfg := hostnode.Config{
 		Log:          log,
-		Port:         "123",
+		Port:         "55555",
 		InitialNodes: nil,
 		Path:         "./test/hn1",
 		PrivateKey:   nil,
@@ -60,7 +60,7 @@ func TestHostNode(t *testing.T) {
 	assert.NoError(t, err)
 
 	cfg.Path = "./test/hn2"
-	cfg.Port = "124"
+	cfg.Port = "55555"
 	hn2, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic)
 	assert.NoError(t, err)
 
