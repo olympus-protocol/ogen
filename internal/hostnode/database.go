@@ -1,6 +1,7 @@
 package hostnode
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
@@ -39,7 +40,6 @@ var (
 type Database interface {
 	SavePeer(pinfo *peer.AddrInfo) error
 	BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error
-	IsIPBanned(ip []byte) bool
 	GetSavedPeers() ([]*peer.AddrInfo, error)
 	GetPrivKey() (priv crypto.PrivKey, err error)
 }
@@ -125,7 +125,7 @@ func (d *database) SavePeer(pinfo *peer.AddrInfo) error {
 	// Check if any of this is already banned
 	banned := false
 	for _, ipBytes := range maBytes {
-		if d.IsIPBanned(ipBytes) {
+		if d.isIPBanned(ipBytes) {
 			banned = true
 		}
 	}
@@ -176,8 +176,13 @@ func (d *database) SavePeer(pinfo *peer.AddrInfo) error {
 		return err
 	}
 
+	// If we reach this point and the peer is properly store, now the hostnode will connect it.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	err = d.host.GetHost().Connect(ctx, *pinfo)
+	if err != nil {
+		cancel()
+	}
 	return nil
-
 }
 
 // BanscorePeer reduces the banscore of a peer. If it reaches limit, it will be banned
@@ -200,7 +205,7 @@ func (d *database) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
 				score = binary.LittleEndian.Uint16(scoreBytes)
 			}
 			score -= weight
-			if score < 0 {
+			if score <= 0 {
 
 				err := d.host.DisconnectPeer(pinfo.ID)
 				if err != nil {
@@ -209,7 +214,7 @@ func (d *database) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
 
 				timeToUnban := time.Now().Unix() + 86400
 
-				var timeBytes []byte
+				timeBytes := make([]byte, 8)
 				binary.LittleEndian.PutUint64(timeBytes, uint64(timeToUnban))
 
 				err = banBkt.Put(maBytes, timeBytes)
@@ -219,7 +224,7 @@ func (d *database) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
 
 			} else {
 
-				var scoreBytes []byte
+				scoreBytes := make([]byte, 2)
 				binary.LittleEndian.PutUint16(scoreBytes, score)
 
 				err := ipBkt.Put(maBytes, scoreBytes)
@@ -238,9 +243,9 @@ func (d *database) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
 	return nil
 }
 
-// IsIPBanned returns true if the ip is already banned.
+// isIPBanned returns true if the ip is already banned.
 // It checks internally if a peer must be unbanned.
-func (d *database) IsIPBanned(ip []byte) bool {
+func (d *database) isIPBanned(ip []byte) bool {
 	banned := false
 	err := d.db.Update(func(tx *bbolt.Tx) error {
 
@@ -275,11 +280,11 @@ func (d *database) IsIPBanned(ip []byte) bool {
 
 // GetSavedPeers returns a list of already known peers.
 func (d *database) GetSavedPeers() ([]*peer.AddrInfo, error) {
-	var peers []*peer.AddrInfo
+	peersMap := make(map[*peer.ID]*peer.AddrInfo)
 
+	// Fetch peers
 	err := d.db.View(func(tx *bbolt.Tx) error {
 
-		// Iterate against the peers bucket for known IDs
 		peersBkt := tx.Bucket(peersDBBkt)
 
 		err := peersBkt.ForEach(func(k, v []byte) error {
@@ -296,36 +301,40 @@ func (d *database) GetSavedPeers() ([]*peer.AddrInfo, error) {
 				_ = peersBkt.Delete(k)
 			}
 
-			// Check if any of the multi-addresses is banned
-			var maBytes [][]byte
-
-			for _, ma := range pinfo.Addrs {
-				maBytes = append(maBytes, ma.Bytes())
-			}
-
-			// Check if any of this is already banned
-			banned := false
-			for _, ipBytes := range maBytes {
-				if d.IsIPBanned(ipBytes) {
-					banned = true
-				}
-			}
-
-			if banned {
-				_ = peersBkt.Delete(k)
-			} else {
-				peers = append(peers, pinfo)
-			}
+			peersMap[id] = pinfo
 
 			return nil
 		})
-
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
+
+	var peers []*peer.AddrInfo
+	// Check if any of these peers are banned
+	for _, pinfo := range peersMap {
+
+		// Check if any of the multi-addresses is banned
+		var maBytes [][]byte
+
+		for _, ma := range pinfo.Addrs {
+			maBytes = append(maBytes, ma.Bytes())
+		}
+
+		// Check if any of this is already banned
+		banned := false
+		for _, ipBytes := range maBytes {
+			if d.isIPBanned(ipBytes) {
+				banned = true
+			}
+		}
+
+		if !banned {
+			peers = append(peers, pinfo)
+		}
+	}
 
 	if err != nil {
 		return nil, err
