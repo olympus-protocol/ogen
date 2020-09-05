@@ -22,6 +22,12 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+type peerInfo struct {
+	VersionMsg    *p2p.MsgVersion
+	ReceivedBytes uint64
+	SentBytes     uint64
+}
+
 const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
 
 // SyncProtocol is an interface for the syncProtocol
@@ -52,7 +58,10 @@ type syncProtocol struct {
 	notifees     []SyncNotifee
 	notifeesLock sync.Mutex
 
-	// held while waiting on blocks request
+	peersTrack     map[peer.ID]*peerInfo
+	peersTrackLock sync.Mutex
+
+	// Structs used duing initial sync process
 	syncMutex   sync.Mutex
 	onSync      bool
 	withPeer    peer.ID
@@ -80,6 +89,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		ctx:             ctx,
 		protocolHandler: ph,
 		chain:           chain,
+		peersTrack:      make(map[peer.ID]*peerInfo),
 	}
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
@@ -90,7 +100,6 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	if err := ph.RegisterHandler(p2p.MsgBlocksCmd, sp.handleBlocks); err != nil {
 		return nil, err
 	}
-
 	if err := sp.listenForBroadcasts(); err != nil {
 		return nil, err
 	}
@@ -267,7 +276,7 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	sp.log.Infof("received version message from %s", id)
 
-	// validate version message here
+	// Send our version message if required
 	ourVersion := sp.versionMsg()
 	direction := sp.host.GetPeerDirection(id)
 
@@ -276,36 +285,15 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 			return err
 		}
 	}
-	// If the node has more blocks, start the syncing process.
-	// The syncing process must ensure no unnecessary blocks are requested and we don't start a sync routine with other peer.
-	// We also need to check if this peer stops sending block msg.
-	if theirVersion.LastBlock > ourVersion.LastBlock && !sp.onSync {
-		sp.lastRequest = time.Now()
-		sp.withPeer = id
-		sp.onSync = true
-		go func(their *p2p.MsgVersion, ours *p2p.MsgVersion) {
-			for {
-				ours = sp.versionMsg()
-				sp.syncMutex.Lock()
-				err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-					LocatorHashes: sp.chain.GetLocatorHashes(),
-					HashStop:      chainhash.Hash{},
-				})
-				if err != nil {
-					return
-				}
-				if their.LastBlock <= ours.LastBlock {
-					// When we finished the sync send a last message to fetch blocks produced during sync.
-					break
-				}
-			}
-			sp.syncMutex.Lock()
-			sp.lastRequest = time.Now()
-			sp.withPeer = ""
-			sp.onSync = false
-			sp.syncMutex.Unlock()
-		}(theirVersion, ourVersion)
+
+	defer sp.peersTrackLock.Unlock()
+	sp.peersTrackLock.Lock()
+	sp.peersTrack[id] = &peerInfo{
+		VersionMsg:    theirVersion,
+		ReceivedBytes: 0,
+		SentBytes:     0,
 	}
+
 	return nil
 }
 

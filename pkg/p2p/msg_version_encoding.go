@@ -23,6 +23,12 @@ func (m *MsgVersion) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (2) 'Timestamp'
 	dst = ssz.MarshalUint64(dst, m.Timestamp)
 
+	// Field (3) 'LastJustifiedHash'
+	dst = append(dst, m.LastJustifiedHash[:]...)
+
+	// Field (4) 'LastJustifiedEpoch'
+	dst = ssz.MarshalUint64(dst, m.LastJustifiedEpoch)
+
 	return
 }
 
@@ -30,7 +36,7 @@ func (m *MsgVersion) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (m *MsgVersion) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 24 {
+	if size != 64 {
 		return ssz.ErrSize
 	}
 
@@ -43,12 +49,18 @@ func (m *MsgVersion) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'Timestamp'
 	m.Timestamp = ssz.UnmarshallUint64(buf[16:24])
 
+	// Field (3) 'LastJustifiedHash'
+	copy(m.LastJustifiedHash[:], buf[24:56])
+
+	// Field (4) 'LastJustifiedEpoch'
+	m.LastJustifiedEpoch = ssz.UnmarshallUint64(buf[56:64])
+
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the MsgVersion object
 func (m *MsgVersion) SizeSSZ() (size int) {
-	size = 24
+	size = 64
 	return
 }
 
@@ -69,6 +81,12 @@ func (m *MsgVersion) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (2) 'Timestamp'
 	hh.PutUint64(m.Timestamp)
+
+	// Field (3) 'LastJustifiedHash'
+	hh.PutBytes(m.LastJustifiedHash[:])
+
+	// Field (4) 'LastJustifiedEpoch'
+	hh.PutUint64(m.LastJustifiedEpoch)
 
 	hh.Merkleize(indx)
 	return

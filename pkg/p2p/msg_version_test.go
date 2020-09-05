@@ -22,6 +22,6 @@ func TestMsgVersion(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgVersionCmd, v.Command())
-	assert.Equal(t, uint64(24), v.MaxPayloadLength())
+	assert.Equal(t, uint64(64), v.MaxPayloadLength())
 
 }
