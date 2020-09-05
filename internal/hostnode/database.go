@@ -1,7 +1,6 @@
 package hostnode
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
@@ -174,13 +173,6 @@ func (d *database) SavePeer(pinfo *peer.AddrInfo) error {
 
 	if err != nil {
 		return err
-	}
-
-	// If we reach this point and the peer is properly store, now the hostnode will connect it.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	err = d.host.GetHost().Connect(ctx, *pinfo)
-	if err != nil {
-		cancel()
 	}
 	return nil
 }

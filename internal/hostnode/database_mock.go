@@ -62,20 +62,6 @@ func (mr *MockDatabaseMockRecorder) BanscorePeer(pinfo, weight interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BanscorePeer", reflect.TypeOf((*MockDatabase)(nil).BanscorePeer), pinfo, weight)
 }
 
-// IsIPBanned mocks base method
-func (m *MockDatabase) IsIPBanned(ip []byte) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPBanned", ip)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsIPBanned indicates an expected call of IsIPBanned
-func (mr *MockDatabaseMockRecorder) IsIPBanned(ip interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPBanned", reflect.TypeOf((*MockDatabase)(nil).IsIPBanned), ip)
-}
-
 // GetSavedPeers mocks base method
 func (m *MockDatabase) GetSavedPeers() ([]*peer.AddrInfo, error) {
 	m.ctrl.T.Helper()

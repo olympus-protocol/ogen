@@ -97,7 +97,7 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		if p.ID == cm.host.GetHost().ID() {
 			continue
 		}
-		if err := cm.host.Database().SavePeer(p); err != nil {
+		if err := cm.host.SavePeer(p); err != nil {
 			cm.log.Errorf("error saving peer: %s", err)
 			continue
 		}
