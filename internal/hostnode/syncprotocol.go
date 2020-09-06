@@ -157,12 +157,13 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 	return nil
 }
 
-// StaleBlockRequestTimeout is the timeout for block requests.
-const StaleBlockRequestTimeout = time.Second * 10
-
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	bh := block.Hash()
 	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
+		// If we receive a block with unknown parent and we are not on sync process request the blocks.
+		if !sp.onSync {
+
+		}
 		sp.log.Infof("received block with unknown parent, ignoring.")
 		return nil
 	}
@@ -297,14 +298,21 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	return nil
 }
 
+func (sp *syncProtocol) requestBlocks() {
+
+}
+
 func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
 	lastBlockHeight := sp.chain.State().Tip().Height
+	tipState := sp.chain.State().TipState()
 	buf := make([]byte, 8)
 	rand.Read(buf)
 	msg := &p2p.MsgVersion{
-		Nonce:     binary.LittleEndian.Uint64(buf),
-		LastBlock: lastBlockHeight,
-		Timestamp: uint64(time.Now().Unix()),
+		Nonce:              binary.LittleEndian.Uint64(buf),
+		LastBlock:          lastBlockHeight,
+		Timestamp:          uint64(time.Now().Unix()),
+		LastJustifiedHash:  tipState.GetJustifiedEpochHash(),
+		LastJustifiedEpoch: tipState.GetJustifiedEpoch(),
 	}
 	return msg
 }

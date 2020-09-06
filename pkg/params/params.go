@@ -127,7 +127,7 @@ var TestNet = ChainParams{
 	DepositAmount:                100,
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 30,
+	SlotDuration:                 1,
 	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 	MaxVotesPerBlock:             32,
