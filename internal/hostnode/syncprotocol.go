@@ -71,8 +71,9 @@ type syncProtocol struct {
 	peersTrackLock sync.Mutex
 
 	// Structs used during initial sync process
-	onSync   bool
-	withPeer peer.ID
+	onSync        bool
+	withPeer      peer.ID
+	blocksRequest *time.Timer
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -174,6 +175,9 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			sp.requestBlocks()
 			return nil
 		}
+	}
+	if sp.onSync {
+		sp.blocksRequest = time.NewTimer(time.Second * 5)
 	}
 	return nil
 }
@@ -290,7 +294,7 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		ReceivedBytes: 0,
 		SentBytes:     0,
 	}
-	sp.requestBlocks()
+
 	return nil
 }
 
@@ -308,8 +312,18 @@ func (sp *syncProtocol) requestBlocks() {
 		if err != nil {
 			return
 		}
+		// Start timer for blocks
+		sp.blocksRequest = time.NewTimer(time.Second * 5)
+		go sp.blockRequestTickerObserver()
 	}
 	return
+}
+
+func (sp *syncProtocol) blockRequestTickerObserver() {
+	// When the ticker runs out, the node will be synced.
+	<-sp.blocksRequest.C
+	sp.withPeer = ""
+	sp.onSync = false
 }
 
 func (sp *syncProtocol) chooseBestPeer() peer.ID {
