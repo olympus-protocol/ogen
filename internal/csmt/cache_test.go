@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/csmt"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -21,20 +22,16 @@ func TestRandomWritesRollbackCommit(t *testing.T) {
 		}
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	assert.NoError(t, err)
 
 	treeRoot, err := underlyingTree.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for i := 0; i < 100; i++ {
 		cachedTreeDB, err := csmt.NewTreeMemoryCache(under)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
+
 		cachedTree := csmt.NewTree(cachedTreeDB)
 
 		err = cachedTree.Update(func(tx csmt.TreeTransactionAccess) error {
@@ -47,25 +44,19 @@ func TestRandomWritesRollbackCommit(t *testing.T) {
 
 			return nil
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
+
 	}
 
 	underlyingHash, err := underlyingTree.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if !underlyingHash.IsEqual(&treeRoot) {
-		t.Fatal("expected uncommitted transaction not to affect underlying tree")
-	}
+	assert.Equal(t, underlyingHash, treeRoot)
 
 	for i := 0; i < 100; i++ {
 		cachedTreeDB, err := csmt.NewTreeMemoryCache(under)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
+
 		cachedTree := csmt.NewTree(cachedTreeDB)
 
 		err = cachedTree.Update(func(tx csmt.TreeTransactionAccess) error {
@@ -78,28 +69,17 @@ func TestRandomWritesRollbackCommit(t *testing.T) {
 
 			return nil
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		cachedTreeHash, err := cachedTree.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		err = cachedTreeDB.Flush()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		underlyingHash, err := underlyingTree.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if !cachedTreeHash.IsEqual(&underlyingHash) {
-			t.Fatal("expected flush to update the underlying tree")
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, cachedTreeHash, underlyingHash)
 	}
 
 	setNodeHashes := make(map[chainhash.Hash]struct{})
@@ -137,7 +117,6 @@ func TestRandomWritesRollbackCommit(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 }

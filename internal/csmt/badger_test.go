@@ -5,19 +5,16 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/internal/csmt"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 	badgerdb, err := badger.Open(badger.DefaultOptions("./badger-test"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	err = badgerdb.DropAll()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	defer badgerdb.Close()
 
@@ -45,30 +42,25 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 		return nil
 	})
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for i := 0; i < 100; i++ {
 		cachedTreeDB, err := csmt.NewTreeMemoryCache(under)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
+
 		cachedTree := csmt.NewTree(cachedTreeDB)
 
 		err = cachedTree.Update(func(tx csmt.TreeTransactionAccess) error {
 			for newVal := 198; newVal < 202; newVal++ {
 				err := tx.Set(ch(fmt.Sprintf("key%d", i)), ch(fmt.Sprintf("val2%d", newVal)))
-				if err != nil {
-					t.Fatal(err)
-				}
+				assert.NoError(t, err)
+
 			}
 
 			return nil
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
+
 	}
 
 	var underlyingHash chainhash.Hash
@@ -82,18 +74,13 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if !underlyingHash.IsEqual(&treeRoot) {
-		t.Fatal("expected uncommitted transaction not to affect underlying tree")
-	}
+	assert.Equal(t, underlyingHash, treeRoot)
 
 	cachedTreeDB, err := csmt.NewTreeMemoryCache(under)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	cachedTree := csmt.NewTree(cachedTreeDB)
 
 	err = cachedTree.Update(func(tx csmt.TreeTransactionAccess) error {
@@ -108,9 +95,7 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	var cachedTreeHash chainhash.Hash
 
@@ -123,14 +108,10 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	err = cachedTreeDB.Flush()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	err = underlyingTree.View(func(tx csmt.TreeTransactionAccess) error {
 		h, err := tx.Hash()
@@ -141,11 +122,7 @@ func TestRandomWritesRollbackCommitBadger(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if !cachedTreeHash.IsEqual(&underlyingHash) {
-		t.Fatal("expected flush to update the underlying tree")
-	}
+	assert.Equal(t, cachedTreeHash, underlyingHash)
 }

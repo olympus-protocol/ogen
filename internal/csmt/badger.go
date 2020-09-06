@@ -99,13 +99,18 @@ func (b *BadgerTreeTransaction) GetNode(nodeHash chainhash.Hash) (*Node, error) 
 	if err != nil {
 		return nil, err
 	}
+	node := new(Node)
+	err = node.Unmarshal(nodeSer)
+	if err != nil {
+		return nil, err
+	}
 
-	return DeserializeNode(nodeSer)
+	return node, nil
 }
 
 // SetNode sets a node in the database.
 func (b *BadgerTreeTransaction) SetNode(n *Node) error {
-	nodeSer := n.Serialize()
+	nodeSer := n.Marshal()
 	nodeHash := n.GetHash()
 	nodeKey := getTreeKey(nodeHash[:])
 
@@ -164,8 +169,12 @@ func (b *BadgerTreeTransaction) Root() (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return DeserializeNode(nodeSer)
+	node := new(Node)
+	err = node.Unmarshal(nodeSer)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 // BadgerTreeTransaction represents a badger transaction.

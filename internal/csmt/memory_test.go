@@ -3,7 +3,7 @@ package csmt_test
 import (
 	"github.com/olympus-protocol/ogen/internal/csmt"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -16,13 +16,11 @@ func TestNodeSerializeDeserialize(t *testing.T) {
 	}
 
 	for _, node := range nodes {
-		nodeSer := node.Serialize()
+		nodeSer := node.Marshal()
 
-		nodeDeser, err := csmt.DeserializeNode(nodeSer)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		reflect.DeepEqual(node, *nodeDeser)
+		nodeUnmarshal := new(csmt.Node)
+		err := nodeUnmarshal.Unmarshal(nodeSer)
+		assert.NoError(t, err)
+		assert.Equal(t, &node, nodeUnmarshal)
 	}
 }

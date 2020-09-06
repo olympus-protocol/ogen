@@ -5,6 +5,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/csmt"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
@@ -31,9 +32,7 @@ func TestTree_RandomSet(t *testing.T) {
 		}
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 }
 
@@ -74,9 +73,7 @@ func TestTree_SetZero(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 }
 
 func BenchmarkTree_Set(b *testing.B) {
@@ -158,22 +155,17 @@ func TestRandomGenerateUpdateWitness(t *testing.T) {
 	err := tree.Update(func(tx csmt.TreeTransactionAccess) error {
 		for i := 0; i < 500; i++ {
 			err := tx.Set(keys[i], val)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
+
 		}
 
 		h, err := tx.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		treehash = h
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
 		err := treeDB.View(func(tx csmt.TreeDatabaseTransaction) error {
@@ -182,18 +174,14 @@ func TestRandomGenerateUpdateWitness(t *testing.T) {
 				return err
 			}
 			root, err := csmt.CalculateRoot(keys[i], val, w.WitnessBitfield, w.Witnesses, w.LastLevel)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !root.IsEqual(treehash) {
-				t.Fatalf("expected witness root to equal tree hash (expected: %s, got: %s)", treehash, root)
-			}
+			assert.NoError(t, err)
+
+			assert.Equal(t, root, treehash)
 
 			return nil
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
+
 	}
 }
 
@@ -207,28 +195,20 @@ func TestGenerateUpdateWitnessEmptyTree(t *testing.T) {
 		uw = w
 		return err
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	var th *chainhash.Hash
 	err = tree.View(func(tx csmt.TreeTransactionAccess) error {
 		h, err := tx.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		th = h
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	newRoot, err := csmt.ApplyWitness(*uw, *th)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	err = tree.Update(func(tx csmt.TreeTransactionAccess) error {
 		err = tx.Set(ch("asdf"), ch("1"))
@@ -246,9 +226,8 @@ func TestGenerateUpdateWitnessEmptyTree(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 }
 
 func TestGenerateUpdateWitnessUpdate(t *testing.T) {
@@ -278,9 +257,7 @@ func TestGenerateUpdateWitnessUpdate(t *testing.T) {
 		}
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
 		setVal := fmt.Sprintf("%d", i)
@@ -293,34 +270,23 @@ func TestGenerateUpdateWitnessUpdate(t *testing.T) {
 			return err
 		})
 
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		th, err := tree.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		newRoot, err := csmt.ApplyWitness(*uw, th)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		err = tree.Update(func(tx csmt.TreeTransactionAccess) error {
 			return tx.Set(ch("asdf"), ch(setVal))
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		th, err = tree.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !th.IsEqual(newRoot) {
-			t.Fatalf("expected calculated state root (%s) to match tree state root (%s)", newRoot, th)
-		}
+		assert.NoError(t, err)
+
+		assert.Equal(t, &th, newRoot)
 	}
 }
 
@@ -369,9 +335,8 @@ func TestChainedUpdates(t *testing.T) {
 	tree := csmt.NewTree(csmt.NewInMemoryTreeDB())
 
 	initialRoot, err := tree.Hash()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	witnesses := make([]*primitives.UpdateWitness, 0)
 
 	err = tree.Update(func(txA csmt.TreeTransactionAccess) error {
@@ -473,9 +438,8 @@ func TestChainedUpdates(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 }
 
 func TestEmptyBranchWitness(t *testing.T) {
@@ -485,9 +449,7 @@ func TestEmptyBranchWitness(t *testing.T) {
 		tx := txA.(*csmt.TreeTransaction)
 
 		preroot, err := tx.Hash()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		w0, err := tx.SetWithWitness(ch("test"), ch("asdf"))
 		if err != nil {
@@ -508,14 +470,12 @@ func TestEmptyBranchWitness(t *testing.T) {
 		return err
 	})
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 }
 
 func TestCheckWitness(t *testing.T) {
 	tree := csmt.NewTree(csmt.NewInMemoryTreeDB())
-	//preroot := tree.Hash()
 
 	err := tree.Update(func(txA csmt.TreeTransactionAccess) error {
 		tx := txA.(*csmt.TreeTransaction)
@@ -537,9 +497,7 @@ func TestCheckWitness(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if csmt.CheckWitness(testProof, *th) == false {
-			t.Fatal("expected verification witness to verify")
-		}
+		assert.True(t, csmt.CheckWitness(testProof, *th))
 
 		// test empty key
 		testProof2, err := tx.Prove(ch("test1"))
@@ -550,14 +508,10 @@ func TestCheckWitness(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if csmt.CheckWitness(testProof2, *th) == false {
-			t.Fatal("expected verification witness to verify")
-		}
+		assert.True(t, csmt.CheckWitness(testProof2, *th))
 
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 }

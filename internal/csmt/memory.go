@@ -285,75 +285,71 @@ func readHash(r io.Reader) (*chainhash.Hash, error) {
 	return &value, nil
 }
 
-// DeserializeNode deserializes a node from disk.
-func DeserializeNode(b []byte) (*Node, error) {
+// Unmarshal deserializes a node from disk.
+func (i *Node) Unmarshal(b []byte) error {
 	r := bytes.NewBuffer(b)
 
 	flag, err := r.ReadByte()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	hash, err := readHash(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	switch flag {
 	case FlagSingle:
 		key, err := readHash(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		val, err := readHash(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return &Node{
-			value:    *hash,
-			one:      true,
-			oneKey:   key,
-			oneValue: val,
-		}, nil
+		i.value = *hash
+		i.one = true
+		i.oneKey = key
+		i.oneValue = val
+		return nil
 	case FlagLeft:
 		left, err := readHash(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return &Node{
-			value: *hash,
-			left:  left,
-		}, nil
+		i.value = *hash
+		i.left = left
+		return nil
 	case FlagRight:
 		right, err := readHash(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return &Node{
-			value: *hash,
-			right: right,
-		}, nil
+		i.value = *hash
+		i.right = right
+		return nil
 	case FlagBoth:
 		left, err := readHash(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		right, err := readHash(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return &Node{
-			value: *hash,
-			left:  left,
-			right: right,
-		}, nil
+		i.value = *hash
+		i.left = left
+		i.right = right
+		return nil
 	default:
-		return nil, errors.New("unexpected flag")
+		return errors.New("unexpected flag")
 	}
 }
 
-// Serialize gets the node as a byte representation.
-func (i *Node) Serialize() []byte {
+// Marshal gets the node as a byte representation.
+func (i *Node) Marshal() []byte {
 	buf := bytes.NewBuffer(nil)
 	var flag byte
 	if i.one {
