@@ -290,21 +290,26 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		ReceivedBytes: 0,
 		SentBytes:     0,
 	}
-
+	sp.requestBlocks()
 	return nil
 }
 
 func (sp *syncProtocol) requestBlocks() {
 	sp.onSync = true
-	sp.withPeer = sp.chooseBestPeer()
-
-	err := sp.protocolHandler.SendMessage(sp.withPeer, &p2p.MsgGetBlocks{
-		LocatorHashes: sp.chain.GetLocatorHashes(),
-		HashStop:      chainhash.Hash{},
-	})
-	if err != nil {
+	bestpeerID := sp.chooseBestPeer()
+	if bestpeerID == "" {
 		return
+	} else {
+		sp.withPeer = bestpeerID
+		err := sp.protocolHandler.SendMessage(bestpeerID, &p2p.MsgGetBlocks{
+			LocatorHashes: sp.chain.GetLocatorHashes(),
+			HashStop:      chainhash.Hash{},
+		})
+		if err != nil {
+			return
+		}
 	}
+	return
 }
 
 func (sp *syncProtocol) chooseBestPeer() peer.ID {
