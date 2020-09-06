@@ -136,6 +136,7 @@ func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		return nil
 	})
 	if err != nil {
+		fmt.Println(err)
 		p.notifeeLock.Lock()
 		for _, n := range p.notifees {
 			n.PeerDisconnected(id)
