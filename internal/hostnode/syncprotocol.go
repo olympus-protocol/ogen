@@ -172,14 +172,29 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			return nil
 		}
 		if err == ErrorBlockParentUnknown {
-			sp.requestBlocks()
+			sp.onSync = true
+			sp.withPeer = id
+			sp.blocksRequest = time.NewTimer(time.Second * 5)
+			err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+				LocatorHashes: sp.chain.GetLocatorHashes(),
+				HashStop:      chainhash.Hash{},
+			})
+			go sp.blockSyncStallCheck()
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 	}
-	if sp.onSync {
-		sp.blocksRequest = time.NewTimer(time.Second * 5)
-	}
+	sp.blocksRequest = time.NewTimer(time.Second * 5)
 	return nil
+}
+
+func (sp *syncProtocol) blockSyncStallCheck() {
+	<-sp.blocksRequest.C
+	sp.onSync = false
+	sp.withPeer = ""
+	return
 }
 
 func (sp *syncProtocol) processBlock(block *primitives.Block) error {
@@ -287,59 +302,14 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		}
 	}
 
-	defer sp.peersTrackLock.Unlock()
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
 		VersionMsg:    theirVersion,
 		ReceivedBytes: 0,
 		SentBytes:     0,
 	}
-
+	sp.peersTrackLock.Unlock()
 	return nil
-}
-
-func (sp *syncProtocol) requestBlocks() {
-	sp.onSync = true
-	bestpeerID := sp.chooseBestPeer()
-	if bestpeerID == "" {
-		return
-	} else {
-		sp.withPeer = bestpeerID
-		err := sp.protocolHandler.SendMessage(bestpeerID, &p2p.MsgGetBlocks{
-			LocatorHashes: sp.chain.GetLocatorHashes(),
-			HashStop:      chainhash.Hash{},
-		})
-		if err != nil {
-			return
-		}
-		// Start timer for blocks
-		sp.blocksRequest = time.NewTimer(time.Second * 5)
-		go sp.blockRequestTickerObserver()
-	}
-	return
-}
-
-func (sp *syncProtocol) blockRequestTickerObserver() {
-	// When the ticker runs out, the node will be synced.
-	<-sp.blocksRequest.C
-	sp.withPeer = ""
-	sp.onSync = false
-}
-
-func (sp *syncProtocol) chooseBestPeer() peer.ID {
-	defer sp.peersTrackLock.Unlock()
-	sp.peersTrackLock.Lock()
-
-	// TODO find a best way to choose a sync peer
-	if len(sp.peersTrack) == 0 {
-		return ""
-	}
-
-	peers := make([]peer.ID, len(sp.peersTrack))
-	for i := range sp.peersTrack {
-		peers = append(peers, i)
-	}
-	return peers[0]
 }
 
 func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
