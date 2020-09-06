@@ -49,8 +49,6 @@ const (
 	MsgAddrCmd = "addr"
 	// MsgGetBlocksCmd ask a node for blocks
 	MsgGetBlocksCmd = "getblocks"
-	// MsgBlocksCmd slice with blocks
-	MsgBlocksCmd = "blocks"
 )
 
 // Message interface for all the messages
@@ -88,8 +86,6 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgAddr{}
 	case MsgGetAddrCmd:
 		msg = &MsgGetAddr{}
-	case MsgBlocksCmd:
-		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
 	case MsgBlockCmd:

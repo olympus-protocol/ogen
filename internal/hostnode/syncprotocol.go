@@ -28,7 +28,16 @@ type peerInfo struct {
 	SentBytes     uint64
 }
 
+var (
+	// ErrorBlockAlreadyKnown returns when received a block already known
+	ErrorBlockAlreadyKnown = errors.New("block already known")
+
+	// ErrorBlockParentUnknown returns when received a block with an unknown parent
+	ErrorBlockParentUnknown = errors.New("unknown block parent")
+)
+
 const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
+const blockRequestTimeout = time.Second * 5
 
 // SyncProtocol is an interface for the syncProtocol
 type SyncProtocol interface {
@@ -61,11 +70,9 @@ type syncProtocol struct {
 	peersTrack     map[peer.ID]*peerInfo
 	peersTrackLock sync.Mutex
 
-	// Structs used duing initial sync process
-	syncMutex   sync.Mutex
-	onSync      bool
-	withPeer    peer.ID
-	lastRequest time.Time
+	// Structs used during initial sync process
+	onSync   bool
+	withPeer peer.ID
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -89,15 +96,13 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		ctx:             ctx,
 		protocolHandler: ph,
 		chain:           chain,
+		onSync:          false,
 		peersTrack:      make(map[peer.ID]*peerInfo),
 	}
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
 	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
-		return nil, err
-	}
-	if err := ph.RegisterHandler(p2p.MsgBlocksCmd, sp.handleBlocks); err != nil {
 		return nil, err
 	}
 	if err := sp.listenForBroadcasts(); err != nil {
@@ -109,8 +114,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	return sp, nil
 }
 
-type SyncNotifee interface {
-}
+type SyncNotifee interface{}
 
 func (sp *syncProtocol) Notify(notifee SyncNotifee) {
 	sp.notifeesLock.Lock()
@@ -158,47 +162,40 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 }
 
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
-	bh := block.Hash()
-	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
-		// If we receive a block with unknown parent and we are not on sync process request the blocks.
-		if !sp.onSync {
-
+	if sp.onSync && sp.withPeer != id {
+		return nil
+	}
+	err := sp.processBlock(block)
+	if err != nil {
+		if err == ErrorBlockAlreadyKnown {
+			return nil
 		}
-		sp.log.Infof("received block with unknown parent, ignoring.")
-		return nil
+		if err == ErrorBlockParentUnknown {
+			sp.requestBlocks()
+			return nil
+		}
+	}
+	return nil
+}
+
+func (sp *syncProtocol) processBlock(block *primitives.Block) error {
+
+	// Check if we already have this block
+	if sp.chain.State().Index().Have(block.Hash()) {
+		return ErrorBlockAlreadyKnown
 	}
 
-	if sp.chain.State().Index().Have(bh) {
-		return nil
+	// Check if the parent block is known.
+	if !sp.chain.State().Index().Have(block.Header.PrevBlockHash) {
+		return ErrorBlockParentUnknown
 	}
 
-	sp.log.Debugf("processing block %s", bh)
+	// Process block
+	sp.log.Debugf("processing block %s", block.Hash())
 	if err := sp.chain.ProcessBlock(block); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (sp *syncProtocol) handleBlocks(id peer.ID, rawMsg p2p.Message) error {
-	// This should only be sent on a response of getblocks.
-	if !sp.onSync {
-		return errors.New("received non-request blocks message")
-	}
-	if id != sp.withPeer {
-		return errors.New("received block message from non-requested peer")
-	}
-	msg, ok := rawMsg.(*p2p.MsgBlocks)
-	if !ok {
-		return errors.New("did not receive blocks message")
-	}
-	sp.log.Tracef("received blocks msg from peer %v", id)
-	for _, b := range msg.Blocks {
-		if err := sp.handleBlock(id, b); err != nil {
-			return err
-		}
-	}
-	sp.syncMutex.Unlock()
 	return nil
 }
 
@@ -234,8 +231,6 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 
 	sp.log.Debugf("found first common block %s", firstCommon.Hash)
 
-	blocksToSend := make([]*primitives.Block, 0, p2p.MaxBlocksPerMsg)
-
 	if firstCommon.Hash.IsEqual(locatorHashesGenHash) {
 		fc, ok := sp.chain.State().Chain().Next(firstCommon)
 		if !ok {
@@ -244,13 +239,11 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 		firstCommon = fc
 	}
 
-	for firstCommon != nil && len(blocksToSend) < p2p.MaxBlocksPerMsg {
+	for firstCommon != nil {
 		block, err := sp.chain.GetBlock(firstCommon.Hash)
 		if err != nil {
 			return err
 		}
-
-		blocksToSend = append(blocksToSend, block)
 
 		if firstCommon.Hash.IsEqual(msg.HashStopH()) {
 			break
@@ -260,13 +253,16 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 		if !ok {
 			break
 		}
+
+		err = sp.protocolHandler.SendMessage(id, &p2p.MsgBlock{
+			Data: block,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
-	sp.log.Debugf("sending %d blocks", len(blocksToSend))
-
-	return sp.protocolHandler.SendMessage(id, &p2p.MsgBlocks{
-		Blocks: blocksToSend,
-	})
+	return nil
 }
 
 func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
@@ -299,7 +295,32 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 }
 
 func (sp *syncProtocol) requestBlocks() {
+	sp.onSync = true
+	sp.withPeer = sp.chooseBestPeer()
 
+	err := sp.protocolHandler.SendMessage(sp.withPeer, &p2p.MsgGetBlocks{
+		LocatorHashes: sp.chain.GetLocatorHashes(),
+		HashStop:      chainhash.Hash{},
+	})
+	if err != nil {
+		return
+	}
+}
+
+func (sp *syncProtocol) chooseBestPeer() peer.ID {
+	defer sp.peersTrackLock.Unlock()
+	sp.peersTrackLock.Lock()
+
+	// TODO find a best way to choose a sync peer
+	if len(sp.peersTrack) == 0 {
+		return ""
+	}
+
+	peers := make([]peer.ID, len(sp.peersTrack))
+	for i := range sp.peersTrack {
+		peers = append(peers, i)
+	}
+	return peers[0]
 }
 
 func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
