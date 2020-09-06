@@ -70,10 +70,9 @@ type syncProtocol struct {
 	peersTrack     map[peer.ID]*peerInfo
 	peersTrackLock sync.Mutex
 
-	// Structs used during initial sync process
-	onSync        bool
-	withPeer      peer.ID
-	blocksRequest *time.Timer
+	onSync    bool
+	withPeer  peer.ID
+	syncStall *time.Timer
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -97,7 +96,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		ctx:             ctx,
 		protocolHandler: ph,
 		chain:           chain,
-		onSync:          false,
+		onSync:          true,
 		peersTrack:      make(map[peer.ID]*peerInfo),
 	}
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
@@ -106,13 +105,65 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
 		return nil, err
 	}
+
 	if err := sp.listenForBroadcasts(); err != nil {
 		return nil, err
 	}
 
-	host.Notify(sp)
+	sp.host.Notify(sp)
+
+	go sp.waitForPeers()
 
 	return sp, nil
+}
+
+// waitForPeers will wait for 4 peers connected until start the sync routine.
+func (sp *syncProtocol) waitForPeers() {
+	for {
+		time.Sleep(time.Second * 1)
+		if sp.host.PeersConnected() < 4 {
+			continue
+		}
+		break
+	}
+
+	go sp.startSync()
+
+	return
+}
+
+// startSync will do some contextual checks among peers to evaluate our state and peers state.
+func (sp *syncProtocol) startSync() {
+	latestHeight := sp.chain.State().Tip().Height
+	var peersHigher []peer.ID
+	var peersSame []peer.ID
+	for id, p := range sp.peersTrack {
+		if p.VersionMsg.LastBlock > latestHeight {
+			peersHigher = append(peersHigher, id)
+		}
+		if p.VersionMsg.LastBlock == latestHeight {
+			peersSame = append(peersSame, id)
+		}
+	}
+
+	if len(peersHigher) > len(peersSame) {
+		r := rand.Intn(len(peersHigher))
+		peerToSync := peersHigher[r]
+		sp.onSync = true
+		sp.withPeer = peerToSync
+		sp.syncStall = time.NewTimer(time.Second * 4)
+		err := sp.protocolHandler.SendMessage(peerToSync, &p2p.MsgGetBlocks{
+			LocatorHashes: sp.chain.GetLocatorHashes(),
+			HashStop:      chainhash.Hash{},
+		})
+		if err != nil {
+			sp.log.Error("unable to send block request msg")
+		}
+	} else {
+		sp.onSync = false
+		sp.withPeer = ""
+		return
+	}
 }
 
 type SyncNotifee interface{}
@@ -172,29 +223,10 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			return nil
 		}
 		if err == ErrorBlockParentUnknown {
-			sp.onSync = true
-			sp.withPeer = id
-			sp.blocksRequest = time.NewTimer(time.Second * 5)
-			err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-				LocatorHashes: sp.chain.GetLocatorHashes(),
-				HashStop:      chainhash.Hash{},
-			})
-			go sp.blockSyncStallCheck()
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 	}
-	sp.blocksRequest = time.NewTimer(time.Second * 5)
 	return nil
-}
-
-func (sp *syncProtocol) blockSyncStallCheck() {
-	<-sp.blocksRequest.C
-	sp.onSync = false
-	sp.withPeer = ""
-	return
 }
 
 func (sp *syncProtocol) processBlock(block *primitives.Block) error {
