@@ -2,7 +2,7 @@ package p2p
 
 // MsgVersion is the struct that contains the node information during the version handshake.
 type MsgVersion struct {
-	LastBlock          uint64   // 8 bytes
+	TipSlot            uint64   // 8 bytes
 	Nonce              uint64   // 8 bytes
 	Timestamp          uint64   // 8 bytes
 	LastJustifiedHash  [32]byte // 32 bytes

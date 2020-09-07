@@ -22,9 +22,7 @@ import (
 )
 
 type peerInfo struct {
-	VersionMsg    *p2p.MsgVersion
-	ReceivedBytes uint64
-	SentBytes     uint64
+	TipBlockSlot uint64
 }
 
 var (
@@ -137,16 +135,16 @@ func (sp *syncProtocol) waitForPeers() {
 
 // startSync will do some contextual checks among peers to evaluate our state and peers state.
 func (sp *syncProtocol) startSync() {
-	latestHeight := sp.chain.State().Tip().Height
+	latestSlot := sp.chain.State().Tip().Slot
 
 	var peersHigher []peer.ID
 	var peersSame []peer.ID
 
 	for id, p := range sp.peersTrack {
-		if p.VersionMsg.LastBlock > latestHeight {
+		if p.TipBlockSlot > latestSlot {
 			peersHigher = append(peersHigher, id)
 		}
-		if p.VersionMsg.LastBlock == latestHeight {
+		if p.TipBlockSlot == latestSlot {
 			peersSame = append(peersSame, id)
 		}
 	}
@@ -243,6 +241,9 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 }
 
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
+	sp.peersTrackLock.Lock()
+	sp.peersTrack[id].TipBlockSlot = block.Header.Slot
+	sp.peersTrackLock.Unlock()
 	if sp.onSync && sp.withPeer != id {
 		return nil
 	}
@@ -349,22 +350,20 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
-		VersionMsg:    theirVersion,
-		ReceivedBytes: 0,
-		SentBytes:     0,
+		TipBlockSlot: theirVersion.TipSlot,
 	}
 	sp.peersTrackLock.Unlock()
 	return nil
 }
 
 func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
-	lastBlockHeight := sp.chain.State().Tip().Height
+	lastSlot := sp.chain.State().Tip().Slot
 	tipState := sp.chain.State().TipState()
 	buf := make([]byte, 8)
 	rand.Read(buf)
 	msg := &p2p.MsgVersion{
 		Nonce:              binary.LittleEndian.Uint64(buf),
-		LastBlock:          lastBlockHeight,
+		TipSlot:            lastSlot,
 		Timestamp:          uint64(time.Now().Unix()),
 		LastJustifiedHash:  tipState.GetJustifiedEpochHash(),
 		LastJustifiedEpoch: tipState.GetJustifiedEpoch(),

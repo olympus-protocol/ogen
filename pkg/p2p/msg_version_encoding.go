@@ -14,8 +14,8 @@ func (m *MsgVersion) MarshalSSZ() ([]byte, error) {
 func (m *MsgVersion) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 
-	// Field (0) 'LastBlock'
-	dst = ssz.MarshalUint64(dst, m.LastBlock)
+	// Field (0) 'TipSlot'
+	dst = ssz.MarshalUint64(dst, m.TipSlot)
 
 	// Field (1) 'Nonce'
 	dst = ssz.MarshalUint64(dst, m.Nonce)
@@ -40,8 +40,8 @@ func (m *MsgVersion) UnmarshalSSZ(buf []byte) error {
 		return ssz.ErrSize
 	}
 
-	// Field (0) 'LastBlock'
-	m.LastBlock = ssz.UnmarshallUint64(buf[0:8])
+	// Field (0) 'TipSlot'
+	m.TipSlot = ssz.UnmarshallUint64(buf[0:8])
 
 	// Field (1) 'Nonce'
 	m.Nonce = ssz.UnmarshallUint64(buf[8:16])
@@ -73,8 +73,8 @@ func (m *MsgVersion) HashTreeRoot() ([32]byte, error) {
 func (m *MsgVersion) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
-	// Field (0) 'LastBlock'
-	hh.PutUint64(m.LastBlock)
+	// Field (0) 'TipSlot'
+	hh.PutUint64(m.TipSlot)
 
 	// Field (1) 'Nonce'
 	hh.PutUint64(m.Nonce)
