@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -37,7 +38,6 @@ var (
 )
 
 const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
-const blockRequestTimeout = time.Second * 5
 
 // SyncProtocol is an interface for the syncProtocol
 type SyncProtocol interface {
@@ -70,9 +70,8 @@ type syncProtocol struct {
 	peersTrack     map[peer.ID]*peerInfo
 	peersTrackLock sync.Mutex
 
-	onSync    bool
-	withPeer  peer.ID
-	syncStall *time.Timer
+	onSync   bool
+	withPeer peer.ID
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -105,6 +104,12 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
 		return nil, err
 	}
+	if err := ph.RegisterHandler(p2p.MsgBlockCmd, sp.blockHandler); err != nil {
+		return nil, err
+	}
+	if err := ph.RegisterHandler(p2p.MsgSyncEndCmd, sp.syncEndHandler); err != nil {
+		return nil, err
+	}
 
 	if err := sp.listenForBroadcasts(); err != nil {
 		return nil, err
@@ -135,8 +140,10 @@ func (sp *syncProtocol) waitForPeers() {
 // startSync will do some contextual checks among peers to evaluate our state and peers state.
 func (sp *syncProtocol) startSync() {
 	latestHeight := sp.chain.State().Tip().Height
+
 	var peersHigher []peer.ID
 	var peersSame []peer.ID
+
 	for id, p := range sp.peersTrack {
 		if p.VersionMsg.LastBlock > latestHeight {
 			peersHigher = append(peersHigher, id)
@@ -151,14 +158,15 @@ func (sp *syncProtocol) startSync() {
 		peerToSync := peersHigher[r]
 		sp.onSync = true
 		sp.withPeer = peerToSync
-		sp.syncStall = time.NewTimer(time.Second * 4)
 		err := sp.protocolHandler.SendMessage(peerToSync, &p2p.MsgGetBlocks{
 			LocatorHashes: sp.chain.GetLocatorHashes(),
 			HashStop:      chainhash.Hash{},
 		})
+
 		if err != nil {
 			sp.log.Error("unable to send block request msg")
 		}
+
 	} else {
 		sp.onSync = false
 		sp.withPeer = ""
@@ -213,6 +221,30 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 	return nil
 }
 
+func (sp *syncProtocol) blockHandler(id peer.ID, msg p2p.Message) error {
+	bmsg, ok := msg.(*p2p.MsgBlock)
+	if !ok {
+		return errors.New("non block msg")
+	}
+	return sp.handleBlock(id, bmsg.Data)
+}
+
+func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
+	_, ok := msg.(*p2p.MsgSyncEnd)
+	if !ok {
+		return errors.New("non syncend msg")
+	}
+
+	if !sp.onSync {
+		return nil
+	}
+	if sp.withPeer == id {
+		sp.onSync = false
+		sp.withPeer = ""
+	}
+	return nil
+}
+
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	if sp.onSync && sp.withPeer != id {
 		return nil
@@ -220,9 +252,11 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	err := sp.processBlock(block)
 	if err != nil {
 		if err == ErrorBlockAlreadyKnown {
+			sp.log.Error(err)
 			return nil
 		}
 		if err == ErrorBlockParentUnknown {
+			sp.log.Error(err)
 			return nil
 		}
 	}
@@ -266,7 +300,7 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 		return fmt.Errorf("unable to get locator genesis hash")
 	}
 	if !firstCommon.Hash.IsEqual(locatorHashesGenHash) {
-		return fmt.Errorf("incorrect genesis block (got: %s, expected: %s)", locatorHashesGenesis, firstCommon.Hash)
+		return fmt.Errorf("incorrect genesis block (got: %s, expected: %s)", hex.EncodeToString(locatorHashesGenesis[:]), firstCommon.Hash)
 	}
 
 	for _, b := range msg.LocatorHashes {
@@ -290,18 +324,19 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 		firstCommon = fc
 	}
 
-	for firstCommon != nil {
+	for {
+		var ok bool
+		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
+		if !ok {
+			break
+		}
+
 		block, err := sp.chain.GetBlock(firstCommon.Hash)
 		if err != nil {
 			return err
 		}
 
 		if firstCommon.Hash.IsEqual(msg.HashStopH()) {
-			break
-		}
-		var ok bool
-		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
-		if !ok {
 			break
 		}
 
@@ -312,7 +347,10 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 			return err
 		}
 	}
-
+	err = sp.protocolHandler.SendMessage(id, &p2p.MsgSyncEnd{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
