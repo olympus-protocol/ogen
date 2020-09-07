@@ -1,43 +1,71 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"github.com/spf13/cobra"
 	"os"
 	"time"
 
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-const MerkleRoot = "1b58fc1de7722bb17854e3c014a06ce4cf7d34f5298c22a84c55c029dc7c57bf"
+const MerkleRoot = "f9afaa28423bf0acf296c3ff688a4bbb18e7d0528fd6f2b688028be5614bc386"
+
+var addr string
+var proof string
+var merkleHash [32]byte
+
+func init() {
+	migrationCmd.Flags().StringVar(&addr, "addr", "", "Address used to generate proof to verify against")
+	migrationCmd.Flags().StringVar(&proof, "proof", "", "Hex encoded string to verify the coin ownership")
+
+	merkleRootBytes, err := hex.DecodeString(MerkleRoot)
+	if err != nil {
+		fmt.Println("Unable to decode merkle root bytes")
+		os.Exit(0)
+	}
+
+	for i, b := range merkleRootBytes[:32/2] {
+		merkleHash[i], merkleHash[32-1-i] = merkleRootBytes[32-1-i], b
+	}
+
+}
+
+var migrationCmd = &cobra.Command{
+	Use:   "migration",
+	Short: "Execute a migration proof and returns the serialized proof for broadcasting on ogen",
+	Long:  `Execute a migration proof and returns the serialized proof for broadcasting on ogen`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if addr == "" {
+			fmt.Println("Please add an address using the --addr flag to verify the proof against")
+			os.Exit(0)
+		}
+
+		if proof == "" {
+			fmt.Println("Please add your serialized proof data")
+			os.Exit(0)
+		}
+
+		proofBytes, err := hex.DecodeString(proof)
+		if err != nil {
+			fmt.Println("Unable to decode proof bytes")
+			os.Exit(0)
+		}
+
+		t := time.Now()
+		if err := burnproof.VerifyBurn(proofBytes, merkleHash, addr); err != nil {
+			fmt.Println("Burn verification failed")
+			os.Exit(0)
+		}
+		fmt.Println(time.Since(t))
+	},
+}
 
 func main() {
-	out, err := ioutil.ReadAll(os.Stdin)
+	err := migrationCmd.Execute()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(0)
 	}
-
-	proofBytes, err := base64.StdEncoding.DecodeString(string(out))
-	if err != nil {
-		panic(err)
-	}
-
-	merkleRootHex, err := hex.DecodeString(MerkleRoot)
-	if err != nil {
-		panic(err)
-	}
-
-	merkleRootHash, err := chainhash.NewHash(merkleRootHex)
-	if err != nil {
-		panic(err)
-	}
-
-	t := time.Now()
-	if err := burnproof.VerifyBurn(proofBytes, *merkleRootHash, "julian test"); err != nil {
-		panic(err)
-	}
-	fmt.Println(time.Since(t))
 }
