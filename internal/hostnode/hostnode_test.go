@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -34,11 +35,17 @@ func TestHostNode(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
+
+	s := state.NewMockState(ctrl)
+	s.EXPECT().GetJustifiedEpochHash().Return(chainhash.Hash{}).Times(4)
+	s.EXPECT().GetJustifiedEpoch().Return(uint64(1)).Times(4)
+
 	stateService := chain.NewMockStateService(ctrl)
 	stateService.EXPECT().Tip().Return(brow).Times(4)
+	stateService.EXPECT().TipState().Return(s).Times(4)
 
 	ch := chain.NewMockBlockchain(ctrl)
-	ch.EXPECT().State().Return(stateService).Times(4)
+	ch.EXPECT().State().Return(stateService).Times(6)
 
 	log := logger.NewMockLogger(ctrl)
 	log.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
@@ -62,7 +69,7 @@ func TestHostNode(t *testing.T) {
 	hn2, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic)
 	assert.NoError(t, err)
 
-	assert.False(t, hn.Syncing())
+	assert.True(t, hn.Syncing())
 
 	assert.Equal(t, ctx, hn.GetContext())
 
