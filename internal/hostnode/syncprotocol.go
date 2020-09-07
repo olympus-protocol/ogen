@@ -258,6 +258,9 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		if err == ErrorBlockParentUnknown {
 			if !sp.onSync {
 				sp.log.Error(err)
+				sp.log.Info("restarting sync process")
+				go sp.startSync()
+				return nil
 			}
 			return nil
 		}
