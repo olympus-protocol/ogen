@@ -325,12 +325,6 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 	}
 
 	for {
-		var ok bool
-		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
-		if !ok {
-			break
-		}
-
 		block, err := sp.chain.GetBlock(firstCommon.Hash)
 		if err != nil {
 			return err
@@ -343,9 +337,17 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 		err = sp.protocolHandler.SendMessage(id, &p2p.MsgBlock{
 			Data: block,
 		})
+
 		if err != nil {
 			return err
 		}
+
+		var ok bool
+		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
+		if !ok {
+			break
+		}
+
 	}
 	err = sp.protocolHandler.SendMessage(id, &p2p.MsgSyncEnd{})
 	if err != nil {
