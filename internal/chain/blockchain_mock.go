@@ -120,20 +120,6 @@ func (mr *MockBlockchainMockRecorder) GetRawBlock(h interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawBlock", reflect.TypeOf((*MockBlockchain)(nil).GetRawBlock), h)
 }
 
-// GetLocatorHashes mocks base method
-func (m *MockBlockchain) GetLocatorHashes() [][32]byte {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLocatorHashes")
-	ret0, _ := ret[0].([][32]byte)
-	return ret0
-}
-
-// GetLocatorHashes indicates an expected call of GetLocatorHashes
-func (mr *MockBlockchainMockRecorder) GetLocatorHashes() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLocatorHashes", reflect.TypeOf((*MockBlockchain)(nil).GetLocatorHashes))
-}
-
 // Notify mocks base method
 func (m *MockBlockchain) Notify(n BlockchainNotifee) {
 	m.ctrl.T.Helper()

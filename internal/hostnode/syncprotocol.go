@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -18,7 +17,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -159,8 +157,7 @@ func (sp *syncProtocol) startSync() {
 		sp.onSync = true
 		sp.withPeer = peerToSync
 		err := sp.protocolHandler.SendMessage(peerToSync, &p2p.MsgGetBlocks{
-			LocatorHashes: sp.chain.GetLocatorHashes(),
-			HashStop:      chainhash.Hash{},
+			LastBlockHash: sp.chain.State().Tip().Hash,
 		})
 
 		if err != nil {
@@ -297,46 +294,23 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 
 	sp.log.Debug("received getblocks")
 
-	// first block is tip, so we check each block in order and check if the block matches
-	firstCommon := sp.chain.State().Chain().Genesis()
-	locatorHashesGenesis := &msg.LocatorHashes[len(msg.LocatorHashes)-1]
-	locatorHashesGenHash, err := chainhash.NewHash(locatorHashesGenesis[:])
-	if err != nil {
-		return fmt.Errorf("unable to get locator genesis hash")
-	}
-	if !firstCommon.Hash.IsEqual(locatorHashesGenHash) {
-		return fmt.Errorf("incorrect genesis block (got: %s, expected: %s)", hex.EncodeToString(locatorHashesGenesis[:]), firstCommon.Hash)
-	}
-
-	for _, b := range msg.LocatorHashes {
-		locatorHash, err := chainhash.NewHash(b[:])
-		if err != nil {
-			return fmt.Errorf("unable to get hash from locator")
-		}
-		if b, found := sp.chain.State().Index().Get(*locatorHash); found {
-			firstCommon = b
-			break
-		}
-	}
-
-	sp.log.Debugf("found first common block %s", firstCommon.Hash)
-
-	if firstCommon.Hash.IsEqual(locatorHashesGenHash) {
-		fc, ok := sp.chain.State().Chain().Next(firstCommon)
-		if !ok {
-			return nil
-		}
-		firstCommon = fc
+	// Get the announced last block to make sure we have a common point
+	firstCommon, ok := sp.chain.State().Index().Get(msg.LastBlockHash)
+	if !ok {
+		sp.log.Errorf("unable to find common point for peer %s", id)
+		return nil
 	}
 
 	for {
+		var ok bool
+		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
+		if !ok {
+			break
+		}
+
 		block, err := sp.chain.GetBlock(firstCommon.Hash)
 		if err != nil {
 			return err
-		}
-
-		if firstCommon.Hash.IsEqual(msg.HashStopH()) {
-			break
 		}
 
 		err = sp.protocolHandler.SendMessage(id, &p2p.MsgBlock{
@@ -347,14 +321,8 @@ func (sp *syncProtocol) handleGetBlocks(id peer.ID, rawMsg p2p.Message) error {
 			return err
 		}
 
-		var ok bool
-		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
-		if !ok {
-			break
-		}
-
 	}
-	err = sp.protocolHandler.SendMessage(id, &p2p.MsgSyncEnd{})
+	err := sp.protocolHandler.SendMessage(id, &p2p.MsgSyncEnd{})
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,6 @@ type Blockchain interface {
 	GenesisTime() time.Time
 	GetBlock(h chainhash.Hash) (block *primitives.Block, err error)
 	GetRawBlock(h chainhash.Hash) (block []byte, err error)
-	GetLocatorHashes() [][32]byte
 	Notify(n BlockchainNotifee)
 	Unnotify(n BlockchainNotifee)
 	UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error
