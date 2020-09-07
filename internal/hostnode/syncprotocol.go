@@ -234,7 +234,7 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return errors.New("non syncend msg")
 	}
-
+	sp.log.Info("syncing finished")
 	if !sp.onSync {
 		return nil
 	}
@@ -256,7 +256,9 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			return nil
 		}
 		if err == ErrorBlockParentUnknown {
-			sp.log.Error(err)
+			if !sp.onSync {
+				sp.log.Error(err)
+			}
 			return nil
 		}
 	}

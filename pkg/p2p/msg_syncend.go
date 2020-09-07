@@ -15,7 +15,7 @@ func (m *MsgSyncEnd) Unmarshal([]byte) error {
 
 // Command returns the message topic
 func (m *MsgSyncEnd) Command() string {
-	return MsgGetAddrCmd
+	return MsgSyncEndCmd
 }
 
 // MaxPayloadLength returns the maximum size of the MsgSyncEnd message.
