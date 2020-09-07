@@ -100,9 +100,7 @@ func init() {
 	stateParams.PremineAddress = addr
 }
 
-// create a blockchain instance and test its methods
-func TestProposer_Object(t *testing.T) {
-	//f := fuzz.New().NilChance(0)
+func TestProposer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 	log.EXPECT().Infof("starting proposer with %d/%d active validators", gomock.Any(), gomock.Any())
@@ -171,12 +169,6 @@ func TestProposer_Object(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, prop)
 
-	// proposer methods
-	err = prop.Start()
-	assert.NoError(t, err)
-
 	// TODO: Find a way to test the routimes within a timer, otherwise they will run indefinitely
-	//prop.ProposeBlocks()
-	//prop.Stop()
 
 }
