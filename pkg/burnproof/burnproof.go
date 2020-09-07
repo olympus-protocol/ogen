@@ -19,8 +19,8 @@ type CoinsProof struct {
 	Transaction  wire.MsgTx
 }
 
-// Decode decodes the proof from a reader.
-func (c *CoinsProof) Decode(r io.Reader) error {
+// Unmarshal decodes the proof from a byte slice.
+func (c *CoinsProof) Unmarshal(r io.Reader) error {
 	indexBytes := make([]byte, 4)
 	if _, err := io.ReadFull(r, indexBytes); err != nil {
 		return err
@@ -174,23 +174,35 @@ func verifyPkhMatchesAddress(script []byte, address string) error {
 
 // VerifyBurn verifies a burn proof.
 func VerifyBurn(proofBytes []byte, merkleRoot chainhash.Hash, address string) error {
-	c := new(CoinsProof)
+	var proofs []*CoinsProof
 
 	buf := bytes.NewBuffer(proofBytes)
-	if err := c.Decode(buf); err != nil {
-		return err
+
+	for {
+		c := new(CoinsProof)
+		err := c.Unmarshal(buf)
+		if err != nil {
+			return err
+		}
+
+		proofs = append(proofs, c)
+		if buf.Len() <= 0 {
+			break
+		}
 	}
 
-	if err := verifyMerkleRoot(merkleRoot, c); err != nil {
-		return err
-	}
+	for _, c := range proofs {
+		if err := verifyMerkleRoot(merkleRoot, c); err != nil {
+			return err
+		}
 
-	if err := verifyScript(c); err != nil {
-		return err
-	}
+		if err := verifyScript(c); err != nil {
+			return err
+		}
 
-	if err := verifyPkhMatchesAddress(c.Transaction.TxOut[0].PkScript, address); err != nil {
-		return err
+		if err := verifyPkhMatchesAddress(c.Transaction.TxOut[0].PkScript, address); err != nil {
+			return err
+		}
 	}
 
 	return nil
