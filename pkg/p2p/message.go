@@ -49,8 +49,8 @@ const (
 	MsgAddrCmd = "addr"
 	// MsgGetBlocksCmd ask a node for blocks
 	MsgGetBlocksCmd = "getblocks"
-	// MsgBlocksCmd slice with blocks
-	MsgBlocksCmd = "blocks"
+	// MsgSyncEnd announce the syncing node the stream finished
+	MsgSyncEndCmd = "syncend"
 )
 
 // Message interface for all the messages
@@ -88,8 +88,6 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgAddr{}
 	case MsgGetAddrCmd:
 		msg = &MsgGetAddr{}
-	case MsgBlocksCmd:
-		msg = &MsgBlocks{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
 	case MsgBlockCmd:
@@ -112,6 +110,8 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgValidatorStart{}
 	case MsgGovernanceCmd:
 		msg = &MsgGovernance{}
+	case MsgSyncEndCmd:
+		msg = &MsgSyncEnd{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

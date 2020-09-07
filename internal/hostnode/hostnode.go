@@ -2,7 +2,6 @@ package hostnode
 
 import (
 	"context"
-	"errors"
 	"net"
 	"sync"
 	"time"
@@ -52,13 +51,12 @@ type HostNode interface {
 	GetPeerInfos() []peer.AddrInfo
 	ConnectedToPeer(id peer.ID) bool
 	Notify(notifee network.Notifiee)
-	CountPeers(id protocol.ID) int
 	GetPeerDirection(id peer.ID) network.Direction
 	Start() error
-	SavePeer(pma multiaddr.Multiaddr) error
-	BanScorePeer(id peer.ID, weight int) error
-	IsPeerBanned(id peer.ID) (bool, error)
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
+	Database() Database
+	GetPeerInfo(id peer.ID) *peer.AddrInfo
+	SavePeer(pinfo *peer.AddrInfo) error
 }
 
 var _ HostNode = &hostNode{}
@@ -93,26 +91,30 @@ type hostNode struct {
 
 // NewHostNode creates a host node
 func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32) (HostNode, error) {
-	ps := pstoremem.NewPeerstore()
-	db, err := NewDatabase(config.Path)
-	if err != nil {
-		return nil, err
+
+	node := &hostNode{
+		ctx:               ctx,
+		timeoutInterval:   timeoutInterval,
+		heartbeatInterval: heartbeatInterval,
+		log:               config.Log,
+		topics:            map[string]*pubsub.Topic{},
+		netMagic:          netMagic,
 	}
 
-	err = db.Initialize()
+	ps := pstoremem.NewPeerstore()
+
+	db, err := NewDatabase(config.Path, node)
 	if err != nil {
 		return nil, err
 	}
+	node.db = db
 
 	priv, err := db.GetPrivKey()
 	if err != nil {
 		return nil, err
 	}
-	// get saved hostnode
-	savedAddresses, err := db.GetSavedPeers()
-	if err != nil {
-		config.Log.Errorf("error retrieving saved hostnode: %s", err)
-	}
+
+	node.privateKey = priv
 
 	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
 	if err != nil {
@@ -125,9 +127,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	listenAddress := []multiaddr.Multiaddr{listen}
 
-	//append saved addresses
-	listenAddress = append(listenAddress, savedAddresses...)
-
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs(listenAddress...),
@@ -139,6 +138,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	if err != nil {
 		return nil, err
 	}
+	node.host = h
 
 	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
 		ID:    h.ID(),
@@ -152,24 +152,11 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		config.Log.Infof("binding to address: %s", a)
 	}
 
-	// setup gossip sub protocol
 	g, err := pubsub.NewGossipSub(ctx, h)
 	if err != nil {
 		return nil, err
 	}
-
-	node := &hostNode{
-		privateKey:        config.PrivateKey,
-		host:              h,
-		gossipSub:         g,
-		ctx:               ctx,
-		timeoutInterval:   timeoutInterval,
-		heartbeatInterval: heartbeatInterval,
-		log:               config.Log,
-		topics:            map[string]*pubsub.Topic{},
-		db:                db,
-		netMagic:          netMagic,
-	}
+	node.gossipSub = g
 
 	discovery, err := NewDiscoveryProtocol(ctx, node, config)
 	if err != nil {
@@ -276,17 +263,6 @@ func (node *hostNode) SetStreamHandler(id protocol.ID, handleStream func(s netwo
 	node.host.SetStreamHandler(id, handleStream)
 }
 
-// CountPeers counts the number of hostnode that support the protocol.
-func (node *hostNode) CountPeers(id protocol.ID) int {
-	count := 0
-	for _, n := range node.host.Peerstore().Peers() {
-		if sup, err := node.host.Peerstore().SupportsProtocols(n, string(id)); err != nil && len(sup) != 0 {
-			count++
-		}
-	}
-	return count
-}
-
 // GetPeerDirection gets the direction of the peer.
 func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	conns := node.host.Network().ConnsToPeer(id)
@@ -302,39 +278,29 @@ func (node *hostNode) Start() error {
 	if err := node.discoveryProtocol.Start(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// Database <-> hostNode Functions
-
-func (node *hostNode) SavePeer(pma multiaddr.Multiaddr) error {
-	if node.db == nil {
-		return errors.New("no initialized db in node")
-	}
-	return node.db.SavePeer(pma)
+func (node *hostNode) Database() Database {
+	return node.db
 }
 
-func (node *hostNode) BanScorePeer(id peer.ID, weight int) error {
-	if node.db == nil {
-		return errors.New("no initialized db in node")
-	}
-	if node.host.ID() == id {
-		return errors.New("trying to ban itself")
-	}
-	banned, err := node.db.BanscorePeer(id, weight)
-	if err == nil {
-		if banned {
-			// disconnect
-			_ = node.DisconnectPeer(id)
-		}
-	}
-	return err
+func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
+	pinfo := node.host.Peerstore().PeerInfo(id)
+	return &pinfo
 }
 
-func (node *hostNode) IsPeerBanned(id peer.ID) (bool, error) {
-	if node.db == nil {
-		return false, errors.New("no initialized db in node")
+func (node *hostNode) SavePeer(pinfo *peer.AddrInfo) error {
+	err := node.db.SavePeer(pinfo)
+	if err != nil {
+		return err
 	}
-	return node.db.IsPeerBanned(id)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	err = node.host.Connect(ctx, *pinfo)
+	if err != nil {
+		cancel()
+		return err
+	}
+	cancel()
+	return nil
 }

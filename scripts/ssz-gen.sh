@@ -2,7 +2,6 @@
 
 sszgen -path ./pkg/p2p/message.go
 sszgen -path ./pkg/p2p/msg_version.go
-sszgen -path ./pkg/p2p/msg_blocks.go -include ./pkg/primitives/block.go,./pkg/primitives/blockheader.go,./pkg/primitives/votes.go,./pkg/primitives/tx.go,./pkg/primitives/tx_multi.go,./pkg/primitives/deposit.go,./pkg/primitives/exit.go,./pkg/primitives/slashing.go,./pkg/primitives/governance_votes.go,./pkg/bls/multisig/multisig.go
 sszgen -path ./pkg/p2p/msg_block.go -include ./pkg/primitives/block.go,./pkg/primitives/blockheader.go,./pkg/primitives/votes.go,./pkg/primitives/tx.go,./pkg/primitives/tx_multi.go,./pkg/primitives/deposit.go,./pkg/primitives/exit.go,./pkg/primitives/slashing.go,./pkg/primitives/governance_votes.go,./pkg/bls/multisig/multisig.go
 sszgen -path ./pkg/p2p/msg_addr.go
 sszgen -path ./pkg/p2p/msg_deposits.go -include ./pkg/primitives/deposit.go

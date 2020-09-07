@@ -12,12 +12,10 @@ type State interface {
 	ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.Hash)
 	ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*primitives.EpochReceipt, error)
 	GetEffectiveBalance(index uint64, p *params.ChainParams) uint64
-	getActiveBalance(_ *params.ChainParams) uint64
 	ActivateValidator(index uint64) error
 	InitiateValidatorExit(index uint64) error
 	ExitValidator(index uint64, status uint64, p *params.ChainParams) error
 	UpdateValidatorStatus(index uint64, status uint64, p *params.ChainParams) error
-	updateValidatorRegistry(p *params.ChainParams) error
 	GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chainhash.Hash
 	GetTotalBalances() uint64
 	NextVoteEpoch(newState uint64)

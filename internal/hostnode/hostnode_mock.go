@@ -12,7 +12,6 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	multiaddr "github.com/multiformats/go-multiaddr"
 	reflect "reflect"
 )
 
@@ -220,20 +219,6 @@ func (mr *MockHostNodeMockRecorder) Notify(notifee interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockHostNode)(nil).Notify), notifee)
 }
 
-// CountPeers mocks base method
-func (m *MockHostNode) CountPeers(id protocol.ID) int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountPeers", id)
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// CountPeers indicates an expected call of CountPeers
-func (mr *MockHostNodeMockRecorder) CountPeers(id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountPeers", reflect.TypeOf((*MockHostNode)(nil).CountPeers), id)
-}
-
 // GetPeerDirection mocks base method
 func (m *MockHostNode) GetPeerDirection(id peer.ID) network.Direction {
 	m.ctrl.T.Helper()
@@ -262,49 +247,6 @@ func (mr *MockHostNodeMockRecorder) Start() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockHostNode)(nil).Start))
 }
 
-// SavePeer mocks base method
-func (m *MockHostNode) SavePeer(pma multiaddr.Multiaddr) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SavePeer", pma)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SavePeer indicates an expected call of SavePeer
-func (mr *MockHostNodeMockRecorder) SavePeer(pma interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePeer", reflect.TypeOf((*MockHostNode)(nil).SavePeer), pma)
-}
-
-// BanScorePeer mocks base method
-func (m *MockHostNode) BanScorePeer(id peer.ID, weight int) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BanScorePeer", id, weight)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// BanScorePeer indicates an expected call of BanScorePeer
-func (mr *MockHostNodeMockRecorder) BanScorePeer(id, weight interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BanScorePeer", reflect.TypeOf((*MockHostNode)(nil).BanScorePeer), id, weight)
-}
-
-// IsPeerBanned mocks base method
-func (m *MockHostNode) IsPeerBanned(id peer.ID) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPeerBanned", id)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsPeerBanned indicates an expected call of IsPeerBanned
-func (mr *MockHostNodeMockRecorder) IsPeerBanned(id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerBanned", reflect.TypeOf((*MockHostNode)(nil).IsPeerBanned), id)
-}
-
 // SetStreamHandler mocks base method
 func (m *MockHostNode) SetStreamHandler(id protocol.ID, handleStream func(network.Stream)) {
 	m.ctrl.T.Helper()
@@ -315,4 +257,46 @@ func (m *MockHostNode) SetStreamHandler(id protocol.ID, handleStream func(networ
 func (mr *MockHostNodeMockRecorder) SetStreamHandler(id, handleStream interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStreamHandler", reflect.TypeOf((*MockHostNode)(nil).SetStreamHandler), id, handleStream)
+}
+
+// Database mocks base method
+func (m *MockHostNode) Database() Database {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Database")
+	ret0, _ := ret[0].(Database)
+	return ret0
+}
+
+// Database indicates an expected call of Database
+func (mr *MockHostNodeMockRecorder) Database() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Database", reflect.TypeOf((*MockHostNode)(nil).Database))
+}
+
+// GetPeerInfo mocks base method
+func (m *MockHostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPeerInfo", id)
+	ret0, _ := ret[0].(*peer.AddrInfo)
+	return ret0
+}
+
+// GetPeerInfo indicates an expected call of GetPeerInfo
+func (mr *MockHostNodeMockRecorder) GetPeerInfo(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerInfo", reflect.TypeOf((*MockHostNode)(nil).GetPeerInfo), id)
+}
+
+// SavePeer mocks base method
+func (m *MockHostNode) SavePeer(pinfo *peer.AddrInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SavePeer", pinfo)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SavePeer indicates an expected call of SavePeer
+func (mr *MockHostNodeMockRecorder) SavePeer(pinfo interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePeer", reflect.TypeOf((*MockHostNode)(nil).SavePeer), pinfo)
 }

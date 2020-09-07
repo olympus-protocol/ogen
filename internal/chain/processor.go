@@ -258,7 +258,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		if err := txn.SetFinalizedHead(finalizedHash); err != nil {
 			return err
 		}
-		if err := ch.state.setFinalizedHead(finalizedHash, finalizedState); err != nil {
+		if err := ch.state.SetFinalizedHead(finalizedHash, finalizedState); err != nil {
 			return err
 		}
 		if err := txn.SetFinalizedState(finalizedState); err != nil {
@@ -274,7 +274,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		if err := txn.SetJustifiedHead(newState.GetJustifiedEpochHash()); err != nil {
 			return err
 		}
-		if err := ch.state.setJustifiedHead(newState.GetJustifiedEpochHash(), justifiedState); err != nil {
+		if err := ch.state.SetJustifiedHead(newState.GetJustifiedEpochHash(), justifiedState); err != nil {
 			return err
 		}
 		if err := txn.SetJustifiedState(justifiedState); err != nil {

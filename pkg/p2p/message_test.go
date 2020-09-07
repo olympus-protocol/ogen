@@ -55,7 +55,6 @@ func TestMsgTypeCreation(t *testing.T) {
 	createMsgVersion(t)
 	createMsgAddr(t)
 	createMsgGetAddr(t)
-	createMsgBlocks(t)
 	createMsgGetBlocks(t)
 	createMsgTx(t)
 	createMsgTxMulti(t)
@@ -108,20 +107,6 @@ func createMsgGetAddr(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, ok := msg.(*p2p.MsgGetAddr)
-	assert.True(t, ok)
-}
-
-func createMsgBlocks(t *testing.T) {
-	v := new(p2p.MsgBlocks)
-	buf := bytes.NewBuffer([]byte{})
-
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgBlocks)
 	assert.True(t, ok)
 }
 

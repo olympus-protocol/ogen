@@ -74,7 +74,7 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
+func NewWallet(ctx context.Context, log logger.Logger, path string, params *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
 	var txTopic *pubsub.Topic
 	var depositTopic *pubsub.Topic
 	var depositsTopic *pubsub.Topic
@@ -109,7 +109,7 @@ func NewWallet(ctx context.Context, log logger.Logger, walletsDir string, params
 	}
 	wall := &wallet{
 		log:           log,
-		directory:     walletsDir,
+		directory:     path,
 		params:        params,
 		open:          false,
 		chain:         ch,

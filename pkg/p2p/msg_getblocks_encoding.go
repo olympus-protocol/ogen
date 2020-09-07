@@ -13,23 +13,9 @@ func (m *MsgGetBlocks) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the MsgGetBlocks object to a target array
 func (m *MsgGetBlocks) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(36)
 
-	// Field (0) 'HashStop'
-	dst = append(dst, m.HashStop[:]...)
-
-	// Offset (1) 'LocatorHashes'
-	dst = ssz.WriteOffset(dst, offset)
-	offset += len(m.LocatorHashes) * 32
-
-	// Field (1) 'LocatorHashes'
-	if len(m.LocatorHashes) > 64 {
-		err = ssz.ErrListTooBig
-		return
-	}
-	for ii := 0; ii < len(m.LocatorHashes); ii++ {
-		dst = append(dst, m.LocatorHashes[ii][:]...)
-	}
+	// Field (0) 'LastBlockHash'
+	dst = append(dst, m.LastBlockHash[:]...)
 
 	return
 }
@@ -38,43 +24,19 @@ func (m *MsgGetBlocks) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (m *MsgGetBlocks) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 36 {
+	if size != 32 {
 		return ssz.ErrSize
 	}
 
-	tail := buf
-	var o1 uint64
+	// Field (0) 'LastBlockHash'
+	copy(m.LastBlockHash[:], buf[0:32])
 
-	// Field (0) 'HashStop'
-	copy(m.HashStop[:], buf[0:32])
-
-	// Offset (1) 'LocatorHashes'
-	if o1 = ssz.ReadOffset(buf[32:36]); o1 > size {
-		return ssz.ErrOffset
-	}
-
-	// Field (1) 'LocatorHashes'
-	{
-		buf = tail[o1:]
-		num, err := ssz.DivideInt2(len(buf), 32, 64)
-		if err != nil {
-			return err
-		}
-		m.LocatorHashes = make([][32]byte, num)
-		for ii := 0; ii < num; ii++ {
-			copy(m.LocatorHashes[ii][:], buf[ii*32:(ii+1)*32])
-		}
-	}
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the MsgGetBlocks object
 func (m *MsgGetBlocks) SizeSSZ() (size int) {
-	size = 36
-
-	// Field (1) 'LocatorHashes'
-	size += len(m.LocatorHashes) * 32
-
+	size = 32
 	return
 }
 
@@ -87,22 +49,8 @@ func (m *MsgGetBlocks) HashTreeRoot() ([32]byte, error) {
 func (m *MsgGetBlocks) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
-	// Field (0) 'HashStop'
-	hh.PutBytes(m.HashStop[:])
-
-	// Field (1) 'LocatorHashes'
-	{
-		if len(m.LocatorHashes) > 64 {
-			err = ssz.ErrListTooBig
-			return
-		}
-		subIndx := hh.Index()
-		for _, i := range m.LocatorHashes {
-			hh.Append(i[:])
-		}
-		numItems := uint64(len(m.LocatorHashes))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(64, numItems, 32))
-	}
+	// Field (0) 'LastBlockHash'
+	hh.PutBytes(m.LastBlockHash[:])
 
 	hh.Merkleize(indx)
 	return

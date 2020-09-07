@@ -2,165 +2,170 @@ package hostnode
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"go.etcd.io/bbolt"
 	"path"
-	"strconv"
 	"time"
 )
 
-// contains several functions that interact with netDB database
+var (
+	// ErrorNotInitialize is returned when the db is not properly initialized.
+	ErrorNotInitialized = errors.New("db is not initialized")
 
-var configBucketKey = []byte("config")
-var privKeyDbKey = []byte("privkey")
+	// ErrorPeerBanned is returned when the peer trying to be stored is already banned.
+	ErrorPeerBanned = errors.New("peer is already known and banned")
+)
 
-var peersDbKey = []byte("hostnode")
-var bansDbKey = []byte("bans")
-var ipDbKey = []byte("ips")
-var scoresDbKey = []byte("scores")
+var (
+	// configDBBkt is the db bucket that contains common config information
+	configDBBkt = []byte("config")
+
+	// peersDBBkt is the bucket that contains usable and known peers information
+	peersDBBkt = []byte("peers")
+
+	// privKeyDBKey is the key containing the binary serialized private key.
+	privKeyDBKey = []byte("privkey")
+
+	// bansDBBkt is the bucket that contains banned peers.
+	bansDBBkt = []byte("bans")
+
+	// ipDBBkt is the bucket that contains the serialized ip for a peer ID.
+	ipDBBkt = []byte("ips")
+)
 
 type Database interface {
-	Initialize() (err error)
-	SavePeer(pma multiaddr.Multiaddr) error
-	BanscorePeer(id peer.ID, weight int) (bool, error)
-	IsPeerBanned(id peer.ID) (bool, error)
-	IsIPBanned(ip string) (bool, bool, error)
-	GetSavedPeers() (savedAddresses []multiaddr.Multiaddr, err error)
+	SavePeer(pinfo *peer.AddrInfo) error
+	BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error
+	GetSavedPeers() ([]*peer.AddrInfo, error)
 	GetPrivKey() (priv crypto.PrivKey, err error)
 }
 
 type database struct {
+	host     HostNode
 	db       *bbolt.DB
-	BanLimit int
+	banLimit int
 }
 
 var _ Database = &database{}
 
 // NewDatabase returns a new Database interface
-func NewDatabase(dbpath string) (Database, error) {
+func NewDatabase(dbpath string, hostnode HostNode) (Database, error) {
 	netDB, err := bbolt.Open(path.Join(dbpath, "net.db"), 0600, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &database{
+	db := &database{
+		host:     hostnode,
 		db:       netDB,
-		BanLimit: 100,
-	}, nil
+		banLimit: 100,
+	}
+	err = db.load()
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
-// InitBuckets initializes the peer database buckets
-func (d *database) Initialize() (err error) {
-	err = d.db.Update(func(tx *bbolt.Tx) error {
+func (d *database) load() error {
+	err := d.db.Update(func(tx *bbolt.Tx) error {
 		var err error
-		configBucket := tx.Bucket(configBucketKey)
+		configBucket := tx.Bucket(configDBBkt)
 		if configBucket == nil {
-			configBucket, err = tx.CreateBucketIfNotExists(configBucketKey)
+			_, err = tx.CreateBucketIfNotExists(configDBBkt)
 			if err != nil {
 				return err
 			}
 		}
 		// peersBucket holds a peerId as key and it's multiaddr as value
-		peersBucket := tx.Bucket(peersDbKey)
+		peersBucket := tx.Bucket(peersDBBkt)
 		if peersBucket == nil {
-			_, err = tx.CreateBucketIfNotExists(peersDbKey)
+			_, err = tx.CreateBucketIfNotExists(peersDBBkt)
 			if err != nil {
 				return err
 			}
 		}
 		// bansBucket holds an IP address as key and a timestamp as value
-		bansBucket := tx.Bucket(bansDbKey)
+		bansBucket := tx.Bucket(bansDBBkt)
 		if bansBucket == nil {
-			_, err = tx.CreateBucketIfNotExists(bansDbKey)
+			_, err = tx.CreateBucketIfNotExists(bansDBBkt)
 			if err != nil {
 				return err
 			}
 		}
 		// ipBucket holds a peerId as key and an IP address as value
-		ipBucket := tx.Bucket(ipDbKey)
+		ipBucket := tx.Bucket(ipDBBkt)
 		if ipBucket == nil {
-			_, err = tx.CreateBucketIfNotExists(ipDbKey)
-			if err != nil {
-				return err
-			}
-		}
-		// scoresBucket holds a multiaddress  as key and the banscore as value
-		scoreBucket := tx.Bucket(scoresDbKey)
-		if scoreBucket == nil {
-			_, err = tx.CreateBucketIfNotExists(scoresDbKey)
+			_, err = tx.CreateBucketIfNotExists(ipDBBkt)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
 	})
-	return
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // SavePeer stores a peer to the node hostnode database.
-func (d *database) SavePeer(pma multiaddr.Multiaddr) error {
+func (d *database) SavePeer(pinfo *peer.AddrInfo) error {
 
-	// get peerID from multiaddr
-	peerID, err := peer.AddrInfoFromP2pAddr(pma)
-	if err != nil {
-		return err
+	// Get the multi-addresses of the peer as bytes
+	var maBytes [][]byte
+
+	for _, ma := range pinfo.Addrs {
+		maBytes = append(maBytes, ma.Bytes())
 	}
 
-	// extract ip from multiaddr
-	ip, err := d.extractIP(pma)
-	if err != nil {
-		return err
+	// Check if any of this is already banned
+	banned := false
+	for _, ipBytes := range maBytes {
+		if d.isIPBanned(ipBytes) {
+			banned = true
+		}
 	}
 
-	// check if ip is banned
-	ban, del, err := d.IsIPBanned(ip)
-	if err != nil {
-		return err
+	if banned {
+		return ErrorPeerBanned
 	}
 
-	if ban {
-		return nil
-	}
+	err := d.db.Update(func(tx *bbolt.Tx) error {
+		peersBkt := tx.Bucket(peersDBBkt)
+		if peersBkt == nil {
+			return ErrorNotInitialized
+		}
 
-	err = d.db.Update(func(tx *bbolt.Tx) error {
+		idBytes, err := pinfo.ID.Marshal()
+		if err != nil {
+			return err
+		}
 
-		peersBucket := tx.Bucket(peersDbKey)
-		ipBucket := tx.Bucket(ipDbKey)
-		scoreBucket := tx.Bucket(scoresDbKey)
-		bansDb := tx.Bucket(bansDbKey)
+		pinfoMarshal, err := pinfo.MarshalJSON()
+		if err != nil {
+			return err
+		}
 
-		if del {
-			err = bansDb.Delete([]byte(ip))
+		err = peersBkt.Put(idBytes, pinfoMarshal)
+		if err != nil {
+			return err
+		}
+
+		ipsBkt := tx.Bucket(ipDBBkt)
+		if ipsBkt == nil {
+			return ErrorNotInitialized
+		}
+
+		for _, ipBytes := range maBytes {
+			score := make([]byte, 2)
+			binary.LittleEndian.PutUint16(score, 100)
+			err = ipsBkt.Put(ipBytes, score)
 			if err != nil {
 				return err
 			}
-		}
-
-		byteID, err := peerID.ID.MarshalBinary()
-		if err != nil {
-			return err
-		}
-
-		// save ip from peer
-		err = ipBucket.Put(byteID, []byte(ip))
-		if err != nil {
-			return err
-		}
-
-		// create banscore for peer if it does not have one
-		if scoreBucket.Get(pma.Bytes()) == nil {
-			err = scoreBucket.Put(pma.Bytes(), []byte(strconv.Itoa(0)))
-			if err != nil {
-				return err
-			}
-		}
-
-		// save multiaddr of peerId
-		err = peersBucket.Put(byteID, pma.Bytes())
-		if err != nil {
-			return err
 		}
 
 		return nil
@@ -169,219 +174,181 @@ func (d *database) SavePeer(pma multiaddr.Multiaddr) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
-
 }
 
 // BanscorePeer reduces the banscore of a peer. If it reaches limit, it will be banned
-func (d *database) BanscorePeer(id peer.ID, weight int) (bool, error) {
-
-	shouldBan := false
-
+func (d *database) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
 	err := d.db.Update(func(tx *bbolt.Tx) error {
-
-		savedDb := tx.Bucket(peersDbKey)
-		bansDb := tx.Bucket(bansDbKey)
-		ipb := tx.Bucket(ipDbKey)
-		scoreDb := tx.Bucket(scoresDbKey)
-
-		//get multiaddr from peerId
-		byteID, err := id.MarshalBinary()
-		if err != nil {
-			return err
+		bkt := tx.Bucket(bansDBBkt)
+		if bkt == nil {
+			return ErrorNotInitialized
 		}
 
-		multiAddrBytes := savedDb.Get(byteID)
-		if multiAddrBytes == nil {
-			return errors.New("could not find peer")
-		}
-
-		//get banscore from multiaddr
-		scoreBytes := scoreDb.Get(multiAddrBytes)
-		if scoreBytes == nil {
-			return errors.New("could not find peer score")
-		}
-
-		score, err := strconv.Atoi(string(scoreBytes))
-		if err != nil {
-			return err
-		}
-
-		score += weight
-
-		if score >= d.BanLimit {
-
-			shouldBan = true
-			// add to banlist
-			ipBytes := ipb.Get(byteID)
-			if ipBytes == nil {
-				return errors.New("could not find peer ip")
-			}
-
-			timestamp := strconv.FormatInt(time.Now().Unix()+24*3600, 10)
-			err = bansDb.Put(ipBytes, []byte(timestamp))
-			if err != nil {
-				return err
-			}
-
-			// remove from saved list and score list
-			err = savedDb.Delete(byteID)
-			if err != nil {
-				return err
-			}
-
-			err = scoreDb.Delete(multiAddrBytes)
-			if err != nil {
-				return err
-			}
-
-		} else {
-			//update banscore
-			err = scoreDb.Put(multiAddrBytes, []byte(strconv.Itoa(score)))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-	return shouldBan, nil
-}
-
-// IsPeerBanned returns a boolean if a peer is already known and banned.
-func (d *database) IsPeerBanned(id peer.ID) (bool, error) {
-	var savedIP []byte
-	err := d.db.View(func(tx *bbolt.Tx) error {
-		var err error
-		ipb := tx.Bucket(ipDbKey)
-		byteID, err := id.MarshalBinary()
-		if err != nil {
-			return err
-		}
-		savedIP = ipb.Get(byteID)
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-	if savedIP == nil {
-		return true, nil
-	}
-	isBanned, shoudDelete, err := d.IsIPBanned(string(savedIP))
-	if shoudDelete {
-		err = d.db.Update(func(tx *bbolt.Tx) error {
-			var err error
-			banDb := tx.Bucket(bansDbKey)
-			err = banDb.Delete(savedIP)
-			return err
-		})
-	}
-	return isBanned, err
-}
-
-// IsIPBanned returns booleans if a peer is already known and banned, this function will also return
-// the second boolean if the ip needs to be unbanned.
-func (d *database) IsIPBanned(ip string) (bool, bool, error) {
-
-	banned := false
-	del := false
-
-	err := d.db.View(func(tx *bbolt.Tx) error {
-
-		bansB := tx.Bucket(bansDbKey)
-
-		ipBytes := []byte(ip)
-
-		bannedTime := bansB.Get(ipBytes)
-
-		if bannedTime != nil {
-
-			timeBan, err := strconv.ParseInt(string(bannedTime), 10, 64)
-			if err != nil {
-				return err
-			}
-
-			if timeBan <= time.Now().Unix() {
-				// if time has passed, unban
-				del = true
-
+		ipBkt := tx.Bucket(ipDBBkt)
+		banBkt := tx.Bucket(bansDBBkt)
+		for _, ma := range pinfo.Addrs {
+			maBytes := ma.Bytes()
+			scoreBytes := ipBkt.Get(maBytes)
+			var score uint16
+			if scoreBytes == nil {
+				score = 100
 			} else {
-
-				banned = true
+				score = binary.LittleEndian.Uint16(scoreBytes)
 			}
+			score -= weight
+			if score <= 0 {
 
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return true, true, err
-	}
-	return banned, del, nil
-}
-
-// GetSavedPeers returns a list of already known hostnode.
-func (d *database) GetSavedPeers() ([]multiaddr.Multiaddr, error) {
-	var savedPeers []multiaddr.Multiaddr
-	err := d.db.Update(func(tx *bbolt.Tx) error {
-
-		savedBucket := tx.Bucket(peersDbKey)
-
-		err := savedBucket.ForEach(func(k, v []byte) error {
-
-			addr, err := multiaddr.NewMultiaddrBytes(v)
-			if err != nil {
-				return err
-			} else {
-
-				peerID, err := peer.AddrInfoFromP2pAddr(addr)
+				err := d.host.DisconnectPeer(pinfo.ID)
 				if err != nil {
-
-					// if the saved peer cannot be validated, delete
-					_ = savedBucket.Delete(k)
-
-				} else {
-
-					isBanned, err := d.IsPeerBanned(peerID.ID)
-
-					if !isBanned && err == nil {
-						savedPeers = append(savedPeers, addr)
-					}
-
-					// if saved peer is banned, delete
-					if isBanned && err == nil {
-						err = savedBucket.Delete(k)
-						if err != nil {
-							return err
-						}
-					}
+					return err
 				}
+
+				timeToUnban := time.Now().Unix() + 86400
+
+				timeBytes := make([]byte, 8)
+				binary.LittleEndian.PutUint64(timeBytes, uint64(timeToUnban))
+
+				err = banBkt.Put(maBytes, timeBytes)
+				if err != nil {
+					return err
+				}
+
+			} else {
+
+				scoreBytes := make([]byte, 2)
+				binary.LittleEndian.PutUint16(scoreBytes, score)
+
+				err := ipBkt.Put(maBytes, scoreBytes)
+				if err != nil {
+					return err
+				}
+
 			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// isIPBanned returns true if the ip is already banned.
+// It checks internally if a peer must be unbanned.
+func (d *database) isIPBanned(ip []byte) bool {
+	banned := false
+	err := d.db.Update(func(tx *bbolt.Tx) error {
+
+		bkt := tx.Bucket(bansDBBkt)
+
+		// Try to fetch the ip, if it is not found, is not banned.
+		banTimeBytes := bkt.Get(ip)
+		if banTimeBytes == nil {
+			return nil
+		}
+
+		// Convert the time to a unix timestamp
+		banTime := binary.LittleEndian.Uint64(banTimeBytes)
+
+		// Check if the peer ban already expired
+		if time.Now().Unix() >= int64(banTime) {
+			_ = bkt.Delete(ip)
+			return nil
+		} else {
+			banned = true
+			return nil
+		}
+
+	})
+
+	if err != nil {
+		return true
+	}
+
+	return banned
+}
+
+// GetSavedPeers returns a list of already known peers.
+func (d *database) GetSavedPeers() ([]*peer.AddrInfo, error) {
+	peersMap := make(map[*peer.ID]*peer.AddrInfo)
+
+	// Fetch peers
+	err := d.db.View(func(tx *bbolt.Tx) error {
+
+		peersBkt := tx.Bucket(peersDBBkt)
+
+		err := peersBkt.ForEach(func(k, v []byte) error {
+
+			id := new(peer.ID)
+			err := id.Unmarshal(k)
+			if err != nil {
+				_ = peersBkt.Delete(k)
+			}
+
+			pinfo := new(peer.AddrInfo)
+			err = pinfo.UnmarshalJSON(v)
+			if err != nil {
+				_ = peersBkt.Delete(k)
+			}
+
+			peersMap[id] = pinfo
+
 			return nil
 		})
 		if err != nil {
 			return err
 		}
+
 		return nil
 	})
+
+	var peers []*peer.AddrInfo
+	// Check if any of these peers are banned
+	for _, pinfo := range peersMap {
+
+		// Check if any of the multi-addresses is banned
+		var maBytes [][]byte
+
+		for _, ma := range pinfo.Addrs {
+			maBytes = append(maBytes, ma.Bytes())
+		}
+
+		// Check if any of this is already banned
+		banned := false
+		for _, ipBytes := range maBytes {
+			if d.isIPBanned(ipBytes) {
+				banned = true
+			}
+		}
+
+		if !banned {
+			peers = append(peers, pinfo)
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	return savedPeers, nil
+
+	return peers, nil
 }
 
-// GetPrivKey returns the private key for the HostNode.
+// GetPrivKey returns the private key for the HostNode
+// Creates a new one if is not found, requires the database to be initialized.
 func (d *database) GetPrivKey() (crypto.PrivKey, error) {
+
 	var priv crypto.PrivKey
 
 	err := d.db.Update(func(tx *bbolt.Tx) error {
 
-		configBucket := tx.Bucket(configBucketKey)
+		bkt := tx.Bucket(configDBBkt)
+		if bkt == nil {
+			return ErrorNotInitialized
+		}
 
-		keyBytes := configBucket.Get(privKeyDbKey)
+		keyBytes := bkt.Get(privKeyDBKey)
 
 		if keyBytes == nil {
 
@@ -395,7 +362,7 @@ func (d *database) GetPrivKey() (crypto.PrivKey, error) {
 				return err
 			}
 
-			err = configBucket.Put(privKeyDbKey, privBytes)
+			err = bkt.Put(privKeyDBKey, privBytes)
 			if err != nil {
 				return err
 			}
@@ -412,26 +379,10 @@ func (d *database) GetPrivKey() (crypto.PrivKey, error) {
 
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	return priv, nil
-}
 
-func (d *database) extractIP(pma multiaddr.Multiaddr) (ip string, err error) {
-	protocols := pma.Protocols()
-	for _, s := range protocols {
-		if s.Name == "ip4" || s.Name == "ip6" {
-			value, err := pma.ValueForProtocol(s.Code)
-			if err != nil {
-				return "", errors.New("could not get ip from multiaddr")
-			}
-			ip = s.Name + "/" + value
-			break
-		}
-	}
-	if ip == "" {
-		err = errors.New("no ip found in multiaddr " + pma.String())
-	}
-	return
+	return priv, nil
 }

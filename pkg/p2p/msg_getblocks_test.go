@@ -12,11 +12,6 @@ func TestMsgGetBlocks(t *testing.T) {
 	v := new(p2p.MsgGetBlocks)
 	f.Fuzz(v)
 
-	var locators [][32]byte
-	f.NumElements(64, 64)
-	f.Fuzz(&locators)
-	v.LocatorHashes = locators
-
 	ser, err := v.Marshal()
 	assert.NoError(t, err)
 
@@ -27,6 +22,6 @@ func TestMsgGetBlocks(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgGetBlocksCmd, v.Command())
-	assert.Equal(t, uint64(2084), v.MaxPayloadLength())
+	assert.Equal(t, uint64(32), v.MaxPayloadLength())
 
 }

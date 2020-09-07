@@ -36,8 +36,6 @@ type Config struct {
 
 //RPCServer is an interface for rpcServer
 type RPCServer interface {
-	registerServices()
-	registerServicesProxy(ctx context.Context)
 	Stop()
 	Start() error
 }

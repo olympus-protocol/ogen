@@ -83,11 +83,10 @@ type StateService interface {
 	SetLatestVotesIfNeeded(vals []uint64, vote *primitives.MultiValidatorVote)
 	Chain() *Chain
 	Index() *chainindex.BlockIndex
-	setFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error
+	SetFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error
 	GetFinalizedHead() (*chainindex.BlockRow, state.State)
+	SetJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error
 	GetJustifiedHead() (*chainindex.BlockRow, state.State)
-	setJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error
-	initChainState(db blockdb.DB, genesisState state.State) error
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
 	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error)
 	Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error)
@@ -98,12 +97,6 @@ type StateService interface {
 	TipStateAtSlot(slot uint64) (state.State, error)
 	GetSubView(tip chainhash.Hash) (View, error)
 	Tip() *chainindex.BlockRow
-	initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error
-	loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error
-	loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error
-	setBlockState(hash chainhash.Hash, state state.State)
-	loadStateMap(txn blockdb.DBViewTransaction) error
-	loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error
 }
 
 // stateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
@@ -169,7 +162,7 @@ func (s *stateService) Index() *chainindex.BlockIndex {
 	return s.blockIndex
 }
 
-func (s *stateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error {
+func (s *stateService) SetFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
@@ -198,7 +191,7 @@ func (s *stateService) GetJustifiedHead() (*chainindex.BlockRow, state.State) {
 	return s.justifiedHead.node, s.justifiedHead.state
 }
 
-func (s *stateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error {
+func (s *stateService) SetJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 

@@ -6,10 +6,7 @@ package mempool
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	peer "github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	state "github.com/olympus-protocol/ogen/internal/state"
-	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	params "github.com/olympus-protocol/ogen/pkg/params"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
@@ -52,18 +49,6 @@ func (mr *MockVoteMempoolMockRecorder) AddValidate(vote, state interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddValidate", reflect.TypeOf((*MockVoteMempool)(nil).AddValidate), vote, state)
 }
 
-// sortMempool mocks base method
-func (m *MockVoteMempool) sortMempool() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "sortMempool")
-}
-
-// sortMempool indicates an expected call of sortMempool
-func (mr *MockVoteMempoolMockRecorder) sortMempool() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "sortMempool", reflect.TypeOf((*MockVoteMempool)(nil).sortMempool))
-}
-
 // Add mocks base method
 func (m *MockVoteMempool) Add(vote *primitives.MultiValidatorVote) {
 	m.ctrl.T.Helper()
@@ -91,18 +76,6 @@ func (mr *MockVoteMempoolMockRecorder) Get(slot, s, p, proposerIndex interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVoteMempool)(nil).Get), slot, s, p, proposerIndex)
 }
 
-// removeFromOrder mocks base method
-func (m *MockVoteMempool) removeFromOrder(h chainhash.Hash) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "removeFromOrder", h)
-}
-
-// removeFromOrder indicates an expected call of removeFromOrder
-func (mr *MockVoteMempoolMockRecorder) removeFromOrder(h interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "removeFromOrder", reflect.TypeOf((*MockVoteMempool)(nil).removeFromOrder), h)
-}
-
 // Remove mocks base method
 func (m *MockVoteMempool) Remove(b *primitives.Block) {
 	m.ctrl.T.Helper()
@@ -113,18 +86,6 @@ func (m *MockVoteMempool) Remove(b *primitives.Block) {
 func (mr *MockVoteMempoolMockRecorder) Remove(b interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockVoteMempool)(nil).Remove), b)
-}
-
-// handleSubscription mocks base method
-func (m *MockVoteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "handleSubscription", sub, id)
-}
-
-// handleSubscription indicates an expected call of handleSubscription
-func (mr *MockVoteMempoolMockRecorder) handleSubscription(sub, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleSubscription", reflect.TypeOf((*MockVoteMempool)(nil).handleSubscription), sub, id)
 }
 
 // Notify mocks base method

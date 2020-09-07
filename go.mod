@@ -6,6 +6,7 @@ require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/cjrd/allocate v0.0.0-20191115010018-022b87fe59fc
+	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
 	github.com/ferranbt/fastssz v0.0.0-20200826142241-3a913c5a1313

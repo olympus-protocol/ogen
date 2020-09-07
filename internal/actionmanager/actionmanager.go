@@ -28,10 +28,8 @@ const MaxMessagePropagationTime = 60 * time.Second
 // LastActionManager is an interface for lastActionManager
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
-	handleStartTopic(topic *pubsub.Subscription)
 	StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool
 	ShouldRun(val [48]byte) bool
-	shouldRun(pubSer [48]byte) bool
 	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
 	RegisterAction(by [48]byte, nonce uint64)
 	GetNonce() uint64

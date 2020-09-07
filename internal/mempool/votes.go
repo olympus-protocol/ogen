@@ -23,12 +23,9 @@ import (
 // VoteMempool is the interface of the voteMempool
 type VoteMempool interface {
 	AddValidate(vote *primitives.MultiValidatorVote, state state.State) error
-	sortMempool()
 	Add(vote *primitives.MultiValidatorVote)
 	Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
-	removeFromOrder(h chainhash.Hash)
 	Remove(b *primitives.Block)
-	handleSubscription(sub *pubsub.Subscription, id peer.ID)
 	Notify(notifee VoteSlashingNotifee)
 }
 

@@ -21,3 +21,4 @@ mockgen --source internal/proposer/proposer.go --destination internal/proposer/p
 mockgen --source internal/server/server.go --destination internal/server/server_mock.go --package server
 mockgen --source internal/state/interface.go --destination internal/state/interface_mock.go --package state
 mockgen --source internal/wallet/wallet.go --destination internal/wallet/wallet_mock.go --package wallet
+mockgen --source internal/execution/execution.go --destination internal/execution/execution_mock.go --package execution

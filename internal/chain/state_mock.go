@@ -6,7 +6,6 @@ package chain
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	blockdb "github.com/olympus-protocol/ogen/internal/blockdb"
 	chainindex "github.com/olympus-protocol/ogen/internal/chainindex"
 	state "github.com/olympus-protocol/ogen/internal/state"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -121,18 +120,18 @@ func (mr *MockStateServiceMockRecorder) Index() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Index", reflect.TypeOf((*MockStateService)(nil).Index))
 }
 
-// setFinalizedHead mocks base method
-func (m *MockStateService) setFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error {
+// SetFinalizedHead mocks base method
+func (m *MockStateService) SetFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "setFinalizedHead", finalizedHash, finalizedState)
+	ret := m.ctrl.Call(m, "SetFinalizedHead", finalizedHash, finalizedState)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// setFinalizedHead indicates an expected call of setFinalizedHead
-func (mr *MockStateServiceMockRecorder) setFinalizedHead(finalizedHash, finalizedState interface{}) *gomock.Call {
+// SetFinalizedHead indicates an expected call of SetFinalizedHead
+func (mr *MockStateServiceMockRecorder) SetFinalizedHead(finalizedHash, finalizedState interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "setFinalizedHead", reflect.TypeOf((*MockStateService)(nil).setFinalizedHead), finalizedHash, finalizedState)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalizedHead", reflect.TypeOf((*MockStateService)(nil).SetFinalizedHead), finalizedHash, finalizedState)
 }
 
 // GetFinalizedHead mocks base method
@@ -150,6 +149,20 @@ func (mr *MockStateServiceMockRecorder) GetFinalizedHead() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFinalizedHead", reflect.TypeOf((*MockStateService)(nil).GetFinalizedHead))
 }
 
+// SetJustifiedHead mocks base method
+func (m *MockStateService) SetJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetJustifiedHead", justifiedHash, justifiedState)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetJustifiedHead indicates an expected call of SetJustifiedHead
+func (mr *MockStateServiceMockRecorder) SetJustifiedHead(justifiedHash, justifiedState interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetJustifiedHead", reflect.TypeOf((*MockStateService)(nil).SetJustifiedHead), justifiedHash, justifiedState)
+}
+
 // GetJustifiedHead mocks base method
 func (m *MockStateService) GetJustifiedHead() (*chainindex.BlockRow, state.State) {
 	m.ctrl.T.Helper()
@@ -163,34 +176,6 @@ func (m *MockStateService) GetJustifiedHead() (*chainindex.BlockRow, state.State
 func (mr *MockStateServiceMockRecorder) GetJustifiedHead() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJustifiedHead", reflect.TypeOf((*MockStateService)(nil).GetJustifiedHead))
-}
-
-// setJustifiedHead mocks base method
-func (m *MockStateService) setJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "setJustifiedHead", justifiedHash, justifiedState)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// setJustifiedHead indicates an expected call of setJustifiedHead
-func (mr *MockStateServiceMockRecorder) setJustifiedHead(justifiedHash, justifiedState interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "setJustifiedHead", reflect.TypeOf((*MockStateService)(nil).setJustifiedHead), justifiedHash, justifiedState)
-}
-
-// initChainState mocks base method
-func (m *MockStateService) initChainState(db blockdb.DB, genesisState state.State) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "initChainState", db, genesisState)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// initChainState indicates an expected call of initChainState
-func (mr *MockStateServiceMockRecorder) initChainState(db, genesisState interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "initChainState", reflect.TypeOf((*MockStateService)(nil).initChainState), db, genesisState)
 }
 
 // GetStateForHash mocks base method
@@ -337,86 +322,4 @@ func (m *MockStateService) Tip() *chainindex.BlockRow {
 func (mr *MockStateServiceMockRecorder) Tip() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tip", reflect.TypeOf((*MockStateService)(nil).Tip))
-}
-
-// initializeDatabase mocks base method
-func (m *MockStateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "initializeDatabase", txn, blockNode, state)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// initializeDatabase indicates an expected call of initializeDatabase
-func (mr *MockStateServiceMockRecorder) initializeDatabase(txn, blockNode, state interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "initializeDatabase", reflect.TypeOf((*MockStateService)(nil).initializeDatabase), txn, blockNode, state)
-}
-
-// loadBlockIndex mocks base method
-func (m *MockStateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "loadBlockIndex", txn, genesisHash)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// loadBlockIndex indicates an expected call of loadBlockIndex
-func (mr *MockStateServiceMockRecorder) loadBlockIndex(txn, genesisHash interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "loadBlockIndex", reflect.TypeOf((*MockStateService)(nil).loadBlockIndex), txn, genesisHash)
-}
-
-// loadJustifiedAndFinalizedStates mocks base method
-func (m *MockStateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "loadJustifiedAndFinalizedStates", txn)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// loadJustifiedAndFinalizedStates indicates an expected call of loadJustifiedAndFinalizedStates
-func (mr *MockStateServiceMockRecorder) loadJustifiedAndFinalizedStates(txn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "loadJustifiedAndFinalizedStates", reflect.TypeOf((*MockStateService)(nil).loadJustifiedAndFinalizedStates), txn)
-}
-
-// setBlockState mocks base method
-func (m *MockStateService) setBlockState(hash chainhash.Hash, state state.State) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "setBlockState", hash, state)
-}
-
-// setBlockState indicates an expected call of setBlockState
-func (mr *MockStateServiceMockRecorder) setBlockState(hash, state interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "setBlockState", reflect.TypeOf((*MockStateService)(nil).setBlockState), hash, state)
-}
-
-// loadStateMap mocks base method
-func (m *MockStateService) loadStateMap(txn blockdb.DBViewTransaction) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "loadStateMap", txn)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// loadStateMap indicates an expected call of loadStateMap
-func (mr *MockStateServiceMockRecorder) loadStateMap(txn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "loadStateMap", reflect.TypeOf((*MockStateService)(nil).loadStateMap), txn)
-}
-
-// loadBlockchainFromDisk mocks base method
-func (m *MockStateService) loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "loadBlockchainFromDisk", txn, genesisHash)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// loadBlockchainFromDisk indicates an expected call of loadBlockchainFromDisk
-func (mr *MockStateServiceMockRecorder) loadBlockchainFromDisk(txn, genesisHash interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "loadBlockchainFromDisk", reflect.TypeOf((*MockStateService)(nil).loadBlockchainFromDisk), txn, genesisHash)
 }

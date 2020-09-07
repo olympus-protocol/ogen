@@ -8,7 +8,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
 	reflect "reflect"
 )
 
@@ -35,85 +34,39 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 	return m.recorder
 }
 
-// Initialize mocks base method
-func (m *MockDatabase) Initialize() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Initialize")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Initialize indicates an expected call of Initialize
-func (mr *MockDatabaseMockRecorder) Initialize() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockDatabase)(nil).Initialize))
-}
-
 // SavePeer mocks base method
-func (m *MockDatabase) SavePeer(pma multiaddr.Multiaddr) error {
+func (m *MockDatabase) SavePeer(pinfo *peer.AddrInfo) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SavePeer", pma)
+	ret := m.ctrl.Call(m, "SavePeer", pinfo)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SavePeer indicates an expected call of SavePeer
-func (mr *MockDatabaseMockRecorder) SavePeer(pma interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) SavePeer(pinfo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePeer", reflect.TypeOf((*MockDatabase)(nil).SavePeer), pma)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePeer", reflect.TypeOf((*MockDatabase)(nil).SavePeer), pinfo)
 }
 
 // BanscorePeer mocks base method
-func (m *MockDatabase) BanscorePeer(id peer.ID, weight int) (bool, error) {
+func (m *MockDatabase) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BanscorePeer", id, weight)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "BanscorePeer", pinfo, weight)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // BanscorePeer indicates an expected call of BanscorePeer
-func (mr *MockDatabaseMockRecorder) BanscorePeer(id, weight interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) BanscorePeer(pinfo, weight interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BanscorePeer", reflect.TypeOf((*MockDatabase)(nil).BanscorePeer), id, weight)
-}
-
-// IsPeerBanned mocks base method
-func (m *MockDatabase) IsPeerBanned(id peer.ID) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPeerBanned", id)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsPeerBanned indicates an expected call of IsPeerBanned
-func (mr *MockDatabaseMockRecorder) IsPeerBanned(id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerBanned", reflect.TypeOf((*MockDatabase)(nil).IsPeerBanned), id)
-}
-
-// IsIPBanned mocks base method
-func (m *MockDatabase) IsIPBanned(ip string) (bool, bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPBanned", ip)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// IsIPBanned indicates an expected call of IsIPBanned
-func (mr *MockDatabaseMockRecorder) IsIPBanned(ip interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPBanned", reflect.TypeOf((*MockDatabase)(nil).IsIPBanned), ip)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BanscorePeer", reflect.TypeOf((*MockDatabase)(nil).BanscorePeer), pinfo, weight)
 }
 
 // GetSavedPeers mocks base method
-func (m *MockDatabase) GetSavedPeers() ([]multiaddr.Multiaddr, error) {
+func (m *MockDatabase) GetSavedPeers() ([]*peer.AddrInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSavedPeers")
-	ret0, _ := ret[0].([]multiaddr.Multiaddr)
+	ret0, _ := ret[0].([]*peer.AddrInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

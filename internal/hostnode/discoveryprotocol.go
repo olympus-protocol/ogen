@@ -69,7 +69,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 const connectionTimeout = 10 * time.Second
 const connectionCooldown = 60 * time.Second
 
-func shufflePeers(peers []peer.AddrInfo) []peer.AddrInfo {
+func shufflePeers(peers []*peer.AddrInfo) []*peer.AddrInfo {
 	rand.Shuffle(len(peers), func(i, j int) {
 		peers[i], peers[j] = peers[j], peers[i]
 	})
@@ -84,8 +84,6 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	}
 
 	peers := msgAddr.Addr
-	// let's set a very short timeout so we can connect faster
-	timeout := time.Second * 5
 
 	for _, pb := range peers {
 		pma, err := multiaddr.NewMultiaddrBytes(pb[:])
@@ -99,19 +97,10 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		if p.ID == cm.host.GetHost().ID() {
 			continue
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		if err := cm.host.GetHost().Connect(ctx, *p); err != nil {
-			cm.log.Tracef("error connecting to suggested peer %s: %s", p, err)
-			cancel()
-			continue
-		}
-		//save connected peer
-		if err := cm.host.SavePeer(pma); err != nil {
+		if err := cm.host.SavePeer(p); err != nil {
 			cm.log.Errorf("error saving peer: %s", err)
-			cancel()
 			continue
 		}
-		cancel()
 	}
 
 	return nil
@@ -123,11 +112,17 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 		return fmt.Errorf("message received is not get addr")
 	}
 	var peers [][64]byte
-	peersData := shufflePeers(cm.host.GetPeerInfos())
+
+	peersInfo, err := cm.host.Database().GetSavedPeers()
+	if err != nil {
+		return err
+	}
+
+	peersData := shufflePeers(peersInfo)
 
 	for i, p := range peersData {
 		if i < p2p.MaxAddrPerMsg {
-			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
+			peerMulti, err := peer.AddrInfoToP2pAddrs(p)
 			if err != nil {
 				continue
 			}
