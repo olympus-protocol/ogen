@@ -12,11 +12,11 @@ import (
 func (s *stateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error {
 	s.blockChain.SetTip(blockNode)
 
-	err := s.setFinalizedHead(blockNode.Hash, state)
+	err := s.SetFinalizedHead(blockNode.Hash, state)
 	if err != nil {
 		return err
 	}
-	err = s.setJustifiedHead(blockNode.Hash, state)
+	err = s.SetJustifiedHead(blockNode.Hash, state)
 	if err != nil {
 		return err
 	}
@@ -99,10 +99,10 @@ func (s *stateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransac
 
 	s.log.Infof("loaded justified head: %s and finalized head %s", justifiedHead, finalizedHead)
 
-	if err := s.setFinalizedHead(finalizedHead, finalizedState); err != nil {
+	if err := s.SetFinalizedHead(finalizedHead, finalizedState); err != nil {
 		return err
 	}
-	if err := s.setJustifiedHead(justifiedHead, justifiedState); err != nil {
+	if err := s.SetJustifiedHead(justifiedHead, justifiedState); err != nil {
 		return err
 	}
 
@@ -176,7 +176,7 @@ func (s *stateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 		return err
 	}
 
-	err = s.setJustifiedHead(justifiedHead, justifiedHeadState)
+	err = s.SetJustifiedHead(justifiedHead, justifiedHeadState)
 	if err != nil {
 		return err
 	}

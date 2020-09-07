@@ -78,20 +78,6 @@ func (mr *MockStateMockRecorder) GetEffectiveBalance(index, p interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEffectiveBalance", reflect.TypeOf((*MockState)(nil).GetEffectiveBalance), index, p)
 }
 
-// getActiveBalance mocks base method
-func (m *MockState) getActiveBalance(arg0 *params.ChainParams) uint64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "getActiveBalance", arg0)
-	ret0, _ := ret[0].(uint64)
-	return ret0
-}
-
-// getActiveBalance indicates an expected call of getActiveBalance
-func (mr *MockStateMockRecorder) getActiveBalance(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "getActiveBalance", reflect.TypeOf((*MockState)(nil).getActiveBalance), arg0)
-}
-
 // ActivateValidator mocks base method
 func (m *MockState) ActivateValidator(index uint64) error {
 	m.ctrl.T.Helper()
@@ -146,20 +132,6 @@ func (m *MockState) UpdateValidatorStatus(index, status uint64, p *params.ChainP
 func (mr *MockStateMockRecorder) UpdateValidatorStatus(index, status, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidatorStatus", reflect.TypeOf((*MockState)(nil).UpdateValidatorStatus), index, status, p)
-}
-
-// updateValidatorRegistry mocks base method
-func (m *MockState) updateValidatorRegistry(p *params.ChainParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "updateValidatorRegistry", p)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// updateValidatorRegistry indicates an expected call of updateValidatorRegistry
-func (mr *MockStateMockRecorder) updateValidatorRegistry(p interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "updateValidatorRegistry", reflect.TypeOf((*MockState)(nil).updateValidatorRegistry), p)
 }
 
 // GetRecentBlockHash mocks base method

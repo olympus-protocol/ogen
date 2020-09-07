@@ -163,13 +163,20 @@ func (p *proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
+
+			// Check if the node has keys to participate
+			if !p.keystore.HasKeysToParticipate() {
+				blockTimer = time.NewTimer(time.Second * 10)
+				continue
+			}
+
+			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				p.log.Infof("blockchain not synced... trying to propose in 10 seconds")
 				blockTimer = time.NewTimer(time.Second * 10)
 				continue
 			}
 
-			// check if we're an attester for this slot
 			tip := p.chain.State().Tip()
 			tipHash := tip.Hash
 
@@ -314,7 +321,14 @@ func (p *proposer) VoteForBlocks() {
 	for {
 		select {
 		case <-voteTimer.C:
-			// check if we're an attester for this slot
+
+			// Check if the node has keys to participate
+			if !p.keystore.HasKeysToParticipate() {
+				voteTimer = time.NewTimer(time.Second * 10)
+				continue
+			}
+
+			// Check if we're an attester for this slot
 			p.log.Infof("sending votes for slot %d", slotToVote)
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 10)

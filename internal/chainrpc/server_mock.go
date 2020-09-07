@@ -5,7 +5,6 @@
 package chainrpc
 
 import (
-	context "context"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -31,30 +30,6 @@ func NewMockRPCServer(ctrl *gomock.Controller) *MockRPCServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockRPCServer) EXPECT() *MockRPCServerMockRecorder {
 	return m.recorder
-}
-
-// registerServices mocks base method
-func (m *MockRPCServer) registerServices() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "registerServices")
-}
-
-// registerServices indicates an expected call of registerServices
-func (mr *MockRPCServerMockRecorder) registerServices() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "registerServices", reflect.TypeOf((*MockRPCServer)(nil).registerServices))
-}
-
-// registerServicesProxy mocks base method
-func (m *MockRPCServer) registerServicesProxy(ctx context.Context) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "registerServicesProxy", ctx)
-}
-
-// registerServicesProxy indicates an expected call of registerServicesProxy
-func (mr *MockRPCServerMockRecorder) registerServicesProxy(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "registerServicesProxy", reflect.TypeOf((*MockRPCServer)(nil).registerServicesProxy), ctx)
 }
 
 // Stop mocks base method

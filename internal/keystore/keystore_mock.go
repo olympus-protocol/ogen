@@ -7,8 +7,6 @@ package keystore
 import (
 	gomock "github.com/golang/mock/gomock"
 	bls "github.com/olympus-protocol/ogen/pkg/bls"
-	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
-	bbolt "go.etcd.io/bbolt"
 	reflect "reflect"
 )
 
@@ -61,34 +59,6 @@ func (m *MockKeystore) OpenKeystore() error {
 func (mr *MockKeystoreMockRecorder) OpenKeystore() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenKeystore", reflect.TypeOf((*MockKeystore)(nil).OpenKeystore))
-}
-
-// load mocks base method
-func (m *MockKeystore) load(db *bbolt.DB) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "load", db)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// load indicates an expected call of load
-func (mr *MockKeystoreMockRecorder) load(db interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "load", reflect.TypeOf((*MockKeystore)(nil).load), db)
-}
-
-// initialize mocks base method
-func (m *MockKeystore) initialize(db *bbolt.DB) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "initialize", db)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// initialize indicates an expected call of initialize
-func (mr *MockKeystoreMockRecorder) initialize(db interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "initialize", reflect.TypeOf((*MockKeystore)(nil).initialize), db)
 }
 
 // Close mocks base method
@@ -150,44 +120,16 @@ func (mr *MockKeystoreMockRecorder) GenerateNewValidatorKey(amount interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateNewValidatorKey", reflect.TypeOf((*MockKeystore)(nil).GenerateNewValidatorKey), amount)
 }
 
-// addKey mocks base method
-func (m *MockKeystore) addKey(priv *bls.SecretKey) error {
+// HasKeysToParticipate mocks base method
+func (m *MockKeystore) HasKeysToParticipate() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "addKey", priv)
-	ret0, _ := ret[0].(error)
+	ret := m.ctrl.Call(m, "HasKeysToParticipate")
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// addKey indicates an expected call of addKey
-func (mr *MockKeystoreMockRecorder) addKey(priv interface{}) *gomock.Call {
+// HasKeysToParticipate indicates an expected call of HasKeysToParticipate
+func (mr *MockKeystoreMockRecorder) HasKeysToParticipate() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "addKey", reflect.TypeOf((*MockKeystore)(nil).addKey), priv)
-}
-
-// addKeyMap mocks base method
-func (m *MockKeystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "addKeyMap", hash, key)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// addKeyMap indicates an expected call of addKeyMap
-func (mr *MockKeystoreMockRecorder) addKeyMap(hash, key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "addKeyMap", reflect.TypeOf((*MockKeystore)(nil).addKeyMap), hash, key)
-}
-
-// addKeyDB mocks base method
-func (m *MockKeystore) addKeyDB(encryptedKey, pubkey []byte) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "addKeyDB", encryptedKey, pubkey)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// addKeyDB indicates an expected call of addKeyDB
-func (mr *MockKeystoreMockRecorder) addKeyDB(encryptedKey, pubkey interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "addKeyDB", reflect.TypeOf((*MockKeystore)(nil).addKeyDB), encryptedKey, pubkey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasKeysToParticipate", reflect.TypeOf((*MockKeystore)(nil).HasKeysToParticipate))
 }

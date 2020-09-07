@@ -6,7 +6,6 @@ package actionmanager
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chainindex "github.com/olympus-protocol/ogen/internal/chainindex"
 	state "github.com/olympus-protocol/ogen/internal/state"
 	bls "github.com/olympus-protocol/ogen/pkg/bls"
@@ -50,18 +49,6 @@ func (mr *MockLastActionManagerMockRecorder) NewTip(row, block, state, receipts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTip", reflect.TypeOf((*MockLastActionManager)(nil).NewTip), row, block, state, receipts)
 }
 
-// handleStartTopic mocks base method
-func (m *MockLastActionManager) handleStartTopic(topic *pubsub.Subscription) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "handleStartTopic", topic)
-}
-
-// handleStartTopic indicates an expected call of handleStartTopic
-func (mr *MockLastActionManagerMockRecorder) handleStartTopic(topic interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "handleStartTopic", reflect.TypeOf((*MockLastActionManager)(nil).handleStartTopic), topic)
-}
-
 // StartValidator mocks base method
 func (m *MockLastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
 	m.ctrl.T.Helper()
@@ -88,20 +75,6 @@ func (m *MockLastActionManager) ShouldRun(val [48]byte) bool {
 func (mr *MockLastActionManagerMockRecorder) ShouldRun(val interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldRun", reflect.TypeOf((*MockLastActionManager)(nil).ShouldRun), val)
-}
-
-// shouldRun mocks base method
-func (m *MockLastActionManager) shouldRun(pubSer [48]byte) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "shouldRun", pubSer)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// shouldRun indicates an expected call of shouldRun
-func (mr *MockLastActionManagerMockRecorder) shouldRun(pubSer interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "shouldRun", reflect.TypeOf((*MockLastActionManager)(nil).shouldRun), pubSer)
 }
 
 // RegisterActionAt mocks base method

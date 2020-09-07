@@ -34,15 +34,11 @@ var (
 type Keystore interface {
 	CreateKeystore() error
 	OpenKeystore() error
-	load(db *bbolt.DB) error
-	initialize(db *bbolt.DB) error
 	Close() error
 	GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool)
 	GetValidatorKeys() ([]*bls.SecretKey, error)
 	GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error)
-	addKey(priv *bls.SecretKey) error
-	addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error
-	addKeyDB(encryptedKey []byte, pubkey []byte) error
+	HasKeysToParticipate() bool
 }
 
 // keystore is a wrapper for the keystore database
@@ -62,6 +58,14 @@ type keystore struct {
 }
 
 var _ Keystore = &keystore{}
+
+func (k *keystore) HasKeysToParticipate() bool {
+	keys, err := k.GetValidatorKeys()
+	if err != nil {
+		return false
+	}
+	return len(keys) > 0
+}
 
 // CreateKeystore will create a new keystore and initialize it.
 func (k *keystore) CreateKeystore() error {
