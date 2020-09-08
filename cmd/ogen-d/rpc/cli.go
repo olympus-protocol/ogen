@@ -2,8 +2,10 @@ package rpc
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/spf13/viper"
 	"io"
 	"os"
@@ -20,16 +22,22 @@ type CLI struct {
 
 // Run runs the CLI.
 func (c *CLI) Run(optArgs []string) {
+
 	fmt.Println(c.rpcClient.address)
+
 	//Here Runs the RPC
 	//check db for tip?
-	//originB := primitives.GetGenesisBlock()
-	ogHash := "e98d7b6dfea75792132912ce83839bfc385440c49d55f4711c9a55662f774104"
-	syncClient, err := c.rpcClient.sync(ogHash)
+
+	genesis := primitives.GetGenesisBlock()
+	genesisHash := genesis.Hash()
+	hash := hex.EncodeToString(genesisHash[:])
+
+	syncClient, err := c.rpcClient.sync(hash)
 	if err != nil {
 		fmt.Println("unable to initialize sync client")
 		os.Exit(0)
 	}
+
 	blockCount := 0
 	for {
 		res, err := syncClient.Recv()
@@ -39,9 +47,9 @@ func (c *CLI) Run(optArgs []string) {
 			break
 		}
 		fmt.Println(res.Data)
-
 		blockCount++
 	}
+
 	fmt.Printf("updated %v blocks", blockCount)
 }
 
