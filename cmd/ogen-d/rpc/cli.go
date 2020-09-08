@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -29,10 +28,7 @@ func (c *CLI) Run(optArgs []string) {
 	//check db for tip?
 
 	genesis := primitives.GetGenesisBlock()
-	genesisHash := genesis.Hash()
-	hash := hex.EncodeToString(genesisHash[:])
-
-	syncClient, err := c.rpcClient.sync(hash)
+	syncClient, err := c.rpcClient.sync(genesis.Hash().String())
 	if err != nil {
 		fmt.Println("unable to initialize sync client")
 		os.Exit(0)

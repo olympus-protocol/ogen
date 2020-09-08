@@ -105,15 +105,13 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 		return nil
 	}
 
-	hash, err := hex.DecodeString(in.Hash)
+	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
 
-	var hashB [32]byte
-	copy(hashB[:], hash)
+	currBlockRow, ok := s.chain.State().GetRowByHash(*hash)
 
-	currBlockRow, ok := s.chain.State().GetRowByHash(hashB)
 	if !ok {
 		return errors.New("block starting point doesnt exist")
 	}
