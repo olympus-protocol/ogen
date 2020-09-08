@@ -111,9 +111,17 @@ func Decode(dst *Hash, src string) error {
 		copy(srcBytes[1:], src)
 	}
 
-	_, err := hex.Decode(dst[HashSize-hex.DecodedLen(len(srcBytes)):], srcBytes)
+	// Hex decode the source bytes to a temporary destination.
+	var reversedHash Hash
+	_, err := hex.Decode(reversedHash[HashSize-hex.DecodedLen(len(srcBytes)):], srcBytes)
 	if err != nil {
 		return err
+	}
+
+	// Reverse copy from the temporary hash to destination.  Because the
+	// temporary was zeroed, the written result will be correctly padded.
+	for i, b := range reversedHash[:HashSize/2] {
+		dst[i], dst[HashSize-1-i] = reversedHash[HashSize-1-i], b
 	}
 
 	return nil

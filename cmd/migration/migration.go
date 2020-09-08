@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/spf13/cobra"
 	"os"
 	"time"
@@ -10,26 +11,14 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 )
 
-const MerkleRoot = "f9afaa28423bf0acf296c3ff688a4bbb18e7d0528fd6f2b688028be5614bc386"
+var MerkleRootHash, _ = chainhash.NewHashFromStr("f9afaa28423bf0acf296c3ff688a4bbb18e7d0528fd6f2b688028be5614bc386")
 
 var addr string
 var proof string
-var merkleHash [32]byte
 
 func init() {
 	migrationCmd.Flags().StringVar(&addr, "addr", "", "Address used to generate proof to verify against")
 	migrationCmd.Flags().StringVar(&proof, "proof", "", "Hex encoded string to verify the coin ownership")
-
-	merkleRootBytes, err := hex.DecodeString(MerkleRoot)
-	if err != nil {
-		fmt.Println("Unable to decode merkle root bytes")
-		os.Exit(0)
-	}
-
-	for i, b := range merkleRootBytes[:32/2] {
-		merkleHash[i], merkleHash[32-1-i] = merkleRootBytes[32-1-i], b
-	}
-
 }
 
 var migrationCmd = &cobra.Command{
@@ -54,7 +43,7 @@ var migrationCmd = &cobra.Command{
 		}
 
 		t := time.Now()
-		if err := burnproof.VerifyBurn(proofBytes, merkleHash, addr); err != nil {
+		if err := burnproof.VerifyBurn(proofBytes, *MerkleRootHash, addr); err != nil {
 			fmt.Println("Burn verification failed")
 			os.Exit(0)
 		}
