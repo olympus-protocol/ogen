@@ -1,4 +1,4 @@
-package rpcclient
+package rpc
 
 import (
 	"crypto/tls"
@@ -30,7 +30,7 @@ func NewRPCClient(addr string, datadir string) *RPCClient {
 		return nil
 	}
 	creds := credentials.NewTLS(&tls.Config{
-		InsecureSkipVerify: false,
+		InsecureSkipVerify: true,
 		RootCAs:            certPool,
 	})
 	if addr == "" {

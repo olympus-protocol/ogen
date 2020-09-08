@@ -1,8 +1,11 @@
-package rpcclient
+package rpc
 
 import (
+	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/spf13/viper"
+	"io"
 	"os"
 	"path"
 )
@@ -19,22 +22,36 @@ type CLI struct {
 func (c *CLI) Run(optArgs []string) {
 	fmt.Println(c.rpcClient.address)
 	//Here Runs the RPC
-	/* add functions in go files for the rpcClient:
-	func (c *RPCClient) getNetworkInfo() (string, error) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		res, err := c.network.GetNetworkInfo(ctx, &proto.Empty{})
-		if err != nil {
-			return "", err
-		}
-		b, err := json.MarshalIndent(res, "", "  ")
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
+	//check db for tip?
+	//originB := primitives.GetGenesisBlock()
+	ogHash := "e98d7b6dfea75792132912ce83839bfc385440c49d55f4711c9a55662f774104"
+	syncClient, err := c.rpcClient.sync(ogHash)
+	if err != nil {
+		fmt.Println("unable to initialize sync client")
+		os.Exit(0)
 	}
-	after that , in this function we can call them like this: c.rpcClient.getnetworkInfo
-	*/
+	blockCount := 0
+	for {
+		res, err := syncClient.Recv()
+		if err == io.EOF || err != nil {
+			fmt.Println(err)
+			_ = syncClient.CloseSend()
+			break
+		}
+		fmt.Println(res.Data)
+
+		blockCount++
+	}
+	fmt.Printf("updated %v blocks", blockCount)
+}
+
+func (c *RPCClient) sync(hash string) (proto.Chain_SyncClient, error) {
+
+	syncClient, err := c.chain.Sync(context.Background(), &proto.Hash{Hash: hash})
+	if err != nil {
+		return nil, err
+	}
+	return syncClient, err
 }
 
 func newCli(rpcClient *RPCClient) *CLI {
