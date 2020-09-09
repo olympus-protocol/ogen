@@ -5,8 +5,8 @@
 package chainhash
 
 import (
+	"bytes"
 	"encoding/hex"
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -24,7 +24,9 @@ func TestHash(t *testing.T) {
 	// Hash of block 234439.
 	blockHashStr := "14a0810ac680a3eb3f82edc878cea25ec41d6b790744e5daeef"
 	blockHash, err := NewHashFromStr(blockHashStr)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("NewHashFromStr: %v", err)
+	}
 
 	// Hash of block 234440 as byte slice.
 	buf := []byte{
@@ -35,36 +37,55 @@ func TestHash(t *testing.T) {
 	}
 
 	hash, err := NewHash(buf)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("NewHash: unexpected error %v", err)
+	}
 
 	// Ensure proper size.
-	assert.Equal(t, HashSize, len(hash))
+	if len(hash) != HashSize {
+		t.Errorf("NewHash: hash length mismatch - got: %v, want: %v",
+			len(hash), HashSize)
+	}
 
 	// Ensure contents match.
-	assert.Equal(t, buf[:], hash[:])
+	if !bytes.Equal(hash[:], buf) {
+		t.Errorf("NewHash: hash contents mismatch - got: %v, want: %v",
+			hash[:], buf)
+	}
 
 	// Ensure contents of hash of block 234440 don't match 234439.
-	assert.False(t, hash.IsEqual(blockHash))
+	if hash.IsEqual(blockHash) {
+		t.Errorf("IsEqual: hash contents should not match - got: %v, want: %v",
+			hash, blockHash)
+	}
 
 	// Set hash from byte slice and ensure contents match.
 	err = hash.SetBytes(blockHash.CloneBytes())
-	assert.NoError(t, err)
-	assert.True(t, hash.IsEqual(blockHash))
+	if err != nil {
+		t.Errorf("SetBytes: %v", err)
+	}
+	if !hash.IsEqual(blockHash) {
+		t.Errorf("IsEqual: hash contents mismatch - got: %v, want: %v",
+			hash, blockHash)
+	}
 
 	// Ensure nil hashes are handled properly.
-	assert.True(t, (*Hash)(nil).IsEqual(nil))
-
-	assert.False(t, hash.IsEqual(nil))
+	if !(*Hash)(nil).IsEqual(nil) {
+		t.Error("IsEqual: nil hashes should match")
+	}
+	if hash.IsEqual(nil) {
+		t.Error("IsEqual: non-nil hash matches nil hash")
+	}
 
 	// Invalid size for SetBytes.
 	err = hash.SetBytes([]byte{0x00})
-	assert.NotNil(t, err)
+	if err == nil {
+		t.Errorf("SetBytes: failed to received expected err - got: nil")
+	}
 
 	// Invalid size for NewHash.
 	invalidHash := make([]byte, HashSize+1)
 	_, err = NewHash(invalidHash)
-	assert.NotNil(t, err)
-
 	if err == nil {
 		t.Errorf("NewHash: failed to received expected err - got: nil")
 	}
@@ -82,7 +103,10 @@ func TestHashString(t *testing.T) {
 	})
 
 	hashStr := hash.String()
-	assert.Equal(t, wantStr, hashStr)
+	if hashStr != wantStr {
+		t.Errorf("String: wrong hash string - got %v, want %v",
+			hashStr, wantStr)
+	}
 }
 
 // TestNewHashFromStr executes tests against the NewHashFromStr function.
@@ -152,15 +176,20 @@ func TestNewHashFromStr(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	unexpectedErrStr := "NewHashFromStr #%d failed to detect expected error - got: %v want: %v"
+	unexpectedResultStr := "NewHashFromStr #%d got: %v want: %v"
+	t.Logf("Running %d tests", len(tests))
+	for i, test := range tests {
 		result, err := NewHashFromStr(test.in)
-		if assert.Equal(t, test.err, err) {
+		if err != test.err {
+			t.Errorf(unexpectedErrStr, i, err, test.err)
+			continue
+		} else if err != nil {
+			// Got expected error. Move on to the next test.
 			continue
 		}
-		if assert.NoError(t, err) {
-			continue
-		}
-		if assert.False(t, test.want.IsEqual(result)) {
+		if !test.want.IsEqual(result) {
+			t.Errorf(unexpectedResultStr, i, result, &test.want)
 			continue
 		}
 	}

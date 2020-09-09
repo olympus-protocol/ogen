@@ -6,7 +6,6 @@ package chainhash
 
 import (
 	"fmt"
-	"github.com/magiconair/properties/assert"
 	"testing"
 )
 
@@ -54,7 +53,10 @@ func TestHashFuncs(t *testing.T) {
 	// expected result.
 	for _, test := range tests {
 		h := fmt.Sprintf("%x", HashB([]byte(test.in)))
-		assert.Equal(t, test.out, h)
+		if h != test.out {
+			t.Errorf("HashB(%q) = %s, want %s", test.in, h, test.out)
+			continue
+		}
 	}
 
 	// Ensure the hash function which returns a Hash returns the expected
@@ -62,7 +64,10 @@ func TestHashFuncs(t *testing.T) {
 	for _, test := range tests {
 		hash := HashH([]byte(test.in))
 		h := fmt.Sprintf("%x", hash[:])
-		assert.Equal(t, test.out, h)
+		if h != test.out {
+			t.Errorf("HashH(%q) = %s, want %s", test.in, h, test.out)
+			continue
+		}
 	}
 }
 
@@ -110,7 +115,11 @@ func TestDoubleHashFuncs(t *testing.T) {
 	// expected result.
 	for _, test := range tests {
 		h := fmt.Sprintf("%x", DoubleHashB([]byte(test.in)))
-		assert.Equal(t, test.out, h)
+		if h != test.out {
+			t.Errorf("DoubleHashB(%q) = %s, want %s", test.in, h,
+				test.out)
+			continue
+		}
 	}
 
 	// Ensure the hash function which returns a Hash returns the expected
@@ -118,6 +127,10 @@ func TestDoubleHashFuncs(t *testing.T) {
 	for _, test := range tests {
 		hash := DoubleHashH([]byte(test.in))
 		h := fmt.Sprintf("%x", hash[:])
-		assert.Equal(t, test.out, h)
+		if h != test.out {
+			t.Errorf("DoubleHashH(%q) = %s, want %s", test.in, h,
+				test.out)
+			continue
+		}
 	}
 }
