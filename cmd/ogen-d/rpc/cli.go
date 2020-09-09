@@ -28,7 +28,9 @@ func (c *CLI) Run(optArgs []string) {
 	//check db for tip?
 
 	genesis := primitives.GetGenesisBlock()
-	syncClient, err := c.rpcClient.sync(genesis.Hash().String())
+	genesisHash := genesis.Hash()
+
+	syncClient, err := c.rpcClient.sync(genesisHash.String())
 	if err != nil {
 		fmt.Println("unable to initialize sync client")
 		os.Exit(0)
