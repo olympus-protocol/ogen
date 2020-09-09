@@ -54,6 +54,9 @@ type proposer struct {
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
 
+	voting    bool
+	proposing bool
+
 	lastActionManager actionmanager.LastActionManager
 }
 

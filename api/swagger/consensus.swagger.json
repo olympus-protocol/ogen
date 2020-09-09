@@ -1,0 +1,218 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "consensus.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/consensus/getepochinfo/{number}": {
+      "get": {
+        "operationId": "Consensus_GetEpochInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EpochInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Consensus"
+        ]
+      }
+    },
+    "/consensus/getslotinfo/{number}": {
+      "get": {
+        "operationId": "Consensus_GetSlotInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SlotInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Consensus"
+        ]
+      }
+    },
+    "/consensus/participation": {
+      "get": {
+        "operationId": "Consensus_GetParticipationStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ParticipationStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Consensus"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ComitteeInformation": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "proposer": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "voted": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "EpochInfo": {
+      "type": "object",
+      "properties": {
+        "epoch_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "passed": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SlotInfo"
+          }
+        }
+      }
+    },
+    "ParticipationStatus": {
+      "type": "object",
+      "properties": {
+        "global_slot_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "epoch_slot_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "expected_participation_balance": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "current_participation_balance": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "participation_percentage": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    },
+    "SlotInfo": {
+      "type": "object",
+      "properties": {
+        "slot_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "passed": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "required_comitters": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "comittees_indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComitteeInformation"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}
