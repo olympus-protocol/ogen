@@ -43,7 +43,7 @@ var migrationCmd = &cobra.Command{
 		}
 
 		t := time.Now()
-		if err := burnproof.VerifyBurn(proofBytes, *MerkleRootHash, addr); err != nil {
+		if err := burnproof.VerifyBurn(proofBytes, MerkleRootHash, addr); err != nil {
 			fmt.Println("Burn verification failed")
 			os.Exit(0)
 		}

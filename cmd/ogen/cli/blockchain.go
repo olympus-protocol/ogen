@@ -59,7 +59,7 @@ func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile,
 
 		chainFileBytesHash := chainhash.HashH(chainFileBytes)
 		if !chainFileBytesHash.IsEqual(&currParams.ChainFileHash) {
-			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash, chainFileBytesHash)
+			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash.String(), chainFileBytesHash)
 		}
 
 		err = ioutil.WriteFile(path, chainFileBytes, 0644)
