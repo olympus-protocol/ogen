@@ -12,7 +12,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 )
 
-
 func (c *RPCClient) submitRawData(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

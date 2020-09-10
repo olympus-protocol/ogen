@@ -230,4 +230,3 @@ func TestProposerWithKeys(t *testing.T) {
 	err = prop.Start()
 	assert.NoError(t, err)
 }
-
