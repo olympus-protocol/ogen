@@ -12,33 +12,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 )
 
-func (c *RPCClient) stopProposer(args []string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	res, err := c.utils.StopProposer(ctx, &proto.Empty{})
-	if err != nil {
-		return "", err
-	}
-	b, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-func (c *RPCClient) startProposer([]string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	res, err := c.utils.StartProposer(ctx, &proto.Empty{})
-	if err != nil {
-		return "", err
-	}
-	b, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
 
 func (c *RPCClient) submitRawData(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
