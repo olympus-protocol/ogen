@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-const NumNodes = 5
+const NumNodes = 6
 const NumValidators = 10
 
 var folders = make([]string, NumNodes)
@@ -269,7 +269,7 @@ func (n *notify) NewTip(r *chainindex.BlockRow, _ *primitives.Block, s state.Sta
 	fmt.Printf("Node %d: received block %d at slot %d Justified: %d Finalized: %d \n", n.num, r.Height, r.Slot, n.lastJustified, n.lastFinalized)
 }
 
-func (n *notify) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
+func (n *notify) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {
 	n.slashed = true
 }
 
