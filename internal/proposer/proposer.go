@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -54,8 +55,10 @@ type proposer struct {
 	blockTopic     *pubsub.Topic
 	voteTopic      *pubsub.Topic
 
-	voting    bool
-	proposing bool
+	voting      bool
+	voteLock    sync.Mutex
+	proposing   bool
+	proposeLock sync.Mutex
 
 	lastActionManager actionmanager.LastActionManager
 }
@@ -159,6 +162,11 @@ func (p *proposer) publishBlock(block *primitives.Block) {
 func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *proposer) ProposeBlocks() {
+	defer func() {
+		p.voteLock.Unlock()
+		p.voting = false
+	}()
+
 	slotToPropose := p.getCurrentSlot() + 1
 
 	blockTimer := time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -166,12 +174,6 @@ func (p *proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-
-			// Check if the node has keys to participate
-			if !p.keystore.HasKeysToParticipate() {
-				blockTimer = time.NewTimer(time.Second * 10)
-				continue
-			}
 
 			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
@@ -314,6 +316,11 @@ func (p *proposer) ProposeBlocks() {
 }
 
 func (p *proposer) VoteForBlocks() {
+	defer func() {
+		p.proposeLock.Unlock()
+		p.proposing = false
+	}()
+
 	slotToVote := p.getCurrentSlot() + 1
 	if slotToVote <= 0 {
 		slotToVote = 1
@@ -324,12 +331,6 @@ func (p *proposer) VoteForBlocks() {
 	for {
 		select {
 		case <-voteTimer.C:
-
-			// Check if the node has keys to participate
-			if !p.keystore.HasKeysToParticipate() {
-				voteTimer = time.NewTimer(time.Second * 10)
-				continue
-			}
 
 			// Check if we're an attester for this slot
 			p.log.Infof("sending votes for slot %d", slotToVote)
@@ -426,22 +427,7 @@ func (p *proposer) VoteForBlocks() {
 // Start runs the proposer.
 func (p *proposer) Start() error {
 	p.chain.Notify(p)
-
-	numOurs := 0
-	numTotal := 0
-	for _, w := range p.chain.State().TipState().GetValidatorRegistry() {
-		_, ok := p.keystore.GetValidatorKey(w.PubKey)
-		if ok {
-			numOurs++
-		}
-		numTotal++
-	}
-
-	p.log.Infof("starting proposer with %d/%d active validators", numOurs, numTotal)
-
-	go p.VoteForBlocks()
-	go p.ProposeBlocks()
-
+	go p.StartRoutine()
 	return nil
 }
 
@@ -452,4 +438,48 @@ func (p *proposer) Stop() {
 
 func (p *proposer) Keystore() keystore.Keystore {
 	return p.keystore
+}
+
+// The StartRoutine is a concurrent process that checks if the node should be voting/proposing
+// It also monitors the vote and propose routines to prevent the node to stop doing those process.
+func (p *proposer) StartRoutine() {
+
+check:
+	numOurs := 0
+	numTotal := 0
+	for _, w := range p.chain.State().TipState().GetValidatorRegistry() {
+		_, ok := p.keystore.GetValidatorKey(w.PubKey)
+		if ok {
+			numOurs++
+		}
+		numTotal++
+	}
+	if numOurs == 0 {
+		p.log.Info("there are no validators to vote/propose, retrying in 1 seconds")
+		time.Sleep(time.Second * 10)
+		goto check
+	}
+
+	p.log.Infof("starting proposer with %d/%d active validators", numOurs, numTotal)
+
+	p.voting = true
+	p.voteLock.Lock()
+	go p.VoteForBlocks()
+	p.proposing = true
+	p.proposeLock.Lock()
+	go p.ProposeBlocks()
+
+	go func() {
+	wait:
+		p.voteLock.Lock()
+		go p.VoteForBlocks()
+		goto wait
+	}()
+
+	go func() {
+	wait:
+		p.voteLock.Lock()
+		go p.ProposeBlocks()
+		goto wait
+	}()
 }
