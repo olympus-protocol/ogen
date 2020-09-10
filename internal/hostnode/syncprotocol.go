@@ -122,7 +122,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 func (sp *syncProtocol) waitForPeers() {
 	for {
 		time.Sleep(time.Second * 1)
-		if sp.host.PeersConnected() < 4 {
+		if sp.host.PeersConnected() < 2 {
 			continue
 		}
 		break
@@ -242,7 +242,10 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	sp.peersTrackLock.Lock()
-	sp.peersTrack[id].TipBlockSlot = block.Header.Slot
+	_, ok := sp.peersTrack[id]
+	if ok {
+		sp.peersTrack[id].TipBlockSlot = block.Header.Slot
+	}
 	sp.peersTrackLock.Unlock()
 	if sp.onSync && sp.withPeer != id {
 		return nil

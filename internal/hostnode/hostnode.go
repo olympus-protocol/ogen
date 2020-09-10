@@ -187,7 +187,10 @@ func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	_, err = t.Relay()
+	if err != nil {
+		return nil, err
+	}
 	node.topics[topic] = t
 	return t, nil
 }

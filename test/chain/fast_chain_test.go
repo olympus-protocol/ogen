@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"math/rand"
 	"os"
 	"path"
 	"strconv"
@@ -27,8 +28,8 @@ import (
 	"time"
 )
 
-const NumNodes = 10
-const NumValidators = 1024
+const NumNodes = 5
+const NumValidators = 10
 
 var folders = make([]string, NumNodes)
 var loggers = make([]logger.Logger, NumNodes)
@@ -42,7 +43,7 @@ var servers = make([]server.Server, NumNodes)
 var premineBytes, _ = hex.DecodeString("464725989655873131a985e94febf059523278c483d2b3e21434fd6bd3720537")
 var premineAddr, _ = bls.SecretKeyFromBytes(premineBytes)
 var params = testdata.TestParams
-var delaySeconds int64 = 20
+var delaySeconds int64 = 30
 
 const dataFolder = "./chain_test"
 const nodeFolderPrefix = "data_folder_"
@@ -130,6 +131,7 @@ func createServers() {
 		go func(index int, folder string, wg *sync.WaitGroup) {
 			defer wg.Done()
 			log := loggers[index]
+			params.SlotDuration = 1
 			db, err := blockdb.NewBlockDB(folder, params, log)
 			if err != nil {
 				panic(err)
@@ -146,10 +148,11 @@ func createServers() {
 				RPCPort:      strconv.Itoa(25000 + index),
 				RPCWallet:    false,
 				RPCAuthToken: "",
-				Debug:        false,
+				Debug:        true,
 				LogFile:      false,
 				Pprof:        false,
 			}
+			params.SlotDuration = 1
 			s, err := server.NewServer(context.Background(), config, log, params, db, initParams)
 			if err != nil {
 				panic(err)
@@ -179,6 +182,7 @@ func TestStartNodes(t *testing.T) {
 func TestConnectNodes(t *testing.T) {
 
 	var peersInfo []multiaddr.Multiaddr
+
 	for i, s := range servers {
 		netID := s.HostNode().GetHost().ID()
 		ma, err := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/" + strconv.Itoa(24000+i) + "/p2p/" + netID.String())
@@ -186,12 +190,14 @@ func TestConnectNodes(t *testing.T) {
 		peersInfo = append(peersInfo, ma)
 	}
 
+	peersConnect := getRandPeers(peersInfo)
+
 	for i := range servers {
 
 		client, err := rpcClient("127.0.0.1:" + strconv.Itoa(25000+i))
 		assert.NoError(t, err)
 
-		for _, p := range peersInfo {
+		for _, p := range peersConnect {
 
 			success, err := client.network.AddPeer(context.Background(), &proto.IP{
 				Host: p.String(),
@@ -206,6 +212,16 @@ func TestConnectNodes(t *testing.T) {
 
 }
 
+func getRandPeers(peers []multiaddr.Multiaddr) []multiaddr.Multiaddr {
+	peersLength := len(peers)
+	peersCalc := make([]multiaddr.Multiaddr, peersLength/3)
+	for i := range peersCalc {
+		r := rand.Intn(peersLength)
+		peersCalc[i] = peers[r]
+	}
+	return peersCalc
+}
+
 func TestCheckNodeConnections(t *testing.T) {
 	for i := range servers {
 
@@ -215,7 +231,8 @@ func TestCheckNodeConnections(t *testing.T) {
 		peers, err := client.network.GetPeersInfo(context.Background(), &proto.Empty{})
 		assert.NoError(t, err)
 
-		assert.Equal(t, len(peers.Peers), 9)
+		assert.GreaterOrEqual(t, len(peers.Peers), (NumNodes-1)/2/2)
+		assert.LessOrEqual(t, len(peers.Peers), NumNodes)
 	}
 }
 
@@ -243,7 +260,7 @@ type notify struct {
 	num           int
 	lastJustified uint64
 	lastFinalized uint64
-	slashing      bool
+	slashed       bool
 }
 
 func (n *notify) NewTip(r *chainindex.BlockRow, _ *primitives.Block, s state.State, _ []*primitives.EpochReceipt) {
@@ -253,7 +270,7 @@ func (n *notify) NewTip(r *chainindex.BlockRow, _ *primitives.Block, s state.Sta
 }
 
 func (n *notify) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {
-	n.slashing = true
+	n.slashed = true
 }
 
 var notifies = make([]*notify, NumNodes)
@@ -261,25 +278,22 @@ var notifies = make([]*notify, NumNodes)
 func TestChainCorrectness(t *testing.T) {
 	for i, s := range servers {
 		n := &notify{
-			num: i,
+			num:           i,
 			lastFinalized: 0,
 			lastJustified: 0,
-			slashing: false,
+			slashed:       false,
 		}
 		s.Chain().Notify(n)
 		notifies[i] = n
 	}
 	for {
-		time.Sleep(time.Second * 2)
-		lastSlotMap := make(map[int]uint64)
-		for i, s := range servers {
-			lastSlotMap[i] = s.Chain().State().TipState().GetSlot()
-		}
-		checkSlot := lastSlotMap[0]
-		for _, s := range lastSlotMap {
-			assert.Equal(t, checkSlot, s)
-		}
-		if checkSlot == 50 {
+		time.Sleep(time.Second * 1)
+		if servers[0].Chain().State().TipState().GetSlot() == 51 {
+			for _, n := range notifies {
+				assert.Equal(t, n.lastJustified, uint64(8))
+				assert.Equal(t, n.lastFinalized, uint64(7))
+				assert.False(t, n.slashed)
+			}
 			break
 		}
 	}
