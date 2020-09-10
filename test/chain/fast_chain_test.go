@@ -288,10 +288,10 @@ func TestChainCorrectness(t *testing.T) {
 	}
 	for {
 		time.Sleep(time.Second * 1)
-		if servers[0].Chain().State().TipState().GetSlot() == 51 {
+		if servers[0].Chain().State().TipState().GetSlot() == 26 {
 			for _, n := range notifies {
-				assert.Equal(t, n.lastJustified, uint64(8))
-				assert.Equal(t, n.lastFinalized, uint64(7))
+				assert.Equal(t, n.lastJustified, uint64(3))
+				assert.Equal(t, n.lastFinalized, uint64(2))
 				assert.False(t, n.slashed)
 			}
 			break
