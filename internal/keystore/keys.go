@@ -64,6 +64,14 @@ func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, err
 	return keys, nil
 }
 
+func (k *keystore) AddKey(priv []byte) error {
+	s, err := bls.SecretKeyFromBytes(priv)
+	if err != nil {
+		return err
+	}
+	return k.addKey(s)
+}
+
 func (k *keystore) addKey(priv *bls.SecretKey) error {
 
 	if !k.open {

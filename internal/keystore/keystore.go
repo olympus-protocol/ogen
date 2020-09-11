@@ -39,6 +39,7 @@ type Keystore interface {
 	GetValidatorKeys() ([]*bls.SecretKey, error)
 	GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error)
 	HasKeysToParticipate() bool
+	AddKey(priv []byte) error
 }
 
 // keystore is a wrapper for the keystore database
