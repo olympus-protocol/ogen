@@ -103,7 +103,7 @@ var Mainnet = ChainParams{
 	},
 }
 
-var testnetChainFileHash, _ = chainhash.NewHashFromStr("6ec9ddc4d9696b43c05f908b20f2b3694ae6d899021b4d2e5ce140565a4ff4c9")
+var testnetChainFileHash, _ = chainhash.NewHashFromStr("4d515071a047ee36967d946ba8a3ae66bcac5f7d1aec7dbfd2004c000e47854f")
 
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
