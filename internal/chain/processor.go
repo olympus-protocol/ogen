@@ -94,7 +94,7 @@ func (ch *blockchain) getLatestAttestationTarget(validator uint64) (row *chainin
 		return nil, fmt.Errorf("attestation target not found")
 	}
 
-	row, ok = ch.state.BlockIndex().Get(att.Data.BeaconBlockHash)
+	row, ok = ch.state.Index().Get(att.Data.BeaconBlockHash)
 	if !ok {
 		return nil, errors.New("couldn't find block attested to by validator in chainindex")
 	}
@@ -212,7 +212,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		row, err := ch.state.BlockIndex().Add(*block)
+		row, err := ch.state.Index().Add(*block)
 		if err != nil {
 			return err
 		}

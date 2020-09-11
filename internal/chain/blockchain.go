@@ -34,7 +34,6 @@ type Blockchain interface {
 var _ Blockchain = &blockchain{}
 
 type blockchain struct {
-	// Initial Ogen Params
 	log         logger.Logger
 	config      Config
 	genesisTime time.Time

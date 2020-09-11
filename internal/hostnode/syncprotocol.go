@@ -137,25 +137,31 @@ func (sp *syncProtocol) waitForPeers() {
 func (sp *syncProtocol) startSync() {
 	latestSlot := sp.chain.State().Tip().Slot
 
-	var peersHigher []peer.ID
-	var peersSame []peer.ID
+	peersHigher := make(map[int]peer.ID)
+	peersSame := make(map[int]peer.ID)
 
+	index := 0
 	for id, p := range sp.peersTrack {
 		if p.TipBlockSlot > latestSlot {
-			peersHigher = append(peersHigher, id)
+			peersHigher[index] = id
 		}
 		if p.TipBlockSlot == latestSlot {
-			peersSame = append(peersSame, id)
+			peersSame[index] = id
+
 		}
+		index++
 	}
 
 	if len(peersHigher) > len(peersSame) {
+
 		r := rand.Intn(len(peersHigher))
+
 		peerToSync := peersHigher[r]
 		sp.onSync = true
 		sp.withPeer = peerToSync
+
 		err := sp.protocolHandler.SendMessage(peerToSync, &p2p.MsgGetBlocks{
-			LastBlockHash: sp.chain.State().Tip().Hash,
+			LastBlockHash: sp.chain.State().Chain().Tip().Hash,
 		})
 
 		if err != nil {
