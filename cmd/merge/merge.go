@@ -21,7 +21,7 @@ func init() {
 func main() {
 
 	files := map[string]string{}
-	err := filepath.Walk("/Users/eabz/Downloads/ks", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk("./ks", func(path string, info os.FileInfo, err error) error {
 		if info != nil {
 			if !info.IsDir() {
 				files[info.Name()] = path
