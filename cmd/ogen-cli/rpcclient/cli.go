@@ -166,10 +166,6 @@ func (c *CLI) Run(optArgs []string) {
 			out, err = c.rpcClient.addPeer(args[1:])
 
 		// Utils methods
-		case "startproposer":
-			out, err = c.rpcClient.startProposer(args[1:])
-		case "stopproposer":
-			out, err = c.rpcClient.stopProposer(args[1:])
 		case "submitrawdata":
 			out, err = c.rpcClient.submitRawData(args[1:])
 		case "genkeypair":

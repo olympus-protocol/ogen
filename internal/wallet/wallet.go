@@ -176,6 +176,9 @@ func (w *wallet) OpenWallet(name string, password string) error {
 	w.name = name
 	secret, err := w.getSecret(password)
 	if err != nil {
+		_ = db.Close()
+		w.db = nil
+		w.name = ""
 		return err
 	}
 	w.priv = secret

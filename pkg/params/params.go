@@ -103,7 +103,7 @@ var Mainnet = ChainParams{
 	},
 }
 
-var testnetChainFileHash, _ = chainhash.NewHashFromStr("2d6f28110cda52c3359e389b4e9e4729a8e64c19475508e99ffa34e23350726c")
+var testnetChainFileHash, _ = chainhash.NewHashFromStr("4d515071a047ee36967d946ba8a3ae66bcac5f7d1aec7dbfd2004c000e47854f")
 
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
@@ -128,7 +128,7 @@ var TestNet = ChainParams{
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 30,
-	ChainFileHash:                testnetChainFileHash,
+	ChainFileHash:                *testnetChainFileHash,
 	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,

@@ -118,10 +118,6 @@ func Test_OpenWalletWithWrongPassword(t *testing.T) {
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = wm.CloseWallet()
-	if err != nil {
-		t.Fatal(err)
-	}
 	clean()
 }
 

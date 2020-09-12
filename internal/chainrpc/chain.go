@@ -23,6 +23,8 @@ type chainServer struct {
 }
 
 func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
+	defer ctx.Done()
+
 	st := s.chain.State()
 	tip := st.Tip()
 	validators := st.TipState().GetValidators()
@@ -40,26 +42,34 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 }
 
 func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
+	defer ctx.Done()
+
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
 	}
-	block, err := s.chain.GetRawBlock(hash)
+
+	block, err := s.chain.GetRawBlock(*hash)
 	if err != nil {
 		return nil, err
 	}
+
 	return &proto.Block{RawBlock: hex.EncodeToString(block)}, nil
 }
 
 func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
+	defer ctx.Done()
+
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
 	}
-	block, err := s.chain.GetBlock(hash)
+
+	block, err := s.chain.GetBlock(*hash)
 	if err != nil {
 		return nil, err
 	}
+
 	blockParse := &proto.Block{
 		Hash: block.Hash().String(),
 		Header: &proto.BlockHeader{
@@ -82,10 +92,13 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 		Signature:       hex.EncodeToString(block.Signature[:]),
 		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
+
 	return blockParse, nil
 }
 
 func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Number) (*proto.Hash, error) {
+	defer ctx.Done()
+
 	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.Number)
 	if !exists {
 		return nil, errors.New("block not found")
@@ -104,13 +117,12 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	if reflect.DeepEqual(in.Hash, s.chain.State().Tip().Hash.String()) {
 		return nil
 	}
+
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
-
-	currBlockRow, ok := s.chain.State().GetRowByHash(hash)
-
+	currBlockRow, ok := s.chain.State().GetRowByHash(*hash)
 	if !ok {
 		return errors.New("block starting point doesnt exist")
 	}
@@ -263,30 +275,39 @@ func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream p
 }
 
 func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (*proto.AccountInfo, error) {
+	defer ctx.Done()
+
 	var account [20]byte
 	_, decoded, err := bech32.Decode(data.Account)
 	if err != nil {
 		return nil, err
 	}
+
 	copy(account[:], decoded)
-	nonce := s.chain.State().TipState().GetCoinsState().Nonces[account]
-	confirmed := decimal.NewFromInt(int64(s.chain.State().TipState().GetCoinsState().Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
+	coinsState := s.chain.State().TipState().GetCoinsState()
+	nonce := coinsState.Nonces[account]
+
+	confirmed := decimal.NewFromInt(int64(coinsState.Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
 	lock := decimal.NewFromInt(0)
+
 	for _, v := range s.chain.State().TipState().GetValidatorRegistry() {
 		if v.PayeeAddress == account {
 			lock = lock.Add(decimal.NewFromInt(int64(v.Balance)))
 		}
 	}
+
 	balance := &proto.Balance{
 		Confirmed: confirmed.String(),
 		Locked:    lock.String(),
 		Total:     decimal.Zero.Add(confirmed).Add(lock).String(),
 	}
+
 	accInfo := &proto.AccountInfo{
 		Account: data.Account,
 		Balance: balance,
 		Nonce:   nonce,
 	}
+
 	return accInfo, nil
 }
 

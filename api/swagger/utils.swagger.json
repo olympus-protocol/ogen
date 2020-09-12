@@ -110,48 +110,15 @@
         ]
       }
     },
-    "/utils/startproposer": {
-      "post": {
-        "summary": "* \nMethod: StartProposer \nInput: message Empty\nResponse: message Success\nDescription: Loads the Keystore into the Proposer..",
-        "operationId": "Utils_StartProposer",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/Success"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/Empty"
-            }
-          }
-        ],
-        "tags": [
-          "Utils"
-        ]
-      }
-    },
-    "/utils/stopproposer": {
+    "/utils/getparticipationinfo": {
       "get": {
-        "summary": "* \nMethod: StopProposer \nInput: message Password\nResponse: message Success\nDescription: Removes Keystore information and stops the block proposer.",
-        "operationId": "Utils_StopProposer",
+        "summary": "*\nMethod: GetParticipationStatus\nInput: Empty\nResponse: ParticipationInfo\nDescription: Returns current internal status of consensus participation.",
+        "operationId": "Utils_GetParticipationStatus",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/Success"
+              "$ref": "#/definitions/ParticipationInfo"
             }
           },
           "default": {
@@ -278,9 +245,6 @@
         }
       }
     },
-    "Empty": {
-      "type": "object"
-    },
     "GenValidatorKeys": {
       "type": "object",
       "properties": {
@@ -298,6 +262,31 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "ParticipationInfo": {
+      "type": "object",
+      "properties": {
+        "voting": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "proposing": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "total_validators": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "owned_validators": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "voting_validators": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },

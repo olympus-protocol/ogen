@@ -77,7 +77,6 @@ type blockNodeAndState struct {
 }
 
 type StateService interface {
-	BlockIndex() *chainindex.BlockIndex
 	Blockchain() *Chain
 	GetLatestVote(val uint64) (*primitives.MultiValidatorVote, bool)
 	SetLatestVotesIfNeeded(vals []uint64, vote *primitives.MultiValidatorVote)
@@ -120,10 +119,6 @@ type stateService struct {
 }
 
 var _ StateService = &stateService{}
-
-func (s *stateService) BlockIndex() *chainindex.BlockIndex {
-	return s.blockIndex
-}
 
 func (s *stateService) Blockchain() *Chain {
 	return s.blockChain

@@ -156,6 +156,7 @@ func (p *proposer) publishBlock(block *primitives.Block) {
 func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *proposer) ProposeBlocks() {
+
 	slotToPropose := p.getCurrentSlot() + 1
 
 	blockTimer := time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -164,16 +165,10 @@ func (p *proposer) ProposeBlocks() {
 		select {
 		case <-blockTimer.C:
 
-			// Check if the node has keys to participate
-			if !p.keystore.HasKeysToParticipate() {
-				blockTimer = time.NewTimer(time.Second * 10)
-				continue
-			}
-
 			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-				p.log.Infof("blockchain not synced... trying to propose in 10 seconds")
-				blockTimer = time.NewTimer(time.Second * 10)
+				blockTimer = time.NewTimer(time.Second * 5)
+				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
 				continue
 			}
 
@@ -182,8 +177,8 @@ func (p *proposer) ProposeBlocks() {
 
 			voteState, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
-				p.log.Error(err)
-				blockTimer = time.NewTimer(time.Second * 10)
+				p.log.Error("unable to get tip state at slot %d", slotToPropose)
+				blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 				continue
 			}
 
@@ -193,24 +188,24 @@ func (p *proposer) ProposeBlocks() {
 
 			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
 
-				if !p.lastActionManager.ShouldRun(proposer.PubKey) {
-					blockTimer = time.NewTimer(time.Second * 10)
-					continue
-				}
+				//if !p.lastActionManager.ShouldRun(proposer.PubKey) {
+				//	blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+				//	continue
+				//}
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
 				votes, err := p.voteMempool.Get(slotToPropose, voteState, p.params, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
 				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
@@ -221,35 +216,35 @@ func (p *proposer) ProposeBlocks() {
 				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
 				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
 				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
 				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
 				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
@@ -294,7 +289,7 @@ func (p *proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 10)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					continue
 				}
 
@@ -322,17 +317,11 @@ func (p *proposer) VoteForBlocks() {
 		select {
 		case <-voteTimer.C:
 
-			// Check if the node has keys to participate
-			if !p.keystore.HasKeysToParticipate() {
-				voteTimer = time.NewTimer(time.Second * 10)
-				continue
-			}
-
 			// Check if we're an attester for this slot
 			p.log.Infof("sending votes for slot %d", slotToVote)
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-				voteTimer = time.NewTimer(time.Second * 10)
-				p.log.Infof("blockchain not synced... trying to vote in 10 seconds")
+				voteTimer = time.NewTimer(time.Second * 5)
+				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
 				continue
 			}
 
@@ -340,12 +329,15 @@ func (p *proposer) VoteForBlocks() {
 
 			voteState, err := s.TipStateAtSlot(slotToVote)
 			if err != nil {
-				panic(err)
+				p.log.Errorf("unable to get tip at slot %d", slotToVote)
+				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				continue
 			}
 
 			validators, err := voteState.GetVoteCommittee(slotToVote, p.params)
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
+				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 				continue
 			}
 
@@ -355,7 +347,9 @@ func (p *proposer) VoteForBlocks() {
 
 			beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
 			if !found {
-				panic("could not find block")
+				p.log.Errorf("unable to find block at slot %d", slotToVote-1)
+				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				continue
 			}
 
 			data := &primitives.VoteData{
@@ -374,21 +368,23 @@ func (p *proposer) VoteForBlocks() {
 
 			bitlistVotes := bitfield.NewBitlist(uint64(len(validators)))
 
+			validatorRegistry := voteState.GetValidatorRegistry()
 			for i, index := range validators {
-				votingValidator := voteState.GetValidatorRegistry()[index]
+				votingValidator := validatorRegistry[index]
 				key, found := p.keystore.GetValidatorKey(votingValidator.PubKey)
 				if !found {
 					continue
 				}
-				signFunc := func(message *primitives.ValidatorHelloMessage) *bls.Signature {
-					msg := message.SignatureMessage()
-					return key.Sign(msg)
-				}
-				if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
-					signatures = append(signatures, key.Sign(dataHash[:]))
-					bitlistVotes.Set(uint(i))
-				}
+				//signFunc := func(message *primitives.ValidatorHelloMessage) *bls.Signature {
+				//	msg := message.SignatureMessage()
+				//	return key.Sign(msg)
+				//}
+				//if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
+				signatures = append(signatures, key.Sign(dataHash[:]))
+				bitlistVotes.Set(uint(i))
+				//}
 			}
+
 			if len(signatures) > 0 {
 				sig := bls.AggregateSignatures(signatures)
 
@@ -404,7 +400,8 @@ func (p *proposer) VoteForBlocks() {
 				err = p.voteMempool.AddValidate(vote, voteState)
 				if err != nil {
 					p.log.Error("unable to submit own generated vote")
-					return
+					voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+					continue
 				}
 
 				go p.publishVotes(vote)
@@ -423,22 +420,7 @@ func (p *proposer) VoteForBlocks() {
 // Start runs the proposer.
 func (p *proposer) Start() error {
 	p.chain.Notify(p)
-
-	numOurs := 0
-	numTotal := 0
-	for _, w := range p.chain.State().TipState().GetValidatorRegistry() {
-		_, ok := p.keystore.GetValidatorKey(w.PubKey)
-		if ok {
-			numOurs++
-		}
-		numTotal++
-	}
-
-	p.log.Infof("starting proposer with %d/%d active validators", numOurs, numTotal)
-
-	go p.VoteForBlocks()
-	go p.ProposeBlocks()
-
+	go p.StartRoutine()
 	return nil
 }
 
@@ -449,4 +431,32 @@ func (p *proposer) Stop() {
 
 func (p *proposer) Keystore() keystore.Keystore {
 	return p.keystore
+}
+
+// The StartRoutine is a concurrent process that checks if the node should be voting/proposing
+// It also monitors the vote and propose routines to prevent the node to stop doing those process.
+func (p *proposer) StartRoutine() {
+
+check:
+	numOurs := 0
+	numTotal := 0
+	for _, w := range p.chain.State().TipState().GetValidatorRegistry() {
+		_, ok := p.keystore.GetValidatorKey(w.PubKey)
+		if ok {
+			numOurs++
+		}
+		numTotal++
+	}
+
+	if numOurs == 0 {
+		p.log.Info("there are no validators to vote/propose, retrying in 1 seconds")
+		time.Sleep(time.Second * 10)
+		goto check
+	}
+
+	p.log.Infof("starting proposer with %d/%d active validators", numOurs, numTotal)
+
+	go p.VoteForBlocks()
+	go p.ProposeBlocks()
+
 }

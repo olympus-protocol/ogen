@@ -8,29 +8,6 @@ import "common.proto";
 service Utils {
 
     /** 
-        Method: StartProposer 
-        Input: message Empty
-        Response: message Success
-        Description: Loads the Keystore into the Proposer..
-    */
-    rpc StartProposer(Empty) returns (Success) {
-        option (google.api.http) = {
-            post: "/utils/startproposer"
-            body: "*"
-        };
-    }
-    /** 
-        Method: StopProposer 
-        Input: message Password
-        Response: message Success
-        Description: Removes Keystore information and stops the block proposer.
-    */
-    rpc StopProposer(Empty) returns (Success) {
-        option (google.api.http) = {
-            get: "/utils/stopproposer"
-        };
-    }
-    /** 
         Method: GenValidatorKey 
         Input: message GenValidatorKeys
         Response: message KeyPairs
@@ -81,8 +58,29 @@ service Utils {
             body: "*"
         };
     }
+
+    /**
+        Method: GetParticipationStatus
+        Input: Empty
+        Response: ParticipationInfo
+        Description: Returns current internal status of consensus participation.
+     */
+    rpc GetParticipationStatus(Empty) returns (ParticipationInfo) {
+        option (google.api.http) = {
+            get: "/utils/getparticipationinfo"
+        };
+    }
+
 }
 
 message GenValidatorKeys {
     uint64 keys = 1;
+}
+
+message ParticipationInfo {
+    bool voting = 1;
+    bool proposing = 2;
+    uint64 total_validators = 3;
+    uint64 owned_validators = 4;
+    uint64 voting_validators = 5;
 }

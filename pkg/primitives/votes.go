@@ -198,7 +198,7 @@ type MultiValidatorVote struct {
 	// Ex. TotalValidators = 6,000, EpochLength = 5.
 	// Each block should contain only votes from (6000 / 5) =  1200 validators.
 	// This size assumes the EpochLength is set to 5 slots.
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6250"`
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6258"`
 }
 
 // Signature returns the signature on BLS type
