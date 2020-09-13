@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/cmd/ogen-d/db"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/spf13/viper"
 	"io"
@@ -17,12 +18,20 @@ type Empty struct{}
 // CLI is the module that allows operations across multiple services.
 type CLI struct {
 	rpcClient *RPCClient
+	dbClient  *db.DBClient
 }
 
 // Run runs the CLI.
 func (c *CLI) Run(optArgs []string) {
 
 	fmt.Println(c.rpcClient.address)
+
+	err := c.dbClient.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("You are Successfully connected!")
 
 	//Here Runs the RPC
 	//check db for tip?
@@ -60,9 +69,10 @@ func (c *RPCClient) sync(hash string) (proto.Chain_SyncClient, error) {
 	return syncClient, err
 }
 
-func newCli(rpcClient *RPCClient) *CLI {
+func newCli(rpcClient *RPCClient, dbClient *db.DBClient) *CLI {
 	return &CLI{
 		rpcClient: rpcClient,
+		dbClient:  dbClient,
 	}
 }
 
@@ -94,6 +104,22 @@ func Run(host string, args []string) {
 		viper.SetConfigName("config")
 	}
 	rpcClient := NewRPCClient(host, DataFolder)
-	cli := newCli(rpcClient)
+	dbp := db.DbParameters{
+		Hostname:     hostname,
+		HostPort:     host_port,
+		Username:     username,
+		Password:     password,
+		DatabaseName: database_name,
+	}
+	dbClient := db.NewDBClient(dbp)
+	cli := newCli(rpcClient, dbClient)
 	cli.Run(args)
 }
+
+const (
+	hostname      = "localhost"
+	host_port     = 5432
+	username      = "postgres"
+	password      = "testpass"
+	database_name = "chaindb"
+)

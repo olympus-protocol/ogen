@@ -49,7 +49,7 @@ func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.B
 		return nil, err
 	}
 
-	block, err := s.chain.GetRawBlock(*hash)
+	block, err := s.chain.GetRawBlock(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 		return nil, err
 	}
 
-	block, err := s.chain.GetBlock(*hash)
+	block, err := s.chain.GetBlock(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
-	currBlockRow, ok := s.chain.State().GetRowByHash(*hash)
+	currBlockRow, ok := s.chain.State().GetRowByHash(hash)
 	if !ok {
 		return errors.New("block starting point doesnt exist")
 	}
