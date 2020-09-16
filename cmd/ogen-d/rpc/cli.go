@@ -110,6 +110,7 @@ func Run(host string, args []string) {
 		Username:     username,
 		Password:     password,
 		DatabaseName: database_name,
+		DriverName:   driver_name,
 	}
 	dbClient := db.NewDBClient(dbp)
 	cli := newCli(rpcClient, dbClient)
@@ -122,4 +123,5 @@ const (
 	username      = "postgres"
 	password      = "testpass"
 	database_name = "chaindb"
+	driver_name   = "sqlite3"
 )
