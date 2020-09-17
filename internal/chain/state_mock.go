@@ -37,20 +37,6 @@ func (m *MockStateService) EXPECT() *MockStateServiceMockRecorder {
 	return m.recorder
 }
 
-// BlockIndex mocks base method
-func (m *MockStateService) BlockIndex() *chainindex.BlockIndex {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BlockIndex")
-	ret0, _ := ret[0].(*chainindex.BlockIndex)
-	return ret0
-}
-
-// BlockIndex indicates an expected call of BlockIndex
-func (mr *MockStateServiceMockRecorder) BlockIndex() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockIndex", reflect.TypeOf((*MockStateService)(nil).BlockIndex))
-}
-
 // Blockchain mocks base method
 func (m *MockStateService) Blockchain() *Chain {
 	m.ctrl.T.Helper()
