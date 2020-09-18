@@ -272,13 +272,11 @@ type notify struct {
 	lastJustified uint64
 	lastFinalized uint64
 	slashed       bool
-	showEpochs bool
 }
 
 func (n *notify) NewTip(r *chainindex.BlockRow, b *primitives.Block, s state.State, receipts []*primitives.EpochReceipt) {
 	n.lastFinalized = s.GetFinalizedEpoch()
 	n.lastJustified = s.GetJustifiedEpoch()
-	if n.showEpochs {
 		if len(receipts) > 0 {
 			msg := "\nEpoch Receipts\n----------\n"
 			receiptTypes := make(map[string]int64)
@@ -302,7 +300,6 @@ func (n *notify) NewTip(r *chainindex.BlockRow, b *primitives.Block, s state.Sta
 			}
 
 			fmt.Println(msg)
-		}
 	}
 	fmt.Printf("Validator Registry: Active %d Starting %d Pending Exit %d Penalty Exit %d Exited %d \n", s.GetValidators().Active, s.GetValidators().Starting, s.GetValidators().PendingExit, s.GetValidators().PenaltyExit, s.GetValidators().Exited)
 	fmt.Printf("Node %d: received block %d at slot %d Justified: %d Finalized: %d \n", n.num, r.Height, r.Slot, n.lastJustified, n.lastFinalized)
@@ -405,9 +402,6 @@ func TestChainCorrectnessWithMoreValidators(t *testing.T) {
 func TestStopProposers(t *testing.T) {
 	servers[0].Proposer().Stop()
 	servers[NumNodes-1].Proposer().Stop()
-	for _, n := range notifies {
-		n.showEpochs = true
-	}
 }
 
 

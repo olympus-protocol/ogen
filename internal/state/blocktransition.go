@@ -635,7 +635,6 @@ func (s *state) ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams)
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
 		Status:           primitives.StatusStarting,
 		FirstActiveEpoch: s.EpochIndex + 2,
-		LastActiveEpoch:  0,
 	})
 
 	return nil

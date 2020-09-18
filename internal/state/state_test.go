@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"encoding/hex"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -8,56 +9,60 @@ import (
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
-var secrets = make([]*bls.SecretKey, 50)
-var publics = make([]*bls.PublicKey, 50)
-var validators = make([]*primitives.Validator, 50)
-var params = &testdata.TestParams
-var owner = bls.RandKey()
+var NumValidators = 10
+
+type pair struct {
+	public  *bls.PublicKey
+	private *bls.SecretKey
+}
+
+var secrets = make([]pair, NumValidators)
+
+var params = testdata.TestParams
+var premineAddr = bls.RandKey()
+
+var initParams *state.InitializationParameters
+
+var blocksMap = make(map[uint64]chainhash.Hash)
 
 func init() {
+
+	initParams = &state.InitializationParameters{
+		InitialValidators: make([]state.ValidatorInitialization, NumValidators),
+		PremineAddress:    premineAddr.PublicKey().ToAccount(),
+		GenesisTime:       time.Now(),
+	}
+
 	for i := range secrets {
 		key := bls.RandKey()
-		secrets[i] = key
-		publics[i] = key.PublicKey()
+		secrets[i] = pair{
+			public:  key.PublicKey(),
+			private: key,
+		}
 		var pub [48]byte
 		copy(pub[:], key.PublicKey().Marshal())
-		payee, _ := owner.PublicKey().Hash()
-		validators[i] = &primitives.Validator{
-			Balance:          100 * params.UnitsPerCoin,
-			PubKey:           pub,
-			PayeeAddress:     payee,
-			Status:           primitives.StatusActive,
-			FirstActiveEpoch: 0,
-			LastActiveEpoch:  0,
+		initParams.InitialValidators[i] = state.ValidatorInitialization{
+			PubKey:       hex.EncodeToString(key.PublicKey().Marshal()),
+			PayeeAddress: premineAddr.PublicKey().ToAccount(),
 		}
 	}
 }
 
 func TestState(t *testing.T) {
-	cs := primitives.CoinsState{
-		Balances: make(map[[20]byte]uint64),
-		Nonces:   make(map[[20]byte]uint64),
-	}
-
-	gs := primitives.Governance{
-		ReplaceVotes:   make(map[[20]byte]chainhash.Hash),
-		CommunityVotes: make(map[chainhash.Hash]primitives.CommunityVoteData),
-	}
-
 	gen := primitives.GetGenesisBlock()
+	blocksMap[0] = gen.Hash()
 
-	initState := state.NewState(cs, gs, validators, gen.Hash(), params)
+	initState, err := state.GetGenesisStateWithInitializationParameters(gen.Hash(), initParams, &params)
+	assert.NoError(t, err)
 
-	assert.Equal(t, validators, initState.GetValidators().Validators)
-
-	rawState, err := initState.Marshal()
+	ser, err := initState.Marshal()
 	assert.NoError(t, err)
 
 	s := state.NewEmptyState()
-	err = s.Unmarshal(rawState)
-	assert.NoError(t, err)
+	err = s.Unmarshal(ser)
 
-	assert.Equal(t, initState, s)
+	assert.NoError(t, err)
 }

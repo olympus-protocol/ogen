@@ -1,9 +1,5 @@
 package primitives
 
-import (
-	"errors"
-)
-
 const (
 	// StatusStarting is when the validator is waiting to join.
 	StatusStarting uint64 = iota
@@ -23,12 +19,6 @@ const (
 	// the ejection balance.
 	StatusExitedWithoutPenalty
 )
-
-// ErrorValidatorSize returned when a validator size is above MaxValidatorSize
-var ErrorValidatorSize = errors.New("validator size too big")
-
-// MaxValidatorSize is the maximum amount of bytes a validator can contain.
-const MaxValidatorSize = 100
 
 // Validator is a validator in the queue.
 type Validator struct {

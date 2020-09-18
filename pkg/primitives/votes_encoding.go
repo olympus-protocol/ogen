@@ -252,7 +252,7 @@ func (m *MultiValidatorVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	offset += len(m.ParticipationBitfield)
 
 	// Field (2) 'ParticipationBitfield'
-	if len(m.ParticipationBitfield) > 6250 {
+	if len(m.ParticipationBitfield) > 6258 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -291,7 +291,7 @@ func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'ParticipationBitfield'
 	{
 		buf = tail[o2:]
-		if err = ssz.ValidateBitlist(buf, 6250); err != nil {
+		if err = ssz.ValidateBitlist(buf, 6258); err != nil {
 			return err
 		}
 		m.ParticipationBitfield = append(m.ParticipationBitfield, buf...)
@@ -327,7 +327,7 @@ func (m *MultiValidatorVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutBytes(m.Sig[:])
 
 	// Field (2) 'ParticipationBitfield'
-	hh.PutBitlist(m.ParticipationBitfield, 6250)
+	hh.PutBitlist(m.ParticipationBitfield, 6258)
 
 	hh.Merkleize(indx)
 	return

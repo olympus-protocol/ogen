@@ -104,8 +104,7 @@ func (s *state) UpdateValidatorStatus(index uint64, status uint64, p *params.Cha
 func (s *state) updateValidatorRegistry(p *params.ChainParams) error {
 	totalBalance := s.getActiveBalance(p)
 
-	// 1/2 balance churn goes to starting validators and 1/2 goes to exiting
-	// validators
+	// 1/2 balance churn goes to starting validators and 1/2 goes to exiting validators
 	maxBalanceChurn := totalBalance / (p.MaxBalanceChurnQuotient * 2)
 
 	balanceChurn := uint64(0)
