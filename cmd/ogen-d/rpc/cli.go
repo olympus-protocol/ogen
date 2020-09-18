@@ -33,6 +33,11 @@ func (c *CLI) Run(optArgs []string) {
 
 	fmt.Println("You are Successfully connected!")
 
+	err = c.dbClient.InitializeTables()
+	if err != nil {
+		panic(err)
+	}
+
 	//Here Runs the RPC
 	//check db for tip?
 
