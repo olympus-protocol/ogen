@@ -1,3 +1,5 @@
+// +build chain_test
+
 package chain_test
 
 import (
@@ -42,6 +44,13 @@ var servers = make([]server.Server, NumNodes)
 
 var premineBytes, _ = hex.DecodeString("464725989655873131a985e94febf059523278c483d2b3e21434fd6bd3720537")
 var premineAddr, _ = bls.SecretKeyFromBytes(premineBytes)
+
+var receivingBytes, _ = hex.DecodeString("1bc06361dfd5a9cb4817b878d9921d340aac483813197653caca0ecdf7744b75")
+var receivingAddr, _ = bls.SecretKeyFromBytes(receivingBytes)
+
+var walletsPass = "wallet_secure_password"
+
+
 var params = testdata.TestParams
 var delaySeconds int64 = 30
 
@@ -146,7 +155,7 @@ func createServers() {
 				RPCProxyPort: strconv.Itoa(8080 + index),
 				RPCProxyAddr: "",
 				RPCPort:      strconv.Itoa(25000 + index),
-				RPCWallet:    false,
+				RPCWallet:    true,
 				RPCAuthToken: "",
 				Debug:        true,
 				LogFile:      false,
@@ -238,6 +247,7 @@ func TestCheckNodeConnections(t *testing.T) {
 
 type client struct {
 	network proto.NetworkClient
+	wallet proto.WalletClient
 }
 
 func rpcClient(addr string) (*client, error) {
@@ -253,6 +263,7 @@ func rpcClient(addr string) (*client, error) {
 	}
 	return &client{
 		network: proto.NewNetworkClient(conn),
+		wallet: proto.NewWalletClient(conn),
 	}, nil
 }
 
@@ -261,11 +272,39 @@ type notify struct {
 	lastJustified uint64
 	lastFinalized uint64
 	slashed       bool
+	showEpochs bool
 }
 
-func (n *notify) NewTip(r *chainindex.BlockRow, _ *primitives.Block, s state.State, _ []*primitives.EpochReceipt) {
+func (n *notify) NewTip(r *chainindex.BlockRow, b *primitives.Block, s state.State, receipts []*primitives.EpochReceipt) {
 	n.lastFinalized = s.GetFinalizedEpoch()
 	n.lastJustified = s.GetJustifiedEpoch()
+	if n.showEpochs {
+		if len(receipts) > 0 {
+			msg := "\nEpoch Receipts\n----------\n"
+			receiptTypes := make(map[string]int64)
+
+			for _, r := range receipts {
+				if _, ok := receiptTypes[r.TypeString()]; !ok {
+					receiptTypes[r.TypeString()] = r.Amount
+				} else {
+					receiptTypes[r.TypeString()] += r.Amount
+				}
+			}
+
+			for rt, amount := range receiptTypes {
+				if amount > 0 {
+					msg += fmt.Sprintf("rewarded %d for %s\n", amount, rt)
+				} else if amount < 0 {
+					msg += fmt.Sprintf("penalized %d for %s\n", -amount, rt)
+				} else {
+					msg += fmt.Sprintf("neutral increments for %s\n", rt)
+				}
+			}
+
+			fmt.Println(msg)
+		}
+	}
+	fmt.Printf("Validator Registry: Active %d Starting %d Pending Exit %d Penalty Exit %d Exited %d \n", s.GetValidators().Active, s.GetValidators().Starting, s.GetValidators().PendingExit, s.GetValidators().PenaltyExit, s.GetValidators().Exited)
 	fmt.Printf("Node %d: received block %d at slot %d Justified: %d Finalized: %d \n", n.num, r.Height, r.Slot, n.lastJustified, n.lastFinalized)
 }
 
@@ -293,6 +332,92 @@ func TestChainCorrectness(t *testing.T) {
 				assert.Equal(t, n.lastJustified, uint64(3))
 				assert.Equal(t, n.lastFinalized, uint64(2))
 				assert.False(t, n.slashed)
+			}
+			break
+		}
+	}
+}
+
+func TestImportCreateNewWallet(t *testing.T) {
+
+	clientPremine, err := rpcClient("127.0.0.1:" + strconv.Itoa(25000))
+	assert.NoError(t, err)
+
+	clientReceiving, err := rpcClient("127.0.0.1:" + strconv.Itoa(25001))
+	assert.NoError(t, err)
+
+	_, err = clientPremine.wallet.ImportWallet(context.Background(), &proto.ImportWalletData{
+		Name:     "premine_wallet",
+		Key:      &proto.KeyPair{
+			Private: premineAddr.ToWIF(),
+		},
+		Password: walletsPass,
+	})
+	assert.NoError(t, err)
+
+	w, err := clientReceiving.wallet.ImportWallet(context.Background(), &proto.ImportWalletData{
+		Name:     "receiving_wallet",
+		Key:      &proto.KeyPair{
+			Private: receivingAddr.ToWIF(),
+		},
+		Password: walletsPass,
+	})
+	assert.NoError(t, err)
+
+	_, err = clientPremine.wallet.SendTransaction(context.Background(), &proto.SendTransactionInfo{
+		Account: w.Public,
+		Amount:  "12800",
+	})
+	assert.NoError(t, err)
+}
+
+func TestValidatorsIncrease(t *testing.T) {
+	time.Sleep(time.Second * 5)
+	newValKeys, err := servers[0].Proposer().Keystore().GenerateNewValidatorKey(128)
+	assert.NoError(t, err)
+	keys := &proto.KeyPairs{Keys: make([]string, len(newValKeys))}
+	for i := range keys.Keys {
+		keys.Keys[i] = hex.EncodeToString(newValKeys[i].Marshal())
+	}
+
+	client, err := rpcClient("127.0.0.1:" + strconv.Itoa(25001))
+	assert.NoError(t, err)
+
+	success, err := client.wallet.StartValidatorBulk(context.Background(), keys)
+	assert.NoError(t, err)
+	assert.True(t, success.Success)
+}
+
+func TestChainCorrectnessWithMoreValidators(t *testing.T) {
+	for {
+		time.Sleep(time.Second * 1)
+		if servers[0].Chain().State().TipState().GetSlot() == 152 {
+			for _, n := range notifies {
+				assert.Equal(t, n.lastJustified, uint64(28))
+				assert.Equal(t, n.lastFinalized, uint64(27))
+				assert.False(t, n.slashed)
+			}
+			break
+		}
+	}
+}
+
+func TestStopProposers(t *testing.T) {
+	servers[0].Proposer().Stop()
+	servers[NumNodes-1].Proposer().Stop()
+	for _, n := range notifies {
+		n.showEpochs = true
+	}
+}
+
+
+func TestChainCorrectnessWithValidatorsPenalization(t *testing.T) {
+	for {
+		time.Sleep(time.Second * 1)
+		if servers[0].Chain().State().TipState().GetSlot() == 190 {
+			for _, n := range notifies {
+				assert.Equal(t, n.lastJustified, uint64(34))
+				assert.Equal(t, n.lastFinalized, uint64(33))
 			}
 			break
 		}

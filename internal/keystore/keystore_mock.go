@@ -133,3 +133,17 @@ func (mr *MockKeystoreMockRecorder) HasKeysToParticipate() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasKeysToParticipate", reflect.TypeOf((*MockKeystore)(nil).HasKeysToParticipate))
 }
+
+// AddKey mocks base method
+func (m *MockKeystore) AddKey(priv []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddKey", priv)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddKey indicates an expected call of AddKey
+func (mr *MockKeystoreMockRecorder) AddKey(priv interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddKey", reflect.TypeOf((*MockKeystore)(nil).AddKey), priv)
+}

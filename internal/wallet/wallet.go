@@ -75,38 +75,31 @@ type wallet struct {
 
 // NewWallet creates a new wallet.
 func NewWallet(ctx context.Context, log logger.Logger, path string, params *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
-	var txTopic *pubsub.Topic
-	var depositTopic *pubsub.Topic
-	var depositsTopic *pubsub.Topic
-	var exitTopic *pubsub.Topic
-	var exitsTopic *pubsub.Topic
-	var err error
-	if hostnode != nil {
-		txTopic, err = hostnode.Topic(p2p.MsgTxCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		depositTopic, err = hostnode.Topic(p2p.MsgDepositCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		depositsTopic, err = hostnode.Topic(p2p.MsgDepositsCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		exitTopic, err = hostnode.Topic(p2p.MsgExitCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		exitsTopic, err = hostnode.Topic(p2p.MsgExitsCmd)
-		if err != nil {
-			return nil, err
-		}
+	txTopic, err := hostnode.Topic(p2p.MsgTxCmd)
+	if err != nil {
+		return nil, err
 	}
+
+	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	depositsTopic, err := hostnode.Topic(p2p.MsgDepositsCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	exitsTopic, err := hostnode.Topic(p2p.MsgExitsCmd)
+	if err != nil {
+		return nil, err
+	}
+
 	wall := &wallet{
 		log:           log,
 		directory:     path,

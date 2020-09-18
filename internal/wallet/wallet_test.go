@@ -3,6 +3,11 @@ package wallet_test
 import (
 	"bytes"
 	"context"
+	"github.com/golang/mock/gomock"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/mempool"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"os"
 	"reflect"
 	"testing"
@@ -17,7 +22,7 @@ var testPass = "test_password"
 var serTestPriv = []byte{111, 88, 18, 177, 76, 20, 221, 218, 2, 86, 121, 165, 156, 129, 88, 88, 57, 132, 159, 180, 206, 45, 20, 200, 46, 20, 186, 56, 22, 234, 137, 24}
 
 func Test_NewWallet(t *testing.T) {
-	wm, err := createWallet(false)
+	wm, err := createWallet(t, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +64,7 @@ func Test_NewWallet(t *testing.T) {
 }
 
 func Test_OpenWallet(t *testing.T) {
-	wm, err := createWallet(true)
+	wm, err := createWallet(t, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +115,7 @@ func Test_OpenWallet(t *testing.T) {
 }
 
 func Test_OpenWalletWithWrongPassword(t *testing.T) {
-	wm, err := createWallet(true)
+	wm, err := createWallet(t, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,8 +126,21 @@ func Test_OpenWalletWithWrongPassword(t *testing.T) {
 	clean()
 }
 
-func createWallet(close bool) (wallet.Wallet, error) {
-	walletMan, err := wallet.NewWallet(context.Background(), nil, "./", &params.TestNet, nil, nil, nil, nil)
+func createWallet(t *testing.T, close bool) (wallet.Wallet, error) {
+	ctrl := gomock.NewController(t)
+
+	ch := chain.NewMockBlockchain(ctrl)
+	hn := hostnode.NewMockHostNode(ctrl)
+	hn.EXPECT().Topic(p2p.MsgTxCmd)
+	hn.EXPECT().Topic(p2p.MsgDepositCmd)
+	hn.EXPECT().Topic(p2p.MsgDepositsCmd)
+	hn.EXPECT().Topic(p2p.MsgExitCmd)
+	hn.EXPECT().Topic(p2p.MsgExitsCmd)
+
+	coinspool := mempool.NewMockCoinsMempool(ctrl)
+	actionpool := mempool.NewMockActionMempool(ctrl)
+
+	walletMan, err := wallet.NewWallet(context.Background(), nil, "./", &params.TestNet, ch, hn, coinspool, actionpool)
 	if err != nil {
 		return nil, err
 	}
