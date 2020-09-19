@@ -9,7 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 )
 
-func (c *RPCClient) getValidatorsList() (string, error) {
+func (c *RPCClient) GetValidatorsList() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.validators.GetValidatorsList(ctx, &proto.Empty{})
@@ -23,7 +23,7 @@ func (c *RPCClient) getValidatorsList() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getAccountValidators(args []string) (string, error) {
+func (c *RPCClient) GetAccountValidators(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {

@@ -10,7 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 )
 
-func (c *RPCClient) getChainInfo() (string, error) {
+func (c *RPCClient) GetChainInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.chain.GetChainInfo(ctx, &proto.Empty{})
@@ -24,7 +24,7 @@ func (c *RPCClient) getChainInfo() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getRawBlock(args []string) (string, error) {
+func (c *RPCClient) GetRawBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -40,7 +40,7 @@ func (c *RPCClient) getRawBlock(args []string) (string, error) {
 	return res.GetRawBlock(), nil
 }
 
-func (c *RPCClient) getBlockHash(args []string) (string, error) {
+func (c *RPCClient) GetBlockHash(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -60,7 +60,7 @@ func (c *RPCClient) getBlockHash(args []string) (string, error) {
 	return res.GetHash(), nil
 }
 
-func (c *RPCClient) getBlock(args []string) (string, error) {
+func (c *RPCClient) GetBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -80,7 +80,7 @@ func (c *RPCClient) getBlock(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getAccountInfo(args []string) (string, error) {
+func (c *RPCClient) GetAccountInfo(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {

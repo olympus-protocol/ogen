@@ -9,7 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 )
 
-func (c *RPCClient) listWallets() (string, error) {
+func (c *RPCClient) ListWallets() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.wallet.ListWallets(ctx, &proto.Empty{})
@@ -23,7 +23,7 @@ func (c *RPCClient) listWallets() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) createWallet(args []string) (string, error) {
+func (c *RPCClient) CreateWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 2 {
@@ -40,7 +40,7 @@ func (c *RPCClient) createWallet(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) openWallet(args []string) (string, error) {
+func (c *RPCClient) OpenWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 2 {
@@ -57,7 +57,7 @@ func (c *RPCClient) openWallet(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) closeWallet() (string, error) {
+func (c *RPCClient) CloseWallet() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.wallet.CloseWallet(ctx, &proto.Empty{})
@@ -71,7 +71,7 @@ func (c *RPCClient) closeWallet() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) importWallet(args []string) (string, error) {
+func (c *RPCClient) ImportWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 3 {
@@ -88,7 +88,7 @@ func (c *RPCClient) importWallet(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) dumpWallet() (string, error) {
+func (c *RPCClient) DumpWallet() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.wallet.DumpWallet(ctx, &proto.Empty{})
@@ -102,7 +102,7 @@ func (c *RPCClient) dumpWallet() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getBalance() (string, error) {
+func (c *RPCClient) GetBalance() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.wallet.GetBalance(ctx, &proto.Empty{})
@@ -116,7 +116,7 @@ func (c *RPCClient) getBalance() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getValidators() (string, error) {
+func (c *RPCClient) GetValidators() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.wallet.GetValidators(ctx, &proto.Empty{})
@@ -130,7 +130,7 @@ func (c *RPCClient) getValidators() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getAccount() (string, error) {
+func (c *RPCClient) GetAccount() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.wallet.GetAccount(ctx, &proto.Empty{})
@@ -144,7 +144,7 @@ func (c *RPCClient) getAccount() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) sendTransaction(args []string) (string, error) {
+func (c *RPCClient) SendTransaction(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 2 {
@@ -161,7 +161,7 @@ func (c *RPCClient) sendTransaction(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) exitValidator(args []string) (string, error) {
+func (c *RPCClient) ExitValidator(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -178,7 +178,7 @@ func (c *RPCClient) exitValidator(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) startValidator(args []string) (string, error) {
+func (c *RPCClient) StartValidator(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {

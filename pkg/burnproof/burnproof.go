@@ -11,6 +11,8 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
+var MerkleRootHash, _ = chainhash.NewHashFromStr("f9afaa28423bf0acf296c3ff688a4bbb18e7d0528fd6f2b688028be5614bc386")
+
 // CoinsProof is a proof of coins on the old blockchain.
 type CoinsProof struct {
 	MerkleIndex  uint32
@@ -173,7 +175,7 @@ func verifyPkhMatchesAddress(script []byte, address string) error {
 }
 
 // VerifyBurn verifies a burn proof.
-func VerifyBurn(proofBytes []byte, merkleRoot chainhash.Hash, address string) error {
+func VerifyBurn(proofBytes []byte, address string) error {
 	var proofs []*CoinsProof
 
 	buf := bytes.NewBuffer(proofBytes)
@@ -192,7 +194,7 @@ func VerifyBurn(proofBytes []byte, merkleRoot chainhash.Hash, address string) er
 	}
 
 	for _, c := range proofs {
-		if err := verifyMerkleRoot(merkleRoot, c); err != nil {
+		if err := verifyMerkleRoot(*MerkleRootHash, c); err != nil {
 			return err
 		}
 

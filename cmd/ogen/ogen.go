@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/olympus-protocol/ogen/cmd/ogen/cli"
+	"github.com/olympus-protocol/ogen/cmd/ogen/commands"
 	_ "net/http/pprof"
 )
 
 func main() {
-	cli.Execute()
+	commands.Execute()
 }
