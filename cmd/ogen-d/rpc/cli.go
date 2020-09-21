@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen-d/db"
@@ -58,11 +59,27 @@ func (c *CLI) Run(optArgs []string) {
 			_ = syncClient.CloseSend()
 			break
 		}
-		fmt.Println(res.Data)
+		blockBytes, err := hex.DecodeString(res.Data)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		var blockOgen primitives.Block
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		err = c.dbClient.InsertBlock(blockOgen, blockCount)
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to insert")
+			break
+		}
 		blockCount++
 	}
 
-	fmt.Printf("updated %v blocks", blockCount)
+	fmt.Printf("registered %v blocks", blockCount)
 }
 
 func (c *RPCClient) sync(hash string) (proto.Chain_SyncClient, error) {
