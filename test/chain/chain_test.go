@@ -140,7 +140,7 @@ func createServers() {
 		go func(index int, folder string, wg *sync.WaitGroup) {
 			defer wg.Done()
 			log := loggers[index]
-			params.SlotDuration = 1
+			params.SlotDuration = 6
 			db, err := blockdb.NewBlockDB(folder, params, log)
 			if err != nil {
 				panic(err)
@@ -161,7 +161,6 @@ func createServers() {
 				LogFile:      false,
 				Pprof:        false,
 			}
-			params.SlotDuration = 1
 			s, err := server.NewServer(context.Background(), config, log, params, db, initParams)
 			if err != nil {
 				panic(err)

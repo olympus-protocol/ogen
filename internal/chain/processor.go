@@ -286,8 +286,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
 		ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))
 		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.GetFinalizedEpoch(), newState.GetJustifiedEpoch())
-
-		// TODO: add a log that shows network participation with expected.
+		ch.log.Debugf("network participation: got %d expected %d percentage %d")
 
 		ch.notifeeLock.RLock()
 		stateCopy := newState.Copy()
