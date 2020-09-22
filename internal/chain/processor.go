@@ -293,13 +293,10 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			voted += len(v.ParticipationBitfield.BitIndices())
 		}
 
-		tip, err := ch.State().TipStateAtSlot(block.Header.Slot)
+		comittee, err := newState.GetVoteCommittee(block.Header.Slot, &ch.params)
 		if err == nil {
-			comittee, err := tip.GetVoteCommittee(block.Header.Slot, &ch.params)
-			if err == nil {
-				percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
-				ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
-			}
+			percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
+			ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
 		}
 
 		ch.notifeeLock.RLock()
