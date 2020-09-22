@@ -297,7 +297,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		if err == nil {
 			comittee, err := tip.GetVoteCommittee(block.Header.Slot, &ch.params)
 			if err == nil {
-				percentage := fmt.Sprintf("%.2f", float64(voted) / float64(len(comittee)) * 100)
+				percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
 				ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
 			}
 		}

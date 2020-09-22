@@ -68,7 +68,7 @@ func FuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.Mu
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		d.Sig = sig
 		if !correct {
-			d.ParticipationBitfield = bitfield.NewBitlist(50000)
+			d.ParticipationBitfield = bitfield.NewBitlist(50064)
 		}
 		if !complete {
 			d.Data = nil

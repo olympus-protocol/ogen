@@ -11,7 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-var MerkleRootHash, _ = chainhash.NewHashFromStr("f9afaa28423bf0acf296c3ff688a4bbb18e7d0528fd6f2b688028be5614bc386")
+var MerkleRootHash, _ = chainhash.NewHashFromStr("0f14e0283ba00f5d516a5d14c33dc713847f4066f0211b904690ece3d31be70b")
 
 // CoinsProof is a proof of coins on the old blockchain.
 type CoinsProof struct {
