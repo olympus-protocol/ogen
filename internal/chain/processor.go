@@ -286,7 +286,21 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
 		ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))
 		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.GetFinalizedEpoch(), newState.GetJustifiedEpoch())
-		ch.log.Debugf("network participation: got %d expected %d percentage %d")
+
+		voted := 0
+
+		for _, v := range block.Votes {
+			voted += len(v.ParticipationBitfield.BitIndices())
+		}
+
+		tip, err := ch.State().TipStateAtSlot(block.Header.Slot)
+		if err == nil {
+			comittee, err := tip.GetVoteCommittee(block.Header.Slot, &ch.params)
+			if err == nil {
+				percentage := fmt.Sprintf("%.2f", float64(voted) / float64(len(comittee)) * 100)
+				ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
+			}
+		}
 
 		ch.notifeeLock.RLock()
 		stateCopy := newState.Copy()

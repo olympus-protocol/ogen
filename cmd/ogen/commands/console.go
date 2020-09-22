@@ -100,10 +100,6 @@ func init() {
 	rootCmd.AddCommand(cliCmd)
 }
 
-func main() {
-	cliCmd.Execute()
-}
-
 // Run runs the CLI.
 func (c *CLI) Run(optArgs []string) {
 	color.Green("Welcome to the Ogen console")
