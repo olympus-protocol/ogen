@@ -2,12 +2,10 @@ package keystore
 
 import (
 	"errors"
-	"path"
-	"sync"
-
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"go.etcd.io/bbolt"
+	"path"
 )
 
 var (
@@ -51,10 +49,6 @@ type keystore struct {
 	datadir string
 	// open prevents accessing the database when is closed
 	open bool
-	// keys is a memory map for access the keys faster
-	keys map[*bls.PublicKey]*bls.SecretKey
-	// keysLock is the maps lock
-	keysLock sync.RWMutex
 }
 
 var _ Keystore = &keystore{}
@@ -106,48 +100,6 @@ func (k *keystore) OpenKeystore() error {
 	return nil
 }
 
-// load is used to properly fill the Keystore data with the database information.
-// returns ErrorNotInitialized if the database doesn't exists or is not properly initialized.
-func (k *keystore) load(db *bbolt.DB) error {
-
-	keysMap := make(map[*bls.PublicKey]*bls.SecretKey)
-
-	// Load the keys to a memory map
-	err := db.View(func(tx *bbolt.Tx) error {
-		bkt := tx.Bucket(keysBucket)
-		if bkt == nil {
-			return ErrorNotInitialized
-		}
-
-		err := bkt.ForEach(func(keypub, keyprv []byte) error {
-
-			key, err := bls.SecretKeyFromBytes(keyprv)
-			if err != nil {
-				return err
-			}
-
-			keysMap[key.PublicKey()] = key
-
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// If everything goes correctly, we add the elements to the struct
-	k.db = db
-	k.keys = keysMap
-	k.open = true
-
-	return nil
-}
-
 func (k *keystore) initialize(db *bbolt.DB) error {
 
 	err := db.Update(func(tx *bbolt.Tx) error {
@@ -165,10 +117,25 @@ func (k *keystore) initialize(db *bbolt.DB) error {
 	return k.load(db)
 }
 
+func (k *keystore) load(db *bbolt.DB) error {
+	err := db.View(func(tx *bbolt.Tx) error {
+		bkt := tx.Bucket(keysBucket)
+		if bkt == nil {
+			return ErrorNotInitialized
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	k.db = db
+	k.open = true
+	return nil
+}
+
 // Close closes the keystore database
 func (k *keystore) Close() error {
 	k.open = false
-	k.keys = map[*bls.PublicKey]*bls.SecretKey{}
 	return k.db.Close()
 }
 

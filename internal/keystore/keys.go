@@ -12,31 +12,26 @@ func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 		return nil, false
 	}
 
-	pub, err := bls.PublicKeyFromBytes(pubkey[:])
+	var key []byte
+	err := k.db.View(func(tx *bbolt.Tx) error {
+		bkt := tx.Bucket(keysBucket)
+		key = bkt.Get(pubkey[:])
+		return nil
+	})
 	if err != nil {
 		return nil, false
 	}
 
-	// TODO find a more optimized way to ensure keysMap and keysDB match.
+	if key == nil {
+		return nil, false
+	}
 
-	keysCount, err := k.getDBKeysCount()
+	blsKey, err := bls.SecretKeyFromBytes(key)
 	if err != nil {
 		return nil, false
 	}
 
-	if keysCount != len(k.keys) {
-		err = k.reloadKeysMap()
-		if err != nil {
-			return nil, false
-		}
-	}
-
-	k.keysLock.Lock()
-	defer k.keysLock.Unlock()
-
-	key, ok := k.keys[pub]
-
-	return key, ok
+	return blsKey, true
 }
 
 // GetValidatorKeys returns all keys on keystore.
@@ -46,16 +41,32 @@ func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 		return nil, ErrorNoOpen
 	}
 
-	defer k.keysLock.Unlock()
-
-	k.keysLock.Lock()
-
 	var keys []*bls.SecretKey
 
-	for _, k := range k.keys {
-		keys = append(keys, k)
-	}
+	err := k.db.View(func(tx *bbolt.Tx) error {
 
+		bkt := tx.Bucket(keysBucket)
+
+		err := bkt.ForEach(func(keypub, keyprv []byte) error {
+
+			key, err := bls.SecretKeyFromBytes(keyprv)
+			if err != nil {
+				return err
+			}
+
+			keys = append(keys, key)
+
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return keys, nil
 }
 
@@ -94,93 +105,11 @@ func (k *keystore) addKey(priv *bls.SecretKey) error {
 		return ErrorNoOpen
 	}
 
-	err := k.addKeyDB(priv)
-	if err != nil {
-		return err
-	}
-
-	err = k.addKeyMap(priv)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (k *keystore) addKeyMap(key *bls.SecretKey) error {
-
-	if !k.open {
-		return ErrorNoOpen
-	}
-
-	k.keysLock.Lock()
-	defer k.keysLock.Unlock()
-
-	k.keys[key.PublicKey()] = key
-	return nil
-}
-
-func (k *keystore) addKeyDB(key *bls.SecretKey) error {
-
-	if !k.open {
-		return ErrorNoOpen
-	}
-
 	return k.db.Update(func(tx *bbolt.Tx) error {
 
 		bkt := tx.Bucket(keysBucket)
 
-		err := bkt.Put(key.PublicKey().Marshal(), key.Marshal())
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-}
-
-func (k *keystore) getDBKeysCount() (int, error) {
-	if !k.open {
-		return 0, ErrorNoOpen
-	}
-	count := 0
-	err := k.db.View(func(tx *bbolt.Tx) error {
-
-		bkt := tx.Bucket(keysBucket)
-
-		stats := bkt.Stats()
-		count = stats.KeyN
-
-		return nil
-	})
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (k *keystore) reloadKeysMap() error {
-	k.keysLock.Lock()
-	defer k.keysLock.Unlock()
-
-	k.keys = make(map[*bls.PublicKey]*bls.SecretKey)
-
-	return k.db.Update(func(tx *bbolt.Tx) error {
-
-		bkt := tx.Bucket(keysBucket)
-
-		err := bkt.ForEach(func(keypub, keyprv []byte) error {
-
-			key, err := bls.SecretKeyFromBytes(keyprv)
-			if err != nil {
-				return err
-			}
-
-			k.keys[key.PublicKey()] = key
-
-			return nil
-		})
+		err := bkt.Put(priv.PublicKey().Marshal(), priv.Marshal())
 		if err != nil {
 			return err
 		}
