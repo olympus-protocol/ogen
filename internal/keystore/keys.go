@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"go.etcd.io/bbolt"
 )
 
@@ -13,12 +12,29 @@ func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 		return nil, false
 	}
 
+	pub, err := bls.PublicKeyFromBytes(pubkey[:])
+	if err != nil {
+		return nil, false
+	}
+
+	// TODO find a more optimized way to ensure keysMap and keysDB match.
+
+	keysCount, err := k.getDBKeysCount()
+	if err != nil {
+		return nil, false
+	}
+
+	if keysCount != len(k.keys) {
+		err = k.reloadKeysMap()
+		if err != nil {
+			return nil, false
+		}
+	}
+
 	k.keysLock.Lock()
 	defer k.keysLock.Unlock()
 
-	pubHash := chainhash.HashH(pubkey[:])
-
-	key, ok := k.keys[pubHash]
+	key, ok := k.keys[pub]
 
 	return key, ok
 }
@@ -78,12 +94,12 @@ func (k *keystore) addKey(priv *bls.SecretKey) error {
 		return ErrorNoOpen
 	}
 
-	err := k.addKeyDB(priv.Marshal(), priv.PublicKey().Marshal())
+	err := k.addKeyDB(priv)
 	if err != nil {
 		return err
 	}
 
-	err = k.addKeyMap(chainhash.HashH(priv.PublicKey().Marshal()), priv)
+	err = k.addKeyMap(priv)
 	if err != nil {
 		return err
 	}
@@ -91,7 +107,7 @@ func (k *keystore) addKey(priv *bls.SecretKey) error {
 	return nil
 }
 
-func (k *keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
+func (k *keystore) addKeyMap(key *bls.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen
@@ -100,11 +116,11 @@ func (k *keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
 	k.keysLock.Lock()
 	defer k.keysLock.Unlock()
 
-	k.keys[hash] = key
+	k.keys[key.PublicKey()] = key
 	return nil
 }
 
-func (k *keystore) addKeyDB(encryptedKey []byte, pubkey []byte) error {
+func (k *keystore) addKeyDB(key *bls.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen
@@ -114,7 +130,57 @@ func (k *keystore) addKeyDB(encryptedKey []byte, pubkey []byte) error {
 
 		bkt := tx.Bucket(keysBucket)
 
-		err := bkt.Put(pubkey, encryptedKey)
+		err := bkt.Put(key.PublicKey().Marshal(), key.Marshal())
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+}
+
+func (k *keystore) getDBKeysCount() (int, error) {
+	if !k.open {
+		return 0, ErrorNoOpen
+	}
+	count := 0
+	err := k.db.View(func(tx *bbolt.Tx) error {
+
+		bkt := tx.Bucket(keysBucket)
+
+		stats := bkt.Stats()
+		count = stats.KeyN
+
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (k *keystore) reloadKeysMap() error {
+	k.keysLock.Lock()
+	defer k.keysLock.Unlock()
+
+	k.keys = make(map[*bls.PublicKey]*bls.SecretKey)
+
+	return k.db.Update(func(tx *bbolt.Tx) error {
+
+		bkt := tx.Bucket(keysBucket)
+
+		err := bkt.ForEach(func(keypub, keyprv []byte) error {
+
+			key, err := bls.SecretKeyFromBytes(keyprv)
+			if err != nil {
+				return err
+			}
+
+			k.keys[key.PublicKey()] = key
+
+			return nil
+		})
 		if err != nil {
 			return err
 		}

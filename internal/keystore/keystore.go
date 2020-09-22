@@ -7,7 +7,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"go.etcd.io/bbolt"
 )
 
@@ -53,7 +52,7 @@ type keystore struct {
 	// open prevents accessing the database when is closed
 	open bool
 	// keys is a memory map for access the keys faster
-	keys map[chainhash.Hash]*bls.SecretKey
+	keys map[*bls.PublicKey]*bls.SecretKey
 	// keysLock is the maps lock
 	keysLock sync.RWMutex
 }
@@ -111,7 +110,7 @@ func (k *keystore) OpenKeystore() error {
 // returns ErrorNotInitialized if the database doesn't exists or is not properly initialized.
 func (k *keystore) load(db *bbolt.DB) error {
 
-	keysMap := make(map[chainhash.Hash]*bls.SecretKey)
+	keysMap := make(map[*bls.PublicKey]*bls.SecretKey)
 
 	// Load the keys to a memory map
 	err := db.View(func(tx *bbolt.Tx) error {
@@ -122,14 +121,12 @@ func (k *keystore) load(db *bbolt.DB) error {
 
 		err := bkt.ForEach(func(keypub, keyprv []byte) error {
 
-			pubHash := chainhash.HashH(keypub)
-
 			key, err := bls.SecretKeyFromBytes(keyprv)
 			if err != nil {
 				return err
 			}
 
-			keysMap[pubHash] = key
+			keysMap[key.PublicKey()] = key
 
 			return nil
 		})
@@ -171,7 +168,7 @@ func (k *keystore) initialize(db *bbolt.DB) error {
 // Close closes the keystore database
 func (k *keystore) Close() error {
 	k.open = false
-	k.keys = map[chainhash.Hash]*bls.SecretKey{}
+	k.keys = map[*bls.PublicKey]*bls.SecretKey{}
 	return k.db.Close()
 }
 
