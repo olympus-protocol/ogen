@@ -140,7 +140,7 @@ func createServers() {
 		go func(index int, folder string, wg *sync.WaitGroup) {
 			defer wg.Done()
 			log := loggers[index]
-			params.SlotDuration = 6
+			params.SlotDuration = 4
 			db, err := blockdb.NewBlockDB(folder, params, log)
 			if err != nil {
 				panic(err)
@@ -387,10 +387,10 @@ func TestValidatorsIncrease(t *testing.T) {
 func TestChainCorrectnessWithMoreValidators(t *testing.T) {
 	for {
 		time.Sleep(time.Second * 1)
-		if servers[0].Chain().State().TipState().GetSlot() == 152 {
+		if servers[0].Chain().State().TipState().GetSlot() == 56 {
 			for _, n := range notifies {
-				assert.Equal(t, n.lastJustified, uint64(28))
-				assert.Equal(t, n.lastFinalized, uint64(27))
+				assert.Equal(t, n.lastJustified, uint64(9))
+				assert.Equal(t, n.lastFinalized, uint64(8))
 				assert.False(t, n.slashed)
 			}
 			break
@@ -407,10 +407,10 @@ func TestStopProposers(t *testing.T) {
 func TestChainCorrectnessWithValidatorsPenalization(t *testing.T) {
 	for {
 		time.Sleep(time.Second * 1)
-		if servers[0].Chain().State().TipState().GetSlot() == 190 {
+		if servers[0].Chain().State().TipState().GetSlot() == 86 {
 			for _, n := range notifies {
-				assert.Equal(t, n.lastJustified, uint64(34))
-				assert.Equal(t, n.lastFinalized, uint64(33))
+				assert.Equal(t, n.lastJustified, uint64(15))
+				assert.Equal(t, n.lastFinalized, uint64(14))
 			}
 			break
 		}
