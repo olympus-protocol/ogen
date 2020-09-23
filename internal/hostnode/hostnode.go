@@ -57,7 +57,7 @@ type HostNode interface {
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	Database() Database
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
-	SavePeer(pinfo *peer.AddrInfo) error
+	SavePeer(pinfo peer.AddrInfo) error
 }
 
 var _ HostNode = &hostNode{}
@@ -301,11 +301,17 @@ func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	return &pinfo
 }
 
-func (node *hostNode) SavePeer(pinfo *peer.AddrInfo) error {
+func (node *hostNode) SavePeer(pinfo peer.AddrInfo) error {
 	err := node.db.SavePeer(pinfo)
 	if err != nil {
 		return err
 	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
-	return node.host.Connect(ctx, *pinfo)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	err = node.host.Connect(ctx, pinfo)
+	if err != nil {
+		cancel()
+		return err
+	}
+	return nil
 }

@@ -365,7 +365,7 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	// Once version handshake is done, we save the peer to the DB
 	p := sp.host.GetPeerInfo(id)
-	pinfo := &peer.AddrInfo{
+	pinfo := peer.AddrInfo{
 		ID:    p.ID,
 		Addrs: p.Addrs,
 	}

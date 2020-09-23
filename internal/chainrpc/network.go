@@ -37,7 +37,7 @@ func (s *networkServer) AddPeer(_ context.Context, peerAddr *proto.IP) (*proto.S
 	if err != nil {
 		return nil, err
 	}
-	err = s.hostnode.SavePeer(pinfo)
+	err = s.hostnode.SavePeer(*pinfo)
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}

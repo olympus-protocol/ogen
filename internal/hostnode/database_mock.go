@@ -35,7 +35,7 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 }
 
 // SavePeer mocks base method
-func (m *MockDatabase) SavePeer(pinfo *peer.AddrInfo) error {
+func (m *MockDatabase) SavePeer(pinfo peer.AddrInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SavePeer", pinfo)
 	ret0, _ := ret[0].(error)
@@ -49,7 +49,7 @@ func (mr *MockDatabaseMockRecorder) SavePeer(pinfo interface{}) *gomock.Call {
 }
 
 // BanscorePeer mocks base method
-func (m *MockDatabase) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
+func (m *MockDatabase) BanscorePeer(pinfo peer.AddrInfo, weight uint16) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BanscorePeer", pinfo, weight)
 	ret0, _ := ret[0].(error)
@@ -63,10 +63,10 @@ func (mr *MockDatabaseMockRecorder) BanscorePeer(pinfo, weight interface{}) *gom
 }
 
 // GetSavedPeers mocks base method
-func (m *MockDatabase) GetSavedPeers() ([]*peer.AddrInfo, error) {
+func (m *MockDatabase) GetSavedPeers() ([]peer.AddrInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSavedPeers")
-	ret0, _ := ret[0].([]*peer.AddrInfo)
+	ret0, _ := ret[0].([]peer.AddrInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

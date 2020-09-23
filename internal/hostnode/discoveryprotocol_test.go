@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -26,8 +27,8 @@ var mockPeers = make([]host.Host, mockPeersNum)
 
 func init() {
 	for i := 0; i < mockPeersNum; i++ {
-		peer, _ := mockNet.GenPeer()
-		mockPeers[i] = peer
+		p, _ := mockNet.GenPeer()
+		mockPeers[i] = p
 	}
 }
 
@@ -45,12 +46,15 @@ func TestDiscoveryProtocol_New(t *testing.T) {
 	bc := chain.NewMockBlockchain(ctrl)
 	bc.EXPECT().Notify(gomock.Any())
 
+	db := hostnode.NewMockDatabase(ctrl)
+	db.EXPECT().GetSavedPeers().Return([]peer.AddrInfo{}, nil)
+
 	hn := hostnode.NewMockHostNode(ctrl)
 	hn.EXPECT().Topic(p2p.MsgValidatorStartCmd).Return(g.Join(p2p.MsgVoteCmd))
 	hn.EXPECT().GetHost().Return(h)
 	hn.EXPECT().SetStreamHandler(gomock.Any(), gomock.Any()).AnyTimes()
 	hn.EXPECT().Notify(gomock.Any()).Times(4)
-
+	hn.EXPECT().Database().Return(db)
 	var c hostnode.Config
 	c.Log = log
 	c.Path = testdata.Node1Folder

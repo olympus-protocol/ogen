@@ -44,6 +44,9 @@ type discoveryProtocol struct {
 	lastConnectLock sync.RWMutex
 
 	protocolHandler ProtocolHandler
+
+	nonWorkingPeersLock sync.RWMutex
+	nonWorkingPeers     map[peer.ID]*peer.AddrInfo
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
@@ -56,6 +59,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		lastConnect:     make(map[peer.ID]time.Time),
 		protocolHandler: ph,
 		log:             config.Log,
+		nonWorkingPeers: make(map[peer.ID]*peer.AddrInfo),
 	}
 	if err := ph.RegisterHandler(p2p.MsgGetAddrCmd, dp.handleGetAddr); err != nil {
 		return nil, err
@@ -99,10 +103,17 @@ func (cm *discoveryProtocol) handleAddr(_ peer.ID, msg p2p.Message) error {
 		if p.ID == cm.host.GetHost().ID() {
 			continue
 		}
-		if err := cm.host.SavePeer(p); err != nil {
-			cm.log.Errorf("error saving peer: %s", err)
-			continue
+		cm.nonWorkingPeersLock.Lock()
+		_, ok := cm.nonWorkingPeers[p.ID]
+		if !ok {
+			if err := cm.host.SavePeer(*p); err != nil {
+				cm.log.Errorf("error saving peer: %s", err)
+				cm.nonWorkingPeers[p.ID] = p
+				cm.nonWorkingPeersLock.Unlock()
+				continue
+			}
 		}
+		cm.nonWorkingPeersLock.Unlock()
 	}
 
 	return nil
@@ -145,9 +156,17 @@ const askForPeersCycle = 60 * time.Second
 
 func (cm *discoveryProtocol) Start() error {
 	go func() {
-		for _, addr := range cm.config.InitialNodes {
+		storedPeers, err := cm.host.Database().GetSavedPeers()
+		if err != nil {
+			cm.log.Errorf("unable to load stored peers")
+		}
+		var initialPeers []peer.AddrInfo
+		initialPeers = append(initialPeers, storedPeers...)
+		initialPeers = append(initialPeers, cm.config.InitialNodes...)
+		for _, addr := range initialPeers {
 			if err := cm.connect(&addr); err != nil {
 				cm.log.Errorf("error connecting to add node %s: %s", addr, err)
+				cm.host.Database()
 			}
 		}
 	}()
@@ -185,7 +204,7 @@ func (cm *discoveryProtocol) connect(pi *peer.AddrInfo) error {
 	lastConnect, found := cm.lastConnect[pi.ID]
 	if !found || time.Since(lastConnect) > connectionCooldown {
 		cm.lastConnect[pi.ID] = time.Now()
-		return cm.host.SavePeer(pi)
+		return cm.host.SavePeer(*pi)
 	}
 	return nil
 }

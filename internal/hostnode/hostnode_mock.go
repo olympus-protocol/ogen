@@ -300,7 +300,7 @@ func (mr *MockHostNodeMockRecorder) GetPeerInfo(id interface{}) *gomock.Call {
 }
 
 // SavePeer mocks base method
-func (m *MockHostNode) SavePeer(pinfo *peer.AddrInfo) error {
+func (m *MockHostNode) SavePeer(pinfo peer.AddrInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SavePeer", pinfo)
 	ret0, _ := ret[0].(error)
