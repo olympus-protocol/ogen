@@ -69,7 +69,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 
 const connectionCooldown = 60 * time.Second
 
-func shufflePeers(peers []*peer.AddrInfo) []*peer.AddrInfo {
+func shufflePeers(peers []peer.AddrInfo) []peer.AddrInfo {
 	rand.Shuffle(len(peers), func(i, j int) {
 		peers[i], peers[j] = peers[j], peers[i]
 	})
@@ -77,7 +77,7 @@ func shufflePeers(peers []*peer.AddrInfo) []*peer.AddrInfo {
 	return peers
 }
 
-func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
+func (cm *discoveryProtocol) handleAddr(_ peer.ID, msg p2p.Message) error {
 	msgAddr, ok := msg.(*p2p.MsgAddr)
 	if !ok {
 		return fmt.Errorf("message received is not addr")
@@ -87,7 +87,7 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 
 	for _, pb := range peers {
 		offset := binary.LittleEndian.Uint64(pb[:])
-		maBytes := pb[8:8+offset]
+		maBytes := pb[8 : 8+offset]
 		pma, err := multiaddr.NewMultiaddrBytes(maBytes)
 		if err != nil {
 			continue
@@ -114,15 +114,17 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 		return fmt.Errorf("message received is not get addr")
 	}
 	var peers [][256]byte
-	peersInfo, err := cm.host.Database().GetSavedPeers()
-	if err != nil {
-		return err
+	peersIDs := cm.host.GetHost().Peerstore().Peers()
+	var peersInfo []peer.AddrInfo
+	for _, id := range peersIDs {
+		pInfo := cm.host.GetHost().Peerstore().PeerInfo(id)
+		peersInfo = append(peersInfo, pInfo)
 	}
 	peersData := shufflePeers(peersInfo)
 
 	for i, p := range peersData {
 		if i < p2p.MaxAddrPerMsg {
-			peerMulti, err := peer.AddrInfoToP2pAddrs(p)
+			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
 			if err != nil {
 				continue
 			}
@@ -195,7 +197,7 @@ func (cm *discoveryProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
 func (cm *discoveryProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
 
 // Connected is called when we connect to a peer.
-func (cm *discoveryProtocol) Connected(net network.Network, conn network.Conn) {
+func (cm *discoveryProtocol) Connected(_ network.Network, conn network.Conn) {
 	if conn.Stat().Direction != network.DirOutbound {
 		return
 	}
@@ -210,7 +212,7 @@ func (cm *discoveryProtocol) Connected(net network.Network, conn network.Conn) {
 }
 
 // Disconnected is called when we disconnect from a peer.
-func (cm *discoveryProtocol) Disconnected(net network.Network, conn network.Conn) {}
+func (cm *discoveryProtocol) Disconnected(network.Network, network.Conn) {}
 
 // OpenedStream is called when we open a stream.
 func (cm *discoveryProtocol) OpenedStream(network.Network, network.Stream) {}

@@ -135,7 +135,6 @@ func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		}
 		return nil
 	})
-	fmt.Println(err)
 	if err != nil {
 		p.notifeeLock.Lock()
 		for _, n := range p.notifees {
