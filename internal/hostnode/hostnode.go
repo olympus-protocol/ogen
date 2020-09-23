@@ -52,6 +52,7 @@ type HostNode interface {
 	ConnectedToPeer(id peer.ID) bool
 	Notify(notifee network.Notifiee)
 	GetPeerDirection(id peer.ID) network.Direction
+	Stop()
 	Start() error
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	Database() Database
@@ -276,7 +277,14 @@ func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	return conns[0].Stat().Direction
 }
 
-// Start the host node and start discovering hostnode.
+// Stop closes all topics before closing the server.
+func (node *hostNode) Stop() {
+	for _, topic := range node.topics {
+		_ = topic.Close()
+	}
+}
+
+// Start the host node and start discovering peers.
 func (node *hostNode) Start() error {
 	if err := node.discoveryProtocol.Start(); err != nil {
 		return err

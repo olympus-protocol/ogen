@@ -233,6 +233,18 @@ func (mr *MockHostNodeMockRecorder) GetPeerDirection(id interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerDirection", reflect.TypeOf((*MockHostNode)(nil).GetPeerDirection), id)
 }
 
+// Stop mocks base method
+func (m *MockHostNode) Stop() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Stop")
+}
+
+// Stop indicates an expected call of Stop
+func (mr *MockHostNodeMockRecorder) Stop() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockHostNode)(nil).Stop))
+}
+
 // Start mocks base method
 func (m *MockHostNode) Start() error {
 	m.ctrl.T.Helper()
