@@ -312,6 +312,5 @@ func (node *hostNode) SavePeer(pinfo *peer.AddrInfo) error {
 		cancel()
 		return err
 	}
-	cancel()
 	return nil
 }
