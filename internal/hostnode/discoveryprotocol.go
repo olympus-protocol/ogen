@@ -139,7 +139,7 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	})
 }
 
-const askForPeersCycle = 2 * time.Second
+const askForPeersCycle = 60 * time.Second
 
 func (cm *discoveryProtocol) Start() error {
 	go func() {
