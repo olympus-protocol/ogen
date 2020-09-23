@@ -5,7 +5,7 @@ const MaxAddrPerMsg = 32
 
 // MsgAddr is the struct for the response of getaddr.
 type MsgAddr struct {
-	Addr [][64]byte `ssz-max:"32"`
+	Addr [][256]byte `ssz-max:"32"`
 }
 
 // Marshal serializes the data to bytes
@@ -25,5 +25,5 @@ func (m *MsgAddr) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgAddr message.
 func (m *MsgAddr) MaxPayloadLength() uint64 {
-	return uint64(MaxAddrPerMsg*64) + 4
+	return uint64(MaxAddrPerMsg*512) + 4
 }

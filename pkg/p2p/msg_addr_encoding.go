@@ -17,7 +17,7 @@ func (m *MsgAddr) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Offset (0) 'Addr'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(m.Addr) * 64
+	offset += len(m.Addr) * 256
 
 	// Field (0) 'Addr'
 	if len(m.Addr) > 32 {
@@ -50,13 +50,13 @@ func (m *MsgAddr) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Addr'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 64, 32)
+		num, err := ssz.DivideInt2(len(buf), 256, 32)
 		if err != nil {
 			return err
 		}
-		m.Addr = make([][64]byte, num)
+		m.Addr = make([][256]byte, num)
 		for ii := 0; ii < num; ii++ {
-			copy(m.Addr[ii][:], buf[ii*64:(ii+1)*64])
+			copy(m.Addr[ii][:], buf[ii*256:(ii+1)*256])
 		}
 	}
 	return err
@@ -67,7 +67,7 @@ func (m *MsgAddr) SizeSSZ() (size int) {
 	size = 4
 
 	// Field (0) 'Addr'
-	size += len(m.Addr) * 64
+	size += len(m.Addr) * 256
 
 	return
 }

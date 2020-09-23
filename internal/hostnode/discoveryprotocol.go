@@ -2,6 +2,7 @@ package hostnode
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -66,7 +67,6 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 	return dp, nil
 }
 
-const connectionTimeout = 10 * time.Second
 const connectionCooldown = 60 * time.Second
 
 func shufflePeers(peers []*peer.AddrInfo) []*peer.AddrInfo {
@@ -86,7 +86,9 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	peers := msgAddr.Addr
 
 	for _, pb := range peers {
-		pma, err := multiaddr.NewMultiaddrBytes(pb[:])
+		offset := binary.LittleEndian.Uint64(pb[:])
+		maBytes := pb[8:8+offset]
+		pma, err := multiaddr.NewMultiaddrBytes(maBytes)
 		if err != nil {
 			continue
 		}
@@ -111,13 +113,11 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return fmt.Errorf("message received is not get addr")
 	}
-	var peers [][64]byte
-
+	var peers [][256]byte
 	peersInfo, err := cm.host.Database().GetSavedPeers()
 	if err != nil {
 		return err
 	}
-
 	peersData := shufflePeers(peersInfo)
 
 	for i, p := range peersData {
@@ -126,8 +126,10 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 			if err != nil {
 				continue
 			}
-			var pb [64]byte
-			copy(pb[:], peerMulti[0].Bytes())
+			var pb [256]byte
+			offset := len(peerMulti[0].Bytes())
+			binary.LittleEndian.PutUint64(pb[:], uint64(offset))
+			copy(pb[8:], peerMulti[0].Bytes())
 			peers = append(peers, pb)
 		}
 	}
@@ -137,7 +139,7 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	})
 }
 
-const askForPeersCycle = 20 * time.Second
+const askForPeersCycle = 2 * time.Second
 
 func (cm *discoveryProtocol) Start() error {
 	go func() {
