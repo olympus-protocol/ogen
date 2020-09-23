@@ -44,14 +44,12 @@ type discoveryProtocol struct {
 	lastConnectLock sync.RWMutex
 
 	protocolHandler ProtocolHandler
-
-	nonWorkingPeersLock sync.RWMutex
-	nonWorkingPeers     map[peer.ID]*peer.AddrInfo
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
 func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
 	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
+
 	dp := &discoveryProtocol{
 		host:            host,
 		ctx:             ctx,
@@ -59,15 +57,10 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		lastConnect:     make(map[peer.ID]time.Time),
 		protocolHandler: ph,
 		log:             config.Log,
-		nonWorkingPeers: make(map[peer.ID]*peer.AddrInfo),
 	}
-	if err := ph.RegisterHandler(p2p.MsgGetAddrCmd, dp.handleGetAddr); err != nil {
-		return nil, err
-	}
-	if err := ph.RegisterHandler(p2p.MsgAddrCmd, dp.handleAddr); err != nil {
-		return nil, err
-	}
+
 	host.Notify(dp)
+
 	return dp, nil
 }
 
@@ -103,17 +96,10 @@ func (cm *discoveryProtocol) handleAddr(_ peer.ID, msg p2p.Message) error {
 		if p.ID == cm.host.GetHost().ID() {
 			continue
 		}
-		cm.nonWorkingPeersLock.Lock()
-		_, ok := cm.nonWorkingPeers[p.ID]
-		if !ok {
-			if err := cm.host.SavePeer(*p); err != nil {
-				cm.log.Errorf("error saving peer: %s", err)
-				cm.nonWorkingPeers[p.ID] = p
-				cm.nonWorkingPeersLock.Unlock()
-				continue
-			}
+		if err := cm.host.SavePeer(*p); err != nil {
+			cm.log.Errorf("error saving peer: %s", err)
+			continue
 		}
-		cm.nonWorkingPeersLock.Unlock()
 	}
 
 	return nil
@@ -156,17 +142,9 @@ const askForPeersCycle = 60 * time.Second
 
 func (cm *discoveryProtocol) Start() error {
 	go func() {
-		storedPeers, err := cm.host.Database().GetSavedPeers()
-		if err != nil {
-			cm.log.Errorf("unable to load stored peers")
-		}
-		var initialPeers []peer.AddrInfo
-		initialPeers = append(initialPeers, storedPeers...)
-		initialPeers = append(initialPeers, cm.config.InitialNodes...)
-		for _, addr := range initialPeers {
+		for _, addr := range cm.config.InitialNodes {
 			if err := cm.connect(&addr); err != nil {
 				cm.log.Errorf("error connecting to add node %s: %s", addr, err)
-				cm.host.Database()
 			}
 		}
 	}()

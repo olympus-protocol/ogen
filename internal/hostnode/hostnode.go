@@ -2,7 +2,9 @@ package hostnode
 
 import (
 	"context"
+	"crypto/rand"
 	"net"
+	"path"
 	"sync"
 	"time"
 
@@ -10,7 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
 
-	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
+	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -20,6 +22,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	mnet "github.com/multiformats/go-multiaddr-net"
+	dsbadger "github.com/ipfs/go-ds-badger"
 )
 
 type Config struct {
@@ -55,7 +58,6 @@ type HostNode interface {
 	Stop()
 	Start() error
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
-	Database() Database
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
 	SavePeer(pinfo peer.AddrInfo) error
 }
@@ -87,7 +89,6 @@ type hostNode struct {
 
 	// syncProtocol handles peer syncing
 	syncProtocol SyncProtocol
-	db           Database
 }
 
 // NewHostNode creates a host node
@@ -102,15 +103,15 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		netMagic:          netMagic,
 	}
 
-	ps := pstoremem.NewPeerstore()
-
-	db, err := NewDatabase(config.Path, node)
+	ds, err := dsbadger.NewDatastore(path.Join(config.Path, "peerstore"), nil)
 	if err != nil {
 		return nil, err
 	}
-	node.db = db
-
-	priv, err := db.GetPrivKey()
+	ps, err := pstoreds.NewPeerstore(node.ctx, ds, pstoreds.DefaultOpts())
+	if err != nil {
+		return nil, err
+	}
+	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -292,23 +293,15 @@ func (node *hostNode) Start() error {
 	return nil
 }
 
-func (node *hostNode) Database() Database {
-	return node.db
-}
-
 func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	pinfo := node.host.Peerstore().PeerInfo(id)
 	return &pinfo
 }
 
 func (node *hostNode) SavePeer(pinfo peer.AddrInfo) error {
-	err := node.db.SavePeer(pinfo)
-	if err != nil {
-		return err
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	err = node.host.Connect(ctx, pinfo)
+	err := node.host.Connect(ctx, pinfo)
 	if err != nil {
 		cancel()
 		return err

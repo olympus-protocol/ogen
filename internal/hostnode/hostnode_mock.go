@@ -271,20 +271,6 @@ func (mr *MockHostNodeMockRecorder) SetStreamHandler(id, handleStream interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStreamHandler", reflect.TypeOf((*MockHostNode)(nil).SetStreamHandler), id, handleStream)
 }
 
-// Database mocks base method
-func (m *MockHostNode) Database() Database {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Database")
-	ret0, _ := ret[0].(Database)
-	return ret0
-}
-
-// Database indicates an expected call of Database
-func (mr *MockHostNodeMockRecorder) Database() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Database", reflect.TypeOf((*MockHostNode)(nil).Database))
-}
-
 // GetPeerInfo mocks base method
 func (m *MockHostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	m.ctrl.T.Helper()

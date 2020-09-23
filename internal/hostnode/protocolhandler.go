@@ -143,11 +143,6 @@ func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		p.notifeeLock.Unlock()
 		if !strings.Contains(err.Error(), "stream reset") {
 			p.log.Errorf("error receiving messages from peer %s: %s", id, err)
-			// reduce trust on peer if the error is different than a stream reset.
-			err = p.host.Database().BanscorePeer(*p.host.GetPeerInfo(id), 10)
-			if err == nil {
-				p.log.Warnf("peer %s banscore increased", id)
-			}
 		}
 
 	}

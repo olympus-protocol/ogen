@@ -279,10 +279,7 @@ func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		if err != nil {
 			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 			if err.Error() == "invalid nonce" {
-				err = cm.hostNode.Database().BanscorePeer(*cm.hostNode.GetPeerInfo(msg.GetFrom()), 10)
-				if err == nil {
-					cm.log.Warnf("peer %s banscore was increased", msg.GetFrom().String())
-				}
+
 			}
 		}
 	}
@@ -319,10 +316,7 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 		if err != nil {
 			cm.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
 			if err.Error() == "invalid nonce" {
-				err = cm.hostNode.Database().BanscorePeer(*cm.hostNode.GetPeerInfo(msg.GetFrom()), 10)
-				if err == nil {
-					cm.log.Warnf("peer %s banscore was increased", msg.GetFrom().String())
-				}
+
 			}
 		}
 	}
