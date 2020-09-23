@@ -137,12 +137,12 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	})
 }
 
-const askForPeersCycle = 60 * time.Second
+const askForPeersCycle = 20 * time.Second
 
 func (cm *discoveryProtocol) Start() error {
 	go func() {
 		for _, addr := range cm.config.InitialNodes {
-			if err := cm.connect(addr); err != nil {
+			if err := cm.connect(&addr); err != nil {
 				cm.log.Errorf("error connecting to add node %s: %s", addr, err)
 			}
 		}
@@ -174,16 +174,14 @@ func (cm *discoveryProtocol) Start() error {
 }
 
 // Connect connects to a peer.
-func (cm *discoveryProtocol) connect(pi peer.AddrInfo) error {
+func (cm *discoveryProtocol) connect(pi *peer.AddrInfo) error {
 	cm.lastConnectLock.Lock()
 	defer cm.lastConnectLock.Unlock()
 
 	lastConnect, found := cm.lastConnect[pi.ID]
 	if !found || time.Since(lastConnect) > connectionCooldown {
 		cm.lastConnect[pi.ID] = time.Now()
-		ctx, cancel := context.WithTimeout(cm.ctx, connectionTimeout)
-		defer cancel()
-		return cm.host.GetHost().Connect(ctx, pi)
+		return cm.host.SavePeer(pi)
 	}
 	return nil
 }

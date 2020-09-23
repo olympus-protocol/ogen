@@ -362,6 +362,7 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		TipBlockSlot: theirVersion.TipSlot,
 	}
 	sp.peersTrackLock.Unlock()
+
 	return nil
 }
 
