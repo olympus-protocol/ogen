@@ -27,7 +27,7 @@ type Blockchain interface {
 	GetRawBlock(h chainhash.Hash) (block []byte, err error)
 	Notify(n BlockchainNotifee)
 	Unnotify(n BlockchainNotifee)
-	UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error
+	UpdateChainHead(possible chainhash.Hash) error
 	ProcessBlock(block *primitives.Block) error
 }
 
@@ -40,7 +40,7 @@ type blockchain struct {
 	params      params.ChainParams
 
 	// DB
-	db blockdb.DB
+	db blockdb.Database
 
 	// StateService
 	state StateService
@@ -68,43 +68,31 @@ func (ch *blockchain) GenesisTime() time.Time {
 
 // GetBlock gets a block from the database.
 func (ch *blockchain) GetBlock(h chainhash.Hash) (block *primitives.Block, err error) {
-	return block, ch.db.View(func(txn blockdb.DBViewTransaction) error {
-		block, err = txn.GetBlock(h)
-		return err
-	})
+	return ch.db.GetBlock(h)
 }
 
 // GetRawBlock gets the block bytes from the database.
 func (ch *blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
-	return block, ch.db.View(func(txn blockdb.DBViewTransaction) error {
-		block, err = txn.GetRawBlock(h)
-		return err
-	})
+	return ch.db.GetRawBlock(h)
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip state.InitializationParameters) (Blockchain, error) {
+func NewBlockchain(config Config, params params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Blockchain, error) {
 	s, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err
 	}
 	var genesisTime time.Time
 
-	err = db.Update(func(tx blockdb.DBUpdateTransaction) error {
-		genesisTime, err = tx.GetGenesisTime()
-		if err != nil {
-			config.Log.Infof("using genesis time %d from params", ip.GenesisTime.Unix())
-			genesisTime = ip.GenesisTime
-			if err := tx.SetGenesisTime(ip.GenesisTime); err != nil {
-				return err
-			}
-		} else {
-			config.Log.Infof("using genesis time %d from db", genesisTime.Unix())
-		}
-		return nil
-	})
+	genesisTime, err = db.GetGenesisTime()
 	if err != nil {
-		return nil, err
+		config.Log.Infof("using genesis time %d from params", ip.GenesisTime.Unix())
+		genesisTime = ip.GenesisTime
+		if err := db.SetGenesisTime(ip.GenesisTime); err != nil {
+			return nil, err
+		}
+	} else {
+		config.Log.Infof("using genesis time %d from db", genesisTime.Unix())
 	}
 	if err != nil {
 		return nil, err
@@ -118,7 +106,5 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.DB, ip s
 		notifees:    make(map[BlockchainNotifee]struct{}),
 		genesisTime: genesisTime,
 	}
-	return ch, db.Update(func(txn blockdb.DBUpdateTransaction) error {
-		return ch.UpdateChainHead(txn, s.Tip().Hash)
-	})
+	return ch, ch.UpdateChainHead(s.Tip().Hash)
 }

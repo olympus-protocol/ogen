@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -18,7 +17,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error {
+func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.GetEpochIndex())
@@ -63,7 +62,7 @@ func (ch *blockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible 
 
 				ch.log.Infof("setting head to %s", head.Hash)
 
-				err := txn.SetTip(head.Hash)
+				err := ch.db.SetTip(head.Hash)
 				if err != nil {
 					return err
 				}
@@ -206,105 +205,103 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Debugf(msg)
 	}
 
-	return ch.db.Update(func(txn blockdb.DBUpdateTransaction) error {
-		err = txn.AddRawBlock(block)
+	err = ch.db.AddRawBlock(block)
+	if err != nil {
+		return err
+	}
+
+	row, err := ch.state.Index().Add(*block)
+	if err != nil {
+		return err
+	}
+
+	// set current block row in database
+	if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
+		return err
+	}
+
+	// update parent to point at current
+	if err := ch.db.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
+		return err
+	}
+
+	for _, a := range block.Votes {
+		validators, err := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
 		if err != nil {
 			return err
 		}
 
-		row, err := ch.state.Index().Add(*block)
-		if err != nil {
-			return err
-		}
+		ch.state.SetLatestVotesIfNeeded(validators, a)
+	}
 
-		// set current block row in database
-		if err := txn.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
-			return err
-		}
+	// TODO: remove when we have fork choice
+	if err := ch.UpdateChainHead(blockHash); err != nil {
+		return err
+	}
 
-		// update parent to point at current
-		if err := txn.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
-			return err
-		}
+	view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
+	if err != nil {
+		return err
+	}
 
-		for _, a := range block.Votes {
-			validators, err := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
-			if err != nil {
-				return err
-			}
+	finalizedSlot := newState.GetFinalizedEpoch() * ch.params.EpochLength
+	finalizedHash, err := view.GetHashBySlot(finalizedSlot)
+	if err != nil {
+		return err
+	}
+	finalizedState, found := ch.state.GetStateForHash(finalizedHash)
+	if !found {
+		return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
+	}
+	if err := ch.db.SetFinalizedHead(finalizedHash); err != nil {
+		return err
+	}
+	if err := ch.state.SetFinalizedHead(finalizedHash, finalizedState); err != nil {
+		return err
+	}
+	if err := ch.db.SetFinalizedState(finalizedState); err != nil {
+		return err
+	}
 
-			ch.state.SetLatestVotesIfNeeded(validators, a)
-		}
+	ch.state.RemoveBeforeSlot(newState.GetFinalizedEpoch() * ch.params.EpochLength)
 
-		// TODO: remove when we have fork choice
-		if err := ch.UpdateChainHead(txn, blockHash); err != nil {
-			return err
-		}
+	justifiedState, found := ch.state.GetStateForHash(newState.GetJustifiedEpochHash())
+	if !found {
+		return fmt.Errorf("could not find justified state with hash %s in state map", newState.GetJustifiedEpochHash())
+	}
+	if err := ch.db.SetJustifiedHead(newState.GetJustifiedEpochHash()); err != nil {
+		return err
+	}
+	if err := ch.state.SetJustifiedHead(newState.GetJustifiedEpochHash(), justifiedState); err != nil {
+		return err
+	}
+	if err := ch.db.SetJustifiedState(justifiedState); err != nil {
+		return err
+	}
 
-		view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
-		if err != nil {
-			return err
-		}
+	// TODO: delete state before finalized
 
-		finalizedSlot := newState.GetFinalizedEpoch() * ch.params.EpochLength
-		finalizedHash, err := view.GetHashBySlot(finalizedSlot)
-		if err != nil {
-			return err
-		}
-		finalizedState, found := ch.state.GetStateForHash(finalizedHash)
-		if !found {
-			return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
-		}
-		if err := txn.SetFinalizedHead(finalizedHash); err != nil {
-			return err
-		}
-		if err := ch.state.SetFinalizedHead(finalizedHash, finalizedState); err != nil {
-			return err
-		}
-		if err := txn.SetFinalizedState(finalizedState); err != nil {
-			return err
-		}
+	ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
+	ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))
+	ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.GetFinalizedEpoch(), newState.GetJustifiedEpoch())
 
-		ch.state.RemoveBeforeSlot(newState.GetFinalizedEpoch() * ch.params.EpochLength)
+	voted := 0
 
-		justifiedState, found := ch.state.GetStateForHash(newState.GetJustifiedEpochHash())
-		if !found {
-			return fmt.Errorf("could not find justified state with hash %s in state map", newState.GetJustifiedEpochHash())
-		}
-		if err := txn.SetJustifiedHead(newState.GetJustifiedEpochHash()); err != nil {
-			return err
-		}
-		if err := ch.state.SetJustifiedHead(newState.GetJustifiedEpochHash(), justifiedState); err != nil {
-			return err
-		}
-		if err := txn.SetJustifiedState(justifiedState); err != nil {
-			return err
-		}
+	for _, v := range block.Votes {
+		voted += len(v.ParticipationBitfield.BitIndices())
+	}
 
-		// TODO: delete state before finalized
+	comittee, err := newState.GetVoteCommittee(block.Header.Slot, &ch.params)
+	if err == nil {
+		percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
+		ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
+	}
 
-		ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
-		ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))
-		ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.GetFinalizedEpoch(), newState.GetJustifiedEpoch())
-
-		voted := 0
-
-		for _, v := range block.Votes {
-			voted += len(v.ParticipationBitfield.BitIndices())
-		}
-
-		comittee, err := newState.GetVoteCommittee(block.Header.Slot, &ch.params)
-		if err == nil {
-			percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
-			ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
-		}
-
-		ch.notifeeLock.RLock()
-		stateCopy := newState.Copy()
-		for i := range ch.notifees {
-			go i.NewTip(row, block, stateCopy, receipts)
-		}
-		ch.notifeeLock.RUnlock()
-		return nil
-	})
+	ch.notifeeLock.RLock()
+	stateCopy := newState.Copy()
+	for i := range ch.notifees {
+		go i.NewTip(row, block, stateCopy, receipts)
+	}
+	ch.notifeeLock.RUnlock()
+	return nil
 }

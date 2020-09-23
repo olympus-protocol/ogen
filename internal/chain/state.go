@@ -104,7 +104,7 @@ type stateService struct {
 	log    logger.Logger
 	lock   sync.RWMutex
 	params params.ChainParams
-	db     blockdb.DB
+	db     blockdb.Database
 
 	blockIndex *chainindex.BlockIndex
 	blockChain *Chain
@@ -200,7 +200,7 @@ func (s *stateService) SetJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 	return nil
 }
 
-func (s *stateService) initChainState(db blockdb.DB, genesisState state.State) error {
+func (s *stateService) initChainState(db blockdb.Database, genesisState state.State) error {
 	// Get the state snap from db dbindex and deserialize
 	s.log.Info("Loading chain state...")
 
@@ -208,9 +208,7 @@ func (s *stateService) initChainState(db blockdb.DB, genesisState state.State) e
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
-	err := s.db.Update(func(txn blockdb.DBUpdateTransaction) error {
-		return txn.AddRawBlock(&genesisBlock)
-	})
+	err := db.AddRawBlock(&genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -225,18 +223,16 @@ func (s *stateService) initChainState(db blockdb.DB, genesisState state.State) e
 	s.blockIndex = blockIndex
 	s.blockChain = NewChain(row)
 
-	return db.Update(func(txn blockdb.DBUpdateTransaction) error {
-		if _, err := txn.GetBlockRow(genesisHash); err != nil {
-			if err := s.initializeDatabase(txn, row, genesisState); err != nil {
-				return err
-			}
-		} else {
-			if err := s.loadBlockchainFromDisk(txn, genesisHash); err != nil {
-				return err
-			}
+	if _, err := db.GetBlockRow(genesisHash); err != nil {
+		if err := s.initializeDatabase(db, row, genesisState); err != nil {
+			return err
 		}
-		return nil
-	})
+	} else {
+		if err := s.loadBlockchainFromDisk(db, genesisHash); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetStateForHash gets the state for a certain block hash.
@@ -351,7 +347,7 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log logger.Logger, ip state.InitializationParameters, params params.ChainParams, db blockdb.DB) (StateService, error) {
+func NewStateService(log logger.Logger, ip state.InitializationParameters, params params.ChainParams, db blockdb.Database) (StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Hash()
 

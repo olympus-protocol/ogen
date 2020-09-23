@@ -100,9 +100,7 @@ func TestBlockchain_Instance(t *testing.T) {
 	log.EXPECT().Info("Starting Blockchain instance").Times(1)
 	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
 
-	db := blockdb.NewMockBlockDB(ctrl)
-	db.EXPECT().View(gomock.Any()).AnyTimes()
-	db.EXPECT().Update(gomock.Any()).Return(nil).AnyTimes()
+	db := blockdb.NewMockDatabase(ctrl)
 	var c chain.Config
 	c.Log = log
 	c.Datadir = testdata.Conf.DataFolder

@@ -6,7 +6,6 @@ package chain
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	blockdb "github.com/olympus-protocol/ogen/internal/blockdb"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
@@ -145,17 +144,17 @@ func (mr *MockBlockchainMockRecorder) Unnotify(n interface{}) *gomock.Call {
 }
 
 // UpdateChainHead mocks base method
-func (m *MockBlockchain) UpdateChainHead(txn blockdb.DBUpdateTransaction, possible chainhash.Hash) error {
+func (m *MockBlockchain) UpdateChainHead(possible chainhash.Hash) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateChainHead", txn, possible)
+	ret := m.ctrl.Call(m, "UpdateChainHead", possible)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateChainHead indicates an expected call of UpdateChainHead
-func (mr *MockBlockchainMockRecorder) UpdateChainHead(txn, possible interface{}) *gomock.Call {
+func (mr *MockBlockchainMockRecorder) UpdateChainHead(possible interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateChainHead", reflect.TypeOf((*MockBlockchain)(nil).UpdateChainHead), txn, possible)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateChainHead", reflect.TypeOf((*MockBlockchain)(nil).UpdateChainHead), possible)
 }
 
 // ProcessBlock mocks base method

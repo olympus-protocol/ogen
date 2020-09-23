@@ -92,8 +92,9 @@ func TestServer_Object(t *testing.T) {
 	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
 	log.EXPECT().Infof("binding to address: %s", gomock.Any())
 
-	db := blockdb.NewMockBlockDB(ctrl)
-	db.EXPECT().Update(gomock.Any()).AnyTimes()
+	db := blockdb.NewMockDatabase(ctrl)
+	db.EXPECT().AddRawBlock(gomock.Any())
+	db.EXPECT().GetBlockRow(gomock.Any())
 
 	serv, err := server.NewServer(ctx, &testdata.Conf, log, *param, db, stateParams)
 	assert.NoError(t, err)
