@@ -19,7 +19,6 @@ type blockRowAndValidator struct {
 // UpdateChainHead updates the blockchain head if needed
 func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
-
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.GetEpochIndex())
 	var targets []blockRowAndValidator
 	for _, i := range activeValidatorIndices {
@@ -47,7 +46,6 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 	}
 
 	head, _ := ch.state.GetJustifiedHead()
-
 	// this may seem weird, but it occurs when importing when the justified block is not
 	// imported, but the finalized head is. It should never occur other than that
 	if head == nil {

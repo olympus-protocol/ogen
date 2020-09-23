@@ -94,9 +94,6 @@ func NewBlockchain(config Config, params params.ChainParams, db blockdb.Database
 	} else {
 		config.Log.Infof("using genesis time %d from db", genesisTime.Unix())
 	}
-	if err != nil {
-		return nil, err
-	}
 	ch := &blockchain{
 		log:         config.Log,
 		config:      config,
