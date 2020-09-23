@@ -238,7 +238,7 @@ func initConfig() {
 		ogenDir := path.Join(configDir, "ogen")
 
 		if _, err := os.Stat(ogenDir); os.IsNotExist(err) {
-			err = os.Mkdir(ogenDir, 0744)
+			err = os.MkdirAll(ogenDir, 0744)
 			if err != nil {
 				panic(err)
 			}
@@ -250,7 +250,6 @@ func initConfig() {
 		viper.AddConfigPath(ogenDir)
 		viper.SetConfigName("config")
 	}
- 	_ = os.MkdirAll(DataFolder, 0700)
 
 	viper.AutomaticEnv()
 
