@@ -95,6 +95,7 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 			if err != nil {
 				return nil, err
 			}
+			return prop, nil
 		}
 		return nil, err
 	}

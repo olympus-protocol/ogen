@@ -137,11 +137,14 @@ Next generation blockchain secured by CASPER.`,
 			for i := range addNodes {
 				maddr, err := multiaddr.NewMultiaddr(addNodesStrs[i])
 				if err != nil {
-					log.Fatalf("error parsing add node %s: %s", addNodesStrs[i], err)
+					log.Errorf("error parsing add node %s: %s", addNodesStrs[i], err)
+					continue
 				}
+
 				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
 				if err != nil {
-					log.Fatalf("error parsing add node %s: %s", maddr, pinfo)
+					log.Errorf("error parsing add node %s: %s", maddr, pinfo)
+					continue
 				}
 
 				addNodes[i] = *pinfo
@@ -247,6 +250,7 @@ func initConfig() {
 		viper.AddConfigPath(ogenDir)
 		viper.SetConfigName("config")
 	}
+ 	_ = os.MkdirAll(DataFolder, 0700)
 
 	viper.AutomaticEnv()
 

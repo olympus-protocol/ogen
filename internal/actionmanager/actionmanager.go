@@ -102,7 +102,10 @@ func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(l.ctx)
 		if err != nil {
-			l.log.Warnf("error getting next message in start validator topic: %s", err)
+			if err != l.ctx.Err() {
+				l.log.Warnf("error getting next message in start validator topic: %s", err)
+				return
+			}
 			return
 		}
 

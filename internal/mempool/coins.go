@@ -252,7 +252,10 @@ func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(cm.ctx)
 		if err != nil {
-			cm.log.Warnf("error getting next message in coins topic: %s", err)
+			if err != cm.ctx.Err() {
+				cm.log.Warnf("error getting next message in coins topic: %s", err)
+				return
+			}
 			return
 		}
 
@@ -289,7 +292,10 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 	for {
 		msg, err := topic.Next(cm.ctx)
 		if err != nil {
-			cm.log.Warnf("error getting next message in coins multi topic: %s", err)
+			if err != cm.ctx.Err() {
+				cm.log.Warnf("error getting next message in coins multi topic: %s", err)
+				return
+			}
 			return
 		}
 
