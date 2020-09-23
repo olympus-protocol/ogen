@@ -306,7 +306,6 @@ func (node *hostNode) SavePeer(pinfo *peer.AddrInfo) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
 	return node.host.Connect(ctx, *pinfo)
 }
