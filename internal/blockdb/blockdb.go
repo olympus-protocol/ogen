@@ -1,23 +1,18 @@
 package blockdb
 
 import (
-	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
-	"path"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/params"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"go.etcd.io/bbolt"
+	"github.com/dgraph-io/badger"
 )
-
-// BlockDBBucketKey is the bucket key of the blocks on the database.
-var BlockDBBucketKey = []byte("blocksdb")
 
 // BlockDB is an interface for blockDb
 type BlockDB interface {
@@ -26,40 +21,39 @@ type BlockDB interface {
 	View(cb func(txn DBViewTransaction) error) error
 }
 
-var _ BlockDB = &blockDB{}
-
-// BlockDB is the struct wrapper for the block database.
 type blockDB struct {
-	log    logger.Logger
-	db     *bbolt.DB
-	params params.ChainParams
-	lock   sync.RWMutex
+	log      logger.Logger
+	badgerdb *badger.DB
+	params   params.ChainParams
+	lock     sync.RWMutex
 
 	requestedClose uint32
 	canClose       sync.WaitGroup
 }
 
-// BlockDBUpdateTransaction is a wrapper for the bbolt transaction with writing privileges.
-type BlockDBUpdateTransaction struct {
-	BlockDBReadTransaction
+var _ BlockDB = &blockDB{}
+
+
+type UpdateTransaction struct {
+	ReadTransaction
 }
 
-// BlockDBReadTransaction is a wrapper for the bbolt transaction with view privileges.
-type BlockDBReadTransaction struct {
-	db  BlockDB
-	bkt *bbolt.Bucket
+type ReadTransaction struct {
+	db          *blockDB
+	log         logger.Logger
+	transaction *badger.Txn
 }
 
-// NewBlockDB returns a database instance with a rawBlockDatabase and BboltDB to use on the selected path.
-func NewBlockDB(pathDir string, params params.ChainParams, log logger.Logger) (BlockDB, error) {
-	db, err := bbolt.Open(path.Join(pathDir, "chain.db"), 0600, nil)
+// NewBlockDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
+func NewBlockDB(path string, params params.ChainParams, log logger.Logger) (BlockDB, error) {
+	badgerdb, err := badger.Open(badger.DefaultOptions(path + "/chain").WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}
 	blockdb := &blockDB{
-		log:    log,
-		db:     db,
-		params: params,
+		log:      log,
+		badgerdb: badgerdb,
+		params:   params,
 	}
 	return blockdb, nil
 }
@@ -71,7 +65,7 @@ func (bdb *blockDB) Close() {
 	}
 	atomic.StoreUint32(&bdb.requestedClose, 1)
 	bdb.canClose.Wait()
-	_ = bdb.db.Close()
+	_ = bdb.badgerdb.Close()
 }
 
 // Update gets a transaction for updating the database.
@@ -84,18 +78,14 @@ func (bdb *blockDB) Update(cb func(txn DBUpdateTransaction) error) error {
 
 	bdb.canClose.Add(1)
 	defer bdb.canClose.Done()
-
-	return bdb.db.Update(func(tx *bbolt.Tx) error {
-		bkt, err := tx.CreateBucketIfNotExists(BlockDBBucketKey)
-		if err != nil {
-			return err
-		}
-		blockTxn := BlockDBReadTransaction{
-			db:  bdb,
-			bkt: bkt,
+	return bdb.badgerdb.Update(func(tx *badger.Txn) error {
+		blockTxn := ReadTransaction{
+			db:          bdb,
+			log:         bdb.log,
+			transaction: tx,
 		}
 
-		return cb(&BlockDBUpdateTransaction{blockTxn})
+		return cb(&UpdateTransaction{blockTxn})
 	})
 }
 
@@ -109,10 +99,11 @@ func (bdb *blockDB) View(cb func(txn DBViewTransaction) error) error {
 
 	bdb.canClose.Add(1)
 	defer bdb.canClose.Done()
-	return bdb.db.View(func(tx *bbolt.Tx) error {
-		blockTxn := &BlockDBReadTransaction{
-			db:  bdb,
-			bkt: tx.Bucket(BlockDBBucketKey),
+	return bdb.badgerdb.Update(func(tx *badger.Txn) error {
+		blockTxn := &ReadTransaction{
+			db:          bdb,
+			log:         bdb.log,
+			transaction: tx,
 		}
 
 		return cb(blockTxn)
@@ -120,7 +111,7 @@ func (bdb *blockDB) View(cb func(txn DBViewTransaction) error) error {
 }
 
 // GetBlock gets a block from the database.
-func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
+func (brt *ReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
 	blockBytes, err := getKey(brt, hash[:])
 	if err != nil {
 		return nil, err
@@ -132,7 +123,7 @@ func (brt *BlockDBReadTransaction) GetBlock(hash chainhash.Hash) (*primitives.Bl
 }
 
 // GetRawBlock gets a block serialized from the database.
-func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
+func (brt *ReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
 	blockBytes, err := getKey(brt, hash[:])
 	if err != nil {
 		return nil, err
@@ -141,7 +132,7 @@ func (brt *BlockDBReadTransaction) GetRawBlock(hash chainhash.Hash) ([]byte, err
 }
 
 // AddRawBlock adds a raw block to the database.
-func (but *BlockDBUpdateTransaction) AddRawBlock(block *primitives.Block) error {
+func (but *UpdateTransaction) AddRawBlock(block *primitives.Block) error {
 	blockHash := block.Hash()
 	blockBytes, err := block.Marshal()
 	if err != nil {
@@ -150,48 +141,56 @@ func (but *BlockDBUpdateTransaction) AddRawBlock(block *primitives.Block) error 
 	return setKey(but, blockHash[:], blockBytes)
 }
 
-func getKeyHash(tx *BlockDBReadTransaction, key []byte) (chainhash.Hash, error) {
+func getKeyHash(tx *ReadTransaction, key []byte) (chainhash.Hash, error) {
 	var out chainhash.Hash
-	i := tx.bkt.Get(key)
-	if len(i) <= 0 {
-		return chainhash.Hash{}, errors.New("no data")
+	i, err := tx.transaction.Get(key)
+	if err != nil {
+		return chainhash.Hash{}, err
 	}
-	copy(out[:], i)
+	_, err = i.ValueCopy(out[:])
+	if err != nil {
+		return out, err
+	}
 	return out, nil
 }
 
-func getKey(tx *BlockDBReadTransaction, key []byte) ([]byte, error) {
-	i := tx.bkt.Get(key)
-	if len(i) <= 0 {
-		return nil, errors.New("no data")
+func getKey(tx *ReadTransaction, key []byte) ([]byte, error) {
+	var out []byte
+	i, err := tx.transaction.Get(key)
+	if err != nil {
+		return nil, err
 	}
-	return i, nil
+	out, err = i.ValueCopy(out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-func setKeyHash(tx *BlockDBUpdateTransaction, key []byte, to chainhash.Hash) error {
-	return tx.bkt.Put(key, to[:])
+func setKeyHash(tx *UpdateTransaction, key []byte, to chainhash.Hash) error {
+	return tx.transaction.Set(key, to[:])
 }
 
-func setKey(tx *BlockDBUpdateTransaction, key []byte, to []byte) error {
-	return tx.bkt.Put(key, to)
+func setKey(tx *UpdateTransaction, key []byte, to []byte) error {
+	return tx.transaction.Set(key, to)
 }
 
 var tipKey = []byte("chain-tip")
 
 // SetTip sets the current best tip of the blockchain.
-func (but *BlockDBUpdateTransaction) SetTip(c chainhash.Hash) error {
+func (but *UpdateTransaction) SetTip(c chainhash.Hash) error {
 	return setKeyHash(but, tipKey, c)
 }
 
 // GetTip gets the current best tip of the blockchain.
-func (brt *BlockDBReadTransaction) GetTip() (chainhash.Hash, error) {
+func (brt *ReadTransaction) GetTip() (chainhash.Hash, error) {
 	return getKeyHash(brt, tipKey)
 }
 
 var finalizedStateKey = []byte("finalized-state")
 
 // SetFinalizedState sets the finalized state of the blockchain.
-func (but *BlockDBUpdateTransaction) SetFinalizedState(s state.State) error {
+func (but *UpdateTransaction) SetFinalizedState(s state.State) error {
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
@@ -201,7 +200,7 @@ func (but *BlockDBUpdateTransaction) SetFinalizedState(s state.State) error {
 }
 
 // GetFinalizedState gets the finalized state of the blockchain.
-func (brt *BlockDBReadTransaction) GetFinalizedState() (state.State, error) {
+func (brt *ReadTransaction) GetFinalizedState() (state.State, error) {
 	stateBytes, err := getKey(brt, finalizedStateKey)
 	if err != nil {
 		return nil, err
@@ -214,7 +213,7 @@ func (brt *BlockDBReadTransaction) GetFinalizedState() (state.State, error) {
 var justifiedStateKey = []byte("justified-state")
 
 // SetJustifiedState sets the justified state of the blockchain.
-func (but *BlockDBUpdateTransaction) SetJustifiedState(s state.State) error {
+func (but *UpdateTransaction) SetJustifiedState(s state.State) error {
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
@@ -224,7 +223,7 @@ func (but *BlockDBUpdateTransaction) SetJustifiedState(s state.State) error {
 }
 
 // GetJustifiedState gets the justified state of the blockchain.
-func (brt *BlockDBReadTransaction) GetJustifiedState() (state.State, error) {
+func (brt *ReadTransaction) GetJustifiedState() (state.State, error) {
 	stateBytes, err := getKey(brt, justifiedStateKey)
 	if err != nil {
 		return nil, err
@@ -236,8 +235,8 @@ func (brt *BlockDBReadTransaction) GetJustifiedState() (state.State, error) {
 
 var blockRowPrefix = []byte("block-row")
 
-// SetBlockRow sets a block row on disk to store the block chainindex.
-func (but *BlockDBUpdateTransaction) SetBlockRow(disk *primitives.BlockNodeDisk) error {
+// SetBlockRow sets a block row on disk to store the block index.
+func (but *UpdateTransaction) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
 	diskSer, err := disk.Marshal()
 	if err != nil {
@@ -247,12 +246,13 @@ func (but *BlockDBUpdateTransaction) SetBlockRow(disk *primitives.BlockNodeDisk)
 }
 
 // GetBlockRow gets the block row on disk.
-func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
+func (brt *ReadTransaction) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
 	key := append(blockRowPrefix, c[:]...)
 	diskSer, err := getKey(brt, key)
 	if err != nil {
 		return nil, err
 	}
+
 	d := new(primitives.BlockNodeDisk)
 	err = d.Unmarshal(diskSer)
 	return d, err
@@ -261,31 +261,31 @@ func (brt *BlockDBReadTransaction) GetBlockRow(c chainhash.Hash) (*primitives.Bl
 var justifiedHeadKey = []byte("justified-head")
 
 // SetJustifiedHead sets the latest justified head.
-func (but *BlockDBUpdateTransaction) SetJustifiedHead(c chainhash.Hash) error {
+func (but *UpdateTransaction) SetJustifiedHead(c chainhash.Hash) error {
 	return setKeyHash(but, justifiedHeadKey, c)
 }
 
 // GetJustifiedHead gets the latest justified head.
-func (brt *BlockDBReadTransaction) GetJustifiedHead() (chainhash.Hash, error) {
+func (brt *ReadTransaction) GetJustifiedHead() (chainhash.Hash, error) {
 	return getKeyHash(brt, justifiedHeadKey)
 }
 
 var finalizedHeadKey = []byte("finalized-head")
 
 // SetFinalizedHead sets the finalized head of the blockchain.
-func (but *BlockDBUpdateTransaction) SetFinalizedHead(c chainhash.Hash) error {
+func (but *UpdateTransaction) SetFinalizedHead(c chainhash.Hash) error {
 	return setKeyHash(but, finalizedHeadKey, c)
 }
 
 // GetFinalizedHead gets the finalized head of the blockchain.
-func (brt *BlockDBReadTransaction) GetFinalizedHead() (chainhash.Hash, error) {
+func (brt *ReadTransaction) GetFinalizedHead() (chainhash.Hash, error) {
 	return getKeyHash(brt, finalizedHeadKey)
 }
 
 var genesisTimeKey = []byte("genesisTime")
 
 // SetGenesisTime sets the genesis time of the blockchain.
-func (but *BlockDBUpdateTransaction) SetGenesisTime(t time.Time) error {
+func (but *UpdateTransaction) SetGenesisTime(t time.Time) error {
 	bs, err := t.MarshalBinary()
 	if err != nil {
 		return err
@@ -294,7 +294,7 @@ func (but *BlockDBUpdateTransaction) SetGenesisTime(t time.Time) error {
 }
 
 // GetGenesisTime gets the genesis time of the blockchain.
-func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
+func (brt *ReadTransaction) GetGenesisTime() (time.Time, error) {
 	bs, err := getKey(brt, genesisTimeKey)
 	if err != nil {
 		return time.Time{}, err
@@ -306,8 +306,8 @@ func (brt *BlockDBReadTransaction) GetGenesisTime() (time.Time, error) {
 }
 
 var _ DB = &blockDB{}
-var _ DBUpdateTransaction = &BlockDBUpdateTransaction{}
-var _ DBViewTransaction = &BlockDBReadTransaction{}
+var _ DBUpdateTransaction = &UpdateTransaction{}
+var _ DBViewTransaction = &ReadTransaction{}
 
 // DB is a database for storing chain state.
 type DB interface {
@@ -316,7 +316,7 @@ type DB interface {
 	View(func(DBViewTransaction) error) error
 }
 
-// DBViewTransaction is a transaction to view the state of the database.
+// DBTransactionRead is a transaction to view the state of the database.
 type DBViewTransaction interface {
 	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
 	GetRawBlock(hash chainhash.Hash) ([]byte, error)
@@ -329,13 +329,13 @@ type DBViewTransaction interface {
 	GetGenesisTime() (time.Time, error)
 }
 
-// DBUpdateTransaction is a transaction to update the state of the database.
+// DBTransaction is a transaction to update the state of the database.
 type DBUpdateTransaction interface {
 	AddRawBlock(block *primitives.Block) error
 	SetTip(chainhash.Hash) error
 	SetFinalizedState(state.State) error
 	SetJustifiedState(state.State) error
-	SetBlockRow(*primitives.BlockNodeDisk) error
+	SetBlockRow(disk *primitives.BlockNodeDisk) error
 	SetJustifiedHead(chainhash.Hash) error
 	SetFinalizedHead(chainhash.Hash) error
 	SetGenesisTime(time.Time) error

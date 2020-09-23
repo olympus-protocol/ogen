@@ -377,17 +377,17 @@ func (mr *MockDBUpdateTransactionMockRecorder) SetJustifiedState(arg0 interface{
 }
 
 // SetBlockRow mocks base method
-func (m *MockDBUpdateTransaction) SetBlockRow(arg0 *primitives.BlockNodeDisk) error {
+func (m *MockDBUpdateTransaction) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetBlockRow", arg0)
+	ret := m.ctrl.Call(m, "SetBlockRow", disk)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetBlockRow indicates an expected call of SetBlockRow
-func (mr *MockDBUpdateTransactionMockRecorder) SetBlockRow(arg0 interface{}) *gomock.Call {
+func (mr *MockDBUpdateTransactionMockRecorder) SetBlockRow(disk interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBlockRow", reflect.TypeOf((*MockDBUpdateTransaction)(nil).SetBlockRow), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBlockRow", reflect.TypeOf((*MockDBUpdateTransaction)(nil).SetBlockRow), disk)
 }
 
 // SetJustifiedHead mocks base method
