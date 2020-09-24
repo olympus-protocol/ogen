@@ -188,16 +188,18 @@ func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
 }
 
 func (p *protocolHandler) HandleStream(s network.Stream) {
-	p.sendMessages(s.Conn().RemotePeer(), s)
+	if s != nil {
+		p.sendMessages(s.Conn().RemotePeer(), s)
 
-	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
-	go p.receiveMessages(s.Conn().RemotePeer(), s)
+		p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
+		go p.receiveMessages(s.Conn().RemotePeer(), s)
 
-	p.notifeeLock.Lock()
-	for _, n := range p.notifees {
-		n.PeerConnected(s.Conn().RemotePeer(), s.Stat().Direction)
+		p.notifeeLock.Lock()
+		for _, n := range p.notifees {
+			n.PeerConnected(s.Conn().RemotePeer(), s.Stat().Direction)
+		}
+		p.notifeeLock.Unlock()
 	}
-	p.notifeeLock.Unlock()
 }
 
 // SendMessage writes a message to a peer.

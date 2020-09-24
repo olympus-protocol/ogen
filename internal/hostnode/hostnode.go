@@ -154,13 +154,11 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.discoveryProtocol = discovery
 
-	if !relayer {
-		syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
-		if err != nil {
+	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain, relayer)
+	if err != nil {
 			return nil, err
 		}
-		node.syncProtocol = syncProtocol
-	}
+	node.syncProtocol = syncProtocol
 
 	return node, nil
 }

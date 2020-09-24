@@ -14,6 +14,27 @@ import (
 	"github.com/olympus-protocol/ogen/internal/logger"
 )
 
+var relayerNodes = map[string]string{
+	"cronos-1": "/ip4/206.189.231.51/tcp/25000/p2p/12D3KooWRnVYX8aAWqQnfzWBj6pmFPihEATX44QxWjxT9mRPZGz7",
+	"cronos-2": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWNq9NMLoLc71vkHvftTcX9zLAL5kWhBN2okN4SqrXFegF",
+}
+
+func getRelayers() []peer.AddrInfo {
+	var r []peer.AddrInfo
+	for _, node := range relayerNodes {
+		ma, err := multiaddr.NewMultiaddr(node)
+		if err != nil {
+			continue
+		}
+		addr, err := peer.AddrInfoFromP2pAddr(ma)
+		if err != nil {
+			continue
+		}
+		r = append(r, *addr)
+	}
+	return r
+}
+
 var rendevouzString = map[int]string{
 	0: "do_not_go_gentle_into_that_good_night",
 }
@@ -179,6 +200,7 @@ func (cm *discoveryProtocol) Start() error {
 		peerstorePeers = append(peerstorePeers, cm.host.GetHost().Peerstore().PeerInfo(id))
 	}
 	var initialNodes []peer.AddrInfo
+	initialNodes = append(initialNodes, getRelayers()...)
 	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := cm.host.GetHost().Connect(cm.ctx, addr); err != nil {
