@@ -45,7 +45,7 @@ type discoveryProtocol struct {
 // NewDiscoveryProtocol creates a new discovery service.
 func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
 	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
-	d, err := dht.New(ctx, host.GetHost())
+	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeServer))
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +116,6 @@ func (cm *discoveryProtocol) Start() error {
 	for _, addr := range cm.config.InitialNodes {
 		if err := cm.host.GetHost().Connect(cm.ctx, addr); err != nil {
 			cm.log.Error(err)
-		} else {
-			cm.log.Infof("Connection established with bootstrap node: %s", addr.ID.String())
 		}
 	}
 	return nil
