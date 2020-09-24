@@ -87,9 +87,6 @@ func TestHostNode(t *testing.T) {
 		Addrs: hn2.GetHost().Addrs(),
 	}
 
-	err = hn.SavePeer(npinfo)
-	assert.NoError(t, err)
-
 	assert.True(t, hn.ConnectedToPeer(hn2.GetHost().ID()))
 
 	peers := hn.PeersConnected()

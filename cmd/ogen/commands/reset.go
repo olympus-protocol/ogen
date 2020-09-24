@@ -26,5 +26,6 @@ var resetCmd = &cobra.Command{
 			panic(err)
 		}
 		_ = os.Remove(path.Join(DataFolder, "chain.json"))
+		_ = os.RemoveAll(path.Join(DataFolder, "peerstore"))
 	},
 }

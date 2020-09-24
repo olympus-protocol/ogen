@@ -12,7 +12,6 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -32,8 +31,6 @@ var (
 	// ErrorBlockParentUnknown returns when received a block with an unknown parent
 	ErrorBlockParentUnknown = errors.New("unknown block parent")
 )
-
-const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
 
 // SyncProtocol is an interface for the syncProtocol
 type SyncProtocol interface {

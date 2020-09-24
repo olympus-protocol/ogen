@@ -16,6 +16,11 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
 
+const (
+	syncProtocolID      = protocol.ID("/ogen/sync/" + OgenVersion)
+	discoveryProtocolID = protocol.ID("/ogen/discovery/" + OgenVersion)
+)
+
 // ProtocolHandler is an interface for the ProtocolHandler
 type ProtocolHandler interface {
 	RegisterHandler(messageName string, handler MessageHandler) error

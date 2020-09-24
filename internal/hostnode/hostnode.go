@@ -3,7 +3,6 @@ package hostnode
 import (
 	"context"
 	"crypto/rand"
-	"net"
 	"path"
 	"sync"
 	"time"
@@ -14,15 +13,15 @@ import (
 
 	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 
+	dsbadger "github.com/ipfs/go-ds-badger"
+	"github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/multiformats/go-multiaddr"
-	mnet "github.com/multiformats/go-multiaddr-net"
-	dsbadger "github.com/ipfs/go-ds-badger"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
 type Config struct {
@@ -34,9 +33,7 @@ type Config struct {
 }
 
 const (
-	OgenVersion       = "0.0.1"
-	timeoutInterval   = 60 * time.Second
-	heartbeatInterval = 20 * time.Second
+	OgenVersion = "0.0.1"
 )
 
 // HostNode is an interface for hostNode
@@ -59,7 +56,6 @@ type HostNode interface {
 	Start() error
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
-	SavePeer(pinfo peer.AddrInfo) error
 }
 
 var _ HostNode = &hostNode{}
@@ -77,9 +73,6 @@ type hostNode struct {
 	topics     map[string]*pubsub.Topic
 	topicsLock sync.RWMutex
 
-	timeoutInterval   time.Duration
-	heartbeatInterval time.Duration
-
 	netMagic uint32
 
 	log logger.Logger
@@ -95,12 +88,10 @@ type hostNode struct {
 func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32) (HostNode, error) {
 
 	node := &hostNode{
-		ctx:               ctx,
-		timeoutInterval:   timeoutInterval,
-		heartbeatInterval: heartbeatInterval,
-		log:               config.Log,
-		topics:            map[string]*pubsub.Topic{},
-		netMagic:          netMagic,
+		ctx:      ctx,
+		log:      config.Log,
+		topics:   map[string]*pubsub.Topic{},
+		netMagic: netMagic,
 	}
 
 	ds, err := dsbadger.NewDatastore(path.Join(config.Path, "peerstore"), nil)
@@ -118,23 +109,20 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 
 	node.privateKey = priv
 
-	netAddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+config.Port)
+	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + config.Port)
 	if err != nil {
 		return nil, err
 	}
 
-	listen, err := mnet.FromNetAddr(netAddr)
-	if err != nil {
-		return nil, err
-	}
-	listenAddress := []multiaddr.Multiaddr{listen}
+	connman := connmgr.NewConnManager(2, 64, time.Second*60)
 
 	h, err := libp2p.New(
 		ctx,
-		libp2p.ListenAddrs(listenAddress...),
+		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
 		libp2p.Identity(priv),
 		libp2p.EnableRelay(),
 		libp2p.Peerstore(ps),
+		libp2p.ConnectionManager(connman),
 	)
 
 	if err != nil {
@@ -142,17 +130,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.host = h
 
-	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
-		ID:    h.ID(),
-		Addrs: listenAddress,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, a := range addrs {
-		config.Log.Infof("binding to address: %s", a)
-	}
+	config.Log.Infof("binding to address: %s", listenAddress.String())
 
 	g, err := pubsub.NewGossipSub(ctx, h)
 	if err != nil {
@@ -296,15 +274,4 @@ func (node *hostNode) Start() error {
 func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	pinfo := node.host.Peerstore().PeerInfo(id)
 	return &pinfo
-}
-
-func (node *hostNode) SavePeer(pinfo peer.AddrInfo) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	err := node.host.Connect(ctx, pinfo)
-	if err != nil {
-		cancel()
-		return err
-	}
-	return nil
 }
