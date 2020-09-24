@@ -3,6 +3,7 @@ package hostnode
 import (
 	"context"
 	"crypto/rand"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"io/ioutil"
 	"os"
 	"path"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 
 	circuit "github.com/libp2p/go-libp2p-circuit"
 	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
@@ -82,13 +83,13 @@ type hostNode struct {
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32) (HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, p *params.ChainParams) (HostNode, error) {
 
 	node := &hostNode{
 		ctx:      ctx,
 		log:      config.Log,
 		topics:   map[string]*pubsub.Topic{},
-		netMagic: netMagic,
+		netMagic: p.NetMagic,
 		path:     config.Path,
 	}
 
@@ -124,6 +125,9 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		libp2p.Peerstore(ps),
 		libp2p.ConnectionManager(connman),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	node.host = h
 
@@ -145,7 +149,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.gossipSub = g
 
-	discovery, err := NewDiscoveryProtocol(ctx, node, config)
+	discovery, err := NewDiscoveryProtocol(ctx, node, config, p)
 	if err != nil {
 		return nil, err
 	}

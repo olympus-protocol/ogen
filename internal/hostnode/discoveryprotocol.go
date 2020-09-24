@@ -3,7 +3,7 @@ package hostnode
 import (
 	"context"
 	discovery "github.com/libp2p/go-libp2p-discovery"
-	"math"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"sync"
 	"time"
 
@@ -11,7 +11,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 )
 
 var relayerNodes = map[string]string{
@@ -35,26 +35,6 @@ func getRelayers() []peer.AddrInfo {
 	return r
 }
 
-var RendevouzStrings = map[int]string{
-	0: "do_not_go_gentle_into_that_good_night",
-}
-
-// GetRendevouzString is a function to return a rendevouz string for a certain version range
-// to make sure peers find each other depending on their version.
-func GetRendevouzString() string {
-	ver := VersionNumber
-	var selectedIndex int
-	var diffSelected int
-	for n := range RendevouzStrings {
-		diff := int(math.Abs(float64(ver - n)))
-		if diff < diffSelected {
-			selectedIndex = n
-			diffSelected = diff
-		}
-	}
-	return RendevouzStrings[selectedIndex]
-}
-
 // DiscoveryProtocol is an interface for discoveryProtocol
 type DiscoveryProtocol interface {
 	Start() error
@@ -74,6 +54,7 @@ type discoveryProtocol struct {
 	config Config
 	ctx    context.Context
 	log    logger.Logger
+	params *params.ChainParams
 
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex
@@ -84,8 +65,8 @@ type discoveryProtocol struct {
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
-	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
+func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *params.ChainParams) (DiscoveryProtocol, error) {
+	ph := newProtocolHandler(ctx, params.DiscoveryProtocolID, host, config)
 	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeAuto))
 	if err != nil {
 		return nil, err
@@ -106,6 +87,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		log:             config.Log,
 		dht:             d,
 		discovery:       r,
+		params:          p,
 		lastConnect:     make(map[peer.ID]time.Time),
 	}
 
@@ -132,7 +114,7 @@ func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 
 func (cm *discoveryProtocol) findPeers() {
 	for {
-		peers, err := cm.discovery.FindPeers(cm.ctx, GetRendevouzString())
+		peers, err := cm.discovery.FindPeers(cm.ctx, cm.params.GetRendevouzString())
 		if err != nil {
 			break
 		}
@@ -153,7 +135,7 @@ func (cm *discoveryProtocol) findPeers() {
 }
 
 func (cm *discoveryProtocol) advertise() {
-	discovery.Advertise(cm.ctx, cm.discovery, GetRendevouzString())
+	discovery.Advertise(cm.ctx, cm.discovery, cm.params.GetRendevouzString())
 }
 
 func (cm *discoveryProtocol) Start() error {
@@ -203,7 +185,7 @@ func (cm *discoveryProtocol) Connected(_ network.Network, conn network.Conn) {
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := cm.host.GetHost().NewStream(cm.ctx, conn.RemotePeer(), discoveryProtocolID)
+	s, err := cm.host.GetHost().NewStream(cm.ctx, conn.RemotePeer(), params.DiscoveryProtocolID)
 	if err != nil {
 		cm.log.Errorf("could not open stream for connection: %s", err)
 	}

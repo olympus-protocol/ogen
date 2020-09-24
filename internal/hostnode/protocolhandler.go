@@ -12,23 +12,10 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
 
-const (
-	mayor = 0
-	minor = 1
-	patch = 0
-)
-
-var (
-	VersionNumber = (mayor * 100000) + (minor * 1000) + (patch * 10)
-	Version       = fmt.Sprintf("%d.%d.%d", mayor, minor, patch)
-
-	syncProtocolID      = protocol.ID("/ogen/sync/" + Version)
-	discoveryProtocolID = protocol.ID("/ogen/discovery/" + Version)
-)
 
 // ProtocolHandler is an interface for the ProtocolHandler
 type ProtocolHandler interface {

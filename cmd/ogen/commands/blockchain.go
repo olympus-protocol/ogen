@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"io/ioutil"
 	"math/rand"
@@ -14,9 +13,9 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/internal/blockdb"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,7 +23,7 @@ import (
 )
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams params.ChainParams) error {
+func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams *params.ChainParams) error {
 	db, err := blockdb.NewBadgerDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -43,7 +42,7 @@ func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger
 	return nil
 }
 
-func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile, error) {
+func getChainFile(path string, currParams *params.ChainParams) (*state.ChainFile, error) {
 	chainFile := new(state.ChainFile)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		resp, err := http.Get(currParams.ChainFileURL)
@@ -110,12 +109,12 @@ Next generation blockchain secured by CASPER.`,
 
 			networkName := viper.GetString("network")
 
-			var currParams params.ChainParams
+			var currParams *params.ChainParams
 			switch networkName {
 			case "mainnet":
-				currParams = params.Mainnet
+				currParams = &params.Mainnet
 			default:
-				currParams = params.TestNet
+				currParams = &params.TestNet
 			}
 
 			cf, err := getChainFile(path.Join(DataFolder, "chain.json"), currParams)
@@ -157,7 +156,7 @@ Next generation blockchain secured by CASPER.`,
 				Pprof:   viper.GetBool("pprof"),
 			}
 
-			log.Infof("Starting Ogen v%v", hostnode.Version)
+			log.Infof("Starting Ogen v%v", params.Version)
 			log.Trace("Loading log on debug mode")
 			ctx, cancel := context.WithCancel(context.Background())
 

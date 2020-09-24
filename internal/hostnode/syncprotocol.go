@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/rand"
 	"sync"
 	"time"
@@ -15,7 +16,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -81,7 +82,7 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
 func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
-	ph := newProtocolHandler(ctx, syncProtocolID, host, config)
+	ph := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
 	sp := &syncProtocol{
 		host:            host,
 		config:          config,
@@ -400,7 +401,7 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), syncProtocolID)
+	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
 	if err != nil {
 		sp.log.Errorf("could not open stream for connection: %s", err)
 	}

@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"github.com/golang/mock/gomock"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -85,18 +85,13 @@ func init() {
 
 func TestServer_Object(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Tracef(gomock.Any(), gomock.Any()).Times(2)
-	log.EXPECT().Info("Loading chain state...").Times(1)
-	log.EXPECT().Info("Starting Blockchain instance").Times(1)
-	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
-	log.EXPECT().Infof("binding to address: %s", gomock.Any())
+	log := logger.New(os.Stdin)
 
 	db := blockdb.NewMockDatabase(ctrl)
 	db.EXPECT().AddRawBlock(gomock.Any())
 	db.EXPECT().GetBlockRow(gomock.Any())
 
-	serv, err := server.NewServer(ctx, &testdata.Conf, log, *param, db, stateParams)
+	serv, err := server.NewServer(ctx, &testdata.Conf, log, param, db, stateParams)
 	assert.NoError(t, err)
 	assert.NotNil(t, serv)
 

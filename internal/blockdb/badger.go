@@ -1,9 +1,9 @@
 package blockdb
 
 import (
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sync"
@@ -15,14 +15,14 @@ import (
 type badgerDB struct {
 	log      logger.Logger
 	badgerdb *badger.DB
-	params   params.ChainParams
+	params   *params.ChainParams
 	lock     sync.RWMutex
 
 	canClose sync.WaitGroup
 }
 
 // NewBadgerDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
-func NewBadgerDB(path string, params params.ChainParams, log logger.Logger) (Database, error) {
+func NewBadgerDB(path string, params *params.ChainParams, log logger.Logger) (Database, error) {
 	badgerdb, err := badger.Open(badger.DefaultOptions(path + "/chain").WithLogger(nil))
 	if err != nil {
 		return nil, err

@@ -12,16 +12,17 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
 )
@@ -77,11 +78,7 @@ func init() {
 
 func TestProposerWithEmptyKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Infof("starting proposer with %d/%d active validators", gomock.Any(), gomock.Any())
-	log.EXPECT().Infof("sending votes for slot %d", gomock.Any()).AnyTimes()
-	log.EXPECT().Debugf("committing for slot %d with %d validators", gomock.Any(), gomock.Any()).AnyTimes()
-	log.EXPECT().Info("there are no validators to vote/propose, retrying in 1 seconds")
+	log := logger.New(os.Stdin)
 
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
@@ -155,11 +152,7 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 
 func TestProposerWithKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Infof("starting proposer with %d/%d active validators", gomock.Any(), gomock.Any())
-	log.EXPECT().Infof("sending votes for slot %d", gomock.Any()).AnyTimes()
-	log.EXPECT().Debugf("committing for slot %d with %d validators", gomock.Any(), gomock.Any()).AnyTimes()
-	log.EXPECT().Info("there are no validators to vote/propose, retrying in 1 seconds")
+	log := logger.New(os.Stdin)
 
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)

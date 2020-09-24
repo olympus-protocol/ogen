@@ -8,10 +8,10 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -95,17 +95,14 @@ func init() {
 func TestBlockchain_Instance(t *testing.T) {
 	//f := fuzz.New().NilChance(0)
 	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Info("Loading chain state...").Times(1)
-	log.EXPECT().Info("Starting Blockchain instance").Times(1)
-	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
+	log := logger.New(os.Stdin)
 
 	db := blockdb.NewMockDatabase(ctrl)
 	var c chain.Config
 	c.Log = log
 	c.Datadir = testdata.Conf.DataFolder
 	var err error
-	bc, err = chain.NewBlockchain(c, *param, db, stateParams)
+	bc, err = chain.NewBlockchain(c, param, db, stateParams)
 	assert.NoError(t, err)
 	assert.NotNil(t, bc)
 	err = bc.Start()

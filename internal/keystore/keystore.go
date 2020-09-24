@@ -2,8 +2,8 @@ package keystore
 
 import (
 	"errors"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"go.etcd.io/bbolt"
 	"path"
 )
