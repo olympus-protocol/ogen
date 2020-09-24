@@ -80,7 +80,7 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 }
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
-func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain, relayer bool) (SyncProtocol, error) {
+func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
 	ph := newProtocolHandler(ctx, syncProtocolID, host, config)
 	sp := &syncProtocol{
 		host:            host,
@@ -90,31 +90,28 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		protocolHandler: ph,
 		chain:           chain,
 		onSync:          true,
-		relayer:         relayer,
 		peersTrack:      make(map[peer.ID]*peerInfo),
 	}
 
 	sp.host.Notify(sp)
 
-	if !relayer {
-		go sp.waitForPeers()
+	go sp.waitForPeers()
 
-		if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
-			return nil, err
-		}
-		if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
-			return nil, err
-		}
-		if err := ph.RegisterHandler(p2p.MsgBlockCmd, sp.blockHandler); err != nil {
-			return nil, err
-		}
-		if err := ph.RegisterHandler(p2p.MsgSyncEndCmd, sp.syncEndHandler); err != nil {
-			return nil, err
-		}
+	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
+		return nil, err
+	}
+	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
+		return nil, err
+	}
+	if err := ph.RegisterHandler(p2p.MsgBlockCmd, sp.blockHandler); err != nil {
+		return nil, err
+	}
+	if err := ph.RegisterHandler(p2p.MsgSyncEndCmd, sp.syncEndHandler); err != nil {
+		return nil, err
+	}
 
-		if err := sp.listenForBroadcasts(); err != nil {
-			return nil, err
-		}
+	if err := sp.listenForBroadcasts(); err != nil {
+		return nil, err
 	}
 
 	return sp, nil

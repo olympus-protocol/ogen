@@ -84,9 +84,9 @@ type discoveryProtocol struct {
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, relayer bool) (DiscoveryProtocol, error) {
+func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
 	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
-	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeServer))
+	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeAuto))
 	if err != nil {
 		return nil, err
 	}
@@ -111,13 +111,8 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, rel
 
 	host.Notify(dp)
 
-	if relayer {
-		go dp.findPeers()
-	} else {
-		go dp.findPeersAsRelayer()
-	}
-
-	go dp.advertise(relayer)
+	go dp.findPeers()
+	go dp.advertise()
 
 	return dp, nil
 }
@@ -157,39 +152,7 @@ func (cm *discoveryProtocol) findPeers() {
 	}
 }
 
-func (cm *discoveryProtocol) findPeersAsRelayer() {
-	for _, s := range rendevouzString {
-		go func(s string) {
-			for {
-				peers, err := cm.discovery.FindPeers(cm.ctx, s)
-				if err != nil {
-					break
-				}
-			peerLoop:
-				for {
-					select {
-					case pi, ok := <-peers:
-						if !ok {
-							time.Sleep(time.Second * 10)
-							break peerLoop
-						}
-						cm.handleNewPeer(pi)
-					case <-cm.ctx.Done():
-						return
-					}
-				}
-			}
-		}(s)
-	}
-}
-
-func (cm *discoveryProtocol) advertise(relayer bool) {
-	// When relayer mode is active we advertise all versions
-	if relayer {
-
-	} else {
-
-	}
+func (cm *discoveryProtocol) advertise() {
 	discovery.Advertise(cm.ctx, cm.discovery, GetRendevouzString())
 }
 

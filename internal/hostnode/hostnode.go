@@ -82,7 +82,7 @@ type hostNode struct {
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32, relayer bool) (HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32) (HostNode, error) {
 
 	node := &hostNode{
 		ctx:      ctx,
@@ -125,9 +125,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		libp2p.ConnectionManager(connman),
 	)
 
-	if err != nil {
-		return nil, err
-	}
 	node.host = h
 
 	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
@@ -148,13 +145,13 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.gossipSub = g
 
-	discovery, err := NewDiscoveryProtocol(ctx, node, config, relayer)
+	discovery, err := NewDiscoveryProtocol(ctx, node, config)
 	if err != nil {
 		return nil, err
 	}
 	node.discoveryProtocol = discovery
 
-	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain, relayer)
+	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
 	if err != nil {
 		return nil, err
 	}
