@@ -50,8 +50,13 @@ func (c *CLI) Run(optArgs []string) {
 		fmt.Println("unable to initialize sync client")
 		os.Exit(0)
 	}
+	err = c.dbClient.InsertBlock(genesis)
+	if err != nil {
+		fmt.Println("unable to register genesis block")
+		return
+	}
 
-	blockCount := 0
+	blockCount := 1
 	for {
 		res, err := syncClient.Recv()
 		if err == io.EOF || err != nil {
@@ -70,13 +75,14 @@ func (c *CLI) Run(optArgs []string) {
 			fmt.Println("unable to parse block")
 			break
 		}
-		err = c.dbClient.InsertBlock(blockOgen, blockCount)
-		err = blockOgen.Unmarshal(blockBytes)
+		err = c.dbClient.InsertBlock(blockOgen)
 		if err != nil {
 			fmt.Println("unable to insert")
 			break
+		} else {
+			blockCount++
 		}
-		blockCount++
+
 	}
 
 	fmt.Printf("registered %v blocks", blockCount)

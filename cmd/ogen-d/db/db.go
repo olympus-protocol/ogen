@@ -11,6 +11,8 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // DBClient represents an DB connectio
@@ -107,24 +109,43 @@ func (dbc DBClient) insert(tableName string, queryVars []interface{}) error {
 	}
 	_, err = stmt.Exec(queryVars...)
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return errors.New("skip block")
+		}
 		return err
 	}
-	/*ra, err := res.RowsAffected()
-	fmt.Println(ra)*/
 	return err
 
 }
 
-func (dbc DBClient) InsertBlock(block primitives.Block, height int) error {
+// funcion to run a query that is expected to return one row and returns the first column
+func (dbc DBClient) querySingleRow(query string) (string, error) {
+	var res string
+	err := dbc.db.QueryRow(query).Scan(&res)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
+}
+
+func (dbc DBClient) InsertBlock(block primitives.Block) error {
+	nextHeight, prevHash, err := dbc.getNextHeight()
+	if err != nil {
+		fmt.Println("height: " + err.Error())
+		return err
+	}
+	fmt.Println(nextHeight)
+	if nextHeight > 0 && hex.EncodeToString(block.Header.PrevBlockHash[:]) != prevHash {
+		return handleError("blocks", errors.New("skip block"))
+	}
 	// insert into blocks table
 	var queryVars []interface{}
 	bHash := block.Hash().String()
 	queryVars = append(queryVars, bHash, hex.EncodeToString(block.Signature[:]),
-		hex.EncodeToString(block.RandaoSignature[:]), height)
-	err := dbc.insert("blocks", queryVars)
+		hex.EncodeToString(block.RandaoSignature[:]), nextHeight)
+	err = dbc.insert("blocks", queryVars)
 	if err != nil {
-		fmt.Println(err.Error())
-		return err
+		return handleError("blocks", err)
 	}
 	// blockheaders
 	queryVars = nil
@@ -134,22 +155,21 @@ func (dbc DBClient) InsertBlock(block primitives.Block, height int) error {
 		hex.EncodeToString(block.Header.ExitMerkleRoot[:]), hex.EncodeToString(block.Header.VoteSlashingMerkleRoot[:]),
 		hex.EncodeToString(block.Header.RANDAOSlashingMerkleRoot[:]), hex.EncodeToString(block.Header.ProposerSlashingMerkleRoot[:]),
 		hex.EncodeToString(block.Header.GovernanceVotesMerkleRoot[:]), hex.EncodeToString(block.Header.PrevBlockHash[:]),
-		int(block.Header.Timestamp), int(block.Header.Slot), hex.EncodeToString(block.Header.StateRoot[:]), hex.EncodeToString(block.Header.FeeAddress[:]))
+		int(block.Header.Timestamp), int(block.Header.Slot), hex.EncodeToString(block.Header.StateRoot[:]),
+		hex.EncodeToString(block.Header.FeeAddress[:]), block.Header.Hash().String())
 	err = dbc.insert("block_headers", queryVars)
 	if err != nil {
-		fmt.Println("blockheaders: " + err.Error())
-		return err
+		return handleError("block_headers", err)
 	}
 	// multivotes
 	for _, vote := range block.Votes {
 		queryVars = nil
-		queryVars = append(queryVars, bHash, hex.EncodeToString(vote.Sig[:]), "bitfield", int(vote.Data.Slot), int(vote.Data.FromEpoch),
+		queryVars = append(queryVars, bHash, hex.EncodeToString(vote.Sig[:]), hex.EncodeToString(vote.ParticipationBitfield), int(vote.Data.Slot), int(vote.Data.FromEpoch),
 			hex.EncodeToString(vote.Data.FromHash[:]), int(vote.Data.ToEpoch), hex.EncodeToString(vote.Data.ToHash[:]), hex.EncodeToString(vote.Data.BeaconBlockHash[:]),
-			int(vote.Data.Nonce))
+			int(vote.Data.Nonce), vote.Hash().String())
 		err = dbc.insert("multi_votes", queryVars)
 		if err != nil {
-			fmt.Println("multi_votes: " + err.Error())
-			return err
+			return handleError("votes", err)
 		}
 	}
 	// transactions (single and multi)
@@ -159,43 +179,36 @@ func (dbc DBClient) InsertBlock(block primitives.Block, height int) error {
 			tx.Amount, tx.Nonce, tx.Fee, 0, hex.EncodeToString(tx.Signature[:]))
 		err = dbc.insert("transactions_0", queryVars)
 		if err != nil {
-			fmt.Println("transactions0: " + err.Error())
-			return err
+			return handleError("single_tx", err)
 		}
 	}
 	for _, tx := range block.TxsMulti {
 		queryVars = nil
 		multiSig, err := tx.Signature.MarshalSSZ()
 		if err != nil {
-			fmt.Println(err.Error())
 			return err
 		}
 		queryVars = append(queryVars, bHash, 1, hex.EncodeToString(tx.To[:]),
 			tx.Amount, tx.Nonce, tx.Fee, 1, hex.EncodeToString(multiSig))
 		err = dbc.insert("transactions_1", queryVars)
 		if err != nil {
-			fmt.Println("transactions1: " + err.Error())
-			return err
+			return handleError("multi_tx", err)
 		}
 	}
-	//// validators
-	//	queryVars = nil
-	//	queryVars = append()
-	//	err = dbc.insert("validators", queryVars)
-	//	if err != nil {
-	//		fmt.Println("validators: " +err.Error())
-	//		return err
-	//	}
-	//}
-	// deposits
+
 	for _, depo := range block.Deposits {
 		queryVars = nil
 		queryVars = append(queryVars, bHash, hex.EncodeToString(depo.PublicKey[:]), hex.EncodeToString(depo.Signature[:]),
 			hex.EncodeToString(depo.Data.PublicKey[:]), hex.EncodeToString(depo.Data.ProofOfPossession[:]), hex.EncodeToString(depo.Data.WithdrawalAddress[:]))
 		err = dbc.insert("deposits", queryVars)
 		if err != nil {
-			fmt.Println("deposits: " + err.Error())
-			return err
+			return handleError("deposits", err)
+		}
+		queryVars = nil
+		queryVars = append(queryVars, hex.EncodeToString(depo.Data.PublicKey[:]))
+		err = dbc.insert("validators", queryVars)
+		if err != nil {
+			return handleError("validators", err)
 		}
 	}
 	// exits
@@ -205,42 +218,75 @@ func (dbc DBClient) InsertBlock(block primitives.Block, height int) error {
 			hex.EncodeToString(exits.Signature[:]))
 		err = dbc.insert("exits", queryVars)
 		if err != nil {
-			fmt.Println("exits: " + err.Error())
-			return err
+			return handleError("exits", err)
 		}
 	}
-	//// vote_slashings
-	//for _, vs := range block.VoteSlashings {
-	//	queryVars = nil
-	//	queryVars = append(queryVars, bHash, vs.Vote1, vs.Vote2)
-	//	err = dbc.insert("vote_slashings", queryVars)
-	//	if err != nil {
-	//		fmt.Println("vote_slashings: " +err.Error())
-	//		return err
-	//	}
-	//}
+	// vote_slashings
+	for _, vs := range block.VoteSlashings {
+		// find votes id
+		v1, err := dbc.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote1.Hash().String())
+		if err != nil {
+			return handleError("vote_slashings", err)
+		}
+		v2, err := dbc.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote2.Hash().String())
+		if err != nil {
+			return handleError("vote_slashings", err)
+		}
+		vote1Int, err := strconv.Atoi(v1)
+		if err != nil {
+			return err
+		}
+		vote2Int, err := strconv.Atoi(v2)
+		if err != nil {
+			return err
+		}
+		queryVars = nil
+		queryVars = append(queryVars, bHash, vote1Int, vote2Int)
+		err = dbc.insert("vote_slashings", queryVars)
+		if err != nil {
+			return handleError("vote_slashings", err)
+		}
+	}
 	// RANDAO_slashings
 	for _, rs := range block.RANDAOSlashings {
 		queryVars = nil
 		queryVars = append(queryVars, bHash, hex.EncodeToString(rs.RandaoReveal[:]), int(rs.Slot), hex.EncodeToString(rs.ValidatorPubkey[:]))
 		err = dbc.insert("RANDAO_slashings", queryVars)
 		if err != nil {
-			fmt.Println("RANDAO_slashings: " + err.Error())
-			return err
+			return handleError("RANDAO_slashings", err)
 		}
 	}
-	//// proposer_slashings
-	//for _, ps := range block.ProposerSlashings {
-	//	queryVars = nil
-	//	queryVars = append(queryVars, bHash, ps.BlockHeader1, ps.BlockHeader2,hex.EncodeToString(ps.Signature1[:]),
-	//		hex.EncodeToString(ps.Signature2[:]))
-	//	err = dbc.insert("proposer_slashings", queryVars)
-	//	if err != nil {
-	//		fmt.Println("proposer_slashings: " +err.Error())
-	//		return err
-	//	}
-	//}
+	// proposer_slashings
+	for _, ps := range block.ProposerSlashings {
+		// find blockheader id
+		bh1, err := dbc.querySingleRow("select id from block_headers where header_hash = " + ps.BlockHeader1.Hash().String())
+		if err != nil {
+			return handleError("proposer_slashings", err)
+		}
+		bh1Int, err := strconv.Atoi(bh1)
+		bh2, err := dbc.querySingleRow("select id from block_headers where header_hash = " + ps.BlockHeader2.Hash().String())
+		if err != nil {
+			return handleError("proposer_slashings", err)
+		}
+		bh2Int, err := strconv.Atoi(bh2)
+		queryVars = nil
+		queryVars = append(queryVars, bHash, bh1Int, bh2Int, hex.EncodeToString(ps.Signature1[:]),
+			hex.EncodeToString(ps.Signature2[:]))
+		err = dbc.insert("proposer_slashings", queryVars)
+		if err != nil {
+			return handleError("proposer_slashings", err)
+		}
+	}
 	return nil
+}
+
+func handleError(s string, err error) error {
+	if err.Error() == "skip block" {
+		fmt.Println("skip block")
+		return nil
+	}
+	fmt.Println(s + ": " + err.Error())
+	return err
 }
 
 func (dbc DBClient) CloseDB() {
@@ -256,6 +302,25 @@ func (dbc DBClient) OpenDB(parameters DbParameters) error {
 	db, err := sql.Open(parameters.DriverName, connString)
 	dbc.db = db
 	return err
+}
+
+func (dbc DBClient) getNextHeight() (int, string, error) {
+	idS, err := dbc.querySingleRow("select max(rowid) from blocks;")
+	if err != nil {
+		if err.Error() == "sql: Scan error on column index 0, name \"max(rowid)\": converting NULL to string is unsupported" {
+			return 0, "", nil
+		}
+		return -1, "", err
+	}
+	id, err := strconv.Atoi(idS)
+	if err != nil {
+		return -1, "", err
+	}
+	lasHash, err := dbc.querySingleRow("select block_hash from blocks where rowid = " + idS + ";")
+	if err != nil {
+		return id + 1, "", err
+	}
+	return id + 1, lasHash, nil
 }
 
 func getConnString(params DbParameters) (string, error) {
