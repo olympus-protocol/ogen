@@ -156,8 +156,8 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 
 	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain, relayer)
 	if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
 	node.syncProtocol = syncProtocol
 
 	return node, nil

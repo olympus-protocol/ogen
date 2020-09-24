@@ -53,7 +53,8 @@ type syncProtocol struct {
 	ctx    context.Context
 	log    logger.Logger
 
-	chain chain.Blockchain
+	chain   chain.Blockchain
+	relayer bool
 
 	protocolHandler ProtocolHandler
 
@@ -89,6 +90,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		protocolHandler: ph,
 		chain:           chain,
 		onSync:          true,
+		relayer:         relayer,
 		peersTrack:      make(map[peer.ID]*peerInfo),
 	}
 
@@ -114,7 +116,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 			return nil, err
 		}
 	}
-	
+
 	return sp, nil
 }
 
@@ -408,7 +410,9 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 
 	sp.protocolHandler.HandleStream(s)
 
-	sp.sendVersion(conn.RemotePeer())
+	if !sp.relayer {
+		sp.sendVersion(conn.RemotePeer())
+	}
 }
 
 // Disconnected is called when we disconnect from a peer.
