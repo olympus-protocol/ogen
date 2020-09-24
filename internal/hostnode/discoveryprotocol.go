@@ -35,7 +35,7 @@ func getRelayers() []peer.AddrInfo {
 	return r
 }
 
-var rendevouzString = map[int]string{
+var RendevouzStrings = map[int]string{
 	0: "do_not_go_gentle_into_that_good_night",
 }
 
@@ -45,14 +45,14 @@ func GetRendevouzString() string {
 	ver := VersionNumber
 	var selectedIndex int
 	var diffSelected int
-	for n := range rendevouzString {
+	for n := range RendevouzStrings {
 		diff := int(math.Abs(float64(ver - n)))
 		if diff < diffSelected {
 			selectedIndex = n
 			diffSelected = diff
 		}
 	}
-	return rendevouzString[selectedIndex]
+	return RendevouzStrings[selectedIndex]
 }
 
 // DiscoveryProtocol is an interface for discoveryProtocol
