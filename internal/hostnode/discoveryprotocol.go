@@ -64,7 +64,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		log:             config.Log,
 		dht:             d,
 		discovery:       r,
-		lastConnect: make(map[peer.ID]time.Time),
+		lastConnect:     make(map[peer.ID]time.Time),
 	}
 
 	host.Notify(dp)

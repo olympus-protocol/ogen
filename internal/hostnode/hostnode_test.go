@@ -59,15 +59,14 @@ func TestHostNode(t *testing.T) {
 		Port:         "50000",
 		InitialNodes: nil,
 		Path:         "./test/hn1",
-		PrivateKey:   nil,
 	}
 
-	hn, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic)
+	hn, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic, false)
 	assert.NoError(t, err)
 
 	cfg.Path = "./test/hn2"
 	cfg.Port = "55554"
-	hn2, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic)
+	hn2, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic, false)
 	assert.NoError(t, err)
 
 	assert.True(t, hn.Syncing())

@@ -30,7 +30,6 @@ type Config struct {
 	Port         string
 	InitialNodes []peer.AddrInfo
 	Path         string
-	PrivateKey   crypto.PrivKey
 }
 
 const (
@@ -86,7 +85,7 @@ type hostNode struct {
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32) (HostNode, error) {
+func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, netMagic uint32, relayer bool) (HostNode, error) {
 
 	node := &hostNode{
 		ctx:      ctx,
@@ -99,10 +98,12 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	if err != nil {
 		return nil, err
 	}
+
 	ps, err := pstoreds.NewPeerstore(node.ctx, ds, pstoreds.DefaultOpts())
 	if err != nil {
 		return nil, err
 	}
+
 	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		return nil, err
@@ -146,11 +147,13 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.discoveryProtocol = discovery
 
-	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
-	if err != nil {
-		return nil, err
+	if !relayer {
+		syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
+		if err != nil {
+			return nil, err
+		}
+		node.syncProtocol = syncProtocol
 	}
-	node.syncProtocol = syncProtocol
 
 	return node, nil
 }
