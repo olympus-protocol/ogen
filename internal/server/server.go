@@ -200,9 +200,9 @@ func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 
 func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) hostnode.Config {
 	cfg := hostnode.Config{
-		Log:          logger,
-		Port:         config.Port,
-		Path:         config.DataFolder,
+		Log:  logger,
+		Port: config.Port,
+		Path: config.DataFolder,
 	}
 	return cfg
 }

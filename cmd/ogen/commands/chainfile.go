@@ -64,9 +64,9 @@ var generateChainCmd = &cobra.Command{
 		}
 
 		chainFile := state.ChainFile{
-			Validators:         validators,
-			GenesisTime:        uint64(genesisTime.Unix()),
-			PremineAddress:     withdrawAddress,
+			Validators:     validators,
+			GenesisTime:    uint64(genesisTime.Unix()),
+			PremineAddress: withdrawAddress,
 		}
 
 		chainFileBytes, err := json.Marshal(chainFile)

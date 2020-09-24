@@ -55,9 +55,9 @@ func TestHostNode(t *testing.T) {
 	log.EXPECT().Trace(gomock.Any()).AnyTimes()
 
 	cfg := hostnode.Config{
-		Log:          log,
-		Port:         "50000",
-		Path:         "./test/hn1",
+		Log:  log,
+		Port: "50000",
+		Path: "./test/hn1",
 	}
 
 	hn, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic, false)
