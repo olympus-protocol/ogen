@@ -131,7 +131,7 @@ func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 	}
 	err := cm.Connect(pi)
 	if err != nil {
-		cm.log.Error("unable to connect to peer %s", pi.ID.String())
+		cm.log.Errorf("unable to connect to peer %s: %s", pi.ID.String(), err.Error())
 	}
 }
 
