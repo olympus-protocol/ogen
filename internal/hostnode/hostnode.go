@@ -11,6 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/logger"
 
+	circuit "github.com/libp2p/go-libp2p-circuit"
 	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 
 	dsbadger "github.com/ipfs/go-ds-badger"
@@ -120,7 +121,8 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		ctx,
 		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
 		libp2p.Identity(priv),
-		libp2p.EnableRelay(),
+		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
+		libp2p.NATPortMap(),
 		libp2p.Peerstore(ps),
 		libp2p.ConnectionManager(connman),
 	)
