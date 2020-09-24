@@ -8,7 +8,6 @@ mockgen --source internal/chain/blockchain.go --destination internal/chain/block
 mockgen --source internal/chain/state.go --destination internal/chain/state_mock.go --package chain
 mockgen --source internal/chainrpc/server.go --destination internal/chainrpc/server_mock.go --package chainrpc
 mockgen --source internal/keystore/keystore.go --destination internal/keystore/keystore_mock.go --package keystore
-mockgen --source internal/logger/log.go --destination internal/logger/log_mock.go --package logger
 mockgen --source internal/mempool/actions.go --destination internal/mempool/actions_mock.go --package mempool
 mockgen --source internal/mempool/coins.go --destination internal/mempool/coins_mock.go --package mempool
 mockgen --source internal/mempool/votes.go --destination internal/mempool/votes_mock.go --package mempool

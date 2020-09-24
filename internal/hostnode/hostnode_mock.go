@@ -38,20 +38,6 @@ func (m *MockHostNode) EXPECT() *MockHostNodeMockRecorder {
 	return m.recorder
 }
 
-// SyncProtocol mocks base method
-func (m *MockHostNode) SyncProtocol() SyncProtocol {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncProtocol")
-	ret0, _ := ret[0].(SyncProtocol)
-	return ret0
-}
-
-// SyncProtocol indicates an expected call of SyncProtocol
-func (mr *MockHostNodeMockRecorder) SyncProtocol() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncProtocol", reflect.TypeOf((*MockHostNode)(nil).SyncProtocol))
-}
-
 // Topic mocks base method
 func (m *MockHostNode) Topic(topic string) (*pubsub.Topic, error) {
 	m.ctrl.T.Helper()
