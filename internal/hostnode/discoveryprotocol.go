@@ -3,8 +3,7 @@ package hostnode
 import (
 	"context"
 	"fmt"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p/p2p/discovery"
+	discovery "github.com/libp2p/go-libp2p-discovery"
 	"sync"
 	"time"
 
@@ -40,6 +39,7 @@ type discoveryProtocol struct {
 
 	protocolHandler ProtocolHandler
 	dht             *dht.IpfsDHT
+	discovery       *discovery.RoutingDiscovery
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
@@ -55,6 +55,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		return nil, err
 	}
 
+	r := discovery.NewRoutingDiscovery(d)
 
 	dp := &discoveryProtocol{
 		host:            host,
@@ -63,12 +64,13 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		protocolHandler: ph,
 		log:             config.Log,
 		dht:             d,
+		discovery:       r,
 	}
 
 	host.Notify(dp)
 
 	go dp.findPeers()
-	//go dp.advertise()
+	go dp.advertise()
 
 	return dp, nil
 }
@@ -85,11 +87,14 @@ func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 
 func (cm *discoveryProtocol) findPeers() {
 	for {
-		peerChan := initMDNS(cm.ctx, cm.host.GetHost(), "rendevouz")
+		peers, err := cm.discovery.FindPeers(cm.ctx, "randezvous")
+		if err != nil {
+			break
+		}
 	peerLoop:
 		for {
 			select {
-			case pi, ok := <-peerChan:
+			case pi, ok := <-peers:
 				fmt.Println(pi, ok)
 				if !ok {
 					time.Sleep(time.Second * 10)
@@ -103,14 +108,16 @@ func (cm *discoveryProtocol) findPeers() {
 	}
 }
 
-//func (cm *discoveryProtocol) advertise() {
-//	discovery.Advertise(cm.ctx, cm.discovery, "randezvous")
-//}
+func (cm *discoveryProtocol) advertise() {
+	discovery.Advertise(cm.ctx, cm.discovery, "randezvous")
+}
 
 func (cm *discoveryProtocol) Start() error {
 	for _, addr := range cm.config.InitialNodes {
 		if err := cm.host.GetHost().Connect(cm.ctx, addr); err != nil {
 			cm.log.Error(err)
+		} else {
+			cm.log.Infof("Connection established with bootstrap node: %s", addr.ID.String())
 		}
 	}
 	return nil
@@ -162,29 +169,3 @@ func (cm *discoveryProtocol) OpenedStream(network.Network, network.Stream) {}
 
 // ClosedStream is called when we close a stream.
 func (cm *discoveryProtocol) ClosedStream(network.Network, network.Stream) {}
-
-
-type discoveryNotifee struct {
-	PeerChan chan peer.AddrInfo
-}
-
-//interface to be called when new  peer is found
-func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
-	n.PeerChan <- pi
-}
-
-//Initialize the MDNS service
-func initMDNS(ctx context.Context, peerhost host.Host, rendezvous string) chan peer.AddrInfo {
-	// An hour might be a long long period in practical applications. But this is fine for us
-	ser, err := discovery.NewMdnsService(ctx, peerhost, time.Hour, rendezvous)
-	if err != nil {
-		panic(err)
-	}
-
-	//register with service so that we get notified about peer discovery
-	n := &discoveryNotifee{}
-	n.PeerChan = make(chan peer.AddrInfo)
-
-	ser.RegisterNotifee(n)
-	return n.PeerChan
-}
