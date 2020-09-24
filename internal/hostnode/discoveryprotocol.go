@@ -74,8 +74,6 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 	return dp, nil
 }
 
-const findPeerCycle = 50 * time.Second
-
 func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == cm.host.GetHost().ID() {
 		return
@@ -88,34 +86,28 @@ func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 
 func (cm *discoveryProtocol) findPeers() {
 	for {
-		findPeerCtx, cancel := context.WithTimeout(cm.ctx, findPeerCycle)
-
-		peers, err := cm.discovery.FindPeers(findPeerCtx, string(cm.host.GetHost().ID()))
+		peers, err := cm.discovery.FindPeers(cm.ctx, "randezvous")
 		if err != nil {
-			cancel()
 			break
 		}
-	peerLoop:
-		for {
-			select {
-			case pi, ok := <-peers:
-				if !ok {
-					time.Sleep(time.Second * 5)
-					break peerLoop
+		peerLoop:
+			for {
+				select {
+				case pi, ok := <-peers:
+					if !ok {
+						time.Sleep(time.Second * 10)
+						break peerLoop
+					}
+					cm.handleNewPeer(pi)
+				case <-cm.ctx.Done():
+					return
 				}
-				cm.handleNewPeer(pi)
-			case <-cm.ctx.Done():
-				cancel()
-				return
-			case <-findPeerCtx.Done():
-				break peerLoop
 			}
 		}
-	}
 }
 
 func (cm *discoveryProtocol) advertise() {
-	discovery.Advertise(cm.ctx, cm.discovery, string(cm.host.GetHost().ID()))
+	discovery.Advertise(cm.ctx, cm.discovery, "randezvous")
 }
 
 func (cm *discoveryProtocol) Start() error {
