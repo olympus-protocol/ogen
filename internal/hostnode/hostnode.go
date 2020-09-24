@@ -130,7 +130,17 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.host = h
 
-	config.Log.Infof("binding to address: %s", listenAddress.String())
+	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
+		ID:    h.ID(),
+		Addrs: []ma.Multiaddr{listenAddress},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range addrs {
+		config.Log.Infof("binding to address: %s", a)
+	}
 
 	g, err := pubsub.NewGossipSub(ctx, h)
 	if err != nil {
