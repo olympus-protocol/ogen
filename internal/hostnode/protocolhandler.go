@@ -17,8 +17,17 @@ import (
 )
 
 const (
-	syncProtocolID      = protocol.ID("/ogen/sync/" + OgenVersion)
-	discoveryProtocolID = protocol.ID("/ogen/discovery/" + OgenVersion)
+	mayor = 0
+	minor = 1
+	patch = 0
+)
+
+var (
+	VersionNumber = (mayor * 100000) + (minor * 1000) + (patch * 10)
+	Version       = fmt.Sprintf("%d.%d.%d", mayor, minor, patch)
+
+	syncProtocolID      = protocol.ID("/ogen/sync/" + Version)
+	discoveryProtocolID = protocol.ID("/ogen/discovery/" + Version)
 )
 
 // ProtocolHandler is an interface for the ProtocolHandler

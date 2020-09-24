@@ -3,6 +3,7 @@ package hostnode
 import (
 	"context"
 	discovery "github.com/libp2p/go-libp2p-discovery"
+	"math"
 	"sync"
 	"time"
 
@@ -12,6 +13,26 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/logger"
 )
+
+var rendevouzString = map[int]string{
+	0: "do_not_go_gentle_into_that_good_night",
+}
+
+// GetRendevouzString is a function to return a rendevouz string for a certain version range
+// to make sure peers find each other depending on their version.
+func GetRendevouzString() string {
+	ver := VersionNumber
+	var selectedIndex int
+	var diffSelected int
+	for n := range rendevouzString {
+		diff := int(math.Abs(float64(ver - n)))
+		if diff < diffSelected {
+			selectedIndex = n
+			diffSelected = diff
+		}
+	}
+	return rendevouzString[selectedIndex]
+}
 
 // DiscoveryProtocol is an interface for discoveryProtocol
 type DiscoveryProtocol interface {
@@ -42,7 +63,7 @@ type discoveryProtocol struct {
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
+func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, relayer bool) (DiscoveryProtocol, error) {
 	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
 	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeServer))
 	if err != nil {
@@ -69,14 +90,22 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 
 	host.Notify(dp)
 
-	go dp.findPeers()
-	go dp.advertise()
+	if relayer {
+		go dp.findPeers()
+	} else {
+		go dp.findPeersAsRelayer()
+	}
+
+	go dp.advertise(relayer)
 
 	return dp, nil
 }
 
 func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == cm.host.GetHost().ID() {
+		return
+	}
+	if cm.host.ConnectedToPeer(pi.ID) {
 		return
 	}
 	err := cm.Connect(pi)
@@ -87,7 +116,7 @@ func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 
 func (cm *discoveryProtocol) findPeers() {
 	for {
-		peers, err := cm.discovery.FindPeers(cm.ctx, "randezvous")
+		peers, err := cm.discovery.FindPeers(cm.ctx, GetRendevouzString())
 		if err != nil {
 			break
 		}
@@ -107,8 +136,40 @@ func (cm *discoveryProtocol) findPeers() {
 	}
 }
 
-func (cm *discoveryProtocol) advertise() {
-	discovery.Advertise(cm.ctx, cm.discovery, "randezvous")
+func (cm *discoveryProtocol) findPeersAsRelayer() {
+	for _, s := range rendevouzString {
+		go func(s string) {
+			for {
+				peers, err := cm.discovery.FindPeers(cm.ctx, s)
+				if err != nil {
+					break
+				}
+			peerLoop:
+				for {
+					select {
+					case pi, ok := <-peers:
+						if !ok {
+							time.Sleep(time.Second * 10)
+							break peerLoop
+						}
+						cm.handleNewPeer(pi)
+					case <-cm.ctx.Done():
+						return
+					}
+				}
+			}
+		}(s)
+	}
+}
+
+func (cm *discoveryProtocol) advertise(relayer bool) {
+	// When relayer mode is active we advertise all versions
+	if relayer {
+
+	} else {
+
+	}
+	discovery.Advertise(cm.ctx, cm.discovery, GetRendevouzString())
 }
 
 func (cm *discoveryProtocol) Start() error {

@@ -32,13 +32,8 @@ type Config struct {
 	Path         string
 }
 
-const (
-	OgenVersion = "0.0.1"
-)
-
 // HostNode is an interface for hostNode
 type HostNode interface {
-	SyncProtocol() SyncProtocol
 	Topic(topic string) (*pubsub.Topic, error)
 	Syncing() bool
 	GetContext() context.Context
@@ -141,7 +136,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.gossipSub = g
 
-	discovery, err := NewDiscoveryProtocol(ctx, node, config)
+	discovery, err := NewDiscoveryProtocol(ctx, node, config, relayer)
 	if err != nil {
 		return nil, err
 	}

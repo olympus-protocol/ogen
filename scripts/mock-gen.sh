@@ -12,7 +12,6 @@ mockgen --source internal/logger/log.go --destination internal/logger/log_mock.g
 mockgen --source internal/mempool/actions.go --destination internal/mempool/actions_mock.go --package mempool
 mockgen --source internal/mempool/coins.go --destination internal/mempool/coins_mock.go --package mempool
 mockgen --source internal/mempool/votes.go --destination internal/mempool/votes_mock.go --package mempool
-mockgen --source internal/hostnode/database.go --destination internal/hostnode/database_mock.go --package hostnode
 mockgen --source internal/hostnode/discoveryprotocol.go --destination internal/hostnode/discoveryprotocol_mock.go --package hostnode
 mockgen --source internal/hostnode/hostnode.go --destination internal/hostnode/hostnode_mock.go --package hostnode
 mockgen --source internal/hostnode/protocolhandler.go --destination internal/hostnode/protocolhandler_mock.go --package hostnode

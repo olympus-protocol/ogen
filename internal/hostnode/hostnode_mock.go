@@ -284,17 +284,3 @@ func (mr *MockHostNodeMockRecorder) GetPeerInfo(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerInfo", reflect.TypeOf((*MockHostNode)(nil).GetPeerInfo), id)
 }
-
-// SavePeer mocks base method
-func (m *MockHostNode) SavePeer(pinfo peer.AddrInfo) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SavePeer", pinfo)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SavePeer indicates an expected call of SavePeer
-func (mr *MockHostNodeMockRecorder) SavePeer(pinfo interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePeer", reflect.TypeOf((*MockHostNode)(nil).SavePeer), pinfo)
-}
