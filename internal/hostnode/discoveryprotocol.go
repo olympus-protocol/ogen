@@ -15,8 +15,8 @@ import (
 )
 
 var relayerNodes = map[string]string{
-	"cronos-1": "/ip4/206.189.231.51/tcp/25000/p2p/12D3KooWRnVYX8aAWqQnfzWBj6pmFPihEATX44QxWjxT9mRPZGz7",
-	"cronos-2": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWNq9NMLoLc71vkHvftTcX9zLAL5kWhBN2okN4SqrXFegF",
+	"cronos-1": "/ip4/206.189.231.51/tcp/25000/p2p/12D3KooWJiD1mSdJTYxoTwRrmG2D2zPnzpHe6vpS5T5FcX3J7HCM",
+	"cronos-2": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWCu1XLbzDN6TASFpvo4QMtHmLPG652VwEq11bfWGj8Tag",
 }
 
 func getRelayers() []peer.AddrInfo {
