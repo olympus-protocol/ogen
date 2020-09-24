@@ -13,8 +13,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
@@ -131,25 +129,6 @@ Next generation blockchain secured by CASPER.`,
 				ip.GenesisTime = time.Unix(int64(genesisTime), 0)
 			}
 
-			addNodesStrs := viper.GetStringSlice("add")
-			addNodesStrs = append(addNodesStrs, cf.InitialConnections...)
-			addNodes := make([]peer.AddrInfo, len(addNodesStrs))
-			for i := range addNodes {
-				maddr, err := multiaddr.NewMultiaddr(addNodesStrs[i])
-				if err != nil {
-					log.Errorf("error parsing add node %s: %s", addNodesStrs[i], err)
-					continue
-				}
-
-				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
-				if err != nil {
-					log.Errorf("error parsing add node %s: %s", maddr, pinfo)
-					continue
-				}
-
-				addNodes[i] = *pinfo
-			}
-
 			rpcauth := ""
 			if viper.GetString("rpc_auth_token") != "" {
 				rpcauth = viper.GetString("rpc_auth_token")
@@ -160,9 +139,8 @@ Next generation blockchain secured by CASPER.`,
 			c := &server.GlobalConfig{
 				DataFolder: DataFolder,
 
-				NetworkName:  networkName,
-				InitialNodes: addNodes,
-				Port:         viper.GetString("port"),
+				NetworkName: networkName,
+				Port:        viper.GetString("port"),
 
 				InitConfig: ip,
 
@@ -204,7 +182,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "Directory to store the chain data.")
 
 	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
-	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
 	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
 
 	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")

@@ -179,7 +179,6 @@ func (cm *discoveryProtocol) Start() error {
 		peerstorePeers = append(peerstorePeers, cm.host.GetHost().Peerstore().PeerInfo(id))
 	}
 	var initialNodes []peer.AddrInfo
-	initialNodes = append(initialNodes, cm.config.InitialNodes...)
 	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := cm.host.GetHost().Connect(cm.ctx, addr); err != nil {

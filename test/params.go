@@ -1,7 +1,6 @@
 package testdata
 
 import (
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -21,7 +20,6 @@ var PremineAddr = bls.RandKey()
 // Conf are the test configuration flags
 var Conf = server.GlobalConfig{
 	NetworkName:  "testing mock net",
-	InitialNodes: []peer.AddrInfo{},
 	Port:         "22222",
 	RPCProxy:     true,
 	RPCProxyPort: "8080",

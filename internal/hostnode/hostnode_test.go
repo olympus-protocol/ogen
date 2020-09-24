@@ -57,7 +57,6 @@ func TestHostNode(t *testing.T) {
 	cfg := hostnode.Config{
 		Log:          log,
 		Port:         "50000",
-		InitialNodes: nil,
 		Path:         "./test/hn1",
 	}
 

@@ -28,7 +28,6 @@ import (
 type Config struct {
 	Log          logger.Logger
 	Port         string
-	InitialNodes []peer.AddrInfo
 	Path         string
 }
 

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -23,9 +22,8 @@ import (
 type GlobalConfig struct {
 	DataFolder string
 
-	NetworkName  string
-	InitialNodes []peer.AddrInfo
-	Port         string
+	NetworkName string
+	Port        string
 
 	InitConfig state.InitializationParameters
 
@@ -203,7 +201,6 @@ func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) hostnode.Config {
 	cfg := hostnode.Config{
 		Log:          logger,
-		InitialNodes: config.InitialNodes,
 		Port:         config.Port,
 		Path:         config.DataFolder,
 	}
