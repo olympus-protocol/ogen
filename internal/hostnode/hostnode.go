@@ -3,6 +3,8 @@ package hostnode
 import (
 	"context"
 	"crypto/rand"
+	"io/ioutil"
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -70,6 +72,7 @@ type hostNode struct {
 	netMagic uint32
 
 	log logger.Logger
+	path string
 
 	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
 	discoveryProtocol DiscoveryProtocol
@@ -86,6 +89,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		log:      config.Log,
 		topics:   map[string]*pubsub.Topic{},
 		netMagic: netMagic,
+		path: config.Path,
 	}
 
 	ds, err := dsbadger.NewDatastore(path.Join(config.Path, "peerstore"), nil)
@@ -98,11 +102,10 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 		return nil, err
 	}
 
-	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	priv, err := node.loadPrivateKey()
 	if err != nil {
 		return nil, err
 	}
-
 	node.privateKey = priv
 
 	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + config.Port)
@@ -273,4 +276,38 @@ func (node *hostNode) Start() error {
 func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	pinfo := node.host.Peerstore().PeerInfo(id)
 	return &pinfo
+}
+
+func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {
+	keyBytes, err := ioutil.ReadFile(path.Join(node.path, "node_key.dat"))
+	if err != nil {
+		return node.createPrivateKey()
+	}
+
+	key, err := crypto.UnmarshalPrivateKey(keyBytes)
+	if err != nil {
+		return node.createPrivateKey()
+	}
+	return key, nil
+}
+
+func (node *hostNode) createPrivateKey()  (crypto.PrivKey, error) {
+	_ = os.RemoveAll(path.Join(node.path, "node_key.dat"))
+
+	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	keyBytes, err := crypto.MarshalPrivateKey(priv)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ioutil.WriteFile(path.Join(node.path, "node_key.dat"), keyBytes, 0700)
+	if err != nil {
+		return nil, err
+	}
+
+	return priv, nil
 }
