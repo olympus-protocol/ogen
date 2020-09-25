@@ -36,7 +36,7 @@ var generateChainCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		k := keystore.NewKeystore(DataFolder, nil)
+		k := keystore.NewKeystore(GlobalDataFolder, nil)
 		defer func() {
 			_ = k.Close()
 		}()
@@ -75,7 +75,7 @@ var generateChainCmd = &cobra.Command{
 			return
 		}
 
-		if err := ioutil.WriteFile(path.Join(DataFolder, outFile), chainFileBytes, 0644); err != nil {
+		if err := ioutil.WriteFile(path.Join(GlobalDataFolder, outFile), chainFileBytes, 0644); err != nil {
 			fmt.Printf("error writing json chain file: %s\n", err)
 			return
 		}

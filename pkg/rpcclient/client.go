@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// RPCClient represents an RPC connection to a server.
-type RPCClient struct {
+// Client represents an RPC connection to a server.
+type Client struct {
 	address string
 	conn    *grpc.ClientConn
 
@@ -23,16 +23,44 @@ type RPCClient struct {
 	wallet     proto.WalletClient
 }
 
+func (c *Client) Chain() proto.ChainClient {
+	return c.chain
+}
+
+func (c *Client) Validators() proto.ValidatorsClient {
+	return c.validators
+}
+
+func (c *Client) Utils() proto.UtilsClient {
+	return c.utils
+}
+
+func (c *Client) Network() proto.NetworkClient {
+	return c.network
+}
+
+func (c *Client) Wallet() proto.WalletClient {
+	return c.wallet
+}
+
 // NewRPCClient creates a new RPC client.
-func NewRPCClient(addr string, datadir string) *RPCClient {
-	certPool, err := chainrpc.LoadCerts(datadir)
-	if err != nil {
-		return nil
+func NewRPCClient(addr string, datadir string, insecure bool) *Client {
+	var creds credentials.TransportCredentials
+	if insecure {
+		creds = credentials.NewTLS(&tls.Config{
+			InsecureSkipVerify: true,
+		})
+	} else {
+		certPool, err := chainrpc.LoadCerts(datadir)
+		if err != nil {
+			return nil
+		}
+		creds = credentials.NewTLS(&tls.Config{
+			InsecureSkipVerify: false,
+			RootCAs:            certPool,
+		})
 	}
-	creds := credentials.NewTLS(&tls.Config{
-		InsecureSkipVerify: false,
-		RootCAs:            certPool,
-	})
+
 	if addr == "" {
 		fmt.Println("Missing address")
 		os.Exit(1)
@@ -41,7 +69,7 @@ func NewRPCClient(addr string, datadir string) *RPCClient {
 	if err != nil {
 		panic("unable to connect to rpc server")
 	}
-	client := &RPCClient{
+	client := &Client{
 		address:    addr,
 		chain:      proto.NewChainClient(conn),
 		validators: proto.NewValidatorsClient(conn),

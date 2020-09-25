@@ -6,5 +6,8 @@ import (
 )
 
 func main() {
-	commands.Execute()
+	err := commands.Execute()
+	if err != nil {
+		panic(err)
+	}
 }

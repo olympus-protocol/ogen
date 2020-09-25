@@ -12,7 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 )
 
-func (c *RPCClient) SubmitRawData(args []string) (string, error) {
+func (c *Client) SubmitRawData(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 2 {
@@ -30,7 +30,7 @@ func (c *RPCClient) SubmitRawData(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) GenKeyPair(raw bool) (string, error) {
+func (c *Client) GenKeyPair(raw bool) (string, error) {
 	blsKeyPair := bls.RandKey()
 
 	var res *bls.KeyPair
@@ -53,7 +53,7 @@ func (c *RPCClient) GenKeyPair(raw bool) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) GenValidatorKey(args []string) (out string, err error) {
+func (c *Client) GenValidatorKey(args []string) (out string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	amount := 0
@@ -78,7 +78,7 @@ func (c *RPCClient) GenValidatorKey(args []string) (out string, err error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) DecodeRawTransaction(args []string) (string, error) {
+func (c *Client) DecodeRawTransaction(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {
@@ -96,7 +96,7 @@ func (c *RPCClient) DecodeRawTransaction(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) DecodeRawBlock(args []string) (string, error) {
+func (c *Client) DecodeRawBlock(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {

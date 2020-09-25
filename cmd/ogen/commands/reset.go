@@ -17,7 +17,7 @@ var resetCmd = &cobra.Command{
 	Short: "Removes all chain data and chain.json",
 	Long:  `Removes all chain data and chain.json`,
 	Run: func(cmd *cobra.Command, args []string) {
-		badgerdb, err := badger.Open(badger.DefaultOptions(DataFolder + "/chain").WithLogger(nil))
+		badgerdb, err := badger.Open(badger.DefaultOptions(GlobalDataFolder + "/chain").WithLogger(nil))
 		if err != nil {
 			panic(err)
 		}
@@ -25,7 +25,7 @@ var resetCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		_ = os.Remove(path.Join(DataFolder, "chain.json"))
-		_ = os.RemoveAll(path.Join(DataFolder, "peerstore"))
+		_ = os.Remove(path.Join(GlobalDataFolder, "chain.json"))
+		_ = os.RemoveAll(path.Join(GlobalDataFolder, "peerstore"))
 	},
 }

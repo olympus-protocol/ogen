@@ -16,6 +16,8 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/herumi/bls-eth-go-binary v0.0.0-20200722032157-41fc56eba7b4
 	github.com/ipfs/go-ds-badger v0.2.3
+	github.com/jackc/pgx v3.6.2+incompatible // indirect
+	github.com/jackc/pgx/v4 v4.8.1
 	github.com/libp2p/go-libp2p v0.11.0
 	github.com/libp2p/go-libp2p-circuit v0.3.1
 	github.com/libp2p/go-libp2p-connmgr v0.2.4
@@ -26,6 +28,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/mattn/go-sqlite3 v1.14.3
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/pkg/errors v0.9.1

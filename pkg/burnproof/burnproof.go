@@ -194,7 +194,7 @@ func VerifyBurn(proofBytes []byte, address string) error {
 	}
 
 	for _, c := range proofs {
-		if err := verifyMerkleRoot(*MerkleRootHash, c); err != nil {
+		if err := verifyMerkleRoot(MerkleRootHash, c); err != nil {
 			return err
 		}
 
