@@ -15,8 +15,8 @@ import (
 )
 
 var relayerNodes = map[string]string{
-	"cronos-1": "/ip4/206.189.231.51/tcp/25000/p2p/12D3KooWJiD1mSdJTYxoTwRrmG2D2zPnzpHe6vpS5T5FcX3J7HCM",
-	"cronos-2": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWCu1XLbzDN6TASFpvo4QMtHmLPG652VwEq11bfWGj8Tag",
+	"cronos-1": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWR58NXxMg5zzSbRqHAXry7tnRtMxTLQGos4735rZgbmVV",
+	//"cronos-2": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWCu1XLbzDN6TASFpvo4QMtHmLPG652VwEq11bfWGj8Tag",
 }
 
 func getRelayers() []peer.AddrInfo {
@@ -59,6 +59,7 @@ type discoveryProtocol struct {
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex
 
+	ID              peer.ID
 	protocolHandler ProtocolHandler
 	dht             *dht.IpfsDHT
 	discovery       *discovery.RoutingDiscovery
@@ -88,6 +89,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *
 		dht:             d,
 		discovery:       r,
 		params:          p,
+		ID:              host.GetHost().ID(),
 		lastConnect:     make(map[peer.ID]time.Time),
 	}
 
@@ -100,7 +102,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *
 }
 
 func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
-	if pi.ID == cm.host.GetHost().ID() {
+	if pi.ID == cm.ID {
 		return
 	}
 	if cm.host.ConnectedToPeer(pi.ID) {

@@ -16,7 +16,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
 
-
 // ProtocolHandler is an interface for the ProtocolHandler
 type ProtocolHandler interface {
 	RegisterHandler(messageName string, handler MessageHandler) error
