@@ -59,7 +59,7 @@ func TestDeposit(t *testing.T) {
 	d.PublicKey = pub
 	d.Signature = sig
 
-	assert.Equal(t, "424e42e029875876927f3fe7aa8753d8c2a4dd5e7939d0a140d268ad79f30e83", d.Hash().String())
+	assert.Equal(t, "830ef379ad68d240a1d039795edda4c2d85387aae73f7f9276588729e0424e42", d.Hash().String())
 
 	retSig, err := d.GetSignature()
 	assert.NoError(t, err)

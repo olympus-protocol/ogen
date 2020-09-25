@@ -56,17 +56,17 @@ func TestBlocksMerkle(t *testing.T) {
 	err = b.Unmarshal(blockRaw)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "36186eff16eece8bb143a404a95848f980c6e53d645ec9ee3fc01d567f39dd79", b.VotesMerkleRoot().String())
-	assert.Equal(t, "c91c86dac2d4c5c45feedf1cf8e12f37425a32746c6702bb2ffe35973f0760eb", b.TransactionMerkleRoot().String())
-	assert.Equal(t, "cd17dd0d0215b9df752367487957406cb7310762d8f862c6e06f3992b2f855f2", b.TransactionMultiMerkleRoot().String())
-	assert.Equal(t, "9aafd7d7da8d9f889592f8515a6cf5b0d236d82a216aa4bf015085b292e975ea", b.DepositMerkleRoot().String())
-	assert.Equal(t, "d1e41a35fa9aec9d19f0af556bd2811f6fcbc78c8ed4015db1f08370b7604352", b.ExitMerkleRoot().String())
-	assert.Equal(t, "f79979bd7423efc89bcf863e012f0d8d6a7bb5ab7ed7367fbf0ad852daab28d4", b.VoteSlashingRoot().String())
-	assert.Equal(t, "4db53e02223cd9075a0d4c85bd4ebbee7ba695f49590de36a370da416bce5da5", b.RANDAOSlashingsRoot().String())
-	assert.Equal(t, "227b2f702cfe280ecab59171e97c67006f25930a60c93bccc84edb0898e73dc9", b.ProposerSlashingsRoot().String())
-	assert.Equal(t, "5eef3331175da6212d04805197f529ccf76b4373baba3cb7cf25187f63ac3745", b.GovernanceVoteMerkleRoot().String())
+	assert.Equal(t, "79dd397f561dc03feec95e643de5c680f94858a904a443b18bceee16ff6e1836", b.VotesMerkleRoot().String())
+	assert.Equal(t, "eb60073f9735fe2fbb02676c74325a42372fe1f81cdfee5fc4c5d4c2da861cc9", b.TransactionMerkleRoot().String())
+	assert.Equal(t, "f255f8b292396fe0c662f8d8620731b76c40577948672375dfb915020ddd17cd", b.TransactionMultiMerkleRoot().String())
+	assert.Equal(t, "ea75e992b2855001bfa46a212ad836d2b0f56c5a51f89295889f8ddad7d7af9a", b.DepositMerkleRoot().String())
+	assert.Equal(t, "524360b77083f0b15d01d48e8cc7cb6f1f81d26b55aff0199dec9afa351ae4d1", b.ExitMerkleRoot().String())
+	assert.Equal(t, "d428abda52d80abf7f36d77eabb57b6a8d0d2f013e86cf9bc8ef2374bd7999f7", b.VoteSlashingRoot().String())
+	assert.Equal(t, "a55dce6b41da70a336de9095f495a67beebb4ebd854c0d5a07d93c22023eb54d", b.RANDAOSlashingsRoot().String())
+	assert.Equal(t, "c93de79808db4ec8cc3bc9600a93256f00677ce97191b5ca0e28fe2c702f7b22", b.ProposerSlashingsRoot().String())
+	assert.Equal(t, "4537ac637f1825cfb73cbaba73436bf7cc29f5975180042d21a65d173133ef5e", b.GovernanceVoteMerkleRoot().String())
 
-	expectedTx := []string{"edef81c301ab855d7b605d7bdc7251838837776b3bea8c96c43726dee91f2b80", "7f5ef60962e1f96a26e504aa0ce70d35c89641fb6c53dff3851d5efbf3f213b5"}
+	expectedTx := []string{"802b1fe9de2637c4968cea3b6b773788835172dc7b5d607b5d85ab01c381efed", "b513f2f3fb5e1d85f3df536cfb4196c8350de70caa04e5266af9e16209f65e7f"}
 	txs := b.GetTxs()
 
 	assert.Equal(t, expectedTx, txs)

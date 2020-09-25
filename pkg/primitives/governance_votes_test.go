@@ -56,7 +56,7 @@ func TestCommunityVoteData(t *testing.T) {
 	orig.ReplacementCandidates[0][0] = 2
 	assert.Equal(t, cp.ReplacementCandidates[0][0], uint8(1))
 
-	assert.Equal(t, "74556ec73e780dd79ab344cc85a681b9108f439e225c46c5b17c563bec7af30a", orig.Hash().String())
+	assert.Equal(t, "0af37aec3b567cb1c5465c229e438f10b981a685cc44b39ad70d783ec76e5574", orig.Hash().String())
 }
 
 func TestGovernanceVote(t *testing.T) {
@@ -99,5 +99,5 @@ func TestGovernanceVote(t *testing.T) {
 	g.Data[1] = 5
 	assert.Equal(t, uint8(2), cp.Data[1])
 
-	assert.Equal(t, "e2692dfd1afebb607da9e57b00d7bf67d05e15ef22b9915832fafa692c546b6a", g.Hash().String())
+	assert.Equal(t, "6a6b542c69fafa325891b922ef155ed067bfd7007be5a97d60bbfe1afd2d69e2", g.Hash().String())
 }

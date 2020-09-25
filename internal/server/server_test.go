@@ -3,7 +3,6 @@ package server_test
 import (
 	"context"
 	"encoding/hex"
-	"github.com/golang/mock/gomock"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -30,7 +29,6 @@ var validatorKeys2 []*bls.SecretKey
 // validators are the initial validators on the realState
 var validators1 []*primitives.Validator
 var validators2 []*primitives.Validator
-var validatorsGlobal []*primitives.Validator
 
 // init params used on the test
 var stateParams state.InitializationParameters
@@ -69,7 +67,6 @@ func init() {
 		}
 
 	}
-	validatorsGlobal = append(validators1, validators2...)
 	stateParams.GenesisTime = time.Unix(time.Now().Unix(), 0)
 	stateParams.InitialValidators = []state.ValidatorInitialization{}
 	// Convert the validators to initialization params.
@@ -84,12 +81,11 @@ func init() {
 }
 
 func TestServer_Object(t *testing.T) {
-	ctrl := gomock.NewController(t)
+
 	log := logger.New(os.Stdin)
 
-	db := blockdb.NewMockDatabase(ctrl)
-	db.EXPECT().AddRawBlock(gomock.Any())
-	db.EXPECT().GetBlockRow(gomock.Any())
+	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
+	assert.NoError(t, err)
 
 	serv, err := server.NewServer(ctx, &testdata.Conf, log, param, db, stateParams)
 	assert.NoError(t, err)
@@ -101,6 +97,8 @@ func TestServer_Object(t *testing.T) {
 
 func cleanTestData() {
 	_ = os.RemoveAll("cert")
+	_ = os.RemoveAll("peerstore")
 	_ = os.Remove("./net.db")
 	_ = os.Remove("./keystore.db")
+	_ = os.Remove("./node_key.dat")
 }

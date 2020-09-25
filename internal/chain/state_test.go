@@ -60,7 +60,8 @@ func init() {
 func TestState(t *testing.T) {
 
 	log := logger.New(os.Stdin)
-	db, err := blockdb.NewBadgerDB("./", params, log)
+
+	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
 	assert.NoError(t, err)
 
 	s, err := chain.NewStateService(log, initParams, params, db)

@@ -78,7 +78,7 @@ func TestVoteSlashing(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "2a52023c2044d323e42eb5e00e9febf03afa319617f1c3bf2610ab1d0ff39902", d.Hash().String())
+	assert.Equal(t, "0299f30f1dab1026bfc3f1179631fa3af0eb9f0ee0b52ee423d344203c02522a", d.Hash().String())
 
 }
 
@@ -112,7 +112,7 @@ func TestRANDAOSlashing(t *testing.T) {
 	d.RandaoReveal = sig
 	d.ValidatorPubkey = pub
 
-	assert.Equal(t, "1424a3bccbe8fa7a01e6643df1d0a0ba3ade084860a8539a35dd4a8d85e8b0d3", d.Hash().String())
+	assert.Equal(t, "d3b0e8858d4add359a53a8604808de3abaa0d0f13d64e6017afae8cbbca32414", d.Hash().String())
 
 	retSig, err := d.GetRandaoReveal()
 	assert.NoError(t, err)
@@ -193,7 +193,7 @@ func TestProposerSlashing(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "7c45d3357e791e8a122862efe490022d4ae4ef3ae3e5e5062b86c0d1d3a12cde", d.Hash().String())
+	assert.Equal(t, "de2ca1d3d1c0862b06e5e5e33aefe44a2d0290e4ef6228128a1e797e35d3457c", d.Hash().String())
 
 	sigDecode, _ := hex.DecodeString("ae09507041b2ccb9e3b3f9cda71ffae3dc8b2c83f331ebdc98cc4269c56bd4db05706bf317c8877608bc751b36d9af380c5fea6bc804d2080940b3910acc8f222fc4b59166630d8a3b31eba539325c2c60aaaa0408e986241cb462fad8652bdc")
 	sigBls, _ := bls.SignatureFromBytes(sigDecode)
