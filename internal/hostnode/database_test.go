@@ -18,7 +18,7 @@ func TestDatabase(t *testing.T) {
 	p1, err := mockNet.GenPeer()
 	assert.NoError(t, err)
 
-	pinfo1 := &peer.AddrInfo{
+	pinfo1 := peer.AddrInfo{
 		ID:    p1.ID(),
 		Addrs: p1.Addrs(),
 	}
@@ -45,26 +45,26 @@ func TestDatabase(t *testing.T) {
 	// Peers should be empty
 	peers, err := db.GetSavedPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, []*peer.AddrInfo(nil), peers)
+	assert.Equal(t, []peer.AddrInfo(nil), peers)
 
 	err = db.SavePeer(pinfo1)
 	assert.NoError(t, err)
 
 	peers, err = db.GetSavedPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, []*peer.AddrInfo{pinfo1}, peers)
+	assert.Equal(t, []peer.AddrInfo{pinfo1}, peers)
 
 	err = db.BanscorePeer(pinfo1, 10)
 
 	peers, err = db.GetSavedPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, []*peer.AddrInfo{pinfo1}, peers)
+	assert.Equal(t, []peer.AddrInfo{pinfo1}, peers)
 
 	err = db.BanscorePeer(pinfo1, 90)
 
 	peers, err = db.GetSavedPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, []*peer.AddrInfo(nil), peers)
+	assert.Equal(t, []peer.AddrInfo(nil), peers)
 
 	err = db.SavePeer(pinfo1)
 	assert.Equal(t, hostnode.ErrorPeerBanned, err)

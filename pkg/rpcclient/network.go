@@ -9,7 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 )
 
-func (c *RPCClient) getNetworkInfo() (string, error) {
+func (c *RPCClient) GetNetworkInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.network.GetNetworkInfo(ctx, &proto.Empty{})
@@ -23,7 +23,7 @@ func (c *RPCClient) getNetworkInfo() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) getPeersInfo() (string, error) {
+func (c *RPCClient) GetPeersInfo() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err := c.network.GetPeersInfo(ctx, &proto.Empty{})
@@ -37,7 +37,7 @@ func (c *RPCClient) getPeersInfo() (string, error) {
 	return string(b), nil
 }
 
-func (c *RPCClient) addPeer(args []string) (string, error) {
+func (c *RPCClient) AddPeer(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if len(args) < 1 {

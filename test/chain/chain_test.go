@@ -140,7 +140,7 @@ func createServers() {
 		go func(index int, folder string, wg *sync.WaitGroup) {
 			defer wg.Done()
 			log := loggers[index]
-			params.SlotDuration = 1
+			params.SlotDuration = 4
 			db, err := blockdb.NewBlockDB(folder, params, log)
 			if err != nil {
 				panic(err)
@@ -161,7 +161,6 @@ func createServers() {
 				LogFile:      false,
 				Pprof:        false,
 			}
-			params.SlotDuration = 1
 			s, err := server.NewServer(context.Background(), config, log, params, db, initParams)
 			if err != nil {
 				panic(err)
@@ -272,13 +271,11 @@ type notify struct {
 	lastJustified uint64
 	lastFinalized uint64
 	slashed       bool
-	showEpochs bool
 }
 
 func (n *notify) NewTip(r *chainindex.BlockRow, b *primitives.Block, s state.State, receipts []*primitives.EpochReceipt) {
 	n.lastFinalized = s.GetFinalizedEpoch()
 	n.lastJustified = s.GetJustifiedEpoch()
-	if n.showEpochs {
 		if len(receipts) > 0 {
 			msg := "\nEpoch Receipts\n----------\n"
 			receiptTypes := make(map[string]int64)
@@ -302,7 +299,6 @@ func (n *notify) NewTip(r *chainindex.BlockRow, b *primitives.Block, s state.Sta
 			}
 
 			fmt.Println(msg)
-		}
 	}
 	fmt.Printf("Validator Registry: Active %d Starting %d Pending Exit %d Penalty Exit %d Exited %d \n", s.GetValidators().Active, s.GetValidators().Starting, s.GetValidators().PendingExit, s.GetValidators().PenaltyExit, s.GetValidators().Exited)
 	fmt.Printf("Node %d: received block %d at slot %d Justified: %d Finalized: %d \n", n.num, r.Height, r.Slot, n.lastJustified, n.lastFinalized)
@@ -391,10 +387,10 @@ func TestValidatorsIncrease(t *testing.T) {
 func TestChainCorrectnessWithMoreValidators(t *testing.T) {
 	for {
 		time.Sleep(time.Second * 1)
-		if servers[0].Chain().State().TipState().GetSlot() == 152 {
+		if servers[0].Chain().State().TipState().GetSlot() == 56 {
 			for _, n := range notifies {
-				assert.Equal(t, n.lastJustified, uint64(28))
-				assert.Equal(t, n.lastFinalized, uint64(27))
+				assert.Equal(t, n.lastJustified, uint64(9))
+				assert.Equal(t, n.lastFinalized, uint64(8))
 				assert.False(t, n.slashed)
 			}
 			break
@@ -405,19 +401,16 @@ func TestChainCorrectnessWithMoreValidators(t *testing.T) {
 func TestStopProposers(t *testing.T) {
 	servers[0].Proposer().Stop()
 	servers[NumNodes-1].Proposer().Stop()
-	for _, n := range notifies {
-		n.showEpochs = true
-	}
 }
 
 
 func TestChainCorrectnessWithValidatorsPenalization(t *testing.T) {
 	for {
 		time.Sleep(time.Second * 1)
-		if servers[0].Chain().State().TipState().GetSlot() == 190 {
+		if servers[0].Chain().State().TipState().GetSlot() == 86 {
 			for _, n := range notifies {
-				assert.Equal(t, n.lastJustified, uint64(34))
-				assert.Equal(t, n.lastFinalized, uint64(33))
+				assert.Equal(t, n.lastJustified, uint64(15))
+				assert.Equal(t, n.lastFinalized, uint64(14))
 			}
 			break
 		}

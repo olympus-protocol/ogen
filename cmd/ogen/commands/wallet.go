@@ -1,12 +1,11 @@
-package cli
+package commands
 
 import (
 	"context"
 	"fmt"
-	"github.com/olympus-protocol/ogen/pkg/bls"
-
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/internal/wallet"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 )

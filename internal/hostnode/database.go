@@ -37,9 +37,9 @@ var (
 )
 
 type Database interface {
-	SavePeer(pinfo *peer.AddrInfo) error
-	BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error
-	GetSavedPeers() ([]*peer.AddrInfo, error)
+	SavePeer(pinfo peer.AddrInfo) error
+	BanscorePeer(pinfo peer.AddrInfo, weight uint16) error
+	GetSavedPeers() ([]peer.AddrInfo, error)
 	GetPrivKey() (priv crypto.PrivKey, err error)
 }
 
@@ -112,7 +112,7 @@ func (d *database) load() error {
 }
 
 // SavePeer stores a peer to the node hostnode database.
-func (d *database) SavePeer(pinfo *peer.AddrInfo) error {
+func (d *database) SavePeer(pinfo peer.AddrInfo) error {
 
 	// Get the multi-addresses of the peer as bytes
 	var maBytes [][]byte
@@ -178,7 +178,7 @@ func (d *database) SavePeer(pinfo *peer.AddrInfo) error {
 }
 
 // BanscorePeer reduces the banscore of a peer. If it reaches limit, it will be banned
-func (d *database) BanscorePeer(pinfo *peer.AddrInfo, weight uint16) error {
+func (d *database) BanscorePeer(pinfo peer.AddrInfo, weight uint16) error {
 	err := d.db.Update(func(tx *bbolt.Tx) error {
 		bkt := tx.Bucket(bansDBBkt)
 		if bkt == nil {
@@ -271,8 +271,8 @@ func (d *database) isIPBanned(ip []byte) bool {
 }
 
 // GetSavedPeers returns a list of already known peers.
-func (d *database) GetSavedPeers() ([]*peer.AddrInfo, error) {
-	peersMap := make(map[*peer.ID]*peer.AddrInfo)
+func (d *database) GetSavedPeers() ([]peer.AddrInfo, error) {
+	peersMap := make(map[*peer.ID]peer.AddrInfo)
 
 	// Fetch peers
 	err := d.db.View(func(tx *bbolt.Tx) error {
@@ -287,7 +287,7 @@ func (d *database) GetSavedPeers() ([]*peer.AddrInfo, error) {
 				_ = peersBkt.Delete(k)
 			}
 
-			pinfo := new(peer.AddrInfo)
+			pinfo := peer.AddrInfo{}
 			err = pinfo.UnmarshalJSON(v)
 			if err != nil {
 				_ = peersBkt.Delete(k)
@@ -304,7 +304,7 @@ func (d *database) GetSavedPeers() ([]*peer.AddrInfo, error) {
 		return nil
 	})
 
-	var peers []*peer.AddrInfo
+	var peers []peer.AddrInfo
 	// Check if any of these peers are banned
 	for _, pinfo := range peersMap {
 

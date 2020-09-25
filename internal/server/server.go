@@ -113,11 +113,12 @@ func (s *server) Start() {
 func (s *server) Stop() error {
 	s.ch.Stop()
 	s.rpc.Stop()
+	s.hn.Stop()
 	return nil
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.BlockDB, ip state.InitializationParameters) (Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Server, error) {
 
 	logger.Tracef("Loading network parameters for %v", currParams.Name)
 
@@ -130,46 +131,46 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	hostnode, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, currParams.NetMagic)
+	hn, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, currParams.NetMagic)
 	if err != nil {
 		return nil, err
 	}
 
-	lastActionManager, err := actionmanager.NewLastActionManager(ctx, hostnode, logger, ch, &currParams)
+	lastActionManager, err := actionmanager.NewLastActionManager(ctx, hn, logger, ch, &currParams)
 	if err != nil {
 		return nil, err
 	}
 
-	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hostnode, &currParams)
+	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hn, &currParams)
 	if err != nil {
 		return nil, err
 	}
 
-	voteMempool, err := mempool.NewVoteMempool(ctx, logger, &currParams, ch, hostnode, lastActionManager)
+	voteMempool, err := mempool.NewVoteMempool(ctx, logger, &currParams, ch, hn, lastActionManager)
 	if err != nil {
 		return nil, err
 	}
 
-	actionsMempool, err := mempool.NewActionMempool(ctx, logger, &currParams, ch, hostnode)
+	actionsMempool, err := mempool.NewActionMempool(ctx, logger, &currParams, ch, hn)
 	if err != nil {
 		return nil, err
 	}
 
 	voteMempool.Notify(actionsMempool)
 
-	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hostnode, coinsMempool, actionsMempool)
+	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hn, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
 
 	ks := keystore.NewKeystore(configParams.DataFolder, logger)
 
-	prop, err := proposer.NewProposer(logger, &currParams, ch, hostnode, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
+	prop, err := proposer.NewProposer(logger, &currParams, ch, hn, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
 	if err != nil {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hostnode, w, &currParams, prop)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hn, w, &currParams, prop)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		log:    logger,
 
 		ch:   ch,
-		hn:   hostnode,
+		hn:   hn,
 		rpc:  rpc,
 		prop: prop,
 		pools: Mempools{

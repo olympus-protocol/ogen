@@ -1,4 +1,4 @@
-package cli
+package commands
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ import (
 
 // loadOgen is the main function to run ogen.
 func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams params.ChainParams) error {
-	db, err := blockdb.NewBlockDB(configParams.DataFolder, currParams, log)
+	db, err := blockdb.NewBadgerDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
 	}
@@ -137,11 +137,14 @@ Next generation blockchain secured by CASPER.`,
 			for i := range addNodes {
 				maddr, err := multiaddr.NewMultiaddr(addNodesStrs[i])
 				if err != nil {
-					log.Fatalf("error parsing add node %s: %s", addNodesStrs[i], err)
+					log.Errorf("error parsing add node %s: %s", addNodesStrs[i], err)
+					continue
 				}
+
 				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
 				if err != nil {
-					log.Fatalf("error parsing add node %s: %s", maddr, pinfo)
+					log.Errorf("error parsing add node %s: %s", maddr, pinfo)
+					continue
 				}
 
 				addNodes[i] = *pinfo
@@ -235,7 +238,7 @@ func initConfig() {
 		ogenDir := path.Join(configDir, "ogen")
 
 		if _, err := os.Stat(ogenDir); os.IsNotExist(err) {
-			err = os.Mkdir(ogenDir, 0744)
+			err = os.MkdirAll(ogenDir, 0744)
 			if err != nil {
 				panic(err)
 			}

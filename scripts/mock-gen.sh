@@ -3,7 +3,7 @@
 rm -rf **/*_mock.go
 
 mockgen --source internal/actionmanager/actionmanager.go --destination internal/actionmanager/actionmanager_mock.go --package actionmanager
-mockgen --source internal/blockdb/blockdb.go --destination internal/blockdb/blockdb_mock.go --package blockdb
+mockgen --source internal/blockdb/interface.go --destination internal/blockdb/interface_mock.go --package blockdb
 mockgen --source internal/chain/blockchain.go --destination internal/chain/blockchain_mock.go --package chain
 mockgen --source internal/chain/state.go --destination internal/chain/state_mock.go --package chain
 mockgen --source internal/chainrpc/server.go --destination internal/chainrpc/server_mock.go --package chainrpc

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 func init() {
@@ -86,7 +87,7 @@ func TestHostNode(t *testing.T) {
 		Addrs: hn2.GetHost().Addrs(),
 	}
 
-	err = hn.GetHost().Connect(ctx, npinfo)
+	err = hn.SavePeer(npinfo)
 	assert.NoError(t, err)
 
 	assert.True(t, hn.ConnectedToPeer(hn2.GetHost().ID()))
@@ -97,6 +98,11 @@ func TestHostNode(t *testing.T) {
 	pinfo = hn.GetPeerInfos()
 	assert.Equal(t, []peer.AddrInfo{npinfo}, pinfo)
 
-	err = hn.Database().SavePeer(&npinfo)
+	err = hn.Start()
 	assert.NoError(t, err)
+
+	err = hn2.Start()
+	assert.NoError(t, err)
+
+	time.Sleep(time.Second * 60)
 }

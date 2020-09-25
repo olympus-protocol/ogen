@@ -28,7 +28,7 @@ func (s *networkServer) GetPeersInfo(context.Context, *proto.Empty) (*proto.Peer
 	}
 	return &proto.Peers{Peers: peersInfo}, nil
 }
-func (s *networkServer) AddPeer(ctx context.Context, peerAddr *proto.IP) (*proto.Success, error) {
+func (s *networkServer) AddPeer(_ context.Context, peerAddr *proto.IP) (*proto.Success, error) {
 	maddr, err := multiaddr.NewMultiaddr(peerAddr.Host)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (s *networkServer) AddPeer(ctx context.Context, peerAddr *proto.IP) (*proto
 	if err != nil {
 		return nil, err
 	}
-	err = s.hostnode.GetHost().Connect(ctx, *pinfo)
+	err = s.hostnode.SavePeer(*pinfo)
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}

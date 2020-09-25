@@ -362,6 +362,17 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		TipBlockSlot: theirVersion.TipSlot,
 	}
 	sp.peersTrackLock.Unlock()
+
+	// Once version handshake is done, we save the peer to the DB
+	p := sp.host.GetPeerInfo(id)
+	pinfo := peer.AddrInfo{
+		ID:    p.ID,
+		Addrs: p.Addrs,
+	}
+	err := sp.host.Database().SavePeer(pinfo)
+	if err != nil {
+		sp.log.Errorf("unable to store peer to database")
+	}
 	return nil
 }
 

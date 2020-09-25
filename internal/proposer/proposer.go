@@ -95,6 +95,7 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 			if err != nil {
 				return nil, err
 			}
+			return prop, nil
 		}
 		return nil, err
 	}
@@ -318,7 +319,6 @@ func (p *proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 
 			// Check if we're an attester for this slot
-			p.log.Infof("sending votes for slot %d", slotToVote)
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 5)
 				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
@@ -403,6 +403,7 @@ func (p *proposer) VoteForBlocks() {
 					voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 					continue
 				}
+				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
 				go p.publishVotes(vote)
 			}

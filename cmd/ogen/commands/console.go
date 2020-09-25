@@ -1,14 +1,15 @@
-package rpcclient
+package commands
 
 import (
 	"fmt"
-	"os"
-	"path"
-	"strings"
-
 	"github.com/c-bata/go-prompt"
 	"github.com/fatih/color"
+	"github.com/olympus-protocol/ogen/pkg/rpcclient"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
+	"path"
+	strings "strings"
 )
 
 var chainCmd = []prompt.Suggest{
@@ -70,7 +71,7 @@ type Empty struct{}
 
 // CLI is the module that allows operations across multiple services.
 type CLI struct {
-	rpcClient *RPCClient
+	rpcClient *rpcclient.RPCClient
 }
 
 var ctrlCKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
@@ -82,9 +83,26 @@ var ctrlDKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
 	Fn:  func(*prompt.Buffer) { os.Exit(0) },
 })
 
+var rpcHost string
+
+var cliCmd = &cobra.Command{
+	Use:   "console",
+	Short: "Starts the integrated RPC command line.",
+	Long:  `Starts the integrated RPC command line.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		StartConsole(rpcHost, args)
+	},
+}
+
+func init() {
+	cliCmd.Flags().StringVar(&rpcHost, "rpc_host", "127.0.0.1:24127", "IP and port of the RPC Server to connect")
+
+	rootCmd.AddCommand(cliCmd)
+}
+
 // Run runs the CLI.
 func (c *CLI) Run(optArgs []string) {
-	color.Green("Welcome to the Ogen cli")
+	color.Green("Welcome to the Ogen console")
 	for {
 		var t string
 		if len(optArgs) == 0 {
@@ -108,7 +126,7 @@ func (c *CLI) Run(optArgs []string) {
 
 		switch args[0] {
 		case "help":
-			out = "Ogen CLI commands \n\n"
+			out = "Ogen CLI command \n\n"
 
 			out += "Chain \n\n"
 			for _, c := range chainCmd {
@@ -141,69 +159,69 @@ func (c *CLI) Run(optArgs []string) {
 			out += "\n"
 		// Chain methods
 		case "getchaininfo":
-			out, err = c.rpcClient.getChainInfo()
+			out, err = c.rpcClient.GetChainInfo()
 		case "getrawblock":
-			out, err = c.rpcClient.getRawBlock(args[1:])
+			out, err = c.rpcClient.GetRawBlock(args[1:])
 		case "getblockhash":
-			out, err = c.rpcClient.getBlockHash(args[1:])
+			out, err = c.rpcClient.GetBlockHash(args[1:])
 		case "getblock":
-			out, err = c.rpcClient.getBlock(args[1:])
+			out, err = c.rpcClient.GetBlock(args[1:])
 		case "getaccountinfo":
-			out, err = c.rpcClient.getAccountInfo(args[1:])
+			out, err = c.rpcClient.GetAccountInfo(args[1:])
 
 		// Validator methods
 		case "getvalidatorslist":
-			out, err = c.rpcClient.getValidatorsList()
+			out, err = c.rpcClient.GetValidatorsList()
 		case "getaccountvalidators":
-			out, err = c.rpcClient.getAccountValidators(args[1:])
+			out, err = c.rpcClient.GetAccountValidators(args[1:])
 
 		// Network methods
 		case "getnetworkinfo":
-			out, err = c.rpcClient.getNetworkInfo()
+			out, err = c.rpcClient.GetNetworkInfo()
 		case "getpeersinfo":
-			out, err = c.rpcClient.getPeersInfo()
+			out, err = c.rpcClient.GetPeersInfo()
 		case "addpeer":
-			out, err = c.rpcClient.addPeer(args[1:])
+			out, err = c.rpcClient.AddPeer(args[1:])
 
 		// Utils methods
 		case "submitrawdata":
-			out, err = c.rpcClient.submitRawData(args[1:])
+			out, err = c.rpcClient.SubmitRawData(args[1:])
 		case "genkeypair":
-			out, err = c.rpcClient.genKeyPair(false)
+			out, err = c.rpcClient.GenKeyPair(false)
 		case "genrawkeypair":
-			out, err = c.rpcClient.genKeyPair(true)
+			out, err = c.rpcClient.GenKeyPair(true)
 		case "genvalidatorkey":
-			out, err = c.rpcClient.genValidatorKey(args[1:])
+			out, err = c.rpcClient.GenValidatorKey(args[1:])
 		case "decoderawtransaction":
-			out, err = c.rpcClient.decodeRawTransaction(args[1:])
+			out, err = c.rpcClient.DecodeRawTransaction(args[1:])
 		case "decoderawblock":
-			out, err = c.rpcClient.decodeRawBlock(args[1:])
+			out, err = c.rpcClient.DecodeRawBlock(args[1:])
 
 		// Wallet methods
 		case "listwallets":
-			out, err = c.rpcClient.listWallets()
+			out, err = c.rpcClient.ListWallets()
 		case "createwallet":
-			out, err = c.rpcClient.createWallet(args[1:])
+			out, err = c.rpcClient.CreateWallet(args[1:])
 		case "openwallet":
-			out, err = c.rpcClient.openWallet(args[1:])
+			out, err = c.rpcClient.OpenWallet(args[1:])
 		case "closewallet":
-			out, err = c.rpcClient.closeWallet()
+			out, err = c.rpcClient.CloseWallet()
 		case "importwallet":
-			out, err = c.rpcClient.importWallet(args[1:])
+			out, err = c.rpcClient.ImportWallet(args[1:])
 		case "dumpwallet":
-			out, err = c.rpcClient.dumpWallet()
+			out, err = c.rpcClient.DumpWallet()
 		case "getbalance":
-			out, err = c.rpcClient.getBalance()
+			out, err = c.rpcClient.GetBalance()
 		case "getvalidators":
-			out, err = c.rpcClient.getValidators()
+			out, err = c.rpcClient.GetValidators()
 		case "getaccount":
-			out, err = c.rpcClient.getAccount()
+			out, err = c.rpcClient.GetAccount()
 		case "sendtransaction":
-			out, err = c.rpcClient.sendTransaction(args[1:])
+			out, err = c.rpcClient.SendTransaction(args[1:])
 		case "startvalidator":
-			out, err = c.rpcClient.startValidator(args[1:])
+			out, err = c.rpcClient.StartValidator(args[1:])
 		case "exitvalidator":
-			out, err = c.rpcClient.exitValidator(args[1:])
+			out, err = c.rpcClient.ExitValidator(args[1:])
 
 		// Misc methods
 		case "exit":
@@ -221,13 +239,13 @@ func (c *CLI) Run(optArgs []string) {
 	}
 }
 
-func newCli(rpcClient *RPCClient) *CLI {
+func newCli(rpcClient *rpcclient.RPCClient) *CLI {
 	return &CLI{
 		rpcClient: rpcClient,
 	}
 }
 
-func Run(host string, args []string) {
+func StartConsole(host string, args []string) {
 	DataFolder := viper.GetString("datadir")
 	if DataFolder != "" {
 		// Use config file from the flag.
@@ -254,7 +272,7 @@ func Run(host string, args []string) {
 		viper.AddConfigPath(ogenDir)
 		viper.SetConfigName("config")
 	}
-	rpcClient := NewRPCClient(host, DataFolder)
+	rpcClient := rpcclient.NewRPCClient(host, DataFolder)
 	cli := newCli(rpcClient)
 	cli.Run(args)
 }

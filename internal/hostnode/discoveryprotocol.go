@@ -2,6 +2,7 @@ package hostnode
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -43,6 +44,9 @@ type discoveryProtocol struct {
 	lastConnectLock sync.RWMutex
 
 	protocolHandler ProtocolHandler
+
+	nonWorkingPeersLock sync.RWMutex
+	nonWorkingPeers     map[peer.ID]*peer.AddrInfo
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
@@ -55,6 +59,7 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 		lastConnect:     make(map[peer.ID]time.Time),
 		protocolHandler: ph,
 		log:             config.Log,
+		nonWorkingPeers: make(map[peer.ID]*peer.AddrInfo),
 	}
 	if err := ph.RegisterHandler(p2p.MsgGetAddrCmd, dp.handleGetAddr); err != nil {
 		return nil, err
@@ -66,10 +71,9 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (Di
 	return dp, nil
 }
 
-const connectionTimeout = 10 * time.Second
 const connectionCooldown = 60 * time.Second
 
-func shufflePeers(peers []*peer.AddrInfo) []*peer.AddrInfo {
+func shufflePeers(peers []peer.AddrInfo) []peer.AddrInfo {
 	rand.Shuffle(len(peers), func(i, j int) {
 		peers[i], peers[j] = peers[j], peers[i]
 	})
@@ -77,7 +81,7 @@ func shufflePeers(peers []*peer.AddrInfo) []*peer.AddrInfo {
 	return peers
 }
 
-func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
+func (cm *discoveryProtocol) handleAddr(_ peer.ID, msg p2p.Message) error {
 	msgAddr, ok := msg.(*p2p.MsgAddr)
 	if !ok {
 		return fmt.Errorf("message received is not addr")
@@ -86,7 +90,9 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 	peers := msgAddr.Addr
 
 	for _, pb := range peers {
-		pma, err := multiaddr.NewMultiaddrBytes(pb[:])
+		offset := binary.LittleEndian.Uint64(pb[:])
+		maBytes := pb[8 : 8+offset]
+		pma, err := multiaddr.NewMultiaddrBytes(maBytes)
 		if err != nil {
 			continue
 		}
@@ -97,10 +103,17 @@ func (cm *discoveryProtocol) handleAddr(id peer.ID, msg p2p.Message) error {
 		if p.ID == cm.host.GetHost().ID() {
 			continue
 		}
-		if err := cm.host.SavePeer(p); err != nil {
-			cm.log.Errorf("error saving peer: %s", err)
-			continue
+		cm.nonWorkingPeersLock.Lock()
+		_, ok := cm.nonWorkingPeers[p.ID]
+		if !ok {
+			if err := cm.host.SavePeer(*p); err != nil {
+				cm.log.Errorf("error saving peer: %s", err)
+				cm.nonWorkingPeers[p.ID] = p
+				cm.nonWorkingPeersLock.Unlock()
+				continue
+			}
 		}
+		cm.nonWorkingPeersLock.Unlock()
 	}
 
 	return nil
@@ -111,23 +124,25 @@ func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return fmt.Errorf("message received is not get addr")
 	}
-	var peers [][64]byte
-
-	peersInfo, err := cm.host.Database().GetSavedPeers()
-	if err != nil {
-		return err
+	var peers [][256]byte
+	peersIDs := cm.host.GetHost().Peerstore().Peers()
+	var peersInfo []peer.AddrInfo
+	for _, id := range peersIDs {
+		pInfo := cm.host.GetHost().Peerstore().PeerInfo(id)
+		peersInfo = append(peersInfo, pInfo)
 	}
-
 	peersData := shufflePeers(peersInfo)
 
 	for i, p := range peersData {
 		if i < p2p.MaxAddrPerMsg {
-			peerMulti, err := peer.AddrInfoToP2pAddrs(p)
+			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
 			if err != nil {
 				continue
 			}
-			var pb [64]byte
-			copy(pb[:], peerMulti[0].Bytes())
+			var pb [256]byte
+			offset := len(peerMulti[0].Bytes())
+			binary.LittleEndian.PutUint64(pb[:], uint64(offset))
+			copy(pb[8:], peerMulti[0].Bytes())
 			peers = append(peers, pb)
 		}
 	}
@@ -141,9 +156,17 @@ const askForPeersCycle = 60 * time.Second
 
 func (cm *discoveryProtocol) Start() error {
 	go func() {
-		for _, addr := range cm.config.InitialNodes {
-			if err := cm.connect(addr); err != nil {
+		storedPeers, err := cm.host.Database().GetSavedPeers()
+		if err != nil {
+			cm.log.Errorf("unable to load stored peers")
+		}
+		var initialPeers []peer.AddrInfo
+		initialPeers = append(initialPeers, storedPeers...)
+		initialPeers = append(initialPeers, cm.config.InitialNodes...)
+		for _, addr := range initialPeers {
+			if err := cm.connect(&addr); err != nil {
 				cm.log.Errorf("error connecting to add node %s: %s", addr, err)
+				cm.host.Database()
 			}
 		}
 	}()
@@ -174,16 +197,14 @@ func (cm *discoveryProtocol) Start() error {
 }
 
 // Connect connects to a peer.
-func (cm *discoveryProtocol) connect(pi peer.AddrInfo) error {
+func (cm *discoveryProtocol) connect(pi *peer.AddrInfo) error {
 	cm.lastConnectLock.Lock()
 	defer cm.lastConnectLock.Unlock()
 
 	lastConnect, found := cm.lastConnect[pi.ID]
 	if !found || time.Since(lastConnect) > connectionCooldown {
 		cm.lastConnect[pi.ID] = time.Now()
-		ctx, cancel := context.WithTimeout(cm.ctx, connectionTimeout)
-		defer cancel()
-		return cm.host.GetHost().Connect(ctx, pi)
+		return cm.host.SavePeer(*pi)
 	}
 	return nil
 }
@@ -195,7 +216,7 @@ func (cm *discoveryProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
 func (cm *discoveryProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
 
 // Connected is called when we connect to a peer.
-func (cm *discoveryProtocol) Connected(net network.Network, conn network.Conn) {
+func (cm *discoveryProtocol) Connected(_ network.Network, conn network.Conn) {
 	if conn.Stat().Direction != network.DirOutbound {
 		return
 	}
@@ -210,7 +231,7 @@ func (cm *discoveryProtocol) Connected(net network.Network, conn network.Conn) {
 }
 
 // Disconnected is called when we disconnect from a peer.
-func (cm *discoveryProtocol) Disconnected(net network.Network, conn network.Conn) {}
+func (cm *discoveryProtocol) Disconnected(network.Network, network.Conn) {}
 
 // OpenedStream is called when we open a stream.
 func (cm *discoveryProtocol) OpenedStream(network.Network, network.Stream) {}

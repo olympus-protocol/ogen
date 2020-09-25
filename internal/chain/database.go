@@ -9,7 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-func (s *stateService) initializeDatabase(txn blockdb.DBUpdateTransaction, blockNode *chainindex.BlockRow, state state.State) error {
+func (s *stateService) initializeDatabase(txn blockdb.Database, blockNode *chainindex.BlockRow, state state.State) error {
 	s.blockChain.SetTip(blockNode)
 
 	err := s.SetFinalizedHead(blockNode.Hash, state)
@@ -45,8 +45,8 @@ func (s *stateService) initializeDatabase(txn blockdb.DBUpdateTransaction, block
 	return nil
 }
 
-func (s *stateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
-	justifiedHead, err := txn.GetJustifiedHead()
+func (s *stateService) loadBlockIndex(txn blockdb.Database, genesisHash chainhash.Hash) error {
+	tip, err := txn.GetTip()
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (s *stateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash
 		if err != nil {
 			return err
 		}
-		if bytes.Equal(current[:], justifiedHead[:]) {
+		if bytes.Equal(current[:], tip[:]) {
 			continue
 		}
 
@@ -79,7 +79,7 @@ func (s *stateService) loadBlockIndex(txn blockdb.DBViewTransaction, genesisHash
 	return nil
 }
 
-func (s *stateService) loadJustifiedAndFinalizedStates(txn blockdb.DBViewTransaction) error {
+func (s *stateService) loadJustifiedAndFinalizedStates(txn blockdb.Database) error {
 	finalizedHead, err := txn.GetFinalizedHead()
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func (s *stateService) setBlockState(hash chainhash.Hash, state state.State) {
 	s.stateMap[hash] = newStateDerivedFromBlock(state)
 }
 
-func (s *stateService) loadStateMap(txn blockdb.DBViewTransaction) error {
+func (s *stateService) loadStateMap(txn blockdb.Database) error {
 	finalizedNode := s.finalizedHead.node
 
 	finalizedNodeWithChildren, err := txn.GetBlockRow(finalizedNode.Hash)
@@ -184,7 +184,7 @@ func (s *stateService) loadStateMap(txn blockdb.DBViewTransaction) error {
 	return nil
 }
 
-func (s *stateService) loadBlockchainFromDisk(txn blockdb.DBViewTransaction, genesisHash chainhash.Hash) error {
+func (s *stateService) loadBlockchainFromDisk(txn blockdb.Database, genesisHash chainhash.Hash) error {
 	s.log.Info("Loading block chainindex...")
 	err := s.loadBlockIndex(txn, genesisHash)
 	if err != nil {

@@ -52,11 +52,12 @@ type HostNode interface {
 	ConnectedToPeer(id peer.ID) bool
 	Notify(notifee network.Notifiee)
 	GetPeerDirection(id peer.ID) network.Direction
+	Stop()
 	Start() error
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	Database() Database
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
-	SavePeer(pinfo *peer.AddrInfo) error
+	SavePeer(pinfo peer.AddrInfo) error
 }
 
 var _ HostNode = &hostNode{}
@@ -276,7 +277,14 @@ func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	return conns[0].Stat().Direction
 }
 
-// Start the host node and start discovering hostnode.
+// Stop closes all topics before closing the server.
+func (node *hostNode) Stop() {
+	for _, topic := range node.topics {
+		_ = topic.Close()
+	}
+}
+
+// Start the host node and start discovering peers.
 func (node *hostNode) Start() error {
 	if err := node.discoveryProtocol.Start(); err != nil {
 		return err
@@ -293,17 +301,17 @@ func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	return &pinfo
 }
 
-func (node *hostNode) SavePeer(pinfo *peer.AddrInfo) error {
+func (node *hostNode) SavePeer(pinfo peer.AddrInfo) error {
 	err := node.db.SavePeer(pinfo)
 	if err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	err = node.host.Connect(ctx, *pinfo)
+	defer cancel()
+	err = node.host.Connect(ctx, pinfo)
 	if err != nil {
 		cancel()
 		return err
 	}
-	cancel()
 	return nil
 }

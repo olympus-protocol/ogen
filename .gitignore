@@ -51,7 +51,5 @@ data_*/
 certs/
 
 # Binaries
-ogen-cli
-migration
 ogen
-ogen-d
+!ogen/

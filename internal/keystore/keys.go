@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"go.etcd.io/bbolt"
 )
 
@@ -13,14 +12,26 @@ func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 		return nil, false
 	}
 
-	k.keysLock.Lock()
-	defer k.keysLock.Unlock()
+	var key []byte
+	err := k.db.View(func(tx *bbolt.Tx) error {
+		bkt := tx.Bucket(keysBucket)
+		key = bkt.Get(pubkey[:])
+		return nil
+	})
+	if err != nil {
+		return nil, false
+	}
 
-	pubHash := chainhash.HashH(pubkey[:])
+	if key == nil {
+		return nil, false
+	}
 
-	key, ok := k.keys[pubHash]
+	blsKey, err := bls.SecretKeyFromBytes(key)
+	if err != nil {
+		return nil, false
+	}
 
-	return key, ok
+	return blsKey, true
 }
 
 // GetValidatorKeys returns all keys on keystore.
@@ -30,16 +41,32 @@ func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 		return nil, ErrorNoOpen
 	}
 
-	defer k.keysLock.Unlock()
-
-	k.keysLock.Lock()
-
 	var keys []*bls.SecretKey
 
-	for _, k := range k.keys {
-		keys = append(keys, k)
-	}
+	err := k.db.View(func(tx *bbolt.Tx) error {
 
+		bkt := tx.Bucket(keysBucket)
+
+		err := bkt.ForEach(func(keypub, keyprv []byte) error {
+
+			key, err := bls.SecretKeyFromBytes(keyprv)
+			if err != nil {
+				return err
+			}
+
+			keys = append(keys, key)
+
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return keys, nil
 }
 
@@ -78,43 +105,11 @@ func (k *keystore) addKey(priv *bls.SecretKey) error {
 		return ErrorNoOpen
 	}
 
-	err := k.addKeyDB(priv.Marshal(), priv.PublicKey().Marshal())
-	if err != nil {
-		return err
-	}
-
-	err = k.addKeyMap(chainhash.HashH(priv.PublicKey().Marshal()), priv)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (k *keystore) addKeyMap(hash chainhash.Hash, key *bls.SecretKey) error {
-
-	if !k.open {
-		return ErrorNoOpen
-	}
-
-	k.keysLock.Lock()
-	defer k.keysLock.Unlock()
-
-	k.keys[hash] = key
-	return nil
-}
-
-func (k *keystore) addKeyDB(encryptedKey []byte, pubkey []byte) error {
-
-	if !k.open {
-		return ErrorNoOpen
-	}
-
 	return k.db.Update(func(tx *bbolt.Tx) error {
 
 		bkt := tx.Bucket(keysBucket)
 
-		err := bkt.Put(pubkey, encryptedKey)
+		err := bkt.Put(priv.PublicKey().Marshal(), priv.Marshal())
 		if err != nil {
 			return err
 		}

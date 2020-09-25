@@ -22,6 +22,6 @@ func TestMsgAddr(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgAddrCmd, v.Command())
-	assert.Equal(t, uint64(2052), v.MaxPayloadLength())
+	assert.Equal(t, uint64(16388), v.MaxPayloadLength())
 
 }

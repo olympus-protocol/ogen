@@ -330,7 +330,10 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 	for {
 		msg, err := sub.Next(m.ctx)
 		if err != nil {
-			m.log.Warnf("error getting next message in votes topic: %s", err)
+			if err != m.ctx.Err() {
+				m.log.Warnf("error getting next message in votes topic: %s", err)
+				return
+			}
 			return
 		}
 		if msg.GetFrom() == id {

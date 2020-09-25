@@ -1,7 +1,7 @@
-package main_test
+package commands_test
 
 import (
-	"github.com/olympus-protocol/ogen/cmd/ogen-cli/rpcclient"
+	cmd2 "github.com/olympus-protocol/ogen/cmd/ogen/commands"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -13,9 +13,9 @@ func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "cli_test",
 		Short: "Mock RPC Cli",
-		Long:  `Simulates the functionality of the cli (single command only)`,
+		Long:  `Simulates the functionality of the command (single command only)`,
 		Run: func(cmd *cobra.Command, args []string) {
-			rpcclient.Run(rpcHost, args)
+			cmd2.StartConsole(rpcHost, args)
 		},
 	}
 }

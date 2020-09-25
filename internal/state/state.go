@@ -61,12 +61,10 @@ type state struct {
 	PreviousEpochVoteAssignments []uint64
 	CurrentEpochVoteAssignments  []uint64
 
-	// NextProposerQueue is the queue of validators scheduled to create a block
-	// in the next epoch.
+	// NextProposerQueue is the queue of validators scheduled to create a block in the next epoch.
 	NextProposerQueue []uint64
 
-	// JustifiedBitfield is a bitfield where the nth least significant bit
-	// represents whether the nth last epoch was justified.
+	// JustifiedBitfield is a bitfield where the nth least significant bit represents whether the nth last epoch was justified.
 	JustificationBitfield uint64
 
 	// FinalizedEpoch is the epoch that was finalized.

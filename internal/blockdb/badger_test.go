@@ -22,23 +22,17 @@ func TestBlockDB_Instance(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	log.EXPECT().Info(gomock.Any()).AnyTimes()
 
-	db, err := blockdb.NewBlockDB(testdata.Node1Folder, *param, log)
+	db, err := blockdb.NewBadgerDB(testdata.Node1Folder, *param, log)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
 
 	// testing the database by Saving a time and then retrieving it
 	testTime := time.Now()
-	err = db.Update(func(tx blockdb.DBUpdateTransaction) error {
-		err = tx.SetGenesisTime(testTime)
-		return err
-	})
+	err = db.SetGenesisTime(testTime)
 	assert.NoError(t, err)
 	var savedTime time.Time
-	err = db.View(func(tx blockdb.DBViewTransaction) error {
-		savedTime, err = tx.GetGenesisTime()
-		return err
-	})
+	savedTime, err = db.GetGenesisTime()
 	assert.NoError(t, err)
 	assert.Equal(t, testTime.Unix(), savedTime.Unix())
 
