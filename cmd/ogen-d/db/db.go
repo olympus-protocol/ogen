@@ -11,6 +11,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -35,10 +36,15 @@ func (dbc DBClient) Ping() error {
 
 func (dbc DBClient) InitializeTables() error {
 	// extract queries
-	jsonFile, err := os.Open("./db/queries.json")
+	path, err := os.Getwd()
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
+	jsonFile, err := os.Open(filepath.Join(path, "cmd/ogen-d/db/queries.json"))
+	if err != nil {
+		return err
+	}
+
 	defer jsonFile.Close()
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	err = json.Unmarshal(byteValue, &dbc.queries)
@@ -387,7 +393,11 @@ func getConnString(params DbParameters) (string, error) {
 			"password=%s dbname=%s sslmode=disable",
 			params.HostPort, params.Hostname, params.Username, params.Password, params.DatabaseName)
 	case "sqlite3":
-		connString = "./db/" + params.DatabaseName + ".db?_foreign_keys=on"
+		path, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		connString = filepath.Join(path, "cmd/ogen-d/db") + "/" + params.DatabaseName + ".db?_foreign_keys=on"
 	}
 	if connString == "" {
 		return "", errors.New("dbms not specified")
@@ -411,12 +421,17 @@ func NewDBClient(parameters DbParameters) *DBClient {
 	if err != nil {
 		panic(err)
 	}
-
+	fmt.Println(connString)
 	db, err := sql.Open(parameters.DriverName, connString)
 	if err != nil {
 		panic(err)
 	}
-
+	// check the connection to the db
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("You are Successfully connected!")
 	client := &DBClient{
 		Name:    parameters.DatabaseName,
 		db:      db,

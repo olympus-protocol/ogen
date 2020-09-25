@@ -98,12 +98,6 @@ func (c *CLI) initialSync() {
 
 func (c *CLI) blockSync(wg *sync.WaitGroup) {
 sync:
-	// check the connection to the db
-	err := c.dbClient.Ping()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("You are Successfully connected!")
 	c.initialSync()
 	subscribe, err := c.rpcClient.chain.SubscribeBlocks(context.Background(), &proto.Empty{})
 	if err != nil {
