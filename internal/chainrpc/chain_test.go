@@ -75,6 +75,10 @@ func Test_ChainServer(t *testing.T) {
 	s.EXPECT().GetValidators().Return(valInfo)
 	s.EXPECT().GetCoinsState().Return(cs).AnyTimes()
 	s.EXPECT().GetValidatorRegistry().Return(validatorRegistry)
+	s.EXPECT().GetFinalizedEpoch().Return(uint64(1))
+	s.EXPECT().GetJustifiedEpoch().Return(uint64(1))
+	s.EXPECT().GetJustifiedEpochHash().Return(chainhash.Hash{})
+
 	mockStateService := chain.NewMockStateService(ctrl)
 	mockStateService.EXPECT().TipState().Return(s).AnyTimes()
 	mockStateService.EXPECT().Tip().Return(tip)
@@ -99,6 +103,9 @@ func Test_ChainServer(t *testing.T) {
 	assert.Equal(t, valInfo.PendingExit, info.Validators.PendingExit)
 	assert.Equal(t, tip.Hash.String(), info.BlockHash)
 	assert.Equal(t, tip.Height, info.BlockHeight)
+	assert.Equal(t, uint64(1), info.LastFinalizedEpoch)
+	assert.Equal(t, uint64(1), info.LastJustifiedEpoch)
+	assert.Equal(t, chainhash.Hash{}.String(), info.LastJustifiedHash)
 
 	block, err := server.GetRawBlock(ctx, &proto.Hash{Hash: genesisHash.String()})
 	assert.NoError(t, err)
