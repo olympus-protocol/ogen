@@ -44,7 +44,7 @@ func TestTx(t *testing.T) {
 	fromPubKey, _ := tx.FromPubkeyHash()
 	assert.Equal(t, pubHash, fromPubKey)
 
-	assert.Equal(t, "6ae5e89695a4a84a3f18ed34f89fbaf056afba8ea9cc9811ae52038088896b9b", tx.Hash().String())
+	assert.Equal(t, "9b6b8988800352ae1198cca98ebaaf56f0ba9ff834ed183f4aa8a49596e8e56a", tx.Hash().String())
 }
 
 func TestTxMulti(t *testing.T) {

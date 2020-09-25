@@ -9,14 +9,15 @@ import (
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -78,8 +79,8 @@ func init() {
 
 func TestLastActionManager_Instance(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Info(gomock.Any()).AnyTimes()
+
+	log := logger.New(os.Stdin)
 
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)

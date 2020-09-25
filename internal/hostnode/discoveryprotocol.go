@@ -2,23 +2,38 @@ package hostnode
 
 import (
 	"context"
-	"encoding/binary"
-	"fmt"
-	"math/rand"
+	discovery "github.com/libp2p/go-libp2p-discovery"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/olympus-protocol/ogen/internal/logger"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
-
-	"github.com/libp2p/go-libp2p-core/protocol"
-
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 )
 
-const discoveryProtocolID = protocol.ID("/ogen/discovery/" + OgenVersion)
+var relayerNodes = map[string]string{
+	"cronos-1": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWR58NXxMg5zzSbRqHAXry7tnRtMxTLQGos4735rZgbmVV",
+	//"cronos-2": "/ip4/104.248.120.150/tcp/25000/p2p/12D3KooWCu1XLbzDN6TASFpvo4QMtHmLPG652VwEq11bfWGj8Tag",
+}
+
+func getRelayers() []peer.AddrInfo {
+	var r []peer.AddrInfo
+	for _, node := range relayerNodes {
+		ma, err := multiaddr.NewMultiaddr(node)
+		if err != nil {
+			continue
+		}
+		addr, err := peer.AddrInfoFromP2pAddr(ma)
+		if err != nil {
+			continue
+		}
+		r = append(r, *addr)
+	}
+	return r
+}
 
 // DiscoveryProtocol is an interface for discoveryProtocol
 type DiscoveryProtocol interface {
@@ -39,172 +54,122 @@ type discoveryProtocol struct {
 	config Config
 	ctx    context.Context
 	log    logger.Logger
+	params *params.ChainParams
 
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex
 
+	ID              peer.ID
 	protocolHandler ProtocolHandler
-
-	nonWorkingPeersLock sync.RWMutex
-	nonWorkingPeers     map[peer.ID]*peer.AddrInfo
+	dht             *dht.IpfsDHT
+	discovery       *discovery.RoutingDiscovery
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config) (DiscoveryProtocol, error) {
-	ph := newProtocolHandler(ctx, discoveryProtocolID, host, config)
+func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *params.ChainParams) (DiscoveryProtocol, error) {
+	ph := newProtocolHandler(ctx, params.DiscoveryProtocolID, host, config)
+	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeAuto))
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.Bootstrap(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	r := discovery.NewRoutingDiscovery(d)
+
 	dp := &discoveryProtocol{
 		host:            host,
 		ctx:             ctx,
 		config:          config,
-		lastConnect:     make(map[peer.ID]time.Time),
 		protocolHandler: ph,
 		log:             config.Log,
-		nonWorkingPeers: make(map[peer.ID]*peer.AddrInfo),
+		dht:             d,
+		discovery:       r,
+		params:          p,
+		ID:              host.GetHost().ID(),
+		lastConnect:     make(map[peer.ID]time.Time),
 	}
-	if err := ph.RegisterHandler(p2p.MsgGetAddrCmd, dp.handleGetAddr); err != nil {
-		return nil, err
-	}
-	if err := ph.RegisterHandler(p2p.MsgAddrCmd, dp.handleAddr); err != nil {
-		return nil, err
-	}
+
 	host.Notify(dp)
+
+	go dp.findPeers()
+	go dp.advertise()
+
 	return dp, nil
 }
 
-const connectionCooldown = 60 * time.Second
-
-func shufflePeers(peers []peer.AddrInfo) []peer.AddrInfo {
-	rand.Shuffle(len(peers), func(i, j int) {
-		peers[i], peers[j] = peers[j], peers[i]
-	})
-
-	return peers
+func (cm *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
+	if pi.ID == cm.ID {
+		return
+	}
+	if cm.host.ConnectedToPeer(pi.ID) {
+		return
+	}
+	err := cm.Connect(pi)
+	if err != nil {
+		cm.log.Errorf("unable to connect to peer %s: %s", pi.ID.String(), err.Error())
+	}
 }
 
-func (cm *discoveryProtocol) handleAddr(_ peer.ID, msg p2p.Message) error {
-	msgAddr, ok := msg.(*p2p.MsgAddr)
-	if !ok {
-		return fmt.Errorf("message received is not addr")
-	}
-
-	peers := msgAddr.Addr
-
-	for _, pb := range peers {
-		offset := binary.LittleEndian.Uint64(pb[:])
-		maBytes := pb[8 : 8+offset]
-		pma, err := multiaddr.NewMultiaddrBytes(maBytes)
+func (cm *discoveryProtocol) findPeers() {
+	for {
+		peers, err := cm.discovery.FindPeers(cm.ctx, cm.params.GetRendevouzString())
 		if err != nil {
-			continue
+			break
 		}
-		p, err := peer.AddrInfoFromP2pAddr(pma)
-		if err != nil {
-			continue
-		}
-		if p.ID == cm.host.GetHost().ID() {
-			continue
-		}
-		cm.nonWorkingPeersLock.Lock()
-		_, ok := cm.nonWorkingPeers[p.ID]
-		if !ok {
-			if err := cm.host.SavePeer(*p); err != nil {
-				cm.log.Errorf("error saving peer: %s", err)
-				cm.nonWorkingPeers[p.ID] = p
-				cm.nonWorkingPeersLock.Unlock()
-				continue
-			}
-		}
-		cm.nonWorkingPeersLock.Unlock()
-	}
-
-	return nil
-}
-
-func (cm *discoveryProtocol) handleGetAddr(id peer.ID, msg p2p.Message) error {
-	_, ok := msg.(*p2p.MsgGetAddr)
-	if !ok {
-		return fmt.Errorf("message received is not get addr")
-	}
-	var peers [][256]byte
-	peersIDs := cm.host.GetHost().Peerstore().Peers()
-	var peersInfo []peer.AddrInfo
-	for _, id := range peersIDs {
-		pInfo := cm.host.GetHost().Peerstore().PeerInfo(id)
-		peersInfo = append(peersInfo, pInfo)
-	}
-	peersData := shufflePeers(peersInfo)
-
-	for i, p := range peersData {
-		if i < p2p.MaxAddrPerMsg {
-			peerMulti, err := peer.AddrInfoToP2pAddrs(&p)
-			if err != nil {
-				continue
-			}
-			var pb [256]byte
-			offset := len(peerMulti[0].Bytes())
-			binary.LittleEndian.PutUint64(pb[:], uint64(offset))
-			copy(pb[8:], peerMulti[0].Bytes())
-			peers = append(peers, pb)
-		}
-	}
-
-	return cm.protocolHandler.SendMessage(id, &p2p.MsgAddr{
-		Addr: peers,
-	})
-}
-
-const askForPeersCycle = 60 * time.Second
-
-func (cm *discoveryProtocol) Start() error {
-	go func() {
-		storedPeers, err := cm.host.Database().GetSavedPeers()
-		if err != nil {
-			cm.log.Errorf("unable to load stored peers")
-		}
-		var initialPeers []peer.AddrInfo
-		initialPeers = append(initialPeers, storedPeers...)
-		initialPeers = append(initialPeers, cm.config.InitialNodes...)
-		for _, addr := range initialPeers {
-			if err := cm.connect(&addr); err != nil {
-				cm.log.Errorf("error connecting to add node %s: %s", addr, err)
-				cm.host.Database()
-			}
-		}
-	}()
-
-	go func() {
-		askForPeersTicker := time.NewTicker(askForPeersCycle)
+	peerLoop:
 		for {
 			select {
-			case <-askForPeersTicker.C:
-				possiblePeersToAsk := cm.host.GetPeerList()
-				if len(possiblePeersToAsk) == 0 {
-					continue
+			case pi, ok := <-peers:
+				if !ok {
+					time.Sleep(time.Second * 10)
+					break peerLoop
 				}
-				peerIdxToAsk := rand.Int() % len(possiblePeersToAsk)
-				peerToAsk := possiblePeersToAsk[peerIdxToAsk]
-
-				if err := cm.protocolHandler.SendMessage(peerToAsk, &p2p.MsgGetAddr{}); err != nil {
-					cm.log.Errorf("error sending getaddr: %s", err)
-					return
-				}
+				cm.handleNewPeer(pi)
 			case <-cm.ctx.Done():
 				return
 			}
 		}
-	}()
+	}
+}
 
+func (cm *discoveryProtocol) advertise() {
+	discovery.Advertise(cm.ctx, cm.discovery, cm.params.GetRendevouzString())
+}
+
+func (cm *discoveryProtocol) Start() error {
+	peersIDs := cm.host.GetHost().Peerstore().Peers()
+	var peerstorePeers []peer.AddrInfo
+	for _, id := range peersIDs {
+		peerstorePeers = append(peerstorePeers, cm.host.GetHost().Peerstore().PeerInfo(id))
+	}
+	var initialNodes []peer.AddrInfo
+	initialNodes = append(initialNodes, getRelayers()...)
+	initialNodes = append(initialNodes, peerstorePeers...)
+	for _, addr := range initialNodes {
+		if err := cm.host.GetHost().Connect(cm.ctx, addr); err != nil {
+			cm.log.Error(err)
+		}
+	}
 	return nil
 }
 
+const connectionTimeout = 10 * time.Second
+const connectionCooldown = 60 * time.Second
+
 // Connect connects to a peer.
-func (cm *discoveryProtocol) connect(pi *peer.AddrInfo) error {
+func (cm *discoveryProtocol) Connect(pi peer.AddrInfo) error {
 	cm.lastConnectLock.Lock()
 	defer cm.lastConnectLock.Unlock()
-
 	lastConnect, found := cm.lastConnect[pi.ID]
 	if !found || time.Since(lastConnect) > connectionCooldown {
 		cm.lastConnect[pi.ID] = time.Now()
-		return cm.host.SavePeer(*pi)
+		ctx, cancel := context.WithTimeout(context.Background(), connectionTimeout)
+		defer cancel()
+		return cm.host.GetHost().Connect(ctx, pi)
 	}
 	return nil
 }
@@ -222,7 +187,7 @@ func (cm *discoveryProtocol) Connected(_ network.Network, conn network.Conn) {
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := cm.host.GetHost().NewStream(cm.ctx, conn.RemotePeer(), discoveryProtocolID)
+	s, err := cm.host.GetHost().NewStream(cm.ctx, conn.RemotePeer(), params.DiscoveryProtocolID)
 	if err != nil {
 		cm.log.Errorf("could not open stream for connection: %s", err)
 	}

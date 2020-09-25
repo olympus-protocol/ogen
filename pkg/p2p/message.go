@@ -43,10 +43,6 @@ const (
 	MsgTxMultiCmd = "tx_multi"
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
-	// MsgGetAddrCmd ask node for address
-	MsgGetAddrCmd = "getaddr"
-	// MsgAddrCmd an slice of address
-	MsgAddrCmd = "addr"
 	// MsgGetBlocksCmd ask a node for blocks
 	MsgGetBlocksCmd = "getblocks"
 	// MsgSyncEnd announce the syncing node the stream finished
@@ -84,10 +80,6 @@ func makeEmptyMessage(command string) (Message, error) {
 	switch command {
 	case MsgVersionCmd:
 		msg = &MsgVersion{}
-	case MsgAddrCmd:
-		msg = &MsgAddr{}
-	case MsgGetAddrCmd:
-		msg = &MsgGetAddr{}
 	case MsgGetBlocksCmd:
 		msg = &MsgGetBlocks{}
 	case MsgBlockCmd:

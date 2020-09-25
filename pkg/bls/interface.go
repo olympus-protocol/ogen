@@ -28,9 +28,9 @@ type KeyPair struct {
 	Private string `json:"private"`
 }
 
-var Prefix params.AccountPrefixes = params.Mainnet.AccountPrefixes
+var Prefix = params.Mainnet.AccountPrefixes
 
-func Initialize(c params.ChainParams) {
+func Initialize(c *params.ChainParams) {
 	Prefix = c.AccountPrefixes
 }
 

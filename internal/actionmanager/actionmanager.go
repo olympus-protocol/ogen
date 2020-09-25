@@ -16,8 +16,8 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 )
 
 // MaxMessagePropagationTime is the maximum time we're expecting a message to

@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"io/ioutil"
 	"math/rand"
@@ -13,12 +12,10 @@ import (
 	"path"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,7 +25,7 @@ import (
 var GlobalDataFolder string
 
 // loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams params.ChainParams) error {
+func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams *params.ChainParams) error {
 	db, err := blockdb.NewBadgerDB(configParams.DataFolder, currParams, log)
 	if err != nil {
 		return err
@@ -47,7 +44,7 @@ func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger
 	return nil
 }
 
-func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile, error) {
+func getChainFile(path string, currParams *params.ChainParams) (*state.ChainFile, error) {
 	chainFile := new(state.ChainFile)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		resp, err := http.Get(currParams.ChainFileURL)
@@ -112,12 +109,12 @@ Next generation blockchain secured by CASPER.`,
 
 			networkName := viper.GetString("network")
 
-			var currParams params.ChainParams
+			var currParams *params.ChainParams
 			switch networkName {
 			case "mainnet":
-				currParams = params.Mainnet
+				currParams = &params.Mainnet
 			default:
-				currParams = params.TestNet
+				currParams = &params.TestNet
 			}
 
 			cf, err := getChainFile(path.Join(GlobalDataFolder, "chain.json"), currParams)
@@ -131,25 +128,6 @@ Next generation blockchain secured by CASPER.`,
 				ip.GenesisTime = time.Unix(int64(genesisTime), 0)
 			}
 
-			addNodesStrs := viper.GetStringSlice("add")
-			addNodesStrs = append(addNodesStrs, cf.InitialConnections...)
-			addNodes := make([]peer.AddrInfo, len(addNodesStrs))
-			for i := range addNodes {
-				maddr, err := multiaddr.NewMultiaddr(addNodesStrs[i])
-				if err != nil {
-					log.Errorf("error parsing add node %s: %s", addNodesStrs[i], err)
-					continue
-				}
-
-				pinfo, err := peer.AddrInfoFromP2pAddr(maddr)
-				if err != nil {
-					log.Errorf("error parsing add node %s: %s", maddr, pinfo)
-					continue
-				}
-
-				addNodes[i] = *pinfo
-			}
-
 			rpcauth := ""
 			if viper.GetString("rpc_auth_token") != "" {
 				rpcauth = viper.GetString("rpc_auth_token")
@@ -160,9 +138,8 @@ Next generation blockchain secured by CASPER.`,
 			c := &server.GlobalConfig{
 				DataFolder: GlobalDataFolder,
 
-				NetworkName:  networkName,
-				InitialNodes: addNodes,
-				Port:         viper.GetString("port"),
+				NetworkName: networkName,
+				Port:        viper.GetString("port"),
 
 				InitConfig: ip,
 
@@ -179,7 +156,7 @@ Next generation blockchain secured by CASPER.`,
 				Pprof:   viper.GetBool("pprof"),
 			}
 
-			log.Infof("Starting Ogen v%v", hostnode.OgenVersion)
+			log.Infof("Starting Ogen v%v", params.Version)
 			log.Trace("Loading log on debug mode")
 			ctx, cancel := context.WithCancel(context.Background())
 
@@ -204,7 +181,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&GlobalDataFolder, "datadir", "", "Directory to store the chain data.")
 
 	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
-	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
 	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
 
 	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")

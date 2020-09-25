@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/olympus-protocol/ogen/internal/blockdb"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -37,7 +37,7 @@ type blockchain struct {
 	log         logger.Logger
 	config      Config
 	genesisTime time.Time
-	params      params.ChainParams
+	params      *params.ChainParams
 
 	// DB
 	db blockdb.Database
@@ -77,7 +77,7 @@ func (ch *blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Blockchain, error) {
+func NewBlockchain(config Config, params *params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Blockchain, error) {
 	s, err := NewStateService(config.Log, ip, params, db)
 	if err != nil {
 		return nil, err

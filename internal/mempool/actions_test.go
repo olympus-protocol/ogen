@@ -6,14 +6,15 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -97,7 +98,7 @@ func TestActionMempool_New(t *testing.T) {
 
 	host.EXPECT().GetHost().Return(h)
 
-	log := logger.NewMockLogger(ctrl)
+	log := logger.New(os.Stdin)
 
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validatorsGlobal)

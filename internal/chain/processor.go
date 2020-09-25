@@ -39,7 +39,7 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 				return 0
 			}
 			if node.Hash.IsEqual(&block.Hash) {
-				votes += justifiedState.GetEffectiveBalance(target.validator, &ch.params) / 1e8
+				votes += justifiedState.GetEffectiveBalance(target.validator, ch.params) / 1e8
 			}
 		}
 		return votes
@@ -118,12 +118,12 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		lastBlockState, _, err := ch.State().GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &ch.params)
+		lastBlockState, _, err := ch.State().GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, ch.params)
 		if err != nil {
 			return err
 		}
 
-		if err := lastBlockState.CheckBlockSignature(block, &ch.params); err != nil {
+		if err := lastBlockState.CheckBlockSignature(block, ch.params); err != nil {
 			return err
 		}
 
@@ -132,7 +132,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		proposerPub, err := lastBlockState.GetProposerPublicKey(block, &ch.params)
+		proposerPub, err := lastBlockState.GetProposerPublicKey(block, ch.params)
 		if err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	}
 
 	for _, a := range block.Votes {
-		validators, err := newState.GetVoteCommittee(a.Data.Slot, &ch.params)
+		validators, err := newState.GetVoteCommittee(a.Data.Slot, ch.params)
 		if err != nil {
 			return err
 		}
@@ -289,7 +289,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		voted += len(v.ParticipationBitfield.BitIndices())
 	}
 
-	comittee, err := newState.GetVoteCommittee(block.Header.Slot, &ch.params)
+	comittee, err := newState.GetVoteCommittee(block.Header.Slot, ch.params)
 	if err == nil {
 		percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
 		ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)

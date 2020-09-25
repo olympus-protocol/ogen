@@ -47,17 +47,15 @@ var combineChainCmd = &cobra.Command{
 		newValidators := make([]state.ValidatorInitialization, 0)
 		newInitialPeers := make([]string, 0)
 		for _, c := range chainFiles {
-			color.Yellow("combining chain file with %d validators and %d initial connections", len(c.Validators), len(c.InitialConnections))
+			color.Yellow("combining chain file with %d validators", len(c.Validators))
 			newValidators = append(newValidators, c.Validators...)
-			newInitialPeers = append(newInitialPeers, c.InitialConnections...)
 		}
 
 		color.Green("new chain file has %d validators and %d initial connections", len(newValidators), len(newInitialPeers))
 
 		newChainFile := state.ChainFile{
-			Validators:         newValidators,
-			InitialConnections: newInitialPeers,
-			GenesisTime:        chainFiles[0].GenesisTime,
+			Validators:  newValidators,
+			GenesisTime: chainFiles[0].GenesisTime,
 		}
 
 		newChainFileBytes, err := json.Marshal(newChainFile)

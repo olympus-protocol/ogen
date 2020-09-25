@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/golang/mock/gomock"
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -93,19 +92,20 @@ func init() {
 
 // create a blockchain instance and test its methods
 func TestBlockchain_Instance(t *testing.T) {
-	//f := fuzz.New().NilChance(0)
-	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Info("Loading chain state...").Times(1)
-	log.EXPECT().Info("Starting Blockchain instance").Times(1)
-	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
 
-	db := blockdb.NewMockDatabase(ctrl)
+	log := logger.New(os.Stdin)
+
+	//block-related methods
+	genblock := primitives.GetGenesisBlock()
+	genesisHash = genblock.Hash()
+
+	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
+	assert.NoError(t, err)
 	var c chain.Config
 	c.Log = log
 	c.Datadir = testdata.Conf.DataFolder
-	var err error
-	bc, err = chain.NewBlockchain(c, *param, db, stateParams)
+
+	bc, err = chain.NewBlockchain(c, param, db, stateParams)
 	assert.NoError(t, err)
 	assert.NotNil(t, bc)
 	err = bc.Start()
@@ -113,10 +113,6 @@ func TestBlockchain_Instance(t *testing.T) {
 
 	genTime := bc.GenesisTime()
 	assert.NotNil(t, genTime)
-
-	//block-related methods
-	genblock := primitives.GetGenesisBlock()
-	genesisHash = genblock.Hash()
 
 	//get signature of genesis hash
 	currState, _ := bc.State().GetStateForHash(genesisHash)
@@ -166,7 +162,5 @@ func TestBlockchain_Instance(t *testing.T) {
 	// ProcessBlock
 	err = bc.ProcessBlock(&b)
 	assert.NoError(t, err)
-
-	_ = os.Remove("./tx.db")
 
 }

@@ -44,5 +44,5 @@ func TestExit(t *testing.T) {
 	assert.Equal(t, pubBls, getWithPub)
 	assert.Equal(t, sigBls, getSig)
 
-	assert.Equal(t, "85905f74d2e0cfca376e590ce6ed22d83dc939733472290365df407ac8ee00da", e.Hash().String())
+	assert.Equal(t, "da00eec87a40df65032972347339c93dd822ede60c596e37cacfe0d2745f9085", e.Hash().String())
 }

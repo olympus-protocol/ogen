@@ -34,7 +34,7 @@ var generateWalletCmd = &cobra.Command{
 			net = &params.Mainnet
 		}
 
-		bls.Initialize(*net)
+		bls.Initialize(net)
 
 		w, err := wallet.NewWallet(context.Background(), nil, GlobalDataFolder, net, nil, nil, nil, nil)
 		if err != nil {

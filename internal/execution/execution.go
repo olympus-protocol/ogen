@@ -3,7 +3,7 @@ package execution
 import (
 	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/internal/csmt"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"path"
 )
 

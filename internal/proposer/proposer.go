@@ -17,9 +17,9 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )

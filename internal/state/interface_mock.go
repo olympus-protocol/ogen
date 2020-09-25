@@ -6,9 +6,9 @@ package state
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	logger "github.com/olympus-protocol/ogen/internal/logger"
 	bls "github.com/olympus-protocol/ogen/pkg/bls"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
+	logger "github.com/olympus-protocol/ogen/pkg/logger"
 	params "github.com/olympus-protocol/ogen/pkg/params"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"

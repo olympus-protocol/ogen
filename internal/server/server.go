@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -13,19 +12,18 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/internal/wallet"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 type GlobalConfig struct {
 	DataFolder string
 
-	NetworkName  string
-	InitialNodes []peer.AddrInfo
-	Port         string
+	NetworkName string
+	Port        string
 
 	InitConfig state.InitializationParameters
 
@@ -118,59 +116,59 @@ func (s *server) Stop() error {
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, currParams params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Server, error) {
+func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, p *params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Server, error) {
 
-	logger.Tracef("Loading network parameters for %v", currParams.Name)
+	logger.Tracef("Loading network parameters for %v", p.Name)
 
-	logger.Tracef("Initializing bls module with params for %v", currParams.Name)
+	logger.Tracef("Initializing bls module with params for %v", p.Name)
 
-	bls.Initialize(currParams)
+	bls.Initialize(p)
 
-	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), currParams, db, ip)
+	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), p, db, ip)
 	if err != nil {
 		return nil, err
 	}
 
-	hn, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, currParams.NetMagic)
+	hn, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, p)
 	if err != nil {
 		return nil, err
 	}
 
-	lastActionManager, err := actionmanager.NewLastActionManager(ctx, hn, logger, ch, &currParams)
+	lastActionManager, err := actionmanager.NewLastActionManager(ctx, hn, logger, ch, p)
 	if err != nil {
 		return nil, err
 	}
 
-	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hn, &currParams)
+	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hn, p)
 	if err != nil {
 		return nil, err
 	}
 
-	voteMempool, err := mempool.NewVoteMempool(ctx, logger, &currParams, ch, hn, lastActionManager)
+	voteMempool, err := mempool.NewVoteMempool(ctx, logger, p, ch, hn, lastActionManager)
 	if err != nil {
 		return nil, err
 	}
 
-	actionsMempool, err := mempool.NewActionMempool(ctx, logger, &currParams, ch, hn)
+	actionsMempool, err := mempool.NewActionMempool(ctx, logger, p, ch, hn)
 	if err != nil {
 		return nil, err
 	}
 
 	voteMempool.Notify(actionsMempool)
 
-	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, &currParams, ch, hn, coinsMempool, actionsMempool)
+	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, p, ch, hn, coinsMempool, actionsMempool)
 	if err != nil {
 		return nil, err
 	}
 
 	ks := keystore.NewKeystore(configParams.DataFolder, logger)
 
-	prop, err := proposer.NewProposer(logger, &currParams, ch, hn, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
+	prop, err := proposer.NewProposer(logger, p, ch, hn, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
 	if err != nil {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hn, w, &currParams, prop)
+	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hn, w, p, prop)
 	if err != nil {
 		return nil, err
 	}
@@ -202,10 +200,9 @@ func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
 
 func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) hostnode.Config {
 	cfg := hostnode.Config{
-		Log:          logger,
-		InitialNodes: config.InitialNodes,
-		Port:         config.Port,
-		Path:         config.DataFolder,
+		Log:  logger,
+		Port: config.Port,
+		Path: config.DataFolder,
 	}
 	return cfg
 }

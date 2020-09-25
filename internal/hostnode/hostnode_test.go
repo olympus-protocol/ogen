@@ -7,14 +7,13 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
-	"time"
 )
 
 func init() {
@@ -48,26 +47,20 @@ func TestHostNode(t *testing.T) {
 	ch := chain.NewMockBlockchain(ctrl)
 	ch.EXPECT().State().Return(stateService).Times(6)
 
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-	log.EXPECT().Info(gomock.Any()).AnyTimes()
-	log.EXPECT().Tracef(gomock.Any(), gomock.Any()).AnyTimes()
-	log.EXPECT().Trace(gomock.Any()).AnyTimes()
+	log := logger.New(os.Stdin)
 
 	cfg := hostnode.Config{
-		Log:          log,
-		Port:         "50000",
-		InitialNodes: nil,
-		Path:         "./test/hn1",
-		PrivateKey:   nil,
+		Log:  log,
+		Port: "50000",
+		Path: "./test/hn1",
 	}
 
-	hn, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic)
+	hn, err := hostnode.NewHostNode(ctx, cfg, ch, &testdata.TestParams)
 	assert.NoError(t, err)
 
 	cfg.Path = "./test/hn2"
 	cfg.Port = "55554"
-	hn2, err := hostnode.NewHostNode(ctx, cfg, ch, testdata.TestParams.NetMagic)
+	hn2, err := hostnode.NewHostNode(ctx, cfg, ch, &testdata.TestParams)
 	assert.NoError(t, err)
 
 	assert.True(t, hn.Syncing())
@@ -87,7 +80,7 @@ func TestHostNode(t *testing.T) {
 		Addrs: hn2.GetHost().Addrs(),
 	}
 
-	err = hn.SavePeer(npinfo)
+	err = hn.GetHost().Connect(hn.GetContext(), npinfo)
 	assert.NoError(t, err)
 
 	assert.True(t, hn.ConnectedToPeer(hn2.GetHost().ID()))
@@ -95,8 +88,8 @@ func TestHostNode(t *testing.T) {
 	peers := hn.PeersConnected()
 	assert.Equal(t, 1, peers)
 
-	pinfo = hn.GetPeerInfos()
-	assert.Equal(t, []peer.AddrInfo{npinfo}, pinfo)
+//	pinfo = hn.GetPeerInfos()
+//	assert.Equal(t, pstore_pb.ProtoAddr{Multiaddr: npinfo.Addrs[0]}, pinfo)
 
 	err = hn.Start()
 	assert.NoError(t, err)
@@ -104,5 +97,5 @@ func TestHostNode(t *testing.T) {
 	err = hn2.Start()
 	assert.NoError(t, err)
 
-	time.Sleep(time.Second * 60)
+	_ = os.RemoveAll("./test")
 }

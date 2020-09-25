@@ -3,6 +3,7 @@ package burnproof
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 
@@ -11,7 +12,12 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-var MerkleRootHash, _ = chainhash.NewHashFromStr("0f14e0283ba00f5d516a5d14c33dc713847f4066f0211b904690ece3d31be70b")
+var merkleRootHash [32]byte
+
+func init() {
+	hashBytes, _ := hex.DecodeString("0be71bd3e3ec9046901b21f066407f8413c73dc3145d6a515d0fa03b28e0140f")
+	copy(merkleRootHash[:], hashBytes)
+}
 
 // CoinsProof is a proof of coins on the old blockchain.
 type CoinsProof struct {
@@ -194,7 +200,7 @@ func VerifyBurn(proofBytes []byte, address string) error {
 	}
 
 	for _, c := range proofs {
-		if err := verifyMerkleRoot(MerkleRootHash, c); err != nil {
+		if err := verifyMerkleRoot(merkleRootHash, c); err != nil {
 			return err
 		}
 

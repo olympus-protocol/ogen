@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +28,7 @@ type pair struct {
 
 var secrets = make([]pair, NumValidators)
 
-var params = testdata.TestParams
+var params = &testdata.TestParams
 var premineAddr = bls.RandKey()
 
 var initParams state.InitializationParameters
@@ -60,7 +60,8 @@ func init() {
 func TestState(t *testing.T) {
 
 	log := logger.New(os.Stdin)
-	db, err := blockdb.NewBadgerDB("./", params, log)
+
+	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
 	assert.NoError(t, err)
 
 	s, err := chain.NewStateService(log, initParams, params, db)
@@ -187,14 +188,14 @@ func getNextSlotVotes(ss chain.StateService, slot uint64) ([]*primitives.MultiVa
 		FromEpoch:       s.GetJustifiedEpoch(),
 		FromHash:        s.GetJustifiedEpochHash(),
 		ToEpoch:         toEpoch,
-		ToHash:          s.GetRecentBlockHash(toEpoch*params.EpochLength-1, &params),
+		ToHash:          s.GetRecentBlockHash(toEpoch*params.EpochLength-1, params),
 		BeaconBlockHash: ss.Tip().Hash,
 		Nonce:           0,
 	}
 
 	dataHash := data.Hash()
 
-	validators, err := s.GetVoteCommittee(slot, &params)
+	validators, err := s.GetVoteCommittee(slot, params)
 	if err != nil {
 		return nil, err
 	}

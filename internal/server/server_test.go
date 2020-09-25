@@ -3,12 +3,11 @@ package server_test
 import (
 	"context"
 	"encoding/hex"
-	"github.com/golang/mock/gomock"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,6 @@ var validatorKeys2 []*bls.SecretKey
 // validators are the initial validators on the realState
 var validators1 []*primitives.Validator
 var validators2 []*primitives.Validator
-var validatorsGlobal []*primitives.Validator
 
 // init params used on the test
 var stateParams state.InitializationParameters
@@ -69,7 +67,6 @@ func init() {
 		}
 
 	}
-	validatorsGlobal = append(validators1, validators2...)
 	stateParams.GenesisTime = time.Unix(time.Now().Unix(), 0)
 	stateParams.InitialValidators = []state.ValidatorInitialization{}
 	// Convert the validators to initialization params.
@@ -84,19 +81,13 @@ func init() {
 }
 
 func TestServer_Object(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Tracef(gomock.Any(), gomock.Any()).Times(2)
-	log.EXPECT().Info("Loading chain state...").Times(1)
-	log.EXPECT().Info("Starting Blockchain instance").Times(1)
-	log.EXPECT().Debugf(gomock.Any(), gomock.Any()).Times(1)
-	log.EXPECT().Infof("binding to address: %s", gomock.Any())
 
-	db := blockdb.NewMockDatabase(ctrl)
-	db.EXPECT().AddRawBlock(gomock.Any())
-	db.EXPECT().GetBlockRow(gomock.Any())
+	log := logger.New(os.Stdin)
 
-	serv, err := server.NewServer(ctx, &testdata.Conf, log, *param, db, stateParams)
+	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
+	assert.NoError(t, err)
+
+	serv, err := server.NewServer(ctx, &testdata.Conf, log, param, db, stateParams)
 	assert.NoError(t, err)
 	assert.NotNil(t, serv)
 
@@ -106,6 +97,8 @@ func TestServer_Object(t *testing.T) {
 
 func cleanTestData() {
 	_ = os.RemoveAll("cert")
+	_ = os.RemoveAll("peerstore")
 	_ = os.Remove("./net.db")
 	_ = os.Remove("./keystore.db")
+	_ = os.Remove("./node_key.dat")
 }

@@ -6,17 +6,17 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -32,8 +32,6 @@ var (
 	// ErrorBlockParentUnknown returns when received a block with an unknown parent
 	ErrorBlockParentUnknown = errors.New("unknown block parent")
 )
-
-const syncProtocolID = protocol.ID("/ogen/sync/" + OgenVersion)
 
 // SyncProtocol is an interface for the syncProtocol
 type SyncProtocol interface {
@@ -56,7 +54,8 @@ type syncProtocol struct {
 	ctx    context.Context
 	log    logger.Logger
 
-	chain chain.Blockchain
+	chain   chain.Blockchain
+	relayer bool
 
 	protocolHandler ProtocolHandler
 
@@ -83,7 +82,7 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
 func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
-	ph := newProtocolHandler(ctx, syncProtocolID, host, config)
+	ph := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
 	sp := &syncProtocol{
 		host:            host,
 		config:          config,
@@ -94,6 +93,11 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		onSync:          true,
 		peersTrack:      make(map[peer.ID]*peerInfo),
 	}
+
+	sp.host.Notify(sp)
+
+	go sp.waitForPeers()
+
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
@@ -110,10 +114,6 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	if err := sp.listenForBroadcasts(); err != nil {
 		return nil, err
 	}
-
-	sp.host.Notify(sp)
-
-	go sp.waitForPeers()
 
 	return sp, nil
 }
@@ -363,16 +363,6 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	}
 	sp.peersTrackLock.Unlock()
 
-	// Once version handshake is done, we save the peer to the DB
-	p := sp.host.GetPeerInfo(id)
-	pinfo := peer.AddrInfo{
-		ID:    p.ID,
-		Addrs: p.Addrs,
-	}
-	err := sp.host.Database().SavePeer(pinfo)
-	if err != nil {
-		sp.log.Errorf("unable to store peer to database")
-	}
 	return nil
 }
 
@@ -411,14 +401,16 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 	}
 
 	// open a stream for the discovery protocol:
-	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), syncProtocolID)
+	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
 	if err != nil {
 		sp.log.Errorf("could not open stream for connection: %s", err)
 	}
 
 	sp.protocolHandler.HandleStream(s)
 
-	sp.sendVersion(conn.RemotePeer())
+	if !sp.relayer {
+		sp.sendVersion(conn.RemotePeer())
+	}
 }
 
 // Disconnected is called when we disconnect from a peer.

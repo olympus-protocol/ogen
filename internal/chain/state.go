@@ -8,8 +8,8 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
-	"github.com/olympus-protocol/ogen/internal/logger"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -103,7 +103,7 @@ type StateService interface {
 type stateService struct {
 	log    logger.Logger
 	lock   sync.RWMutex
-	params params.ChainParams
+	params *params.ChainParams
 	db     blockdb.Database
 
 	blockIndex *chainindex.BlockIndex
@@ -275,14 +275,14 @@ func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.
 		return nil, nil, err
 	}
 
-	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, &s.params)
+	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, s.params)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	newState := lastBlockState.Copy()
 
-	err = newState.ProcessBlock(block, &s.params)
+	err = newState.ProcessBlock(block, s.params)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -338,7 +338,7 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 	if err != nil {
 		return nil, err
 	}
-	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, &s.params)
+	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, s.params)
 	if err != nil {
 		return nil, err
 	}
@@ -347,11 +347,11 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log logger.Logger, ip state.InitializationParameters, params params.ChainParams, db blockdb.Database) (StateService, error) {
+func NewStateService(log logger.Logger, ip state.InitializationParameters, params *params.ChainParams, db blockdb.Database) (StateService, error) {
 	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Hash()
 
-	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, &ip, &params)
+	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, &ip, params)
 	if err != nil {
 		return nil, err
 	}

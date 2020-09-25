@@ -12,7 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
 
@@ -143,11 +143,6 @@ func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		p.notifeeLock.Unlock()
 		if !strings.Contains(err.Error(), "stream reset") {
 			p.log.Errorf("error receiving messages from peer %s: %s", id, err)
-			// reduce trust on peer if the error is different than a stream reset.
-			err = p.host.Database().BanscorePeer(*p.host.GetPeerInfo(id), 10)
-			if err == nil {
-				p.log.Warnf("peer %s banscore increased", id)
-			}
 		}
 
 	}
@@ -179,16 +174,18 @@ func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
 }
 
 func (p *protocolHandler) HandleStream(s network.Stream) {
-	p.sendMessages(s.Conn().RemotePeer(), s)
+	if s != nil {
+		p.sendMessages(s.Conn().RemotePeer(), s)
 
-	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
-	go p.receiveMessages(s.Conn().RemotePeer(), s)
+		p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
+		go p.receiveMessages(s.Conn().RemotePeer(), s)
 
-	p.notifeeLock.Lock()
-	for _, n := range p.notifees {
-		n.PeerConnected(s.Conn().RemotePeer(), s.Stat().Direction)
+		p.notifeeLock.Lock()
+		for _, n := range p.notifees {
+			n.PeerConnected(s.Conn().RemotePeer(), s.Stat().Direction)
+		}
+		p.notifeeLock.Unlock()
 	}
-	p.notifeeLock.Unlock()
 }
 
 // SendMessage writes a message to a peer.

@@ -15,18 +15,22 @@ require (
 	github.com/google/gofuzz v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/herumi/bls-eth-go-binary v0.0.0-20200722032157-41fc56eba7b4
-	github.com/jackc/pgx v3.6.2+incompatible
+	github.com/ipfs/go-ds-badger v0.2.3
+	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jackc/pgx/v4 v4.8.1
-	github.com/libp2p/go-libp2p v0.10.2
+	github.com/libp2p/go-libp2p v0.11.0
+	github.com/libp2p/go-libp2p-circuit v0.3.1
+	github.com/libp2p/go-libp2p-connmgr v0.2.4
 	github.com/libp2p/go-libp2p-core v0.6.1
+	github.com/libp2p/go-libp2p-discovery v0.5.0
+	github.com/libp2p/go-libp2p-kad-dht v0.10.0
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
-	github.com/libp2p/go-libp2p-pubsub v0.3.3
+	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v1.14.3
 	github.com/mattn/go-tty v0.0.3 // indirect
-	github.com/multiformats/go-multiaddr v0.2.2
-	github.com/multiformats/go-multiaddr-net v0.1.5
+	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/rs/cors v1.7.0

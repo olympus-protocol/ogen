@@ -26,6 +26,7 @@ var (
 )
 
 func (w *wallet) initialize(cipher []byte, salt [8]byte, nonce [12]byte, passhash chainhash.Hash) error {
+
 	return w.db.Update(func(tx *bbolt.Tx) error {
 		keybkt, err := tx.CreateBucket(walletKeyBucket)
 		if err != nil {
