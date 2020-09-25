@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/hex"
-	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -76,8 +75,6 @@ func TestUInt64Insertion(t *testing.T) {
 	}
 	var num uint64
 	num = math.MaxUint64
-	fmt.Println(num)
-	fmt.Println(int(num))
 
 	prepQuery := "insert into foo(numb) values(?);"
 	stmt, err := db.Prepare(prepQuery)

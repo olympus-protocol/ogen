@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sync"
 )
 
 // Empty is the empty request.
@@ -25,38 +26,47 @@ type CLI struct {
 // Run runs the CLI.
 func (c *CLI) Run(optArgs []string) {
 
-	fmt.Println(c.rpcClient.address)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		c.blockSync(wg)
+	}(&wg)
+	wg.Wait()
 
-	err := c.dbClient.Ping()
+}
+
+func (c *CLI) initialSync() {
+	// ensure the tables are created for the db
+	err := c.dbClient.InitializeTables()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("You are Successfully connected!")
-
-	err = c.dbClient.InitializeTables()
+	//get the saved state
+	indexState, err := c.dbClient.GetCurrentState()
 	if err != nil {
 		panic(err)
 	}
 
-	//Here Runs the RPC
-	//check db for tip?
-
-	genesis := primitives.GetGenesisBlock()
-	genesisHash := genesis.Hash()
-
-	syncClient, err := c.rpcClient.sync(genesisHash.String())
-	if err != nil {
-		fmt.Println("unable to initialize sync client")
-		os.Exit(0)
+	var latestBHash string
+	if indexState.Blocks == 0 && indexState.LastBlockHash == "" {
+		genesis := primitives.GetGenesisBlock()
+		genesisHash := genesis.Hash()
+		err = c.dbClient.InsertBlock(genesis)
+		if err != nil {
+			fmt.Println("unable to register genesis block")
+			return
+		}
+		latestBHash = genesisHash.String()
+	} else {
+		latestBHash = indexState.LastBlockHash
 	}
-	err = c.dbClient.InsertBlock(genesis)
+	syncClient, err := c.rpcClient.chain.Sync(context.Background(), &proto.Hash{Hash: latestBHash})
 	if err != nil {
-		fmt.Println("unable to register genesis block")
-		return
+		panic("unable to initialize sync client")
 	}
 
-	blockCount := 1
+	blockCount := 0
 	for {
 		res, err := syncClient.Recv()
 		if err == io.EOF || err != nil {
@@ -82,19 +92,90 @@ func (c *CLI) Run(optArgs []string) {
 		} else {
 			blockCount++
 		}
-
 	}
-
 	fmt.Printf("registered %v blocks", blockCount)
 }
 
-func (c *RPCClient) sync(hash string) (proto.Chain_SyncClient, error) {
-
-	syncClient, err := c.chain.Sync(context.Background(), &proto.Hash{Hash: hash})
+func (c *CLI) blockSync(wg *sync.WaitGroup) {
+sync:
+	// check the connection to the db
+	err := c.dbClient.Ping()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	return syncClient, err
+	fmt.Println("You are Successfully connected!")
+	c.initialSync()
+	subscribe, err := c.rpcClient.chain.SubscribeBlocks(context.Background(), &proto.Empty{})
+	if err != nil {
+		panic("unable to initialize subscription client")
+	}
+	wg.Done()
+	for {
+		res, err := subscribe.Recv()
+		if err == io.EOF || err != nil {
+			// listener closed restart with sync
+			goto sync
+		}
+		// To make sure the explorer is always synced, every new block we reinsert the last 5
+		blockBytes, err := hex.DecodeString(res.Data)
+		if err != nil {
+			fmt.Println("unable to parse block")
+		}
+		var blockOgen primitives.Block
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to unmarshal block")
+		}
+		err = c.dbClient.InsertBlock(blockOgen)
+		if err != nil {
+			fmt.Println("unable to insert")
+			break
+		}
+		fmt.Println("received and parsed new block")
+	}
+}
+
+func (c *CLI) customSync(blockGap int) {
+
+	//get the saved state
+	customState, err := c.dbClient.GetSpecificState(blockGap)
+	if err != nil {
+		panic(err)
+	}
+
+	syncClient, err := c.rpcClient.chain.Sync(context.Background(), &proto.Hash{Hash: customState.LastBlockHash})
+	if err != nil {
+		panic("unable to initialize sync client")
+	}
+
+	blockCount := 0
+	for {
+		res, err := syncClient.Recv()
+		if err == io.EOF || err != nil {
+			fmt.Println(err)
+			_ = syncClient.CloseSend()
+			break
+		}
+		blockBytes, err := hex.DecodeString(res.Data)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		var blockOgen primitives.Block
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		err = c.dbClient.InsertBlock(blockOgen)
+		if err != nil {
+			fmt.Println("unable to insert")
+			break
+		} else {
+			blockCount++
+		}
+	}
+	fmt.Printf("registered %v blocks", blockCount)
 }
 
 func newCli(rpcClient *RPCClient, dbClient *db.DBClient) *CLI {

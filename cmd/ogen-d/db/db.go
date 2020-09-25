@@ -23,6 +23,12 @@ type DBClient struct {
 	queries map[string]string
 }
 
+//State represents the last block saved
+type State struct {
+	Blocks        int
+	LastBlockHash string
+}
+
 func (dbc DBClient) Ping() error {
 	return dbc.db.Ping()
 }
@@ -128,6 +134,7 @@ func (dbc DBClient) querySingleRow(query string) (string, error) {
 	return res, nil
 }
 
+//Inserts a block into the db.
 func (dbc DBClient) InsertBlock(block primitives.Block) error {
 	nextHeight, prevHash, err := dbc.getNextHeight()
 	if err != nil {
@@ -304,6 +311,45 @@ func (dbc DBClient) OpenDB(parameters DbParameters) error {
 	return err
 }
 
+func (dbc DBClient) GetCurrentState() (State, error) {
+	nextH, prevH, err := dbc.getNextHeight()
+	if err != nil {
+		return State{}, err
+	}
+	if nextH == 0 {
+		return State{
+			Blocks:        0,
+			LastBlockHash: "",
+		}, nil
+	} else {
+		return State{Blocks: nextH - 1, LastBlockHash: prevH}, nil
+	}
+}
+
+// returns state from height - gap
+func (dbc DBClient) GetSpecificState(gap int) (State, error) {
+	nextH, _, err := dbc.getNextHeight()
+	if err != nil {
+		return State{}, err
+	}
+	var height int
+	var hash string
+	if nextH-1 <= gap {
+		hash, err = dbc.getHeight(0)
+		if err != nil {
+			return State{}, err
+		}
+		height = 0
+	} else {
+		hash, err = dbc.getHeight(nextH - 1 - gap)
+		if err != nil {
+			return State{}, err
+		}
+		height = nextH - 1 - gap
+	}
+	return State{Blocks: height, LastBlockHash: hash}, nil
+}
+
 func (dbc DBClient) getNextHeight() (int, string, error) {
 	idS, err := dbc.querySingleRow("select max(rowid) from blocks;")
 	if err != nil {
@@ -321,6 +367,16 @@ func (dbc DBClient) getNextHeight() (int, string, error) {
 		return id + 1, "", err
 	}
 	return id + 1, lasHash, nil
+}
+
+// getheight returns the hash at the specified height
+func (dbc DBClient) getHeight(i int) (string, error) {
+	idS := strconv.Itoa(i)
+	hash, err := dbc.querySingleRow("select block_hash from blocks where rowid = " + idS + ";")
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
 }
 
 func getConnString(params DbParameters) (string, error) {
