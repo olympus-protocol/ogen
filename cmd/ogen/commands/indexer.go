@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer"
 	"github.com/olympus-protocol/ogen/internal/logger"
@@ -161,31 +160,34 @@ func (i *Indexer) customSync(blockGap int) {
 	blockCount := 0
 	for {
 		res, err := syncClient.Recv()
-		if err == io.EOF || err != nil {
-			fmt.Println(err)
-			_ = syncClient.CloseSend()
+		if err != nil {
+			if err == io.EOF {
+				_ = syncClient.CloseSend()
+				break
+			}
+			i.log.Error(err)
 			break
 		}
 		blockBytes, err := hex.DecodeString(res.Data)
 		if err != nil {
-			fmt.Println("unable to parse block")
+			i.log.Error("unable to parse block")
 			break
 		}
 		var blockOgen primitives.Block
 		err = blockOgen.Unmarshal(blockBytes)
 		if err != nil {
-			fmt.Println("unable to parse block")
+			i.log.Error("unable to parse block")
 			break
 		}
 		err = i.dbClient.InsertBlock(blockOgen)
 		if err != nil {
-			fmt.Println("unable to insert")
+			i.log.Error("unable to insert")
 			break
 		} else {
 			blockCount++
 		}
 	}
-	fmt.Printf("registered %v blocks", blockCount)
+	i.log.Infof("registered %v blocks", blockCount)
 }
 
 var indexerCmd = &cobra.Command{
