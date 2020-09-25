@@ -12,7 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -37,12 +37,9 @@ func (d *Database) Ping() error {
 }
 
 func (d *Database) InitializeTables() error {
+
 	// extract queries
-	path, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	jsonFile, err := os.Open(filepath.Join(path, "cmd/ogen-d/db/queries.json"))
+	jsonFile, err := os.Open("cmd/ogen/indexer/queries.json")
 	if err != nil {
 		return err
 	}
@@ -309,16 +306,6 @@ func (d *Database) CloseDB() {
 	return
 }
 
-func (d *Database) OpenDB(parameters *Config) error {
-	connString, err := getConnString(parameters)
-	if err != nil {
-		panic(err)
-	}
-	db, err := sql.Open(parameters.DriverName, connString)
-	d.db = db
-	return err
-}
-
 func (d *Database) GetCurrentState() (State, error) {
 	nextH, prevH, err := d.getNextHeight()
 	if err != nil {
@@ -387,7 +374,8 @@ func (d *Database) getHeight(i int) (string, error) {
 	return hash, nil
 }
 
-func getConnString(params *Config) (string, error) {
+func getConnString(params *Config, datadir string) (string, error) {
+
 	var connString string
 	switch params.DriverName {
 	case "pgx":
@@ -395,12 +383,9 @@ func getConnString(params *Config) (string, error) {
 			"password=%s dbname=%s sslmode=disable",
 			params.HostPort, params.Hostname, params.Username, params.Password, params.DatabaseName)
 	case "sqlite3":
-		path, err := os.Getwd()
-		if err != nil {
-			return "", err
-		}
-		connString = filepath.Join(path, "cmd/ogen-d/db") + "/" + params.DatabaseName + ".db?_foreign_keys=on"
+		connString = path.Join(datadir, params.DatabaseName + ".db?_foreign_keys=on")
 	}
+
 	if connString == "" {
 		return "", errors.New("dbms not specified")
 	}
@@ -418,26 +403,33 @@ type Config struct {
 }
 
 // NewDBClient creates a db client
-func NewDBClient(parameters *Config) *Database {
-	connString, err := getConnString(parameters)
+func NewDBClient(parameters *Config, path string, log logger.Logger) *Database {
+
+	connString, err := getConnString(parameters, path)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(connString)
+
 	db, err := sql.Open(parameters.DriverName, connString)
 	if err != nil {
 		panic(err)
 	}
+
 	// check the connection to the db
 	err = db.Ping()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("You are Successfully connected!")
+
+
 	client := &Database{
+		log: log,
 		name:    parameters.DatabaseName,
 		db:      db,
 		queries: map[string]string{},
 	}
+
+	client.log.Info("database connection established")
+
 	return client
 }
