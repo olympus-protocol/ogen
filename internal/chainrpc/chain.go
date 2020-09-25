@@ -27,6 +27,7 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 
 	st := s.chain.State()
 	tip := st.Tip()
+	tipState := st.TipState()
 	validators := st.TipState().GetValidators()
 	return &proto.ChainInfo{
 		BlockHash:   tip.Hash.String(),
@@ -38,6 +39,9 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 			Exited:      validators.Exited,
 			Starting:    validators.Starting,
 		},
+		LastJustifiedEpoch: tipState.GetJustifiedEpoch(),
+		LastFinalizedEpoch: tipState.GetFinalizedEpoch(),
+		LastJustifiedHash:  tipState.GetJustifiedEpochHash().String(),
 	}, nil
 }
 

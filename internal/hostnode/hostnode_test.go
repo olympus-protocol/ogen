@@ -88,8 +88,8 @@ func TestHostNode(t *testing.T) {
 	peers := hn.PeersConnected()
 	assert.Equal(t, 1, peers)
 
-//	pinfo = hn.GetPeerInfos()
-//	assert.Equal(t, pstore_pb.ProtoAddr{Multiaddr: npinfo.Addrs[0]}, pinfo)
+	//	pinfo = hn.GetPeerInfos()
+	//	assert.Equal(t, pstore_pb.ProtoAddr{Multiaddr: npinfo.Addrs[0]}, pinfo)
 
 	err = hn.Start()
 	assert.NoError(t, err)

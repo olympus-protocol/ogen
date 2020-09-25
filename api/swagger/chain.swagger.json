@@ -429,6 +429,17 @@
         },
         "validators": {
           "$ref": "#/definitions/ValidatorsInfo"
+        },
+        "last_justified_epoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "last_finalized_epoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "last_justified_hash": {
+          "type": "string"
         }
       }
     },

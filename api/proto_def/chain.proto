@@ -135,6 +135,9 @@ message ChainInfo {
     string block_hash = 1;
     uint64 block_height = 2;
     ValidatorsInfo validators = 3;
+    uint64 last_justified_epoch = 4;
+    uint64 last_finalized_epoch = 5;
+    string last_justified_hash = 6;
 }
 
 message AccountInfo {
