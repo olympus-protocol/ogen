@@ -25,6 +25,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+var GlobalDataFolder string
+
 // loadOgen is the main function to run ogen.
 func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams params.ChainParams) error {
 	db, err := blockdb.NewBadgerDB(configParams.DataFolder, currParams, log)
@@ -59,7 +61,7 @@ func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile,
 
 		chainFileBytesHash := chainhash.HashH(chainFileBytes)
 		if !chainFileBytesHash.IsEqual(&currParams.ChainFileHash) {
-			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash, chainFileBytesHash)
+			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash.String(), chainFileBytesHash)
 		}
 
 		err = ioutil.WriteFile(path, chainFileBytes, 0644)
@@ -86,8 +88,6 @@ func getChainFile(path string, currParams params.ChainParams) (*state.ChainFile,
 }
 
 var (
-	DataFolder string
-
 	rootCmd = &cobra.Command{
 		Use:   "ogen",
 		Short: "Ogen is a Go Olympus implementation",
@@ -97,7 +97,7 @@ Next generation blockchain secured by CASPER.`,
 			var log logger.Logger
 
 			if viper.GetBool("log_file") {
-				logFile, err := os.OpenFile(path.Join(DataFolder, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
+				logFile, err := os.OpenFile(path.Join(GlobalDataFolder, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
 				if err != nil {
 					panic(err)
 				}
@@ -120,7 +120,7 @@ Next generation blockchain secured by CASPER.`,
 				currParams = params.TestNet
 			}
 
-			cf, err := getChainFile(path.Join(DataFolder, "chain.json"), currParams)
+			cf, err := getChainFile(path.Join(GlobalDataFolder, "chain.json"), currParams)
 			if err != nil {
 				log.Fatalf("could not load chainfile: %s", err)
 			}
@@ -158,7 +158,7 @@ Next generation blockchain secured by CASPER.`,
 			}
 
 			c := &server.GlobalConfig{
-				DataFolder: DataFolder,
+				DataFolder: GlobalDataFolder,
 
 				NetworkName:  networkName,
 				InitialNodes: addNodes,
@@ -201,7 +201,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&DataFolder, "datadir", "", "Directory to store the chain data.")
+	rootCmd.PersistentFlags().StringVar(&GlobalDataFolder, "datadir", "", "Directory to store the chain data.")
 
 	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
 	rootCmd.Flags().StringSlice("add", []string{}, "IP addresses of nodes to add.")
@@ -225,9 +225,9 @@ func init() {
 }
 
 func initConfig() {
-	if DataFolder != "" {
+	if GlobalDataFolder != "" {
 		// Use config file from the flag.
-		viper.AddConfigPath(DataFolder)
+		viper.AddConfigPath(GlobalDataFolder)
 		viper.SetConfigName("config")
 	} else {
 		configDir, err := os.UserConfigDir()
@@ -244,7 +244,7 @@ func initConfig() {
 			}
 		}
 
-		DataFolder = ogenDir
+		GlobalDataFolder = ogenDir
 
 		// Search config in home directory with name ".cobra" (without extension).
 		viper.AddConfigPath(ogenDir)

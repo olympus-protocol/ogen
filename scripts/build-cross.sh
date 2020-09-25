@@ -8,8 +8,7 @@ CC=x86_64-linux-gnu-gcc CXX=x86_64-linux-gnu-g++  CGO_ENABLED=1 GOOS=linux GOARC
 
 mkdir $FOLDER_NAME
 mv ogen ./$FOLDER_NAME
-mv ogen-cli ./$FOLDER_NAME
-mv migration ./$FOLDER_NAME
+
 tar -czvf ogen-$OGEN_VERSION-linux-amd64.tar.gz ./$FOLDER_NAME
 rm -r ./$FOLDER_NAME
 
@@ -18,8 +17,7 @@ CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ CGO_ENABLED=1 GOOS=linux GOAR
 
 mkdir $FOLDER_NAME
 mv ogen ./$FOLDER_NAME
-mv ogen-cli ./$FOLDER_NAME
-mv migration ./$FOLDER_NAME
+
 tar -czvf ogen-$OGEN_VERSION-linux-arm64.tar.gz ./$FOLDER_NAME
 rm -r ./$FOLDER_NAME
 
@@ -28,8 +26,7 @@ CXX=x86_64-apple-darwin19-clang++ CC=x86_64-apple-darwin19-clang CGO_ENABLED=1 G
 
 mkdir $FOLDER_NAME
 mv ogen ./$FOLDER_NAME
-mv ogen-cli ./$FOLDER_NAME
-mv migration ./$FOLDER_NAME
+
 tar -czvf ogen-$OGEN_VERSION-osx-amd64.tar.gz ./$FOLDER_NAME
 rm -r ./$FOLDER_NAME
 
@@ -38,7 +35,6 @@ CXX=x86_64-w64-mingw32-c++ CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows 
 
 mkdir $FOLDER_NAME
 mv ogen.exe ./$FOLDER_NAME
-mv ogen-cli.exe ./$FOLDER_NAME
-mv migration.exe ./$FOLDER_NAME
+
 zip -r ogen-$OGEN_VERSION-windows-amd64.zip ./$FOLDER_NAME
 rm -r ./$FOLDER_NAME
