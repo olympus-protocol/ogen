@@ -1,4 +1,4 @@
-package db
+package indexer_test
 
 import (
 	"bytes"

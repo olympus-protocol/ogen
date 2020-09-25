@@ -1,0 +1,208 @@
+package commands
+
+import (
+	"context"
+	"encoding/hex"
+	"fmt"
+	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/cmd/ogen/indexer"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/olympus-protocol/ogen/pkg/rpcclient"
+	"github.com/spf13/cobra"
+	"io"
+	"sync"
+)
+
+// TODO provide a dynanmic way for the user to load the info
+
+const (
+	hostname = "localhost"
+	hostport = 5432
+	username = "postgres"
+	password = "testpass"
+	dbname   = "chaindb"
+	driver   = "sqlite3"
+)
+
+func init() {
+	indexerCmd.Flags().StringVar(&rpcHost, "rpc_host", "127.0.0.1:24127", "IP and port of the RPC Server to connect")
+
+	rootCmd.AddCommand(indexerCmd)
+}
+
+// Indexer is the module that allows operations across multiple services.
+type Indexer struct {
+	ctx       context.Context
+	rpcClient *rpcclient.Client
+	dbClient  *indexer.Database
+}
+
+func (i *Indexer) Run() {
+	i.blockSync()
+}
+
+func (i *Indexer) initialSync() {
+	// ensure the tables are created for the db
+	err := i.dbClient.InitializeTables()
+	if err != nil {
+		panic(err)
+	}
+
+	//get the saved state
+	indexState, err := i.dbClient.GetCurrentState()
+	if err != nil {
+		panic(err)
+	}
+
+	var latestBHash string
+	if indexState.Blocks == 0 && indexState.LastBlockHash == "" {
+		genesis := primitives.GetGenesisBlock()
+		genesisHash := genesis.Hash()
+		err = i.dbClient.InsertBlock(genesis)
+		if err != nil {
+			fmt.Println("unable to register genesis block")
+			return
+		}
+		latestBHash = genesisHash.String()
+	} else {
+		latestBHash = indexState.LastBlockHash
+	}
+	syncClient, err := i.rpcClient.Chain().Sync(context.Background(), &proto.Hash{Hash: latestBHash})
+	if err != nil {
+		panic("unable to initialize sync client")
+	}
+
+	blockCount := 0
+	for {
+		res, err := syncClient.Recv()
+		if err == io.EOF || err != nil {
+			fmt.Println(err)
+			_ = syncClient.CloseSend()
+			break
+		}
+		blockBytes, err := hex.DecodeString(res.Data)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		var blockOgen primitives.Block
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		err = i.dbClient.InsertBlock(blockOgen)
+		if err != nil {
+			fmt.Println("unable to insert")
+			break
+		} else {
+			blockCount++
+		}
+	}
+	fmt.Printf("registered %v blocks", blockCount)
+}
+
+func (i *Indexer) blockSync(wg *sync.WaitGroup) {
+sync:
+	i.initialSync()
+	subscribe, err := i.rpcClient.Chain().SubscribeBlocks(context.Background(), &proto.Empty{})
+	if err != nil {
+		panic("unable to initialize subscription client")
+	}
+	wg.Done()
+	for {
+		res, err := subscribe.Recv()
+		if err == io.EOF || err != nil {
+			// listener closed restart with sync
+			goto sync
+		}
+		// To make sure the explorer is always synced, every new block we reinsert the last 5
+		blockBytes, err := hex.DecodeString(res.Data)
+		if err != nil {
+			fmt.Println("unable to parse block")
+		}
+		var blockOgen primitives.Block
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to unmarshal block")
+		}
+		err = i.dbClient.InsertBlock(blockOgen)
+		if err != nil {
+			fmt.Println("unable to insert")
+			break
+		}
+		fmt.Println("received and parsed new block")
+	}
+}
+
+func (i *Indexer) customSync(blockGap int) {
+
+	//get the saved state
+	customState, err := i.dbClient.GetSpecificState(blockGap)
+	if err != nil {
+		panic(err)
+	}
+
+	syncClient, err := i.rpcClient.Chain().Sync(context.Background(), &proto.Hash{Hash: customState.LastBlockHash})
+	if err != nil {
+		panic("unable to initialize sync client")
+	}
+
+	blockCount := 0
+	for {
+		res, err := syncClient.Recv()
+		if err == io.EOF || err != nil {
+			fmt.Println(err)
+			_ = syncClient.CloseSend()
+			break
+		}
+		blockBytes, err := hex.DecodeString(res.Data)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		var blockOgen primitives.Block
+		err = blockOgen.Unmarshal(blockBytes)
+		if err != nil {
+			fmt.Println("unable to parse block")
+			break
+		}
+		err = i.dbClient.InsertBlock(blockOgen)
+		if err != nil {
+			fmt.Println("unable to insert")
+			break
+		} else {
+			blockCount++
+		}
+	}
+	fmt.Printf("registered %v blocks", blockCount)
+}
+
+var indexerCmd = &cobra.Command{
+	Use:   "indexer",
+	Short: "Execute the and indexer to organize the blockchain information through RPC",
+	Long:  `Execute the and indexer to organize the blockchain information through RPC`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		rpcClient := rpcclient.NewRPCClient(rpcHost, DataFolder, true)
+
+		dbp := &indexer.Config{
+			Hostname:     hostname,
+			HostPort:     hostport,
+			Username:     username,
+			Password:     password,
+			DatabaseName: dbname,
+			DriverName:   driver,
+		}
+		dbClient := indexer.NewDBClient(dbp)
+
+		indexer := Indexer{
+			ctx:       context.Background(),
+			rpcClient: rpcClient,
+			dbClient:  dbClient,
+		}
+
+		go indexer.Run()
+		<-indexer.ctx.Done()
+	},
+}

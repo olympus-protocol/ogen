@@ -6,9 +6,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"os"
-	"path"
 	strings "strings"
 )
 
@@ -71,17 +68,8 @@ type Empty struct{}
 
 // CLI is the module that allows operations across multiple services.
 type CLI struct {
-	rpcClient *rpcclient.RPCClient
+	rpcClient *rpcclient.Client
 }
-
-var ctrlCKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
-	Key: prompt.ControlC,
-	Fn:  func(*prompt.Buffer) { os.Exit(0) },
-})
-var ctrlDKeybind = prompt.OptionAddKeyBind(prompt.KeyBind{
-	Key: prompt.ControlD,
-	Fn:  func(*prompt.Buffer) { os.Exit(0) },
-})
 
 var rpcHost string
 
@@ -106,7 +94,7 @@ func (c *CLI) Run(optArgs []string) {
 	for {
 		var t string
 		if len(optArgs) == 0 {
-			t = prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "), ctrlCKeybind, ctrlDKeybind)
+			t = prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "))
 		} else {
 			t = strings.Join(optArgs, " ")
 			optArgs[0] = "exit"
@@ -239,40 +227,14 @@ func (c *CLI) Run(optArgs []string) {
 	}
 }
 
-func newCli(rpcClient *rpcclient.RPCClient) *CLI {
+func newCli(rpcClient *rpcclient.Client) *CLI {
 	return &CLI{
 		rpcClient: rpcClient,
 	}
 }
 
 func StartConsole(host string, args []string) {
-	DataFolder := viper.GetString("datadir")
-	if DataFolder != "" {
-		// Use config file from the flag.
-		viper.AddConfigPath(DataFolder)
-		viper.SetConfigName("config")
-	} else {
-		configDir, err := os.UserConfigDir()
-		if err != nil {
-			panic(err)
-		}
-
-		ogenDir := path.Join(configDir, "ogen")
-
-		if _, err := os.Stat(ogenDir); os.IsNotExist(err) {
-			err = os.Mkdir(ogenDir, 0744)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		DataFolder = ogenDir
-
-		// Search config in home directory with name ".cobra" (without extension).
-		viper.AddConfigPath(ogenDir)
-		viper.SetConfigName("config")
-	}
-	rpcClient := rpcclient.NewRPCClient(host, DataFolder)
+	rpcClient := rpcclient.NewRPCClient(host, DataFolder, false)
 	cli := newCli(rpcClient)
 	cli.Run(args)
 }
