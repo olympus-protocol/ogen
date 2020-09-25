@@ -8,7 +8,7 @@ import (
 	"fmt"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/olympus-protocol/ogen/internal/logger"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"io/ioutil"
 	"os"
