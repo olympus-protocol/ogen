@@ -64,6 +64,7 @@ func TestMsgTypeCreation(t *testing.T) {
 	createMsgVote(t)
 	createMsgValidatorStart(t)
 	createMsgGovernance(t)
+	createMsgFinalization(t)
 }
 
 func createMsgVersion(t *testing.T) {
@@ -231,5 +232,19 @@ func createMsgGovernance(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, ok := msg.(*p2p.MsgGovernance)
+	assert.True(t, ok)
+}
+
+func createMsgFinalization(t *testing.T) {
+	v := new(p2p.MsgFinalization)
+	buf := bytes.NewBuffer([]byte{})
+
+	err := p2p.WriteMessage(buf, v, 1)
+	assert.NoError(t, err)
+
+	msg, err := p2p.ReadMessage(buf, 1)
+	assert.NoError(t, err)
+
+	_, ok := msg.(*p2p.MsgFinalization)
 	assert.True(t, ok)
 }

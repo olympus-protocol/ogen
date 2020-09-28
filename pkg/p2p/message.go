@@ -47,6 +47,8 @@ const (
 	MsgGetBlocksCmd = "getblocks"
 	// MsgSyncEnd announce the syncing node the stream finished
 	MsgSyncEndCmd = "syncend"
+	// MsgFinalizationCmd announce a peer to reached state finalization
+	MsgFinalizationCmd = "finalized"
 )
 
 // Message interface for all the messages
@@ -104,6 +106,8 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgGovernance{}
 	case MsgSyncEndCmd:
 		msg = &MsgSyncEnd{}
+	case MsgFinalizationCmd:
+		msg = &MsgFinalization{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

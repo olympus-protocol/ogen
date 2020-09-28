@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/rand"
 	"sync"
@@ -21,8 +22,18 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+const MinPeersToStart = 4
+
 type peerInfo struct {
-	TipBlockSlot uint64
+	TipSlot         uint64
+	TipHeight       uint64
+	TipHash         chainhash.Hash
+	JustifiedSlot   uint64
+	JustifiedHeight uint64
+	JustifiedHash   chainhash.Hash
+	FinalizedSlot   uint64
+	FinalizedHeight uint64
+	FinalizedHash   chainhash.Hash
 }
 
 var (
@@ -116,21 +127,44 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	return sp, nil
 }
 
+func (sp *syncProtocol) initialBlockDownload() {
+	sp.waitForPeers()
+}
+
+func (sp *syncProtocol) waitForPeers() {
+	for {
+		time.Sleep(time.Second * 1)
+		if sp.host.PeersConnected() < MinPeersToStart {
+			continue
+		}
+		break
+	}
+}
+
+func (sp *syncProtocol) filterPeers() {
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	//myInfo := sp.versionMsg()
+
+	//peersAhead := make(map[peer.ID]uint64)
+	//peersBehind := make(map[peer.ID]uint64)
+	//peersEqual := make(map[peer.ID]uint64)
+	//
+	//
+	//for id, p := range sp.peersTrack {
+
+	//}
+}
+
 // askForBlocks will ask a peer for blocks.
 func (sp *syncProtocol) askForBlocks(id peer.ID) {
 
 	sp.peersTrackLock.Lock()
 	defer sp.peersTrackLock.Unlock()
-	peerSync, ok := sp.peersTrack[id]
-	if !ok {
-		return
-	}
-	// Ignore if the peer is tracked lower than us.
-	if peerSync.TipBlockSlot <= sp.chain.State().TipState().GetSlot() {
-		sp.onSync = false
-		sp.withPeer = ""
-		return
-	}
+	//peerSync, ok := sp.peersTrack[id]
+	//if !ok {
+	//	return
+	//}
 
 	sp.onSync = true
 	sp.withPeer = id
@@ -191,6 +225,44 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 	return nil
 }
 
+func (sp *syncProtocol) listenForFinalizations() error {
+	finTopic, err := sp.host.Topic(p2p.MsgFinalizationCmd)
+	if err != nil {
+		return err
+	}
+
+	finSub, err := finTopic.Subscribe()
+	if err != nil {
+		return err
+	}
+
+	go listenToTopic(sp.ctx, finSub, func(data []byte, id peer.ID) {
+		if id == sp.host.GetHost().ID() {
+			return
+		}
+
+		buf := bytes.NewBuffer(data)
+
+		msg, err := p2p.ReadMessage(buf, sp.host.GetNetMagic())
+
+		if err != nil {
+			sp.log.Errorf("error decoding msg from peer %s", id)
+			return
+		}
+
+		fin, ok := msg.(*p2p.MsgFinalization)
+		if !ok {
+			sp.log.Errorf("wrong message type on finalization subscription from peer %s", id)
+			return
+		}
+
+		if err := sp.handleFinalization(id, fin); err != nil {
+			sp.log.Errorf("error handling incoming finalization from peer: %s", err)
+		}
+	})
+	return nil
+}
+
 func (sp *syncProtocol) blockHandler(id peer.ID, msg p2p.Message) error {
 	bmsg, ok := msg.(*p2p.MsgBlock)
 	if !ok {
@@ -216,12 +288,6 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 }
 
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
-	sp.peersTrackLock.Lock()
-	_, ok := sp.peersTrack[id]
-	if ok {
-		sp.peersTrack[id].TipBlockSlot = block.Header.Slot
-	}
-	sp.peersTrackLock.Unlock()
 	if sp.onSync && sp.withPeer != id {
 		return nil
 	}
@@ -241,6 +307,28 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			return nil
 		}
 	}
+	return nil
+}
+
+func (sp *syncProtocol) handleFinalization(id peer.ID, fin *p2p.MsgFinalization) error {
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	_, ok := sp.peersTrack[id]
+	if !ok {
+		return nil
+	}
+	sp.peersTrack[id] = &peerInfo{
+		TipSlot:         fin.TipSlot,
+		TipHeight:       fin.Tip,
+		TipHash:         fin.TipHash,
+		JustifiedSlot:   fin.JustifiedSlot,
+		JustifiedHeight: fin.JustifiedHeight,
+		JustifiedHash:   fin.JustifiedHash,
+		FinalizedSlot:   fin.FinalizedSlot,
+		FinalizedHeight: fin.FinalizedHeight,
+		FinalizedHash:   fin.FinalizedHash,
+	}
+
 	return nil
 }
 
@@ -328,8 +416,17 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
-		TipBlockSlot: theirVersion.TipSlot,
+		TipSlot:         theirVersion.TipSlot,
+		TipHeight:       theirVersion.Tip,
+		TipHash:         theirVersion.TipHash,
+		JustifiedSlot:   theirVersion.JustifiedSlot,
+		JustifiedHeight: theirVersion.JustifiedHeight,
+		JustifiedHash:   theirVersion.JustifiedHash,
+		FinalizedSlot:   theirVersion.FinalizedSlot,
+		FinalizedHeight: theirVersion.FinalizedHeight,
+		FinalizedHash:   theirVersion.FinalizedHash,
 	}
+
 	sp.peersTrackLock.Unlock()
 
 	go sp.askForBlocks(id)
@@ -338,16 +435,25 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 }
 
 func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
-	lastSlot := sp.chain.State().Tip().Slot
-	tipState := sp.chain.State().TipState()
+
+	justified, _ := sp.chain.State().GetJustifiedHead()
+	finalized, _ := sp.chain.State().GetFinalizedHead()
+
+	tip := sp.chain.State().Chain().Tip()
+
 	buf := make([]byte, 8)
 	rand.Read(buf)
 	msg := &p2p.MsgVersion{
-		Nonce:              binary.LittleEndian.Uint64(buf),
-		TipSlot:            lastSlot,
-		Timestamp:          uint64(time.Now().Unix()),
-		LastJustifiedHash:  tipState.GetJustifiedEpochHash(),
-		LastJustifiedEpoch: tipState.GetJustifiedEpoch(),
+		Tip:             tip.Height,
+		TipHash:         tip.Hash,
+		Nonce:           binary.LittleEndian.Uint64(buf),
+		Timestamp:       uint64(time.Now().Unix()),
+		JustifiedSlot:   justified.Slot,
+		JustifiedHeight: justified.Height,
+		JustifiedHash:   justified.Hash,
+		FinalizedSlot:   finalized.Slot,
+		FinalizedHeight: finalized.Height,
+		FinalizedHash:   finalized.Hash,
 	}
 	return msg
 }
@@ -355,7 +461,7 @@ func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
 func (sp *syncProtocol) sendVersion(id peer.ID) {
 	if err := sp.protocolHandler.SendMessage(id, sp.versionMsg()); err != nil {
 		sp.log.Errorf("error sending version message: %s", err)
-		sp.host.DisconnectPeer(id)
+		_ = sp.host.DisconnectPeer(id)
 	}
 }
 
