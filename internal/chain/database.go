@@ -46,7 +46,7 @@ func (s *stateService) initializeDatabase(txn blockdb.Database, blockNode *chain
 }
 
 func (s *stateService) loadBlockIndex(txn blockdb.Database, genesisHash chainhash.Hash) error {
-	tip, err := txn.GetTip()
+	tip, err := txn.GetJustifiedHead()
 	if err != nil {
 		return err
 	}
