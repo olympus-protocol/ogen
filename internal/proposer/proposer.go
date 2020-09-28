@@ -167,11 +167,11 @@ func (p *proposer) ProposeBlocks() {
 		case <-blockTimer.C:
 
 			// Check if we're an attester for this slot
-			//if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-			//	blockTimer = time.NewTimer(time.Second * 5)
-			//	p.log.Info("blockchain not synced... trying to vote in 5 seconds")
-			//	continue
-			//}
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+				blockTimer = time.NewTimer(time.Second * 5)
+				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
+				continue
+			}
 
 			tip := p.chain.State().Tip()
 			tipHash := tip.Hash
@@ -319,11 +319,11 @@ func (p *proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 
 			// Check if we're an attester for this slot
-			//if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-			//	voteTimer = time.NewTimer(time.Second * 5)
-			//	p.log.Info("blockchain not synced... trying to vote in 5 seconds")
-			//	continue
-			//}
+			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+				voteTimer = time.NewTimer(time.Second * 5)
+				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
+				continue
+			}
 
 			s := p.chain.State()
 
