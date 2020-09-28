@@ -364,6 +364,7 @@ func NewStateService(log logger.Logger, ip state.InitializationParameters, param
 		latestVotes: make(map[uint64]*primitives.MultiValidatorVote),
 		db:          db,
 	}
+
 	err = ss.initChainState(db, genesisState)
 	if err != nil {
 		return nil, err

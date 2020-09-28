@@ -1,8 +1,10 @@
 package hostnode
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"io"
 	"strings"
 	"sync"
@@ -21,6 +23,7 @@ type ProtocolHandler interface {
 	RegisterHandler(messageName string, handler MessageHandler) error
 	receiveMessages(id peer.ID, r io.Reader)
 	SendMessage(toPeer peer.ID, msg p2p.Message) error
+	SendFinalizedMessage(msg *p2p.MsgFinalization) error
 	Listen(network.Network, multiaddr.Multiaddr)
 	ListenClose(network.Network, multiaddr.Multiaddr)
 	Connected(net network.Network, conn network.Conn)
@@ -58,7 +61,8 @@ type protocolHandler struct {
 	notifees    []ConnectionManagerNotifee
 	notifeeLock sync.Mutex
 
-	log logger.Logger
+	log      logger.Logger
+	finTopic *pubsub.Topic
 }
 
 // ConnectionManagerNotifee is a notifee for the connection manager.
@@ -68,7 +72,11 @@ type ConnectionManagerNotifee interface {
 }
 
 // newProtocolHandler constructs a new protocol handler for a specific protocol ID.
-func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, config Config) ProtocolHandler {
+func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, config Config) (ProtocolHandler, error) {
+	finTopic, err := host.Topic(p2p.MsgFinalizationCmd)
+	if err != nil {
+		return nil, err
+	}
 	ph := &protocolHandler{
 		ID:               id,
 		host:             host,
@@ -77,12 +85,13 @@ func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, conf
 		ctx:              ctx,
 		notifees:         make([]ConnectionManagerNotifee, 0),
 		log:              config.Log,
+		finTopic:         finTopic,
 	}
 
 	host.SetStreamHandler(id, ph.HandleStream)
 	host.Notify(ph)
 
-	return ph
+	return ph, nil
 }
 
 // RegisterHandler registers a handler for a protocol.
@@ -198,6 +207,15 @@ func (p *protocolHandler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
 	}
 	msgsChan <- msg
 	return nil
+}
+
+func (p *protocolHandler) SendFinalizedMessage(msg *p2p.MsgFinalization) error {
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, p.host.GetNetMagic())
+	if err != nil {
+		return err
+	}
+	return p.finTopic.Publish(p.ctx, buf.Bytes())
 }
 
 // Listen is called when we start listening on an address.

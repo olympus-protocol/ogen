@@ -78,6 +78,8 @@ type syncProtocol struct {
 
 	onSync   bool
 	withPeer peer.ID
+
+	lastFinalizedEpoch uint64
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -93,7 +95,10 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
 func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
-	ph := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
+	ph, err := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
+	if err != nil {
+		return nil, err
+	}
 	sp := &syncProtocol{
 		host:            host,
 		config:          config,
@@ -110,13 +115,24 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
+
 	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
 		return nil, err
 	}
+
 	if err := ph.RegisterHandler(p2p.MsgBlockCmd, sp.blockHandler); err != nil {
 		return nil, err
 	}
+
 	if err := ph.RegisterHandler(p2p.MsgSyncEndCmd, sp.syncEndHandler); err != nil {
+		return nil, err
+	}
+
+	if err := ph.RegisterHandler(p2p.MsgFinalizationCmd, sp.handleFinalization); err != nil {
+		return nil, err
+	}
+
+	if err := sp.listenForFinalizations(); err != nil {
 		return nil, err
 	}
 
@@ -250,13 +266,7 @@ func (sp *syncProtocol) listenForFinalizations() error {
 			return
 		}
 
-		fin, ok := msg.(*p2p.MsgFinalization)
-		if !ok {
-			sp.log.Errorf("wrong message type on finalization subscription from peer %s", id)
-			return
-		}
-
-		if err := sp.handleFinalization(id, fin); err != nil {
+		if err := sp.handleFinalization(id, msg); err != nil {
 			sp.log.Errorf("error handling incoming finalization from peer: %s", err)
 		}
 	})
@@ -310,10 +320,20 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 	return nil
 }
 
-func (sp *syncProtocol) handleFinalization(id peer.ID, fin *p2p.MsgFinalization) error {
+func (sp *syncProtocol) handleFinalization(id peer.ID, msg p2p.Message) error {
+
+	fin, ok := msg.(*p2p.MsgFinalization)
+	if !ok {
+		return errors.New("non block msg")
+	}
+
+	if sp.host.GetHost().ID() == id {
+		return nil
+	}
+
 	sp.peersTrackLock.Lock()
 	defer sp.peersTrackLock.Unlock()
-	_, ok := sp.peersTrack[id]
+	_, ok = sp.peersTrack[id]
 	if !ok {
 		return nil
 	}
@@ -328,6 +348,8 @@ func (sp *syncProtocol) handleFinalization(id peer.ID, fin *p2p.MsgFinalization)
 		FinalizedHeight: fin.FinalizedHeight,
 		FinalizedHash:   fin.FinalizedHash,
 	}
+
+	sp.log.Tracef("Peer %s announced finalized at %d", sp.peersTrack[id].FinalizedHeight)
 
 	return nil
 }
@@ -349,6 +371,37 @@ func (sp *syncProtocol) processBlock(block *primitives.Block) error {
 	if err := sp.chain.ProcessBlock(block); err != nil {
 		return err
 	}
+
+	// The sync protocol has an internal tracker of the lastFinalizedEpoch to know
+	// when a new state is finalized.
+	// When this happens we should announce all blocks our new status.
+	fmt.Println(sp.chain.State().TipState().GetFinalizedEpoch())
+	fmt.Println(sp.lastFinalizedEpoch)
+	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch {
+
+		tip := sp.chain.State().Tip()
+		justified, _ := sp.chain.State().GetJustifiedHead()
+		finalized, _ := sp.chain.State().GetFinalizedHead()
+
+		msg := &p2p.MsgFinalization{
+			Tip:             tip.Height,
+			TipSlot:         tip.Slot,
+			TipHash:         tip.Hash,
+			JustifiedSlot:   justified.Slot,
+			JustifiedHeight: justified.Height,
+			JustifiedHash:   justified.Hash,
+			FinalizedSlot:   finalized.Slot,
+			FinalizedHeight: finalized.Height,
+			FinalizedHash:   finalized.Hash,
+		}
+
+		err := sp.protocolHandler.SendFinalizedMessage(msg)
+		if err != nil {
+			sp.log.Error(err)
+		}
+	}
+
+	sp.lastFinalizedEpoch = sp.chain.State().TipState().GetFinalizedEpoch()
 
 	return nil
 }
