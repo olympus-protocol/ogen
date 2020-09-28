@@ -232,10 +232,9 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.state.SetLatestVotesIfNeeded(validators, a)
 	}
 
-	//// TODO: remove when we have fork choice
-	//if err := ch.UpdateChainHead(blockHash); err != nil {
-	//	return err
-	//}
+	if err := ch.UpdateChainHead(blockHash); err != nil {
+		return err
+	}
 
 	view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
 	if err != nil {
