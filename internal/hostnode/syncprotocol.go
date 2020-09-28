@@ -122,7 +122,7 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 func (sp *syncProtocol) waitForPeers() {
 	for {
 		time.Sleep(time.Second * 1)
-		if sp.host.PeersConnected() < 2 {
+		if sp.host.PeersConnected() < 1 {
 			continue
 		}
 		break
