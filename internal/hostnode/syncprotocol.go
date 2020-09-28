@@ -121,10 +121,12 @@ func (sp *syncProtocol) askForBlocks(id peer.ID) {
 
 	sp.peersTrackLock.Lock()
 	defer sp.peersTrackLock.Unlock()
-	peerSync := sp.peersTrack[id]
-
+	peerSync, ok := sp.peersTrack[id]
+	if !ok {
+		return
+	}
 	// Ignore if the peer is tracked lower than us.
-	if peerSync.TipBlockSlot < sp.chain.State().TipState().GetSlot() {
+	if peerSync.TipBlockSlot <= sp.chain.State().TipState().GetSlot() {
 		sp.onSync = false
 		sp.withPeer = ""
 		return
@@ -329,6 +331,8 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		TipBlockSlot: theirVersion.TipSlot,
 	}
 	sp.peersTrackLock.Unlock()
+
+	go sp.askForBlocks(id)
 
 	return nil
 }
