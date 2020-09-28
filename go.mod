@@ -3,6 +3,7 @@ module github.com/olympus-protocol/ogen
 go 1.14
 
 require (
+	github.com/bcicen/grmon v0.0.0-20190725134940-6c3770b6af49
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/cjrd/allocate v0.0.0-20191115010018-022b87fe59fc
@@ -16,7 +17,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/herumi/bls-eth-go-binary v0.0.0-20200722032157-41fc56eba7b4
 	github.com/ipfs/go-ds-badger v0.2.3
-	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/libp2p/go-libp2p v0.11.0
 	github.com/libp2p/go-libp2p-circuit v0.3.1

@@ -161,7 +161,7 @@ func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Lo
 		return nil, err
 	}
 
-	ks := keystore.NewKeystore(configParams.DataFolder, logger)
+	ks := keystore.NewKeystore(configParams.DataFolder)
 
 	prop, err := proposer.NewProposer(logger, p, ch, hn, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
 	if err != nil {

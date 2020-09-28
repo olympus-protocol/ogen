@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	amount  int
-	network string
+	amount      int
+	network     string
+	genesistime int64
 )
 
 var genParamsCmd = &cobra.Command{
@@ -37,7 +38,7 @@ var genParamsCmd = &cobra.Command{
 
 		dirPath := "./cmd/ogen/initialization/"
 
-		ks := keystore.NewKeystore(dirPath, nil)
+		ks := keystore.NewKeystore(dirPath)
 
 		err := ks.CreateKeystore()
 		if err != nil {
@@ -63,6 +64,7 @@ var genParamsCmd = &cobra.Command{
 		initParams := initialization.NetworkInitialParams{
 			Validators:     validators,
 			PremineAddress: premine.PublicKey().ToAccount(),
+			GenesisTime:    genesistime,
 		}
 
 		if network != "mainnet" {
@@ -78,13 +80,15 @@ var genParamsCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+
+		_ = ks.Close()
 	},
 }
 
 func init() {
 	genParamsCmd.Flags().StringVar(&network, "network", "testnet", "network name to generate params to")
 	genParamsCmd.Flags().IntVar(&amount, "amount", 8, "amount of validators to generate")
-	genParamsCmd.Flags().IntVar(&amount, "genesistime", 0, "genesis time to start the chain")
+	genParamsCmd.Flags().Int64Var(&genesistime, "genesistime", 0, "genesis time to start the chain")
 
 	rootCmd.AddCommand(genParamsCmd)
 }

@@ -3,7 +3,6 @@ package keystore
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"go.etcd.io/bbolt"
 	"path"
 )
@@ -43,8 +42,6 @@ type Keystore interface {
 type keystore struct {
 	// db is a reference to the bbolt database
 	db *bbolt.DB
-	// log is a reference to the global logger
-	log logger.Logger
 	// datadir is the folder where the database is located
 	datadir string
 	// open prevents accessing the database when is closed
@@ -140,9 +137,8 @@ func (k *keystore) Close() error {
 }
 
 // NewKeystore creates a new keystore instance.
-func NewKeystore(datadir string, log logger.Logger) Keystore {
+func NewKeystore(datadir string) Keystore {
 	return &keystore{
-		log:     log,
 		open:    false,
 		datadir: datadir,
 	}
