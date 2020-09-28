@@ -1,12 +1,10 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/state"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -14,7 +12,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/server"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
@@ -42,46 +39,6 @@ func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger
 		return err
 	}
 	return nil
-}
-
-func getChainFile(path string, currParams *params.ChainParams) (*state.ChainFile, error) {
-	chainFile := new(state.ChainFile)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		resp, err := http.Get(currParams.ChainFileURL)
-		if err != nil {
-			return nil, err
-		}
-		chainFileBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		chainFileBytesHash := chainhash.HashH(chainFileBytes)
-		if !chainFileBytesHash.IsEqual(&currParams.ChainFileHash) {
-			return nil, fmt.Errorf("chain file hash does not match (expected: %s, got: %s)", currParams.ChainFileHash.String(), chainFileBytesHash)
-		}
-
-		err = ioutil.WriteFile(path, chainFileBytes, 0644)
-		if err != nil {
-			return nil, fmt.Errorf("unable to write chain file")
-		}
-
-		err = json.Unmarshal(chainFileBytes, chainFile)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		chainFileBytes, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-
-		err = json.Unmarshal(chainFileBytes, chainFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return chainFile, nil
 }
 
 var (
@@ -117,15 +74,31 @@ Next generation blockchain secured by CASPER.`,
 				currParams = &params.TestNet
 			}
 
-			cf, err := getChainFile(path.Join(GlobalDataFolder, "chain.json"), currParams)
+			initparams, err := initialization.LoadParams(currParams.Name)
 			if err != nil {
-				log.Fatalf("could not load chainfile: %s", err)
+				log.Error("no params specified for that network")
+				panic(err)
 			}
 
-			ip := cf.ToInitializationParameters()
-			genesisTime := viper.GetUint64("genesistime")
-			if genesisTime != 0 {
-				ip.GenesisTime = time.Unix(int64(genesisTime), 0)
+			initialValidators := make([]state.ValidatorInitialization, len(initparams.Validators))
+			for i := range initialValidators {
+				v := state.ValidatorInitialization{
+					PubKey:       initparams.Validators[i].PublicKey,
+					PayeeAddress: initparams.PremineAddress,
+				}
+				initialValidators[i] = v
+			}
+
+			var genesisTime time.Time
+			if initparams.GenesisTime == 0 {
+				genesisTime = time.Now()
+			} else {
+				genesisTime = time.Unix(initparams.GenesisTime, 0)
+			}
+			ip := state.InitializationParameters{
+				GenesisTime:       genesisTime,
+				InitialValidators: initialValidators,
+				PremineAddress:    initparams.PremineAddress,
 			}
 
 			rpcauth := ""
@@ -189,7 +162,6 @@ func init() {
 	rootCmd.Flags().String("rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
 	rootCmd.Flags().Bool("rpc_wallet", false, "Enable wallet access through RPC.")
 
-	rootCmd.Flags().Uint64("genesistime", 0, "Overrides the genesis time on chain.json")
 	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
 	rootCmd.PersistentFlags().Bool("log_file", false, "Display log information to file.")
 	rootCmd.PersistentFlags().Bool("pprof", false, "Run ogen with a profiling server attached.")

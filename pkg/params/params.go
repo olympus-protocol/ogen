@@ -17,8 +17,7 @@ var (
 	VersionNumber = (mayor * 100000) + (minor * 1000) + (patch * 10)
 	Version       = fmt.Sprintf("%d.%d.%d", mayor, minor, patch)
 
-	SyncProtocolID      = protocol.ID("/ogen/sync/" + Version)
-	DiscoveryProtocolID = protocol.ID("/ogen/discovery/" + Version)
+	SyncProtocolID = protocol.ID("/ogen/sync/" + Version)
 )
 
 // AccountPrefixes are prefixes used for account bech32 encoding.
@@ -63,9 +62,8 @@ type ChainParams struct {
 	CommunityOverrideQuotient    uint64
 	VotingPeriodSlots            uint64
 	InitialManagers              [][20]byte
-	ChainFileHash                chainhash.Hash
-	ChainFileURL                 string
 	RendevouzStrings             map[int]string
+	Relayers                     map[string]string
 }
 
 // Mainnet are chain parameters used for the main network.
@@ -123,8 +121,6 @@ var Mainnet = ChainParams{
 	},
 }
 
-var testnetChainFileHash, _ = chainhash.NewHashFromStr("0b01b1f56756f366622262c27b53b25f5dcfdab33c298865045ea612875afa9c")
-
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
 	Name:           "testnet",
@@ -148,8 +144,6 @@ var TestNet = ChainParams{
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
 	SlotDuration:                 30,
-	ChainFileHash:                testnetChainFileHash,
-	ChainFileURL:                 "https://public.oly.tech/olympus/testnet/chain.json",
 	MaxVotesPerBlock:             32,
 	MaxTxsPerBlock:               5000,
 	MaxTxsMultiPerBlock:          128,
@@ -178,6 +172,9 @@ var TestNet = ChainParams{
 	},
 	RendevouzStrings: map[int]string{
 		0: "do_not_go_gentle_into_that_good_night",
+	},
+	Relayers: map[string]string{
+		"cronos": "/ip4/134.122.114.214/tcp/25000/p2p/12D3KooWGEe3XVJXq9uPQa1QC5kzQrerhHRzXsZaBsytE2XYeP21",
 	},
 }
 
