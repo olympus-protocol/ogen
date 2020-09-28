@@ -96,8 +96,6 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 
 	sp.host.Notify(sp)
 
-	go sp.waitForPeers()
-
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
@@ -118,60 +116,29 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	return sp, nil
 }
 
-// waitForPeers will wait for 4 peers connected until start the sync routine.
-func (sp *syncProtocol) waitForPeers() {
-	for {
-		time.Sleep(time.Second * 1)
-		if sp.host.PeersConnected() < 1 {
-			continue
-		}
-		break
-	}
+// askForBlocks will ask a peer for blocks.
+func (sp *syncProtocol) askForBlocks(id peer.ID) {
 
-	go sp.startSync()
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	peerSync := sp.peersTrack[id]
 
-	return
-}
-
-// startSync will do some contextual checks among peers to evaluate our state and peers state.
-func (sp *syncProtocol) startSync() {
-	latestSlot := sp.chain.State().Tip().Slot
-
-	peersHigher := make(map[int]peer.ID)
-	peersSame := make(map[int]peer.ID)
-
-	index := 0
-	for id, p := range sp.peersTrack {
-		if p.TipBlockSlot > latestSlot {
-			peersHigher[index] = id
-		}
-		if p.TipBlockSlot == latestSlot {
-			peersSame[index] = id
-
-		}
-		index++
-	}
-
-	if len(peersHigher) > len(peersSame) {
-
-		r := rand.Intn(len(peersHigher))
-
-		peerToSync := peersHigher[r]
-		sp.onSync = true
-		sp.withPeer = peerToSync
-
-		err := sp.protocolHandler.SendMessage(peerToSync, &p2p.MsgGetBlocks{
-			LastBlockHash: sp.chain.State().Chain().Tip().Hash,
-		})
-
-		if err != nil {
-			sp.log.Error("unable to send block request msg")
-		}
-
-	} else {
+	// Ignore if the peer is tracked lower than us.
+	if peerSync.TipBlockSlot < sp.chain.State().TipState().GetSlot() {
 		sp.onSync = false
 		sp.withPeer = ""
 		return
+	}
+
+	sp.onSync = true
+	sp.withPeer = id
+
+	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+		LastBlockHash: sp.chain.State().Chain().Tip().Hash,
+	})
+
+	if err != nil {
+		sp.log.Error("unable to send block request msg")
 	}
 }
 
@@ -266,7 +233,7 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			if !sp.onSync {
 				sp.log.Error(err)
 				sp.log.Info("restarting sync process")
-				go sp.startSync()
+				go sp.askForBlocks(id)
 				return nil
 			}
 			return nil
