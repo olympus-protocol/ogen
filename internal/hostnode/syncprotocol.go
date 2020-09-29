@@ -395,7 +395,7 @@ func (sp *syncProtocol) processBlock(block *primitives.Block) error {
 	// when a new state is finalized.
 	// When this happens we should announce all blocks our new status.
 
-	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch {
+	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch && !sp.Syncing() {
 
 		tip := sp.chain.State().Tip()
 		justified, _ := sp.chain.State().GetJustifiedHead()
