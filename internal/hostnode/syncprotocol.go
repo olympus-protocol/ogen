@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/rand"
 	"sync"
@@ -21,8 +22,19 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+const MinPeersForSyncStart = 3
+
 type peerInfo struct {
-	TipBlockSlot uint64
+	ID              peer.ID
+	TipSlot         uint64
+	TipHeight       uint64
+	TipHash         chainhash.Hash
+	JustifiedSlot   uint64
+	JustifiedHeight uint64
+	JustifiedHash   chainhash.Hash
+	FinalizedSlot   uint64
+	FinalizedHeight uint64
+	FinalizedHash   chainhash.Hash
 }
 
 var (
@@ -67,6 +79,9 @@ type syncProtocol struct {
 
 	onSync   bool
 	withPeer peer.ID
+
+	lastFinalizedEpoch uint64
+	unknownBlocksCount uint64
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -82,32 +97,45 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
 func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
-	ph := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
+	ph, err := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
+	if err != nil {
+		return nil, err
+	}
 	sp := &syncProtocol{
-		host:            host,
-		config:          config,
-		log:             config.Log,
-		ctx:             ctx,
-		protocolHandler: ph,
-		chain:           chain,
-		onSync:          true,
-		peersTrack:      make(map[peer.ID]*peerInfo),
+		host:               host,
+		config:             config,
+		log:                config.Log,
+		ctx:                ctx,
+		protocolHandler:    ph,
+		chain:              chain,
+		onSync:             true,
+		peersTrack:         make(map[peer.ID]*peerInfo),
+		unknownBlocksCount: 0,
 	}
 
 	sp.host.Notify(sp)
 
-	go sp.waitForPeers()
-
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
+
 	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
 		return nil, err
 	}
+
 	if err := ph.RegisterHandler(p2p.MsgBlockCmd, sp.blockHandler); err != nil {
 		return nil, err
 	}
+
 	if err := ph.RegisterHandler(p2p.MsgSyncEndCmd, sp.syncEndHandler); err != nil {
+		return nil, err
+	}
+
+	if err := ph.RegisterHandler(p2p.MsgFinalizationCmd, sp.handleFinalization); err != nil {
+		return nil, err
+	}
+
+	if err := sp.listenForFinalizations(); err != nil {
 		return nil, err
 	}
 
@@ -115,63 +143,67 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
+	go sp.initialBlockDownload()
+
 	return sp, nil
 }
 
-// waitForPeers will wait for 4 peers connected until start the sync routine.
-func (sp *syncProtocol) waitForPeers() {
+func (sp *syncProtocol) initialBlockDownload() {
+
 	for {
 		time.Sleep(time.Second * 1)
-		if sp.host.PeersConnected() < 1 {
+		if sp.host.PeersConnected() < MinPeersForSyncStart {
 			continue
 		}
 		break
 	}
 
-	go sp.startSync()
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	myInfo := sp.versionMsg()
 
-	return
-}
+	var peersAhead []*peerInfo
+	var peersBehind []*peerInfo
+	var peersEqual []*peerInfo
 
-// startSync will do some contextual checks among peers to evaluate our state and peers state.
-func (sp *syncProtocol) startSync() {
-	latestSlot := sp.chain.State().Tip().Slot
-
-	peersHigher := make(map[int]peer.ID)
-	peersSame := make(map[int]peer.ID)
-
-	index := 0
-	for id, p := range sp.peersTrack {
-		if p.TipBlockSlot > latestSlot {
-			peersHigher[index] = id
+	for _, p := range sp.peersTrack {
+		if p.FinalizedHeight > myInfo.FinalizedHeight {
+			peersAhead = append(peersAhead, p)
 		}
-		if p.TipBlockSlot == latestSlot {
-			peersSame[index] = id
 
+		if p.FinalizedHeight == myInfo.FinalizedHeight {
+			peersEqual = append(peersEqual, p)
 		}
-		index++
+
+		if p.FinalizedHeight < myInfo.FinalizedHeight {
+			peersBehind = append(peersBehind, p)
+		}
 	}
 
-	if len(peersHigher) > len(peersSame) {
-
-		r := rand.Intn(len(peersHigher))
-
-		peerToSync := peersHigher[r]
-		sp.onSync = true
-		sp.withPeer = peerToSync
-
-		err := sp.protocolHandler.SendMessage(peerToSync, &p2p.MsgGetBlocks{
-			LastBlockHash: sp.chain.State().Chain().Tip().Hash,
-		})
-
-		if err != nil {
-			sp.log.Error("unable to send block request msg")
-		}
-
-	} else {
+	if len(peersAhead) == 0 {
 		sp.onSync = false
-		sp.withPeer = ""
 		return
+	}
+
+	r := rand.Intn(len(peersAhead))
+	peerSelected := peersAhead[r]
+
+	sp.askForBlocks(peerSelected.ID)
+
+}
+
+// askForBlocks will ask a peer for blocks.
+func (sp *syncProtocol) askForBlocks(id peer.ID) {
+
+	sp.onSync = true
+	sp.withPeer = id
+
+	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
+		LastBlockHash: sp.chain.State().Chain().Tip().Hash,
+	})
+
+	if err != nil {
+		sp.log.Error("unable to send block request msg")
 	}
 }
 
@@ -222,6 +254,38 @@ func (sp *syncProtocol) listenForBroadcasts() error {
 	return nil
 }
 
+func (sp *syncProtocol) listenForFinalizations() error {
+	finTopic, err := sp.host.Topic(p2p.MsgFinalizationCmd)
+	if err != nil {
+		return err
+	}
+
+	finSub, err := finTopic.Subscribe()
+	if err != nil {
+		return err
+	}
+
+	go listenToTopic(sp.ctx, finSub, func(data []byte, id peer.ID) {
+		if id == sp.host.GetHost().ID() {
+			return
+		}
+
+		buf := bytes.NewBuffer(data)
+
+		msg, err := p2p.ReadMessage(buf, sp.host.GetNetMagic())
+
+		if err != nil {
+			sp.log.Errorf("error decoding msg from peer %s", id)
+			return
+		}
+
+		if err := sp.handleFinalization(id, msg); err != nil {
+			sp.log.Errorf("error handling incoming finalization from peer: %s", err)
+		}
+	})
+	return nil
+}
+
 func (sp *syncProtocol) blockHandler(id peer.ID, msg p2p.Message) error {
 	bmsg, ok := msg.(*p2p.MsgBlock)
 	if !ok {
@@ -247,12 +311,6 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 }
 
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
-	sp.peersTrackLock.Lock()
-	_, ok := sp.peersTrack[id]
-	if ok {
-		sp.peersTrack[id].TipBlockSlot = block.Header.Slot
-	}
-	sp.peersTrackLock.Unlock()
 	if sp.onSync && sp.withPeer != id {
 		return nil
 	}
@@ -265,13 +323,53 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		if err == ErrorBlockParentUnknown {
 			if !sp.onSync {
 				sp.log.Error(err)
-				sp.log.Info("restarting sync process")
-				go sp.startSync()
+				// Wait until at least 5 unknown blocks are tried to parse to reinitialize initial block download.
+				sp.unknownBlocksCount += 1
+				fmt.Println(sp.unknownBlocksCount)
+				if sp.unknownBlocksCount == 5 {
+					sp.initialBlockDownload()
+					sp.unknownBlocksCount = 0
+					return nil
+				}
 				return nil
 			}
 			return nil
 		}
 	}
+	return nil
+}
+
+func (sp *syncProtocol) handleFinalization(id peer.ID, msg p2p.Message) error {
+
+	fin, ok := msg.(*p2p.MsgFinalization)
+	if !ok {
+		return errors.New("non block msg")
+	}
+
+	if sp.host.GetHost().ID() == id {
+		return nil
+	}
+
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	_, ok = sp.peersTrack[id]
+	if !ok {
+		return nil
+	}
+
+	sp.peersTrack[id] = &peerInfo{
+		ID:              id,
+		TipSlot:         fin.TipSlot,
+		TipHeight:       fin.Tip,
+		TipHash:         fin.TipHash,
+		JustifiedSlot:   fin.JustifiedSlot,
+		JustifiedHeight: fin.JustifiedHeight,
+		JustifiedHash:   fin.JustifiedHash,
+		FinalizedSlot:   fin.FinalizedSlot,
+		FinalizedHeight: fin.FinalizedHeight,
+		FinalizedHash:   fin.FinalizedHash,
+	}
+
 	return nil
 }
 
@@ -292,6 +390,36 @@ func (sp *syncProtocol) processBlock(block *primitives.Block) error {
 	if err := sp.chain.ProcessBlock(block); err != nil {
 		return err
 	}
+
+	// The sync protocol has an internal tracker of the lastFinalizedEpoch to know
+	// when a new state is finalized.
+	// When this happens we should announce all blocks our new status.
+
+	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch && !sp.Syncing() {
+
+		tip := sp.chain.State().Tip()
+		justified, _ := sp.chain.State().GetJustifiedHead()
+		finalized, _ := sp.chain.State().GetFinalizedHead()
+
+		msg := &p2p.MsgFinalization{
+			Tip:             tip.Height,
+			TipSlot:         tip.Slot,
+			TipHash:         tip.Hash,
+			JustifiedSlot:   justified.Slot,
+			JustifiedHeight: justified.Height,
+			JustifiedHash:   justified.Hash,
+			FinalizedSlot:   finalized.Slot,
+			FinalizedHeight: finalized.Height,
+			FinalizedHash:   finalized.Hash,
+		}
+
+		err := sp.protocolHandler.SendFinalizedMessage(msg)
+		if err != nil {
+			sp.log.Error(err)
+		}
+	}
+
+	sp.lastFinalizedEpoch = sp.chain.State().TipState().GetFinalizedEpoch()
 
 	return nil
 }
@@ -359,24 +487,43 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
-		TipBlockSlot: theirVersion.TipSlot,
+		ID:              id,
+		TipSlot:         theirVersion.TipSlot,
+		TipHeight:       theirVersion.Tip,
+		TipHash:         theirVersion.TipHash,
+		JustifiedSlot:   theirVersion.JustifiedSlot,
+		JustifiedHeight: theirVersion.JustifiedHeight,
+		JustifiedHash:   theirVersion.JustifiedHash,
+		FinalizedSlot:   theirVersion.FinalizedSlot,
+		FinalizedHeight: theirVersion.FinalizedHeight,
+		FinalizedHash:   theirVersion.FinalizedHash,
 	}
+
 	sp.peersTrackLock.Unlock()
 
 	return nil
 }
 
 func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
-	lastSlot := sp.chain.State().Tip().Slot
-	tipState := sp.chain.State().TipState()
+
+	justified, _ := sp.chain.State().GetJustifiedHead()
+	finalized, _ := sp.chain.State().GetFinalizedHead()
+
+	tip := sp.chain.State().Chain().Tip()
+
 	buf := make([]byte, 8)
 	rand.Read(buf)
 	msg := &p2p.MsgVersion{
-		Nonce:              binary.LittleEndian.Uint64(buf),
-		TipSlot:            lastSlot,
-		Timestamp:          uint64(time.Now().Unix()),
-		LastJustifiedHash:  tipState.GetJustifiedEpochHash(),
-		LastJustifiedEpoch: tipState.GetJustifiedEpoch(),
+		Tip:             tip.Height,
+		TipHash:         tip.Hash,
+		Nonce:           binary.LittleEndian.Uint64(buf),
+		Timestamp:       uint64(time.Now().Unix()),
+		JustifiedSlot:   justified.Slot,
+		JustifiedHeight: justified.Height,
+		JustifiedHash:   justified.Hash,
+		FinalizedSlot:   finalized.Slot,
+		FinalizedHeight: finalized.Height,
+		FinalizedHash:   finalized.Hash,
 	}
 	return msg
 }
@@ -384,7 +531,7 @@ func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
 func (sp *syncProtocol) sendVersion(id peer.ID) {
 	if err := sp.protocolHandler.SendMessage(id, sp.versionMsg()); err != nil {
 		sp.log.Errorf("error sending version message: %s", err)
-		sp.host.DisconnectPeer(id)
+		_ = sp.host.DisconnectPeer(id)
 	}
 }
 
@@ -414,7 +561,11 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 }
 
 // Disconnected is called when we disconnect from a peer.
-func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {}
+func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	delete(sp.peersTrack, conn.RemotePeer())
+}
 
 // OpenedStream is called when we open a stream.
 func (sp *syncProtocol) OpenedStream(net network.Network, stream network.Stream) {}

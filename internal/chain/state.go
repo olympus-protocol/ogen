@@ -297,7 +297,6 @@ func (s *stateService) RemoveBeforeSlot(slot uint64) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	numRemoved := 0
-
 	for i := range s.stateMap {
 		row, found := s.blockIndex.Get(i)
 		if !found {
@@ -365,6 +364,7 @@ func NewStateService(log logger.Logger, ip state.InitializationParameters, param
 		latestVotes: make(map[uint64]*primitives.MultiValidatorVote),
 		db:          db,
 	}
+
 	err = ss.initChainState(db, genesisState)
 	if err != nil {
 		return nil, err

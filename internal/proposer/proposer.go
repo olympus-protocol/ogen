@@ -168,8 +168,8 @@ func (p *proposer) ProposeBlocks() {
 
 			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-				blockTimer = time.NewTimer(time.Second * 5)
-				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
+				blockTimer = time.NewTimer(time.Second * 10)
+				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
 				continue
 			}
 
@@ -320,8 +320,8 @@ func (p *proposer) VoteForBlocks() {
 
 			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
-				voteTimer = time.NewTimer(time.Second * 5)
-				p.log.Info("blockchain not synced... trying to vote in 5 seconds")
+				voteTimer = time.NewTimer(time.Second * 10)
+				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
 				continue
 			}
 

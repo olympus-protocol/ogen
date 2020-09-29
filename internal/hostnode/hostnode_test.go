@@ -36,16 +36,22 @@ func TestHostNode(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
+	chview := chain.NewChain(brow)
+
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetJustifiedEpochHash().Return(chainhash.Hash{}).Times(4)
 	s.EXPECT().GetJustifiedEpoch().Return(uint64(1)).Times(4)
 
+
 	stateService := chain.NewMockStateService(ctrl)
 	stateService.EXPECT().Tip().Return(brow).Times(4)
 	stateService.EXPECT().TipState().Return(s).Times(4)
+	stateService.EXPECT().GetFinalizedHead().Return(brow, nil).AnyTimes()
+	stateService.EXPECT().GetJustifiedHead().Return(brow, nil).AnyTimes()
+	stateService.EXPECT().Chain().Return(chview).AnyTimes()
 
 	ch := chain.NewMockBlockchain(ctrl)
-	ch.EXPECT().State().Return(stateService).Times(6)
+	ch.EXPECT().State().Return(stateService).AnyTimes()
 
 	log := logger.New(os.Stdin)
 

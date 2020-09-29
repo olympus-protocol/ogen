@@ -3,6 +3,7 @@ package hostnode
 import (
 	"context"
 	"crypto/rand"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"io/ioutil"
 	"os"
@@ -171,19 +172,36 @@ func (node *hostNode) SyncProtocol() SyncProtocol {
 func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
 	node.topicsLock.Lock()
 	defer node.topicsLock.Unlock()
+
 	if t, ok := node.topics[topic]; ok {
 		return t, nil
 	}
+
 	t, err := node.gossipSub.Join(topic)
 	if err != nil {
 		return nil, err
 	}
-	_, err = t.Relay()
-	if err != nil {
-		return nil, err
-	}
+
+	node.relay(topic, t)
+
 	node.topics[topic] = t
 	return t, nil
+}
+
+func (node *hostNode) relay(topic string, pub *pubsub.Topic) {
+	switch topic {
+	case p2p.MsgBlockCmd:
+	case p2p.MsgTxCmd:
+	case p2p.MsgTxMultiCmd:
+	case p2p.MsgDepositCmd:
+	case p2p.MsgDepositsCmd:
+	case p2p.MsgExitCmd:
+	case p2p.MsgExitsCmd:
+	case p2p.MsgGovernanceCmd:
+	case p2p.MsgVoteCmd:
+	case p2p.MsgValidatorStartCmd:
+		_, _ = pub.Relay()
+	}
 }
 
 // Syncing returns a boolean if the chain is on sync mode
