@@ -22,7 +22,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-const MinPeersForSyncStart = 4
+const MinPeersForSyncStart = 3
 
 type peerInfo struct {
 	ID              peer.ID
