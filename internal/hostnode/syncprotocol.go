@@ -187,18 +187,12 @@ func (sp *syncProtocol) initialBlockDownload() {
 	r := rand.Intn(len(peersAhead))
 	peerSelected := peersAhead[r]
 
-	sp.onSync = true
-	sp.withPeer = peerSelected.ID
-
 	sp.askForBlocks(peerSelected.ID)
 
 }
 
 // askForBlocks will ask a peer for blocks.
 func (sp *syncProtocol) askForBlocks(id peer.ID) {
-
-	sp.peersTrackLock.Lock()
-	defer sp.peersTrackLock.Unlock()
 
 	sp.onSync = true
 	sp.withPeer = id
