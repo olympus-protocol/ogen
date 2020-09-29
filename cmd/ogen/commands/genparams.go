@@ -71,7 +71,7 @@ var genParamsCmd = &cobra.Command{
 			initParams.PreminePrivateKey = premine.ToWIF()
 		}
 
-		b, err := json.Marshal(initParams)
+		b, err := json.MarshalIndent(initParams, "", " ")
 		if err != nil {
 			panic(err)
 		}
