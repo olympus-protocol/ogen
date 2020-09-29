@@ -397,12 +397,8 @@ func (p *proposer) VoteForBlocks() {
 					Sig:                   voteSig,
 				}
 
-				err = p.voteMempool.AddValidate(vote, voteState)
-				if err != nil {
-					p.log.Error("unable to submit own generated vote")
-					voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
-					continue
-				}
+				p.voteMempool.Add(vote)
+
 				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
 				go p.publishVotes(vote)
