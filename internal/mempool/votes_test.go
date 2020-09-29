@@ -45,11 +45,8 @@ var genesisHash chainhash.Hash
 // params are the params used on the test
 var param = &testdata.TestParams
 
-var slot1Commiters = []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99}
-var slot2Commiters = []uint64{20, 21, 22, 23, 24, 25, 26, 27, 28, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
-var slot3Commiters = []uint64{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59}
-var slot4Commiters = []uint64{60, 61, 62, 63, 64, 65, 66, 67, 68, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39}
-var slot5Commiters = []uint64{80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
+var slot1Committee = []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99}
+var slot2Committee = []uint64{20, 21, 22, 23, 24, 25, 26, 27, 28, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79}
 
 func init() {
 	f := fuzz.New().NilChance(0)
@@ -132,15 +129,15 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	voteDataSlot1Hash := voteDataSlot1.Hash()
 
-	bfS1att1 := bitfield.NewBitlist(uint64(len(slot1Commiters)))
-	bfS1att2 := bitfield.NewBitlist(uint64(len(slot1Commiters)))
-	bfS1Aggr := bitfield.NewBitlist(uint64(len(slot1Commiters)))
+	bfS1att1 := bitfield.NewBitlist(uint64(len(slot1Committee)))
+	bfS1att2 := bitfield.NewBitlist(uint64(len(slot1Committee)))
+	bfS1Aggr := bitfield.NewBitlist(uint64(len(slot1Committee)))
 
 	var sigsS1Att1 []*bls.Signature
 	var sigsS1Att2 []*bls.Signature
 	var sigsS1Aggr []*bls.Signature
 
-	for i, val := range slot1Commiters {
+	for i, val := range slot1Committee {
 		bfS1Aggr.Set(uint(i))
 
 		votingValidator := validatorsGlobal[val]
@@ -198,7 +195,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	s.EXPECT().IsVoteValid(voteSlot1att1, param).Return(nil)
 	s.EXPECT().IsVoteValid(voteSlot1att2, param).Return(nil)
-	s.EXPECT().GetVoteCommittee(voteDataSlot1.Slot, param).AnyTimes().Return(slot1Commiters, nil)
+	s.EXPECT().GetVoteCommittee(voteDataSlot1.Slot, param).AnyTimes().Return(slot1Committee, nil)
 	s.EXPECT().ProcessVote(voteSlot1AggVote, param, uint64(1)).Return(nil)
 
 	err = pool.AddValidate(voteSlot1att1, s)
@@ -230,15 +227,15 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	voteDataSlot2Hash := voteDataSlot2.Hash()
 
-	bfs2att1 := bitfield.NewBitlist(uint64(len(slot1Commiters)))
-	bfs2att2 := bitfield.NewBitlist(uint64(len(slot1Commiters)))
-	bfs2aggr := bitfield.NewBitlist(uint64(len(slot1Commiters)))
+	bfs2att1 := bitfield.NewBitlist(uint64(len(slot2Committee)))
+	bfs2att2 := bitfield.NewBitlist(uint64(len(slot2Committee)))
+	bfs2aggr := bitfield.NewBitlist(uint64(len(slot2Committee)))
 
 	var sigsS2Att1 []*bls.Signature
 	var sigsS2Att2 []*bls.Signature
 	var sigsS2Aggr []*bls.Signature
 
-	for i, val := range slot2Commiters {
+	for i, val := range slot2Committee {
 		bfs2aggr.Set(uint(i))
 
 		votingValidator := validatorsGlobal[val]
@@ -296,7 +293,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	s.EXPECT().IsVoteValid(voteSlot2att1, param).Return(nil)
 	s.EXPECT().IsVoteValid(voteSlot2att2, param).Return(nil)
-	s.EXPECT().GetVoteCommittee(voteDataSlot2.Slot, param).AnyTimes().Return(slot2Commiters, nil)
+	s.EXPECT().GetVoteCommittee(voteDataSlot2.Slot, param).AnyTimes().Return(slot2Committee, nil)
 	s.EXPECT().ProcessVote(voteSlot2AggVote, param, uint64(1)).Return(nil)
 
 	err = pool.AddValidate(voteSlot2att1, s)

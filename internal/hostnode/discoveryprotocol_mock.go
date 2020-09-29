@@ -6,8 +6,6 @@ package hostnode
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	network "github.com/libp2p/go-libp2p-core/network"
-	multiaddr "github.com/multiformats/go-multiaddr"
 	reflect "reflect"
 )
 
@@ -46,76 +44,4 @@ func (m *MockDiscoveryProtocol) Start() error {
 func (mr *MockDiscoveryProtocolMockRecorder) Start() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockDiscoveryProtocol)(nil).Start))
-}
-
-// Listen mocks base method
-func (m *MockDiscoveryProtocol) Listen(arg0 network.Network, arg1 multiaddr.Multiaddr) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Listen", arg0, arg1)
-}
-
-// Listen indicates an expected call of Listen
-func (mr *MockDiscoveryProtocolMockRecorder) Listen(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Listen", reflect.TypeOf((*MockDiscoveryProtocol)(nil).Listen), arg0, arg1)
-}
-
-// ListenClose mocks base method
-func (m *MockDiscoveryProtocol) ListenClose(arg0 network.Network, arg1 multiaddr.Multiaddr) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ListenClose", arg0, arg1)
-}
-
-// ListenClose indicates an expected call of ListenClose
-func (mr *MockDiscoveryProtocolMockRecorder) ListenClose(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenClose", reflect.TypeOf((*MockDiscoveryProtocol)(nil).ListenClose), arg0, arg1)
-}
-
-// Connected mocks base method
-func (m *MockDiscoveryProtocol) Connected(net network.Network, conn network.Conn) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Connected", net, conn)
-}
-
-// Connected indicates an expected call of Connected
-func (mr *MockDiscoveryProtocolMockRecorder) Connected(net, conn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connected", reflect.TypeOf((*MockDiscoveryProtocol)(nil).Connected), net, conn)
-}
-
-// Disconnected mocks base method
-func (m *MockDiscoveryProtocol) Disconnected(net network.Network, conn network.Conn) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Disconnected", net, conn)
-}
-
-// Disconnected indicates an expected call of Disconnected
-func (mr *MockDiscoveryProtocolMockRecorder) Disconnected(net, conn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Disconnected", reflect.TypeOf((*MockDiscoveryProtocol)(nil).Disconnected), net, conn)
-}
-
-// OpenedStream mocks base method
-func (m *MockDiscoveryProtocol) OpenedStream(arg0 network.Network, arg1 network.Stream) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "OpenedStream", arg0, arg1)
-}
-
-// OpenedStream indicates an expected call of OpenedStream
-func (mr *MockDiscoveryProtocolMockRecorder) OpenedStream(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenedStream", reflect.TypeOf((*MockDiscoveryProtocol)(nil).OpenedStream), arg0, arg1)
-}
-
-// ClosedStream mocks base method
-func (m *MockDiscoveryProtocol) ClosedStream(arg0 network.Network, arg1 network.Stream) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ClosedStream", arg0, arg1)
-}
-
-// ClosedStream indicates an expected call of ClosedStream
-func (mr *MockDiscoveryProtocolMockRecorder) ClosedStream(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClosedStream", reflect.TypeOf((*MockDiscoveryProtocol)(nil).ClosedStream), arg0, arg1)
 }

@@ -77,6 +77,20 @@ func (mr *MockProtocolHandlerMockRecorder) SendMessage(toPeer, msg interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockProtocolHandler)(nil).SendMessage), toPeer, msg)
 }
 
+// SendFinalizedMessage mocks base method
+func (m *MockProtocolHandler) SendFinalizedMessage(msg *p2p.MsgFinalization) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendFinalizedMessage", msg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendFinalizedMessage indicates an expected call of SendFinalizedMessage
+func (mr *MockProtocolHandlerMockRecorder) SendFinalizedMessage(msg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendFinalizedMessage", reflect.TypeOf((*MockProtocolHandler)(nil).SendFinalizedMessage), msg)
+}
+
 // Listen mocks base method
 func (m *MockProtocolHandler) Listen(arg0 network.Network, arg1 multiaddr.Multiaddr) {
 	m.ctrl.T.Helper()

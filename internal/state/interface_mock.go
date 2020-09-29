@@ -387,6 +387,20 @@ func (mr *MockStateMockRecorder) ApplyExit(exit interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyExit", reflect.TypeOf((*MockState)(nil).ApplyExit), exit)
 }
 
+// AreDepositsValid mocks base method
+func (m *MockState) AreDepositsValid(deposit []*primitives.Deposit, params *params.ChainParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AreDepositsValid", deposit, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AreDepositsValid indicates an expected call of AreDepositsValid
+func (mr *MockStateMockRecorder) AreDepositsValid(deposit, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AreDepositsValid", reflect.TypeOf((*MockState)(nil).AreDepositsValid), deposit, params)
+}
+
 // IsDepositValid mocks base method
 func (m *MockState) IsDepositValid(deposit *primitives.Deposit, params *params.ChainParams) error {
 	m.ctrl.T.Helper()
@@ -399,6 +413,20 @@ func (m *MockState) IsDepositValid(deposit *primitives.Deposit, params *params.C
 func (mr *MockStateMockRecorder) IsDepositValid(deposit, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDepositValid", reflect.TypeOf((*MockState)(nil).IsDepositValid), deposit, params)
+}
+
+// ApplyDeposits mocks base method
+func (m *MockState) ApplyDeposits(deposit []*primitives.Deposit, p *params.ChainParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyDeposits", deposit, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyDeposits indicates an expected call of ApplyDeposits
+func (mr *MockStateMockRecorder) ApplyDeposits(deposit, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyDeposits", reflect.TypeOf((*MockState)(nil).ApplyDeposits), deposit, p)
 }
 
 // ApplyDeposit mocks base method

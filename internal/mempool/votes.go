@@ -100,18 +100,6 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 		return
 	}
 
-	committee, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
-	if err != nil {
-		m.log.Error(err)
-		return
-	}
-
-	// Votes participation fields should have the same length as the current state validator registry size.
-	if (vote.ParticipationBitfield.Len()) != uint64(len(committee)) {
-		m.log.Error("wrong vote participation field size")
-		return
-	}
-
 	// Register voting action for validators included on the vote
 	//for i, c := range committee {
 	//if vote.ParticipationBitfield.Get(uint(i)) {

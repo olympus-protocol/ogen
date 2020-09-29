@@ -19,8 +19,6 @@ var (
 	ErrorVoteDataSize = errors.New("vote data too big")
 	// ErrorAcceptedVoteDataSize is returned when a vote data is above MaxAcceptedVoteInfoSize
 	ErrorAcceptedVoteDataSize = errors.New("accepted vote data too big")
-	// ErrorMultiValidatorVoteSize is returned when a multi validator vote data is above MaxMultiValidatorVoteSize
-	ErrorMultiValidatorVoteSize = errors.New("accepted vote data too big")
 )
 
 const (
