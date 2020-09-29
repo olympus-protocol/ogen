@@ -42,7 +42,6 @@ func TestHostNode(t *testing.T) {
 	s.EXPECT().GetJustifiedEpochHash().Return(chainhash.Hash{}).Times(4)
 	s.EXPECT().GetJustifiedEpoch().Return(uint64(1)).Times(4)
 
-
 	stateService := chain.NewMockStateService(ctrl)
 	stateService.EXPECT().Tip().Return(brow).Times(4)
 	stateService.EXPECT().TipState().Return(s).Times(4)
