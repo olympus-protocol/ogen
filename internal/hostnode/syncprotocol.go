@@ -22,9 +22,10 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-const MinPeersToStart = 4
+const MinPeersForSyncStart = 4
 
 type peerInfo struct {
+	ID              peer.ID
 	TipSlot         uint64
 	TipHeight       uint64
 	TipHash         chainhash.Hash
@@ -80,6 +81,7 @@ type syncProtocol struct {
 	withPeer peer.ID
 
 	lastFinalizedEpoch uint64
+	unknownBlocksCount uint64
 }
 
 func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handler func(data []byte, id peer.ID)) {
@@ -140,36 +142,56 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
+	go sp.initialBlockDownload()
+
 	return sp, nil
 }
 
 func (sp *syncProtocol) initialBlockDownload() {
-	sp.waitForPeers()
-}
 
-func (sp *syncProtocol) waitForPeers() {
 	for {
 		time.Sleep(time.Second * 1)
-		if sp.host.PeersConnected() < MinPeersToStart {
+		if sp.host.PeersConnected() < MinPeersForSyncStart {
 			continue
 		}
 		break
 	}
-}
 
-func (sp *syncProtocol) filterPeers() {
 	sp.peersTrackLock.Lock()
 	defer sp.peersTrackLock.Unlock()
-	//myInfo := sp.versionMsg()
+	myInfo := sp.versionMsg()
 
-	//peersAhead := make(map[peer.ID]uint64)
-	//peersBehind := make(map[peer.ID]uint64)
-	//peersEqual := make(map[peer.ID]uint64)
-	//
-	//
-	//for id, p := range sp.peersTrack {
+	var peersAhead []*peerInfo
+	var peersBehind []*peerInfo
+	var peersEqual []*peerInfo
 
-	//}
+	for _, p := range sp.peersTrack {
+		if p.FinalizedHeight > myInfo.FinalizedHeight {
+			peersAhead = append(peersAhead, p)
+		}
+
+		if p.FinalizedHeight == myInfo.FinalizedHeight {
+			peersEqual = append(peersEqual, p)
+		}
+
+		if p.FinalizedHeight < myInfo.FinalizedHeight {
+			peersBehind = append(peersBehind, p)
+		}
+	}
+
+	if len(peersAhead) == 0 {
+		sp.onSync = false
+		return
+	}
+
+	r := rand.Intn(len(peersAhead))
+	peerSelected := peersAhead[r]
+
+	sp.onSync = true
+	sp.withPeer = peerSelected.ID
+
+	sp.askForBlocks(peerSelected.ID)
+
 }
 
 // askForBlocks will ask a peer for blocks.
@@ -177,10 +199,6 @@ func (sp *syncProtocol) askForBlocks(id peer.ID) {
 
 	sp.peersTrackLock.Lock()
 	defer sp.peersTrackLock.Unlock()
-	//peerSync, ok := sp.peersTrack[id]
-	//if !ok {
-	//	return
-	//}
 
 	sp.onSync = true
 	sp.withPeer = id
@@ -310,8 +328,12 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		if err == ErrorBlockParentUnknown {
 			if !sp.onSync {
 				sp.log.Error(err)
-				sp.log.Info("restarting sync process")
-				go sp.askForBlocks(id)
+				// Wait until at least 5 unknown blocks are tried to parse to reinitialize initial block download.
+				sp.unknownBlocksCount += 1
+				if sp.unknownBlocksCount == 5 {
+					go sp.initialBlockDownload()
+					sp.unknownBlocksCount = 0
+				}
 				return nil
 			}
 			return nil
@@ -337,7 +359,9 @@ func (sp *syncProtocol) handleFinalization(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return nil
 	}
+
 	sp.peersTrack[id] = &peerInfo{
+		ID:              id,
 		TipSlot:         fin.TipSlot,
 		TipHeight:       fin.Tip,
 		TipHash:         fin.TipHash,
@@ -348,8 +372,6 @@ func (sp *syncProtocol) handleFinalization(id peer.ID, msg p2p.Message) error {
 		FinalizedHeight: fin.FinalizedHeight,
 		FinalizedHash:   fin.FinalizedHash,
 	}
-
-	sp.log.Tracef("Peer %s announced finalized at %d", sp.peersTrack[id].FinalizedHeight)
 
 	return nil
 }
@@ -375,8 +397,7 @@ func (sp *syncProtocol) processBlock(block *primitives.Block) error {
 	// The sync protocol has an internal tracker of the lastFinalizedEpoch to know
 	// when a new state is finalized.
 	// When this happens we should announce all blocks our new status.
-	fmt.Println(sp.chain.State().TipState().GetFinalizedEpoch())
-	fmt.Println(sp.lastFinalizedEpoch)
+
 	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch {
 
 		tip := sp.chain.State().Tip()
@@ -469,6 +490,7 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
+		ID:              id,
 		TipSlot:         theirVersion.TipSlot,
 		TipHeight:       theirVersion.Tip,
 		TipHash:         theirVersion.TipHash,
@@ -481,8 +503,6 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	}
 
 	sp.peersTrackLock.Unlock()
-
-	go sp.askForBlocks(id)
 
 	return nil
 }
@@ -544,7 +564,11 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 }
 
 // Disconnected is called when we disconnect from a peer.
-func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {}
+func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+	delete(sp.peersTrack, conn.RemotePeer())
+}
 
 // OpenedStream is called when we open a stream.
 func (sp *syncProtocol) OpenedStream(net network.Network, stream network.Stream) {}
