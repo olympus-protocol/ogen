@@ -554,126 +554,6 @@ func (s *state) ApplyExit(exit *primitives.Exit) error {
 	return nil
 }
 
-func (s *state) AreDepositsValid(deposit []*primitives.Deposit, params *params.ChainParams) error {
-	amount := len(deposit)
-
-	pubs := make([]*bls.PublicKey, amount)
-	msgs := make([][32]byte, amount)
-	sigs := make([]*bls.Signature, amount)
-
-	dataPubs := make([]*bls.PublicKey, amount)
-	dataMsgs := make([][32]byte, amount)
-	dataSigs := make([]*bls.Signature, amount)
-
-	for i, d := range deposit {
-		dPub, err := d.GetPublicKey()
-		if err != nil {
-			return err
-		}
-
-		pkh, err := dPub.Hash()
-		if err != nil {
-			return err
-		}
-
-		validatorPubkey := d.Data.PublicKey
-
-		// now, ensure we don't already have this validator
-		for _, v := range s.ValidatorRegistry {
-			if bytes.Equal(v.PubKey[:], validatorPubkey[:]) {
-				return fmt.Errorf("validator already registered")
-			}
-		}
-
-		if s.CoinsState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
-			return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
-		}
-
-		buf, err := d.Data.Marshal()
-		if err != nil {
-			return err
-		}
-
-		depositHash := chainhash.HashH(buf)
-
-		dSig, err := d.GetSignature()
-		if err != nil {
-			return err
-		}
-
-		pubs[i] = dPub
-		sigs[i] = dSig
-		msgs[i] = depositHash
-
-		pubkeyHash := chainhash.HashH(validatorPubkey[:])
-
-		dataSig, err := d.Data.GetSignature()
-		if err != nil {
-			return err
-		}
-
-		dataPub, err := d.Data.GetPublicKey()
-		if err != nil {
-			return err
-		}
-
-		dataPubs[i] = dataPub
-		dataSigs[i] = dataSig
-		dataMsgs[i] = pubkeyHash
-
-	}
-
-	sig := bls.AggregateSignatures(sigs)
-
-	valid := sig.AggregateVerify(pubs, msgs)
-
-	if !valid {
-		return errors.New("deposit signature is not valid")
-	}
-
-	dataSig := bls.AggregateSignatures(dataSigs)
-
-	valid = dataSig.AggregateVerify(dataPubs, dataMsgs)
-
-	if !valid {
-		return errors.New("proof-of-possession is not valid")
-	}
-
-	return nil
-}
-
-// ApplyDeposits applies multiple deposits to the state.
-func (s *state) ApplyDeposits(deposit []*primitives.Deposit, p *params.ChainParams) error {
-
-	if err := s.AreDepositsValid(deposit, p); err != nil {
-		return err
-	}
-
-	for _, d := range deposit {
-
-		pub, err := d.GetPublicKey()
-		if err != nil {
-			return err
-		}
-		pkh, err := pub.Hash()
-		if err != nil {
-			return err
-		}
-
-		s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
-
-		s.ValidatorRegistry = append(s.ValidatorRegistry, &primitives.Validator{
-			Balance:          p.DepositAmount * p.UnitsPerCoin,
-			PubKey:           d.Data.PublicKey,
-			PayeeAddress:     d.Data.WithdrawalAddress,
-			Status:           primitives.StatusStarting,
-			FirstActiveEpoch: s.EpochIndex + 2,
-		})
-	}
-
-	return nil
-}
-
 // IsDepositValid validates signatures and ensures that a deposit is valid.
 func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.ChainParams) error {
 
@@ -1031,10 +911,12 @@ func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
-	err = s.ApplyDeposits(b.Deposits, p)
-	if err != nil {
-		return err
+	for _, d := range b.Deposits {
+		if err := s.ApplyDeposit(d, p); err != nil {
+			return err
+		}
 	}
+
 	for _, tx := range b.Txs {
 		if err := s.ApplyTransactionSingle(tx, b.Header.FeeAddress, p); err != nil {
 			return err

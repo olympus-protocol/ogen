@@ -250,6 +250,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	if !found {
 		return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
 	}
+
 	if err := ch.db.SetFinalizedHead(finalizedHash); err != nil {
 		return err
 	}
@@ -259,8 +260,6 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	if err := ch.db.SetFinalizedState(finalizedState); err != nil {
 		return err
 	}
-
-	ch.state.RemoveBeforeSlot(newState.GetFinalizedEpoch() * ch.params.EpochLength)
 
 	justifiedState, found := ch.state.GetStateForHash(newState.GetJustifiedEpochHash())
 	if !found {
@@ -276,7 +275,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
-	// TODO: delete state before finalized
+	ch.state.RemoveBeforeSlot(finalizedSlot)
 
 	ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
 	ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))

@@ -73,8 +73,6 @@ func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
 	return current
 }
 
-var zeroHash = chainhash.Hash{}
-
 // BlockIndex is an chainindex from hash to BlockRow.
 type BlockIndex struct {
 	lock  sync.RWMutex

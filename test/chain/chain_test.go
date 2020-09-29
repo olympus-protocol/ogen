@@ -1,5 +1,3 @@
-// +build chain_test
-
 package chain_test
 
 import (
@@ -36,7 +34,7 @@ const NumValidators = 10
 var folders = make([]string, NumNodes)
 var loggers = make([]logger.Logger, NumNodes)
 
-var validatorsKeys []*bls.SecretKey
+var validatorsKeys = make(map[int][]*bls.SecretKey)
 var initParams state.InitializationParameters
 
 var keystores = make([]keystore.Keystore, NumNodes)
@@ -50,8 +48,7 @@ var receivingAddr, _ = bls.SecretKeyFromBytes(receivingBytes)
 
 var walletsPass = "wallet_secure_password"
 
-
-var params = testdata.TestParams
+var params = &testdata.TestParams
 var delaySeconds int64 = 30
 
 const dataFolder = "./chain_test"
@@ -81,7 +78,7 @@ func createKeystoresAndValidators() {
 				panic(err)
 			}
 			loggers[index] = logger.New(logFile)
-			keystores[index] = keystore.NewKeystore(folder, loggers[index])
+			keystores[index] = keystore.NewKeystore(folder)
 		}(i, folder, &folderWg)
 	}
 	folderWg.Wait()
@@ -89,10 +86,12 @@ func createKeystoresAndValidators() {
 	// Initialize each keystore with NumValidators
 	var keystoreWg sync.WaitGroup
 	keystoreWg.Add(len(keystores))
-	var keys [][]*bls.SecretKey
-	for _, ks := range keystores {
-		go func(keystore keystore.Keystore, wg *sync.WaitGroup) {
+	var keysLock sync.RWMutex
+	for i, ks := range keystores {
+		go func(index int, keystore keystore.Keystore, wg *sync.WaitGroup, lock *sync.RWMutex) {
+			lock.Lock()
 			defer wg.Done()
+			defer lock.Unlock()
 			err := keystore.CreateKeystore()
 			if err != nil {
 				panic(err)
@@ -101,27 +100,27 @@ func createKeystoresAndValidators() {
 			if err != nil {
 				panic(err)
 			}
-			keys = append(keys, ksvalidators)
+			validatorsKeys[index] = ksvalidators
 			err = keystore.Close()
 			if err != nil {
 				panic(err)
 			}
-		}(ks, &keystoreWg)
+		}(i, ks, &keystoreWg, &keysLock)
 	}
-	keystoreWg.Wait()
 
-	for _, kslice := range keys {
-		validatorsKeys = append(validatorsKeys, kslice...)
-	}
+	keystoreWg.Wait()
 }
 
 func createInitializationParams() {
 
-	valInit := make([]state.ValidatorInitialization, NumNodes*NumValidators)
-	for i, key := range validatorsKeys {
-		valInit[i] = state.ValidatorInitialization{
-			PubKey:       hex.EncodeToString(key.PublicKey().Marshal()),
-			PayeeAddress: premineAddr.PublicKey().ToAccount(),
+	var valInit []state.ValidatorInitialization
+	for _, kslice := range validatorsKeys {
+		for _, key := range kslice {
+			val := state.ValidatorInitialization{
+				PubKey:       hex.EncodeToString(key.PublicKey().Marshal()),
+				PayeeAddress: premineAddr.PublicKey().ToAccount(),
+			}
+			valInit = append(valInit, val)
 		}
 
 	}
@@ -141,14 +140,13 @@ func createServers() {
 			defer wg.Done()
 			log := loggers[index]
 			params.SlotDuration = 4
-			db, err := blockdb.NewBlockDB(folder, params, log)
+			db, err := blockdb.NewBadgerDB(folder, params, log)
 			if err != nil {
 				panic(err)
 			}
 			config := &server.GlobalConfig{
 				DataFolder:   folder,
 				NetworkName:  "",
-				InitialNodes: nil,
 				Port:         strconv.Itoa(24000 + index),
 				InitConfig:   state.InitializationParameters{},
 				RPCProxy:     false,
@@ -246,7 +244,7 @@ func TestCheckNodeConnections(t *testing.T) {
 
 type client struct {
 	network proto.NetworkClient
-	wallet proto.WalletClient
+	wallet  proto.WalletClient
 }
 
 func rpcClient(addr string) (*client, error) {
@@ -262,7 +260,7 @@ func rpcClient(addr string) (*client, error) {
 	}
 	return &client{
 		network: proto.NewNetworkClient(conn),
-		wallet: proto.NewWalletClient(conn),
+		wallet:  proto.NewWalletClient(conn),
 	}, nil
 }
 
@@ -276,29 +274,29 @@ type notify struct {
 func (n *notify) NewTip(r *chainindex.BlockRow, b *primitives.Block, s state.State, receipts []*primitives.EpochReceipt) {
 	n.lastFinalized = s.GetFinalizedEpoch()
 	n.lastJustified = s.GetJustifiedEpoch()
-		if len(receipts) > 0 {
-			msg := "\nEpoch Receipts\n----------\n"
-			receiptTypes := make(map[string]int64)
+	if len(receipts) > 0 {
+		msg := "\nEpoch Receipts\n----------\n"
+		receiptTypes := make(map[string]int64)
 
-			for _, r := range receipts {
-				if _, ok := receiptTypes[r.TypeString()]; !ok {
-					receiptTypes[r.TypeString()] = r.Amount
-				} else {
-					receiptTypes[r.TypeString()] += r.Amount
-				}
+		for _, r := range receipts {
+			if _, ok := receiptTypes[r.TypeString()]; !ok {
+				receiptTypes[r.TypeString()] = r.Amount
+			} else {
+				receiptTypes[r.TypeString()] += r.Amount
 			}
+		}
 
-			for rt, amount := range receiptTypes {
-				if amount > 0 {
-					msg += fmt.Sprintf("rewarded %d for %s\n", amount, rt)
-				} else if amount < 0 {
-					msg += fmt.Sprintf("penalized %d for %s\n", -amount, rt)
-				} else {
-					msg += fmt.Sprintf("neutral increments for %s\n", rt)
-				}
+		for rt, amount := range receiptTypes {
+			if amount > 0 {
+				msg += fmt.Sprintf("rewarded %d for %s\n", amount, rt)
+			} else if amount < 0 {
+				msg += fmt.Sprintf("penalized %d for %s\n", -amount, rt)
+			} else {
+				msg += fmt.Sprintf("neutral increments for %s\n", rt)
 			}
+		}
 
-			fmt.Println(msg)
+		fmt.Println(msg)
 	}
 	fmt.Printf("Validator Registry: Active %d Starting %d Pending Exit %d Penalty Exit %d Exited %d \n", s.GetValidators().Active, s.GetValidators().Starting, s.GetValidators().PendingExit, s.GetValidators().PenaltyExit, s.GetValidators().Exited)
 	fmt.Printf("Node %d: received block %d at slot %d Justified: %d Finalized: %d \n", n.num, r.Height, r.Slot, n.lastJustified, n.lastFinalized)
@@ -343,8 +341,8 @@ func TestImportCreateNewWallet(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = clientPremine.wallet.ImportWallet(context.Background(), &proto.ImportWalletData{
-		Name:     "premine_wallet",
-		Key:      &proto.KeyPair{
+		Name: "premine_wallet",
+		Key: &proto.KeyPair{
 			Private: premineAddr.ToWIF(),
 		},
 		Password: walletsPass,
@@ -352,8 +350,8 @@ func TestImportCreateNewWallet(t *testing.T) {
 	assert.NoError(t, err)
 
 	w, err := clientReceiving.wallet.ImportWallet(context.Background(), &proto.ImportWalletData{
-		Name:     "receiving_wallet",
-		Key:      &proto.KeyPair{
+		Name: "receiving_wallet",
+		Key: &proto.KeyPair{
 			Private: receivingAddr.ToWIF(),
 		},
 		Password: walletsPass,
@@ -402,7 +400,6 @@ func TestStopProposers(t *testing.T) {
 	servers[0].Proposer().Stop()
 	servers[NumNodes-1].Proposer().Stop()
 }
-
 
 func TestChainCorrectnessWithValidatorsPenalization(t *testing.T) {
 	for {
