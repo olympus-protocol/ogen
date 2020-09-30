@@ -65,6 +65,7 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 		cancel()
 		return nil, err
 	}
+
 	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
 	if err != nil {
 		cancel()
@@ -178,7 +179,7 @@ func (p *proposer) ProposeBlocks() {
 
 			voteState, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
-				p.log.Error("unable to get tip state at slot %d", slotToPropose)
+				p.log.Errorf("unable to get tip state at slot %d", slotToPropose)
 				blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 				continue
 			}

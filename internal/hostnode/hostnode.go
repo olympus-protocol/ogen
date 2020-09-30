@@ -191,16 +191,55 @@ func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
 func (node *hostNode) relay(topic string, pub *pubsub.Topic) {
 	switch topic {
 	case p2p.MsgBlockCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgTxCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgTxMultiCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgDepositCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgDepositsCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgExitCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgExitsCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgGovernanceCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgVoteCmd:
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	case p2p.MsgValidatorStartCmd:
-		_, _ = pub.Relay()
+		_, err := pub.Relay()
+		if err != nil {
+			node.log.Error(err)
+		}
 	}
 }
 
