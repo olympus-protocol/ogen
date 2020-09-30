@@ -325,11 +325,9 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			return
 		}
 
-
 		if msg.GetFrom() == id {
 			continue
 		}
-
 
 		buf := bytes.NewBuffer(msg.Data)
 
