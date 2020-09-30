@@ -320,26 +320,29 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 		if err != nil {
 			if err != m.ctx.Err() {
 				m.log.Warnf("error getting next message in votes topic: %s", err)
-				return
+				continue
 			}
 			return
 		}
+
+
 		if msg.GetFrom() == id {
 			continue
 		}
+
 
 		buf := bytes.NewBuffer(msg.Data)
 
 		voteRead, err := p2p.ReadMessage(buf, m.hostNode.GetNetMagic())
 		if err != nil {
 			m.log.Warnf("unable to decode message: %s", err)
-			return
+			continue
 		}
 
 		voteMsg, ok := voteRead.(*p2p.MsgVote)
 		if !ok {
 			m.log.Warnf("peer sent wrong message on vote subscription")
-			return
+			continue
 		}
 
 		vote := voteMsg.Data
@@ -350,24 +353,25 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 		tip := m.blockchain.State().Tip()
 
 		if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
-			return
+			continue
 		}
 
 		view, err := m.blockchain.State().GetSubView(tip.Hash)
 		if err != nil {
 			m.log.Warnf("could not get block view representing current tip: %s", err)
-			return
+			continue
 		}
 
 		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
 		if err != nil {
 			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-			return
+			continue
 		}
 
 		err = m.AddValidate(vote, currentState)
 		if err != nil {
 			m.log.Debugf("error adding vote to mempool: %s", err)
+			continue
 		}
 	}
 }
