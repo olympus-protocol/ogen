@@ -167,15 +167,15 @@ func (sp *syncProtocol) initialBlockDownload() {
 	var peersEqual []*peerInfo
 
 	for _, p := range sp.peersTrack {
-		if p.FinalizedHeight > myInfo.FinalizedHeight {
+		if p.TipHeight > myInfo.FinalizedHeight {
 			peersAhead = append(peersAhead, p)
 		}
 
-		if p.FinalizedHeight == myInfo.FinalizedHeight {
+		if p.TipHeight == myInfo.FinalizedHeight {
 			peersEqual = append(peersEqual, p)
 		}
 
-		if p.FinalizedHeight < myInfo.FinalizedHeight {
+		if p.TipHeight < myInfo.FinalizedHeight {
 			peersBehind = append(peersBehind, p)
 		}
 	}
