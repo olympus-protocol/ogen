@@ -1,3 +1,5 @@
+// +build chain_test
+
 package chain_test
 
 import (
