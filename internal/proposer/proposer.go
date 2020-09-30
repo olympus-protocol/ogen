@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -46,6 +47,9 @@ type proposer struct {
 	mineActive bool
 	context    context.Context
 	stop       context.CancelFunc
+
+	proposerLock sync.RWMutex
+	voteLock sync.RWMutex
 
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
@@ -138,7 +142,9 @@ func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
 	}
 	if err := p.voteTopic.Publish(p.context, buf.Bytes()); err != nil {
 		p.log.Errorf("error publishing vote: %s", err)
+		return
 	}
+	return
 }
 
 func (p *proposer) publishBlock(block *primitives.Block) {
@@ -151,7 +157,9 @@ func (p *proposer) publishBlock(block *primitives.Block) {
 	}
 	if err := p.blockTopic.Publish(p.context, buf.Bytes()); err != nil {
 		p.log.Errorf("error publishing block: %s", err)
+		return
 	}
+	return
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
@@ -166,11 +174,12 @@ func (p *proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-
+			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
+				p.proposerLock.Unlock()
 				continue
 			}
 
@@ -181,6 +190,7 @@ func (p *proposer) ProposeBlocks() {
 			if err != nil {
 				p.log.Errorf("unable to get tip state at slot %d", slotToPropose)
 				blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+				p.proposerLock.Unlock()
 				continue
 			}
 
@@ -201,6 +211,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -208,6 +219,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -219,6 +231,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -226,6 +239,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -233,6 +247,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -240,6 +255,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -247,6 +263,7 @@ func (p *proposer) ProposeBlocks() {
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -292,13 +309,15 @@ func (p *proposer) ProposeBlocks() {
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				go p.publishBlock(&block)
+				p.publishBlock(&block)
 			}
 
 			slotToPropose++
+			p.proposerLock.Unlock()
 			blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 		case <-p.context.Done():
 			p.log.Info("stopping proposer")
@@ -318,11 +337,12 @@ func (p *proposer) VoteForBlocks() {
 	for {
 		select {
 		case <-voteTimer.C:
-
+			p.voteLock.Lock()
 			// Check if we're an attester for this slot
 			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
+				p.voteLock.Unlock()
 				continue
 			}
 
@@ -332,6 +352,7 @@ func (p *proposer) VoteForBlocks() {
 			if err != nil {
 				p.log.Errorf("unable to get tip at slot %d", slotToVote)
 				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				p.voteLock.Unlock()
 				continue
 			}
 
@@ -339,6 +360,7 @@ func (p *proposer) VoteForBlocks() {
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
 				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				p.voteLock.Unlock()
 				continue
 			}
 
@@ -350,6 +372,7 @@ func (p *proposer) VoteForBlocks() {
 			if !found {
 				p.log.Errorf("unable to find block at slot %d", slotToVote-1)
 				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				p.voteLock.Unlock()
 				continue
 			}
 
@@ -402,11 +425,11 @@ func (p *proposer) VoteForBlocks() {
 
 				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
-				go p.publishVotes(vote)
+				p.publishVotes(vote)
 			}
 
 			slotToVote++
-
+			p.voteLock.Unlock()
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 		case <-p.context.Done():
 			p.log.Info("stopping voter")

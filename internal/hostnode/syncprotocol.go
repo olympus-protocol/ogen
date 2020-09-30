@@ -198,8 +198,10 @@ func (sp *syncProtocol) askForBlocks(id peer.ID) {
 	sp.onSync = true
 	sp.withPeer = id
 
+	finalized, _ := sp.chain.State().GetFinalizedHead()
+
 	err := sp.protocolHandler.SendMessage(id, &p2p.MsgGetBlocks{
-		LastBlockHash: sp.chain.State().Chain().Tip().Hash,
+		LastBlockHash: finalized.Hash,
 	})
 
 	if err != nil {
@@ -323,14 +325,7 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		if err == ErrorBlockParentUnknown {
 			if !sp.onSync {
 				sp.log.Error(err)
-				// Wait until at least 5 unknown blocks are tried to parse to reinitialize initial block download.
-				sp.unknownBlocksCount += 1
-				fmt.Println(sp.unknownBlocksCount)
-				if sp.unknownBlocksCount == 5 {
-					sp.initialBlockDownload()
-					sp.unknownBlocksCount = 0
-					return nil
-				}
+				go sp.initialBlockDownload()
 				return nil
 			}
 			return nil
