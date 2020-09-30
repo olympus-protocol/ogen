@@ -136,7 +136,7 @@ func (d *discoveryProtocol) Start() error {
 	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := d.host.GetHost().Connect(d.ctx, addr); err != nil {
-			d.log.Error(err)
+			d.log.Errorf("unable to connect to peer %s", addr.ID)
 		}
 	}
 	return nil
