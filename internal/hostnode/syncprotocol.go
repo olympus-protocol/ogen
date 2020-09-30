@@ -135,6 +135,8 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
+	sp.initialBlockDownload()
+
 	if err := sp.listenForFinalizations(); err != nil {
 		return nil, err
 	}
@@ -142,8 +144,6 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	if err := sp.listenForBroadcasts(); err != nil {
 		return nil, err
 	}
-
-	go sp.initialBlockDownload()
 
 	return sp, nil
 }
