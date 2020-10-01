@@ -91,10 +91,6 @@ func (s *server) Start() {
 	if err != nil {
 		s.log.Fatal("unable to start chain instance")
 	}
-	err = s.hn.Start()
-	if err != nil {
-		s.log.Fatal("unable to start host node")
-	}
 	go func() {
 		err := s.rpc.Start()
 		if err != nil {

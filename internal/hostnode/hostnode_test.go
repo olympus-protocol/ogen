@@ -96,11 +96,5 @@ func TestHostNode(t *testing.T) {
 	//	pinfo = hn.GetPeerInfos()
 	//	assert.Equal(t, pstore_pb.ProtoAddr{Multiaddr: npinfo.Addrs[0]}, pinfo)
 
-	err = hn.Start()
-	assert.NoError(t, err)
-
-	err = hn2.Start()
-	assert.NoError(t, err)
-
 	_ = os.RemoveAll("./test")
 }

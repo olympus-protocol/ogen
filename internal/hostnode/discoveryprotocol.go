@@ -29,13 +29,6 @@ func (d *discoveryProtocol) getRelayers() []peer.AddrInfo {
 	return r
 }
 
-// DiscoveryProtocol is an interface for discoveryProtocol
-type DiscoveryProtocol interface {
-	Start() error
-}
-
-var _ DiscoveryProtocol = &discoveryProtocol{}
-
 // discoveryProtocol is the service to discover other hostnode.
 type discoveryProtocol struct {
 	host   HostNode
@@ -54,7 +47,7 @@ type discoveryProtocol struct {
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *params.ChainParams) (DiscoveryProtocol, error) {
+func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *params.ChainParams) (*discoveryProtocol, error) {
 	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeAutoServer))
 	if err != nil {
 		return nil, err
@@ -81,6 +74,8 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *
 
 	go dp.findPeers()
 	go dp.advertise()
+
+	dp.Start()
 
 	return dp, nil
 }
@@ -125,7 +120,7 @@ func (d *discoveryProtocol) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.params.GetRendevouzString())
 }
 
-func (d *discoveryProtocol) Start() error {
+func (d *discoveryProtocol) Start() {
 	peersIDs := d.host.GetHost().Peerstore().Peers()
 	var peerstorePeers []peer.AddrInfo
 	for _, id := range peersIDs {
@@ -139,7 +134,6 @@ func (d *discoveryProtocol) Start() error {
 			d.log.Errorf("unable to connect to peer %s", addr.ID)
 		}
 	}
-	return nil
 }
 
 const connectionTimeout = 10 * time.Second

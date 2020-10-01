@@ -51,7 +51,6 @@ type HostNode interface {
 	Notify(notifee network.Notifiee)
 	GetPeerDirection(id peer.ID) network.Direction
 	Stop()
-	Start() error
 	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
 }
@@ -77,7 +76,7 @@ type hostNode struct {
 	path string
 
 	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
-	discoveryProtocol DiscoveryProtocol
+	discoveryProtocol *discoveryProtocol
 
 	// syncProtocol handles peer syncing
 	syncProtocol SyncProtocol
@@ -163,10 +162,6 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	node.syncProtocol = syncProtocol
 
 	return node, nil
-}
-
-func (node *hostNode) SyncProtocol() SyncProtocol {
-	return node.syncProtocol
 }
 
 func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
@@ -329,14 +324,6 @@ func (node *hostNode) Stop() {
 	for _, topic := range node.topics {
 		_ = topic.Close()
 	}
-}
-
-// Start the host node and start discovering peers.
-func (node *hostNode) Start() error {
-	if err := node.discoveryProtocol.Start(); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
