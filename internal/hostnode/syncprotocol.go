@@ -140,11 +140,10 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 				sp.sendVersion(conn.RemotePeer())
 		},
 		DisconnectedF: func(n network.Network, conn network.Conn) {
-			go func() {
-				sp.peersTrackLock.Lock()
-				defer sp.peersTrackLock.Unlock()
-				delete(sp.peersTrack, conn.RemotePeer())
-			}()
+			fmt.Println(n, conn)
+			sp.peersTrackLock.Lock()
+			defer sp.peersTrackLock.Unlock()
+			delete(sp.peersTrack, conn.RemotePeer())
 		},
 	})
 
