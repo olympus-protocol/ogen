@@ -208,7 +208,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
-	row, err := ch.state.Index().Add(*block)
+	row, err := ch.state.Index().Add(block)
 	if err != nil {
 		return err
 	}

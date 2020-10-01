@@ -38,7 +38,7 @@ func TestBlockIndex_Instance(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cIndex)
 
-	bRow, err := cIndex.Add(*block2)
+	bRow, err := cIndex.Add(block2)
 	assert.NoError(t, err)
 	assert.NotNil(t, bRow)
 
