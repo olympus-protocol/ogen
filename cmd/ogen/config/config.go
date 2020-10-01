@@ -2,10 +2,10 @@ package config
 
 import (
 	"context"
-	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/spf13/viper"
 	"os"
 	"os/signal"
 	"path"
@@ -53,6 +53,7 @@ var GlobalFlags *Flags
 var GlobalParams *Params
 
 func Init() {
+	setDataPath()
 
 	GlobalFlags = &Flags{
 		DataPath:     DataPath,
@@ -66,8 +67,6 @@ func Init() {
 		Debug:        Debug,
 		LogFile:      LogFile,
 	}
-
-	fmt.Println(GlobalFlags)
 
 	var log logger.Logger
 
@@ -127,6 +126,42 @@ func Init() {
 		Context:    context.Background(),
 	}
 
+}
+
+func setDataPath() {
+	if DataPath != "" {
+		// Use config file from the flag.
+		viper.AddConfigPath(DataPath)
+		viper.SetConfigName("config")
+		if _, err := os.Stat(DataPath); os.IsNotExist(err) {
+			err = os.MkdirAll(DataPath, 0744)
+			if err != nil {
+				panic(err)
+			}
+		}
+	} else {
+		configDir, err := os.UserConfigDir()
+		if err != nil {
+			panic(err)
+		}
+
+		ogenDir := path.Join(configDir, "ogen")
+
+		if _, err := os.Stat(ogenDir); os.IsNotExist(err) {
+			err = os.MkdirAll(ogenDir, 0744)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		DataPath = ogenDir
+
+		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath(ogenDir)
+		viper.SetConfigName("config")
+	}
+
+	viper.AutomaticEnv()
 }
 
 var shutdownRequestChannel = make(chan struct{})

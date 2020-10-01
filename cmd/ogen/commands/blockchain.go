@@ -1,15 +1,12 @@
 package commands
 
 import (
-	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"path"
 )
 
 // loadOgen is the main function to run ogen.
@@ -63,7 +60,6 @@ func Execute() error {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&config.DataPath, "datadir", "", "Directory to store the chain data.")
 	rootCmd.PersistentFlags().BoolVar(&config.Debug, "debug", false, "Displays debug information.")
@@ -84,43 +80,5 @@ func init() {
 	}
 
 	config.Init()
-}
 
-func initConfig() {
-	if viper.GetString("datadir") != "" {
-		// Use config file from the flag.
-		viper.AddConfigPath(config.DataPath)
-		viper.SetConfigName("config")
-	} else {
-		configDir, err := os.UserConfigDir()
-		if err != nil {
-			panic(err)
-		}
-
-		ogenDir := path.Join(configDir, "ogen")
-
-		if _, err := os.Stat(ogenDir); os.IsNotExist(err) {
-			err = os.MkdirAll(ogenDir, 0744)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		config.DataPath = ogenDir
-
-		// Search config in home directory with name ".cobra" (without extension).
-		viper.AddConfigPath(ogenDir)
-		viper.SetConfigName("config")
-	}
-
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-
-	err := viper.BindPFlags(rootCmd.Flags())
-	if err != nil {
-		panic(err)
-	}
 }
