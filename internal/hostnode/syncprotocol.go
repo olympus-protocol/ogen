@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -120,6 +121,19 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 	if err := sp.listenForBroadcasts(); err != nil {
 		return nil, err
 	}
+
+	host.Notify(&network.NotifyBundle{
+		ConnectedF: func(n network.Network, conn network.Conn) {
+			go func() {
+
+			}()
+		},
+		DisconnectedF: func(n network.Network, conn network.Conn) {
+			go func() {
+
+			}()
+		},
+	})
 
 	go sp.initialBlockDownload()
 

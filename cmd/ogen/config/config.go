@@ -123,7 +123,6 @@ func Init() {
 		Logger:     log,
 		NetParams:  netParams,
 		InitParams: ip,
-		Context:    context.Background(),
 	}
 
 }
@@ -169,27 +168,27 @@ var shutdownRequestChannel = make(chan struct{})
 var interruptSignals = []os.Signal{os.Interrupt}
 
 func InterruptListener() {
-	log := GlobalParams.Logger
-	_, cancel := context.WithCancel(GlobalParams.Context)
+	ctx, cancel := context.WithCancel(context.Background())
+	GlobalParams.Context = ctx
 	go func() {
 		interruptChannel := make(chan os.Signal, 1)
 		signal.Notify(interruptChannel, interruptSignals...)
 		select {
 		case sig := <-interruptChannel:
-			log.Warnf("Received signal (%s).  Shutting down...",
+			GlobalParams.Logger.Warnf("Received signal (%s).  Shutting down...",
 				sig)
 		case <-shutdownRequestChannel:
-			log.Warn("Shutdown requested.  Shutting down...")
+			GlobalParams.Logger.Warn("Shutdown requested.  Shutting down...")
 		}
 		cancel()
 		for {
 			select {
 			case sig := <-interruptChannel:
-				log.Warnf("Received signal (%s).  Already "+
+				GlobalParams.Logger.Warnf("Received signal (%s).  Already "+
 					"shutting down...", sig)
 
 			case <-shutdownRequestChannel:
-				log.Warn("Shutdown requested.  Already " +
+				GlobalParams.Logger.Warn("Shutdown requested.  Already " +
 					"shutting down...")
 			}
 		}

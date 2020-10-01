@@ -108,13 +108,11 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	}
 
 	connman := connmgr.NewConnManager(2, 64, time.Second*60)
-
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
 		libp2p.Identity(priv),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
-		libp2p.NATPortMap(),
 		libp2p.Peerstore(ps),
 		libp2p.ConnectionManager(connman),
 	)
@@ -153,6 +151,8 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		return nil, err
 	}
 	node.syncProtocol = syncProtocol
+
+	node.Notify(connman.Notifee())
 
 	return node, nil
 }

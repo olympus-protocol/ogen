@@ -23,7 +23,9 @@ func loadOgen() error {
 	}
 
 	go s.Start()
+
 	<-config.GlobalParams.Context.Done()
+
 	db.Close()
 	err = s.Stop()
 	if err != nil {

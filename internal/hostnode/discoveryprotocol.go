@@ -82,8 +82,8 @@ func NewDiscoveryProtocol(host HostNode) (*discoveryProtocol, error) {
 		}
 	}
 
-	go dp.findPeers()
 	go dp.advertise()
+	go dp.findPeers()
 
 	return dp, nil
 }
