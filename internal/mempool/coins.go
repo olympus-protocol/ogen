@@ -254,9 +254,9 @@ func (cm *coinsMempool) handleSubscription(topic *pubsub.Subscription) {
 		if err != nil {
 			if err != cm.ctx.Err() {
 				cm.log.Warnf("error getting next message in coins topic: %s", err)
-				return
+				continue
 			}
-			return
+			continue
 		}
 
 		buf := bytes.NewBuffer(msg.Data)
