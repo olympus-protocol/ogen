@@ -72,10 +72,11 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *
 		lastConnect: make(map[peer.ID]time.Time),
 	}
 
+	dp.Start()
+
 	go dp.findPeers()
 	go dp.advertise()
 
-	dp.Start()
 
 	return dp, nil
 }
@@ -121,14 +122,8 @@ func (d *discoveryProtocol) advertise() {
 }
 
 func (d *discoveryProtocol) Start() {
-	peersIDs := d.host.GetHost().Peerstore().Peers()
-	var peerstorePeers []peer.AddrInfo
-	for _, id := range peersIDs {
-		peerstorePeers = append(peerstorePeers, d.host.GetHost().Peerstore().PeerInfo(id))
-	}
 	var initialNodes []peer.AddrInfo
 	initialNodes = append(initialNodes, d.getRelayers()...)
-	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := d.host.GetHost().Connect(d.ctx, addr); err != nil {
 			d.log.Errorf("unable to connect to peer %s", addr.ID)

@@ -115,6 +115,7 @@ func processMessages(ctx context.Context, net uint32, stream io.Reader, handler 
 		default:
 			break
 		}
+
 		msg, err := p2p.ReadMessage(stream, net)
 		if err != nil {
 			return err

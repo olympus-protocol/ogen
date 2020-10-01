@@ -67,7 +67,6 @@ type syncProtocol struct {
 	log    logger.Logger
 
 	chain   chain.Blockchain
-	relayer bool
 
 	protocolHandler ProtocolHandler
 
@@ -135,8 +134,6 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
-	sp.initialBlockDownload()
-
 	if err := sp.listenForFinalizations(); err != nil {
 		return nil, err
 	}
@@ -145,21 +142,26 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
+	go sp.initialBlockDownload()
+
 	return sp, nil
 }
 
 func (sp *syncProtocol) initialBlockDownload() {
 
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
+
 	for {
 		time.Sleep(time.Second * 1)
-		if sp.host.PeersConnected() < MinPeersForSyncStart {
+		if len(sp.peersTrack) < MinPeersForSyncStart {
+			fmt.Println(len(sp.peersTrack))
 			continue
 		}
 		break
 	}
 
-	sp.peersTrackLock.Lock()
-	defer sp.peersTrackLock.Unlock()
+
 	myInfo := sp.versionMsg()
 
 	var peersAhead []*peerInfo
@@ -472,14 +474,10 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	// Send our version message if required
 	ourVersion := sp.versionMsg()
-	direction := sp.host.GetPeerDirection(id)
-
-	if direction == network.DirInbound {
-		if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
-			return err
-		}
+	//direction := sp.host.GetPeerDirection(id)
+	if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
+		return err
 	}
-
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
 		ID:              id,
@@ -542,7 +540,7 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 		return
 	}
 
-	// open a stream for the discovery protocol:
+	// open a stream for the sync protocol:
 	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
 	if err != nil {
 		sp.log.Errorf("could not open stream for connection: %s", err)
@@ -550,9 +548,7 @@ func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
 
 	sp.protocolHandler.HandleStream(s)
 
-	if !sp.relayer {
-		sp.sendVersion(conn.RemotePeer())
-	}
+	sp.sendVersion(conn.RemotePeer())
 }
 
 // Disconnected is called when we disconnect from a peer.
