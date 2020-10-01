@@ -4,7 +4,22 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"path"
+	"time"
 )
+
+// ValidatorInitialization is the parameters needed to initialize validators.
+type ValidatorInitialization struct {
+	PubKey       string `json:"pubkey"`
+	PayeeAddress string `json:"withdraw_address"`
+}
+
+// InitializationParameters are used in conjunction with ChainParams to generate
+// the new genesis state.
+type InitializationParameters struct {
+	InitialValidators []ValidatorInitialization
+	PremineAddress    string
+	GenesisTime       time.Time
+}
 
 type Validators struct {
 	PublicKey  string `json:"public_key"`

@@ -123,34 +123,6 @@ func (mr *MockHostNodeMockRecorder) DisconnectPeer(p interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisconnectPeer", reflect.TypeOf((*MockHostNode)(nil).DisconnectPeer), p)
 }
 
-// IsConnected mocks base method
-func (m *MockHostNode) IsConnected() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsConnected")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsConnected indicates an expected call of IsConnected
-func (mr *MockHostNodeMockRecorder) IsConnected() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsConnected", reflect.TypeOf((*MockHostNode)(nil).IsConnected))
-}
-
-// PeersConnected mocks base method
-func (m *MockHostNode) PeersConnected() int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PeersConnected")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// PeersConnected indicates an expected call of PeersConnected
-func (mr *MockHostNodeMockRecorder) PeersConnected() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeersConnected", reflect.TypeOf((*MockHostNode)(nil).PeersConnected))
-}
-
 // GetPeerList mocks base method
 func (m *MockHostNode) GetPeerList() []peer.ID {
 	m.ctrl.T.Helper()
@@ -229,20 +201,6 @@ func (m *MockHostNode) Stop() {
 func (mr *MockHostNodeMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockHostNode)(nil).Stop))
-}
-
-// Start mocks base method
-func (m *MockHostNode) Start() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Start indicates an expected call of Start
-func (mr *MockHostNodeMockRecorder) Start() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockHostNode)(nil).Start))
 }
 
 // SetStreamHandler mocks base method

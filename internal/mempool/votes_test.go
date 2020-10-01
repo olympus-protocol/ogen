@@ -15,12 +15,10 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -97,8 +95,6 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
 
-	log := logger.New(os.Stdin)
-
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validatorsGlobal)
 
@@ -111,7 +107,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	manager := actionmanager.NewMockLastActionManager(ctrl)
 
-	pool, err := mempool.NewVoteMempool(ctx, log, &testdata.TestParams, ch, host, manager)
+	pool, err := mempool.NewVoteMempool(ch, host, manager)
 	assert.NoError(t, err)
 
 	// This test will try to replicate a chain with 100 validators and 2 proposers moving for 1 epoch.
@@ -193,10 +189,10 @@ func TestVoteMempoolAggregation(t *testing.T) {
 		ParticipationBitfield: bfS1Aggr,
 	}
 
-	s.EXPECT().IsVoteValid(voteSlot1att1, param).Return(nil)
-	s.EXPECT().IsVoteValid(voteSlot1att2, param).Return(nil)
-	s.EXPECT().GetVoteCommittee(voteDataSlot1.Slot, param).AnyTimes().Return(slot1Committee, nil)
-	s.EXPECT().ProcessVote(voteSlot1AggVote, param, uint64(1)).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot1att1).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot1att2).Return(nil)
+	s.EXPECT().GetVoteCommittee(voteDataSlot1.Slot).AnyTimes().Return(slot1Committee, nil)
+	s.EXPECT().ProcessVote(voteSlot1AggVote, uint64(1)).Return(nil)
 
 	err = pool.AddValidate(voteSlot1att1, s)
 	assert.NoError(t, err)
@@ -205,7 +201,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	slotToVote++
 
-	votesSlot1, err := pool.Get(slotToVote, s, param, 1)
+	votesSlot1, err := pool.Get(slotToVote, s, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(votesSlot1))
 
@@ -291,10 +287,10 @@ func TestVoteMempoolAggregation(t *testing.T) {
 		ParticipationBitfield: bfs2aggr,
 	}
 
-	s.EXPECT().IsVoteValid(voteSlot2att1, param).Return(nil)
-	s.EXPECT().IsVoteValid(voteSlot2att2, param).Return(nil)
-	s.EXPECT().GetVoteCommittee(voteDataSlot2.Slot, param).AnyTimes().Return(slot2Committee, nil)
-	s.EXPECT().ProcessVote(voteSlot2AggVote, param, uint64(1)).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot2att1).Return(nil)
+	s.EXPECT().IsVoteValid(voteSlot2att2).Return(nil)
+	s.EXPECT().GetVoteCommittee(voteDataSlot2.Slot).AnyTimes().Return(slot2Committee, nil)
+	s.EXPECT().ProcessVote(voteSlot2AggVote, uint64(1)).Return(nil)
 
 	err = pool.AddValidate(voteSlot2att1, s)
 	assert.NoError(t, err)
@@ -303,7 +299,7 @@ func TestVoteMempoolAggregation(t *testing.T) {
 
 	slotToVote++
 
-	votesSlot2, err := pool.Get(slotToVote, s, param, 1)
+	votesSlot2, err := pool.Get(slotToVote, s, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(votesSlot2))
 

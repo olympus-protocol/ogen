@@ -3,6 +3,7 @@ package hostnode
 import (
 	"context"
 	discovery "github.com/libp2p/go-libp2p-discovery"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"sync"
 	"time"
@@ -15,7 +16,7 @@ import (
 
 func (d *discoveryProtocol) getRelayers() []peer.AddrInfo {
 	var r []peer.AddrInfo
-	for _, node := range d.params.Relayers {
+	for _, node := range d.netParams.Relayers {
 		ma, err := multiaddr.NewMultiaddr(node)
 		if err != nil {
 			continue
@@ -31,23 +32,25 @@ func (d *discoveryProtocol) getRelayers() []peer.AddrInfo {
 
 // discoveryProtocol is the service to discover other hostnode.
 type discoveryProtocol struct {
-	host   HostNode
-	config Config
-	ctx    context.Context
-	log    logger.Logger
-	params *params.ChainParams
+	host      HostNode
+	ctx       context.Context
+	log       logger.Logger
+	netParams *params.ChainParams
 
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.RWMutex
 
-	ID              peer.ID
-	protocolHandler ProtocolHandler
-	dht             *dht.IpfsDHT
-	discovery       *discovery.RoutingDiscovery
+	ID        peer.ID
+	dht       *dht.IpfsDHT
+	discovery *discovery.RoutingDiscovery
 }
 
 // NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *params.ChainParams) (*discoveryProtocol, error) {
+func NewDiscoveryProtocol(host HostNode) (*discoveryProtocol, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
+
 	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeAutoServer))
 	if err != nil {
 		return nil, err
@@ -63,20 +66,24 @@ func NewDiscoveryProtocol(ctx context.Context, host HostNode, config Config, p *
 	dp := &discoveryProtocol{
 		host:        host,
 		ctx:         ctx,
-		config:      config,
-		log:         config.Log,
+		log:         log,
 		dht:         d,
 		discovery:   r,
-		params:      p,
+		netParams:   netParams,
 		ID:          host.GetHost().ID(),
 		lastConnect: make(map[peer.ID]time.Time),
 	}
 
-	dp.Start()
+	var initialNodes []peer.AddrInfo
+	initialNodes = append(initialNodes, dp.getRelayers()...)
+	for _, addr := range initialNodes {
+		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
+			dp.log.Errorf("unable to connect to peer %s", addr.ID)
+		}
+	}
 
 	go dp.findPeers()
 	go dp.advertise()
-
 
 	return dp, nil
 }
@@ -96,7 +103,7 @@ func (d *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 
 func (d *discoveryProtocol) findPeers() {
 	for {
-		peers, err := d.discovery.FindPeers(d.ctx, d.params.GetRendevouzString())
+		peers, err := d.discovery.FindPeers(d.ctx, d.netParams.GetRendevouzString())
 		if err != nil {
 			break
 		}
@@ -118,17 +125,7 @@ func (d *discoveryProtocol) findPeers() {
 }
 
 func (d *discoveryProtocol) advertise() {
-	discovery.Advertise(d.ctx, d.discovery, d.params.GetRendevouzString())
-}
-
-func (d *discoveryProtocol) Start() {
-	var initialNodes []peer.AddrInfo
-	initialNodes = append(initialNodes, d.getRelayers()...)
-	for _, addr := range initialNodes {
-		if err := d.host.GetHost().Connect(d.ctx, addr); err != nil {
-			d.log.Errorf("unable to connect to peer %s", addr.ID)
-		}
-	}
+	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
 const connectionTimeout = 10 * time.Second

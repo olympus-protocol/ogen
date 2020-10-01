@@ -3,6 +3,7 @@ package chain
 import (
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"sync"
 
@@ -37,7 +38,7 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock state.State) *stateDeriv
 	}
 }
 
-func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView, p *params.ChainParams, log logger.Logger) (state.State, []*primitives.EpochReceipt, error) {
+func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -48,7 +49,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView, p
 	if slot < s.lastSlot {
 		derivedState := s.firstSlotState.Copy()
 
-		receipts, err := derivedState.ProcessSlots(slot, view, p, log)
+		receipts, err := derivedState.ProcessSlots(slot, view)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -60,7 +61,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView, p
 
 	view.SetTipSlot(s.lastSlot)
 
-	receipts, err := s.lastSlotState.ProcessSlots(slot, view, p, log)
+	receipts, err := s.lastSlotState.ProcessSlots(slot, view)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -87,7 +88,7 @@ type StateService interface {
 	SetJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error
 	GetJustifiedHead() (*chainindex.BlockRow, state.State)
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
-	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error)
+	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error)
 	Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error)
 	RemoveBeforeSlot(slot uint64)
 	GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool)
@@ -101,10 +102,10 @@ type StateService interface {
 // stateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
 // get rid of old states.
 type stateService struct {
-	log    logger.Logger
-	lock   sync.RWMutex
-	params *params.ChainParams
-	db     blockdb.Database
+	log       logger.Logger
+	lock      sync.RWMutex
+	netParams *params.ChainParams
+	db        blockdb.Database
 
 	blockIndex *chainindex.BlockIndex
 	blockChain *Chain
@@ -251,7 +252,7 @@ func (s *stateService) GetStateForHash(hash chainhash.Hash) (state.State, bool) 
 var ErrTooFarInFuture = fmt.Errorf("tried to get block too far in future")
 
 // GetStateForHashAtSlot gets the state for a certain block hash at a certain slot.
-func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error) {
+func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error) {
 	s.lock.RLock()
 	derivedState, found := s.stateMap[hash]
 	s.lock.RUnlock()
@@ -263,7 +264,7 @@ func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 		return nil, nil, ErrTooFarInFuture
 	}
 
-	return derivedState.deriveState(slot, view, p, s.log)
+	return derivedState.deriveState(slot, view)
 }
 
 // Add adds a block to the blockchain.
@@ -275,14 +276,14 @@ func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.
 		return nil, nil, err
 	}
 
-	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, s.params)
+	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	newState := lastBlockState.Copy()
 
-	err = newState.ProcessBlock(block, s.params)
+	err = newState.ProcessBlock(block)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -338,7 +339,7 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 	if err != nil {
 		return nil, err
 	}
-	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, s.params)
+	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view)
 	if err != nil {
 		return nil, err
 	}
@@ -347,18 +348,22 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log logger.Logger, ip state.InitializationParameters, params *params.ChainParams, db blockdb.Database) (StateService, error) {
+func NewStateService(db blockdb.Database) (StateService, error) {
+	ip := config.GlobalParams.InitParams
+	netParams := config.GlobalParams.NetParams
+	log := config.GlobalParams.Logger
+
 	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Hash()
 
-	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, &ip, params)
+	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, ip, netParams)
 	if err != nil {
 		return nil, err
 	}
 
 	ss := &stateService{
-		params: params,
-		log:    log,
+		netParams: netParams,
+		log:       log,
 		stateMap: map[chainhash.Hash]*stateDerivedFromBlock{
 			genesisHash: newStateDerivedFromBlock(genesisState),
 		},

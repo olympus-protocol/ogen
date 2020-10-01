@@ -9,12 +9,10 @@ import (
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -75,7 +73,7 @@ func TestNilPointer(t *testing.T) {
 
 	mState := state.NewState(cs, gs, validatorsGlobal, genesisHash, param)
 	assert.NotPanics(t, func() {
-		_ = mState.IsDepositValid(deposit, param)
+		_ = mState.IsDepositValid(deposit)
 	})
 
 }
@@ -98,8 +96,6 @@ func TestActionMempool_New(t *testing.T) {
 
 	host.EXPECT().GetHost().Return(h)
 
-	log := logger.New(os.Stdin)
-
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validatorsGlobal)
 
@@ -111,7 +107,7 @@ func TestActionMempool_New(t *testing.T) {
 	ch.EXPECT().State().AnyTimes().Return(stateService)
 	ch.EXPECT().Notify(gomock.Any()).AnyTimes()
 
-	am, err := mempool.NewActionMempool(ctx, log, param, ch, host)
+	am, err := mempool.NewActionMempool(ch, host)
 	assert.NoError(t, err)
 	assert.NotNil(t, am)
 }

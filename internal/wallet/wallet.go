@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"os"
 	"path"
@@ -46,7 +47,7 @@ var _ Wallet = &wallet{}
 // wallet is the structure of the wallet manager.
 type wallet struct {
 	// Wallet manager properties
-	params        *params.ChainParams
+	netParams     *params.ChainParams
 	log           logger.Logger
 	chain         chain.Blockchain
 	hostnode      hostnode.HostNode
@@ -74,7 +75,11 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ctx context.Context, log logger.Logger, path string, params *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
+func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
+	netParams := config.GlobalParams.NetParams
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+
 	var txTopic, depositTopic, depositsTopic, exitTopic, exitsTopic *pubsub.Topic
 	var err error
 	if hostnode != nil {
@@ -106,8 +111,8 @@ func NewWallet(ctx context.Context, log logger.Logger, path string, params *para
 
 	wall := &wallet{
 		log:           log,
-		directory:     path,
-		params:        params,
+		directory:     config.GlobalFlags.DataPath,
+		netParams:     netParams,
 		open:          false,
 		chain:         ch,
 		txTopic:       txTopic,

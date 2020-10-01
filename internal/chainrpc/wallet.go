@@ -15,9 +15,9 @@ import (
 )
 
 type walletServer struct {
-	wallet wallet.Wallet
-	chain  chain.Blockchain
-	params *params.ChainParams
+	wallet    wallet.Wallet
+	chain     chain.Blockchain
+	netParams *params.ChainParams
 	proto.UnimplementedWalletServer
 }
 
@@ -93,7 +93,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	if err != nil {
 		return nil, err
 	}
-	if prefix != s.params.AccountPrefixes.Private {
+	if prefix != s.netParams.AccountPrefixes.Private {
 		return nil, errors.New("wrong wallet format for current network")
 	}
 
@@ -171,7 +171,7 @@ func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey[:]),
 			Status:           v.StatusString(),
-			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.netParams.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
 		}

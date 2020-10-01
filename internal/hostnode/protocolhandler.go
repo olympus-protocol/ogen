@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"io"
 	"strings"
 	"sync"
@@ -13,29 +14,9 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
-
-// ProtocolHandler is an interface for the ProtocolHandler
-type ProtocolHandler interface {
-	RegisterHandler(messageName string, handler MessageHandler) error
-	receiveMessages(id peer.ID, r io.Reader)
-	SendMessage(toPeer peer.ID, msg p2p.Message) error
-	SendFinalizedMessage(msg *p2p.MsgFinalization) error
-	Listen(network.Network, multiaddr.Multiaddr)
-	ListenClose(network.Network, multiaddr.Multiaddr)
-	Connected(net network.Network, conn network.Conn)
-	Disconnected(net network.Network, conn network.Conn)
-	OpenedStream(network.Network, network.Stream)
-	ClosedStream(network.Network, network.Stream)
-	Notify(n ConnectionManagerNotifee)
-	StopNotify(n ConnectionManagerNotifee)
-	HandleStream(s network.Stream)
-}
-
-var _ ProtocolHandler = &protocolHandler{}
 
 // MessageHandler is a handler for a specific message.
 type MessageHandler func(id peer.ID, msg p2p.Message) error
@@ -58,21 +39,12 @@ type protocolHandler struct {
 
 	ctx context.Context
 
-	notifees    []ConnectionManagerNotifee
-	notifeeLock sync.Mutex
-
 	log      logger.Logger
 	finTopic *pubsub.Topic
 }
 
-// ConnectionManagerNotifee is a notifee for the connection manager.
-type ConnectionManagerNotifee interface {
-	PeerConnected(peer.ID, network.Direction)
-	PeerDisconnected(peer.ID)
-}
-
 // newProtocolHandler constructs a new protocol handler for a specific protocol ID.
-func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, config Config) (ProtocolHandler, error) {
+func newProtocolHandler(id protocol.ID, host HostNode) (*protocolHandler, error) {
 	finTopic, err := host.Topic(p2p.MsgFinalizationCmd)
 	if err != nil {
 		return nil, err
@@ -82,14 +54,12 @@ func newProtocolHandler(ctx context.Context, id protocol.ID, host HostNode, conf
 		host:             host,
 		messageHandlers:  make(map[string]MessageHandler),
 		outgoingMessages: make(map[peer.ID]chan p2p.Message),
-		ctx:              ctx,
-		notifees:         make([]ConnectionManagerNotifee, 0),
-		log:              config.Log,
+		ctx:              config.GlobalParams.Context,
+		log:              config.GlobalParams.Logger,
 		finTopic:         finTopic,
 	}
 
 	host.SetStreamHandler(id, ph.HandleStream)
-	host.Notify(ph)
 
 	return ph, nil
 }
@@ -146,11 +116,6 @@ func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 		return nil
 	})
 	if err != nil {
-		p.notifeeLock.Lock()
-		for _, n := range p.notifees {
-			n.PeerDisconnected(id)
-		}
-		p.notifeeLock.Unlock()
 		if !strings.Contains(err.Error(), "stream reset") {
 			p.log.Errorf("error receiving messages from peer %s: %s", id, err)
 		}
@@ -170,13 +135,6 @@ func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
 			err := p2p.WriteMessage(w, msg, p.host.GetNetMagic())
 			if err != nil {
 				p.log.Errorf("error sending message to peer %s: %s", id, err)
-
-				p.notifeeLock.Lock()
-				for _, n := range p.notifees {
-					n.PeerDisconnected(id)
-				}
-				p.notifeeLock.Unlock()
-
 				_ = p.host.DisconnectPeer(id)
 			}
 		}
@@ -186,15 +144,8 @@ func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
 func (p *protocolHandler) HandleStream(s network.Stream) {
 	if s != nil {
 		p.sendMessages(s.Conn().RemotePeer(), s)
-
 		p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
 		go p.receiveMessages(s.Conn().RemotePeer(), s)
-
-		p.notifeeLock.Lock()
-		for _, n := range p.notifees {
-			n.PeerConnected(s.Conn().RemotePeer(), s.Stat().Direction)
-		}
-		p.notifeeLock.Unlock()
 	}
 }
 
@@ -217,56 +168,4 @@ func (p *protocolHandler) SendFinalizedMessage(msg *p2p.MsgFinalization) error {
 		return err
 	}
 	return p.finTopic.Publish(p.ctx, buf.Bytes())
-}
-
-// Listen is called when we start listening on an address.
-func (p *protocolHandler) Listen(network.Network, multiaddr.Multiaddr) {}
-
-// ListenClose is called when we stop listening on an address.
-func (p *protocolHandler) ListenClose(network.Network, multiaddr.Multiaddr) {}
-
-// Connected is called when we connect to a peer.
-func (p *protocolHandler) Connected(net network.Network, conn network.Conn) {}
-
-// Disconnected is called when we disconnect to a peer.
-func (p *protocolHandler) Disconnected(net network.Network, conn network.Conn) {
-	peerID := conn.RemotePeer()
-
-	if net.Connectedness(peerID) == network.NotConnected {
-		p.outgoingMessagesLock.Lock()
-		defer p.outgoingMessagesLock.Unlock()
-		if handler, found := p.outgoingMessages[peerID]; found {
-			close(handler)
-			delete(p.outgoingMessages, peerID)
-		}
-	}
-}
-
-// OpenedStream is called when we open a stream to a peer.
-func (p *protocolHandler) OpenedStream(network.Network, network.Stream) {}
-
-// ClosedStream is called when we close a stream to a peer.
-func (p *protocolHandler) ClosedStream(network.Network, network.Stream) {}
-
-// Notify notifies a specific notifier when certain events happen.
-func (p *protocolHandler) Notify(n ConnectionManagerNotifee) {
-	p.notifeeLock.Lock()
-	p.notifees = append(p.notifees, n)
-	p.notifeeLock.Unlock()
-}
-
-// StopNotify stops notifying a certain notifee about certain events.
-func (p *protocolHandler) StopNotify(n ConnectionManagerNotifee) {
-	p.notifeeLock.Lock()
-	found := -1
-	for i, notif := range p.notifees {
-		if notif == n {
-			found = i
-			break
-		}
-	}
-	if found != -1 {
-		p.notifees = append(p.notifees[:found], p.notifees[found+1:]...)
-	}
-	p.notifeeLock.Unlock()
 }

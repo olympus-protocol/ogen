@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
@@ -41,7 +42,7 @@ var _ Proposer = &proposer{}
 // proposer manages mining for the blockchain.
 type proposer struct {
 	log        logger.Logger
-	params     *params.ChainParams
+	netParams  *params.ChainParams
 	chain      chain.Blockchain
 	keystore   keystore.Keystore
 	mineActive bool
@@ -49,7 +50,7 @@ type proposer struct {
 	stop       context.CancelFunc
 
 	proposerLock sync.RWMutex
-	voteLock sync.RWMutex
+	voteLock     sync.RWMutex
 
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
@@ -62,8 +63,9 @@ type proposer struct {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+
 	blockTopic, err := hostnode.Topic(p2p.MsgBlockCmd)
 	if err != nil {
 		cancel()
@@ -77,8 +79,8 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 	}
 
 	prop := &proposer{
-		log:               log,
-		params:            params,
+		log:               config.GlobalParams.Logger,
+		netParams:         config.GlobalParams.NetParams,
 		keystore:          ks,
 		chain:             chain,
 		mineActive:        true,
@@ -115,7 +117,7 @@ func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newSt
 }
 
 func (p *proposer) getCurrentSlot() uint64 {
-	slot := time.Now().Sub(p.chain.GenesisTime()) / (time.Duration(p.params.SlotDuration) * time.Second)
+	slot := time.Now().Sub(p.chain.GenesisTime()) / (time.Duration(p.netParams.SlotDuration) * time.Second)
 	if slot < 0 {
 		return 0
 	}
@@ -124,12 +126,12 @@ func (p *proposer) getCurrentSlot() uint64 {
 
 // getNextSlotTime gets the next slot time.
 func (p *proposer) getNextBlockTime(nextSlot uint64) time.Time {
-	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second)
+	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.netParams.SlotDuration) * time.Second)
 }
 
 // getNextSlotTime gets the next slot time.
 func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
-	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
+	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.netParams.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.netParams.SlotDuration) / 2)
 }
 
 func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
@@ -176,7 +178,7 @@ func (p *proposer) ProposeBlocks() {
 		case <-blockTimer.C:
 			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+			if p.hostnode.Syncing() {
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
 				p.proposerLock.Unlock()
@@ -194,7 +196,7 @@ func (p *proposer) ProposeBlocks() {
 				continue
 			}
 
-			slotIndex := (slotToPropose + p.params.EpochLength - 1) % p.params.EpochLength
+			slotIndex := (slotToPropose + p.netParams.EpochLength - 1) % p.netParams.EpochLength
 			proposerIndex := voteState.GetProposerQueue()[slotIndex]
 			proposer := voteState.GetValidatorRegistry()[proposerIndex]
 
@@ -207,7 +209,7 @@ func (p *proposer) ProposeBlocks() {
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
-				votes, err := p.voteMempool.Get(slotToPropose, voteState, p.params, proposerIndex)
+				votes, err := p.voteMempool.Get(slotToPropose, voteState, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -215,7 +217,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), voteState)
+				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.netParams.MaxDepositsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -223,11 +225,11 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				coinTxs, voteState := p.coinsMempool.Get(p.params.MaxTxsPerBlock, voteState)
+				coinTxs, voteState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, voteState)
 
-				coinTxMulti := p.coinsMempool.GetMulti(p.params.MaxTxsMultiPerBlock, voteState)
+				coinTxMulti := p.coinsMempool.GetMulti(p.netParams.MaxTxsMultiPerBlock, voteState)
 
-				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
+				exitTxs, err := p.actionsMempool.GetExits(int(p.netParams.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -235,7 +237,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), voteState)
+				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.netParams.MaxRANDAOSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -243,7 +245,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), voteState)
+				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.netParams.MaxVoteSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -251,7 +253,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), voteState)
+				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.netParams.MaxProposerSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -259,7 +261,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), voteState)
+				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.netParams.MaxGovernanceVotesPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -339,7 +341,7 @@ func (p *proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 			p.voteLock.Lock()
 			// Check if we're an attester for this slot
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+			if p.hostnode.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
 				p.voteLock.Unlock()
@@ -356,7 +358,7 @@ func (p *proposer) VoteForBlocks() {
 				continue
 			}
 
-			validators, err := voteState.GetVoteCommittee(slotToVote, p.params)
+			validators, err := voteState.GetVoteCommittee(slotToVote)
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
 				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
@@ -366,7 +368,7 @@ func (p *proposer) VoteForBlocks() {
 
 			p.log.Debugf("committing for slot %d with %d validators", slotToVote, len(validators))
 
-			toEpoch := (slotToVote - 1) / p.params.EpochLength
+			toEpoch := (slotToVote - 1) / p.netParams.EpochLength
 
 			beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
 			if !found {
@@ -381,7 +383,7 @@ func (p *proposer) VoteForBlocks() {
 				FromEpoch:       voteState.GetJustifiedEpoch(),
 				FromHash:        voteState.GetJustifiedEpochHash(),
 				ToEpoch:         toEpoch,
-				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, p.params),
+				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.netParams.EpochLength - 1),
 				BeaconBlockHash: beaconBlock.Hash,
 				Nonce:           p.lastActionManager.GetNonce(),
 			}

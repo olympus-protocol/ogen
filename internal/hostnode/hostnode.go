@@ -3,37 +3,29 @@ package hostnode
 import (
 	"context"
 	"crypto/rand"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
-	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"io/ioutil"
 	"os"
 	"path"
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p"
-	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/pkg/logger"
-
-	circuit "github.com/libp2p/go-libp2p-circuit"
-	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
-
 	dsbadger "github.com/ipfs/go-ds-badger"
+	"github.com/libp2p/go-libp2p"
+	circuit "github.com/libp2p/go-libp2p-circuit"
 	"github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 )
-
-type Config struct {
-	Log  logger.Logger
-	Port string
-	Path string
-}
 
 // HostNode is an interface for hostNode
 type HostNode interface {
@@ -43,8 +35,6 @@ type HostNode interface {
 	GetHost() host.Host
 	GetNetMagic() uint32
 	DisconnectPeer(p peer.ID) error
-	IsConnected() bool
-	PeersConnected() int
 	GetPeerList() []peer.ID
 	GetPeerInfos() []peer.AddrInfo
 	ConnectedToPeer(id peer.ID) bool
@@ -72,28 +62,31 @@ type hostNode struct {
 
 	netMagic uint32
 
-	log  logger.Logger
-	path string
+	log      logger.Logger
+	datapath string
 
 	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
 	discoveryProtocol *discoveryProtocol
 
 	// syncProtocol handles peer syncing
-	syncProtocol SyncProtocol
+	syncProtocol *syncProtocol
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, p *params.ChainParams) (HostNode, error) {
+func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
 
 	node := &hostNode{
 		ctx:      ctx,
-		log:      config.Log,
+		log:      log,
 		topics:   map[string]*pubsub.Topic{},
-		netMagic: p.NetMagic,
-		path:     config.Path,
+		netMagic: netParams.NetMagic,
+		datapath: config.GlobalFlags.DataPath,
 	}
 
-	ds, err := dsbadger.NewDatastore(path.Join(config.Path, "peerstore"), nil)
+	ds, err := dsbadger.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +102,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.privateKey = priv
 
-	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + config.Port)
+	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + netParams.DefaultP2PPort)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +133,7 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 
 	for _, a := range addrs {
-		config.Log.Infof("binding to address: %s", a)
+		log.Infof("binding to address: %s", a)
 	}
 
 	g, err := pubsub.NewGossipSub(ctx, h)
@@ -149,13 +142,13 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 	node.gossipSub = g
 
-	discovery, err := NewDiscoveryProtocol(ctx, node, config, p)
+	discovery, err := NewDiscoveryProtocol(node)
 	if err != nil {
 		return nil, err
 	}
 	node.discoveryProtocol = discovery
 
-	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
+	syncProtocol, err := NewSyncProtocol(node, blockchain)
 	if err != nil {
 		return nil, err
 	}
@@ -257,18 +250,9 @@ func (node *hostNode) GetNetMagic() uint32 {
 	return node.netMagic
 }
 
-func (node *hostNode) removePeer(p peer.ID) {
-	node.host.Peerstore().ClearAddrs(p)
-}
-
 // DisconnectPeer disconnects a peer
 func (node *hostNode) DisconnectPeer(p peer.ID) error {
 	return node.host.Network().ClosePeer(p)
-}
-
-// IsConnected checks if the host node is connected.
-func (node *hostNode) IsConnected() bool {
-	return node.PeersConnected() > 0
 }
 
 // PeersConnected checks how many hostnode are connected.
@@ -332,7 +316,7 @@ func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 }
 
 func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {
-	keyBytes, err := ioutil.ReadFile(path.Join(node.path, "node_key.dat"))
+	keyBytes, err := ioutil.ReadFile(path.Join(node.datapath, "node_key.dat"))
 	if err != nil {
 		return node.createPrivateKey()
 	}
@@ -345,7 +329,7 @@ func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {
 }
 
 func (node *hostNode) createPrivateKey() (crypto.PrivKey, error) {
-	_ = os.RemoveAll(path.Join(node.path, "node_key.dat"))
+	_ = os.RemoveAll(path.Join(node.datapath, "node_key.dat"))
 
 	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
@@ -357,7 +341,7 @@ func (node *hostNode) createPrivateKey() (crypto.PrivKey, error) {
 		return nil, err
 	}
 
-	err = ioutil.WriteFile(path.Join(node.path, "node_key.dat"), keyBytes, 0700)
+	err = ioutil.WriteFile(path.Join(node.datapath, "node_key.dat"), keyBytes, 0700)
 	if err != nil {
 		return nil, err
 	}

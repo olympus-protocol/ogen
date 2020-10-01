@@ -7,7 +7,6 @@ package mempool
 import (
 	gomock "github.com/golang/mock/gomock"
 	state "github.com/olympus-protocol/ogen/internal/state"
-	params "github.com/olympus-protocol/ogen/pkg/params"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
 )
@@ -62,18 +61,18 @@ func (mr *MockVoteMempoolMockRecorder) Add(vote interface{}) *gomock.Call {
 }
 
 // Get mocks base method
-func (m *MockVoteMempool) Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *MockVoteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", slot, s, p, proposerIndex)
+	ret := m.ctrl.Call(m, "Get", slot, s, proposerIndex)
 	ret0, _ := ret[0].([]*primitives.MultiValidatorVote)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get
-func (mr *MockVoteMempoolMockRecorder) Get(slot, s, p, proposerIndex interface{}) *gomock.Call {
+func (mr *MockVoteMempoolMockRecorder) Get(slot, s, proposerIndex interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVoteMempool)(nil).Get), slot, s, p, proposerIndex)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVoteMempool)(nil).Get), slot, s, proposerIndex)
 }
 
 // Remove mocks base method

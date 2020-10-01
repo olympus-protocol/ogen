@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
@@ -104,7 +105,7 @@ var _ CoinsMempool = &coinsMempool{}
 type coinsMempool struct {
 	blockchain chain.Blockchain
 	hostNode   hostnode.HostNode
-	params     *params.ChainParams
+	netParams  *params.ChainParams
 	topic      *pubsub.Topic
 	ctx        context.Context
 	log        logger.Logger
@@ -203,7 +204,7 @@ func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitive
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := s.ApplyTransactionSingle(tx, [20]byte{}, cm.params); err != nil {
+			if err := s.ApplyTransactionSingle(tx, [20]byte{}); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, tx)
@@ -226,7 +227,7 @@ func (cm *coinsMempool) GetMulti(maxTransactions uint64, s state.State) []*primi
 outer:
 	for _, addr := range cm.mempoolMulti {
 		for _, tx := range addr.transactions {
-			if err := s.ApplyTransactionMulti(tx, [20]byte{}, cm.params); err != nil {
+			if err := s.ApplyTransactionMulti(tx, [20]byte{}); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, tx)
@@ -323,7 +324,10 @@ func (cm *coinsMempool) handleSubscriptionMulti(topic *pubsub.Subscription) {
 }
 
 // NewCoinsMempool constructs a new coins mempool.
-func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain, hostNode hostnode.HostNode, params *params.ChainParams) (CoinsMempool, error) {
+func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMempool, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
 
 	topic, err := hostNode.Topic(p2p.MsgTxCmd)
 	if err != nil {
@@ -352,7 +356,7 @@ func NewCoinsMempool(ctx context.Context, log logger.Logger, ch chain.Blockchain
 		ctx:          ctx,
 		blockchain:   ch,
 		hostNode:     hostNode,
-		params:       params,
+		netParams:    netParams,
 		topic:        topic,
 		log:          log,
 	}

@@ -2,6 +2,7 @@ package state_test
 
 import (
 	"encoding/hex"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -24,14 +25,14 @@ var secrets = make([]pair, NumValidators)
 var params = testdata.TestParams
 var premineAddr = bls.RandKey()
 
-var initParams *state.InitializationParameters
+var initParams *initialization.InitializationParameters
 
 var blocksMap = make(map[uint64]chainhash.Hash)
 
 func init() {
 
-	initParams = &state.InitializationParameters{
-		InitialValidators: make([]state.ValidatorInitialization, NumValidators),
+	initParams = &initialization.InitializationParameters{
+		InitialValidators: make([]initialization.ValidatorInitialization, NumValidators),
 		PremineAddress:    premineAddr.PublicKey().ToAccount(),
 		GenesisTime:       time.Now(),
 	}
@@ -44,7 +45,7 @@ func init() {
 		}
 		var pub [48]byte
 		copy(pub[:], key.PublicKey().Marshal())
-		initParams.InitialValidators[i] = state.ValidatorInitialization{
+		initParams.InitialValidators[i] = initialization.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(key.PublicKey().Marshal()),
 			PayeeAddress: premineAddr.PublicKey().ToAccount(),
 		}

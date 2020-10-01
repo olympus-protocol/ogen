@@ -2,7 +2,6 @@ package wallet_test
 
 import (
 	"bytes"
-	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 var testPass = "test_password"
@@ -140,7 +138,7 @@ func createWallet(t *testing.T, close bool) (wallet.Wallet, error) {
 	coinspool := mempool.NewMockCoinsMempool(ctrl)
 	actionpool := mempool.NewMockActionMempool(ctrl)
 
-	walletMan, err := wallet.NewWallet(context.Background(), nil, "./", &params.TestNet, ch, hn, coinspool, actionpool)
+	walletMan, err := wallet.NewWallet(ch, hn, coinspool, actionpool)
 	if err != nil {
 		return nil, err
 	}

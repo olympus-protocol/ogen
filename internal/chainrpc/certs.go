@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -40,36 +41,37 @@ var baseCA = &x509.Certificate{
 	BasicConstraintsValid: true,
 }
 
-// LoadCerts will attempt to load certificates previously generatet. If it fails it will generate them and load them again.
-func LoadCerts(dataFolder string) (*x509.CertPool, error) {
+// LoadCerts will attempt to load certificates previously generate. If it fails it will generate them and load them again.
+func LoadCerts() (*x509.CertPool, error) {
+	datapath := config.GlobalFlags.DataPath
 open:
-	ca, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CA))
+	ca, err := ioutil.ReadFile(path.Join(datapath, "cert", CA))
 	if err != nil {
-		err := GenerateCerts(dataFolder)
+		err := GenerateCerts(datapath)
 		if err != nil {
 			return nil, err
 		}
 		goto open
 	}
-	caKey, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CaKey))
+	caKey, err := ioutil.ReadFile(path.Join(datapath, "cert", CaKey))
 	if err != nil {
-		err := GenerateCerts(dataFolder)
+		err := GenerateCerts(datapath)
 		if err != nil {
 			return nil, err
 		}
 		goto open
 	}
-	cert, err := ioutil.ReadFile(path.Join(dataFolder, "cert", Cert))
+	cert, err := ioutil.ReadFile(path.Join(datapath, "cert", Cert))
 	if err != nil {
-		err := GenerateCerts(dataFolder)
+		err := GenerateCerts(datapath)
 		if err != nil {
 			return nil, err
 		}
 		goto open
 	}
-	certKey, err := ioutil.ReadFile(path.Join(dataFolder, "cert", CertKey))
+	certKey, err := ioutil.ReadFile(path.Join(datapath, "cert", CertKey))
 	if err != nil {
-		err := GenerateCerts(dataFolder)
+		err := GenerateCerts(datapath)
 		if err != nil {
 			return nil, err
 		}

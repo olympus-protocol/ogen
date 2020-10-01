@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/olympus-protocol/ogen/internal/wallet"
@@ -36,7 +35,7 @@ var generateWalletCmd = &cobra.Command{
 
 		bls.Initialize(net)
 
-		w, err := wallet.NewWallet(context.Background(), nil, GlobalDataFolder, net, nil, nil, nil, nil)
+		w, err := wallet.NewWallet(nil, nil, nil, nil)
 		if err != nil {
 			panic(err)
 		}

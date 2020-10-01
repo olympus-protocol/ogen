@@ -5,9 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	fuzz "github.com/google/gofuzz"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -35,7 +35,7 @@ var genesisHash chainhash.Hash
 var param = &testdata.TestParams
 
 // init params used on the test
-var stateParams state.InitializationParameters
+var stateParams initialization.InitializationParameters
 
 //bc hold the initialized blockchain
 var bc chain.Blockchain
@@ -78,10 +78,10 @@ func init() {
 	}
 	validatorsGlobal = append(validators1, validators2...)
 	stateParams.GenesisTime = time.Unix(time.Now().Unix(), 0)
-	stateParams.InitialValidators = []state.ValidatorInitialization{}
+	stateParams.InitialValidators = []initialization.ValidatorInitialization{}
 	// Convert the validators to initialization params.
 	for _, vk := range validatorKeys1 {
-		val := state.ValidatorInitialization{
+		val := initialization.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
 		}
@@ -101,11 +101,8 @@ func TestBlockchain_Instance(t *testing.T) {
 
 	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
 	assert.NoError(t, err)
-	var c chain.Config
-	c.Log = log
-	c.Datadir = testdata.Conf.DataFolder
 
-	bc, err = chain.NewBlockchain(c, param, db, stateParams)
+	bc, err = chain.NewBlockchain(db)
 	assert.NoError(t, err)
 	assert.NotNil(t, bc)
 	err = bc.Start()
@@ -138,7 +135,7 @@ func TestBlockchain_Instance(t *testing.T) {
 		Txs: []*primitives.Tx{},
 	}
 	// sign the block with the next validator
-	valPub, err := currState.GetProposerPublicKey(&b, param)
+	valPub, err := currState.GetProposerPublicKey(&b)
 	assert.NoError(t, err)
 	var priv *bls.SecretKey
 	for _, element := range validatorKeys1 {

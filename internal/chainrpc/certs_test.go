@@ -15,12 +15,12 @@ func Test_GenCertificates(t *testing.T) {
 }
 
 func Test_LoadCertificatesCreating(t *testing.T) {
-	_, err := chainrpc.LoadCerts("./")
+	_, err := chainrpc.LoadCerts()
 	assert.NoError(t, err)
 }
 
 func Test_LoadCertificates(t *testing.T) {
-	_, err := chainrpc.LoadCerts("./")
+	_, err := chainrpc.LoadCerts()
 	assert.NoError(t, err)
 	rmv()
 }

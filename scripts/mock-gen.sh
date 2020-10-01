@@ -11,10 +11,7 @@ mockgen --source internal/keystore/keystore.go --destination internal/keystore/k
 mockgen --source internal/mempool/actions.go --destination internal/mempool/actions_mock.go --package mempool
 mockgen --source internal/mempool/coins.go --destination internal/mempool/coins_mock.go --package mempool
 mockgen --source internal/mempool/votes.go --destination internal/mempool/votes_mock.go --package mempool
-mockgen --source internal/hostnode/discoveryprotocol.go --destination internal/hostnode/discoveryprotocol_mock.go --package hostnode
 mockgen --source internal/hostnode/hostnode.go --destination internal/hostnode/hostnode_mock.go --package hostnode
-mockgen --source internal/hostnode/protocolhandler.go --destination internal/hostnode/protocolhandler_mock.go --package hostnode
-mockgen --source internal/hostnode/syncprotocol.go --destination internal/hostnode/syncprotocol_mock.go --package hostnode
 mockgen --source internal/proposer/proposer.go --destination internal/proposer/proposer_mock.go --package proposer
 mockgen --source internal/server/server.go --destination internal/server/server_mock.go --package server
 mockgen --source internal/state/interface.go --destination internal/state/interface_mock.go --package state
