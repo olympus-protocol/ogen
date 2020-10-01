@@ -140,7 +140,6 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 				sp.sendVersion(conn.RemotePeer())
 		},
 		DisconnectedF: func(n network.Network, conn network.Conn) {
-			fmt.Println(n, conn)
 			sp.peersTrackLock.Lock()
 			defer sp.peersTrackLock.Unlock()
 			delete(sp.peersTrack, conn.RemotePeer())
@@ -154,9 +153,6 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 
 func (sp *syncProtocol) initialBlockDownload() {
 
-	sp.peersTrackLock.Lock()
-	defer sp.peersTrackLock.Unlock()
-
 	for {
 		time.Sleep(time.Second * 1)
 		if len(sp.peersTrack) < MinPeersForSyncStart {
@@ -165,6 +161,9 @@ func (sp *syncProtocol) initialBlockDownload() {
 		}
 		break
 	}
+
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
 
 	myInfo := sp.versionMsg()
 
@@ -474,6 +473,7 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 	if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
 		return err
 	}
+	fmt.Println("lock")
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
 		ID:              id,
@@ -487,9 +487,9 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		FinalizedHeight: theirVersion.FinalizedHeight,
 		FinalizedHash:   theirVersion.FinalizedHash,
 	}
-
+	fmt.Println(sp.peersTrack[id])
 	sp.peersTrackLock.Unlock()
-
+	fmt.Println("unlock")
 	return nil
 }
 
