@@ -124,7 +124,7 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 
 	host.Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, conn network.Conn) {
-			go func() {
+			fmt.Println(conn, n)
 				if conn.Stat().Direction != network.DirOutbound {
 					return
 				}
@@ -138,7 +138,6 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 				sp.protocolHandler.HandleStream(s)
 
 				sp.sendVersion(conn.RemotePeer())
-			}()
 		},
 		DisconnectedF: func(n network.Network, conn network.Conn) {
 			go func() {
