@@ -177,6 +177,7 @@ var TestNet = ChainParams{
 		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooWDbvbYMzEvRi5CECVHawadaaZLich93GRhaCRRxQHFVcN",
 		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWBdwHS4aLQmfzhddfsT3aV9YA8Cy47VWx8ckoYkC8Vwb4",
 		"evolbyte": "/ip4/136.244.90.254/tcp/25000/p2p/12D3KooWNTqMjzeGDuyGDLm3kADGM6FWqN4fV2mem38Y1tEoxEdZ",
+		"stepollo": "/ip4/45.32.184.252/tcp/25000/p2p/12D3KooWStKhuQayJhKKqnA2HLqo2NrEP9dKhD7Ra7GM5TYUhCNW",
 	},
 }
 
