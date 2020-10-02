@@ -124,7 +124,6 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 
 	host.Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, conn network.Conn) {
-			fmt.Println(conn, n)
 				if conn.Stat().Direction != network.DirOutbound {
 					return
 				}
@@ -156,7 +155,6 @@ func (sp *syncProtocol) initialBlockDownload() {
 	for {
 		time.Sleep(time.Second * 1)
 		if len(sp.peersTrack) < MinPeersForSyncStart {
-			fmt.Println(len(sp.peersTrack))
 			continue
 		}
 		break
