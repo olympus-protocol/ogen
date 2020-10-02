@@ -124,19 +124,19 @@ func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, erro
 
 	host.Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, conn network.Conn) {
-				if conn.Stat().Direction != network.DirOutbound {
-					return
-				}
+			if conn.Stat().Direction != network.DirOutbound {
+				return
+			}
 
-				// open a stream for the sync protocol:
-				s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
-				if err != nil {
-					sp.log.Errorf("could not open stream for connection: %s", err)
-				}
+			// open a stream for the sync protocol:
+			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
+			if err != nil {
+				sp.log.Errorf("could not open stream for connection: %s", err)
+			}
 
-				sp.protocolHandler.HandleStream(s)
+			sp.protocolHandler.HandleStream(s)
 
-				sp.sendVersion(conn.RemotePeer())
+			sp.sendVersion(conn.RemotePeer())
 		},
 		DisconnectedF: func(n network.Network, conn network.Conn) {
 			sp.peersTrackLock.Lock()
