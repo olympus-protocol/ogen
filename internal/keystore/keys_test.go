@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-var k2 = keystore.NewKeystore(testdata.Node2Folder)
+var k2 = keystore.NewKeystore()
 
 func init() {
 	_ = os.Mkdir(testdata.Node2Folder, 0777)

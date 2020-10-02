@@ -9,7 +9,6 @@ import (
 	chainindex "github.com/olympus-protocol/ogen/internal/chainindex"
 	state "github.com/olympus-protocol/ogen/internal/state"
 	chainhash "github.com/olympus-protocol/ogen/pkg/chainhash"
-	params "github.com/olympus-protocol/ogen/pkg/params"
 	primitives "github.com/olympus-protocol/ogen/pkg/primitives"
 	reflect "reflect"
 )
@@ -180,9 +179,9 @@ func (mr *MockStateServiceMockRecorder) GetStateForHash(hash interface{}) *gomoc
 }
 
 // GetStateForHashAtSlot mocks base method
-func (m *MockStateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error) {
+func (m *MockStateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStateForHashAtSlot", hash, slot, view, p)
+	ret := m.ctrl.Call(m, "GetStateForHashAtSlot", hash, slot, view)
 	ret0, _ := ret[0].(state.State)
 	ret1, _ := ret[1].([]*primitives.EpochReceipt)
 	ret2, _ := ret[2].(error)
@@ -190,9 +189,9 @@ func (m *MockStateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint6
 }
 
 // GetStateForHashAtSlot indicates an expected call of GetStateForHashAtSlot
-func (mr *MockStateServiceMockRecorder) GetStateForHashAtSlot(hash, slot, view, p interface{}) *gomock.Call {
+func (mr *MockStateServiceMockRecorder) GetStateForHashAtSlot(hash, slot, view interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateForHashAtSlot", reflect.TypeOf((*MockStateService)(nil).GetStateForHashAtSlot), hash, slot, view, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateForHashAtSlot", reflect.TypeOf((*MockStateService)(nil).GetStateForHashAtSlot), hash, slot, view)
 }
 
 // Add mocks base method

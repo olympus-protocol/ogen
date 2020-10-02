@@ -1,7 +1,6 @@
 package testdata
 
 import (
-	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
@@ -16,19 +15,6 @@ var Node2Folder = "./data_node2"
 var Node3Folder = "./data_node3"
 
 var PremineAddr = bls.RandKey()
-
-// Conf are the test configuration flags
-var Conf = server.GlobalConfig{
-	NetworkName:  "testing mock net",
-	Port:         "22222",
-	RPCProxy:     true,
-	RPCProxyPort: "8080",
-	RPCPort:      "22223",
-	RPCWallet:    true,
-	Debug:        true,
-	LogFile:      false,
-	Pprof:        true,
-}
 
 // TestParams network parameters for test chains.
 var TestParams = params.ChainParams{

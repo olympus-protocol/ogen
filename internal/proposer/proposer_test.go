@@ -7,6 +7,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
@@ -17,12 +18,10 @@ import (
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 	"time"
 )
@@ -38,7 +37,7 @@ var genesisHash chainhash.Hash
 
 var param = &testdata.TestParams
 
-var stateParams state.InitializationParameters
+var stateParams initialization.InitializationParameters
 
 func init() {
 	f := fuzz.New().NilChance(0)
@@ -64,10 +63,10 @@ func init() {
 	}
 
 	stateParams.GenesisTime = time.Unix(time.Now().Unix(), 0)
-	stateParams.InitialValidators = []state.ValidatorInitialization{}
+	stateParams.InitialValidators = []initialization.ValidatorInitialization{}
 	// Convert the validators to initialization params.
 	for _, vk := range validatorKeys {
-		val := state.ValidatorInitialization{
+		val := initialization.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
 		}
@@ -78,7 +77,6 @@ func init() {
 
 func TestProposerWithEmptyKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	log := logger.New(os.Stdin)
 
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
@@ -90,11 +88,11 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
-	s.EXPECT().GetVoteCommittee(gomock.Any(), gomock.Any()).AnyTimes()
+	s.EXPECT().GetVoteCommittee(gomock.Any()).AnyTimes()
 	s.EXPECT().GetJustifiedEpoch().Return(uint64(0)).AnyTimes()
 	s.EXPECT().GetProposerQueue().Return([]uint64{0, 1, 2, 3, 4, 5}).AnyTimes()
 	s.EXPECT().GetJustifiedEpochHash().Return(genblock.Hash()).AnyTimes()
-	s.EXPECT().GetRecentBlockHash(gomock.Any(), gomock.Any()).Return(genblock.Hash()).AnyTimes()
+	s.EXPECT().GetRecentBlockHash(gomock.Any()).Return(genblock.Hash()).AnyTimes()
 
 	brow := &chainindex.BlockRow{
 		StateRoot: chainhash.Hash{},
@@ -123,7 +121,6 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 	host.EXPECT().Topic(p2p.MsgBlockCmd).Return(g.Join(p2p.MsgBlockCmd))
 	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
-	host.EXPECT().PeersConnected().Return(1).AnyTimes()
 	host.EXPECT().Syncing().Return(false).AnyTimes()
 
 	voteMem := mempool.NewMockVoteMempool(ctrl)
@@ -139,7 +136,7 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 	ks.EXPECT().OpenKeystore().Times(1)
 	ks.EXPECT().GetValidatorKey(gomock.Any()).AnyTimes()
 
-	prop, err := proposer.NewProposer(log, param, bch, host, voteMem, coinsMem, actionsMem, am, ks)
+	prop, err := proposer.NewProposer(bch, host, voteMem, coinsMem, actionsMem, am, ks)
 	assert.NoError(t, err)
 	assert.NotNil(t, prop)
 
@@ -152,7 +149,6 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 
 func TestProposerWithKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	log := logger.New(os.Stdin)
 
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
@@ -164,11 +160,11 @@ func TestProposerWithKeys(t *testing.T) {
 
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validators)
-	s.EXPECT().GetVoteCommittee(gomock.Any(), gomock.Any()).AnyTimes()
+	s.EXPECT().GetVoteCommittee(gomock.Any()).AnyTimes()
 	s.EXPECT().GetJustifiedEpoch().Return(uint64(0)).AnyTimes()
 	s.EXPECT().GetProposerQueue().Return([]uint64{0, 1, 2, 3, 4, 5}).AnyTimes()
 	s.EXPECT().GetJustifiedEpochHash().Return(genblock.Hash()).AnyTimes()
-	s.EXPECT().GetRecentBlockHash(gomock.Any(), gomock.Any()).Return(genblock.Hash()).AnyTimes()
+	s.EXPECT().GetRecentBlockHash(gomock.Any()).Return(genblock.Hash()).AnyTimes()
 
 	brow := &chainindex.BlockRow{
 		StateRoot: chainhash.Hash{},
@@ -197,7 +193,6 @@ func TestProposerWithKeys(t *testing.T) {
 	host.EXPECT().Topic(p2p.MsgBlockCmd).Return(g.Join(p2p.MsgBlockCmd))
 	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
-	host.EXPECT().PeersConnected().Return(1).AnyTimes()
 	host.EXPECT().Syncing().Return(false).AnyTimes()
 
 	voteMem := mempool.NewMockVoteMempool(ctrl)
@@ -216,7 +211,7 @@ func TestProposerWithKeys(t *testing.T) {
 	}
 	ks.EXPECT().GetValidatorKey(gomock.Any()).AnyTimes()
 
-	prop, err := proposer.NewProposer(log, param, bch, host, voteMem, coinsMem, actionsMem, am, ks)
+	prop, err := proposer.NewProposer(bch, host, voteMem, coinsMem, actionsMem, am, ks)
 	assert.NoError(t, err)
 	assert.NotNil(t, prop)
 

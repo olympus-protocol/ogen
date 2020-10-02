@@ -6,16 +6,16 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -45,38 +45,20 @@ var (
 	ErrorBlockParentUnknown = errors.New("unknown block parent")
 )
 
-// SyncProtocol is an interface for the syncProtocol
-type SyncProtocol interface {
-	Notify(notifee SyncNotifee)
-	Listen(network.Network, multiaddr.Multiaddr)
-	ListenClose(network.Network, multiaddr.Multiaddr)
-	Connected(net network.Network, conn network.Conn)
-	Disconnected(net network.Network, conn network.Conn)
-	OpenedStream(net network.Network, stream network.Stream)
-	ClosedStream(network.Network, network.Stream)
-	Syncing() bool
-}
-
-var _ SyncProtocol = &syncProtocol{}
-
 // SyncProtocol handles syncing for a blockchain.
 type syncProtocol struct {
-	host   HostNode
-	config Config
-	ctx    context.Context
-	log    logger.Logger
+	host HostNode
+	ctx  context.Context
+	log  logger.Logger
 
-	chain   chain.Blockchain
+	chain chain.Blockchain
 
-	protocolHandler ProtocolHandler
-
-	notifees     []SyncNotifee
-	notifeesLock sync.Mutex
+	protocolHandler *protocolHandler
 
 	peersTrack     map[peer.ID]*peerInfo
 	peersTrackLock sync.Mutex
 
-	onSync   bool
+	sync     bool
 	withPeer peer.ID
 
 	lastFinalizedEpoch uint64
@@ -95,24 +77,22 @@ func listenToTopic(ctx context.Context, subscription *pubsub.Subscription, handl
 }
 
 // NewSyncProtocol constructs a new sync protocol with a given host and chain.
-func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain chain.Blockchain) (SyncProtocol, error) {
-	ph, err := newProtocolHandler(ctx, params.SyncProtocolID, host, config)
+func NewSyncProtocol(host HostNode, chain chain.Blockchain) (*syncProtocol, error) {
+
+	ph, err := newProtocolHandler(params.SyncProtocolID, host)
 	if err != nil {
 		return nil, err
 	}
 	sp := &syncProtocol{
 		host:               host,
-		config:             config,
-		log:                config.Log,
-		ctx:                ctx,
+		log:                config.GlobalParams.Logger,
+		ctx:                config.GlobalParams.Context,
 		protocolHandler:    ph,
 		chain:              chain,
-		onSync:             true,
+		sync:               true,
 		peersTrack:         make(map[peer.ID]*peerInfo),
 		unknownBlocksCount: 0,
 	}
-
-	sp.host.Notify(sp)
 
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
@@ -142,6 +122,29 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
+	host.Notify(&network.NotifyBundle{
+		ConnectedF: func(n network.Network, conn network.Conn) {
+			if conn.Stat().Direction != network.DirOutbound {
+				return
+			}
+
+			// open a stream for the sync protocol:
+			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
+			if err != nil {
+				sp.log.Errorf("could not open stream for connection: %s", err)
+			}
+
+			sp.protocolHandler.HandleStream(s)
+
+			sp.sendVersion(conn.RemotePeer())
+		},
+		DisconnectedF: func(n network.Network, conn network.Conn) {
+			sp.peersTrackLock.Lock()
+			defer sp.peersTrackLock.Unlock()
+			delete(sp.peersTrack, conn.RemotePeer())
+		},
+	})
+
 	go sp.initialBlockDownload()
 
 	return sp, nil
@@ -149,18 +152,16 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 
 func (sp *syncProtocol) initialBlockDownload() {
 
-	sp.peersTrackLock.Lock()
-	defer sp.peersTrackLock.Unlock()
-
 	for {
 		time.Sleep(time.Second * 1)
 		if len(sp.peersTrack) < MinPeersForSyncStart {
-			fmt.Println(len(sp.peersTrack))
 			continue
 		}
 		break
 	}
 
+	sp.peersTrackLock.Lock()
+	defer sp.peersTrackLock.Unlock()
 
 	myInfo := sp.versionMsg()
 
@@ -183,7 +184,7 @@ func (sp *syncProtocol) initialBlockDownload() {
 	}
 
 	if len(peersAhead) == 0 {
-		sp.onSync = false
+		sp.sync = false
 		return
 	}
 
@@ -197,7 +198,7 @@ func (sp *syncProtocol) initialBlockDownload() {
 // askForBlocks will ask a peer for blocks.
 func (sp *syncProtocol) askForBlocks(id peer.ID) {
 
-	sp.onSync = true
+	sp.sync = true
 	sp.withPeer = id
 
 	finalized, _ := sp.chain.State().GetFinalizedHead()
@@ -209,14 +210,6 @@ func (sp *syncProtocol) askForBlocks(id peer.ID) {
 	if err != nil {
 		sp.log.Error("unable to send block request msg")
 	}
-}
-
-type SyncNotifee interface{}
-
-func (sp *syncProtocol) Notify(notifee SyncNotifee) {
-	sp.notifeesLock.Lock()
-	defer sp.notifeesLock.Unlock()
-	sp.notifees = append(sp.notifees, notifee)
 }
 
 func (sp *syncProtocol) listenForBroadcasts() error {
@@ -304,18 +297,18 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 		return errors.New("non syncend msg")
 	}
 	sp.log.Info("syncing finished")
-	if !sp.onSync {
+	if !sp.sync {
 		return nil
 	}
 	if sp.withPeer == id {
-		sp.onSync = false
+		sp.sync = false
 		sp.withPeer = ""
 	}
 	return nil
 }
 
 func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
-	if sp.onSync && sp.withPeer != id {
+	if sp.sync && sp.withPeer != id {
 		return nil
 	}
 	err := sp.processBlock(block)
@@ -325,7 +318,7 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 			return nil
 		}
 		if err == ErrorBlockParentUnknown {
-			if !sp.onSync {
+			if !sp.sync {
 				sp.log.Error(err)
 				go sp.initialBlockDownload()
 				return nil
@@ -474,10 +467,15 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	// Send our version message if required
 	ourVersion := sp.versionMsg()
-	//direction := sp.host.GetPeerDirection(id)
-	if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
-		return err
+	direction := sp.host.GetPeerDirection(id)
+
+	if direction == network.DirInbound {
+		if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
+			return err
+		}
+
 	}
+
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
 		ID:              id,
@@ -491,7 +489,6 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		FinalizedHeight: theirVersion.FinalizedHeight,
 		FinalizedHash:   theirVersion.FinalizedHash,
 	}
-
 	sp.peersTrackLock.Unlock()
 
 	return nil
@@ -522,48 +519,15 @@ func (sp *syncProtocol) versionMsg() *p2p.MsgVersion {
 }
 
 func (sp *syncProtocol) sendVersion(id peer.ID) {
-	if err := sp.protocolHandler.SendMessage(id, sp.versionMsg()); err != nil {
+	msg := sp.versionMsg()
+	err := sp.protocolHandler.SendMessage(id, msg)
+	if err != nil {
 		sp.log.Errorf("error sending version message: %s", err)
 		_ = sp.host.DisconnectPeer(id)
 	}
+	return
 }
-
-// Listen is called when we start listening on a multipraddr.
-func (sp *syncProtocol) Listen(network.Network, multiaddr.Multiaddr) {}
-
-// ListenClose is called when we stop listening on a multiaddr.
-func (sp *syncProtocol) ListenClose(network.Network, multiaddr.Multiaddr) {}
-
-// Connected is called when we connect to a peer.
-func (sp *syncProtocol) Connected(net network.Network, conn network.Conn) {
-	if conn.Stat().Direction != network.DirOutbound {
-		return
-	}
-
-	// open a stream for the sync protocol:
-	s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.SyncProtocolID)
-	if err != nil {
-		sp.log.Errorf("could not open stream for connection: %s", err)
-	}
-
-	sp.protocolHandler.HandleStream(s)
-
-	sp.sendVersion(conn.RemotePeer())
-}
-
-// Disconnected is called when we disconnect from a peer.
-func (sp *syncProtocol) Disconnected(net network.Network, conn network.Conn) {
-	sp.peersTrackLock.Lock()
-	defer sp.peersTrackLock.Unlock()
-	delete(sp.peersTrack, conn.RemotePeer())
-}
-
-// OpenedStream is called when we open a stream.
-func (sp *syncProtocol) OpenedStream(net network.Network, stream network.Stream) {}
-
-// ClosedStream is called when we close a stream.
-func (sp *syncProtocol) ClosedStream(network.Network, network.Stream) {}
 
 func (sp *syncProtocol) Syncing() bool {
-	return sp.onSync
+	return sp.sync
 }

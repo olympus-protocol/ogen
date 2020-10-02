@@ -6,17 +6,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/olympus-protocol/ogen/api/proto"
-	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type utilsServer struct {
-	proposer     proposer.Proposer
+	keystore     keystore.Keystore
 	hostnode     hostnode.HostNode
 	txTopic      *pubsub.Topic
 	depositTopic *pubsub.Topic
@@ -25,7 +25,7 @@ type utilsServer struct {
 }
 
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
-	key, err := s.proposer.Keystore().GenerateNewValidatorKey(in.Keys)
+	key, err := s.keystore.GenerateNewValidatorKey(in.Keys)
 	if err != nil {
 		return nil, err
 	}

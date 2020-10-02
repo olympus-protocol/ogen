@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
@@ -24,7 +25,7 @@ import (
 type VoteMempool interface {
 	AddValidate(vote *primitives.MultiValidatorVote, state state.State) error
 	Add(vote *primitives.MultiValidatorVote)
-	Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
+	Get(slot uint64, s state.State, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
 	Remove(b *primitives.Block)
 	Notify(notifee VoteSlashingNotifee)
 }
@@ -37,7 +38,7 @@ type voteMempool struct {
 	// chainindex 0 is highest prioritized, 1 is less, etc
 	poolOrder []chainhash.Hash
 
-	params     *params.ChainParams
+	netParams  *params.ChainParams
 	log        logger.Logger
 	ctx        context.Context
 	blockchain chain.Blockchain
@@ -54,7 +55,7 @@ var _ VoteMempool = &voteMempool{}
 
 // AddValidate validates, then adds the vote to the mempool.
 func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state state.State) error {
-	if err := state.IsVoteValid(vote, m.params); err != nil {
+	if err := state.IsVoteValid(vote); err != nil {
 		return err
 	}
 
@@ -92,7 +93,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	voteData := vote.Data
 	voteHash := voteData.Hash()
 
-	firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
+	firstSlotAllowedToInclude := vote.Data.Slot + m.netParams.MinAttestationInclusionDelay
 
 	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
 	if err != nil {
@@ -118,7 +119,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			continue
 		}
 
-		if currentState.GetSlot() >= v.Data.LastSlotValid(m.params) {
+		if currentState.GetSlot() >= v.Data.LastSlotValid(m.netParams) {
 			delete(m.pool, voteHash)
 			m.removeFromOrder(voteHash)
 			continue
@@ -126,12 +127,12 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 
 		var votingValidators = make(map[uint64]struct{})
 		var common []uint64
-		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
 			return
 		}
-		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot, m.params)
+		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
 			return
@@ -187,7 +188,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
 			// Check if votes overlaps voters
 
-			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot, m.params)
+			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot)
 			if err != nil {
 				m.log.Error(err)
 				return
@@ -250,7 +251,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 }
 
 // Get gets a vote from the mempool.
-func (m *voteMempool) Get(slot uint64, s state.State, p *params.ChainParams, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
+func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error) {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 
@@ -260,11 +261,11 @@ func (m *voteMempool) Get(slot uint64, s state.State, p *params.ChainParams, pro
 
 		vote := m.pool[h]
 
-		if slot >= vote.Data.FirstSlotValid(p) && slot <= vote.Data.LastSlotValid(p) {
-			if err := s.ProcessVote(vote, p, proposerIndex); err != nil {
+		if slot >= vote.Data.FirstSlotValid(m.netParams) && slot <= vote.Data.LastSlotValid(m.netParams) {
+			if err := s.ProcessVote(vote, proposerIndex); err != nil {
 				return nil, err
 			}
-			if uint64(len(votes)) < p.MaxVotesPerBlock {
+			if uint64(len(votes)) < m.netParams.MaxVotesPerBlock {
 				votes = append(votes, vote)
 			}
 		}
@@ -307,7 +308,7 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 }
 
 func (m *voteMempool) getCurrentSlot() uint64 {
-	slot := time.Now().Sub(m.blockchain.GenesisTime()) / (time.Duration(m.params.SlotDuration) * time.Second)
+	slot := time.Now().Sub(m.blockchain.GenesisTime()) / (time.Duration(m.netParams.SlotDuration) * time.Second)
 	if slot < 0 {
 		return 0
 	}
@@ -347,10 +348,10 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 
 		m.log.Debugf("received votes from peer %s", msg.GetFrom().String())
 
-		firstSlotAllowedToInclude := vote.Data.Slot + m.params.MinAttestationInclusionDelay
+		firstSlotAllowedToInclude := vote.Data.Slot + m.netParams.MinAttestationInclusionDelay
 		tip := m.blockchain.State().Tip()
 
-		if tip.Slot+m.params.EpochLength*2 < firstSlotAllowedToInclude {
+		if tip.Slot+m.netParams.EpochLength*2 < firstSlotAllowedToInclude {
 			continue
 		}
 
@@ -360,7 +361,7 @@ func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
 			continue
 		}
 
-		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view, m.params)
+		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view)
 		if err != nil {
 			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
 			continue
@@ -382,7 +383,11 @@ func (m *voteMempool) Notify(notifee VoteSlashingNotifee) {
 }
 
 // NewVoteMempool creates a new mempool.
-func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParams, ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
+func NewVoteMempool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) (VoteMempool, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
+
 	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
 	if err != nil {
 		return nil, err
@@ -395,7 +400,7 @@ func NewVoteMempool(ctx context.Context, log logger.Logger, p *params.ChainParam
 
 	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
-		params:            p,
+		netParams:         netParams,
 		log:               log,
 		ctx:               ctx,
 		blockchain:        ch,

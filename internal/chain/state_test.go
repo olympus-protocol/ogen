@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -31,13 +31,13 @@ var secrets = make([]pair, NumValidators)
 var params = &testdata.TestParams
 var premineAddr = bls.RandKey()
 
-var initParams state.InitializationParameters
+var initParams initialization.InitializationParameters
 
 func init() {
 	_ = os.Remove("./chain.db")
 
-	initParams = state.InitializationParameters{
-		InitialValidators: make([]state.ValidatorInitialization, NumValidators),
+	initParams = initialization.InitializationParameters{
+		InitialValidators: make([]initialization.ValidatorInitialization, NumValidators),
 		PremineAddress:    premineAddr.PublicKey().ToAccount(),
 		GenesisTime:       time.Unix(time.Now().Unix()+5, 0),
 	}
@@ -50,7 +50,7 @@ func init() {
 		}
 		var pub [48]byte
 		copy(pub[:], key.PublicKey().Marshal())
-		initParams.InitialValidators[i] = state.ValidatorInitialization{
+		initParams.InitialValidators[i] = initialization.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(key.PublicKey().Marshal()),
 			PayeeAddress: premineAddr.PublicKey().ToAccount(),
 		}
@@ -64,7 +64,7 @@ func TestState(t *testing.T) {
 	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
 	assert.NoError(t, err)
 
-	s, err := chain.NewStateService(log, initParams, params, db)
+	s, err := chain.NewStateService(db)
 	assert.NoError(t, err)
 
 	err = processBlock(s)
@@ -188,14 +188,14 @@ func getNextSlotVotes(ss chain.StateService, slot uint64) ([]*primitives.MultiVa
 		FromEpoch:       s.GetJustifiedEpoch(),
 		FromHash:        s.GetJustifiedEpochHash(),
 		ToEpoch:         toEpoch,
-		ToHash:          s.GetRecentBlockHash(toEpoch*params.EpochLength-1, params),
+		ToHash:          s.GetRecentBlockHash(toEpoch*params.EpochLength - 1),
 		BeaconBlockHash: ss.Tip().Hash,
 		Nonce:           0,
 	}
 
 	dataHash := data.Hash()
 
-	validators, err := s.GetVoteCommittee(slot, params)
+	validators, err := s.GetVoteCommittee(slot)
 	if err != nil {
 		return nil, err
 	}

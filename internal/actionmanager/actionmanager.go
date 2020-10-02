@@ -3,6 +3,7 @@ package actionmanager
 import (
 	"bytes"
 	"context"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"math/rand"
@@ -55,11 +56,11 @@ type lastActionManager struct {
 
 	startTopic *pubsub.Topic
 
-	params *params.ChainParams
+	netParams *params.ChainParams
 }
 
-func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt) {
-	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
+func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Block, state state.State, _ []*primitives.EpochReceipt) {
+	slotIndex := (block.Header.Slot + l.netParams.EpochLength - 1) % l.netParams.EpochLength
 
 	proposerIndex := state.GetProposerQueue()[slotIndex]
 	proposer := state.GetValidatorRegistry()[proposerIndex]
@@ -70,7 +71,11 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(ctx context.Context, node hostnode.HostNode, log logger.Logger, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
+func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActionManager, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
+
 	topic, err := node.Topic(p2p.MsgValidatorStartCmd)
 	if err != nil {
 		return nil, err
@@ -88,7 +93,7 @@ func NewLastActionManager(ctx context.Context, node hostnode.HostNode, log logge
 		log:         log,
 		startTopic:  topic,
 		nonce:       rand.Uint64(),
-		params:      params,
+		netParams:   netParams,
 	}
 
 	ch.Notify(l)

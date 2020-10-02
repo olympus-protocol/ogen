@@ -7,10 +7,8 @@ import (
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/state"
-	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -28,8 +26,6 @@ func TestCoinsMempool_New(t *testing.T) {
 	host.EXPECT().Topic(p2p.MsgTxMultiCmd).Return(g.Join(p2p.MsgTxMultiCmd))
 	host.EXPECT().GetHost().Return(h)
 
-	log := logger.New(os.Stdin)
-
 	s := state.NewMockState(ctrl)
 	s.EXPECT().GetValidatorRegistry().AnyTimes().Return(validatorsGlobal)
 
@@ -41,7 +37,7 @@ func TestCoinsMempool_New(t *testing.T) {
 	ch.EXPECT().State().AnyTimes().Return(stateService)
 	ch.EXPECT().Notify(gomock.Any()).AnyTimes()
 
-	cm, err := mempool.NewCoinsMempool(ctx, log, ch, host, param)
+	cm, err := mempool.NewCoinsMempool(ch, host)
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
 }

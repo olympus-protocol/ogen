@@ -3,25 +3,26 @@ package state
 import (
 	"bytes"
 	"errors"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
-	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"math/big"
 )
 
 // GetEffectiveBalance gets the balance of a validator.
-func (s *state) GetEffectiveBalance(index uint64, p *params.ChainParams) uint64 {
+func (s *state) GetEffectiveBalance(index uint64) uint64 {
+	netParams := config.GlobalParams.NetParams
+
 	b := s.ValidatorRegistry[index].Balance
-	if b >= p.DepositAmount {
-		return p.DepositAmount
+	if b >= netParams.DepositAmount {
+		return netParams.DepositAmount
 	}
 
 	return b
 }
 
-func (s *state) getActiveBalance(_ *params.ChainParams) uint64 {
+func (s *state) getActiveBalance() uint64 {
 	balance := uint64(0)
 
 	for _, v := range s.ValidatorRegistry {
@@ -58,7 +59,9 @@ func (s *state) InitiateValidatorExit(index uint64) error {
 }
 
 // ExitValidator handles state changes when a validator exits.
-func (s *state) ExitValidator(index uint64, status uint64, p *params.ChainParams) error {
+func (s *state) ExitValidator(index uint64, status uint64) error {
+	netParams := config.GlobalParams.NetParams
+
 	validator := s.ValidatorRegistry[index]
 	prevStatus := validator.Status
 
@@ -69,11 +72,11 @@ func (s *state) ExitValidator(index uint64, status uint64, p *params.ChainParams
 	validator.Status = status
 
 	if status == primitives.StatusExitedWithPenalty {
-		slotIndex := (s.Slot + p.EpochLength - 1) % p.EpochLength
+		slotIndex := (s.Slot + netParams.EpochLength - 1) % netParams.EpochLength
 
 		proposerIndex := s.ProposerQueue[slotIndex]
 
-		whistleblowerReward := s.GetEffectiveBalance(proposerIndex, p) / p.WhistleblowerRewardQuotient
+		whistleblowerReward := s.GetEffectiveBalance(proposerIndex) / netParams.WhistleblowerRewardQuotient
 
 		s.ValidatorRegistry[proposerIndex].Balance += whistleblowerReward
 		s.ValidatorRegistry[index].Balance -= whistleblowerReward
@@ -87,7 +90,7 @@ func (s *state) ExitValidator(index uint64, status uint64, p *params.ChainParams
 }
 
 // UpdateValidatorStatus moves a validator to a specific status.
-func (s *state) UpdateValidatorStatus(index uint64, status uint64, p *params.ChainParams) error {
+func (s *state) UpdateValidatorStatus(index uint64, status uint64) error {
 	if status == primitives.StatusActive {
 		err := s.ActivateValidator(index)
 		return err
@@ -95,31 +98,33 @@ func (s *state) UpdateValidatorStatus(index uint64, status uint64, p *params.Cha
 		err := s.InitiateValidatorExit(index)
 		return err
 	} else if status == primitives.StatusExitedWithPenalty || status == primitives.StatusExitedWithoutPenalty {
-		err := s.ExitValidator(index, status, p)
+		err := s.ExitValidator(index, status)
 		return err
 	}
 	return nil
 }
 
-func (s *state) updateValidatorRegistry(p *params.ChainParams) error {
-	totalBalance := s.getActiveBalance(p)
+func (s *state) updateValidatorRegistry() error {
+	netParams := config.GlobalParams.NetParams
+
+	totalBalance := s.getActiveBalance()
 
 	// 1/2 balance churn goes to starting validators and 1/2 goes to exiting validators
-	maxBalanceChurn := totalBalance / (p.MaxBalanceChurnQuotient * 2)
+	maxBalanceChurn := totalBalance / (netParams.MaxBalanceChurnQuotient * 2)
 
 	balanceChurn := uint64(0)
 	for idx, validator := range s.ValidatorRegistry {
 		index := uint64(idx)
 
 		// start validators if needed
-		if validator.Status == primitives.StatusStarting && validator.Balance == p.DepositAmount*p.UnitsPerCoin && validator.FirstActiveEpoch <= s.EpochIndex {
-			balanceChurn += s.GetEffectiveBalance(index, p)
+		if validator.Status == primitives.StatusStarting && validator.Balance == netParams.DepositAmount*netParams.UnitsPerCoin && validator.FirstActiveEpoch <= s.EpochIndex {
+			balanceChurn += s.GetEffectiveBalance(index)
 
 			if balanceChurn > maxBalanceChurn {
 				break
 			}
 
-			err := s.UpdateValidatorStatus(index, primitives.StatusActive, p)
+			err := s.UpdateValidatorStatus(index, primitives.StatusActive)
 			if err != nil {
 				return err
 			}
@@ -131,13 +136,13 @@ func (s *state) updateValidatorRegistry(p *params.ChainParams) error {
 		index := uint64(idx)
 
 		if validator.Status == primitives.StatusActivePendingExit && validator.LastActiveEpoch <= s.EpochIndex {
-			balanceChurn += s.GetEffectiveBalance(index, p)
+			balanceChurn += s.GetEffectiveBalance(index)
 
 			if balanceChurn > maxBalanceChurn {
 				break
 			}
 
-			err := s.UpdateValidatorStatus(index, primitives.StatusExitedWithoutPenalty, p)
+			err := s.UpdateValidatorStatus(index, primitives.StatusExitedWithoutPenalty)
 			if err != nil {
 				return err
 			}
@@ -148,12 +153,14 @@ func (s *state) updateValidatorRegistry(p *params.ChainParams) error {
 }
 
 // GetRecentBlockHash gets block hashes from the LatestBlockHashes array.
-func (s *state) GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chainhash.Hash {
-	if s.Slot-slotToGet >= p.LatestBlockRootsLength {
+func (s *state) GetRecentBlockHash(slotToGet uint64) chainhash.Hash {
+	netParams := config.GlobalParams.NetParams
+
+	if s.Slot-slotToGet >= netParams.LatestBlockRootsLength {
 		return chainhash.Hash{}
 	}
 
-	return s.LatestBlockHashes[slotToGet%p.LatestBlockRootsLength]
+	return s.LatestBlockHashes[slotToGet%netParams.LatestBlockRootsLength]
 }
 
 // GetTotalBalances gets the total balances of the state.
@@ -180,7 +187,9 @@ func (s *state) NextVoteEpoch(newState uint64) {
 
 // CheckForVoteTransitions tallies up votes and checks for any governance
 // state transitions.
-func (s *state) CheckForVoteTransitions(p *params.ChainParams) {
+func (s *state) CheckForVoteTransitions() {
+	netParams := config.GlobalParams.NetParams
+
 	switch s.VotingState {
 	case GovernanceStateActive:
 		// if it's active, we should check if we've accumulated enough votes
@@ -192,14 +201,14 @@ func (s *state) CheckForVoteTransitions(p *params.ChainParams) {
 			votingBalance += bal
 		}
 
-		if votingBalance*p.CommunityOverrideQuotient >= totalBalance {
+		if votingBalance*netParams.CommunityOverrideQuotient >= totalBalance {
 			s.NextVoteEpoch(GovernanceStateVoting)
 			for i := range s.CurrentManagers {
 				s.ManagerReplacement.Set(uint(i))
 			}
 		}
 	case GovernanceStateVoting:
-		if s.VoteEpochStartSlot+p.VotingPeriodSlots <= s.Slot {
+		if s.VoteEpochStartSlot+netParams.VotingPeriodSlots <= s.Slot {
 			// tally votes and choose next managers
 			managerVotes := make(map[chainhash.Hash]uint64)
 
@@ -237,22 +246,22 @@ func (s *state) CheckForVoteTransitions(p *params.ChainParams) {
 	}
 
 	// process payouts if needed
-	epochsPerMonth := 30 * 24 * 60 * 60 / p.SlotDuration / p.EpochLength
-	if s.LastPaidSlot/p.EpochLength+epochsPerMonth <= s.Slot {
+	epochsPerMonth := 30 * 24 * 60 * 60 / netParams.SlotDuration / netParams.EpochLength
+	if s.LastPaidSlot/netParams.EpochLength+epochsPerMonth <= s.Slot {
 		// 10% to 5/5 multisig
 		// 10% to each
 
-		totalBlockReward := p.BaseRewardPerBlock * 60 * 60 * 24 * 30 / p.SlotDuration
+		totalBlockReward := netParams.BaseRewardPerBlock * 60 * 60 * 24 * 30 / netParams.SlotDuration
 		perGroup := totalBlockReward / 10
 
 		multipub := multisig.PublicKeyHashesToMultisigHash(s.CurrentManagers, 5)
 		s.CoinsState.Balances[multipub] += perGroup
-		if len(s.CurrentManagers) != len(p.GovernancePercentages) {
+		if len(s.CurrentManagers) != len(netParams.GovernancePercentages) {
 			return
 		}
 
 		for group, address := range s.CurrentManagers {
-			percent := p.GovernancePercentages[group]
+			percent := netParams.GovernancePercentages[group]
 			s.CoinsState.Balances[address] += perGroup * uint64(percent) / 100
 		}
 
@@ -261,10 +270,12 @@ func (s *state) CheckForVoteTransitions(p *params.ChainParams) {
 }
 
 // ProcessEpochTransition runs an epoch transition on the state.
-func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) ([]*primitives.EpochReceipt, error) {
-	s.CheckForVoteTransitions(p)
+func (s *state) ProcessEpochTransition() ([]*primitives.EpochReceipt, error) {
+	netParams := config.GlobalParams.NetParams
 
-	totalBalance := s.getActiveBalance(p)
+	s.CheckForVoteTransitions()
+
+	totalBalance := s.getActiveBalance()
 
 	// These are voters who voted for a target of the previous epoch.
 	previousEpochVoters := newVoterGroup()
@@ -274,13 +285,13 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 	currentEpochVotersMatchingTarget := newVoterGroup()
 
 	previousEpochBoundaryHash := chainhash.Hash{}
-	if s.Slot >= 2*p.EpochLength {
-		previousEpochBoundaryHash = s.GetRecentBlockHash(s.Slot-2*p.EpochLength-1, p)
+	if s.Slot >= 2*netParams.EpochLength {
+		previousEpochBoundaryHash = s.GetRecentBlockHash(s.Slot - 2*netParams.EpochLength - 1)
 	}
 
 	epochBoundaryHash := chainhash.Hash{}
-	if s.Slot >= p.EpochLength {
-		epochBoundaryHash = s.GetRecentBlockHash(s.Slot-p.EpochLength-1, p)
+	if s.Slot >= netParams.EpochLength {
+		epochBoundaryHash = s.GetRecentBlockHash(s.Slot - netParams.EpochLength - 1)
 	}
 
 	// previousEpochVotersMap maps validator to their assigned vote
@@ -288,12 +299,12 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 	previousEpochVotersMap := make(map[uint64]*primitives.AcceptedVoteInfo)
 
 	for _, v := range s.PreviousEpochVotes {
-		validatorIndices, err := s.GetVoteCommittee(v.Data.Slot, p)
+		validatorIndices, err := s.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			return nil, err
 		}
 		previousEpochVoters.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
-		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot-1, p)
+		actualBlockHash := s.GetRecentBlockHash(v.Data.Slot - 1)
 		if bytes.Equal(actualBlockHash[:], v.Data.BeaconBlockHash[:]) {
 			previousEpochVotersMatchingBeaconBlock.addFromBitfield(s.ValidatorRegistry, v.ParticipationBitfield, validatorIndices)
 		}
@@ -306,7 +317,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 	}
 
 	for _, v := range s.CurrentEpochVotes {
-		validators, err := s.GetVoteCommittee(v.Data.Slot, p)
+		validators, err := s.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			return nil, err
 		}
@@ -323,13 +334,13 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 	if 3*previousEpochVotersMatchingTargetHash.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 1 // mark
 		s.JustifiedEpoch = s.EpochIndex - 1
-		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
+		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch * netParams.EpochLength)
 	}
 
 	if 3*currentEpochVotersMatchingTarget.totalBalance >= 2*totalBalance {
 		s.JustificationBitfield |= 1 << 0
 		s.JustifiedEpoch = s.EpochIndex
-		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch*p.EpochLength, p)
+		s.JustifiedEpochHash = s.GetRecentBlockHash(s.JustifiedEpoch * netParams.EpochLength)
 	}
 
 	if (s.JustificationBitfield>>1)%4 == 3 && s.PreviousJustifiedEpoch == s.EpochIndex-2 { // 110 <- old previous justified would be
@@ -342,10 +353,11 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 		s.JustifiedEpoch = s.EpochIndex
 	}
 
+	// TODO move to params
 	const numRewards = 5
 
 	baseReward := func(index uint64) uint64 {
-		return s.GetEffectiveBalance(index, p) * p.UnitsPerCoin * p.BaseRewardPerBlock * p.EpochLength / totalBalance / numRewards
+		return s.GetEffectiveBalance(index) * netParams.UnitsPerCoin * netParams.BaseRewardPerBlock * netParams.EpochLength / totalBalance / numRewards
 	}
 
 	receipts := make([]*primitives.EpochReceipt, 0)
@@ -371,7 +383,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 		})
 	}
 
-	if s.Slot >= 2*p.EpochLength {
+	if s.Slot >= 2*netParams.EpochLength {
 
 		for index, validator := range s.ValidatorRegistry {
 			idx := uint64(index)
@@ -423,7 +435,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 
 			inclusionDistance := vote.InclusionDelay
 
-			reward = baseReward(proposerIndex) * p.MinAttestationInclusionDelay / inclusionDistance
+			reward = baseReward(proposerIndex) * netParams.MinAttestationInclusionDelay / inclusionDistance
 			if _, ok := proposerRewardDistance[proposerIndex]; !ok {
 				proposerRewardDistance[proposerIndex] = 0
 			}
@@ -452,7 +464,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 				penalizeValidator(idx, penalty, primitives.PenaltyInactivityLeak)
 
 				if !previousEpochVotersMatchingTargetHash.contains(idx) {
-					penalty := s.GetEffectiveBalance(idx, p) * finalityDelay / p.InactivityPenaltyQuotient
+					penalty := s.GetEffectiveBalance(idx) * finalityDelay / netParams.InactivityPenaltyQuotient
 					penalizeValidator(idx, penalty, primitives.PenaltyInactivityLeakNoVote)
 				}
 			}
@@ -460,18 +472,18 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 	}
 
 	for index, validator := range s.ValidatorRegistry {
-		if validator.IsActive() && validator.Balance < p.EjectionBalance*p.UnitsPerCoin {
-			err := s.UpdateValidatorStatus(uint64(index), primitives.StatusExitedWithoutPenalty, p)
+		if validator.IsActive() && validator.Balance < netParams.EjectionBalance*netParams.UnitsPerCoin {
+			err := s.UpdateValidatorStatus(uint64(index), primitives.StatusExitedWithoutPenalty)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	s.EpochIndex = s.Slot / p.EpochLength
+	s.EpochIndex = s.Slot / netParams.EpochLength
 
 	if s.FinalizedEpoch > s.LatestValidatorRegistryChange {
-		err := s.updateValidatorRegistry(p)
+		err := s.updateValidatorRegistry()
 		if err != nil {
 			return nil, err
 		}
@@ -481,7 +493,7 @@ func (s *state) ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) (
 
 	s.ProposerQueue = s.NextProposerQueue
 	activeValidators := s.GetValidatorIndicesActiveAt(s.EpochIndex + 1)
-	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, activeValidators, p)
+	s.NextProposerQueue = DetermineNextProposers(s.RANDAO, activeValidators)
 
 	s.PreviousEpochVoteAssignments = s.CurrentEpochVoteAssignments
 	s.CurrentEpochVoteAssignments = Shuffle(s.RANDAO, activeValidators)
@@ -518,9 +530,11 @@ func Shuffle(randao chainhash.Hash, vals []uint64) []uint64 {
 }
 
 // DetermineNextProposers gets the next shuffling.
-func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint64, p *params.ChainParams) []uint64 {
+func DetermineNextProposers(randao chainhash.Hash, activeValidators []uint64) []uint64 {
+	netParams := config.GlobalParams.NetParams
+
 	validatorsChosen := make(map[uint64]struct{})
-	nextProposers := make([]uint64, p.EpochLength)
+	nextProposers := make([]uint64, netParams.EpochLength)
 
 	for i := range nextProposers {
 		found := true

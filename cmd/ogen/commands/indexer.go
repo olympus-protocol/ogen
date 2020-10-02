@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -197,7 +198,7 @@ var indexerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log := logger.New(os.Stdin)
 
-		rpcClient := rpcclient.NewRPCClient(rpcHost, GlobalDataFolder, true)
+		rpcClient := rpcclient.NewRPCClient(rpcHost, config.DataPath, true)
 
 		dbp := &indexer.Config{
 			Hostname:     hostname,
@@ -207,7 +208,7 @@ var indexerCmd = &cobra.Command{
 			DatabaseName: dbname,
 			DriverName:   driver,
 		}
-		dbClient := indexer.NewDBClient(dbp, GlobalDataFolder, log)
+		dbClient := indexer.NewDBClient(dbp, config.DataPath, log)
 
 		indexer := Indexer{
 			log:       log,

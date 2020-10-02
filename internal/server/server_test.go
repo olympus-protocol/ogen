@@ -3,9 +3,9 @@ package server_test
 import (
 	"context"
 	"encoding/hex"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/server"
-	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -31,7 +31,7 @@ var validators1 []*primitives.Validator
 var validators2 []*primitives.Validator
 
 // init params used on the test
-var stateParams state.InitializationParameters
+var stateParams initialization.InitializationParameters
 
 func init() {
 	priv := testdata.PremineAddr
@@ -68,10 +68,10 @@ func init() {
 
 	}
 	stateParams.GenesisTime = time.Unix(time.Now().Unix(), 0)
-	stateParams.InitialValidators = []state.ValidatorInitialization{}
+	stateParams.InitialValidators = []initialization.ValidatorInitialization{}
 	// Convert the validators to initialization params.
 	for _, vk := range validatorKeys1 {
-		val := state.ValidatorInitialization{
+		val := initialization.ValidatorInitialization{
 			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
 			PayeeAddress: addr,
 		}
@@ -87,7 +87,7 @@ func TestServer_Object(t *testing.T) {
 	db, err := blockdb.NewMemoryDB(testdata.TestParams, log)
 	assert.NoError(t, err)
 
-	serv, err := server.NewServer(ctx, &testdata.Conf, log, param, db, stateParams)
+	serv, err := server.NewServer(db)
 	assert.NoError(t, err)
 	assert.NotNil(t, serv)
 

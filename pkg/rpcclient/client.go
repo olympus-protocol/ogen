@@ -51,7 +51,7 @@ func NewRPCClient(addr string, datadir string, insecure bool) *Client {
 			InsecureSkipVerify: true,
 		})
 	} else {
-		certPool, err := chainrpc.LoadCerts(datadir)
+		certPool, err := chainrpc.LoadCerts()
 		if err != nil {
 			return nil
 		}

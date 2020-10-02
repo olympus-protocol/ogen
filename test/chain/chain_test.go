@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/keystore"
@@ -37,7 +38,7 @@ var folders = make([]string, NumNodes)
 var loggers = make([]logger.Logger, NumNodes)
 
 var validatorsKeys = make(map[int][]*bls.SecretKey)
-var initParams state.InitializationParameters
+var initParams initialization.InitializationParameters
 
 var keystores = make([]keystore.Keystore, NumNodes)
 var servers = make([]server.Server, NumNodes)
@@ -115,10 +116,10 @@ func createKeystoresAndValidators() {
 
 func createInitializationParams() {
 
-	var valInit []state.ValidatorInitialization
+	var valInit []initialization.ValidatorInitialization
 	for _, kslice := range validatorsKeys {
 		for _, key := range kslice {
-			val := state.ValidatorInitialization{
+			val := initialization.ValidatorInitialization{
 				PubKey:       hex.EncodeToString(key.PublicKey().Marshal()),
 				PayeeAddress: premineAddr.PublicKey().ToAccount(),
 			}
@@ -127,7 +128,7 @@ func createInitializationParams() {
 
 	}
 
-	initParams = state.InitializationParameters{
+	initParams = initialization.InitializationParameters{
 		InitialValidators: valInit,
 		PremineAddress:    premineAddr.PublicKey().ToAccount(),
 		GenesisTime:       time.Unix(time.Now().Unix()+delaySeconds, 0),
@@ -150,7 +151,7 @@ func createServers() {
 				DataFolder:   folder,
 				NetworkName:  "",
 				Port:         strconv.Itoa(24000 + index),
-				InitConfig:   state.InitializationParameters{},
+				InitConfig:   initialization.InitializationParameters{},
 				RPCProxy:     false,
 				RPCProxyPort: strconv.Itoa(8080 + index),
 				RPCProxyAddr: "",
@@ -159,7 +160,6 @@ func createServers() {
 				RPCAuthToken: "",
 				Debug:        true,
 				LogFile:      false,
-				Pprof:        false,
 			}
 			s, err := server.NewServer(context.Background(), config, log, params, db, initParams)
 			if err != nil {
