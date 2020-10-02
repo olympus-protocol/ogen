@@ -140,19 +140,17 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	}
 	node.gossipSub = g
 
-	discovery, err := NewDiscoveryProtocol(node)
-	if err != nil {
-		return nil, err
-	}
-	node.discoveryProtocol = discovery
-
 	syncProtocol, err := NewSyncProtocol(node, blockchain)
 	if err != nil {
 		return nil, err
 	}
 	node.syncProtocol = syncProtocol
 
-	node.Notify(connman.Notifee())
+	discovery, err := NewDiscoveryProtocol(node)
+	if err != nil {
+		return nil, err
+	}
+	node.discoveryProtocol = discovery
 
 	return node, nil
 }

@@ -75,10 +75,16 @@ func NewDiscoveryProtocol(host HostNode) (*discoveryProtocol, error) {
 	}
 
 	var initialNodes []peer.AddrInfo
+	peersIDs := dp.host.GetHost().Peerstore().Peers()
+	var peerstorePeers []peer.AddrInfo
+	for _, id := range peersIDs {
+		peerstorePeers = append(peerstorePeers, dp.host.GetHost().Peerstore().PeerInfo(id))
+	}
 	initialNodes = append(initialNodes, dp.getRelayers()...)
+	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
-			dp.log.Errorf("unable to connect to peer %s", addr.ID)
+			dp.log.Infof("unable to connect to peer %s", addr.ID)
 		}
 	}
 

@@ -469,11 +469,15 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 
 	// Send our version message if required
 	ourVersion := sp.versionMsg()
-	//direction := sp.host.GetPeerDirection(id)
-	if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
-		return err
+	direction := sp.host.GetPeerDirection(id)
+
+	if direction == network.DirInbound {
+		if err := sp.protocolHandler.SendMessage(id, ourVersion); err != nil {
+			return err
+		}
+
 	}
-	fmt.Println("lock")
+
 	sp.peersTrackLock.Lock()
 	sp.peersTrack[id] = &peerInfo{
 		ID:              id,
@@ -487,9 +491,8 @@ func (sp *syncProtocol) handleVersion(id peer.ID, msg p2p.Message) error {
 		FinalizedHeight: theirVersion.FinalizedHeight,
 		FinalizedHash:   theirVersion.FinalizedHash,
 	}
-	fmt.Println(sp.peersTrack[id])
 	sp.peersTrackLock.Unlock()
-	fmt.Println("unlock")
+
 	return nil
 }
 
