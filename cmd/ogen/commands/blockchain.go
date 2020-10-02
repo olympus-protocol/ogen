@@ -207,7 +207,5 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() error {
-	fmt.Println(config.GlobalFlags)
-	fmt.Println(config.GlobalParams)
 	return rootCmd.Execute()
 }
