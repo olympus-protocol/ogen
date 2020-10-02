@@ -288,6 +288,7 @@ func (s *stateService) Add(block *primitives.Block, isApplying bool) (state.Stat
 	}
 
 	if isApplying {
+		//My skype email is evgenytikhonov@outlook.com. Could we please discuss by skype or slack?
 		s.setBlockState(block.Hash(), newState)
 	}
 
