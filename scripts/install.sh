@@ -42,7 +42,7 @@ fi
 
 echo "Installing dependencies"
 
-sudo apt update && sudo apt install git build-essential -y &> /dev/null
+apt update && apt install git build-essential -y &> /dev/null
 
 if ! command -v go version &> /dev/null
 then
@@ -64,6 +64,8 @@ cd ogen && bash ./scripts/build.sh && cp ogen /usr/local/bin
 title="Ogen Installed"
 instructions_first="The program is installed in the systemd services"
 instructions_second="To start the program run 'service ogen start'"
+
+mkdir -p /root/.config/ogen
 
 configure_systemd
 
