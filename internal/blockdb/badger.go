@@ -63,11 +63,14 @@ func (db *badgerDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
 }
 
 // AddRawBlock adds a raw block to the database.
-func (db *badgerDB) AddRawBlock(block *primitives.Block) error {
+func (db *badgerDB) AddRawBlock(block *primitives.Block, isCheck bool) error {
 	blockHash := block.Hash()
 	blockBytes, err := block.Marshal()
 	if err != nil {
 		return err
+	}
+	if isCheck {
+		return nil
 	}
 	return db.setKey(blockHash[:], blockBytes)
 }

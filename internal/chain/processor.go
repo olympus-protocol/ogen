@@ -172,7 +172,8 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// 2. verify block against previous block's state
 
-	newState, receipts, err := ch.State().Add(block)
+	newState, receipts, err := ch.State().Add(block, false)
+
 	if err != nil {
 		ch.log.Warn(err)
 		return err
@@ -203,12 +204,15 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Debugf(msg)
 	}
 
-	err = ch.db.AddRawBlock(block)
+	/**
+	Check if all operations are possible
+	*/
+	err = ch.db.AddRawBlock(block, false)
 	if err != nil {
 		return err
 	}
 
-	row, err := ch.state.Index().Add(*block)
+	row, err := ch.state.Index().Add(*block, false)
 	if err != nil {
 		return err
 	}
@@ -228,7 +232,6 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		if err != nil {
 			return err
 		}
-
 		ch.state.SetLatestVotesIfNeeded(validators, a)
 	}
 
@@ -282,6 +285,8 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	ch.log.Infof("new block at slot: %d with %d finalized and %d justified", block.Header.Slot, newState.GetFinalizedEpoch(), newState.GetJustifiedEpoch())
 
 	voted := 0
+
+	_, _, _ = ch.State().Add(block, true)
 
 	for _, v := range block.Votes {
 		voted += len(v.ParticipationBitfield.BitIndices())

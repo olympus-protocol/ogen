@@ -135,7 +135,7 @@ func (i *BlockIndex) add(row *BlockRow) error {
 }
 
 // Add adds a row to the block chainindex.
-func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
+func (i *BlockIndex) Add(block primitives.Block, isCheck bool) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[block.Header.PrevBlockHash]
@@ -153,7 +153,6 @@ func (i *BlockIndex) Add(block primitives.Block) (*BlockRow, error) {
 	}
 
 	prev.AddChild(row)
-
 	i.index[block.Header.PrevBlockHash] = prev
 
 	err := i.add(row)

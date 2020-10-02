@@ -78,11 +78,15 @@ func (db *memoryDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
 }
 
 // AddRawBlock adds a raw block to the database.
-func (db *memoryDB) AddRawBlock(block *primitives.Block) error {
+func (db *memoryDB) AddRawBlock(block *primitives.Block, isCheck bool) error {
 	blockHash := block.Hash()
 	db.blocksLock.Lock()
 	defer db.blocksLock.Unlock()
-	db.blocks[blockHash] = block
+	if isCheck {
+
+	} else {
+		db.blocks[blockHash] = block
+	}
 	return nil
 }
 
