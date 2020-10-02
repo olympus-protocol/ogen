@@ -176,7 +176,6 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 	if err != nil {
 		return nil, err
 	}
-
 	return &rpcServer{
 		rpc:  grpc.NewServer(grpc.Creds(creds)),
 		http: runtime.NewServeMux(),

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"github.com/dgraph-io/badger"
-	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"os"
 	"path"
 
@@ -18,7 +17,7 @@ var resetCmd = &cobra.Command{
 	Short: "Removes all chain data and chain.json",
 	Long:  `Removes all chain data and chain.json`,
 	Run: func(cmd *cobra.Command, args []string) {
-		badgerdb, err := badger.Open(badger.DefaultOptions(config.DataPath + "/chain").WithLogger(nil))
+		badgerdb, err := badger.Open(badger.DefaultOptions(DataPath + "/chain").WithLogger(nil))
 		if err != nil {
 			panic(err)
 		}
@@ -26,7 +25,7 @@ var resetCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		_ = os.Remove(path.Join(config.DataPath, "chain.json"))
-		_ = os.RemoveAll(path.Join(config.DataPath, "peerstore"))
+		_ = os.Remove(path.Join(DataPath, "chain.json"))
+		_ = os.RemoveAll(path.Join(DataPath, "peerstore"))
 	},
 }
