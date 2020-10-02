@@ -147,9 +147,9 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 		return nil, err
 	}
 
-	if err := sp.listenForState(); err != nil {
-		return nil, err
-	}
+	//if err := sp.listenForState(); err != nil {
+	//	return nil, err
+	//}
 
 	go sp.initialBlockDownload()
 
