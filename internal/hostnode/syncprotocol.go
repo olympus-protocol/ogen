@@ -292,6 +292,7 @@ func (sp *syncProtocol) blockHandler(id peer.ID, msg p2p.Message) error {
 }
 
 func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
+	// TODO sync last blocks produced during sync.
 	_, ok := msg.(*p2p.MsgSyncEnd)
 	if !ok {
 		return errors.New("non syncend msg")
