@@ -321,7 +321,6 @@ func (sp *syncProtocol) handleBlock(id peer.ID, block *primitives.Block) error {
 		if err == ErrorBlockParentUnknown {
 			if !sp.sync {
 				sp.log.Error(err)
-				go sp.initialBlockDownload()
 				return nil
 			}
 			return nil
