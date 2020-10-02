@@ -202,7 +202,6 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Fatal(err)
 	},
 }
 
