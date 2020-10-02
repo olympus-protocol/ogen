@@ -1,9 +1,7 @@
 package initialization
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"path"
+	"errors"
 	"time"
 )
 
@@ -35,15 +33,9 @@ type NetworkInitialParams struct {
 
 // LoadParams returns the initialization params required for the network specified.
 func LoadParams(network string) (NetworkInitialParams, error) {
-	filename := network + "_params.json"
-	b, err := ioutil.ReadFile(path.Join("./cmd/ogen/initialization", filename))
-	if err != nil {
-		return NetworkInitialParams{}, err
+	switch network {
+	case "testnet":
+		return TestNet, nil
 	}
-	var params NetworkInitialParams
-	err = json.Unmarshal(b, &params)
-	if err != nil {
-		return NetworkInitialParams{}, err
-	}
-	return params, err
+	return NetworkInitialParams{}, errors.New("no params for network")
 }
