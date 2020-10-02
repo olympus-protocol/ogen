@@ -42,7 +42,7 @@ fi
 
 echo "Installing dependencies"
 
-apt update && apt install git build-essential -y &> /dev/null
+apt update &> /dev/null && apt install git build-essential -y &> /dev/null
 
 if ! command -v go version &> /dev/null
 then
@@ -55,17 +55,21 @@ fi
 
 echo "Downloading Ogen"
 
+cd /opt || exit
+
 rm -rf ogen
 
 git clone https://github.com/olympus-protocol/ogen &> /dev/null
 
-cd ogen && bash ./scripts/build.sh && cp ogen /usr/local/bin
+cd ogen && bash ./scripts/build.sh &> /dev/null && cp ogen /usr/local/bin
 
 title="Ogen Installed"
 instructions_first="The program is installed in the systemd services"
 instructions_second="To start the program run 'service ogen start'"
 
 mkdir -p /root/.config/ogen
+
+rm -rf ogen
 
 configure_systemd
 
