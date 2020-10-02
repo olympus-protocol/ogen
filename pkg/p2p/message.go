@@ -49,6 +49,8 @@ const (
 	MsgSyncEndCmd = "syncend"
 	// MsgFinalizationCmd announce a peer to reached state finalization
 	MsgFinalizationCmd = "finalized"
+	// MsgNewState announce chain state is updated
+	MsgNewStateCmd = "state"
 )
 
 // Message interface for all the messages
@@ -108,6 +110,9 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgSyncEnd{}
 	case MsgFinalizationCmd:
 		msg = &MsgFinalization{}
+	case MsgNewStateCmd:
+		msg = &MsgNewState{}
+
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

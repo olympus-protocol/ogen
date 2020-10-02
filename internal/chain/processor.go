@@ -298,6 +298,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	for i := range ch.notifees {
 		go i.NewTip(row, block, stateCopy, receipts)
 	}
+	//publish StateCopy
 	ch.notifeeLock.RUnlock()
 	return nil
 }

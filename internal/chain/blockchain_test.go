@@ -159,7 +159,7 @@ func TestBlockchain_Instance(t *testing.T) {
 	b.Signature = ds
 	b.RandaoSignature = rs
 
-	// ProcessBlock
+	// StateProcessBlock
 	err = bc.ProcessBlock(&b)
 	assert.NoError(t, err)
 

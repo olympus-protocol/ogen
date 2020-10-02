@@ -189,12 +189,10 @@ func (p *proposer) ProposeBlocks() {
 			proposer := voteState.GetValidatorRegistry()[proposerIndex]
 
 			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
-
 				//if !p.lastActionManager.ShouldRun(proposer.PubKey) {
 				//	blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 				//	continue
 				//}
-
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
 				votes, err := p.voteMempool.Get(slotToPropose, voteState, p.params, proposerIndex)

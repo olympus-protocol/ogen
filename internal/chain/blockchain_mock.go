@@ -157,16 +157,16 @@ func (mr *MockBlockchainMockRecorder) UpdateChainHead(possible interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateChainHead", reflect.TypeOf((*MockBlockchain)(nil).UpdateChainHead), possible)
 }
 
-// ProcessBlock mocks base method
+// StateProcessBlock mocks base method
 func (m *MockBlockchain) ProcessBlock(block *primitives.Block) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessBlock", block)
+	ret := m.ctrl.Call(m, "StateProcessBlock", block)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ProcessBlock indicates an expected call of ProcessBlock
+// StateProcessBlock indicates an expected call of StateProcessBlock
 func (mr *MockBlockchainMockRecorder) ProcessBlock(block interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessBlock", reflect.TypeOf((*MockBlockchain)(nil).ProcessBlock), block)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateProcessBlock", reflect.TypeOf((*MockBlockchain)(nil).ProcessBlock), block)
 }

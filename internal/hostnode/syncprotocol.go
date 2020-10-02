@@ -115,18 +115,22 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 
 	sp.host.Notify(sp)
 
+	//Handler for receiving version when connected
 	if err := ph.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersion); err != nil {
 		return nil, err
 	}
 
+	//Handler for request to receive initial blocks when connected to peer
 	if err := ph.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocks); err != nil {
 		return nil, err
 	}
 
+	//Handler for receiving initial blocks
 	if err := ph.RegisterHandler(p2p.MsgBlockCmd, sp.blockHandler); err != nil {
 		return nil, err
 	}
 
+	//Handler for sync end
 	if err := ph.RegisterHandler(p2p.MsgSyncEndCmd, sp.syncEndHandler); err != nil {
 		return nil, err
 	}
@@ -140,6 +144,10 @@ func NewSyncProtocol(ctx context.Context, host HostNode, config Config, chain ch
 	}
 
 	if err := sp.listenForBroadcasts(); err != nil {
+		return nil, err
+	}
+
+	if err := sp.listenForState(); err != nil {
 		return nil, err
 	}
 
@@ -213,6 +221,45 @@ func (sp *syncProtocol) Notify(notifee SyncNotifee) {
 	sp.notifeesLock.Lock()
 	defer sp.notifeesLock.Unlock()
 	sp.notifees = append(sp.notifees, notifee)
+}
+
+func (sp *syncProtocol) listenForState() error {
+	blockTopic, err := sp.host.Topic(p2p.MsgNewStateCmd)
+	if err != nil {
+		return err
+	}
+
+	blockSub, err := blockTopic.Subscribe()
+	if err != nil {
+		return err
+	}
+
+	go listenToTopic(sp.ctx, blockSub, func(data []byte, id peer.ID) {
+		if id == sp.host.GetHost().ID() {
+			return
+		}
+
+		buf := bytes.NewBuffer(data)
+
+		msg, err := p2p.ReadMessage(buf, sp.host.GetNetMagic())
+
+		if err != nil {
+			sp.log.Errorf("error decoding msg from peer %s: %s", id, err)
+			return
+		}
+
+		block, ok := msg.(*p2p.MsgNewState)
+		if !ok {
+			sp.log.Errorf("wrong message type on block subscription from peer %s: %s", id, err)
+			return
+		}
+
+		if err := sp.handleState(id, block.Data); err != nil {
+			sp.log.Errorf("error handling incoming block from peer: %s", err)
+		}
+	})
+	return nil
+
 }
 
 func (sp *syncProtocol) listenForBroadcasts() error {
@@ -306,6 +353,13 @@ func (sp *syncProtocol) syncEndHandler(id peer.ID, msg p2p.Message) error {
 	if sp.withPeer == id {
 		sp.onSync = false
 		sp.withPeer = ""
+	}
+	return nil
+}
+
+func (sp *syncProtocol) handleState(id peer.ID, block *primitives.SerializableState) error {
+	if sp.onSync && sp.withPeer != id {
+		return nil
 	}
 	return nil
 }

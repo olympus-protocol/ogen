@@ -2,6 +2,8 @@ package primitives
 
 import "github.com/olympus-protocol/ogen/pkg/bitfield"
 
+const MaxStateSize = 1024 * 1024 * 2.5 // 2.5 MB
+
 // SerializableState is a serializable copy of the state
 type SerializableState struct {
 	// CoinsState keeps if accounts balances and transactions.

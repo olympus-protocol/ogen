@@ -824,8 +824,8 @@ func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) 
 	return nil
 }
 
-// ProcessBlock runs a block transition on the state and mutates state.
-func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
+// StateProcessBlock runs a block transition on the state and mutates state.
+func (s *state) StateProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 	err := allocate.Zero(b)
 	if err != nil {
 		return err

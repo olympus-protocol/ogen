@@ -500,18 +500,18 @@ func (mr *MockStateMockRecorder) CheckBlockSignature(b, p interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBlockSignature", reflect.TypeOf((*MockState)(nil).CheckBlockSignature), b, p)
 }
 
-// ProcessBlock mocks base method
-func (m *MockState) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
+// StateProcessBlock mocks base method
+func (m *MockState) StateProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessBlock", b, p)
+	ret := m.ctrl.Call(m, "StateProcessBlock", b, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ProcessBlock indicates an expected call of ProcessBlock
+// StateProcessBlock indicates an expected call of StateProcessBlock
 func (mr *MockStateMockRecorder) ProcessBlock(b, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessBlock", reflect.TypeOf((*MockState)(nil).ProcessBlock), b, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateProcessBlock", reflect.TypeOf((*MockState)(nil).StateProcessBlock), b, p)
 }
 
 // ToSerializable mocks base method

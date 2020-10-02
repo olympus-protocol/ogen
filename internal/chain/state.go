@@ -282,7 +282,7 @@ func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.
 
 	newState := lastBlockState.Copy()
 
-	err = newState.ProcessBlock(block, s.params)
+	err = newState.StateProcessBlock(block, s.params)
 	if err != nil {
 		return nil, nil, err
 	}
