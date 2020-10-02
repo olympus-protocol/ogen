@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/c-bata/go-prompt"
 	"github.com/fatih/color"
-	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"github.com/spf13/cobra"
 	strings "strings"
@@ -235,7 +234,7 @@ func newCli(rpcClient *rpcclient.Client) *CLI {
 }
 
 func StartConsole(host string, args []string) {
-	rpcClient := rpcclient.NewRPCClient(host, config.DataPath, false)
+	rpcClient := rpcclient.NewRPCClient(host, DataPath, false)
 	cli := newCli(rpcClient)
 	cli.Run(args)
 }
