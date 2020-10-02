@@ -2,11 +2,16 @@ package config
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
+	testdata "github.com/olympus-protocol/ogen/test"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var (
@@ -68,4 +73,68 @@ func InterruptListener() {
 			}
 		}
 	}()
+}
+
+func SetTestParams() {
+	GlobalParams = &Params{
+		Logger:     logger.New(os.Stdin),
+		NetParams:  &testdata.TestParams,
+		InitParams: testInitParams(),
+		Context:    context.Background(),
+	}
+}
+
+func SetTestFlags() {
+	_ = os.MkdirAll("./test_data", 0700)
+	GlobalFlags = &Flags{
+		DataPath:     "test_data",
+		NetworkName:  "test_network",
+		Port:         "",
+		RPCProxy:     false,
+		RPCProxyPort: "",
+		RPCProxyAddr: "",
+		RPCPort:      "",
+		RPCWallet:    false,
+		RPCAuthToken: "",
+		Debug:        false,
+		LogFile:      false,
+	}
+}
+
+func testInitParams() *initialization.InitializationParameters {
+	var validatorsKeys []*bls.SecretKey
+	var validators []*primitives.Validator
+
+	addr := testdata.PremineAddr.PublicKey().ToAccount()
+
+	addrHash, _ := testdata.PremineAddr.PublicKey().Hash()
+	for i := 0; i < 100; i++ {
+		key := bls.RandKey()
+		validatorsKeys = append(validatorsKeys, bls.RandKey())
+		val := &primitives.Validator{
+			Balance:          100 * 1e8,
+			PayeeAddress:     addrHash,
+			Status:           primitives.StatusActive,
+			FirstActiveEpoch: 0,
+			LastActiveEpoch:  0,
+		}
+		copy(val.PubKey[:], key.PublicKey().Marshal())
+		validators = append(validators, val)
+	}
+
+	var initparams initialization.InitializationParameters
+
+	initparams.GenesisTime = time.Unix(time.Now().Unix(), 0)
+	initparams.InitialValidators = []initialization.ValidatorInitialization{}
+
+	// Convert the validators to initialization params.
+	for _, vk := range validatorsKeys {
+		val := initialization.ValidatorInitialization{
+			PubKey:       hex.EncodeToString(vk.PublicKey().Marshal()),
+			PayeeAddress: addr,
+		}
+		initparams.InitialValidators = append(initparams.InitialValidators, val)
+	}
+	initparams.PremineAddress = addr
+	return &initparams
 }
