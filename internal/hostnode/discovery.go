@@ -14,7 +14,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/logger"
 )
 
-func (d *discoveryProtocol) getRelayers() []peer.AddrInfo {
+func (d *discover) getRelayers() []peer.AddrInfo {
 	var r []peer.AddrInfo
 	for _, node := range d.netParams.Relayers {
 		ma, err := multiaddr.NewMultiaddr(node)
@@ -30,8 +30,8 @@ func (d *discoveryProtocol) getRelayers() []peer.AddrInfo {
 	return r
 }
 
-// discoveryProtocol is the service to discover other hostnode.
-type discoveryProtocol struct {
+// discover is the routine to announce and discover new peers for the hostnode.
+type discover struct {
 	host      HostNode
 	ctx       context.Context
 	log       logger.Logger
@@ -45,8 +45,8 @@ type discoveryProtocol struct {
 	discovery *discovery.RoutingDiscovery
 }
 
-// NewDiscoveryProtocol creates a new discovery service.
-func NewDiscoveryProtocol(host HostNode) (*discoveryProtocol, error) {
+// NewDiscover creates a new discovery service.
+func NewDiscover(host HostNode) (*discover, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -63,7 +63,7 @@ func NewDiscoveryProtocol(host HostNode) (*discoveryProtocol, error) {
 
 	r := discovery.NewRoutingDiscovery(d)
 
-	dp := &discoveryProtocol{
+	dp := &discover{
 		host:        host,
 		ctx:         ctx,
 		log:         log,
@@ -94,7 +94,7 @@ func NewDiscoveryProtocol(host HostNode) (*discoveryProtocol, error) {
 	return dp, nil
 }
 
-func (d *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
+func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
@@ -107,7 +107,7 @@ func (d *discoveryProtocol) handleNewPeer(pi peer.AddrInfo) {
 	}
 }
 
-func (d *discoveryProtocol) findPeers() {
+func (d *discover) findPeers() {
 	for {
 		peers, err := d.discovery.FindPeers(d.ctx, d.netParams.GetRendevouzString())
 		if err != nil {
@@ -130,7 +130,7 @@ func (d *discoveryProtocol) findPeers() {
 	}
 }
 
-func (d *discoveryProtocol) advertise() {
+func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
@@ -138,7 +138,7 @@ const connectionTimeout = 10 * time.Second
 const connectionCooldown = 60 * time.Second
 
 // Connect connects to a peer.
-func (d *discoveryProtocol) Connect(pi peer.AddrInfo) error {
+func (d *discover) Connect(pi peer.AddrInfo) error {
 	d.lastConnectLock.Lock()
 	defer d.lastConnectLock.Unlock()
 	lastConnect, found := d.lastConnect[pi.ID]

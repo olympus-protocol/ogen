@@ -17,7 +17,7 @@ var (
 	VersionNumber = (mayor * 100000) + (minor * 1000) + (patch * 10)
 	Version       = fmt.Sprintf("%d.%d.%d", mayor, minor, patch)
 
-	SyncProtocolID = protocol.ID("/ogen/sync/" + Version)
+	ProtocolID = protocol.ID("/ogen/" + Version)
 )
 
 // AccountPrefixes are prefixes used for account bech32 encoding.

@@ -1,16 +1,13 @@
 package hostnode
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"io"
 	"strings"
 	"sync"
 
-	"github.com/libp2p/go-libp2p-core/discovery"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
@@ -21,15 +18,13 @@ import (
 // MessageHandler is a handler for a specific message.
 type MessageHandler func(id peer.ID, msg p2p.Message) error
 
-// protocolHandler handles all of the messages, discovery, and shut down for each protocol.
-type protocolHandler struct {
+// handler handles all of the peers messages.
+type handler struct {
 	// ID is the protocol being handled.
 	ID protocol.ID
 
 	// host is the host to connect to.
 	host HostNode
-
-	discovery discovery.Discovery
 
 	messageHandlers     map[string]MessageHandler
 	messageHandlersLock sync.RWMutex
@@ -39,33 +34,27 @@ type protocolHandler struct {
 
 	ctx context.Context
 
-	log      logger.Logger
-	finTopic *pubsub.Topic
+	log logger.Logger
 }
 
-// newProtocolHandler constructs a new protocol handler for a specific protocol ID.
-func newProtocolHandler(id protocol.ID, host HostNode) (*protocolHandler, error) {
-	finTopic, err := host.Topic(p2p.MsgFinalizationCmd)
-	if err != nil {
-		return nil, err
-	}
-	ph := &protocolHandler{
+// newHandler constructs a new handler for a specific protocol ID.
+func newHandler(id protocol.ID, host HostNode) (*handler, error) {
+	ph := &handler{
 		ID:               id,
 		host:             host,
 		messageHandlers:  make(map[string]MessageHandler),
 		outgoingMessages: make(map[peer.ID]chan p2p.Message),
 		ctx:              config.GlobalParams.Context,
 		log:              config.GlobalParams.Logger,
-		finTopic:         finTopic,
 	}
 
-	host.SetStreamHandler(id, ph.HandleStream)
+	host.SetStreamHandler(id, ph.handleStream)
 
 	return ph, nil
 }
 
 // RegisterHandler registers a handler for a protocol.
-func (p *protocolHandler) RegisterHandler(messageName string, handler MessageHandler) error {
+func (p *handler) RegisterHandler(messageName string, handler MessageHandler) error {
 	p.messageHandlersLock.Lock()
 	defer p.messageHandlersLock.Unlock()
 	if _, found := p.messageHandlers[messageName]; found {
@@ -97,7 +86,7 @@ func processMessages(ctx context.Context, net uint32, stream io.Reader, handler 
 	}
 }
 
-func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
+func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 	err := processMessages(p.ctx, p.host.GetNetMagic(), r, func(message p2p.Message) error {
 		cmd := message.Command()
 
@@ -123,7 +112,7 @@ func (p *protocolHandler) receiveMessages(id peer.ID, r io.Reader) {
 	}
 }
 
-func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
+func (p *handler) sendMessages(id peer.ID, w io.Writer) {
 	msgChan := make(chan p2p.Message)
 
 	p.outgoingMessagesLock.Lock()
@@ -141,7 +130,7 @@ func (p *protocolHandler) sendMessages(id peer.ID, w io.Writer) {
 	}()
 }
 
-func (p *protocolHandler) HandleStream(s network.Stream) {
+func (p *handler) handleStream(s network.Stream) {
 	if s != nil {
 		p.sendMessages(s.Conn().RemotePeer(), s)
 		p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
@@ -150,7 +139,7 @@ func (p *protocolHandler) HandleStream(s network.Stream) {
 }
 
 // SendMessage writes a message to a peer.
-func (p *protocolHandler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
+func (p *handler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
 	p.outgoingMessagesLock.RLock()
 	msgsChan, found := p.outgoingMessages[toPeer]
 	p.outgoingMessagesLock.RUnlock()
@@ -161,11 +150,19 @@ func (p *protocolHandler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
 	return nil
 }
 
-func (p *protocolHandler) SendFinalizedMessage(msg *p2p.MsgFinalization) error {
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, p.host.GetNetMagic())
-	if err != nil {
-		return err
+// BroadcastMessage writes a message to all connected peers
+func (p *handler) BroadcastMessage(msg p2p.Message) {
+	peersID := p.host.GetPeerList()
+	var chans []chan p2p.Message
+	p.outgoingMessagesLock.RLock()
+	for _, id := range peersID {
+		msgsChan, found := p.outgoingMessages[id]
+		if found {
+			chans = append(chans, msgsChan)
+		}
 	}
-	return p.finTopic.Publish(p.ctx, buf.Bytes())
+	p.outgoingMessagesLock.RUnlock()
+	for _, msgChan := range chans {
+		msgChan <- msg
+	}
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -54,8 +53,6 @@ type lastActionManager struct {
 	lastActions     map[[48]byte]time.Time
 	lastActionsLock sync.RWMutex
 
-	startTopic *pubsub.Topic
-
 	netParams *params.ChainParams
 }
 
@@ -76,72 +73,18 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	topic, err := node.Topic(p2p.MsgValidatorStartCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	topicSub, err := topic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
 	l := &lastActionManager{
 		hostNode:    node,
 		ctx:         ctx,
 		lastActions: make(map[[48]byte]time.Time),
 		log:         log,
-		startTopic:  topic,
 		nonce:       rand.Uint64(),
 		netParams:   netParams,
 	}
 
 	ch.Notify(l)
 
-	go l.handleStartTopic(topicSub)
-
 	return l, nil
-}
-
-func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
-	for {
-		msg, err := topic.Next(l.ctx)
-		if err != nil {
-			if err != l.ctx.Err() {
-				l.log.Warnf("error getting next message in start validator topic: %s", err)
-				return
-			}
-			return
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		p2pMsg, err := p2p.ReadMessage(buf, l.hostNode.GetNetMagic())
-
-		if err != nil {
-			return
-		}
-
-		validatorHello, ok := p2pMsg.(*p2p.MsgValidatorStart)
-		if !ok {
-			return
-		}
-
-		sig, err := bls.SignatureFromBytes(validatorHello.Data.Signature[:])
-		if err != nil {
-			l.log.Warnf("invalid signature: %s", err)
-		}
-
-		pub, err := bls.PublicKeyFromBytes(validatorHello.Data.PublicKey[:])
-		if err != nil {
-			l.log.Warnf("invalid pubkey: %s", err)
-		}
-
-		if !sig.Verify(pub, validatorHello.Data.SignatureMessage()) {
-			l.log.Warnf("validator hello signature did not verify")
-			return
-		}
-	}
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
@@ -168,8 +111,6 @@ func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitive
 	if err != nil {
 		return false
 	}
-
-	err = l.startTopic.Publish(l.ctx, buf.Bytes())
 
 	if err != nil {
 		return false

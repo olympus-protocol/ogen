@@ -41,15 +41,11 @@ var _ ActionMempool = &actionMempool{}
 // ActionMempool keeps track of actions to be added to the blockchain
 // such as deposits, withdrawals, slashings, etc.
 type actionMempool struct {
-	depositsLock       sync.Mutex
-	deposits           map[chainhash.Hash]*primitives.Deposit
-	depositsTopic      *pubsub.Topic
-	depositsSliceTopic *pubsub.Topic
+	depositsLock sync.Mutex
+	deposits     map[chainhash.Hash]*primitives.Deposit
 
-	exitsLock       sync.Mutex
-	exits           map[chainhash.Hash]*primitives.Exit
-	exitsTopic      *pubsub.Topic
-	exitsSliceTopic *pubsub.Topic
+	exitsLock sync.Mutex
+	exits     map[chainhash.Hash]*primitives.Exit
 
 	voteSlashingLock sync.Mutex
 	voteSlashings    []*primitives.VoteSlashing
@@ -62,7 +58,6 @@ type actionMempool struct {
 
 	governanceVoteLock sync.Mutex
 	governanceVotes    map[chainhash.Hash]*primitives.GovernanceVote
-	governanceTopic    *pubsub.Topic
 
 	netParams  *params.ChainParams
 	ctx        context.Context
@@ -148,66 +143,12 @@ func NewActionMempool(blockchain chain.Blockchain, hostnode hostnode.HostNode) (
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 
-	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	depositSliceTopic, err := hostnode.Topic(p2p.MsgDepositsCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	depositTopicSub, err := depositTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	depositSliceTopicSub, err := depositSliceTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	exitSliceTopic, err := hostnode.Topic(p2p.MsgExitsCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	exitTopicSub, err := exitTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	exitSliceTopicSub, err := exitSliceTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	governanceTopic, err := hostnode.Topic(p2p.MsgGovernanceCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	governanceTopicSub, err := governanceTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
 	am := &actionMempool{
 		netParams:  netParams,
 		ctx:        ctx,
 		log:        log,
 		blockchain: blockchain,
 		hostNode:   hostnode,
-
-		depositsTopic:   depositTopic,
-		exitsTopic:      exitTopic,
-		governanceTopic: governanceTopic,
 
 		deposits:        make(map[chainhash.Hash]*primitives.Deposit),
 		exits:           make(map[chainhash.Hash]*primitives.Exit),

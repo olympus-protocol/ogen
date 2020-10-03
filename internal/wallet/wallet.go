@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,7 +10,6 @@ import (
 
 	"go.etcd.io/bbolt"
 
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/mempool"
@@ -51,15 +49,8 @@ type wallet struct {
 	log           logger.Logger
 	chain         chain.Blockchain
 	hostnode      hostnode.HostNode
-	txTopic       *pubsub.Topic
 	mempool       mempool.CoinsMempool
 	actionMempool mempool.ActionMempool
-
-	depositTopic  *pubsub.Topic
-	depositsTopic *pubsub.Topic
-
-	exitTopic  *pubsub.Topic
-	exitsTopic *pubsub.Topic
 
 	directory string
 	ctx       context.Context
@@ -80,47 +71,13 @@ func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 
-	var txTopic, depositTopic, depositsTopic, exitTopic, exitsTopic *pubsub.Topic
-	var err error
-	if hostnode != nil {
-		txTopic, err = hostnode.Topic(p2p.MsgTxCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		depositTopic, err = hostnode.Topic(p2p.MsgDepositCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		depositsTopic, err = hostnode.Topic(p2p.MsgDepositsCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		exitTopic, err = hostnode.Topic(p2p.MsgExitCmd)
-		if err != nil {
-			return nil, err
-		}
-
-		exitsTopic, err = hostnode.Topic(p2p.MsgExitsCmd)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	wall := &wallet{
 		log:           log,
 		directory:     config.GlobalFlags.DataPath,
 		netParams:     netParams,
 		open:          false,
 		chain:         ch,
-		txTopic:       txTopic,
 		hostnode:      hostnode,
-		depositTopic:  depositTopic,
-		depositsTopic: depositsTopic,
-		exitTopic:     exitTopic,
-		exitsTopic:    exitsTopic,
 		mempool:       mempool,
 		ctx:           ctx,
 		actionMempool: actionMempool,
