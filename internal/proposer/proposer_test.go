@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"github.com/golang/mock/gomock"
 	fuzz "github.com/google/gofuzz"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
@@ -18,7 +17,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -34,8 +32,6 @@ var validators []*primitives.Validator
 var validatorKeys []*bls.SecretKey
 
 var genesisHash chainhash.Hash
-
-var param = &testdata.TestParams
 
 var stateParams initialization.InitializationParameters
 
@@ -81,9 +77,6 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
 
-	g, err := pubsub.NewGossipSub(ctx, h)
-	assert.NoError(t, err)
-
 	genblock := primitives.GetGenesisBlock()
 
 	s := state.NewMockState(ctrl)
@@ -118,8 +111,6 @@ func TestProposerWithEmptyKeys(t *testing.T) {
 	bch.EXPECT().Unnotify(gomock.Any())
 
 	host := hostnode.NewMockHostNode(ctrl)
-	host.EXPECT().Topic(p2p.MsgBlockCmd).Return(g.Join(p2p.MsgBlockCmd))
-	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
 	host.EXPECT().Syncing().Return(false).AnyTimes()
 
@@ -153,9 +144,6 @@ func TestProposerWithKeys(t *testing.T) {
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
 
-	g, err := pubsub.NewGossipSub(ctx, h)
-	assert.NoError(t, err)
-
 	genblock := primitives.GetGenesisBlock()
 
 	s := state.NewMockState(ctrl)
@@ -190,8 +178,6 @@ func TestProposerWithKeys(t *testing.T) {
 	bch.EXPECT().Unnotify(gomock.Any())
 
 	host := hostnode.NewMockHostNode(ctrl)
-	host.EXPECT().Topic(p2p.MsgBlockCmd).Return(g.Join(p2p.MsgBlockCmd))
-	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
 	host.EXPECT().Syncing().Return(false).AnyTimes()
 

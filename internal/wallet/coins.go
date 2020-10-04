@@ -1,12 +1,10 @@
 package wallet
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
-
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
@@ -72,26 +70,14 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	currentState := w.chain.State().TipState()
 	cs := currentState.GetCoinsState()
-	if err := w.mempool.Add(tx, &cs); err != nil {
+	if err := w.coinsmempool.Add(tx, &cs); err != nil {
 		return nil, err
 	}
 
-	w.broadcastTx(tx)
+	msg := &p2p.MsgTx{Data: tx}
+	w.host.BroadcastMessage(msg)
 
 	txHash := tx.Hash()
 
 	return &txHash, nil
-}
-
-func (w *wallet) broadcastTx(payload *primitives.Tx) {
-	msg := &p2p.MsgTx{Data: payload}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
-	if err != nil {
-		w.log.Errorf("error encoding tx: %s", err)
-		return
-	}
-	if err := w.txTopic.Publish(w.ctx, buf.Bytes()); err != nil {
-		w.log.Errorf("error broadcasting transaction: %s", err)
-	}
 }
