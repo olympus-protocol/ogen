@@ -94,7 +94,7 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 		return nil, err
 	}
 
-	host.Notify(&network.NotifyBundle{
+	host.GetHost().Network().Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, conn network.Conn) {
 			if conn.Stat().Direction != network.DirOutbound {
 				return
@@ -304,7 +304,7 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 		}
 
 	}
-	err := sp.protocolHandler.SendMessage(id, &p2p.MsgSyncEnd{})
+	err := sp.host.SendMessage(id, &p2p.MsgSyncEnd{})
 	if err != nil {
 		return err
 	}
@@ -370,7 +370,7 @@ func (sp *synchronizer) processBlock(block *primitives.Block) error {
 	// when a new state is finalized.
 	// When this happens we should announce all blocks our new status.
 
-	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch && !sp.Syncing() {
+	if sp.chain.State().TipState().GetFinalizedEpoch() > sp.lastFinalizedEpoch && !sp.sync {
 
 		tip := sp.chain.State().Tip()
 		justified, _ := sp.chain.State().GetJustifiedHead()

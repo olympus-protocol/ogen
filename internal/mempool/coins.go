@@ -106,15 +106,15 @@ type coinsMempool struct {
 	blockchain chain.Blockchain
 	hostNode   hostnode.HostNode
 	netParams  *params.ChainParams
-	topic      *pubsub.Topic
+
 	ctx        context.Context
 	log        logger.Logger
 
 	mempool      map[[20]byte]*coinMempoolItem
 	mempoolMulti map[[20]byte]*coinMempoolItemMulti
+
 	balances     map[[20]byte]uint64
 	lock         sync.RWMutex
-	baLock       sync.RWMutex
 }
 
 // AddMulti adds an item to the coins mempool.
@@ -329,26 +329,6 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	topic, err := hostNode.Topic(p2p.MsgTxCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	topicMulti, err := hostNode.Topic(p2p.MsgTxMultiCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	topicSub, err := topic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	topicMultiSub, err := topicMulti.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
 	cm := &coinsMempool{
 		mempool:      make(map[[20]byte]*coinMempoolItem),
 		mempoolMulti: make(map[[20]byte]*coinMempoolItemMulti),
@@ -357,7 +337,6 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		blockchain:   ch,
 		hostNode:     hostNode,
 		netParams:    netParams,
-		topic:        topic,
 		log:          log,
 	}
 

@@ -48,7 +48,7 @@ func newHandler(id protocol.ID, host HostNode) (*handler, error) {
 		log:              config.GlobalParams.Logger,
 	}
 
-	host.SetStreamHandler(id, ph.handleStream)
+	host.GetHost().SetStreamHandler(id, ph.handleStream)
 
 	return ph, nil
 }
@@ -139,12 +139,12 @@ func (p *handler) handleStream(s network.Stream) {
 }
 
 // SendMessage writes a message to a peer.
-func (p *handler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
+func (p *handler) SendMessage(id peer.ID, msg p2p.Message) error {
 	p.outgoingMessagesLock.RLock()
-	msgsChan, found := p.outgoingMessages[toPeer]
+	msgsChan, found := p.outgoingMessages[id]
 	p.outgoingMessagesLock.RUnlock()
 	if !found {
-		return fmt.Errorf("not tracking peer %s", toPeer)
+		return fmt.Errorf("not tracking peer %s", id)
 	}
 	msgsChan <- msg
 	return nil
@@ -152,7 +152,7 @@ func (p *handler) SendMessage(toPeer peer.ID, msg p2p.Message) error {
 
 // BroadcastMessage writes a message to all connected peers
 func (p *handler) BroadcastMessage(msg p2p.Message) {
-	peersID := p.host.GetPeerList()
+	peersID := p.host.GetHost().Network().Peers()
 	var chans []chan p2p.Message
 	p.outgoingMessagesLock.RLock()
 	for _, id := range peersID {

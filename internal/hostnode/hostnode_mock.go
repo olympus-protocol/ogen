@@ -5,13 +5,11 @@
 package hostnode
 
 import (
-	context "context"
 	gomock "github.com/golang/mock/gomock"
 	host "github.com/libp2p/go-libp2p-core/host"
 	network "github.com/libp2p/go-libp2p-core/network"
 	peer "github.com/libp2p/go-libp2p-core/peer"
-	protocol "github.com/libp2p/go-libp2p-core/protocol"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	p2p "github.com/olympus-protocol/ogen/pkg/p2p"
 	reflect "reflect"
 )
 
@@ -36,49 +34,6 @@ func NewMockHostNode(ctrl *gomock.Controller) *MockHostNode {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockHostNode) EXPECT() *MockHostNodeMockRecorder {
 	return m.recorder
-}
-
-// Topic mocks base method
-func (m *MockHostNode) Topic(topic string) (*pubsub.Topic, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Topic", topic)
-	ret0, _ := ret[0].(*pubsub.Topic)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Topic indicates an expected call of Topic
-func (mr *MockHostNodeMockRecorder) Topic(topic interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Topic", reflect.TypeOf((*MockHostNode)(nil).Topic), topic)
-}
-
-// Syncing mocks base method
-func (m *MockHostNode) Syncing() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Syncing")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Syncing indicates an expected call of Syncing
-func (mr *MockHostNodeMockRecorder) Syncing() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Syncing", reflect.TypeOf((*MockHostNode)(nil).Syncing))
-}
-
-// GetContext mocks base method
-func (m *MockHostNode) GetContext() context.Context {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetContext")
-	ret0, _ := ret[0].(context.Context)
-	return ret0
-}
-
-// GetContext indicates an expected call of GetContext
-func (mr *MockHostNodeMockRecorder) GetContext() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContext", reflect.TypeOf((*MockHostNode)(nil).GetContext))
 }
 
 // GetHost mocks base method
@@ -123,20 +78,6 @@ func (mr *MockHostNodeMockRecorder) DisconnectPeer(p interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisconnectPeer", reflect.TypeOf((*MockHostNode)(nil).DisconnectPeer), p)
 }
 
-// GetPeerList mocks base method
-func (m *MockHostNode) GetPeerList() []peer.ID {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPeerList")
-	ret0, _ := ret[0].([]peer.ID)
-	return ret0
-}
-
-// GetPeerList indicates an expected call of GetPeerList
-func (mr *MockHostNodeMockRecorder) GetPeerList() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerList", reflect.TypeOf((*MockHostNode)(nil).GetPeerList))
-}
-
 // GetPeerInfos mocks base method
 func (m *MockHostNode) GetPeerInfos() []peer.AddrInfo {
 	m.ctrl.T.Helper()
@@ -149,32 +90,6 @@ func (m *MockHostNode) GetPeerInfos() []peer.AddrInfo {
 func (mr *MockHostNodeMockRecorder) GetPeerInfos() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerInfos", reflect.TypeOf((*MockHostNode)(nil).GetPeerInfos))
-}
-
-// ConnectedToPeer mocks base method
-func (m *MockHostNode) ConnectedToPeer(id peer.ID) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConnectedToPeer", id)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// ConnectedToPeer indicates an expected call of ConnectedToPeer
-func (mr *MockHostNodeMockRecorder) ConnectedToPeer(id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectedToPeer", reflect.TypeOf((*MockHostNode)(nil).ConnectedToPeer), id)
-}
-
-// Notify mocks base method
-func (m *MockHostNode) Notify(notifee network.Notifiee) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Notify", notifee)
-}
-
-// Notify indicates an expected call of Notify
-func (mr *MockHostNodeMockRecorder) Notify(notifee interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockHostNode)(nil).Notify), notifee)
 }
 
 // GetPeerDirection mocks base method
@@ -191,30 +106,6 @@ func (mr *MockHostNodeMockRecorder) GetPeerDirection(id interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerDirection", reflect.TypeOf((*MockHostNode)(nil).GetPeerDirection), id)
 }
 
-// Stop mocks base method
-func (m *MockHostNode) Stop() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop")
-}
-
-// Stop indicates an expected call of Stop
-func (mr *MockHostNodeMockRecorder) Stop() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockHostNode)(nil).Stop))
-}
-
-// SetStreamHandler mocks base method
-func (m *MockHostNode) SetStreamHandler(id protocol.ID, handleStream func(network.Stream)) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetStreamHandler", id, handleStream)
-}
-
-// SetStreamHandler indicates an expected call of SetStreamHandler
-func (mr *MockHostNodeMockRecorder) SetStreamHandler(id, handleStream interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStreamHandler", reflect.TypeOf((*MockHostNode)(nil).SetStreamHandler), id, handleStream)
-}
-
 // GetPeerInfo mocks base method
 func (m *MockHostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	m.ctrl.T.Helper()
@@ -227,4 +118,56 @@ func (m *MockHostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 func (mr *MockHostNodeMockRecorder) GetPeerInfo(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerInfo", reflect.TypeOf((*MockHostNode)(nil).GetPeerInfo), id)
+}
+
+// RegisterHandler mocks base method
+func (m *MockHostNode) RegisterHandler(message string, handler MessageHandler) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterHandler", message, handler)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterHandler indicates an expected call of RegisterHandler
+func (mr *MockHostNodeMockRecorder) RegisterHandler(message, handler interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterHandler", reflect.TypeOf((*MockHostNode)(nil).RegisterHandler), message, handler)
+}
+
+// HandleStream mocks base method
+func (m *MockHostNode) HandleStream(s network.Stream) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "HandleStream", s)
+}
+
+// HandleStream indicates an expected call of HandleStream
+func (mr *MockHostNodeMockRecorder) HandleStream(s interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleStream", reflect.TypeOf((*MockHostNode)(nil).HandleStream), s)
+}
+
+// SendMessaege mocks base method
+func (m *MockHostNode) SendMessaege(id peer.ID, msg p2p.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendMessaege", id, msg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMessaege indicates an expected call of SendMessaege
+func (mr *MockHostNodeMockRecorder) SendMessaege(id, msg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessaege", reflect.TypeOf((*MockHostNode)(nil).SendMessaege), id, msg)
+}
+
+// BroadcastMessage mocks base method
+func (m *MockHostNode) BroadcastMessage(msg p2p.Message) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "BroadcastMessage", msg)
+}
+
+// BroadcastMessage indicates an expected call of BroadcastMessage
+func (mr *MockHostNodeMockRecorder) BroadcastMessage(msg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastMessage", reflect.TypeOf((*MockHostNode)(nil).BroadcastMessage), msg)
 }

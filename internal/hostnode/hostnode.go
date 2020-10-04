@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"io/ioutil"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -27,19 +27,16 @@ import (
 
 // HostNode is an interface for hostNode
 type HostNode interface {
-	RegisterHandler(message string, handler MessageHandler) error
-	HandleStream(s network.Stream)
-
 	GetHost() host.Host
 	GetNetMagic() uint32
 	DisconnectPeer(p peer.ID) error
-	PeersConnected() int
-	GetPeerList() []peer.ID
 	GetPeerInfos() []peer.AddrInfo
-	Notify(notifee network.Notifiee)
-	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	GetPeerDirection(id peer.ID) network.Direction
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
+	RegisterHandler(message string, handler MessageHandler) error
+	HandleStream(s network.Stream)
+	SendMessage(id peer.ID, msg p2p.Message) error
+	BroadcastMessage(msg p2p.Message)
 }
 
 var _ HostNode = &hostNode{}
@@ -154,16 +151,6 @@ func (node *hostNode) DisconnectPeer(p peer.ID) error {
 	return node.host.Network().ClosePeer(p)
 }
 
-// PeersConnected checks how many hostnode are connected.
-func (node *hostNode) PeersConnected() int {
-	return len(node.host.Network().Peers())
-}
-
-// GetPeerList returns a list of all hostnode.
-func (node *hostNode) GetPeerList() []peer.ID {
-	return node.host.Network().Peers()
-}
-
 // GetPeerInfos gets peer infos of connected hostnode.
 func (node *hostNode) GetPeerInfos() []peer.AddrInfo {
 	peers := node.host.Network().Peers()
@@ -174,16 +161,6 @@ func (node *hostNode) GetPeerInfos() []peer.AddrInfo {
 	}
 
 	return infos
-}
-
-// Notify notifies a notifee for network events.
-func (node *hostNode) Notify(notifee network.Notifiee) {
-	node.host.Network().Notify(notifee)
-}
-
-// SetStreamHandler sets a stream handler for the host node.
-func (node *hostNode) SetStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
-	node.host.SetStreamHandler(id, handleStream)
 }
 
 // GetPeerDirection gets the direction of the peer.
@@ -207,6 +184,14 @@ func (node *hostNode) RegisterHandler(message string, handler MessageHandler) er
 
 func (node *hostNode) HandleStream(s network.Stream) {
 	node.handler.handleStream(s)
+}
+
+func (node *hostNode) SendMessage(id peer.ID, msg p2p.Message) error {
+	return node.handler.SendMessage(id, msg)
+}
+
+func (node *hostNode) BroadcastMessage(msg p2p.Message)  {
+	node.handler.BroadcastMessage(msg)
 }
 
 func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {

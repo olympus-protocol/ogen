@@ -98,9 +98,6 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
-	if d.host.ConnectedToPeer(pi.ID) {
-		return
-	}
 	err := d.Connect(pi)
 	if err != nil {
 		d.log.Infof("unable to connect to peer %s", pi.ID.String())
