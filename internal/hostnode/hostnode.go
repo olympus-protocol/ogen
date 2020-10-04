@@ -27,6 +27,7 @@ import (
 
 // HostNode is an interface for hostNode
 type HostNode interface {
+	Syncing() bool
 	GetHost() host.Host
 	GetNetMagic() uint32
 	DisconnectPeer(p peer.ID) error
@@ -137,6 +138,10 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	return node, nil
 }
 
+func (node *hostNode) Syncing() bool {
+	return node.synchronizer.sync
+}
+
 // GetHost returns the host
 func (node *hostNode) GetHost() host.Host {
 	return node.host
@@ -190,7 +195,7 @@ func (node *hostNode) SendMessage(id peer.ID, msg p2p.Message) error {
 	return node.handler.SendMessage(id, msg)
 }
 
-func (node *hostNode) BroadcastMessage(msg p2p.Message)  {
+func (node *hostNode) BroadcastMessage(msg p2p.Message) {
 	node.handler.BroadcastMessage(msg)
 }
 

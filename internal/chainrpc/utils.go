@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -9,18 +8,13 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type utilsServer struct {
-	keystore     keystore.Keystore
-	hostnode     hostnode.HostNode
-	txTopic      *pubsub.Topic
-	depositTopic *pubsub.Topic
-	exitTopic    *pubsub.Topic
+	keystore keystore.Keystore
+	host     hostnode.HostNode
 	proto.UnimplementedUtilsServer
 }
 
@@ -52,17 +46,8 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		}
 
 		msg := &p2p.MsgTx{Data: tx}
-
-		buf := bytes.NewBuffer([]byte{})
-		err = p2p.WriteMessage(buf, msg, s.hostnode.GetNetMagic())
-		if err != nil {
-			return nil, err
-		}
-
-		err = s.txTopic.Publish(ctx, buf.Bytes())
-		if err != nil {
-			return nil, err
-		}
+		// TODO apply to ourselves first.
+		s.host.BroadcastMessage(msg)
 
 		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
 
@@ -76,17 +61,8 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		}
 
 		msg := &p2p.MsgDeposit{Data: deposit}
-
-		buf := bytes.NewBuffer([]byte{})
-		err = p2p.WriteMessage(buf, msg, s.hostnode.GetNetMagic())
-		if err != nil {
-			return nil, err
-		}
-
-		err = s.depositTopic.Publish(ctx, buf.Bytes())
-		if err != nil {
-			return nil, err
-		}
+		// TODO apply to ourselves first.
+		s.host.BroadcastMessage(msg)
 
 		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
 
@@ -100,17 +76,8 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		}
 
 		msg := &p2p.MsgExit{Data: exit}
-
-		buf := bytes.NewBuffer([]byte{})
-		err = p2p.WriteMessage(buf, msg, s.hostnode.GetNetMagic())
-		if err != nil {
-			return nil, err
-		}
-
-		err = s.exitTopic.Publish(ctx, buf.Bytes())
-		if err != nil {
-			return nil, err
-		}
+		// TODO apply to ourselves first.
+		s.host.BroadcastMessage(msg)
 
 		return &proto.Success{Success: true, Data: exit.Hash().String()}, nil
 

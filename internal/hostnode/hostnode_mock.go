@@ -36,6 +36,20 @@ func (m *MockHostNode) EXPECT() *MockHostNodeMockRecorder {
 	return m.recorder
 }
 
+// Syncing mocks base method
+func (m *MockHostNode) Syncing() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Syncing")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Syncing indicates an expected call of Syncing
+func (mr *MockHostNodeMockRecorder) Syncing() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Syncing", reflect.TypeOf((*MockHostNode)(nil).Syncing))
+}
+
 // GetHost mocks base method
 func (m *MockHostNode) GetHost() host.Host {
 	m.ctrl.T.Helper()
@@ -146,18 +160,18 @@ func (mr *MockHostNodeMockRecorder) HandleStream(s interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleStream", reflect.TypeOf((*MockHostNode)(nil).HandleStream), s)
 }
 
-// SendMessaege mocks base method
-func (m *MockHostNode) SendMessaege(id peer.ID, msg p2p.Message) error {
+// SendMessage mocks base method
+func (m *MockHostNode) SendMessage(id peer.ID, msg p2p.Message) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendMessaege", id, msg)
+	ret := m.ctrl.Call(m, "SendMessage", id, msg)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SendMessaege indicates an expected call of SendMessaege
-func (mr *MockHostNodeMockRecorder) SendMessaege(id, msg interface{}) *gomock.Call {
+// SendMessage indicates an expected call of SendMessage
+func (mr *MockHostNodeMockRecorder) SendMessage(id, msg interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessaege", reflect.TypeOf((*MockHostNode)(nil).SendMessaege), id, msg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockHostNode)(nil).SendMessage), id, msg)
 }
 
 // BroadcastMessage mocks base method

@@ -45,12 +45,13 @@ var _ Wallet = &wallet{}
 // wallet is the structure of the wallet manager.
 type wallet struct {
 	// Wallet manager properties
-	netParams     *params.ChainParams
-	log           logger.Logger
-	chain         chain.Blockchain
-	hostnode      hostnode.HostNode
-	mempool       mempool.CoinsMempool
-	actionMempool mempool.ActionMempool
+	netParams *params.ChainParams
+	log       logger.Logger
+	chain     chain.Blockchain
+	host      hostnode.HostNode
+
+	coinsmempool   mempool.CoinsMempool
+	actionsmempool mempool.ActionMempool
 
 	directory string
 	ctx       context.Context
@@ -72,15 +73,15 @@ func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.
 	log := config.GlobalParams.Logger
 
 	wall := &wallet{
-		log:           log,
-		directory:     config.GlobalFlags.DataPath,
-		netParams:     netParams,
-		open:          false,
-		chain:         ch,
-		hostnode:      hostnode,
-		mempool:       mempool,
-		ctx:           ctx,
-		actionMempool: actionMempool,
+		log:            log,
+		directory:      config.GlobalFlags.DataPath,
+		netParams:      netParams,
+		open:           false,
+		chain:          ch,
+		host:           hostnode,
+		coinsmempool:   mempool,
+		ctx:            ctx,
+		actionsmempool: actionMempool,
 	}
 	return wall, nil
 }

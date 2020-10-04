@@ -1,7 +1,6 @@
 package proposer
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
@@ -12,8 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
 	"time"
-
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
@@ -55,9 +52,7 @@ type proposer struct {
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
 	actionsMempool mempool.ActionMempool
-	hostnode       hostnode.HostNode
-	blockTopic     *pubsub.Topic
-	voteTopic      *pubsub.Topic
+	host           hostnode.HostNode
 
 	lastActionManager actionmanager.LastActionManager
 }
@@ -65,18 +60,6 @@ type proposer struct {
 // NewProposer creates a new proposer from the parameters.
 func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-
-	blockTopic, err := hostnode.Topic(p2p.MsgBlockCmd)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-
-	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
 
 	prop := &proposer{
 		log:               config.GlobalParams.Logger,
@@ -89,13 +72,11 @@ func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool
 		voteMempool:       voteMempool,
 		coinsMempool:      coinsMempool,
 		actionsMempool:    actionsMempool,
-		hostnode:          hostnode,
-		blockTopic:        blockTopic,
-		voteTopic:         voteTopic,
+		host:              hostnode,
 		lastActionManager: manager,
 	}
 
-	err = prop.keystore.OpenKeystore()
+	err := prop.keystore.OpenKeystore()
 	if err != nil {
 		if err == keystore.ErrorNotInitialized {
 			err = prop.keystore.CreateKeystore()
@@ -134,36 +115,6 @@ func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
 	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.netParams.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.netParams.SlotDuration) / 2)
 }
 
-func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
-	msg := &p2p.MsgVote{Data: v}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, p.hostnode.GetNetMagic())
-	if err != nil {
-		p.log.Errorf("error encoding vote: %s", err)
-		return
-	}
-	if err := p.voteTopic.Publish(p.context, buf.Bytes()); err != nil {
-		p.log.Errorf("error publishing vote: %s", err)
-		return
-	}
-	return
-}
-
-func (p *proposer) publishBlock(block *primitives.Block) {
-	msg := &p2p.MsgBlock{Data: block}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, p.hostnode.GetNetMagic())
-	if err != nil {
-		p.log.Errorf("error encoding vote: %s", err)
-		return
-	}
-	if err := p.blockTopic.Publish(p.context, buf.Bytes()); err != nil {
-		p.log.Errorf("error publishing block: %s", err)
-		return
-	}
-	return
-}
-
 // ProposerSlashingConditionViolated implements chain notifee.
 func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
@@ -178,7 +129,7 @@ func (p *proposer) ProposeBlocks() {
 		case <-blockTimer.C:
 			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
-			if p.hostnode.Syncing() {
+			if p.host.Syncing() {
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
 				p.proposerLock.Unlock()
@@ -315,7 +266,8 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				p.publishBlock(&block)
+				msg := &p2p.MsgBlock{Data: &block}
+				p.host.BroadcastMessage(msg)
 			}
 
 			slotToPropose++
@@ -341,7 +293,7 @@ func (p *proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 			p.voteLock.Lock()
 			// Check if we're an attester for this slot
-			if p.hostnode.Syncing() {
+			if p.host.Syncing() {
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
 				p.voteLock.Unlock()
@@ -427,7 +379,8 @@ func (p *proposer) VoteForBlocks() {
 
 				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
-				p.publishVotes(vote)
+				msg := &p2p.MsgVote{Data: vote}
+				p.host.BroadcastMessage(msg)
 			}
 
 			slotToVote++

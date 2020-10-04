@@ -10,24 +10,24 @@ import (
 )
 
 type networkServer struct {
-	hostnode hostnode.HostNode
+	host hostnode.HostNode
 	proto.UnimplementedNetworkServer
 }
 
 func (s *networkServer) GetNetworkInfo(context.Context, *proto.Empty) (*proto.NetworkInfo, error) {
-	p := s.hostnode.GetPeerList()
-	return &proto.NetworkInfo{Peers: int32(len(p)), ID: s.hostnode.GetHost().ID().String()}, nil
+	return &proto.NetworkInfo{Peers: int32(len(s.host.GetHost().Network().Peers())), ID: s.host.GetHost().ID().String()}, nil
 }
 
 func (s *networkServer) GetPeersInfo(context.Context, *proto.Empty) (*proto.Peers, error) {
-	peersID := s.hostnode.GetPeerList()
+	peersID := s.host.GetHost().Network().Peers()
 	peersInfo := make([]*proto.Peer, len(peersID))
 	for i, p := range peersID {
-		addr := s.hostnode.GetPeerDirection(p)
+		addr := s.host.GetPeerDirection(p)
 		peersInfo[i] = &proto.Peer{Id: p.Pretty(), Host: &proto.IP{Host: addr.String()}}
 	}
 	return &proto.Peers{Peers: peersInfo}, nil
 }
+
 func (s *networkServer) AddPeer(ctx context.Context, peerAddr *proto.IP) (*proto.Success, error) {
 	maddr, err := multiaddr.NewMultiaddr(peerAddr.Host)
 	if err != nil {
@@ -37,7 +37,7 @@ func (s *networkServer) AddPeer(ctx context.Context, peerAddr *proto.IP) (*proto
 	if err != nil {
 		return nil, err
 	}
-	err = s.hostnode.GetHost().Connect(ctx, *pinfo)
+	err = s.host.GetHost().Connect(ctx, *pinfo)
 	if err != nil {
 		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}

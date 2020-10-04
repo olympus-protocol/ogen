@@ -3,8 +3,8 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"errors"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -38,12 +38,12 @@ type voteMempool struct {
 	// chainindex 0 is highest prioritized, 1 is less, etc
 	poolOrder []chainhash.Hash
 
-	netParams  *params.ChainParams
-	log        logger.Logger
-	ctx        context.Context
-	blockchain chain.Blockchain
-	hostNode   hostnode.HostNode
-	voteTopic  *pubsub.Topic
+	netParams *params.ChainParams
+	log       logger.Logger
+	ctx       context.Context
+
+	chain chain.Blockchain
+	host  hostnode.HostNode
 
 	notifees     []VoteSlashingNotifee
 	notifeesLock sync.Mutex
@@ -95,7 +95,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 
 	firstSlotAllowedToInclude := vote.Data.Slot + m.netParams.MinAttestationInclusionDelay
 
-	currentState, err := m.blockchain.State().TipStateAtSlot(firstSlotAllowedToInclude)
+	currentState, err := m.chain.State().TipStateAtSlot(firstSlotAllowedToInclude)
 	if err != nil {
 		m.log.Error(err)
 		return
@@ -308,71 +308,28 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 }
 
 func (m *voteMempool) getCurrentSlot() uint64 {
-	slot := time.Now().Sub(m.blockchain.GenesisTime()) / (time.Duration(m.netParams.SlotDuration) * time.Second)
+	slot := time.Now().Sub(m.chain.GenesisTime()) / (time.Duration(m.netParams.SlotDuration) * time.Second)
 	if slot < 0 {
 		return 0
 	}
 	return uint64(slot)
 }
 
-func (m *voteMempool) handleSubscription(sub *pubsub.Subscription, id peer.ID) {
-	for {
-		msg, err := sub.Next(m.ctx)
-		if err != nil {
-			if err != m.ctx.Err() {
-				m.log.Warnf("error getting next message in votes topic: %s", err)
-				continue
-			}
-			continue
-		}
-
-		if msg.GetFrom() == id {
-			continue
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		voteRead, err := p2p.ReadMessage(buf, m.hostNode.GetNetMagic())
-		if err != nil {
-			m.log.Warnf("unable to decode message: %s", err)
-			continue
-		}
-
-		voteMsg, ok := voteRead.(*p2p.MsgVote)
-		if !ok {
-			m.log.Warnf("peer sent wrong message on vote subscription")
-			continue
-		}
-
-		vote := voteMsg.Data
-
-		m.log.Debugf("received votes from peer %s", msg.GetFrom().String())
-
-		firstSlotAllowedToInclude := vote.Data.Slot + m.netParams.MinAttestationInclusionDelay
-		tip := m.blockchain.State().Tip()
-
-		if tip.Slot+m.netParams.EpochLength*2 < firstSlotAllowedToInclude {
-			continue
-		}
-
-		view, err := m.blockchain.State().GetSubView(tip.Hash)
-		if err != nil {
-			m.log.Warnf("could not get block view representing current tip: %s", err)
-			continue
-		}
-
-		currentState, _, err := m.blockchain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view)
-		if err != nil {
-			m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-			continue
-		}
-
-		err = m.AddValidate(vote, currentState)
-		if err != nil {
-			m.log.Debugf("error adding vote to mempool: %s", err)
-			continue
-		}
+func (m *voteMempool) handleVote(id peer.ID, msg p2p.Message) error {
+	if id == m.host.GetHost().ID() {
+		return nil
 	}
+	// TODO relay and filter already received objects.
+	data, ok := msg.(*p2p.MsgVote)
+	if !ok {
+		return errors.New("wrong message on vote topic")
+	}
+	s := m.chain.State().TipState()
+	err := m.AddValidate(data.Data, s)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Notify registers a notifee to be notified when illegal votes occur.
@@ -388,29 +345,20 @@ func NewVoteMempool(ch chain.Blockchain, hostnode hostnode.HostNode, manager act
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	voteSub, err := voteTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
 	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
 		netParams:         netParams,
 		log:               log,
 		ctx:               ctx,
-		blockchain:        ch,
-		voteTopic:         voteTopic,
+		chain:             ch,
 		notifees:          make([]VoteSlashingNotifee, 0),
-		hostNode:          hostnode,
+		host:              hostnode,
 		lastActionManager: manager,
 	}
 
-	go vm.handleSubscription(voteSub, hostnode.GetHost().ID())
+	if err := vm.host.RegisterHandler(p2p.MsgVoteCmd, vm.handleVote); err != nil {
+		return nil, err
+	}
 
 	return vm, nil
 }
