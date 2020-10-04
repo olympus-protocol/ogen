@@ -18,10 +18,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-var (
-	ErrorTxKnown = errors.New("tx is already on mempool")
-)
-
 type coinMempoolItemMulti struct {
 	transactions map[uint64]*primitives.TxMulti
 	balanceSpent uint64
@@ -145,8 +141,6 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.Coi
 		if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 			return err
 		}
-	} else {
-		return ErrorTxKnown
 	}
 
 	return nil
@@ -176,8 +170,6 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 		if err := mpi.add(item, state.Balances[fpkh]); err != nil {
 			return err
 		}
-	} else {
-		return ErrorTxKnown
 	}
 
 	return nil
@@ -271,15 +263,8 @@ func (cm *coinsMempool) handleTx(id peer.ID, msg p2p.Message) error {
 
 	err := cm.Add(data.Data, &cs)
 	if err != nil {
-
-		if err == ErrorTxKnown {
-			return nil
-		}
-
 		return err
 	}
-
-	cm.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -299,15 +284,8 @@ func (cm *coinsMempool) handleTxMulti(id peer.ID, msg p2p.Message) error {
 	err := cm.AddMulti(data.Data, &cs)
 
 	if err != nil {
-
-		if err == ErrorTxKnown {
-			return nil
-		}
-
 		return err
 	}
-
-	cm.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -329,11 +307,11 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		log:          log,
 	}
 
-	if err := cm.host.RegisterHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {
+	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {
 		return nil, err
 	}
 
-	if err := cm.host.RegisterHandler(p2p.MsgTxMultiCmd, cm.handleTxMulti); err != nil {
+	if err := cm.host.RegisterTopicHandler(p2p.MsgTxMultiCmd, cm.handleTxMulti); err != nil {
 		return nil, err
 	}
 

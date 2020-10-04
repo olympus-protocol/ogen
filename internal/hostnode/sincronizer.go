@@ -82,7 +82,7 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 		return nil, err
 	}
 
-	if err := host.RegisterHandler(p2p.MsgBlockCmd, sp.handleBlockMsg); err != nil {
+	if err := host.RegisterTopicHandler(p2p.MsgBlockCmd, sp.handleBlockMsg); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +90,7 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 		return nil, err
 	}
 
-	if err := host.RegisterHandler(p2p.MsgFinalizationCmd, sp.handleFinalizationMsg); err != nil {
+	if err := host.RegisterTopicHandler(p2p.MsgFinalizationCmd, sp.handleFinalizationMsg); err != nil {
 		return nil, err
 	}
 
@@ -216,8 +216,6 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 		}
 	}
 
-	sp.host.BroadcastMessage(msg)
-
 	return nil
 }
 
@@ -239,10 +237,6 @@ func (sp *synchronizer) handleFinalizationMsg(id peer.ID, msg p2p.Message) error
 		return nil
 	}
 
-	if sp.peersTrack[id].FinalizedHeight == fin.FinalizedHeight {
-		return nil
-	}
-
 	sp.peersTrack[id] = &peerInfo{
 		ID:              id,
 		TipSlot:         fin.TipSlot,
@@ -255,8 +249,6 @@ func (sp *synchronizer) handleFinalizationMsg(id peer.ID, msg p2p.Message) error
 		FinalizedHeight: fin.FinalizedHeight,
 		FinalizedHash:   fin.FinalizedHash,
 	}
-
-	sp.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -397,7 +389,11 @@ func (sp *synchronizer) processBlock(block *primitives.Block) error {
 			FinalizedHash:   finalized.Hash,
 		}
 
-		sp.host.BroadcastMessage(msg)
+		err := sp.host.Broadcast(msg)
+		if err != nil {
+			sp.log.Error(err)
+		}
+
 	}
 
 	sp.lastFinalizedEpoch = sp.chain.State().TipState().GetFinalizedEpoch()

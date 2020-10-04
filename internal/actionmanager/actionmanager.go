@@ -83,7 +83,7 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 		netParams:   netParams,
 	}
 
-	if err := l.host.RegisterHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart); err != nil {
+	if err := l.host.RegisterTopicHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart); err != nil {
 		return nil, err
 	}
 
@@ -96,7 +96,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	if id == l.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgValidatorStart)
 	if !ok {
 		return errors.New("wrong message on start validator topic")
@@ -113,6 +113,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	if !sig.Verify(pub, data.Data.SignatureMessage()) {
 		return err
 	}
+
 	// TODO apply
 	return nil
 }
@@ -136,7 +137,10 @@ func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitive
 	validatorHello.Signature = sig
 
 	msg := &p2p.MsgValidatorStart{Data: validatorHello}
-	l.host.BroadcastMessage(msg)
+	err := l.host.Broadcast(msg)
+	if err != nil {
+		return false
+	}
 	return true
 }
 

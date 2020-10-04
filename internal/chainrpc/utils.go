@@ -47,7 +47,11 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		msg := &p2p.MsgTx{Data: tx}
 		// TODO apply to ourselves first.
-		s.host.BroadcastMessage(msg)
+
+		err = s.host.Broadcast(msg)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
 
 		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
 
@@ -62,7 +66,11 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		msg := &p2p.MsgDeposit{Data: deposit}
 		// TODO apply to ourselves first.
-		s.host.BroadcastMessage(msg)
+
+		err = s.host.Broadcast(msg)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
 
 		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
 
@@ -77,7 +85,11 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		msg := &p2p.MsgExit{Data: exit}
 		// TODO apply to ourselves first.
-		s.host.BroadcastMessage(msg)
+
+		err = s.host.Broadcast(msg)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
 
 		return &proto.Success{Success: true, Data: exit.Hash().String()}, nil
 

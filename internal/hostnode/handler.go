@@ -26,8 +26,11 @@ type handler struct {
 	// host is the host to connect to.
 	host HostNode
 
-	messageHandlers     map[string]MessageHandler
+	messageHandler      map[string]MessageHandler
 	messageHandlersLock sync.RWMutex
+
+	topicHandlers     map[string]MessageHandler
+	topicHandlersLock sync.RWMutex
 
 	outgoingMessages     map[peer.ID]chan p2p.Message
 	outgoingMessagesLock sync.RWMutex
@@ -42,7 +45,8 @@ func newHandler(id protocol.ID, host HostNode) (*handler, error) {
 	ph := &handler{
 		ID:               id,
 		host:             host,
-		messageHandlers:  make(map[string]MessageHandler),
+		topicHandlers:    make(map[string]MessageHandler),
+		messageHandler:   make(map[string]MessageHandler),
 		outgoingMessages: make(map[peer.ID]chan p2p.Message),
 		ctx:              config.GlobalParams.Context,
 		log:              config.GlobalParams.Logger,
@@ -57,11 +61,23 @@ func newHandler(id protocol.ID, host HostNode) (*handler, error) {
 func (p *handler) RegisterHandler(messageName string, handler MessageHandler) error {
 	p.messageHandlersLock.Lock()
 	defer p.messageHandlersLock.Unlock()
-	if _, found := p.messageHandlers[messageName]; found {
+	if _, found := p.messageHandler[messageName]; found {
 		return fmt.Errorf("handler for message name %s already exists", messageName)
 	}
 
-	p.messageHandlers[messageName] = handler
+	p.messageHandler[messageName] = handler
+	return nil
+}
+
+// RegisterTopicHandler registers a handler for a protocol.
+func (p *handler) RegisterTopicHandler(messageName string, handler MessageHandler) error {
+	p.topicHandlersLock.Lock()
+	defer p.topicHandlersLock.Unlock()
+	if _, found := p.topicHandlers[messageName]; found {
+		return fmt.Errorf("handler for message name %s already exists", messageName)
+	}
+
+	p.topicHandlers[messageName] = handler
 	return nil
 }
 
@@ -93,7 +109,8 @@ func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 		p.log.Tracef("processing message %s from peer %s", cmd, id)
 
 		p.messageHandlersLock.RLock()
-		if handler, found := p.messageHandlers[cmd]; found {
+
+		if handler, found := p.messageHandler[cmd]; found {
 			p.messageHandlersLock.RUnlock()
 			err := handler(id, message)
 			if err != nil {
@@ -148,21 +165,4 @@ func (p *handler) SendMessage(id peer.ID, msg p2p.Message) error {
 	}
 	msgsChan <- msg
 	return nil
-}
-
-// BroadcastMessage writes a message to all connected peers
-func (p *handler) BroadcastMessage(msg p2p.Message) {
-	peersID := p.host.GetHost().Network().Peers()
-	var chans []chan p2p.Message
-	p.outgoingMessagesLock.RLock()
-	for _, id := range peersID {
-		msgsChan, found := p.outgoingMessages[id]
-		if found {
-			chans = append(chans, msgsChan)
-		}
-	}
-	p.outgoingMessagesLock.RUnlock()
-	for _, msgChan := range chans {
-		msgChan <- msg
-	}
 }

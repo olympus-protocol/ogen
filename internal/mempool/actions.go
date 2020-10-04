@@ -20,12 +20,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-var (
-	ErrorDepositKnown    = errors.New("deposit is already on mempool")
-	ErrorExitKnown       = errors.New("exit is already on mempool")
-	ErrorGovernanceKnown = errors.New("governance vote is already on mempool")
-)
-
 // ActioMempool is the interface dor actionMempool
 type ActionMempool interface {
 	NotifyIllegalVotes(slashing *primitives.VoteSlashing)
@@ -164,23 +158,23 @@ func NewActionMempool(blockchain chain.Blockchain, hostnode hostnode.HostNode) (
 
 	blockchain.Notify(am)
 
-	if err := am.host.RegisterHandler(p2p.MsgDepositCmd, am.handleDeposit); err != nil {
+	if err := am.host.RegisterTopicHandler(p2p.MsgDepositCmd, am.handleDeposit); err != nil {
 		return nil, err
 	}
 
-	if err := am.host.RegisterHandler(p2p.MsgDepositsCmd, am.handleDeposits); err != nil {
+	if err := am.host.RegisterTopicHandler(p2p.MsgDepositsCmd, am.handleDeposits); err != nil {
 		return nil, err
 	}
 
-	if err := am.host.RegisterHandler(p2p.MsgExitCmd, am.handleExit); err != nil {
+	if err := am.host.RegisterTopicHandler(p2p.MsgExitCmd, am.handleExit); err != nil {
 		return nil, err
 	}
 
-	if err := am.host.RegisterHandler(p2p.MsgExitsCmd, am.handleExits); err != nil {
+	if err := am.host.RegisterTopicHandler(p2p.MsgExitsCmd, am.handleExits); err != nil {
 		return nil, err
 	}
 
-	if err := am.host.RegisterHandler(p2p.MsgGovernanceCmd, am.handleGovernance); err != nil {
+	if err := am.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, am.handleGovernance); err != nil {
 		return nil, err
 	}
 
@@ -199,13 +193,8 @@ func (am *actionMempool) handleDeposit(id peer.ID, msg p2p.Message) error {
 	s := am.chain.State().TipState()
 	err := am.AddDeposit(data.Data, s)
 	if err != nil {
-		if err == ErrorDepositKnown {
-			return nil
-		}
 		return err
 	}
-
-	am.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -223,14 +212,9 @@ func (am *actionMempool) handleDeposits(id peer.ID, msg p2p.Message) error {
 	for _, d := range data.Data {
 		err := am.AddDeposit(d, s)
 		if err != nil {
-			if err == ErrorDepositKnown {
-				return nil
-			}
 			return err
 		}
 	}
-	am.host.BroadcastMessage(msg)
-
 	return nil
 }
 
@@ -249,15 +233,8 @@ func (am *actionMempool) handleExit(id peer.ID, msg p2p.Message) error {
 
 	err := am.AddExit(data.Data, s)
 	if err != nil {
-
-		if err == ErrorExitKnown {
-			return nil
-		}
-
 		return err
 	}
-
-	am.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -279,15 +256,10 @@ func (am *actionMempool) handleExits(id peer.ID, msg p2p.Message) error {
 
 		err := am.AddExit(d, s)
 		if err != nil {
-			if err == ErrorExitKnown {
-				return nil
-			}
 			return err
 		}
 
 	}
-
-	am.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -307,13 +279,8 @@ func (am *actionMempool) handleGovernance(id peer.ID, msg p2p.Message) error {
 
 	err := am.AddGovernanceVote(data.Data, s)
 	if err != nil {
-		if err == ErrorGovernanceKnown {
-			return nil
-		}
 		return err
 	}
-
-	am.host.BroadcastMessage(msg)
 
 	return nil
 }
@@ -335,8 +302,6 @@ func (am *actionMempool) AddDeposit(deposit *primitives.Deposit, state state.Sta
 	_, ok := am.deposits[deposit.Hash()]
 	if !ok {
 		am.deposits[deposit.Hash()] = deposit
-	} else {
-		return ErrorDepositKnown
 	}
 
 	return nil
@@ -529,8 +494,6 @@ func (am *actionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 	_, ok := am.governanceVotes[vote.Hash()]
 	if !ok {
 		am.governanceVotes[vote.Hash()] = vote
-	} else {
-		return ErrorGovernanceKnown
 	}
 
 	return nil
@@ -554,8 +517,6 @@ func (am *actionMempool) AddExit(exit *primitives.Exit, state state.State) error
 	_, ok := am.exits[exit.Hash()]
 	if !ok {
 		am.exits[exit.Hash()] = exit
-	} else {
-		return ErrorExitKnown
 	}
 
 	return nil

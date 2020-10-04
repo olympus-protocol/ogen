@@ -267,7 +267,14 @@ func (p *proposer) ProposeBlocks() {
 				}
 
 				msg := &p2p.MsgBlock{Data: &block}
-				p.host.BroadcastMessage(msg)
+
+				err = p.host.Broadcast(msg)
+				if err != nil {
+					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.proposerLock.Unlock()
+					continue
+				}
 			}
 
 			slotToPropose++
@@ -380,7 +387,13 @@ func (p *proposer) VoteForBlocks() {
 				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
 				msg := &p2p.MsgVote{Data: vote}
-				p.host.BroadcastMessage(msg)
+				err = p.host.Broadcast(msg)
+				if err != nil {
+					p.log.Error(err)
+					voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+					p.voteLock.Unlock()
+					continue
+				}
 			}
 
 			slotToVote++

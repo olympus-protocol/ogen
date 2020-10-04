@@ -174,14 +174,16 @@ func (mr *MockHostNodeMockRecorder) SendMessage(id, msg interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockHostNode)(nil).SendMessage), id, msg)
 }
 
-// BroadcastMessage mocks base method
-func (m *MockHostNode) BroadcastMessage(msg p2p.Message) {
+// Broadcast mocks base method
+func (m *MockHostNode) Broadcast(msg p2p.Message) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "BroadcastMessage", msg)
+	ret := m.ctrl.Call(m, "Broadcast", msg)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// BroadcastMessage indicates an expected call of BroadcastMessage
-func (mr *MockHostNodeMockRecorder) BroadcastMessage(msg interface{}) *gomock.Call {
+// Broadcast indicates an expected call of Broadcast
+func (mr *MockHostNodeMockRecorder) Broadcast(msg interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastMessage", reflect.TypeOf((*MockHostNode)(nil).BroadcastMessage), msg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockHostNode)(nil).Broadcast), msg)
 }

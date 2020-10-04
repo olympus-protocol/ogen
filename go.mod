@@ -3,7 +3,6 @@ module github.com/olympus-protocol/ogen
 go 1.14
 
 require (
-	github.com/benbjohnson/clock v1.0.3 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/dgraph-io/badger v1.6.1
@@ -24,6 +23,7 @@ require (
 	github.com/libp2p/go-libp2p-discovery v0.5.0
 	github.com/libp2p/go-libp2p-kad-dht v0.10.0
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
+	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v1.14.3

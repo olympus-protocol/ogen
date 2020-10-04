@@ -37,7 +37,11 @@ func (w *wallet) StartValidatorBulk(valSecKeys []*bls.SecretKey) (bool, error) {
 	}
 
 	msg := &p2p.MsgDeposits{Data: deposits}
-	w.host.BroadcastMessage(msg)
+
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -68,7 +72,10 @@ func (w *wallet) StartValidator(valPrivBytes *bls.SecretKey) (bool, error) {
 
 	msg := &p2p.MsgDeposit{Data: deposit}
 
-	w.host.BroadcastMessage(msg)
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -142,7 +149,10 @@ func (w *wallet) ExitValidatorBulk(valPubKeys []*bls.PublicKey) (bool, error) {
 	}
 
 	msg := &p2p.MsgExits{Data: exits}
-	w.host.BroadcastMessage(msg)
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -171,7 +181,10 @@ func (w *wallet) ExitValidator(valPubKey *bls.PublicKey) (bool, error) {
 	}
 
 	msg := &p2p.MsgExit{Data: exit}
-	w.host.BroadcastMessage(msg)
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }

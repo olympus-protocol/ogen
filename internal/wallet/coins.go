@@ -75,7 +75,11 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	}
 
 	msg := &p2p.MsgTx{Data: tx}
-	w.host.BroadcastMessage(msg)
+
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return nil, nil
+	}
 
 	txHash := tx.Hash()
 
