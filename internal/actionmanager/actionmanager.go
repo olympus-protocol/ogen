@@ -1,8 +1,9 @@
 package actionmanager
 
 import (
-	"bytes"
 	"context"
+	"errors"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -43,7 +44,7 @@ var _ LastActionManager = &lastActionManager{}
 type lastActionManager struct {
 	log logger.Logger
 
-	hostNode hostnode.HostNode
+	host hostnode.HostNode
 	ctx      context.Context
 
 	nonce uint64
@@ -74,7 +75,7 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 	netParams := config.GlobalParams.NetParams
 
 	l := &lastActionManager{
-		hostNode:    node,
+		host:    node,
 		ctx:         ctx,
 		lastActions: make(map[[48]byte]time.Time),
 		log:         log,
@@ -82,11 +83,39 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 		netParams:   netParams,
 	}
 
+	if err := l.host.RegisterHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart); err != nil {
+		return nil, err
+	}
+
 	ch.Notify(l)
 
 	return l, nil
 }
 
+func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) error {
+	if id == l.host.GetHost().ID() {
+		return nil
+	}
+	// TODO relay and filter already received objects.
+	data, ok := msg.(*p2p.MsgValidatorStart)
+	if !ok {
+		return errors.New("wrong message on start validator topic")
+	}
+	sig, err := bls.SignatureFromBytes(data.Data.Signature[:])
+	if err != nil {
+		return err
+	}
+
+	pub, err := bls.PublicKeyFromBytes(data.Data.PublicKey[:])
+	if err != nil {
+		return err
+	}
+	if !sig.Verify(pub, data.Data.SignatureMessage()) {
+		return err
+	}
+	// TODO apply
+	return nil
+}
 // StartValidator requests a validator to be started and returns whether it should be started.
 func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
 	l.lastActionsLock.RLock()
@@ -106,16 +135,7 @@ func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitive
 	validatorHello.Signature = sig
 
 	msg := &p2p.MsgValidatorStart{Data: validatorHello}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, l.hostNode.GetNetMagic())
-	if err != nil {
-		return false
-	}
-
-	if err != nil {
-		return false
-	}
-
+	l.host.BroadcastMessage(msg)
 	return true
 }
 
