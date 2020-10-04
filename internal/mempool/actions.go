@@ -20,6 +20,12 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+var (
+	ErrorDepositKnown    = errors.New("deposit is already on mempool")
+	ErrorExitKnown       = errors.New("exit is already on mempool")
+	ErrorGovernanceKnown = errors.New("governance vote is already on mempool")
+)
+
 // ActioMempool is the interface dor actionMempool
 type ActionMempool interface {
 	NotifyIllegalVotes(slashing *primitives.VoteSlashing)
@@ -193,8 +199,14 @@ func (am *actionMempool) handleDeposit(id peer.ID, msg p2p.Message) error {
 	s := am.chain.State().TipState()
 	err := am.AddDeposit(data.Data, s)
 	if err != nil {
+		if err == ErrorDepositKnown {
+			return nil
+		}
 		return err
 	}
+
+	am.host.BroadcastMessage(msg)
+
 	return nil
 }
 
@@ -211,62 +223,98 @@ func (am *actionMempool) handleDeposits(id peer.ID, msg p2p.Message) error {
 	for _, d := range data.Data {
 		err := am.AddDeposit(d, s)
 		if err != nil {
+			if err == ErrorDepositKnown {
+				return nil
+			}
 			return err
 		}
 	}
+	am.host.BroadcastMessage(msg)
+
 	return nil
 }
 
 func (am *actionMempool) handleExit(id peer.ID, msg p2p.Message) error {
+
 	if id == am.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgExit)
 	if !ok {
 		return errors.New("wrong message on exit topic")
 	}
+
 	s := am.chain.State().TipState()
+
 	err := am.AddExit(data.Data, s)
 	if err != nil {
+
+		if err == ErrorExitKnown {
+			return nil
+		}
+
 		return err
 	}
+
+	am.host.BroadcastMessage(msg)
+
 	return nil
 }
 
 func (am *actionMempool) handleExits(id peer.ID, msg p2p.Message) error {
+
 	if id == am.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgExits)
 	if !ok {
 		return errors.New("wrong message on exits topic")
 	}
+
 	s := am.chain.State().TipState()
+
 	for _, d := range data.Data {
+
 		err := am.AddExit(d, s)
 		if err != nil {
+			if err == ErrorExitKnown {
+				return nil
+			}
 			return err
 		}
+
 	}
+
+	am.host.BroadcastMessage(msg)
+
 	return nil
 }
 
 func (am *actionMempool) handleGovernance(id peer.ID, msg p2p.Message) error {
+
 	if id == am.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgGovernance)
 	if !ok {
 		return errors.New("wrong message on governance topic")
 	}
+
 	s := am.chain.State().TipState()
+
 	err := am.AddGovernanceVote(data.Data, s)
 	if err != nil {
+		if err == ErrorGovernanceKnown {
+			return nil
+		}
 		return err
 	}
+
+	am.host.BroadcastMessage(msg)
+
 	return nil
 }
 
@@ -287,6 +335,8 @@ func (am *actionMempool) AddDeposit(deposit *primitives.Deposit, state state.Sta
 	_, ok := am.deposits[deposit.Hash()]
 	if !ok {
 		am.deposits[deposit.Hash()] = deposit
+	} else {
+		return ErrorDepositKnown
 	}
 
 	return nil
@@ -479,6 +529,8 @@ func (am *actionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 	_, ok := am.governanceVotes[vote.Hash()]
 	if !ok {
 		am.governanceVotes[vote.Hash()] = vote
+	} else {
+		return ErrorGovernanceKnown
 	}
 
 	return nil
@@ -502,6 +554,8 @@ func (am *actionMempool) AddExit(exit *primitives.Exit, state state.State) error
 	_, ok := am.exits[exit.Hash()]
 	if !ok {
 		am.exits[exit.Hash()] = exit
+	} else {
+		return ErrorExitKnown
 	}
 
 	return nil

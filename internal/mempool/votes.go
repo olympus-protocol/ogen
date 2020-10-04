@@ -21,10 +21,14 @@ import (
 	"time"
 )
 
+var (
+	ErrorVoteKnown = errors.New("vote is already known")
+)
+
 // VoteMempool is the interface of the voteMempool
 type VoteMempool interface {
 	AddValidate(vote *primitives.MultiValidatorVote, state state.State) error
-	Add(vote *primitives.MultiValidatorVote)
+	Add(vote *primitives.MultiValidatorVote) error
 	Get(slot uint64, s state.State, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
 	Remove(b *primitives.Block)
 	Notify(notifee VoteSlashingNotifee)
@@ -58,9 +62,7 @@ func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state sta
 	if err := state.IsVoteValid(vote); err != nil {
 		return err
 	}
-
-	m.Add(vote)
-	return nil
+	return m.Add(vote)
 }
 
 // sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
@@ -87,7 +89,7 @@ func (m *voteMempool) sortMempool() {
 }
 
 // Add adds a vote to the mempool.
-func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
+func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) error {
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 	voteData := vote.Data
@@ -98,7 +100,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	currentState, err := m.chain.State().TipStateAtSlot(firstSlotAllowedToInclude)
 	if err != nil {
 		m.log.Error(err)
-		return
+		return nil
 	}
 
 	// Register voting action for validators included on the vote
@@ -130,12 +132,12 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
-			return
+			return nil
 		}
 		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
-			return
+			return nil
 		}
 		for i, idx := range vote1Comitte {
 			if !v.ParticipationBitfield.Get(uint(i)) {
@@ -171,7 +173,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 						Vote2: v,
 					})
 				}
-				return
+				return nil
 			}
 		}
 	}
@@ -191,7 +193,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot)
 			if err != nil {
 				m.log.Error(err)
-				return
+				return nil
 			}
 
 			var common []uint64
@@ -210,23 +212,23 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 						Vote2: v,
 					})
 				}
-				return
+				return nil
 			}
 
 			newBitfield, err := v.ParticipationBitfield.Merge(vote.ParticipationBitfield)
 			if err != nil {
 				m.log.Error(err)
-				return
+				return nil
 			}
 			sig1, err := bls.SignatureFromBytes(v.Sig[:])
 			if err != nil {
 				m.log.Error(err)
-				return
+				return nil
 			}
 			sig2, err := bls.SignatureFromBytes(vote.Sig[:])
 			if err != nil {
 				m.log.Error(err)
-				return
+				return nil
 			}
 			newVoteSig := bls.AggregateSignatures([]*bls.Signature{sig1, sig2})
 
@@ -240,6 +242,8 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			}
 
 			m.pool[voteHash] = newVote
+		} else {
+			return ErrorVoteKnown
 		}
 	} else {
 
@@ -248,6 +252,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	}
 
 	m.sortMempool()
+	return nil
 }
 
 // Get gets a vote from the mempool.
@@ -316,19 +321,30 @@ func (m *voteMempool) getCurrentSlot() uint64 {
 }
 
 func (m *voteMempool) handleVote(id peer.ID, msg p2p.Message) error {
+
 	if id == m.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgVote)
 	if !ok {
 		return errors.New("wrong message on vote topic")
 	}
+
 	s := m.chain.State().TipState()
+
 	err := m.AddValidate(data.Data, s)
 	if err != nil {
+
+		if err == ErrorVoteKnown {
+			return nil
+		}
+
 		return err
 	}
+
+	m.host.BroadcastMessage(msg)
+
 	return nil
 }
 

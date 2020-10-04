@@ -45,7 +45,7 @@ type lastActionManager struct {
 	log logger.Logger
 
 	host hostnode.HostNode
-	ctx      context.Context
+	ctx  context.Context
 
 	nonce uint64
 
@@ -75,7 +75,7 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 	netParams := config.GlobalParams.NetParams
 
 	l := &lastActionManager{
-		host:    node,
+		host:        node,
 		ctx:         ctx,
 		lastActions: make(map[[48]byte]time.Time),
 		log:         log,
@@ -116,6 +116,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	// TODO apply
 	return nil
 }
+
 // StartValidator requests a validator to be started and returns whether it should be started.
 func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
 	l.lastActionsLock.RLock()

@@ -215,6 +215,9 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 			return nil
 		}
 	}
+
+	sp.host.BroadcastMessage(msg)
+
 	return nil
 }
 
@@ -236,6 +239,10 @@ func (sp *synchronizer) handleFinalizationMsg(id peer.ID, msg p2p.Message) error
 		return nil
 	}
 
+	if sp.peersTrack[id].FinalizedHeight == fin.FinalizedHeight {
+		return nil
+	}
+
 	sp.peersTrack[id] = &peerInfo{
 		ID:              id,
 		TipSlot:         fin.TipSlot,
@@ -248,6 +255,8 @@ func (sp *synchronizer) handleFinalizationMsg(id peer.ID, msg p2p.Message) error
 		FinalizedHeight: fin.FinalizedHeight,
 		FinalizedHash:   fin.FinalizedHash,
 	}
+
+	sp.host.BroadcastMessage(msg)
 
 	return nil
 }

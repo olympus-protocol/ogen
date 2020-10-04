@@ -18,6 +18,10 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+var (
+	ErrorTxKnown = errors.New("tx is already on mempool")
+)
+
 type coinMempoolItemMulti struct {
 	transactions map[uint64]*primitives.TxMulti
 	balanceSpent uint64
@@ -134,12 +138,15 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.Coi
 	}
 
 	mpi, ok := cm.mempoolMulti[fpkh]
+
 	if !ok {
 		cm.mempoolMulti[fpkh] = newCoinMempoolItemMulti()
 		mpi = cm.mempoolMulti[fpkh]
-	}
-	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
-		return err
+		if err := mpi.add(item, state.Balances[fpkh]); err != nil {
+			return err
+		}
+	} else {
+		return ErrorTxKnown
 	}
 
 	return nil
@@ -166,9 +173,11 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
-	}
-	if err := mpi.add(item, state.Balances[fpkh]); err != nil {
-		return err
+		if err := mpi.add(item, state.Balances[fpkh]); err != nil {
+			return err
+		}
+	} else {
+		return ErrorTxKnown
 	}
 
 	return nil
@@ -252,16 +261,26 @@ func (cm *coinsMempool) handleTx(id peer.ID, msg p2p.Message) error {
 	if id == cm.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgTx)
 	if !ok {
 		return errors.New("wrong message on tx topic")
 	}
+
 	cs := cm.chain.State().TipState().GetCoinsState()
+
 	err := cm.Add(data.Data, &cs)
 	if err != nil {
+
+		if err == ErrorTxKnown {
+			return nil
+		}
+
 		return err
 	}
+
+	cm.host.BroadcastMessage(msg)
+
 	return nil
 }
 
@@ -269,16 +288,27 @@ func (cm *coinsMempool) handleTxMulti(id peer.ID, msg p2p.Message) error {
 	if id == cm.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
+
 	data, ok := msg.(*p2p.MsgTxMulti)
 	if !ok {
 		return errors.New("wrong message on txmulti topic")
 	}
+
 	cs := cm.chain.State().TipState().GetCoinsState()
+
 	err := cm.AddMulti(data.Data, &cs)
+
 	if err != nil {
+
+		if err == ErrorTxKnown {
+			return nil
+		}
+
 		return err
 	}
+
+	cm.host.BroadcastMessage(msg)
+
 	return nil
 }
 
