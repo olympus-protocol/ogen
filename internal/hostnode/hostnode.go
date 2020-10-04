@@ -117,6 +117,12 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		log.Infof("binding to address: %s", a)
 	}
 
+	handler, err := newHandler(params.ProtocolID, node)
+	if err != nil {
+		return nil, err
+	}
+	node.handler = handler
+
 	synchronizer, err := NewSyncronizer(node, blockchain)
 	if err != nil {
 		return nil, err
@@ -128,12 +134,6 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		return nil, err
 	}
 	node.discover = discovery
-
-	handler, err := newHandler(params.ProtocolID, node)
-	if err != nil {
-		return nil, err
-	}
-	node.handler = handler
 
 	return node, nil
 }
