@@ -102,9 +102,10 @@ func (db *memoryDB) GetTip() (chainhash.Hash, error) {
 }
 
 // SetFinalizedState sets the finalized state of the blockchain.
-func (db *memoryDB) SetFinalizedState(s state.State) error {
+func (db *memoryDB) SetFinalizedState(s state.State) (state.State, error) {
+	oldState := db.finalizedState.Copy()
 	db.finalizedState = s
-	return nil
+	return oldState, nil
 }
 
 // GetFinalizedState gets the finalized state of the blockchain.
@@ -113,9 +114,10 @@ func (db *memoryDB) GetFinalizedState() (state.State, error) {
 }
 
 // SetJustifiedState sets the justified state of the blockchain.
-func (db *memoryDB) SetJustifiedState(s state.State) error {
+func (db *memoryDB) SetJustifiedState(s state.State) (state.State, error) {
+	oldState := db.justifiedState.Copy()
 	db.justifiedState = s
-	return nil
+	return oldState, nil
 }
 
 // GetJustifiedState gets the justified state of the blockchain.
@@ -144,9 +146,11 @@ func (db *memoryDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, er
 }
 
 // SetJustifiedHead sets the latest justified head.
-func (db *memoryDB) SetJustifiedHead(c chainhash.Hash) error {
+func (db *memoryDB) SetJustifiedHead(c chainhash.Hash) (chainhash.Hash, error) {
+	oldBytes := db.justifiedHead.CloneBytes()
+	oldHash, _ := chainhash.NewHash(oldBytes)
 	db.justifiedHead = c
-	return nil
+	return *oldHash, nil
 }
 
 // GetJustifiedHead gets the latest justified head.
@@ -155,9 +159,11 @@ func (db *memoryDB) GetJustifiedHead() (chainhash.Hash, error) {
 }
 
 // SetFinalizedHead sets the finalized head of the blockchain.
-func (db *memoryDB) SetFinalizedHead(c chainhash.Hash) error {
+func (db *memoryDB) SetFinalizedHead(c chainhash.Hash) (chainhash.Hash, error) {
+	oldBytes := db.finalizedHead.CloneBytes()
+	oldHash, _ := chainhash.NewHash(oldBytes)
 	db.finalizedHead = c
-	return nil
+	return *oldHash, nil
 }
 
 // GetFinalizedHead gets the finalized head of the blockchain.

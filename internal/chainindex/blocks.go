@@ -73,7 +73,7 @@ func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
 	return current
 }
 
-// BlockIndex is an chainindex from hash to BlockRow.
+// BlockIndex is an chain index from hash to BlockRow.
 type BlockIndex struct {
 	lock  sync.RWMutex
 	index map[chainhash.Hash]*BlockRow
@@ -134,7 +134,7 @@ func (i *BlockIndex) add(row *BlockRow) error {
 	return nil
 }
 
-// Add adds a row to the block chainindex.
+// Add adds a row to the block chain index.
 func (i *BlockIndex) Add(block primitives.Block, isCheck bool) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -150,6 +150,10 @@ func (i *BlockIndex) Add(block primitives.Block, isCheck bool) (*BlockRow, error
 		Hash:      block.Header.Hash(),
 		Slot:      block.Header.Slot,
 		children:  make([]*BlockRow, 0),
+	}
+
+	if isCheck {
+		return prev, nil
 	}
 
 	prev.AddChild(row)

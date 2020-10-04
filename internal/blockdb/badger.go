@@ -90,13 +90,13 @@ func (db *badgerDB) GetTip() (chainhash.Hash, error) {
 var finalizedStateKey = []byte("finalized-state")
 
 // SetFinalizedState sets the finalized state of the blockchain.
-func (db *badgerDB) SetFinalizedState(s state.State) error {
+func (db *badgerDB) SetFinalizedState(s state.State) (state.State, error) {
 	buf, err := s.Marshal()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return db.setKey(finalizedStateKey, buf)
+	oldState, _ := db.GetFinalizedState()
+	return oldState, db.setKey(finalizedStateKey, buf)
 }
 
 // GetFinalizedState gets the finalized state of the blockchain.
@@ -113,13 +113,13 @@ func (db *badgerDB) GetFinalizedState() (state.State, error) {
 var justifiedStateKey = []byte("justified-state")
 
 // SetJustifiedState sets the justified state of the blockchain.
-func (db *badgerDB) SetJustifiedState(s state.State) error {
+func (db *badgerDB) SetJustifiedState(s state.State) (state.State, error) {
 	buf, err := s.Marshal()
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return db.setKey(justifiedStateKey, buf)
+	oldState, _ := db.GetJustifiedState()
+	return oldState, db.setKey(justifiedStateKey, buf)
 }
 
 // GetJustifiedState gets the justified state of the blockchain.
@@ -161,8 +161,9 @@ func (db *badgerDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, er
 var justifiedHeadKey = []byte("justified-head")
 
 // SetJustifiedHead sets the latest justified head.
-func (db *badgerDB) SetJustifiedHead(c chainhash.Hash) error {
-	return db.setKeyHash(justifiedHeadKey, c)
+func (db *badgerDB) SetJustifiedHead(c chainhash.Hash) (chainhash.Hash, error) {
+	oldHead, _ := db.GetJustifiedHead()
+	return oldHead, db.setKeyHash(justifiedHeadKey, c)
 }
 
 // GetJustifiedHead gets the latest justified head.
@@ -173,8 +174,9 @@ func (db *badgerDB) GetJustifiedHead() (chainhash.Hash, error) {
 var finalizedHeadKey = []byte("finalized-head")
 
 // SetFinalizedHead sets the finalized head of the blockchain.
-func (db *badgerDB) SetFinalizedHead(c chainhash.Hash) error {
-	return db.setKeyHash(finalizedHeadKey, c)
+func (db *badgerDB) SetFinalizedHead(c chainhash.Hash) (chainhash.Hash, error) {
+	oldFinalized, _ := db.getKeyHash(finalizedHeadKey)
+	return oldFinalized, db.setKeyHash(finalizedHeadKey, c)
 }
 
 // GetFinalizedHead gets the finalized head of the blockchain.

@@ -88,7 +88,7 @@ type StateService interface {
 	GetJustifiedHead() (*chainindex.BlockRow, state.State)
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
 	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error)
-	Add(block *primitives.Block, isApplying bool) (state.State, []*primitives.EpochReceipt, error)
+	Add(block *primitives.Block, isCheck bool) (state.State, []*primitives.EpochReceipt, error)
 	RemoveBeforeSlot(slot uint64)
 	GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool)
 	Height() uint64
@@ -208,7 +208,7 @@ func (s *stateService) initChainState(db blockdb.Database, genesisState state.St
 	genesisHash := genesisBlock.Header.Hash()
 
 	// load chain state
-	err := db.AddRawBlock(&genesisBlock)
+	err := db.AddRawBlock(&genesisBlock, false)
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 }
 
 // Add adds a block to the blockchain.
-func (s *stateService) Add(block *primitives.Block, isApplying bool) (state.State, []*primitives.EpochReceipt, error) {
+func (s *stateService) Add(block *primitives.Block, isCheck bool) (state.State, []*primitives.EpochReceipt, error) {
 	lastBlockHash := block.Header.PrevBlockHash
 
 	view, err := s.GetSubView(lastBlockHash)
@@ -287,8 +287,8 @@ func (s *stateService) Add(block *primitives.Block, isApplying bool) (state.Stat
 		return nil, nil, err
 	}
 
-	if isApplying {
-		//My skype email is evgenytikhonov@outlook.com. Could we please discuss by skype or slack?
+	if isCheck {
+	} else {
 		s.setBlockState(block.Hash(), newState)
 	}
 

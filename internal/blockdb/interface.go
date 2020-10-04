@@ -14,15 +14,15 @@ type Database interface {
 	AddRawBlock(block *primitives.Block, isCheck bool) error
 	SetTip(c chainhash.Hash) error
 	GetTip() (chainhash.Hash, error)
-	SetFinalizedState(s state.State) error
+	SetFinalizedState(s state.State) (state.State, error)
 	GetFinalizedState() (state.State, error)
-	SetJustifiedState(s state.State) error
+	SetJustifiedState(s state.State) (state.State, error)
 	GetJustifiedState() (state.State, error)
 	SetBlockRow(disk *primitives.BlockNodeDisk) error
 	GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error)
-	SetJustifiedHead(c chainhash.Hash) error
+	SetJustifiedHead(c chainhash.Hash) (chainhash.Hash, error)
 	GetJustifiedHead() (chainhash.Hash, error)
-	SetFinalizedHead(c chainhash.Hash) error
+	SetFinalizedHead(c chainhash.Hash) (chainhash.Hash, error)
 	GetFinalizedHead() (chainhash.Hash, error)
 	SetGenesisTime(t time.Time) error
 	GetGenesisTime() (time.Time, error)

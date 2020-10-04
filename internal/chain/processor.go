@@ -17,7 +17,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
+func (ch *blockchain) UpdateChainHead(possible chainhash.Hash, isCheck bool) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.GetEpochIndex())
 	var targets []blockRowAndValidator
@@ -56,6 +56,9 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
+				if isCheck {
+					return nil
+				}
 				ch.state.Blockchain().SetTip(head)
 
 				ch.log.Infof("setting head to %s", head.Hash)
@@ -172,7 +175,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 	// 2. verify block against previous block's state
 
-	newState, receipts, err := ch.State().Add(block, false)
+	newState, receipts, err := ch.State().Add(block, true)
 
 	if err != nil {
 		ch.log.Warn(err)
@@ -206,26 +209,34 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 	/**
 	Check if all operations are possible
+	Store all data as raw bytes
 	*/
-	err = ch.db.AddRawBlock(block, false)
+	err = ch.db.AddRawBlock(block, true)
 	if err != nil {
+		ch.log.Infof("ProcessBlock==AddRawBlock==Failed")
 		return err
 	}
-
-	row, err := ch.state.Index().Add(*block, false)
+	/*
+		BlockRow-> RawBlock
+		Eventually a block is manged into RawBlck and BlockRow.
+	*/
+	prev, err := ch.state.Index().Add(*block, true)
 	if err != nil {
+		ch.log.Infof("ProcessBlock==Index().Add==Failed")
 		return err
 	}
 
-	// set current block row in database
-	if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
-		return err
-	}
-
-	// update parent to point at current
-	if err := ch.db.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
-		return err
-	}
+	//// set current block row in database
+	//if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
+	//	ch.log.Infof("ProcessBlock==SetBlockRow==Failed")
+	//	return err
+	//}
+	//
+	//// update parent to point at current
+	//if err := ch.db.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
+	//	ch.log.Infof("ProcessBlock==SetBlockRow2==Failed")
+	//	return err
+	//}
 
 	for _, a := range block.Votes {
 		validators, err := newState.GetVoteCommittee(a.Data.Slot, ch.params)
@@ -234,15 +245,19 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		}
 		ch.state.SetLatestVotesIfNeeded(validators, a)
 	}
-
-	if err := ch.UpdateChainHead(blockHash); err != nil {
+	/*********
+	  Finish all of checks.
+	*/
+	if err := ch.UpdateChainHead(blockHash, true); err != nil {
+		ch.log.Infof("ProcessBlock==UpdateChainHead==Failed")
 		return err
 	}
 
-	view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
-	if err != nil {
-		return err
-	}
+	view := NewChainView(prev)
+	//view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
+	//if err != nil {
+	//	return err
+	//}
 
 	finalizedSlot := newState.GetFinalizedEpoch() * ch.params.EpochLength
 	finalizedHash, err := view.GetHashBySlot(finalizedSlot)
@@ -254,13 +269,14 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return fmt.Errorf("could not find finalized state with hash %s in state map", finalizedHash)
 	}
 
-	if err := ch.db.SetFinalizedHead(finalizedHash); err != nil {
+	if oldHead, err := ch.db.SetFinalizedHead(finalizedHash); err != nil {
+		_, _ = ch.db.SetFinalizedHead(oldHead)
 		return err
 	}
 	if err := ch.state.SetFinalizedHead(finalizedHash, finalizedState); err != nil {
 		return err
 	}
-	if err := ch.db.SetFinalizedState(finalizedState); err != nil {
+	if _, err := ch.db.SetFinalizedState(finalizedState); err != nil {
 		return err
 	}
 
@@ -268,13 +284,13 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	if !found {
 		return fmt.Errorf("could not find justified state with hash %s in state map", newState.GetJustifiedEpochHash())
 	}
-	if err := ch.db.SetJustifiedHead(newState.GetJustifiedEpochHash()); err != nil {
+	if _, err := ch.db.SetJustifiedHead(newState.GetJustifiedEpochHash()); err != nil {
 		return err
 	}
 	if err := ch.state.SetJustifiedHead(newState.GetJustifiedEpochHash(), justifiedState); err != nil {
 		return err
 	}
-	if err := ch.db.SetJustifiedState(justifiedState); err != nil {
+	if _, err := ch.db.SetJustifiedState(justifiedState); err != nil {
 		return err
 	}
 
@@ -286,7 +302,26 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 
 	voted := 0
 
-	_, _, _ = ch.State().Add(block, true)
+	/**
+	Check if all operations are possible
+	Store all data as raw bytes
+	*/
+	err = ch.db.AddRawBlock(block, false)
+	row, _ := ch.state.Index().Add(*block, false)
+	// set current block row in database
+	if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
+		ch.log.Infof("ProcessBlock==SetBlockRow==Failed")
+		return err
+	}
+
+	// update parent to point at current
+	if err := ch.db.SetBlockRow(row.Parent.ToBlockNodeDisk()); err != nil {
+		ch.log.Infof("ProcessBlock==SetBlockRow2==Failed")
+		return err
+	}
+	_, _ = ch.state.Index().Add(*block, false)
+
+	_, _, _ = ch.State().Add(block, false)
 
 	for _, v := range block.Votes {
 		voted += len(v.ParticipationBitfield.BitIndices())

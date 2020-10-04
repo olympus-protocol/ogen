@@ -27,7 +27,7 @@ type Blockchain interface {
 	GetRawBlock(h chainhash.Hash) (block []byte, err error)
 	Notify(n BlockchainNotifee)
 	Unnotify(n BlockchainNotifee)
-	UpdateChainHead(possible chainhash.Hash) error
+	UpdateChainHead(possible chainhash.Hash, isCheck bool) error
 	ProcessBlock(block *primitives.Block) error
 }
 
@@ -103,5 +103,5 @@ func NewBlockchain(config Config, params *params.ChainParams, db blockdb.Databas
 		notifees:    make(map[BlockchainNotifee]struct{}),
 		genesisTime: genesisTime,
 	}
-	return ch, ch.UpdateChainHead(s.Tip().Hash)
+	return ch, ch.UpdateChainHead(s.Tip().Hash, false)
 }

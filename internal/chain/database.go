@@ -25,16 +25,16 @@ func (s *stateService) initializeDatabase(txn blockdb.Database, blockNode *chain
 		return err
 	}
 
-	if err := txn.SetFinalizedHead(blockNode.Hash); err != nil {
+	if _, err := txn.SetFinalizedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := txn.SetJustifiedHead(blockNode.Hash); err != nil {
+	if _, err := txn.SetJustifiedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := txn.SetFinalizedState(state); err != nil {
+	if _, err := txn.SetFinalizedState(state); err != nil {
 		return err
 	}
-	if err := txn.SetJustifiedState(state); err != nil {
+	if _, err := txn.SetJustifiedState(state); err != nil {
 		return err
 	}
 
@@ -153,7 +153,7 @@ func (s *stateService) loadStateMap(txn blockdb.Database) error {
 			return err
 		}
 
-		_, _, err = s.Add(bl)
+		_, _, err = s.Add(bl, false)
 		if err != nil {
 			return err
 		}
