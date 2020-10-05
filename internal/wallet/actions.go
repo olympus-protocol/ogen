@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"bytes"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -32,12 +31,17 @@ func (w *wallet) StartValidatorBulk(valSecKeys []*bls.SecretKey) (bool, error) {
 		}
 		deposits[i] = deposit
 
-		if err := w.actionMempool.AddDeposit(deposit, currentState); err != nil {
+		if err := w.actionsmempool.AddDeposit(deposit, currentState); err != nil {
 			return false, err
 		}
 	}
 
-	w.broadcastDepositBulk(deposits)
+	msg := &p2p.MsgDeposits{Data: deposits}
+
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -62,11 +66,16 @@ func (w *wallet) StartValidator(valPrivBytes *bls.SecretKey) (bool, error) {
 
 	currentState := w.chain.State().TipState()
 
-	if err := w.actionMempool.AddDeposit(deposit, currentState); err != nil {
+	if err := w.actionsmempool.AddDeposit(deposit, currentState); err != nil {
 		return false, err
 	}
 
-	w.broadcastDeposit(deposit)
+	msg := &p2p.MsgDeposit{Data: deposit}
+
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -134,12 +143,16 @@ func (w *wallet) ExitValidatorBulk(valPubKeys []*bls.PublicKey) (bool, error) {
 		}
 		exits[i] = exit
 
-		if err := w.actionMempool.AddExit(exit, currentState); err != nil {
+		if err := w.actionsmempool.AddExit(exit, currentState); err != nil {
 			return false, err
 		}
 	}
 
-	w.broadcastExitBulk(exits)
+	msg := &p2p.MsgExits{Data: exits}
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -163,11 +176,15 @@ func (w *wallet) ExitValidator(valPubKey *bls.PublicKey) (bool, error) {
 
 	currentState := w.chain.State().TipState()
 
-	if err := w.actionMempool.AddExit(exit, currentState); err != nil {
+	if err := w.actionsmempool.AddExit(exit, currentState); err != nil {
 		return false, err
 	}
 
-	w.broadcastExit(exit)
+	msg := &p2p.MsgExit{Data: exit}
+	err = w.host.Broadcast(msg)
+	if err != nil {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -188,56 +205,4 @@ func (w *wallet) createExit(priv *bls.SecretKey, valPubKey *bls.PublicKey) (*pri
 		WithdrawPubkey:  withp,
 		Signature:       s,
 	}, nil
-}
-
-func (w *wallet) broadcastExitBulk(exits []*primitives.Exit) {
-	msg := &p2p.MsgExits{Data: exits}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
-	if err != nil {
-		w.log.Errorf("error encoding tx: %s", err)
-		return
-	}
-	if err := w.exitsTopic.Publish(w.ctx, buf.Bytes()); err != nil {
-		w.log.Errorf("error broadcasting transaction: %s", err)
-	}
-}
-
-func (w *wallet) broadcastExit(exit *primitives.Exit) {
-	msg := &p2p.MsgExit{Data: exit}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
-	if err != nil {
-		w.log.Errorf("error encoding tx: %s", err)
-		return
-	}
-	if err := w.exitTopic.Publish(w.ctx, buf.Bytes()); err != nil {
-		w.log.Errorf("error broadcasting transaction: %s", err)
-	}
-}
-
-func (w *wallet) broadcastDepositBulk(deposit []*primitives.Deposit) {
-	msg := &p2p.MsgDeposits{Data: deposit}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
-	if err != nil {
-		w.log.Errorf("error encoding tx: %s", err)
-		return
-	}
-	if err := w.depositsTopic.Publish(w.ctx, buf.Bytes()); err != nil {
-		w.log.Errorf("error broadcasting transaction: %s", err)
-	}
-}
-
-func (w *wallet) broadcastDeposit(deposit *primitives.Deposit) {
-	msg := &p2p.MsgDeposit{Data: deposit}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, w.hostnode.GetNetMagic())
-	if err != nil {
-		w.log.Errorf("error encoding tx: %s", err)
-		return
-	}
-	if err := w.depositTopic.Publish(w.ctx, buf.Bytes()); err != nil {
-		w.log.Errorf("error broadcasting transaction: %s", err)
-	}
 }

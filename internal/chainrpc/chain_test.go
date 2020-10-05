@@ -103,9 +103,6 @@ func Test_ChainServer(t *testing.T) {
 	assert.Equal(t, valInfo.PendingExit, info.Validators.PendingExit)
 	assert.Equal(t, tip.Hash.String(), info.BlockHash)
 	assert.Equal(t, tip.Height, info.BlockHeight)
-	assert.Equal(t, uint64(1), info.LastFinalizedEpoch)
-	assert.Equal(t, uint64(1), info.LastJustifiedEpoch)
-	assert.Equal(t, chainhash.Hash{}.String(), info.LastJustifiedHash)
 
 	block, err := server.GetRawBlock(ctx, &proto.Hash{Hash: genesisHash.String()})
 	assert.NoError(t, err)

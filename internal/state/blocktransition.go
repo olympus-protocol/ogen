@@ -626,8 +626,6 @@ func (s *state) ApplyDeposit(deposit *primitives.Deposit) error {
 }
 
 var (
-	// ErrorVoteEmpty returns when some information of a MultiValidatorVote is missing
-	ErrorVoteEmpty = errors.New("vote information is not complete")
 	// ErrorVoteSlot returns when the vote data slot is out of range
 	ErrorVoteSlot = errors.New("slot out of range")
 	// ErrorFromEpoch returns when the vote From Epoch doesn't match a justified epoch

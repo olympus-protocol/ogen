@@ -3,6 +3,8 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"errors"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -41,15 +42,11 @@ var _ ActionMempool = &actionMempool{}
 // ActionMempool keeps track of actions to be added to the blockchain
 // such as deposits, withdrawals, slashings, etc.
 type actionMempool struct {
-	depositsLock       sync.Mutex
-	deposits           map[chainhash.Hash]*primitives.Deposit
-	depositsTopic      *pubsub.Topic
-	depositsSliceTopic *pubsub.Topic
+	depositsLock sync.Mutex
+	deposits     map[chainhash.Hash]*primitives.Deposit
 
-	exitsLock       sync.Mutex
-	exits           map[chainhash.Hash]*primitives.Exit
-	exitsTopic      *pubsub.Topic
-	exitsSliceTopic *pubsub.Topic
+	exitsLock sync.Mutex
+	exits     map[chainhash.Hash]*primitives.Exit
 
 	voteSlashingLock sync.Mutex
 	voteSlashings    []*primitives.VoteSlashing
@@ -62,13 +59,12 @@ type actionMempool struct {
 
 	governanceVoteLock sync.Mutex
 	governanceVotes    map[chainhash.Hash]*primitives.GovernanceVote
-	governanceTopic    *pubsub.Topic
 
-	netParams  *params.ChainParams
-	ctx        context.Context
-	log        logger.Logger
-	blockchain chain.Blockchain
-	hostNode   hostnode.HostNode
+	netParams *params.ChainParams
+	ctx       context.Context
+	log       logger.Logger
+	chain     chain.Blockchain
+	host      hostnode.HostNode
 }
 
 func (am *actionMempool) NotifyIllegalVotes(slashing *primitives.VoteSlashing) {
@@ -80,7 +76,7 @@ func (am *actionMempool) NotifyIllegalVotes(slashing *primitives.VoteSlashing) {
 		maxSlot = slot2
 	}
 
-	tipState, err := am.blockchain.State().TipStateAtSlot(maxSlot)
+	tipState, err := am.chain.State().TipStateAtSlot(maxSlot)
 	if err != nil {
 		am.log.Error(err)
 		return
@@ -117,7 +113,7 @@ func (am *actionMempool) ProposerSlashingConditionViolated(slashing *primitives.
 		maxSlot = slot2
 	}
 
-	tipState, err := am.blockchain.State().TipStateAtSlot(maxSlot)
+	tipState, err := am.chain.State().TipStateAtSlot(maxSlot)
 	if err != nil {
 		am.log.Error(err)
 		return
@@ -148,66 +144,12 @@ func NewActionMempool(blockchain chain.Blockchain, hostnode hostnode.HostNode) (
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 
-	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	depositSliceTopic, err := hostnode.Topic(p2p.MsgDepositsCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	depositTopicSub, err := depositTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	depositSliceTopicSub, err := depositSliceTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	exitSliceTopic, err := hostnode.Topic(p2p.MsgExitsCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	exitTopicSub, err := exitTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	exitSliceTopicSub, err := exitSliceTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	governanceTopic, err := hostnode.Topic(p2p.MsgGovernanceCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	governanceTopicSub, err := governanceTopic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
 	am := &actionMempool{
-		netParams:  netParams,
-		ctx:        ctx,
-		log:        log,
-		blockchain: blockchain,
-		hostNode:   hostnode,
-
-		depositsTopic:   depositTopic,
-		exitsTopic:      exitTopic,
-		governanceTopic: governanceTopic,
+		netParams: netParams,
+		ctx:       ctx,
+		log:       log,
+		chain:     blockchain,
+		host:      hostnode,
 
 		deposits:        make(map[chainhash.Hash]*primitives.Deposit),
 		exits:           make(map[chainhash.Hash]*primitives.Exit),
@@ -216,85 +158,131 @@ func NewActionMempool(blockchain chain.Blockchain, hostnode hostnode.HostNode) (
 
 	blockchain.Notify(am)
 
-	go am.handleDepositSub(depositTopicSub)
-	go am.handleDepositBulkSub(depositSliceTopicSub)
-	go am.handleExitSub(exitTopicSub)
-	go am.handleExitBulkSub(exitSliceTopicSub)
-	go am.handleGovernanceSub(governanceTopicSub)
+	if err := am.host.RegisterTopicHandler(p2p.MsgDepositCmd, am.handleDeposit); err != nil {
+		return nil, err
+	}
+
+	if err := am.host.RegisterTopicHandler(p2p.MsgDepositsCmd, am.handleDeposits); err != nil {
+		return nil, err
+	}
+
+	if err := am.host.RegisterTopicHandler(p2p.MsgExitCmd, am.handleExit); err != nil {
+		return nil, err
+	}
+
+	if err := am.host.RegisterTopicHandler(p2p.MsgExitsCmd, am.handleExits); err != nil {
+		return nil, err
+	}
+
+	if err := am.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, am.handleGovernance); err != nil {
+		return nil, err
+	}
 
 	return am, nil
 }
 
-func (am *actionMempool) handleDepositSub(sub *pubsub.Subscription) {
-	for {
-		msg, err := sub.Next(am.ctx)
-		if err != nil {
-			if err != am.ctx.Err() {
-				am.log.Warnf("error getting next message in deposits topic: %s", err)
-				return
-			}
-			return
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		depositMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
-
-		if err != nil {
-			am.log.Warnf("unable to decode message: %s", err)
-			return
-		}
-
-		deposit, ok := depositMsg.(*p2p.MsgDeposit)
-		if !ok {
-			am.log.Warnf("peer sent wrong message on deposit subscription")
-			return
-		}
-
-		currentState := am.blockchain.State().TipState()
-
-		err = am.AddDeposit(deposit.Data, currentState)
-		if err != nil {
-			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-		}
+func (am *actionMempool) handleDeposit(id peer.ID, msg p2p.Message) error {
+	if id == am.host.GetHost().ID() {
+		return nil
 	}
+	// TODO relay and filter already received objects.
+	data, ok := msg.(*p2p.MsgDeposit)
+	if !ok {
+		return errors.New("wrong message on deposit topic")
+	}
+	s := am.chain.State().TipState()
+	err := am.AddDeposit(data.Data, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (am *actionMempool) handleDepositBulkSub(sub *pubsub.Subscription) {
-	for {
-		msg, err := sub.Next(am.ctx)
+func (am *actionMempool) handleDeposits(id peer.ID, msg p2p.Message) error {
+	if id == am.host.GetHost().ID() {
+		return nil
+	}
+	// TODO relay and filter already received objects.
+	data, ok := msg.(*p2p.MsgDeposits)
+	if !ok {
+		return errors.New("wrong message on deposits topic")
+	}
+	s := am.chain.State().TipState()
+	for _, d := range data.Data {
+		err := am.AddDeposit(d, s)
 		if err != nil {
-			if err != am.ctx.Err() {
-				am.log.Warnf("error getting next message in deposits bulk topic: %s", err)
-				return
-			}
-			return
+			return err
 		}
+	}
+	return nil
+}
 
-		buf := bytes.NewBuffer(msg.Data)
+func (am *actionMempool) handleExit(id peer.ID, msg p2p.Message) error {
 
-		depositMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
+	if id == am.host.GetHost().ID() {
+		return nil
+	}
 
+	data, ok := msg.(*p2p.MsgExit)
+	if !ok {
+		return errors.New("wrong message on exit topic")
+	}
+
+	s := am.chain.State().TipState()
+
+	err := am.AddExit(data.Data, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (am *actionMempool) handleExits(id peer.ID, msg p2p.Message) error {
+
+	if id == am.host.GetHost().ID() {
+		return nil
+	}
+
+	data, ok := msg.(*p2p.MsgExits)
+	if !ok {
+		return errors.New("wrong message on exits topic")
+	}
+
+	s := am.chain.State().TipState()
+
+	for _, d := range data.Data {
+
+		err := am.AddExit(d, s)
 		if err != nil {
-			am.log.Warnf("unable to decode message: %s", err)
-			return
-		}
-
-		deposit, ok := depositMsg.(*p2p.MsgDeposits)
-		if !ok {
-			am.log.Warnf("peer sent wrong message on deposit subscription")
-			return
-		}
-
-		currentState := am.blockchain.State().TipState()
-		for _, d := range deposit.Data {
-			err = am.AddDeposit(d, currentState)
-			if err != nil {
-				am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-			}
+			return err
 		}
 
 	}
+
+	return nil
+}
+
+func (am *actionMempool) handleGovernance(id peer.ID, msg p2p.Message) error {
+
+	if id == am.host.GetHost().ID() {
+		return nil
+	}
+
+	data, ok := msg.(*p2p.MsgGovernance)
+	if !ok {
+		return errors.New("wrong message on governance topic")
+	}
+
+	s := am.chain.State().TipState()
+
+	err := am.AddGovernanceVote(data.Data, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AddDeposit adds a deposit to the mempool.
@@ -486,40 +474,6 @@ outer1:
 	am.governanceVoteLock.Unlock()
 }
 
-func (am *actionMempool) handleGovernanceSub(sub *pubsub.Subscription) {
-	for {
-		msg, err := sub.Next(am.ctx)
-		if err != nil {
-			if err != am.ctx.Err() {
-				am.log.Warnf("error getting next message in governance topic: %s", err)
-				return
-			}
-			return
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		govMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
-		if err != nil {
-			am.log.Warnf("unable to decode message: %s", err)
-			return
-		}
-
-		governance, ok := govMsg.(*p2p.MsgGovernance)
-		if !ok {
-			am.log.Warnf("peer sent wrong message on governance subscription")
-			return
-		}
-
-		currentState := am.blockchain.State().TipState()
-
-		err = am.AddGovernanceVote(governance.Data, currentState)
-		if err != nil {
-			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-		}
-	}
-}
-
 // AddGovernanceVote adds a governance vote to the mempool.
 func (am *actionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, state state.State) error {
 	if err := state.IsGovernanceVoteValid(vote); err != nil {
@@ -543,74 +497,6 @@ func (am *actionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 	}
 
 	return nil
-}
-
-func (am *actionMempool) handleExitSub(sub *pubsub.Subscription) {
-	for {
-		msg, err := sub.Next(am.ctx)
-		if err != nil {
-			if err != am.ctx.Err() {
-				am.log.Warnf("error getting next message in exits topic: %s", err)
-				return
-			}
-			return
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		exitMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
-		if err != nil {
-			am.log.Warnf("unable to decode exit message: %s", err)
-			return
-		}
-
-		exit, ok := exitMsg.(*p2p.MsgExit)
-		if !ok {
-			am.log.Warnf("peer sent wrong message on exit subscription")
-		}
-
-		currentState := am.blockchain.State().TipState()
-
-		err = am.AddExit(exit.Data, currentState)
-		if err != nil {
-			am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-		}
-	}
-}
-
-func (am *actionMempool) handleExitBulkSub(sub *pubsub.Subscription) {
-	for {
-		msg, err := sub.Next(am.ctx)
-		if err != nil {
-			if err != am.ctx.Err() {
-				am.log.Warnf("error getting next message in exits bulk topic: %s", err)
-				return
-			}
-			return
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		exitMsg, err := p2p.ReadMessage(buf, am.hostNode.GetNetMagic())
-		if err != nil {
-			am.log.Warnf("unable to decode exit message: %s", err)
-			return
-		}
-
-		exit, ok := exitMsg.(*p2p.MsgExits)
-		if !ok {
-			am.log.Warnf("peer sent wrong message on exit subscription")
-		}
-
-		currentState := am.blockchain.State().TipState()
-		for _, e := range exit.Data {
-			err = am.AddExit(e, currentState)
-			if err != nil {
-				am.log.Debugf("error adding transaction to mempool (might not be synced): %s", err)
-			}
-		}
-
-	}
 }
 
 // AddExit adds a exit to the mempool.

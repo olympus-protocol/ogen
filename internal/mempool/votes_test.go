@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	fuzz "github.com/google/gofuzz"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -15,7 +14,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -86,13 +84,9 @@ func TestVoteMempoolAggregation(t *testing.T) {
 	h, err := mockNet.GenPeer()
 	assert.NoError(t, err)
 
-	g, err := pubsub.NewGossipSub(ctx, h)
-	assert.NoError(t, err)
-
 	ctrl := gomock.NewController(t)
 
 	host := hostnode.NewMockHostNode(ctrl)
-	host.EXPECT().Topic(p2p.MsgVoteCmd).Return(g.Join(p2p.MsgVoteCmd))
 	host.EXPECT().GetHost().Return(h)
 
 	s := state.NewMockState(ctrl)

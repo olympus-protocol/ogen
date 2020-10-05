@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/keystore"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"net"
 	"net/http"
 	"path"
@@ -154,21 +153,7 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	txTopic, err := hostnode.Topic(p2p.MsgTxCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
-	if err != nil {
-		return nil, err
-	}
-	_, err = LoadCerts()
+	_, err := LoadCerts()
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +182,11 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 			chain:     chain,
 		},
 		networkServer: &networkServer{
-			hostnode: hostnode,
+			host: hostnode,
 		},
 		utilsServer: &utilsServer{
-			txTopic:      txTopic,
-			depositTopic: depositTopic,
-			exitTopic:    exitTopic,
-			keystore:     ks,
-			hostnode:     hostnode,
+			keystore: ks,
+			host:     hostnode,
 		},
 		walletServer: &walletServer{
 			wallet:    wallet,

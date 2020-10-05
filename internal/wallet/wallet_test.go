@@ -6,7 +6,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"os"
 	"reflect"
 	"testing"
@@ -129,11 +128,6 @@ func createWallet(t *testing.T, close bool) (wallet.Wallet, error) {
 
 	ch := chain.NewMockBlockchain(ctrl)
 	hn := hostnode.NewMockHostNode(ctrl)
-	hn.EXPECT().Topic(p2p.MsgTxCmd)
-	hn.EXPECT().Topic(p2p.MsgDepositCmd)
-	hn.EXPECT().Topic(p2p.MsgDepositsCmd)
-	hn.EXPECT().Topic(p2p.MsgExitCmd)
-	hn.EXPECT().Topic(p2p.MsgExitsCmd)
 
 	coinspool := mempool.NewMockCoinsMempool(ctrl)
 	actionpool := mempool.NewMockActionMempool(ctrl)
