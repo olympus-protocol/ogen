@@ -291,9 +291,10 @@ func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.
 func (s *stateService) RemoveBeforeSlot(slot uint64) {
 	s.stateMapLock.Lock()
 	defer s.stateMapLock.Unlock()
-	if slot < 0 {
+	if slot <= 0 || slot < 20 {
 		return
 	}
+	slot -= 20
 	statesCleaned := 0
 	for i := range s.stateMap {
 		row, found := s.index.Get(i)
@@ -311,7 +312,6 @@ func (s *stateService) RemoveBeforeSlot(slot uint64) {
 			continue
 		}
 	}
-
 	s.log.Debugf("removed %d states on map observing %d states", statesCleaned, len(s.stateMap))
 }
 

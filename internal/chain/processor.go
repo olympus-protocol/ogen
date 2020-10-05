@@ -276,7 +276,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	}
 
 	// To prevent deleting a finalized state, keep 20 slots more before finalized state
-	ch.state.RemoveBeforeSlot(finalizedSlot - 20)
+	ch.state.RemoveBeforeSlot(finalizedSlot)
 
 	ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
 	ch.log.Debugf("included %d vote slashing %d randao slashing %d proposer slashing", len(block.VoteSlashings), len(block.RANDAOSlashings), len(block.ProposerSlashings))
