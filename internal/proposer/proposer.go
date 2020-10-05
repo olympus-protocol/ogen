@@ -142,7 +142,7 @@ func (p *proposer) ProposeBlocks() {
 			voteState, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
 				p.log.Errorf("unable to get tip state at slot %d", slotToPropose)
-				blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+				blockTimer = time.NewTimer(time.Second * 2)
 				p.proposerLock.Unlock()
 				continue
 			}
@@ -163,7 +163,7 @@ func (p *proposer) ProposeBlocks() {
 				votes, err := p.voteMempool.Get(slotToPropose, voteState, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -171,7 +171,7 @@ func (p *proposer) ProposeBlocks() {
 				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.netParams.MaxDepositsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -183,7 +183,7 @@ func (p *proposer) ProposeBlocks() {
 				exitTxs, err := p.actionsMempool.GetExits(int(p.netParams.MaxExitsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -191,7 +191,7 @@ func (p *proposer) ProposeBlocks() {
 				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.netParams.MaxRANDAOSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -199,7 +199,7 @@ func (p *proposer) ProposeBlocks() {
 				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.netParams.MaxVoteSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -207,7 +207,7 @@ func (p *proposer) ProposeBlocks() {
 				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.netParams.MaxProposerSlashingsPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -215,7 +215,7 @@ func (p *proposer) ProposeBlocks() {
 				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.netParams.MaxGovernanceVotesPerBlock), voteState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -261,7 +261,7 @@ func (p *proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -271,7 +271,7 @@ func (p *proposer) ProposeBlocks() {
 				err = p.host.Broadcast(msg)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
 					continue
 				}
@@ -312,7 +312,7 @@ func (p *proposer) VoteForBlocks() {
 			voteState, err := s.TipStateAtSlot(slotToVote)
 			if err != nil {
 				p.log.Errorf("unable to get tip at slot %d", slotToVote)
-				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				voteTimer = time.NewTimer(time.Second * 2)
 				p.voteLock.Unlock()
 				continue
 			}
@@ -320,7 +320,7 @@ func (p *proposer) VoteForBlocks() {
 			validators, err := voteState.GetVoteCommittee(slotToVote)
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
-				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				voteTimer = time.NewTimer(time.Second * 2)
 				p.voteLock.Unlock()
 				continue
 			}
@@ -332,7 +332,7 @@ func (p *proposer) VoteForBlocks() {
 			beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
 			if !found {
 				p.log.Errorf("unable to find block at slot %d", slotToVote-1)
-				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				voteTimer = time.NewTimer(time.Second * 2)
 				p.voteLock.Unlock()
 				continue
 			}
@@ -382,7 +382,13 @@ func (p *proposer) VoteForBlocks() {
 					Sig:                   voteSig,
 				}
 
-				p.voteMempool.Add(vote)
+				err = p.voteMempool.AddValidate(vote, voteState)
+				if err != nil {
+					p.log.Error(err)
+					voteTimer = time.NewTimer(time.Second * 2)
+					p.voteLock.Unlock()
+					continue
+				}
 
 				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
@@ -390,7 +396,7 @@ func (p *proposer) VoteForBlocks() {
 				err = p.host.Broadcast(msg)
 				if err != nil {
 					p.log.Error(err)
-					voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+					voteTimer = time.NewTimer(time.Second * 2)
 					p.voteLock.Unlock()
 					continue
 				}

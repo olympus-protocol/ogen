@@ -86,6 +86,10 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 		return nil, err
 	}
 
+	if err := host.RegisterHandler(p2p.MsgBlockCmd, sp.handleBlockMsg); err != nil {
+		return nil, err
+	}
+
 	if err := host.RegisterHandler(p2p.MsgSyncEndCmd, sp.handleSyncEndMsg); err != nil {
 		return nil, err
 	}
