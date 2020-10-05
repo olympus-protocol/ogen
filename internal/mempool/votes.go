@@ -23,7 +23,7 @@ import (
 
 // VoteMempool is the interface of the voteMempool
 type VoteMempool interface {
-	AddValidate(vote *primitives.MultiValidatorVote, state state.State) error
+	AddValidate(vote *primitives.MultiValidatorVote, s state.State) error
 	Add(vote *primitives.MultiValidatorVote)
 	Get(slot uint64, s state.State, proposerIndex uint64) ([]*primitives.MultiValidatorVote, error)
 	Remove(b *primitives.Block)
@@ -54,8 +54,8 @@ type voteMempool struct {
 var _ VoteMempool = &voteMempool{}
 
 // AddValidate validates, then adds the vote to the mempool.
-func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, state state.State) error {
-	if err := state.IsVoteValid(vote); err != nil {
+func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, s state.State) error {
+	if err := s.IsVoteValid(vote); err != nil {
 		return err
 	}
 	m.Add(vote)
@@ -316,9 +316,28 @@ func (m *voteMempool) handleVote(id peer.ID, msg p2p.Message) error {
 		return errors.New("wrong message on vote topic")
 	}
 
-	s := m.chain.State().TipState()
+	vote := data.Data
 
-	err := m.AddValidate(data.Data, s)
+	firstSlotAllowedToInclude := vote.Data.Slot + m.netParams.MinAttestationInclusionDelay
+	tip := m.chain.State().Tip()
+
+	if tip.Slot+m.netParams.EpochLength*2 < firstSlotAllowedToInclude {
+		return errors.New("tried to include a vote too far in the future")
+	}
+
+	view, err := m.chain.State().GetSubView(tip.Hash)
+	if err != nil {
+		m.log.Warnf("could not get block view representing current tip: %s", err)
+		return err
+	}
+
+	currentState, _, err := m.chain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view)
+	if err != nil {
+		m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
+		return err
+	}
+
+	err = m.AddValidate(data.Data, currentState)
 	if err != nil {
 
 		return err
