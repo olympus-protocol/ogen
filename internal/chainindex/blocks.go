@@ -129,10 +129,6 @@ func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 	return ok
 }
 
-func (i *BlockIndex) add(row *BlockRow) error {
-	i.index[row.Hash] = row
-	return nil
-}
 
 // Add adds a row to the block chainindex.
 func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
@@ -156,10 +152,7 @@ func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
 
 	i.index[block.Header.PrevBlockHash] = prev
 
-	err := i.add(row)
-	if err != nil {
-		return nil, err
-	}
+	i.index[row.Hash] = row
 
 	return row, nil
 }
