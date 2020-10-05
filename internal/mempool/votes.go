@@ -253,7 +253,12 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 
 		if slot >= vote.Data.FirstSlotValid(m.netParams) && slot <= vote.Data.LastSlotValid(m.netParams) {
 			if err := s.ProcessVote(vote, proposerIndex); err != nil {
-				return nil, err
+				m.poolLock.Lock()
+				voteHash := vote.Hash()
+				delete(m.pool, voteHash)
+				m.removeFromOrder(voteHash)
+				m.poolLock.Unlock()
+				continue
 			}
 			if uint64(len(votes)) < m.netParams.MaxVotesPerBlock {
 				votes = append(votes, vote)
