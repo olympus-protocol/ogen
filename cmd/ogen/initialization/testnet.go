@@ -517,5 +517,5 @@ var TestNet = NetworkInitialParams{
 	},
 	PremineAddress:    "tlpub1m3zr09fwetfpct6jkxru9ptwf98tpsckcvw9cq",
 	PreminePrivateKey: "tlprv1dph47rtc08g5sd9t02g3rfy7hurhrn06393wjegr43l34ppd5amqntflx4",
-	GenesisTime:       1601924700,
+	GenesisTime:       1601926000,
 }
