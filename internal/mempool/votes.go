@@ -327,7 +327,7 @@ func (m *voteMempool) handleVote(id peer.ID, msg p2p.Message) error {
 	tip := m.chain.State().Tip()
 
 	if tip.Slot+m.netParams.EpochLength*2 < firstSlotAllowedToInclude {
-		return errors.New("tried to include a vote too far in the future")
+		return nil
 	}
 
 	view, err := m.chain.State().GetSubView(tip.Hash)
