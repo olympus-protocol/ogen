@@ -113,7 +113,7 @@ type coinsMempool struct {
 	mempoolMulti map[[20]byte]*coinMempoolItemMulti
 
 	balances map[[20]byte]uint64
-	lock     sync.RWMutex
+	lock     sync.Mutex
 }
 
 // AddMulti adds an item to the coins mempool.
@@ -197,8 +197,8 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 
 // Get gets transactions to be included in a block. Mutates state.
 func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State) {
-	cm.lock.RLock()
-	defer cm.lock.RUnlock()
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
 
 outer:
@@ -220,8 +220,8 @@ outer:
 
 // Get gets transactions to be included in a block. Mutates state.
 func (cm *coinsMempool) GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti {
-	cm.lock.RLock()
-	defer cm.lock.RUnlock()
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 	allTransactions := make([]*primitives.TxMulti, 0, maxTransactions)
 
 outer:

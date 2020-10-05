@@ -56,7 +56,7 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
-				ch.state.Blockchain().SetTip(head)
+				ch.state.Chain().SetTip(head)
 
 				ch.log.Infof("setting head to %s", head.Hash)
 
@@ -293,11 +293,11 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
 	}
 
-	ch.notifeeLock.RLock()
+	ch.notifeeLock.Lock()
 	stateCopy := newState.Copy()
 	for i := range ch.notifees {
 		go i.NewTip(row, block, stateCopy, receipts)
 	}
-	ch.notifeeLock.RUnlock()
+	ch.notifeeLock.Unlock()
 	return nil
 }

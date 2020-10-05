@@ -148,6 +148,20 @@ func (mr *MockHostNodeMockRecorder) RegisterHandler(message, handler interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterHandler", reflect.TypeOf((*MockHostNode)(nil).RegisterHandler), message, handler)
 }
 
+// RegisterTopicHandler mocks base method
+func (m *MockHostNode) RegisterTopicHandler(message string, handler MessageHandler) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterTopicHandler", message, handler)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterTopicHandler indicates an expected call of RegisterTopicHandler
+func (mr *MockHostNodeMockRecorder) RegisterTopicHandler(message, handler interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterTopicHandler", reflect.TypeOf((*MockHostNode)(nil).RegisterTopicHandler), message, handler)
+}
+
 // HandleStream mocks base method
 func (m *MockHostNode) HandleStream(s network.Stream) {
 	m.ctrl.T.Helper()

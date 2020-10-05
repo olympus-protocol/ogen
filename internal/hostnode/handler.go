@@ -27,13 +27,13 @@ type handler struct {
 	host HostNode
 
 	messageHandler      map[string]MessageHandler
-	messageHandlersLock sync.RWMutex
+	messageHandlersLock sync.Mutex
 
 	topicHandlers     map[string]MessageHandler
-	topicHandlersLock sync.RWMutex
+	topicHandlersLock sync.Mutex
 
 	outgoingMessages     map[peer.ID]chan p2p.Message
-	outgoingMessagesLock sync.RWMutex
+	outgoingMessagesLock sync.Mutex
 
 	ctx context.Context
 
@@ -108,16 +108,16 @@ func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 
 		p.log.Tracef("processing message %s from peer %s", cmd, id)
 
-		p.messageHandlersLock.RLock()
+		p.messageHandlersLock.Lock()
 
 		if handler, found := p.messageHandler[cmd]; found {
-			p.messageHandlersLock.RUnlock()
+			p.messageHandlersLock.Unlock()
 			err := handler(id, message)
 			if err != nil {
 				return err
 			}
 		} else {
-			p.messageHandlersLock.RUnlock()
+			p.messageHandlersLock.Unlock()
 		}
 		return nil
 	})
@@ -157,9 +157,9 @@ func (p *handler) handleStream(s network.Stream) {
 
 // SendMessage writes a message to a peer.
 func (p *handler) SendMessage(id peer.ID, msg p2p.Message) error {
-	p.outgoingMessagesLock.RLock()
+	p.outgoingMessagesLock.Lock()
 	msgsChan, found := p.outgoingMessages[id]
-	p.outgoingMessagesLock.RUnlock()
+	p.outgoingMessagesLock.Unlock()
 	if !found {
 		return fmt.Errorf("not tracking peer %s", id)
 	}

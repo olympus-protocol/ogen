@@ -35,17 +35,17 @@ func (m *MockVoteMempool) EXPECT() *MockVoteMempoolMockRecorder {
 }
 
 // AddValidate mocks base method
-func (m *MockVoteMempool) AddValidate(vote *primitives.MultiValidatorVote, state state.State) error {
+func (m *MockVoteMempool) AddValidate(vote *primitives.MultiValidatorVote, s state.State) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddValidate", vote, state)
+	ret := m.ctrl.Call(m, "AddValidate", vote, s)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddValidate indicates an expected call of AddValidate
-func (mr *MockVoteMempoolMockRecorder) AddValidate(vote, state interface{}) *gomock.Call {
+func (mr *MockVoteMempoolMockRecorder) AddValidate(vote, s interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddValidate", reflect.TypeOf((*MockVoteMempool)(nil).AddValidate), vote, state)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddValidate", reflect.TypeOf((*MockVoteMempool)(nil).AddValidate), vote, s)
 }
 
 // Add mocks base method

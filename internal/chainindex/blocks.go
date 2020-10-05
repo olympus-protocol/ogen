@@ -17,7 +17,7 @@ type BlockRow struct {
 	Parent    *BlockRow
 
 	children     []*BlockRow
-	childrenLock sync.RWMutex
+	childrenLock sync.Mutex
 }
 
 // AddChild adds a child to the block row.
@@ -37,8 +37,8 @@ func (br *BlockRow) AddChild(child *BlockRow) {
 // Children gets the children of the block row.
 func (br *BlockRow) Children() []*BlockRow {
 	childrenCopy := make([]*BlockRow, len(br.children))
-	br.childrenLock.RLock()
-	defer br.childrenLock.RUnlock()
+	br.childrenLock.Lock()
+	defer br.childrenLock.Unlock()
 	copy(childrenCopy, br.children)
 	return childrenCopy
 }
@@ -75,7 +75,7 @@ func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
 
 // BlockIndex is an chainindex from hash to BlockRow.
 type BlockIndex struct {
-	lock  sync.RWMutex
+	lock  sync.Mutex
 	index map[chainhash.Hash]*BlockRow
 }
 
@@ -114,8 +114,8 @@ func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
 
 // Get gets a block from the block chainindex.
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
-	i.lock.RLock()
-	defer i.lock.RUnlock()
+	i.lock.Lock()
+	defer i.lock.Unlock()
 
 	row, found := i.get(hash)
 	return row, found
@@ -123,9 +123,9 @@ func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 
 // Have checks if the block chainindex contains a certain hash.
 func (i *BlockIndex) Have(hash chainhash.Hash) bool {
-	i.lock.RLock()
+	i.lock.Lock()
 	_, ok := i.index[hash]
-	i.lock.RUnlock()
+	i.lock.Unlock()
 	return ok
 }
 

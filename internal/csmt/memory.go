@@ -16,13 +16,13 @@ type InMemoryTreeDB struct {
 	nodes map[chainhash.Hash]Node
 	store map[chainhash.Hash]chainhash.Hash
 
-	updateLock *sync.RWMutex
+	updateLock *sync.Mutex
 }
 
 // Hash gets the root hash of the tree.
 func (t *InMemoryTreeDB) Hash() (*chainhash.Hash, error) {
-	t.updateLock.RLock()
-	defer t.updateLock.RUnlock()
+	t.updateLock.Lock()
+	defer t.updateLock.Unlock()
 
 	return &t.root, nil
 }
@@ -38,7 +38,7 @@ func NewInMemoryTreeDB() *InMemoryTreeDB {
 		nodes: make(map[chainhash.Hash]Node),
 		store: make(map[chainhash.Hash]chainhash.Hash),
 
-		updateLock: new(sync.RWMutex),
+		updateLock: new(sync.Mutex),
 	}
 }
 
@@ -82,7 +82,7 @@ func (t *InMemoryTreeDB) View(cb func(TreeDatabaseTransaction) error) error {
 	nodesCopy := make(map[chainhash.Hash]Node)
 	storeCopy := make(map[chainhash.Hash]chainhash.Hash)
 
-	t.updateLock.RLock()
+	t.updateLock.Lock()
 	for k, v := range t.nodes {
 		nodesCopy[k] = v
 	}
@@ -90,7 +90,7 @@ func (t *InMemoryTreeDB) View(cb func(TreeDatabaseTransaction) error) error {
 	for k, v := range t.store {
 		storeCopy[k] = v
 	}
-	t.updateLock.RUnlock()
+	t.updateLock.Unlock()
 
 	tx := &InMemoryTreeTX{
 		root:   t.root,

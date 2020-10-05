@@ -17,7 +17,7 @@ type badgerDB struct {
 	log       logger.Logger
 	netParams *params.ChainParams
 
-	lock     sync.RWMutex
+	lock     sync.Mutex
 	badgerdb *badger.DB
 	canClose sync.WaitGroup
 }

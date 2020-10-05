@@ -50,7 +50,7 @@ var _ Logger = &logger{}
 
 // logger struct define the underlying storage for sing	le logger
 type logger struct {
-	mu        sync.RWMutex
+	mu        sync.Mutex
 	color     bool
 	out       FdWriter
 	debug     bool
@@ -159,8 +159,8 @@ func (l *logger) WithoutDebug() Logger {
 
 // IsDebug check the state of debugging output
 func (l *logger) IsDebug() bool {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	return l.debug
 }
 
@@ -198,8 +198,8 @@ func (l *logger) NoQuiet() Logger {
 
 // IsQuiet check for quiet state
 func (l *logger) IsQuiet() bool {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	return l.quiet
 }
 
