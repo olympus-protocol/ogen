@@ -36,20 +36,6 @@ func (m *MockStateService) EXPECT() *MockStateServiceMockRecorder {
 	return m.recorder
 }
 
-// Blockchain mocks base method
-func (m *MockStateService) Blockchain() *Chain {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Blockchain")
-	ret0, _ := ret[0].(*Chain)
-	return ret0
-}
-
-// Blockchain indicates an expected call of Blockchain
-func (mr *MockStateServiceMockRecorder) Blockchain() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Blockchain", reflect.TypeOf((*MockStateService)(nil).Blockchain))
-}
-
 // GetLatestVote mocks base method
 func (m *MockStateService) GetLatestVote(val uint64) (*primitives.MultiValidatorVote, bool) {
 	m.ctrl.T.Helper()

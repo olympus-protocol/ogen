@@ -1,12 +1,18 @@
 package chainrpc_test
 
 import (
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
 )
+
+func init() {
+	config.SetTestParams()
+	config.SetTestFlags()
+}
 
 func Test_GenCertificates(t *testing.T) {
 	err := chainrpc.GenerateCerts("./")
