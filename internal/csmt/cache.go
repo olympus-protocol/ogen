@@ -16,13 +16,13 @@ type TreeMemoryCache struct {
 	toRemove        map[chainhash.Hash]struct{}
 	root            chainhash.Hash
 
-	lock *sync.RWMutex
+	lock *sync.Mutex
 }
 
 // Hash gets the hash of the current tree.
 func (t *TreeMemoryCache) Hash() (*chainhash.Hash, error) {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
 	return &t.root, nil
 }
@@ -56,7 +56,7 @@ func NewTreeMemoryCache(underlyingDatabase TreeDatabase) (*TreeMemoryCache, erro
 		dirty:           make(map[chainhash.Hash]Node),
 		dirtyKV:         make(map[chainhash.Hash]chainhash.Hash),
 		toRemove:        make(map[chainhash.Hash]struct{}),
-		lock:            new(sync.RWMutex),
+		lock:            new(sync.Mutex),
 	}, nil
 }
 
@@ -109,7 +109,7 @@ func (t *TreeMemoryCache) Update(cb func(TreeDatabaseTransaction) error) error {
 // View creates a view transaction for the cache.
 func (t *TreeMemoryCache) View(cb func(TreeDatabaseTransaction) error) error {
 	return t.underlyingStore.View(func(underlyingTx TreeDatabaseTransaction) error {
-		t.lock.RLock()
+		t.lock.Lock()
 
 		dirtyCopy := make(map[chainhash.Hash]Node)
 		dirtyKVCopy := make(map[chainhash.Hash]chainhash.Hash)
@@ -127,7 +127,7 @@ func (t *TreeMemoryCache) View(cb func(TreeDatabaseTransaction) error) error {
 			toRemoveCopy[k] = struct{}{}
 		}
 
-		t.lock.RUnlock()
+		t.lock.Unlock()
 
 		tx := &TreeMemoryCacheTransaction{
 			underlyingTransaction: underlyingTx,

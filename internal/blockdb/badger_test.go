@@ -1,6 +1,7 @@
 package blockdb_test
 
 import (
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -9,8 +10,11 @@ import (
 	"time"
 )
 
-// params are the params used on the test
-var param = &testdata.TestParams
+
+func init() {
+	config.SetTestParams()
+	config.SetTestFlags()
+}
 
 func TestBlockDB_Instance(t *testing.T) {
 	err := os.Mkdir(testdata.Node1Folder, 0777)

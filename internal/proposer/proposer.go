@@ -46,8 +46,8 @@ type proposer struct {
 	context    context.Context
 	stop       context.CancelFunc
 
-	proposerLock sync.RWMutex
-	voteLock     sync.RWMutex
+	proposerLock sync.Mutex
+	voteLock     sync.Mutex
 
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool

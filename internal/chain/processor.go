@@ -56,7 +56,7 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
-				ch.state.Blockchain().SetTip(head)
+				ch.state.Chain().SetTip(head)
 
 				ch.log.Infof("setting head to %s", head.Hash)
 
@@ -275,6 +275,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
+	// To prevent deleting a finalized state, keep 20 slots more before finalized state
 	ch.state.RemoveBeforeSlot(finalizedSlot)
 
 	ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
@@ -293,11 +294,11 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
 	}
 
-	ch.notifeeLock.RLock()
+	ch.notifeeLock.Lock()
 	stateCopy := newState.Copy()
 	for i := range ch.notifees {
 		go i.NewTip(row, block, stateCopy, receipts)
 	}
-	ch.notifeeLock.RUnlock()
+	ch.notifeeLock.Unlock()
 	return nil
 }

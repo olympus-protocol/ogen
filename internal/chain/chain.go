@@ -7,13 +7,13 @@ import (
 )
 
 type Chain struct {
-	lock  sync.RWMutex
+	lock  sync.Mutex
 	chain []*chainindex.BlockRow
 }
 
 func (c *Chain) Height() uint64 {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	return uint64(len(c.chain) - 1)
 }
 
@@ -49,20 +49,20 @@ func (c *Chain) SetTip(row *chainindex.BlockRow) {
 }
 
 func (c *Chain) Tip() *chainindex.BlockRow {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	return c.chain[len(c.chain)-1]
 }
 
 func (c *Chain) Genesis() *chainindex.BlockRow {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	return c.chain[0]
 }
 
 func (c *Chain) Next(row *chainindex.BlockRow) (*chainindex.BlockRow, bool) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if uint64(len(c.chain)) <= row.Height+1 {
 		return nil, false
@@ -72,8 +72,8 @@ func (c *Chain) Next(row *chainindex.BlockRow) (*chainindex.BlockRow, bool) {
 }
 
 func (c *Chain) GetNodeByHeight(height uint64) (*chainindex.BlockRow, bool) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if height >= uint64(len(c.chain)) {
 		return nil, false

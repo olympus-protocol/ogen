@@ -178,8 +178,8 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// IMPORTANT: 	We should never allow a vote that conflicts a previous vote to be added to the pool.
 	// 				That should be checked against all votes on pool comparing bitlists.
 	v, ok := m.pool[voteHash]
-
 	if ok {
+		m.log.Debugf("received vote with same vote data aggregating %d votes", len(vote.ParticipationBitfield.BitIndices()))
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
 			// Check if votes overlaps voters
 
@@ -210,6 +210,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			if err != nil {
 				m.log.Error(err)
 			}
+
 			sig1, err := bls.SignatureFromBytes(v.Sig[:])
 			if err != nil {
 				m.log.Error(err)
@@ -218,6 +219,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			if err != nil {
 				m.log.Error(err)
 			}
+
 			newVoteSig := bls.AggregateSignatures([]*bls.Signature{sig1, sig2})
 
 			var voteSig [96]byte
@@ -228,11 +230,10 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 				ParticipationBitfield: newBitfield,
 				Sig:                   voteSig,
 			}
-
 			m.pool[voteHash] = newVote
 		}
 	} else {
-
+		m.log.Debugf("adding vote to the mempool with %d votes", len(vote.ParticipationBitfield.BitIndices()))
 		m.pool[voteHash] = vote
 		m.poolOrder = append(m.poolOrder, voteHash)
 	}
@@ -327,7 +328,7 @@ func (m *voteMempool) handleVote(id peer.ID, msg p2p.Message) error {
 	tip := m.chain.State().Tip()
 
 	if tip.Slot+m.netParams.EpochLength*2 < firstSlotAllowedToInclude {
-		return errors.New("tried to include a vote too far in the future")
+		return nil
 	}
 
 	view, err := m.chain.State().GetSubView(tip.Hash)
@@ -341,7 +342,7 @@ func (m *voteMempool) handleVote(id peer.ID, msg p2p.Message) error {
 		m.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
 		return err
 	}
-
+	m.log.Debugf("received vote from %s with %d votes", id, len(data.Data.ParticipationBitfield.BitIndices()))
 	err = m.AddValidate(data.Data, currentState)
 	if err != nil {
 

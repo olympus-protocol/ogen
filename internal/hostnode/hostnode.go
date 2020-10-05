@@ -293,7 +293,7 @@ func (node *hostNode) listenTopics() {
 		}
 
 		cmd := msgData.Command()
-		node.handler.topicHandlersLock.RLock()
+		node.handler.topicHandlersLock.Lock()
 		handler, found := node.handler.topicHandlers[cmd]
 		if !found {
 			continue
@@ -302,6 +302,6 @@ func (node *hostNode) listenTopics() {
 		if err != nil {
 			node.log.Error(err)
 		}
-		node.handler.topicHandlersLock.RUnlock()
+		node.handler.topicHandlersLock.Unlock()
 	}
 }

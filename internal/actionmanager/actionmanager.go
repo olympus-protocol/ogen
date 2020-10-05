@@ -52,7 +52,7 @@ type lastActionManager struct {
 	// lastActions are the last recorded actions by a validator with a certain
 	// salted private key hash.
 	lastActions     map[[48]byte]time.Time
-	lastActionsLock sync.RWMutex
+	lastActionsLock sync.Mutex
 
 	netParams *params.ChainParams
 }
@@ -120,8 +120,8 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 
 // StartValidator requests a validator to be started and returns whether it should be started.
 func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
-	l.lastActionsLock.RLock()
-	defer l.lastActionsLock.RUnlock()
+	l.lastActionsLock.Lock()
+	defer l.lastActionsLock.Unlock()
 
 	if !l.ShouldRun(valPub) {
 		return false
@@ -145,8 +145,8 @@ func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitive
 }
 
 func (l *lastActionManager) ShouldRun(val [48]byte) bool {
-	l.lastActionsLock.RLock()
-	defer l.lastActionsLock.RUnlock()
+	l.lastActionsLock.Lock()
+	defer l.lastActionsLock.Unlock()
 
 	return l.shouldRun(val)
 }

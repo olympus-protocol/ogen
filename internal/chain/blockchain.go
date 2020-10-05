@@ -40,7 +40,7 @@ type blockchain struct {
 	state StateService
 
 	notifees    map[BlockchainNotifee]struct{}
-	notifeeLock sync.RWMutex
+	notifeeLock sync.Mutex
 }
 
 func (ch *blockchain) Start() (err error) {

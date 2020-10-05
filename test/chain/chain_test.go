@@ -89,9 +89,9 @@ func createKeystoresAndValidators() {
 	// Initialize each keystore with NumValidators
 	var keystoreWg sync.WaitGroup
 	keystoreWg.Add(len(keystores))
-	var keysLock sync.RWMutex
+	var keysLock sync.Mutex
 	for i, ks := range keystores {
-		go func(index int, keystore keystore.Keystore, wg *sync.WaitGroup, lock *sync.RWMutex) {
+		go func(index int, keystore keystore.Keystore, wg *sync.WaitGroup, lock *sync.Mutex) {
 			lock.Lock()
 			defer wg.Done()
 			defer lock.Unlock()

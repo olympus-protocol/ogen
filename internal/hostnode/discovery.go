@@ -38,7 +38,7 @@ type discover struct {
 	netParams *params.ChainParams
 
 	lastConnect     map[peer.ID]time.Time
-	lastConnectLock sync.RWMutex
+	lastConnectLock sync.Mutex
 
 	ID        peer.ID
 	dht       *dht.IpfsDHT
