@@ -291,7 +291,9 @@ func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.
 func (s *stateService) RemoveBeforeSlot(slot uint64) {
 	s.stateMapLock.Lock()
 	defer s.stateMapLock.Unlock()
-
+	if slot < 0 {
+		return
+	}
 	statesCleaned := 0
 	for i := range s.stateMap {
 		row, found := s.index.Get(i)
