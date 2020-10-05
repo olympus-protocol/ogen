@@ -292,23 +292,25 @@ func (s *stateService) RemoveBeforeSlot(slot uint64) {
 	s.stateMapLock.Lock()
 	defer s.stateMapLock.Unlock()
 
-	numRemoved := 0
+	statesCleaned := 0
 	for i := range s.stateMap {
 		row, found := s.index.Get(i)
 		if !found {
 			s.log.Debugf("deleting block state for %s", i)
 			delete(s.stateMap, i)
-			numRemoved++
+			statesCleaned++
 			continue
 		}
 
 		if row.Slot < slot {
 			s.log.Debugf("deleting block state for %s", i)
 			delete(s.stateMap, i)
-			numRemoved++
+			statesCleaned++
 			continue
 		}
 	}
+
+	s.log.Debugf("removed %d states on map observing %d states", statesCleaned, len(s.stateMap))
 }
 
 // GetRowByHash gets a specific row by hash.

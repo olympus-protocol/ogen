@@ -112,7 +112,7 @@ func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
 	return row, found
 }
 
-// Get gets a block from the block chainindex.
+// Get gets a block from the block index.
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
