@@ -300,7 +300,7 @@ func (s *stateService) RemoveBeforeSlot(slot uint64) {
 		row, found := s.index.Get(i)
 		if !found {
 			s.log.Debugf("deleting block state for %s", i)
-			delete(s.stateMap, i)
+			//delete(s.stateMap, i)
 			statesCleaned++
 			continue
 		}

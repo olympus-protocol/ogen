@@ -81,7 +81,6 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 			}
 		}
 		head = bestVoteCountChild
-		return nil
 	}
 }
 
