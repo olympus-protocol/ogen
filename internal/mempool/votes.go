@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
@@ -231,7 +230,6 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 				ParticipationBitfield: newBitfield,
 				Sig:                   voteSig,
 			}
-			fmt.Println(len(newVote.ParticipationBitfield.BitIndices()))
 			m.pool[voteHash] = newVote
 		}
 	} else {
