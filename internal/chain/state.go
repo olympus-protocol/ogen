@@ -294,6 +294,7 @@ func (s *stateService) RemoveBeforeSlot(slot uint64) {
 	if slot < 20 {
 		return
 	}
+	slot -= 20
 	statesCleaned := 0
 	for i, st := range s.stateMap {
 		if st.firstSlot < slot {
