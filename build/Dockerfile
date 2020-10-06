@@ -40,6 +40,7 @@ RUN cd ogen && go mod download
 
 ## Build Cross-Compile
 
+RUNC cd ogen && go get -u github.com/gobuffalo/packr/packr
 RUN cd ogen && ./scripts/build-cross.sh
 
 RUN mkdir /release && mv ogen/*.tar.gz /release && mv ogen/*.zip /release
