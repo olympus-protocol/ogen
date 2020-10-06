@@ -227,9 +227,10 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 
 	for _, vote := range m.pool {
 
-
 		if slot >= vote.Data.FirstSlotValid(m.netParams) && slot <= vote.Data.LastSlotValid(m.netParams) {
-			if err := s.ProcessVote(vote, proposerIndex); err != nil {
+			err := s.ProcessVote(vote, proposerIndex)
+			if err != nil {
+				m.log.Error(err)
 				m.poolLock.Lock()
 				voteHash := vote.Hash()
 				delete(m.pool, voteHash)
