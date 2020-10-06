@@ -31,6 +31,7 @@ type Proposer interface {
 	VoteForBlocks()
 	Start() error
 	Stop()
+	GetCurrentSlot() uint64
 	Keystore() keystore.Keystore
 }
 
@@ -48,6 +49,9 @@ type proposer struct {
 
 	proposerLock sync.Mutex
 	voteLock     sync.Mutex
+
+	voting bool
+	proposing bool
 
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
@@ -97,6 +101,10 @@ func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newSt
 	p.actionsMempool.RemoveByBlock(block, newState)
 }
 
+func (p *proposer) GetCurrentSlot() uint64 {
+	return p.getCurrentSlot()
+}
+
 func (p *proposer) getCurrentSlot() uint64 {
 	slot := time.Now().Sub(p.chain.GenesisTime()) / (time.Duration(p.netParams.SlotDuration) * time.Second)
 	if slot < 0 {
@@ -119,6 +127,9 @@ func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
 func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *proposer) ProposeBlocks() {
+	defer func() {
+		p.proposing = false
+	}()
 
 	slotToPropose := p.getCurrentSlot() + 1
 
@@ -288,6 +299,9 @@ func (p *proposer) ProposeBlocks() {
 }
 
 func (p *proposer) VoteForBlocks() {
+	defer func() {
+		p.voting = false
+	}()
 	slotToVote := p.getCurrentSlot() + 1
 	if slotToVote <= 0 {
 		slotToVote = 1

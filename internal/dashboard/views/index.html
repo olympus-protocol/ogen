@@ -58,39 +58,39 @@
                             <ul class="list-group">
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Tip Height
-                                    <span class="badge badge-primary badge-pill">0</span>
+                                    <span class="badge badge-primary badge-pill">{{.NodeData.TipHeight}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Tip Hash
-                                    <span class="badge badge-primary badge-pill text-overflow">asdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasd</span>
+                                    <span class="badge badge-primary badge-pill text-overflow">{{.NodeData.TipHash}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Tip Slot
-                                    <span class="badge badge-primary badge-pill">0</span>
+                                    <span class="badge badge-primary badge-pill">{{.NodeData.TipSlot}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Justified Height
-                                    <span class="badge badge-primary badge-pill">0</span>
+                                    <span class="badge badge-primary badge-pill">{{.NodeData.JustifiedHeight}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Justified Hash
-                                    <span class="badge badge-primary badge-pill text-overflow">asdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasd</span>
+                                    <span class="badge badge-primary badge-pill text-overflow">{{.NodeData.JustifiedHash}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Justified Slot
-                                    <span class="badge badge-primary badge-pill">0</span>
+                                    <span class="badge badge-primary badge-pill">{{.NodeData.JustifiedSlot}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Finalized Height
-                                    <span class="badge badge-primary badge-pill">0</span>
+                                    <span class="badge badge-primary badge-pill">{{.NodeData.FinalizedHeight}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Finalized Hash
-                                    <span class="badge badge-primary badge-pill text-overflow">asdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasdasd</span>
+                                    <span class="badge badge-primary badge-pill text-overflow">{{.NodeData.FinalizedHash}}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Finalized Slot
-                                    <span class="badge badge-primary badge-pill">0</span>
+                                    <span class="badge badge-primary badge-pill">{{.NodeData.FinalizedSlot}}</span>
                                 </li>
                             </ul>
                         </div>
@@ -112,7 +112,27 @@
                     <div id="networkStatsBody" class="collapse" role="tabpanel" aria-labelledby="networkStatsTitle"
                          data-parent="#accordion">
                         <div class="card-body">
-
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Node ID: <code>{{.NetworkData.ID}}</code>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Peers Connected
+                                    <span class="badge badge-primary badge-pill text-overflow">{{.NetworkData.PeersConnected}}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Peers Ahead
+                                    <span class="badge badge-primary badge-pill">{{.NetworkData.PeersAhead}}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Peers Equal
+                                    <span class="badge badge-primary badge-pill">{{.NetworkData.PeersEqual}}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Peers Behind
+                                    <span class="badge badge-primary badge-pill">{{.NetworkData.PeersBehind}}</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 
@@ -132,7 +152,20 @@
                     <div id="keystoreStatsBody" class="collapse" role="tabpanel" aria-labelledby="keystoreStatsTitle"
                          data-parent="#accordion">
                         <div class="card-body">
-
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Keys on keystore
+                                    <span class="badge badge-primary badge-pill text-overflow">{{.KeystoreData.Keys}}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Active validators
+                                    <span class="badge badge-primary badge-pill">{{.KeystoreData.Validators}}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Keys participating
+                                    <span class="badge badge-primary badge-pill">{{.KeystoreData.KeysParticipating}}</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 
@@ -152,7 +185,24 @@
                     <div id="proposerStatsBody" class="collapse" role="tabpanel" aria-labelledby="proposerStatsTitle"
                          data-parent="#accordion">
                         <div class="card-body">
-
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Current slot
+                                    <span class="badge badge-primary badge-pill text-overflow">0</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Current epoch
+                                    <span class="badge badge-primary badge-pill">0</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Voting
+                                    <span class="badge badge-primary badge-pill">true</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Proposing
+                                    <span class="badge badge-primary badge-pill">true</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 
@@ -172,6 +222,14 @@
                     <div id="peersStatsBody" class="collapse" role="tabpanel" aria-labelledby="peersStatsTitle"
                          data-parent="#accordion">
                         <div class="card-body">
+                            <ul class="list-group">
+                                {{range $peer := .PeerData}}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="text-overflow" style="max-width: 200px">{{$peer.ID}}</span>
+                                    <span class="badge badge-primary badge-pill">Fin: {{$peer.Finalized}} Just: {{$peer.Justified}} Tip: {{$peer.Tip}}</span>
+                                </li>
+                                {{end}}
+                            </ul>
 
                         </div>
                     </div>
@@ -192,7 +250,20 @@
                     <div id="participationStatsBody" class="collapse" role="tabpanel" aria-labelledby="participationStatsTitle"
                          data-parent="#accordion">
                         <div class="card-body">
-
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Epoch Slot
+                                    <span class="badge badge-primary badge-pill text-overflow">0/5</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                   Epoch
+                                    <span class="badge badge-primary badge-pill text-overflow">0</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Epoch participation percentage
+                                    <span class="badge badge-primary badge-pill text-overflow">0%</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 

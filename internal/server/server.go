@@ -153,7 +153,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 	}
 
 	if config.GlobalFlags.Dashboard {
-		s.dashboard, err = dashboard.NewDashboard(hn, ch)
+		s.dashboard, err = dashboard.NewDashboard(hn, ch, prop)
 		if err != nil {
 			return nil, err
 		}
