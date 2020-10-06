@@ -209,7 +209,7 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 					return nil
 				}
 				fin, _ := sp.chain.State().GetFinalizedHead()
-				if p.FinalizedHeight > fin.Height {
+				if p.FinalizedHeight >= fin.Height && p.TipHeight > sp.chain.State().Tip().Height {
 					sp.askForBlocks(id)
 				}
 				return nil
