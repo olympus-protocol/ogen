@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"strconv"
 	"time"
 
@@ -30,8 +31,28 @@ func (c *Client) SubmitRawData(args []string) (string, error) {
 	return string(b), nil
 }
 
-func (c *Client) GenKeyPair(raw bool) (string, error) {
+func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 	blsKeyPair := bls.RandKey()
+
+	if !raw {
+		if len(args) < 1 {
+			return "", errors.New("Usage: genkeypair <network>")
+		}
+
+		netName := args[0]
+		var netParams *params.ChainParams
+		switch netName {
+		case "testnet":
+			netParams = &params.TestNet
+		case "mainnet":
+			netParams = &params.Mainnet
+		default:
+			return "", errors.New("no params for " + netName)
+		}
+
+		bls.Initialize(netParams)
+	}
+
 
 	var res *bls.KeyPair
 	if raw {
