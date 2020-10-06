@@ -129,7 +129,6 @@ func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 	return ok
 }
 
-
 // Add adds a row to the block chainindex.
 func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
 	i.lock.Lock()

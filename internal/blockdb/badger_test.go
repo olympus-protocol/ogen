@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-
 func init() {
 	config.SetTestParams()
 	config.SetTestFlags()
