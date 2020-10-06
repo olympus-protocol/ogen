@@ -16,7 +16,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"sort"
 	"sync"
 	"time"
 )
@@ -34,9 +33,6 @@ type VoteMempool interface {
 type voteMempool struct {
 	poolLock sync.Mutex
 	pool     map[chainhash.Hash]*primitives.MultiValidatorVote
-
-	// chainindex 0 is highest prioritized, 1 is less, etc
-	poolOrder []chainhash.Hash
 
 	netParams *params.ChainParams
 	log       logger.Logger
@@ -60,29 +56,6 @@ func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, s state.S
 	}
 	m.Add(vote)
 	return nil
-}
-
-// sortMempool sorts the poolOrder so that the highest priority transactions come first and assumes you hold the poolLock.
-func (m *voteMempool) sortMempool() {
-	sort.Slice(m.poolOrder, func(i, j int) bool {
-
-		// return if i is higher priority than j
-
-		iHash := m.poolOrder[i]
-		jHash := m.poolOrder[j]
-		iData := m.pool[iHash].Data
-		jData := m.pool[jHash].Data
-
-		// first sort by slot
-		if iData.Slot < jData.Slot {
-			return true
-		} else if iData.Slot > jData.Slot {
-			return false
-		}
-
-		// arbitrary
-		return true
-	})
 }
 
 // Add adds a vote to the mempool.
@@ -119,31 +92,30 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 
 		if currentState.GetSlot() >= v.Data.LastSlotValid(m.netParams) {
 			delete(m.pool, voteHash)
-			m.removeFromOrder(voteHash)
 			continue
 		}
 
 		var votingValidators = make(map[uint64]struct{})
 		var common []uint64
 
-		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot)
+		vote1Committee, err := currentState.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
 		}
 
-		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot)
+		vote2Committee, err := currentState.GetVoteCommittee(vote.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
 		}
 
-		for i, idx := range vote1Comitte {
+		for i, idx := range vote1Committee {
 			if !v.ParticipationBitfield.Get(uint(i)) {
 				continue
 			}
 			votingValidators[idx] = struct{}{}
 		}
 
-		for i, idx := range vote2Comitte {
+		for i, idx := range vote2Committee {
 			if !vote.ParticipationBitfield.Get(uint(i)) {
 				continue
 			}
@@ -171,6 +143,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 						Vote2: v,
 					})
 				}
+				return
 			}
 		}
 	}
@@ -187,15 +160,14 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
 
 			// Check if votes overlaps voters
-
-			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot)
+			voteCommittee, err := currentState.GetVoteCommittee(v.Data.Slot)
 			if err != nil {
 				m.log.Error(err)
 			}
 
 			var common []uint64
 
-			for i, idx := range votesComitte {
+			for i, idx := range voteCommittee {
 				if v.ParticipationBitfield.Get(uint(i)) && vote.ParticipationBitfield.Get(uint(i)) {
 					common = append(common, idx)
 				}
@@ -243,10 +215,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	} else {
 		m.log.Debugf("adding vote to the mempool with %d votes", len(vote.ParticipationBitfield.BitIndices()))
 		m.pool[voteHash] = vote
-		m.poolOrder = append(m.poolOrder, voteHash)
 	}
-
-	m.sortMempool()
 }
 
 // Get gets a vote from the mempool.
@@ -256,16 +225,14 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 
 	votes := make([]*primitives.MultiValidatorVote, 0)
 
-	for _, h := range m.poolOrder {
+	for _, vote := range m.pool {
 
-		vote := m.pool[h]
 
 		if slot >= vote.Data.FirstSlotValid(m.netParams) && slot <= vote.Data.LastSlotValid(m.netParams) {
 			if err := s.ProcessVote(vote, proposerIndex); err != nil {
 				m.poolLock.Lock()
 				voteHash := vote.Hash()
 				delete(m.pool, voteHash)
-				m.removeFromOrder(voteHash)
 				m.poolLock.Unlock()
 				continue
 			}
@@ -277,19 +244,6 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 	}
 
 	return votes, nil
-}
-
-// Assumes you already hold the poolLock mutex.
-func (m *voteMempool) removeFromOrder(h chainhash.Hash) {
-	newOrder := make([]chainhash.Hash, 0, len(m.poolOrder))
-
-	for _, vh := range m.poolOrder {
-		if !vh.IsEqual(&h) {
-			newOrder = append(newOrder, vh)
-		}
-	}
-
-	m.poolOrder = newOrder
 }
 
 // Remove removes mempool items that are no longer relevant.
@@ -305,7 +259,6 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		_, ok := m.pool[voteHash]
 		if ok {
 			delete(m.pool, voteHash)
-			m.removeFromOrder(voteHash)
 		}
 	}
 
