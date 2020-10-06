@@ -1,59 +1,45 @@
 package hostnode
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
-	"github.com/olympus-protocol/ogen/pkg/params"
-	"io/ioutil"
-	"os"
-	"path"
-	"sync"
-	"time"
-
-	"github.com/libp2p/go-libp2p"
-	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/pkg/logger"
-
-	circuit "github.com/libp2p/go-libp2p-circuit"
-	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
-
 	dsbadger "github.com/ipfs/go-ds-badger"
+	"github.com/libp2p/go-libp2p"
+	circuit "github.com/libp2p/go-libp2p-circuit"
 	"github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/libp2p/go-libp2p-peerstore/pstoreds"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"github.com/olympus-protocol/ogen/pkg/params"
+	"io/ioutil"
+	"os"
+	"path"
+	"time"
 )
-
-type Config struct {
-	Log  logger.Logger
-	Port string
-	Path string
-}
 
 // HostNode is an interface for hostNode
 type HostNode interface {
-	Topic(topic string) (*pubsub.Topic, error)
 	Syncing() bool
-	GetContext() context.Context
 	GetHost() host.Host
 	GetNetMagic() uint32
 	DisconnectPeer(p peer.ID) error
-	IsConnected() bool
-	PeersConnected() int
-	GetPeerList() []peer.ID
 	GetPeerInfos() []peer.AddrInfo
-	ConnectedToPeer(id peer.ID) bool
-	Notify(notifee network.Notifiee)
 	GetPeerDirection(id peer.ID) network.Direction
-	Stop()
-	Start() error
-	SetStreamHandler(id protocol.ID, handleStream func(s network.Stream))
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
+	RegisterHandler(message string, handler MessageHandler) error
+	RegisterTopicHandler(message string, handler MessageHandler) error
+	HandleStream(s network.Stream)
+	SendMessage(id peer.ID, msg p2p.Message) error
+	Broadcast(msg p2p.Message) error
 }
 
 var _ HostNode = &hostNode{}
@@ -62,39 +48,34 @@ var _ HostNode = &hostNode{}
 // It's the low level P2P communication layer, the App class handles high level protocols
 // The RPC communication is hanlded by App, not HostNode
 type hostNode struct {
-	privateKey crypto.PrivKey
-
-	host      host.Host
-	gossipSub *pubsub.PubSub
-	ctx       context.Context
-
-	topics     map[string]*pubsub.Topic
-	topicsLock sync.RWMutex
-
+	host     host.Host
+	ctx      context.Context
+	datapath string
 	netMagic uint32
+	log      logger.Logger
 
-	log  logger.Logger
-	path string
+	discover     *discover
+	synchronizer *synchronizer
+	handler      *handler
 
-	// discoveryProtocol handles peer discovery (mDNS, DHT, etc)
-	discoveryProtocol DiscoveryProtocol
-
-	// syncProtocol handles peer syncing
-	syncProtocol SyncProtocol
+	topic    *pubsub.Topic
+	topicSub *pubsub.Subscription
 }
 
 // NewHostNode creates a host node
-func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain, p *params.ChainParams) (HostNode, error) {
+func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
 
 	node := &hostNode{
 		ctx:      ctx,
-		log:      config.Log,
-		topics:   map[string]*pubsub.Topic{},
-		netMagic: p.NetMagic,
-		path:     config.Path,
+		log:      log,
+		netMagic: netParams.NetMagic,
+		datapath: config.GlobalFlags.DataPath,
 	}
 
-	ds, err := dsbadger.NewDatastore(path.Join(config.Path, "peerstore"), nil)
+	ds, err := dsbadger.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -108,21 +89,18 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	if err != nil {
 		return nil, err
 	}
-	node.privateKey = priv
 
-	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + config.Port)
+	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + netParams.DefaultP2PPort)
 	if err != nil {
 		return nil, err
 	}
 
 	connman := connmgr.NewConnManager(2, 64, time.Second*60)
-
 	h, err := libp2p.New(
 		ctx,
 		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
 		libp2p.Identity(priv),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
-		libp2p.NATPortMap(),
 		libp2p.Peerstore(ps),
 		libp2p.ConnectionManager(connman),
 	)
@@ -141,116 +119,54 @@ func NewHostNode(ctx context.Context, config Config, blockchain chain.Blockchain
 	}
 
 	for _, a := range addrs {
-		config.Log.Infof("binding to address: %s", a)
+		log.Infof("binding to address: %s", a)
 	}
 
-	g, err := pubsub.NewGossipSub(ctx, h)
+	g, err := pubsub.NewGossipSub(node.ctx, node.host)
 	if err != nil {
 		return nil, err
 	}
-	node.gossipSub = g
 
-	discovery, err := NewDiscoveryProtocol(ctx, node, config, p)
+	node.topic, err = g.Join("pub_channel")
 	if err != nil {
 		return nil, err
 	}
-	node.discoveryProtocol = discovery
 
-	syncProtocol, err := NewSyncProtocol(ctx, node, config, blockchain)
+	_, err = node.topic.Relay()
 	if err != nil {
 		return nil, err
 	}
-	node.syncProtocol = syncProtocol
+
+	node.topicSub, err = node.topic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	handler, err := newHandler(params.ProtocolID, node)
+	if err != nil {
+		return nil, err
+	}
+	node.handler = handler
+
+	synchronizer, err := NewSyncronizer(node, blockchain)
+	if err != nil {
+		return nil, err
+	}
+	node.synchronizer = synchronizer
+
+	discovery, err := NewDiscover(node)
+	if err != nil {
+		return nil, err
+	}
+	node.discover = discovery
+
+	go node.listenTopics()
 
 	return node, nil
 }
 
-func (node *hostNode) SyncProtocol() SyncProtocol {
-	return node.syncProtocol
-}
-
-func (node *hostNode) Topic(topic string) (*pubsub.Topic, error) {
-	node.topicsLock.Lock()
-	defer node.topicsLock.Unlock()
-
-	if t, ok := node.topics[topic]; ok {
-		return t, nil
-	}
-
-	t, err := node.gossipSub.Join(topic)
-	if err != nil {
-		return nil, err
-	}
-
-	node.relay(topic, t)
-
-	node.topics[topic] = t
-	return t, nil
-}
-
-func (node *hostNode) relay(topic string, pub *pubsub.Topic) {
-	switch topic {
-	case p2p.MsgBlockCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgTxCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgTxMultiCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgDepositCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgDepositsCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgExitCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgExitsCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgGovernanceCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgVoteCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	case p2p.MsgValidatorStartCmd:
-		_, err := pub.Relay()
-		if err != nil {
-			node.log.Error(err)
-		}
-	}
-}
-
-// Syncing returns a boolean if the chain is on sync mode
 func (node *hostNode) Syncing() bool {
-	return node.syncProtocol.Syncing()
-}
-
-// GetContext returns the context
-func (node *hostNode) GetContext() context.Context {
-	return node.ctx
+	return node.synchronizer.sync
 }
 
 // GetHost returns the host
@@ -262,28 +178,9 @@ func (node *hostNode) GetNetMagic() uint32 {
 	return node.netMagic
 }
 
-func (node *hostNode) removePeer(p peer.ID) {
-	node.host.Peerstore().ClearAddrs(p)
-}
-
 // DisconnectPeer disconnects a peer
 func (node *hostNode) DisconnectPeer(p peer.ID) error {
 	return node.host.Network().ClosePeer(p)
-}
-
-// IsConnected checks if the host node is connected.
-func (node *hostNode) IsConnected() bool {
-	return node.PeersConnected() > 0
-}
-
-// PeersConnected checks how many hostnode are connected.
-func (node *hostNode) PeersConnected() int {
-	return len(node.host.Network().Peers())
-}
-
-// GetPeerList returns a list of all hostnode.
-func (node *hostNode) GetPeerList() []peer.ID {
-	return node.host.Network().Peers()
 }
 
 // GetPeerInfos gets peer infos of connected hostnode.
@@ -298,22 +195,6 @@ func (node *hostNode) GetPeerInfos() []peer.AddrInfo {
 	return infos
 }
 
-// ConnectedToPeer returns true if we're connected to the peer.
-func (node *hostNode) ConnectedToPeer(id peer.ID) bool {
-	connectedness := node.host.Network().Connectedness(id)
-	return connectedness == network.Connected
-}
-
-// Notify notifies a notifee for network events.
-func (node *hostNode) Notify(notifee network.Notifiee) {
-	node.host.Network().Notify(notifee)
-}
-
-// SetStreamHandler sets a stream handler for the host node.
-func (node *hostNode) SetStreamHandler(id protocol.ID, handleStream func(s network.Stream)) {
-	node.host.SetStreamHandler(id, handleStream)
-}
-
 // GetPeerDirection gets the direction of the peer.
 func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	conns := node.host.Network().ConnsToPeer(id)
@@ -324,28 +205,38 @@ func (node *hostNode) GetPeerDirection(id peer.ID) network.Direction {
 	return conns[0].Stat().Direction
 }
 
-// Stop closes all topics before closing the server.
-func (node *hostNode) Stop() {
-	for _, topic := range node.topics {
-		_ = topic.Close()
-	}
-}
-
-// Start the host node and start discovering peers.
-func (node *hostNode) Start() error {
-	if err := node.discoveryProtocol.Start(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (node *hostNode) GetPeerInfo(id peer.ID) *peer.AddrInfo {
 	pinfo := node.host.Peerstore().PeerInfo(id)
 	return &pinfo
 }
 
+func (node *hostNode) RegisterHandler(message string, handler MessageHandler) error {
+	return node.handler.RegisterHandler(message, handler)
+}
+
+func (node *hostNode) RegisterTopicHandler(message string, handler MessageHandler) error {
+	return node.handler.RegisterTopicHandler(message, handler)
+}
+
+func (node *hostNode) HandleStream(s network.Stream) {
+	node.handler.handleStream(s)
+}
+
+func (node *hostNode) SendMessage(id peer.ID, msg p2p.Message) error {
+	return node.handler.SendMessage(id, msg)
+}
+
+func (node *hostNode) Broadcast(msg p2p.Message) error {
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, node.netMagic)
+	if err != nil {
+		return err
+	}
+	return node.topic.Publish(node.ctx, buf.Bytes())
+}
+
 func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {
-	keyBytes, err := ioutil.ReadFile(path.Join(node.path, "node_key.dat"))
+	keyBytes, err := ioutil.ReadFile(path.Join(node.datapath, "node_key.dat"))
 	if err != nil {
 		return node.createPrivateKey()
 	}
@@ -358,7 +249,7 @@ func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {
 }
 
 func (node *hostNode) createPrivateKey() (crypto.PrivKey, error) {
-	_ = os.RemoveAll(path.Join(node.path, "node_key.dat"))
+	_ = os.RemoveAll(path.Join(node.datapath, "node_key.dat"))
 
 	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
@@ -370,10 +261,47 @@ func (node *hostNode) createPrivateKey() (crypto.PrivKey, error) {
 		return nil, err
 	}
 
-	err = ioutil.WriteFile(path.Join(node.path, "node_key.dat"), keyBytes, 0700)
+	err = ioutil.WriteFile(path.Join(node.datapath, "node_key.dat"), keyBytes, 0700)
 	if err != nil {
 		return nil, err
 	}
 
 	return priv, nil
+}
+
+func (node *hostNode) listenTopics() {
+	for {
+		msg, err := node.topicSub.Next(node.ctx)
+		if err != nil {
+			if err != node.ctx.Err() {
+				node.log.Warnf("error getting next message in votes topic: %s", err)
+				continue
+			}
+			continue
+		}
+
+		if msg.GetFrom() == node.host.ID() {
+			continue
+		}
+
+		buf := bytes.NewBuffer(msg.Data)
+
+		msgData, err := p2p.ReadMessage(buf, node.netMagic)
+		if err != nil {
+			node.log.Warnf("unable to decode message: %s", err)
+			continue
+		}
+
+		cmd := msgData.Command()
+		node.handler.topicHandlersLock.Lock()
+		handler, found := node.handler.topicHandlers[cmd]
+		if !found {
+			continue
+		}
+		err = handler(msg.GetFrom(), msgData)
+		if err != nil {
+			node.log.Error(err)
+		}
+		node.handler.topicHandlersLock.Unlock()
+	}
 }

@@ -1,7 +1,7 @@
 package chain
 
 import (
-	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"sync"
 	"time"
 
@@ -11,11 +11,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
-
-type Config struct {
-	Datadir string
-	Log     logger.Logger
-}
 
 // Blockchain is an interface for blockchain
 type Blockchain interface {
@@ -35,9 +30,8 @@ var _ Blockchain = &blockchain{}
 
 type blockchain struct {
 	log         logger.Logger
-	config      Config
 	genesisTime time.Time
-	params      *params.ChainParams
+	netParams   *params.ChainParams
 
 	// DB
 	db blockdb.Database
@@ -46,7 +40,7 @@ type blockchain struct {
 	state StateService
 
 	notifees    map[BlockchainNotifee]struct{}
-	notifeeLock sync.RWMutex
+	notifeeLock sync.Mutex
 }
 
 func (ch *blockchain) Start() (err error) {
@@ -77,8 +71,13 @@ func (ch *blockchain) GetRawBlock(h chainhash.Hash) (block []byte, err error) {
 }
 
 // NewBlockchain constructs a new blockchain.
-func NewBlockchain(config Config, params *params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Blockchain, error) {
-	s, err := NewStateService(config.Log, ip, params, db)
+func NewBlockchain(db blockdb.Database) (Blockchain, error) {
+
+	log := config.GlobalParams.Logger
+	ip := config.GlobalParams.InitParams
+	netParams := config.GlobalParams.NetParams
+
+	s, err := NewStateService(db)
 	if err != nil {
 		return nil, err
 	}
@@ -86,18 +85,17 @@ func NewBlockchain(config Config, params *params.ChainParams, db blockdb.Databas
 
 	genesisTime, err = db.GetGenesisTime()
 	if err != nil {
-		config.Log.Infof("using genesis time %d from params", ip.GenesisTime.Unix())
+		log.Infof("using genesis time %d from params", ip.GenesisTime.Unix())
 		genesisTime = ip.GenesisTime
 		if err := db.SetGenesisTime(ip.GenesisTime); err != nil {
 			return nil, err
 		}
 	} else {
-		config.Log.Infof("using genesis time %d from db", genesisTime.Unix())
+		log.Infof("using genesis time %d from db", genesisTime.Unix())
 	}
 	ch := &blockchain{
-		log:         config.Log,
-		config:      config,
-		params:      params,
+		log:         log,
+		netParams:   netParams,
 		db:          db,
 		state:       s,
 		notifees:    make(map[BlockchainNotifee]struct{}),

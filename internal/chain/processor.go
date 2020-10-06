@@ -17,7 +17,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *blockchain) UpdateChainHead(possible chainhash.Hash, isCheck bool) error {
+func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.GetEpochIndex())
 	var targets []blockRowAndValidator
@@ -39,7 +39,7 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash, isCheck bool) err
 				return 0
 			}
 			if node.Hash.IsEqual(&block.Hash) {
-				votes += justifiedState.GetEffectiveBalance(target.validator, ch.params) / 1e8
+				votes += justifiedState.GetEffectiveBalance(target.validator) / 1e8
 			}
 		}
 		return votes
@@ -56,10 +56,7 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash, isCheck bool) err
 		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
-				if isCheck {
-					return nil
-				}
-				ch.state.Blockchain().SetTip(head)
+				ch.state.Chain().SetTip(head)
 
 				ch.log.Infof("setting head to %s", head.Hash)
 
@@ -105,7 +102,7 @@ func (ch *blockchain) getLatestAttestationTarget(validator uint64) (row *chainin
 func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	// 1. first verify basic block properties
 	// b. get parent block
-	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.params.SlotDuration*block.Header.Slot))
+	blockTime := ch.genesisTime.Add(time.Second * time.Duration(ch.netParams.SlotDuration*block.Header.Slot))
 
 	blockHash := block.Hash()
 
@@ -121,12 +118,12 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		lastBlockState, _, err := ch.State().GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, ch.params)
+		lastBlockState, _, err := ch.State().GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view)
 		if err != nil {
 			return err
 		}
 
-		if err := lastBlockState.CheckBlockSignature(block, ch.params); err != nil {
+		if err := lastBlockState.CheckBlockSignature(block); err != nil {
 			return err
 		}
 
@@ -135,7 +132,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 			return err
 		}
 
-		proposerPub, err := lastBlockState.GetProposerPublicKey(block, ch.params)
+		proposerPub, err := lastBlockState.GetProposerPublicKey(block)
 		if err != nil {
 			return err
 		}
@@ -213,14 +210,13 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	*/
 	err = ch.db.AddRawBlock(block, true)
 	if err != nil {
-		ch.log.Infof("ProcessBlock==AddRawBlock==Failed")
 		return err
 	}
 	/*
 		BlockRow-> RawBlock
 		Eventually a block is manged into RawBlck and BlockRow.
 	*/
-	prev, err := ch.state.Index().Add(*block, true)
+	prev, err := ch.state.Index().Add(block, true)
 	if err != nil {
 		ch.log.Infof("ProcessBlock==Index().Add==Failed")
 		return err
@@ -239,10 +235,11 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	//}
 
 	for _, a := range block.Votes {
-		validators, err := newState.GetVoteCommittee(a.Data.Slot, ch.params)
+		validators, err := newState.GetVoteCommittee(a.Data.Slot)
 		if err != nil {
 			return err
 		}
+
 		ch.state.SetLatestVotesIfNeeded(validators, a)
 	}
 	/*********
@@ -259,7 +256,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	//	return err
 	//}
 
-	finalizedSlot := newState.GetFinalizedEpoch() * ch.params.EpochLength
+	finalizedSlot := newState.GetFinalizedEpoch() * ch.netParams.EpochLength
 	finalizedHash, err := view.GetHashBySlot(finalizedSlot)
 	if err != nil {
 		return err
@@ -294,6 +291,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
+	// To prevent deleting a finalized state, keep 20 slots more before finalized state
 	ch.state.RemoveBeforeSlot(finalizedSlot)
 
 	ch.log.Debugf("processed %d votes %d deposits %d exits and %d transactions", len(block.Votes), len(block.Deposits), len(block.Exits), len(block.Txs))
@@ -319,7 +317,6 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		ch.log.Infof("ProcessBlock==SetBlockRow2==Failed")
 		return err
 	}
-	_, _ = ch.state.Index().Add(*block, false)
 
 	_, _, _ = ch.State().Add(block, false)
 
@@ -327,18 +324,17 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		voted += len(v.ParticipationBitfield.BitIndices())
 	}
 
-	comittee, err := newState.GetVoteCommittee(block.Header.Slot, ch.params)
+	comittee, err := newState.GetVoteCommittee(block.Header.Slot)
 	if err == nil {
 		percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
 		ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
 	}
 
-	ch.notifeeLock.RLock()
+	ch.notifeeLock.Lock()
 	stateCopy := newState.Copy()
 	for i := range ch.notifees {
 		go i.NewTip(row, block, stateCopy, receipts)
 	}
-	//publish StateCopy
-	ch.notifeeLock.RUnlock()
+	ch.notifeeLock.Unlock()
 	return nil
 }

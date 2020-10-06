@@ -3,44 +3,42 @@ package state
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/logger"
-	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type State interface {
-	ProcessSlot(p *params.ChainParams, previousBlockRoot chainhash.Hash)
-	ProcessSlots(requestedSlot uint64, view BlockView, p *params.ChainParams, log logger.Logger) ([]*primitives.EpochReceipt, error)
-	GetEffectiveBalance(index uint64, p *params.ChainParams) uint64
+	ProcessSlot(previousBlockRoot chainhash.Hash)
+	ProcessSlots(requestedSlot uint64, view BlockView) ([]*primitives.EpochReceipt, error)
+	GetEffectiveBalance(index uint64) uint64
 	ActivateValidator(index uint64) error
 	InitiateValidatorExit(index uint64) error
-	ExitValidator(index uint64, status uint64, p *params.ChainParams) error
-	UpdateValidatorStatus(index uint64, status uint64, p *params.ChainParams) error
-	GetRecentBlockHash(slotToGet uint64, p *params.ChainParams) chainhash.Hash
+	ExitValidator(index uint64, status uint64) error
+	UpdateValidatorStatus(index uint64, status uint64) error
+	GetRecentBlockHash(slotToGet uint64) chainhash.Hash
 	GetTotalBalances() uint64
 	NextVoteEpoch(newState uint64)
-	CheckForVoteTransitions(p *params.ChainParams)
-	ProcessEpochTransition(p *params.ChainParams, _ logger.Logger) ([]*primitives.EpochReceipt, error)
-	IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params.ChainParams) error
-	ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params.ChainParams) error
-	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error
-	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error
+	CheckForVoteTransitions()
+	ProcessEpochTransition() ([]*primitives.EpochReceipt, error)
+	IsGovernanceVoteValid(vote *primitives.GovernanceVote) error
+	ProcessGovernanceVote(vote *primitives.GovernanceVote) error
+	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
+	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
-	ApplyProposerSlashing(ps *primitives.ProposerSlashing, p *params.ChainParams) error
-	IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.ChainParams) ([]uint64, error)
-	ApplyVoteSlashing(vs *primitives.VoteSlashing, p *params.ChainParams) error
+	ApplyProposerSlashing(ps *primitives.ProposerSlashing) error
+	IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, error)
+	ApplyVoteSlashing(vs *primitives.VoteSlashing) error
 	IsRANDAOSlashingValid(rs *primitives.RANDAOSlashing) (uint64, error)
-	ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing, p *params.ChainParams) error
-	GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error)
+	ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing) error
+	GetVoteCommittee(slot uint64) ([]uint64, error)
 	IsExitValid(exit *primitives.Exit) error
 	ApplyExit(exit *primitives.Exit) error
-	IsDepositValid(deposit *primitives.Deposit, params *params.ChainParams) error
-	ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams) error
-	IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainParams) error
-	ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error
-	GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error)
-	CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error
-	StateProcessBlock(b *primitives.Block, p *params.ChainParams) error
+	IsDepositValid(deposit *primitives.Deposit) error
+	ApplyDeposit(deposit *primitives.Deposit) error
+	IsVoteValid(v *primitives.MultiValidatorVote) error
+	ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error
+	GetProposerPublicKey(b *primitives.Block) (*bls.PublicKey, error)
+	CheckBlockSignature(b *primitives.Block) error
+	ProcessBlock(b *primitives.Block) error
 	ToSerializable() *primitives.SerializableState
 	FromSerializable(ser *primitives.SerializableState)
 	Marshal() ([]byte, error)

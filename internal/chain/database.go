@@ -10,7 +10,7 @@ import (
 )
 
 func (s *stateService) initializeDatabase(txn blockdb.Database, blockNode *chainindex.BlockRow, state state.State) error {
-	s.blockChain.SetTip(blockNode)
+	s.chain.SetTip(blockNode)
 
 	err := s.SetFinalizedHead(blockNode.Hash, state)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *stateService) loadBlockIndex(txn blockdb.Database, genesisHash chainhas
 			return err
 		}
 
-		_, err = s.blockIndex.LoadBlockNode(rowDisk)
+		_, err = s.index.LoadBlockNode(rowDisk)
 		if err != nil {
 			return err
 		}
@@ -110,8 +110,8 @@ func (s *stateService) loadJustifiedAndFinalizedStates(txn blockdb.Database) err
 }
 
 func (s *stateService) setBlockState(hash chainhash.Hash, state state.State) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.stateMapLock.Lock()
+	defer s.stateMapLock.Unlock()
 
 	s.log.Debugf("setting block state for %s", hash)
 
@@ -135,7 +135,7 @@ func (s *stateService) loadStateMap(txn blockdb.Database) error {
 
 	s.setBlockState(finalizedNode.Hash, justifiedState)
 
-	s.blockChain.SetTip(finalizedNode)
+	s.chain.SetTip(finalizedNode)
 
 	for len(loadQueue) > 0 {
 		toLoad := loadQueue[0]
@@ -158,7 +158,7 @@ func (s *stateService) loadStateMap(txn blockdb.Database) error {
 			return err
 		}
 
-		_, err = s.blockIndex.LoadBlockNode(node)
+		_, err = s.index.LoadBlockNode(node)
 		if err != nil {
 			return err
 		}

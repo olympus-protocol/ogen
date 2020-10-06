@@ -131,13 +131,18 @@ message SubscribeValidatorRequest {
     repeated bytes public_key = 1;
 }
 
+message Head {
+    uint64 height = 1;
+    uint64 slot = 2;
+    string hash = 3;
+}
+
 message ChainInfo {
     string block_hash = 1;
     uint64 block_height = 2;
     ValidatorsInfo validators = 3;
-    uint64 last_justified_epoch = 4;
-    uint64 last_finalized_epoch = 5;
-    string last_justified_hash = 6;
+    Head justified_head = 4;
+    Head finalized_head = 5;
 }
 
 message AccountInfo {

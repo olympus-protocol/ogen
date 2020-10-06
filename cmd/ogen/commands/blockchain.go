@@ -2,181 +2,71 @@ package commands
 
 import (
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
-	"github.com/olympus-protocol/ogen/internal/state"
-	"math/rand"
-	"os"
-	"os/signal"
-	"path"
-	"time"
-
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/server"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/net/context"
+	"os"
+	"path"
+	"time"
 )
-
-var GlobalDataFolder string
-
-// loadOgen is the main function to run ogen.
-func loadOgen(ctx context.Context, configParams *server.GlobalConfig, log logger.Logger, currParams *params.ChainParams) error {
-	db, err := blockdb.NewBadgerDB(configParams.DataFolder, currParams, log)
-	if err != nil {
-		return err
-	}
-	s, err := server.NewServer(ctx, configParams, log, currParams, db, configParams.InitConfig)
-	if err != nil {
-		return err
-	}
-	go s.Start()
-	<-ctx.Done()
-	db.Close()
-	err = s.Stop()
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 var (
-	rootCmd = &cobra.Command{
-		Use:   "ogen",
-		Short: "Ogen is a Go Olympus implementation",
-		Long: `A Golang implementation of the Olympus protocol.
-Next generation blockchain secured by CASPER.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			var log logger.Logger
+	DataPath string
+	NetName  string
+	Port     string
+	Debug    bool
+	LogFile  bool
 
-			if viper.GetBool("log_file") {
-				logFile, err := os.OpenFile(path.Join(GlobalDataFolder, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
-				if err != nil {
-					panic(err)
-				}
-				log = logger.New(logFile)
-			} else {
-				log = logger.New(os.Stdin)
-			}
-
-			if viper.GetBool("debug") {
-				log = log.WithDebug()
-			}
-
-			networkName := viper.GetString("network")
-
-			var currParams *params.ChainParams
-			switch networkName {
-			case "mainnet":
-				currParams = &params.Mainnet
-			default:
-				currParams = &params.TestNet
-			}
-
-			initparams, err := initialization.LoadParams(currParams.Name)
-			if err != nil {
-				log.Error("no params specified for that network")
-				panic(err)
-			}
-
-			initialValidators := make([]state.ValidatorInitialization, len(initparams.Validators))
-			for i := range initialValidators {
-				v := state.ValidatorInitialization{
-					PubKey:       initparams.Validators[i].PublicKey,
-					PayeeAddress: initparams.PremineAddress,
-				}
-				initialValidators[i] = v
-			}
-
-			var genesisTime time.Time
-			if initparams.GenesisTime == 0 {
-				genesisTime = time.Now()
-			} else {
-				genesisTime = time.Unix(initparams.GenesisTime, 0)
-			}
-			ip := state.InitializationParameters{
-				GenesisTime:       genesisTime,
-				InitialValidators: initialValidators,
-				PremineAddress:    initparams.PremineAddress,
-			}
-
-			rpcauth := ""
-			if viper.GetString("rpc_auth_token") != "" {
-				rpcauth = viper.GetString("rpc_auth_token")
-			} else {
-				rpcauth = randomAuthToken()
-			}
-
-			c := &server.GlobalConfig{
-				DataFolder: GlobalDataFolder,
-
-				NetworkName: networkName,
-				Port:        viper.GetString("port"),
-
-				InitConfig: ip,
-
-				RPCProxy:     viper.GetBool("rpc_proxy"),
-				RPCProxyPort: viper.GetString("rpc_proxy_port"),
-				RPCProxyAddr: viper.GetString("rpc_proxy_addr"),
-				RPCPort:      viper.GetString("rpc_port"),
-				RPCWallet:    viper.GetBool("rpc_wallet"),
-				RPCAuthToken: rpcauth,
-
-				Debug: viper.GetBool("debug"),
-
-				LogFile: viper.GetBool("log_file"),
-				Pprof:   viper.GetBool("pprof"),
-			}
-
-			log.Infof("Starting Ogen v%v", params.Version)
-			log.Trace("Loading log on debug mode")
-			ctx, cancel := context.WithCancel(context.Background())
-
-			InterruptListener(log, cancel)
-
-			err = loadOgen(ctx, c, log, currParams)
-			if err != nil {
-				log.Fatal(err)
-			}
-		},
-	}
+	RPCPort      string
+	RPCWallet    bool
+	RPCProxy     bool
+	RPCProxyPort string
+	RPCPRoxyAddr string
 )
-
-// Execute executes the root command.
-func Execute() error {
-	return rootCmd.Execute()
-}
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVar(&DataPath, "datadir", "", "Directory to store the chain data.")
 
-	rootCmd.PersistentFlags().StringVar(&GlobalDataFolder, "datadir", "", "Directory to store the chain data.")
+	rootCmd.Flags().StringVar(&NetName, "network", "testnet", "String of the network to connect.")
+	rootCmd.Flags().StringVar(&Port, "port", "24126", "Default port for p2p connections listener.")
 
-	rootCmd.Flags().String("network", "testnet", "String of the network to connect.")
-	rootCmd.Flags().String("port", "24126", "Default port for p2p connections listener.")
+	rootCmd.Flags().BoolVar(&RPCProxy, "rpc_proxy", false, "Enable http proxy for RPC server.")
+	rootCmd.Flags().StringVar(&RPCProxyPort, "rpc_proxy_port", "8080", "Port for the http proxy.")
+	rootCmd.Flags().StringVar(&RPCPort, "rpc_port", "24127", "RPC server port.")
+	rootCmd.Flags().StringVar(&RPCPRoxyAddr, "rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
+	rootCmd.Flags().BoolVar(&RPCWallet, "rpc_wallet", false, "Enable wallet access through RPC.")
 
-	rootCmd.Flags().Bool("rpc_proxy", false, "Enable http proxy for RPC server.")
-	rootCmd.Flags().String("rpc_proxy_port", "8080", "Port for the http proxy.")
-	rootCmd.Flags().String("rpc_port", "24127", "RPC server port.")
-	rootCmd.Flags().String("rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
-	rootCmd.Flags().Bool("rpc_wallet", false, "Enable wallet access through RPC.")
-
-	rootCmd.PersistentFlags().Bool("debug", false, "Displays debug information.")
-	rootCmd.PersistentFlags().Bool("log_file", false, "Display log information to file.")
-	rootCmd.PersistentFlags().Bool("pprof", false, "Run ogen with a profiling server attached.")
+	rootCmd.PersistentFlags().BoolVar(&Debug, "debug", false, "Displays debug information.")
+	rootCmd.PersistentFlags().BoolVar(&LogFile, "logfile", false, "Display log information to file.")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.BindPFlags(rootCmd.Flags())
 	if err != nil {
 		panic(err)
 	}
 }
 
 func initConfig() {
-	if GlobalDataFolder != "" {
+	if DataPath != "" {
 		// Use config file from the flag.
-		viper.AddConfigPath(GlobalDataFolder)
+		viper.AddConfigPath(DataPath)
 		viper.SetConfigName("config")
+		if _, err := os.Stat(DataPath); os.IsNotExist(err) {
+			err = os.MkdirAll(DataPath, 0744)
+			if err != nil {
+				panic(err)
+			}
+		}
 	} else {
 		configDir, err := os.UserConfigDir()
 		if err != nil {
@@ -192,7 +82,7 @@ func initConfig() {
 			}
 		}
 
-		GlobalDataFolder = ogenDir
+		DataPath = ogenDir
 
 		// Search config in home directory with name ".cobra" (without extension).
 		viper.AddConfigPath(ogenDir)
@@ -209,54 +99,112 @@ func initConfig() {
 	if err != nil {
 		panic(err)
 	}
-}
 
-func randomAuthToken() string {
-	rand.Seed(time.Now().UnixNano())
-	digits := "0123456789"
-	specials := "~=+%^*/()[]{}/!@#$?|"
-	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-		"abcdefghijklmnopqrstuvwxyz" +
-		digits + specials
-	length := 8
-	buf := make([]byte, length)
-	buf[0] = digits[rand.Intn(len(digits))]
-	buf[1] = specials[rand.Intn(len(specials))]
-	for i := 2; i < length; i++ {
-		buf[i] = all[rand.Intn(len(all))]
+	config.GlobalFlags = &config.Flags{
+		DataPath:     DataPath,
+		NetworkName:  NetName,
+		Port:         Port,
+		RPCProxy:     RPCProxy,
+		RPCProxyPort: RPCProxyPort,
+		RPCProxyAddr: RPCPRoxyAddr,
+		RPCPort:      RPCPort,
+		RPCWallet:    RPCWallet,
+		Debug:        Debug,
+		LogFile:      LogFile,
 	}
-	rand.Shuffle(len(buf), func(i, j int) {
-		buf[i], buf[j] = buf[j], buf[i]
-	})
-	return string(buf)
+
+	var log logger.Logger
+
+	if config.GlobalFlags.LogFile {
+		logFile, err := os.OpenFile(path.Join(DataPath, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
+		if err != nil {
+			panic(err)
+		}
+		log = logger.New(logFile)
+	} else {
+		log = logger.New(os.Stdin)
+	}
+
+	if config.GlobalFlags.Debug {
+		log = log.WithDebug()
+	}
+	var netParams *params.ChainParams
+	switch config.GlobalFlags.NetworkName {
+	case "mainnet":
+		netParams = &params.Mainnet
+	default:
+		netParams = &params.TestNet
+	}
+
+	initparams, err := initialization.LoadParams(config.GlobalFlags.NetworkName)
+	if err != nil {
+		log.Error("no params specified for that network")
+		panic(err)
+	}
+
+	initialValidators := make([]initialization.ValidatorInitialization, len(initparams.Validators))
+	for i := range initialValidators {
+		v := initialization.ValidatorInitialization{
+			PubKey:       initparams.Validators[i].PublicKey,
+			PayeeAddress: initparams.PremineAddress,
+		}
+		initialValidators[i] = v
+	}
+
+	var genesisTime time.Time
+	if initparams.GenesisTime == 0 {
+		genesisTime = time.Now()
+	} else {
+		genesisTime = time.Unix(initparams.GenesisTime, 0)
+	}
+
+	ip := &initialization.InitializationParameters{
+		GenesisTime:       genesisTime,
+		InitialValidators: initialValidators,
+		PremineAddress:    initparams.PremineAddress,
+	}
+
+	config.GlobalParams = &config.Params{
+		Logger:     log,
+		NetParams:  netParams,
+		InitParams: ip,
+	}
 }
 
-var shutdownRequestChannel = make(chan struct{})
+var rootCmd = &cobra.Command{
+	Use:   "ogen",
+	Short: "Ogen is a Go Olympus implementation",
+	Long:  "A Golang implementation of the Olympus protocol. Next generation blockchain secured by CASPER.",
+	Run: func(cmd *cobra.Command, args []string) {
+		log := config.GlobalParams.Logger
 
-var interruptSignals = []os.Signal{os.Interrupt}
+		log.Infof("Starting Ogen v%v", params.Version)
+		log.Trace("Loading log on debug mode")
 
-func InterruptListener(log logger.Logger, cancel context.CancelFunc) {
-	go func() {
-		interruptChannel := make(chan os.Signal, 1)
-		signal.Notify(interruptChannel, interruptSignals...)
-		select {
-		case sig := <-interruptChannel:
-			log.Warnf("Received signal (%s).  Shutting down...",
-				sig)
-		case <-shutdownRequestChannel:
-			log.Warn("Shutdown requested.  Shutting down...")
+		config.InterruptListener()
+
+		db, err := blockdb.NewBadgerDB()
+		if err != nil {
+			log.Fatal(err)
 		}
-		cancel()
-		for {
-			select {
-			case sig := <-interruptChannel:
-				log.Warnf("Received signal (%s).  Already "+
-					"shutting down...", sig)
 
-			case <-shutdownRequestChannel:
-				log.Warn("Shutdown requested.  Already " +
-					"shutting down...")
-			}
+		s, err := server.NewServer(db)
+		if err != nil {
+			log.Fatal(err)
 		}
-	}()
+
+		go s.Start()
+
+		<-config.GlobalParams.Context.Done()
+
+		db.Close()
+		err = s.Stop()
+		if err != nil {
+			log.Fatal(err)
+		}
+	},
+}
+
+func Execute() error {
+	return rootCmd.Execute()
 }

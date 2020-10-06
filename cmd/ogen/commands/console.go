@@ -175,9 +175,9 @@ func (c *CLI) Run(optArgs []string) {
 		case "submitrawdata":
 			out, err = c.rpcClient.SubmitRawData(args[1:])
 		case "genkeypair":
-			out, err = c.rpcClient.GenKeyPair(false)
+			out, err = c.rpcClient.GenKeyPair(args[1:],false)
 		case "genrawkeypair":
-			out, err = c.rpcClient.GenKeyPair(true)
+			out, err = c.rpcClient.GenKeyPair(args[1:],true)
 		case "genvalidatorkey":
 			out, err = c.rpcClient.GenValidatorKey(args[1:])
 		case "decoderawtransaction":
@@ -234,7 +234,7 @@ func newCli(rpcClient *rpcclient.Client) *CLI {
 }
 
 func StartConsole(host string, args []string) {
-	rpcClient := rpcclient.NewRPCClient(host, GlobalDataFolder, false)
+	rpcClient := rpcclient.NewRPCClient(host, DataPath, false)
 	cli := newCli(rpcClient)
 	cli.Run(args)
 }

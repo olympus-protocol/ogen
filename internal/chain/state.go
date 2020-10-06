@@ -3,6 +3,7 @@ package chain
 import (
 	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"sync"
 
@@ -37,7 +38,7 @@ func newStateDerivedFromBlock(stateAfterProcessingBlock state.State) *stateDeriv
 	}
 }
 
-func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView, p *params.ChainParams, log logger.Logger) (state.State, []*primitives.EpochReceipt, error) {
+func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -60,7 +61,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView, p
 
 	view.SetTipSlot(s.lastSlot)
 
-	receipts, err := s.lastSlotState.ProcessSlots(slot, view, p, log)
+	receipts, err := s.lastSlotState.ProcessSlots(slot, view)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -87,8 +88,8 @@ type StateService interface {
 	SetJustifiedHead(justifiedHash chainhash.Hash, justifiedState state.State) error
 	GetJustifiedHead() (*chainindex.BlockRow, state.State)
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
-	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error)
-	Add(block *primitives.Block, isCheck bool) (state.State, []*primitives.EpochReceipt, error)
+	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error)
+	Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error)
 	RemoveBeforeSlot(slot uint64)
 	GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool)
 	Height() uint64
@@ -101,36 +102,31 @@ type StateService interface {
 // stateService keeps track of the blockchain and its state. This is where pruning should eventually be implemented to
 // get rid of old states.
 type stateService struct {
-	log    logger.Logger
-	lock   sync.RWMutex
-	params *params.ChainParams
-	db     blockdb.Database
+	log       logger.Logger
+	netParams *params.ChainParams
+	db        blockdb.Database
 
-	blockIndex *chainindex.BlockIndex
-	blockChain *Chain
-	stateMap   map[chainhash.Hash]*stateDerivedFromBlock
+	index *chainindex.BlockIndex
+	chain *Chain
+
+	stateMap     map[chainhash.Hash]*stateDerivedFromBlock
+	stateMapLock sync.Mutex
 
 	headLock      sync.Mutex
 	finalizedHead blockNodeAndState
 	justifiedHead blockNodeAndState
 
 	latestVotes     map[uint64]*primitives.MultiValidatorVote
-	latestVotesLock sync.RWMutex
+	latestVotesLock sync.Mutex
 }
 
 var _ StateService = &stateService{}
 
-func (s *stateService) Blockchain() *Chain {
-	return s.blockChain
-}
-
 // GetLatestVote gets the latest vote for this validator.
 func (s *stateService) GetLatestVote(val uint64) (*primitives.MultiValidatorVote, bool) {
-	s.latestVotesLock.RLock()
-	s.latestVotesLock.RUnlock()
-
+	s.latestVotesLock.Lock()
+	defer s.latestVotesLock.Unlock()
 	v, ok := s.latestVotes[val]
-
 	return v, ok
 }
 
@@ -149,19 +145,19 @@ func (s *stateService) SetLatestVotesIfNeeded(vals []uint64, vote *primitives.Mu
 
 // Chain gets the blockchain.
 func (s *stateService) Chain() *Chain {
-	return s.blockChain
+	return s.chain
 }
 
 // Index gets the block chainindex.
 func (s *stateService) Index() *chainindex.BlockIndex {
-	return s.blockIndex
+	return s.index
 }
 
 func (s *stateService) SetFinalizedHead(finalizedHash chainhash.Hash, finalizedState state.State) error {
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
-	finalizedNode, found := s.blockIndex.Get(finalizedHash)
+	finalizedNode, found := s.index.Get(finalizedHash)
 	if !found {
 		return fmt.Errorf("could not find block with hash %s", finalizedHash)
 	}
@@ -190,7 +186,7 @@ func (s *stateService) SetJustifiedHead(justifiedHash chainhash.Hash, justifiedS
 	s.headLock.Lock()
 	defer s.headLock.Unlock()
 
-	justifiedNode, found := s.blockIndex.Get(justifiedHash)
+	justifiedNode, found := s.index.Get(justifiedHash)
 	if !found {
 		return fmt.Errorf("could not find block with hash %s", justifiedHash)
 	}
@@ -220,8 +216,8 @@ func (s *stateService) initChainState(db blockdb.Database, genesisState state.St
 
 	row, _ := blockIndex.Get(genesisHash)
 
-	s.blockIndex = blockIndex
-	s.blockChain = NewChain(row)
+	s.index = blockIndex
+	s.chain = NewChain(row)
 
 	if _, err := db.GetBlockRow(genesisHash); err != nil {
 		if err := s.initializeDatabase(db, row, genesisState); err != nil {
@@ -237,9 +233,9 @@ func (s *stateService) initChainState(db blockdb.Database, genesisState state.St
 
 // GetStateForHash gets the state for a certain block hash.
 func (s *stateService) GetStateForHash(hash chainhash.Hash) (state.State, bool) {
-	s.lock.RLock()
+	s.stateMapLock.Lock()
 	derivedState, found := s.stateMap[hash]
-	s.lock.RUnlock()
+	s.stateMapLock.Unlock()
 	if !found {
 		return nil, false
 	}
@@ -251,10 +247,10 @@ func (s *stateService) GetStateForHash(hash chainhash.Hash) (state.State, bool) 
 var ErrTooFarInFuture = fmt.Errorf("tried to get block too far in future")
 
 // GetStateForHashAtSlot gets the state for a certain block hash at a certain slot.
-func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView, p *params.ChainParams) (state.State, []*primitives.EpochReceipt, error) {
-	s.lock.RLock()
+func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error) {
+	s.stateMapLock.Lock()
 	derivedState, found := s.stateMap[hash]
-	s.lock.RUnlock()
+	s.stateMapLock.Unlock()
 	if !found {
 		return nil, nil, fmt.Errorf("could not find state for block %s", hash)
 	}
@@ -263,7 +259,7 @@ func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 		return nil, nil, ErrTooFarInFuture
 	}
 
-	return derivedState.deriveState(slot, view, p, s.log)
+	return derivedState.deriveState(slot, view)
 }
 
 // Add adds a block to the blockchain.
@@ -275,7 +271,7 @@ func (s *stateService) Add(block *primitives.Block, isCheck bool) (state.State, 
 		return nil, nil, err
 	}
 
-	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view, s.params)
+	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -297,41 +293,37 @@ func (s *stateService) Add(block *primitives.Block, isCheck bool) (state.State, 
 
 // RemoveBeforeSlot removes state before a certain slot.
 func (s *stateService) RemoveBeforeSlot(slot uint64) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	numRemoved := 0
-	for i := range s.stateMap {
-		row, found := s.blockIndex.Get(i)
-		if !found {
-			s.log.Debugf("deleting block state for %s", i)
+	s.stateMapLock.Lock()
+	defer s.stateMapLock.Unlock()
+	if slot < 20 {
+		return
+	}
+	slot -= 20
+	statesCleaned := 0
+	for i, st := range s.stateMap {
+		if st.firstSlot < slot {
+			s.log.Debugf("deleting state for %s", i)
 			delete(s.stateMap, i)
-			numRemoved++
-			continue
-		}
-
-		if row.Slot < slot {
-			s.log.Debugf("deleting block state for %s", i)
-			delete(s.stateMap, i)
-			numRemoved++
+			statesCleaned++
 			continue
 		}
 	}
+	s.log.Debugf("removed %d states on map observing %d states", statesCleaned, len(s.stateMap))
 }
 
 // GetRowByHash gets a specific row by hash.
 func (s *stateService) GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool) {
-	return s.blockIndex.Get(h)
+	return s.index.Get(h)
 }
 
 // Height gets the height of the blockchain.
 func (s *stateService) Height() uint64 {
-	return s.blockChain.Height()
+	return s.chain.Height()
 }
 
 // TipState gets the state of the tip of the blockchain.
 func (s *stateService) TipState() state.State {
-	return s.stateMap[s.blockChain.Tip().Hash].firstSlotState
+	return s.stateMap[s.chain.Tip().Hash].firstSlotState
 }
 
 // TipStateAtSlot gets the tip state updated to a certain slot.
@@ -341,7 +333,7 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 	if err != nil {
 		return nil, err
 	}
-	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view, s.params)
+	st, _, err := s.GetStateForHashAtSlot(tipHash, slot, &view)
 	if err != nil {
 		return nil, err
 	}
@@ -350,18 +342,22 @@ func (s *stateService) TipStateAtSlot(slot uint64) (state.State, error) {
 }
 
 // NewStateService constructs a new state service.
-func NewStateService(log logger.Logger, ip state.InitializationParameters, params *params.ChainParams, db blockdb.Database) (StateService, error) {
+func NewStateService(db blockdb.Database) (StateService, error) {
+	ip := config.GlobalParams.InitParams
+	netParams := config.GlobalParams.NetParams
+	log := config.GlobalParams.Logger
+
 	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Hash()
 
-	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, &ip, params)
+	genesisState, err := state.GetGenesisStateWithInitializationParameters(genesisHash, ip, netParams)
 	if err != nil {
 		return nil, err
 	}
 
 	ss := &stateService{
-		params: params,
-		log:    log,
+		netParams: netParams,
+		log:       log,
 		stateMap: map[chainhash.Hash]*stateDerivedFromBlock{
 			genesisHash: newStateDerivedFromBlock(genesisState),
 		},
@@ -378,7 +374,7 @@ func NewStateService(log logger.Logger, ip state.InitializationParameters, param
 
 // GetSubView gets a view of the blockchain at a certain tip.
 func (s *stateService) GetSubView(tip chainhash.Hash) (View, error) {
-	tipNode, found := s.blockIndex.Get(tip)
+	tipNode, found := s.index.Get(tip)
 	if !found {
 		return View{}, errors.New("could not find tip node")
 	}
@@ -387,5 +383,5 @@ func (s *stateService) GetSubView(tip chainhash.Hash) (View, error) {
 
 // Tip gets the tip of the blockchain.
 func (s *stateService) Tip() *chainindex.BlockRow {
-	return s.blockChain.Tip()
+	return s.chain.Tip()
 }

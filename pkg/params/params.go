@@ -17,7 +17,7 @@ var (
 	VersionNumber = (mayor * 100000) + (minor * 1000) + (patch * 10)
 	Version       = fmt.Sprintf("%d.%d.%d", mayor, minor, patch)
 
-	SyncProtocolID = protocol.ID("/ogen/sync/" + Version)
+	ProtocolID = protocol.ID("/ogen/" + Version)
 )
 
 // AccountPrefixes are prefixes used for account bech32 encoding.
@@ -174,8 +174,8 @@ var TestNet = ChainParams{
 		0: "do_not_go_gentle_into_that_good_night",
 	},
 	Relayers: map[string]string{
-		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooWDbvbYMzEvRi5CECVHawadaaZLich93GRhaCRRxQHFVcN",
-		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWBdwHS4aLQmfzhddfsT3aV9YA8Cy47VWx8ckoYkC8Vwb4",
+		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooW9vP2a7eKqGbKDWoAnhB9jc2ceBwHYRLXPmSu2TFXxjWt",
+		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWSrL9n292KSqww7MAzw9stNRrjuc25xeMFtXHBDnRAHAn",
 	},
 }
 

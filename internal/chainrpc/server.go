@@ -3,7 +3,8 @@ package chainrpc
 import (
 	"context"
 	"crypto/tls"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/keystore"
 	"net"
 	"net/http"
 	"path"
@@ -11,8 +12,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/internal/proposer"
-	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/wallet"
@@ -24,14 +23,13 @@ import (
 
 // Config config for the RPCServer
 type Config struct {
-	DataDir      string
-	Network      string
-	RPCWallet    bool
-	RPCProxy     bool
-	RPCProxyPort string
-	RPCProxyAddr string
-	RPCPort      string
-	Log          logger.Logger
+	datapath     string
+	network      string
+	rpcwallet    bool
+	rpcproxy     bool
+	rpcproxyport string
+	rpcproxyaddr string
+	rpcport      string
 }
 
 //RPCServer is an interface for rpcServer
@@ -45,7 +43,7 @@ var _ RPCServer = &rpcServer{}
 // rpcServer struct model for the gRPC server
 type rpcServer struct {
 	log              logger.Logger
-	config           Config
+	config           *Config
 	http             *runtime.ServeMux
 	rpc              *grpc.Server
 	chainServer      *chainServer
@@ -60,13 +58,13 @@ func (s *rpcServer) registerServices() {
 	proto.RegisterValidatorsServer(s.rpc, s.validatorsServer)
 	proto.RegisterUtilsServer(s.rpc, s.utilsServer)
 	proto.RegisterNetworkServer(s.rpc, s.networkServer)
-	if s.config.RPCWallet {
+	if s.config.rpcwallet {
 		proto.RegisterWalletServer(s.rpc, s.walletServer)
 	}
 }
 
 func (s *rpcServer) registerServicesProxy(ctx context.Context) {
-	certPool, err := LoadCerts(s.config.DataDir)
+	certPool, err := LoadCerts()
 	if err != nil {
 		s.log.Fatal(err)
 	}
@@ -91,7 +89,7 @@ func (s *rpcServer) registerServicesProxy(ctx context.Context) {
 	if err != nil {
 		s.log.Fatal(err)
 	}
-	if s.config.RPCWallet {
+	if s.config.rpcwallet {
 		err = proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 		if err != nil {
 			s.log.Fatal(err)
@@ -108,16 +106,21 @@ func (s *rpcServer) Stop() {
 // Start starts gRPC listener
 func (s *rpcServer) Start() error {
 	s.registerServices()
+
 	s.log.Info("Starting gRPC Server")
-	if s.config.RPCProxy {
+
+	if s.config.rpcproxy {
+
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
+
 		s.registerServicesProxy(ctx)
+
 		go func() {
 			var addr string
-			if s.config.RPCProxyAddr != "" {
-				addr = s.config.RPCProxyAddr
+			if s.config.rpcproxyaddr != "" {
+				addr = s.config.rpcproxyaddr
 			} else {
 				addr = "localhost"
 			}
@@ -126,13 +129,14 @@ func (s *rpcServer) Start() error {
 				AllowedMethods: []string{http.MethodGet, http.MethodPost},
 			})
 			handler := c.Handler(s.http)
-			err := http.ListenAndServeTLS(addr+":"+s.config.RPCProxyPort, path.Join(s.config.DataDir, "cert", "cert.pem"), path.Join(s.config.DataDir, "cert", "cert_key.pem"), handler)
+			err := http.ListenAndServeTLS(addr+":"+s.config.rpcproxyport, path.Join(config.GlobalFlags.DataPath, "cert", "cert.pem"), path.Join(config.GlobalFlags.DataPath, "cert", "cert_key.pem"), handler)
 			if err != nil {
 				s.log.Fatal(err)
 			}
+
 		}()
 	}
-	lis, err := net.Listen("tcp", "127.0.0.1:"+s.config.RPCPort)
+	lis, err := net.Listen("tcp", "127.0.0.1:"+s.config.rpcport)
 	if err != nil {
 		return err
 	}
@@ -144,56 +148,50 @@ func (s *rpcServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(config Config, chain chain.Blockchain, hostnode hostnode.HostNode, wallet wallet.Wallet, params *params.ChainParams, p proposer.Proposer) (RPCServer, error) {
-	txTopic, err := hostnode.Topic(p2p.MsgTxCmd)
-	if err != nil {
-		return nil, err
-	}
+func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wallet.Wallet, ks keystore.Keystore) (RPCServer, error) {
+	datapath := config.GlobalFlags.DataPath
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
 
-	depositTopic, err := hostnode.Topic(p2p.MsgDepositCmd)
+	_, err := LoadCerts()
 	if err != nil {
 		return nil, err
 	}
-
-	exitTopic, err := hostnode.Topic(p2p.MsgExitCmd)
+	creds, err := credentials.NewServerTLSFromFile(path.Join(datapath, "cert", "cert.pem"), path.Join(datapath, "cert", "cert_key.pem"))
 	if err != nil {
 		return nil, err
 	}
-	_, err = LoadCerts(config.DataDir)
-	if err != nil {
-		return nil, err
-	}
-	creds, err := credentials.NewServerTLSFromFile(path.Join(config.DataDir, "cert", "cert.pem"), path.Join(config.DataDir, "cert", "cert_key.pem"))
-	if err != nil {
-		return nil, err
-	}
-
 	return &rpcServer{
-		rpc:    grpc.NewServer(grpc.Creds(creds)),
-		http:   runtime.NewServeMux(),
-		config: config,
-		log:    config.Log,
+		rpc:  grpc.NewServer(grpc.Creds(creds)),
+		http: runtime.NewServeMux(),
+		config: &Config{
+			datapath:     config.GlobalFlags.DataPath,
+			network:      config.GlobalFlags.NetworkName,
+			rpcwallet:    config.GlobalFlags.RPCWallet,
+			rpcproxy:     config.GlobalFlags.RPCProxy,
+			rpcproxyport: config.GlobalFlags.RPCProxyPort,
+			rpcproxyaddr: config.GlobalFlags.RPCProxyAddr,
+			rpcport:      config.GlobalFlags.RPCPort,
+		},
+		log: log,
 		chainServer: &chainServer{
 			chain: chain,
 		},
 		validatorsServer: &validatorsServer{
-			params: params,
-			chain:  chain,
+			netParams: netParams,
+			chain:     chain,
 		},
 		networkServer: &networkServer{
-			hostnode: hostnode,
+			host: hostnode,
 		},
 		utilsServer: &utilsServer{
-			txTopic:      txTopic,
-			depositTopic: depositTopic,
-			exitTopic:    exitTopic,
-			proposer:     p,
-			hostnode:     hostnode,
+			keystore: ks,
+			host:     hostnode,
 		},
 		walletServer: &walletServer{
-			wallet: wallet,
-			chain:  chain,
-			params: params,
+			wallet:    wallet,
+			chain:     chain,
+			netParams: netParams,
 		},
 	}, nil
 }

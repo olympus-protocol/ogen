@@ -17,7 +17,7 @@ type BlockRow struct {
 	Parent    *BlockRow
 
 	children     []*BlockRow
-	childrenLock sync.RWMutex
+	childrenLock sync.Mutex
 }
 
 // AddChild adds a child to the block row.
@@ -37,8 +37,8 @@ func (br *BlockRow) AddChild(child *BlockRow) {
 // Children gets the children of the block row.
 func (br *BlockRow) Children() []*BlockRow {
 	childrenCopy := make([]*BlockRow, len(br.children))
-	br.childrenLock.RLock()
-	defer br.childrenLock.RUnlock()
+	br.childrenLock.Lock()
+	defer br.childrenLock.Unlock()
 	copy(childrenCopy, br.children)
 	return childrenCopy
 }
@@ -73,9 +73,9 @@ func (br *BlockRow) GetAncestorAtHeight(height uint64) *BlockRow {
 	return current
 }
 
-// BlockIndex is an chain index from hash to BlockRow.
+// BlockIndex is an chainindex from hash to BlockRow.
 type BlockIndex struct {
-	lock  sync.RWMutex
+	lock  sync.Mutex
 	index map[chainhash.Hash]*BlockRow
 }
 
@@ -114,8 +114,8 @@ func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
 
 // Get gets a block from the block chainindex.
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
-	i.lock.RLock()
-	defer i.lock.RUnlock()
+	i.lock.Lock()
+	defer i.lock.Unlock()
 
 	row, found := i.get(hash)
 	return row, found
@@ -123,19 +123,14 @@ func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 
 // Have checks if the block chainindex contains a certain hash.
 func (i *BlockIndex) Have(hash chainhash.Hash) bool {
-	i.lock.RLock()
+	i.lock.Lock()
 	_, ok := i.index[hash]
-	i.lock.RUnlock()
+	i.lock.Unlock()
 	return ok
 }
 
-func (i *BlockIndex) add(row *BlockRow) error {
-	i.index[row.Hash] = row
-	return nil
-}
-
-// Add adds a row to the block chain index.
-func (i *BlockIndex) Add(block primitives.Block, isCheck bool) (*BlockRow, error) {
+// Add adds a row to the block chainindex.
+func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[block.Header.PrevBlockHash]
@@ -152,17 +147,11 @@ func (i *BlockIndex) Add(block primitives.Block, isCheck bool) (*BlockRow, error
 		children:  make([]*BlockRow, 0),
 	}
 
-	if isCheck {
-		return prev, nil
-	}
-
 	prev.AddChild(row)
+
 	i.index[block.Header.PrevBlockHash] = prev
 
-	err := i.add(row)
-	if err != nil {
-		return nil, err
-	}
+	i.index[row.Hash] = row
 
 	return row, nil
 }

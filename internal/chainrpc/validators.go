@@ -14,9 +14,9 @@ import (
 )
 
 type validatorsServer struct {
-	keystore *keystore.Keystore
-	params   *params.ChainParams
-	chain    chain.Blockchain
+	keystore  *keystore.Keystore
+	netParams *params.ChainParams
+	chain     chain.Blockchain
 	proto.UnimplementedValidatorsServer
 }
 
@@ -27,7 +27,7 @@ func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*pr
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey[:]),
 			Status:           v.StatusString(),
-			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.netParams.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
 		}
@@ -57,7 +57,7 @@ func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.
 		newValidator := &proto.ValidatorRegistry{
 			PublicKey:        hex.EncodeToString(v.PubKey[:]),
 			Status:           v.StatusString(),
-			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.params.UnitsPerCoin))).StringFixed(3),
+			Balance:          decimal.NewFromInt(int64(v.Balance)).Div(decimal.NewFromInt(int64(s.netParams.UnitsPerCoin))).StringFixed(3),
 			FirstActiveEpoch: v.FirstActiveEpoch,
 			LastActiveEpoch:  v.LastActiveEpoch,
 		}
