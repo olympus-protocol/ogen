@@ -12,10 +12,10 @@ import (
 )
 
 type Dashboard struct {
-	ctx    context.Context
-	r *gin.Engine
-	host   hostnode.HostNode
-	chain  chain.Blockchain
+	ctx   context.Context
+	r     *gin.Engine
+	host  hostnode.HostNode
+	chain chain.Blockchain
 }
 
 func (d *Dashboard) Start() error {
@@ -58,13 +58,15 @@ func (d *Dashboard) loadTemplate() error {
 }
 
 func NewDashboard(h hostnode.HostNode, ch chain.Blockchain) (*Dashboard, error) {
-	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(gin.Recovery())
 
 	d := &Dashboard{
-		ctx:    config.GlobalParams.Context,
-		r: r,
-		host:   h,
-		chain:  ch,
+		ctx:   config.GlobalParams.Context,
+		r:     r,
+		host:  h,
+		chain: ch,
 	}
 	err := d.loadTemplate()
 	if err != nil {
