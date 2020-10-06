@@ -463,14 +463,14 @@ func (s *state) GetVoteCommittee(slot uint64) ([]uint64, error) {
 
 	if (slot-1)/netParams.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
-		slotIndex := uint64(slot % netParams.EpochLength)
+		slotIndex := slot % netParams.EpochLength
 		min := (slotIndex * uint64(len(assignments))) / netParams.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / netParams.EpochLength
 		return assignments[min:max], nil
 
 	} else if (slot-1)/netParams.EpochLength == s.EpochIndex-1 {
 		assignments := s.PreviousEpochVoteAssignments
-		slotIndex := uint64(slot % netParams.EpochLength)
+		slotIndex := slot % netParams.EpochLength
 		min := (slotIndex * uint64(len(assignments))) / netParams.EpochLength
 		max := ((slotIndex + 1) * uint64(len(assignments))) / netParams.EpochLength
 		return assignments[min:max], nil
