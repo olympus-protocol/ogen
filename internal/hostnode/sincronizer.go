@@ -58,7 +58,6 @@ type synchronizer struct {
 	withPeer peer.ID
 
 	lastFinalizedEpoch uint64
-	unknownBlocksCount uint64
 }
 
 // NewSyncronizerl constructs a new sync protocol with a given host and chain.
@@ -71,7 +70,6 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 		chain:              chain,
 		sync:               true,
 		peersTrack:         make(map[peer.ID]*peerInfo),
-		unknownBlocksCount: 0,
 	}
 
 	if err := host.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersionMsg); err != nil {
@@ -211,7 +209,7 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 					return nil
 				}
 				fin, _ := sp.chain.State().GetFinalizedHead()
-				if p.FinalizedHeight >= fin.Height {
+				if p.FinalizedHeight > fin.Height {
 					sp.askForBlocks(id)
 				}
 				return nil

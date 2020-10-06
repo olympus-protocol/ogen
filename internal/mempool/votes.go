@@ -125,20 +125,24 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 
 		var votingValidators = make(map[uint64]struct{})
 		var common []uint64
+
 		vote1Comitte, err := currentState.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
 		}
+
 		vote2Comitte, err := currentState.GetVoteCommittee(vote.Data.Slot)
 		if err != nil {
 			m.log.Error(err)
 		}
+
 		for i, idx := range vote1Comitte {
 			if !v.ParticipationBitfield.Get(uint(i)) {
 				continue
 			}
 			votingValidators[idx] = struct{}{}
 		}
+
 		for i, idx := range vote2Comitte {
 			if !vote.ParticipationBitfield.Get(uint(i)) {
 				continue
@@ -179,8 +183,9 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	// 				That should be checked against all votes on pool comparing bitlists.
 	v, ok := m.pool[voteHash]
 	if ok {
-		m.log.Debugf("received vote with same vote data aggregating %d votes", len(vote.ParticipationBitfield.BitIndices()))
+		m.log.Debugf("received vote with same vote data aggregating %d votes...", len(vote.ParticipationBitfield.BitIndices()))
 		if !bytes.Equal(v.Sig[:], vote.Sig[:]) {
+
 			// Check if votes overlaps voters
 
 			votesComitte, err := currentState.GetVoteCommittee(v.Data.Slot)
@@ -204,6 +209,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 						Vote2: v,
 					})
 				}
+				return
 			}
 
 			newBitfield, err := v.ParticipationBitfield.Merge(vote.ParticipationBitfield)
@@ -215,6 +221,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			if err != nil {
 				m.log.Error(err)
 			}
+
 			sig2, err := bls.SignatureFromBytes(vote.Sig[:])
 			if err != nil {
 				m.log.Error(err)
@@ -230,6 +237,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 				ParticipationBitfield: newBitfield,
 				Sig:                   voteSig,
 			}
+
 			m.pool[voteHash] = newVote
 		}
 	} else {
