@@ -37,7 +37,6 @@ RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6 /usr/lib/libtapi.so
 RUN ln -s /usr/x86_64-apple-darwin/osxcross/lib/libtapi.so.6.0.1 /usr/lib/libtapi.so.6.0.1
 
 COPY .. /build/ogen
-FROM eabz:ogen-builder as builder
 
 RUN cd ogen && go mod download
 
@@ -46,3 +45,8 @@ WORKDIR /build
 
 RUN cd ogen && go get -u github.com/gobuffalo/packr/packr
 RUN cd ogen && ./scripts/build-cross.sh
+
+RUN mkdir /release && mv ogen/*.tar.gz /release && mv ogen/*.zip /release
+
+FROM scratch as export
+COPY --from=build /release/* .
