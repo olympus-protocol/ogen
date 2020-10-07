@@ -1,5 +1,6 @@
 FROM eabz/ogen-builder:latest as builder
 
+COPY .. /build/ogen
 RUN cd ogen && go mod download
 
 WORKDIR /build
