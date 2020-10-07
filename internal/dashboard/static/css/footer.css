@@ -1,0 +1,17 @@
+.footer{
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    padding: 10px;
+    background-color: #364999;
+}
+.footer-img{
+   height: 50px;
+}
+
+@media only screen and (max-width: 500px){
+    .footer-img{
+        height: 35px;
+    }
+}

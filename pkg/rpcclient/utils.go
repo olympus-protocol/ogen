@@ -53,7 +53,6 @@ func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 		bls.Initialize(netParams)
 	}
 
-
 	var res *bls.KeyPair
 	if raw {
 		res = &bls.KeyPair{

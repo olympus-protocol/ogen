@@ -22,11 +22,13 @@ var (
 	Debug    bool
 	LogFile  bool
 
-	RPCPort      string
-	RPCWallet    bool
-	RPCProxy     bool
-	RPCProxyPort string
-	RPCPRoxyAddr string
+	RPCPort       string
+	RPCWallet     bool
+	RPCProxy      bool
+	RPCProxyPort  string
+	RPCPRoxyAddr  string
+	Dashboard     bool
+	DashboardPort string
 )
 
 func init() {
@@ -41,6 +43,9 @@ func init() {
 	rootCmd.Flags().StringVar(&RPCPort, "rpc_port", "24127", "RPC server port.")
 	rootCmd.Flags().StringVar(&RPCPRoxyAddr, "rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
 	rootCmd.Flags().BoolVar(&RPCWallet, "rpc_wallet", false, "Enable wallet access through RPC.")
+
+	rootCmd.Flags().StringVar(&DashboardPort, "dashboard_port", "8080", "Port to expose node dashboard.")
+	rootCmd.Flags().BoolVar(&Dashboard, "dashboard", false, "Expose node dashboard.")
 
 	rootCmd.PersistentFlags().BoolVar(&Debug, "debug", false, "Displays debug information.")
 	rootCmd.PersistentFlags().BoolVar(&LogFile, "logfile", false, "Display log information to file.")
@@ -101,16 +106,18 @@ func initConfig() {
 	}
 
 	config.GlobalFlags = &config.Flags{
-		DataPath:     DataPath,
-		NetworkName:  NetName,
-		Port:         Port,
-		RPCProxy:     RPCProxy,
-		RPCProxyPort: RPCProxyPort,
-		RPCProxyAddr: RPCPRoxyAddr,
-		RPCPort:      RPCPort,
-		RPCWallet:    RPCWallet,
-		Debug:        Debug,
-		LogFile:      LogFile,
+		DataPath:      DataPath,
+		NetworkName:   NetName,
+		Port:          Port,
+		RPCProxy:      RPCProxy,
+		RPCProxyPort:  RPCProxyPort,
+		RPCProxyAddr:  RPCPRoxyAddr,
+		RPCPort:       RPCPort,
+		RPCWallet:     RPCWallet,
+		Debug:         Debug,
+		LogFile:       LogFile,
+		DashboardPort: DashboardPort,
+		Dashboard:     Dashboard,
 	}
 
 	var log logger.Logger
