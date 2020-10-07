@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gobuffalo/packr"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"io/ioutil"
-	"os"
 	"path"
 	"strconv"
 	"strings"
+)
+
+var (
+	ErrorPrevBlockHash = errors.New("block previous hash doesn't match")
 )
 
 // Database represents an DB connection
@@ -37,16 +40,14 @@ func (d *Database) Ping() error {
 }
 
 func (d *Database) InitializeTables() error {
+	box := packr.NewBox( "./")
 
-	// extract queries
-	jsonFile, err := os.Open("cmd/ogen/indexer/queries.json")
+	queries, err := box.Find("queries.json")
 	if err != nil {
 		return err
 	}
 
-	defer jsonFile.Close()
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	err = json.Unmarshal(byteValue, &d.queries)
+	err = json.Unmarshal(queries, &d.queries)
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,6 @@ func (d *Database) insert(tableName string, queryVars []interface{}) error {
 
 }
 
-// funcion to run a query that is expected to return one row and returns the first column
 func (d *Database) querySingleRow(query string) (string, error) {
 	var res string
 	err := d.db.QueryRow(query).Scan(&res)
@@ -139,17 +139,18 @@ func (d *Database) querySingleRow(query string) (string, error) {
 	return res, nil
 }
 
-//Inserts a block into the db.
+// InsertBlock a block into the db.
 func (d *Database) InsertBlock(block primitives.Block) error {
+
 	nextHeight, prevHash, err := d.getNextHeight()
 	if err != nil {
 		d.log.Error(err)
 		return err
 	}
+
 	if nextHeight > 0 && hex.EncodeToString(block.Header.PrevBlockHash[:]) != prevHash {
-		err := "block previous hash doesn't match"
-		d.log.Error(err)
-		return errors.New(err)
+		d.log.Error(ErrorPrevBlockHash)
+		return ErrorPrevBlockHash
 	}
 
 	// Insert into blocks table
@@ -159,7 +160,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		hex.EncodeToString(block.RandaoSignature[:]), nextHeight)
 	err = d.insert("blocks", queryVars)
 	if err != nil {
-		return d.handleError(false, "blocks")
+		return err
 	}
 
 	// Block Headers
@@ -174,7 +175,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		hex.EncodeToString(block.Header.FeeAddress[:]), block.Header.Hash().String())
 	err = d.insert("block_headers", queryVars)
 	if err != nil {
-		return d.handleError(false, "block header")
+		return err
 	}
 
 	// MultiValidatorVotes
@@ -185,7 +186,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			int(vote.Data.Nonce), vote.Hash().String())
 		err = d.insert("multi_votes", queryVars)
 		if err != nil {
-			return d.handleError(false, "votes")
+			continue
 		}
 	}
 
@@ -196,7 +197,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			tx.Amount, tx.Nonce, tx.Fee, 0, hex.EncodeToString(tx.Signature[:]))
 		err = d.insert("transactions_0", queryVars)
 		if err != nil {
-			return d.handleError(false, "single tx")
+			continue
 		}
 	}
 	for _, tx := range block.TxsMulti {
@@ -209,7 +210,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			tx.Amount, tx.Nonce, tx.Fee, 1, hex.EncodeToString(multiSig))
 		err = d.insert("transactions_1", queryVars)
 		if err != nil {
-			return d.handleError(false, "multi tx")
+			continue
 		}
 	}
 
@@ -219,13 +220,13 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			hex.EncodeToString(depo.Data.PublicKey[:]), hex.EncodeToString(depo.Data.ProofOfPossession[:]), hex.EncodeToString(depo.Data.WithdrawalAddress[:]))
 		err = d.insert("deposits", queryVars)
 		if err != nil {
-			return d.handleError(false, "deposits")
+			continue
 		}
 		queryVars = nil
 		queryVars = append(queryVars, hex.EncodeToString(depo.Data.PublicKey[:]))
 		err = d.insert("validators", queryVars)
 		if err != nil {
-			return d.handleError(false, "validators")
+			continue
 		}
 	}
 
@@ -236,7 +237,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			hex.EncodeToString(exits.Signature[:]))
 		err = d.insert("exits", queryVars)
 		if err != nil {
-			return d.handleError(false, "exits")
+			continue
 		}
 	}
 
@@ -246,11 +247,11 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		// find votes id
 		v1, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote1.Hash().String())
 		if err != nil {
-			return d.handleError(true, "vote")
+			continue
 		}
 		v2, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote2.Hash().String())
 		if err != nil {
-			return d.handleError(true, "vote")
+			continue
 		}
 		vote1Int, err := strconv.Atoi(v1)
 		if err != nil {
@@ -264,7 +265,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		queryVars = append(queryVars, bHash, vote1Int, vote2Int)
 		err = d.insert("vote_slashings", queryVars)
 		if err != nil {
-			return d.handleError(false, "vote slashings")
+			continue
 		}
 	}
 
@@ -274,7 +275,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		queryVars = append(queryVars, bHash, hex.EncodeToString(rs.RandaoReveal[:]), int(rs.Slot), hex.EncodeToString(rs.ValidatorPubkey[:]))
 		err = d.insert("RANDAO_slashings", queryVars)
 		if err != nil {
-			return d.handleError(false, "RANDAO slashings")
+			continue
 		}
 	}
 
@@ -285,12 +286,12 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 
 		bh1, err := d.querySingleRow("select id from block_headers where header_hash = " + ps.BlockHeader1.Hash().String())
 		if err != nil {
-			return d.handleError(true, "block headers")
+			continue
 		}
 		bh1Int, err := strconv.Atoi(bh1)
 		bh2, err := d.querySingleRow("select id from block_headers where header_hash = " + ps.BlockHeader2.Hash().String())
 		if err != nil {
-			return d.handleError(true, "block headers")
+			continue
 		}
 		bh2Int, err := strconv.Atoi(bh2)
 		queryVars = nil
@@ -298,22 +299,11 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			hex.EncodeToString(ps.Signature2[:]))
 		err = d.insert("proposer_slashings", queryVars)
 		if err != nil {
-			return d.handleError(false, "proposer slashings")
+			continue
 		}
 	}
 
 	return nil
-}
-
-func (d *Database) handleError(query bool, primitive string) error {
-	var err string
-	if query {
-		err = "unable to get data for " + primitive
-	} else {
-		err = "unable to insert " + primitive
-	}
-	d.log.Error(err)
-	return errors.New(err)
 }
 
 func (d *Database) CloseDB() {
@@ -379,7 +369,6 @@ func (d *Database) getNextHeight() (int, string, error) {
 	return id + 1, lasHash, nil
 }
 
-// getheight returns the hash at the specified height
 func (d *Database) getHeight(i int) (string, error) {
 	idS := strconv.Itoa(i)
 	hash, err := d.querySingleRow("select block_hash from blocks where rowid = " + idS + ";")
@@ -443,7 +432,7 @@ func NewDBClient(parameters *Config, path string, log logger.Logger) *Database {
 		queries: map[string]string{},
 	}
 
-	client.log.Info("database connection established")
+	client.log.Info("Database connection established")
 
 	return client
 }
