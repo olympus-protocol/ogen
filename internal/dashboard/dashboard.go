@@ -15,10 +15,10 @@ import (
 )
 
 type Dashboard struct {
-	ctx   context.Context
-	r     *gin.Engine
-	host  hostnode.HostNode
-	chain chain.Blockchain
+	ctx      context.Context
+	r        *gin.Engine
+	host     hostnode.HostNode
+	chain    chain.Blockchain
 	proposer proposer.Proposer
 }
 
@@ -48,7 +48,7 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 			peersBehind += 1
 		}
 		pData := PeerData{
-			ID: p.ID.String(),
+			ID:        p.ID.String(),
 			Finalized: p.FinalizedHeight,
 			Justified: p.JustifiedHeight,
 			Tip:       p.TipHeight,
@@ -74,6 +74,8 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 		}
 	}
 
+	slotEpoch := d.proposer.GetCurrentSlot() % config.GlobalParams.NetParams.EpochLength
+	slotEpoch += 1
 	data := Data{
 		NodeData: NodeData{
 			TipHeight:       tip.Height,
@@ -93,19 +95,23 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 			PeersBehind:    peersBehind,
 			PeersEqual:     peersEqual,
 		},
-		KeystoreData:      KeystoreData{
+		KeystoreData: KeystoreData{
 			Keys:              len(keys),
 			Validators:        activeValidators,
 			KeysParticipating: keysActive,
 		},
-		ProposerData:      ProposerData{
+		ProposerData: ProposerData{
 			Slot:      d.proposer.GetCurrentSlot(),
 			Epoch:     d.proposer.GetCurrentSlot() / config.GlobalParams.NetParams.EpochLength,
-			Voting:    false,
-			Proposing: false,
+			Voting:    d.proposer.Voting(),
+			Proposing: d.proposer.Proposing(),
 		},
-		PeerData:          peersData,
-		ParticipationInfo: ParticipationInfo{},
+		PeerData: peersData,
+		ParticipationInfo: ParticipationInfo{
+			EpochSlot:               slotEpoch,
+			Epoch:                   d.proposer.GetCurrentSlot() / config.GlobalParams.NetParams.EpochLength,
+			ParticipationPercentage: "",
+		},
 	}
 	c.HTML(http.StatusOK, "index.html", data)
 	return
@@ -146,10 +152,10 @@ func NewDashboard(h hostnode.HostNode, ch chain.Blockchain, prop proposer.Propos
 	r.Use(gin.Recovery())
 
 	d := &Dashboard{
-		ctx:   config.GlobalParams.Context,
-		r:     r,
-		host:  h,
-		chain: ch,
+		ctx:      config.GlobalParams.Context,
+		r:        r,
+		host:     h,
+		chain:    ch,
 		proposer: prop,
 	}
 	err := d.loadTemplate()

@@ -32,6 +32,8 @@ type Proposer interface {
 	Start() error
 	Stop()
 	GetCurrentSlot() uint64
+	Voting() bool
+	Proposing() bool
 	Keystore() keystore.Keystore
 }
 
@@ -50,7 +52,7 @@ type proposer struct {
 	proposerLock sync.Mutex
 	voteLock     sync.Mutex
 
-	voting bool
+	voting    bool
 	proposing bool
 
 	voteMempool    mempool.VoteMempool
@@ -78,6 +80,8 @@ func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool
 		actionsMempool:    actionsMempool,
 		host:              hostnode,
 		lastActionManager: manager,
+		voting:            false,
+		proposing:         false,
 	}
 
 	err := prop.keystore.OpenKeystore()
@@ -92,6 +96,14 @@ func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool
 		return nil, err
 	}
 	return prop, nil
+}
+
+func (p *proposer) Voting() bool {
+	return p.voting
+}
+
+func (p *proposer) Proposing() bool {
+	return p.proposing
 }
 
 // NewTip implements the BlockchainNotifee interface.
@@ -141,11 +153,13 @@ func (p *proposer) ProposeBlocks() {
 			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
 			if p.host.Syncing() {
+				p.proposing = false
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
 				p.proposerLock.Unlock()
 				continue
 			}
+			p.proposing = true
 
 			tip := p.chain.State().Tip()
 			tipHash := tip.Hash
@@ -302,6 +316,7 @@ func (p *proposer) VoteForBlocks() {
 	defer func() {
 		p.voting = false
 	}()
+
 	slotToVote := p.getCurrentSlot() + 1
 	if slotToVote <= 0 {
 		slotToVote = 1
@@ -315,12 +330,14 @@ func (p *proposer) VoteForBlocks() {
 			p.voteLock.Lock()
 			// Check if we're an attester for this slot
 			if p.host.Syncing() {
+				p.voting = false
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
 				p.voteLock.Unlock()
 				continue
 			}
 
+			p.voting = true
 			s := p.chain.State()
 
 			voteState, err := s.TipStateAtSlot(slotToVote)

@@ -43,7 +43,7 @@ type ProposerData struct {
 }
 
 type PeerData struct {
-	ID string
+	ID        string
 	Finalized uint64
 	Justified uint64
 	Tip       uint64
