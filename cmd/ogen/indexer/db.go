@@ -40,7 +40,7 @@ func (d *Database) Ping() error {
 }
 
 func (d *Database) InitializeTables() error {
-	box := packr.NewBox( "./")
+	box := packr.NewBox("./")
 
 	queries, err := box.Find("queries.json")
 	if err != nil {

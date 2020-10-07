@@ -101,6 +101,7 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		ctx,
 		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
 		libp2p.Identity(priv),
+		libp2p.NATPortMap(),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
 		libp2p.Peerstore(ps),
 		libp2p.ConnectionManager(connman),
