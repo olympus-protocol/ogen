@@ -186,7 +186,6 @@ func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block
 	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
 	select {
 	case bn.blocks <- toSend:
-
 	default:
 	}
 }

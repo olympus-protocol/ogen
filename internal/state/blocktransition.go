@@ -791,7 +791,7 @@ func (s *state) CheckBlockSignature(b *primitives.Block) error {
 }
 
 // ProcessBlock runs a block transition on the state and mutates state.
-func (s *state) ProcessBlock(b *primitives.Block) error {
+func (s *state) StateProcessBlock(b *primitives.Block) error {
 	netParams := config.GlobalParams.NetParams
 
 	if b.Header.Slot != s.Slot {

@@ -112,7 +112,7 @@ func (i *BlockIndex) get(hash chainhash.Hash) (*BlockRow, bool) {
 	return row, found
 }
 
-// Get gets a block from the block chainindex.
+// Get gets a block from the block index.
 func (i *BlockIndex) Get(hash chainhash.Hash) (*BlockRow, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -130,7 +130,7 @@ func (i *BlockIndex) Have(hash chainhash.Hash) bool {
 }
 
 // Add adds a row to the block chainindex.
-func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
+func (i *BlockIndex) Add(block *primitives.Block, isCheck bool) (*BlockRow, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	prev, found := i.index[block.Header.PrevBlockHash]
@@ -138,6 +138,9 @@ func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
 		return nil, fmt.Errorf("could not add block to chainindex: could not find parent with hash %s", block.Header.PrevBlockHash)
 	}
 
+	if isCheck == true {
+		return prev, nil
+	}
 	row := &BlockRow{
 		StateRoot: block.Header.StateRoot,
 		Height:    prev.Height + 1,

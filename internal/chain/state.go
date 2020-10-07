@@ -49,7 +49,7 @@ func (s *stateDerivedFromBlock) deriveState(slot uint64, view state.BlockView) (
 	if slot < s.lastSlot {
 		derivedState := s.firstSlotState.Copy()
 
-		receipts, err := derivedState.ProcessSlots(slot, view, p, log)
+		receipts, err := derivedState.ProcessSlots(slot, view)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -78,7 +78,6 @@ type blockNodeAndState struct {
 }
 
 type StateService interface {
-	Blockchain() *Chain
 	GetLatestVote(val uint64) (*primitives.MultiValidatorVote, bool)
 	SetLatestVotesIfNeeded(vals []uint64, vote *primitives.MultiValidatorVote)
 	Chain() *Chain
@@ -89,7 +88,7 @@ type StateService interface {
 	GetJustifiedHead() (*chainindex.BlockRow, state.State)
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
 	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error)
-	Add(block *primitives.Block) (state.State, []*primitives.EpochReceipt, error)
+	Add(block *primitives.Block, isCheck bool) (state.State, []*primitives.EpochReceipt, error)
 	RemoveBeforeSlot(slot uint64)
 	GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool)
 	Height() uint64
@@ -278,7 +277,7 @@ func (s *stateService) Add(block *primitives.Block, isCheck bool) (state.State, 
 
 	newState := lastBlockState.Copy()
 
-	err = newState.StateProcessBlock(block, s.params)
+	err = newState.StateProcessBlock(block)
 	if err != nil {
 		return nil, nil, err
 	}

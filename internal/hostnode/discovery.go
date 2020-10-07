@@ -84,7 +84,7 @@ func NewDiscover(host HostNode) (*discover, error) {
 	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
-			dp.log.Infof("unable to connect to peer %s", addr.ID)
+			dp.log.Infof("unable to connect to peer %s %s", addr.ID, err.Error())
 		}
 	}
 
@@ -100,7 +100,7 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	}
 	err := d.Connect(pi)
 	if err != nil {
-		d.log.Infof("unable to connect to peer %s", pi.ID.String())
+		d.log.Infof("unable to connect to peer %s [%s]", pi.ID.String(), err.Error())
 	}
 }
 

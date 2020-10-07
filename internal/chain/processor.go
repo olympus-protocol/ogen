@@ -17,7 +17,7 @@ type blockRowAndValidator struct {
 }
 
 // UpdateChainHead updates the blockchain head if needed
-func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
+func (ch *blockchain) UpdateChainHead(possible chainhash.Hash, isCheck bool) error {
 	_, justifiedState := ch.state.GetJustifiedHead()
 	activeValidatorIndices := justifiedState.GetValidatorIndicesActiveAt(justifiedState.GetEpochIndex())
 	var targets []blockRowAndValidator
@@ -56,15 +56,16 @@ func (ch *blockchain) UpdateChainHead(possible chainhash.Hash) error {
 		children := head.Children()
 		if len(children) == 0 {
 			if head.Hash.IsEqual(&possible) {
-				ch.state.Chain().SetTip(head)
+				if isCheck == false {
+					ch.state.Chain().SetTip(head)
 
-				ch.log.Infof("setting head to %s", head.Hash)
+					ch.log.Infof("setting head to %s", head.Hash)
 
-				err := ch.db.SetTip(head.Hash)
-				if err != nil {
-					return err
+					err := ch.db.SetTip(head.Hash)
+					if err != nil {
+						return err
+					}
 				}
-
 			}
 			return nil
 		}
@@ -305,7 +306,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	Store all data as raw bytes
 	*/
 	err = ch.db.AddRawBlock(block, false)
-	row, _ := ch.state.Index().Add(*block, false)
+	row, _ := ch.state.Index().Add(block, false)
 	// set current block row in database
 	if err := ch.db.SetBlockRow(row.ToBlockNodeDisk()); err != nil {
 		ch.log.Infof("ProcessBlock==SetBlockRow==Failed")

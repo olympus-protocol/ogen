@@ -38,7 +38,7 @@ type State interface {
 	ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error
 	GetProposerPublicKey(b *primitives.Block) (*bls.PublicKey, error)
 	CheckBlockSignature(b *primitives.Block) error
-	ProcessBlock(b *primitives.Block) error
+	StateProcessBlock(b *primitives.Block) error
 	ToSerializable() *primitives.SerializableState
 	FromSerializable(ser *primitives.SerializableState)
 	Marshal() ([]byte, error)

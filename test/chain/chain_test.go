@@ -81,7 +81,7 @@ func createKeystoresAndValidators() {
 				panic(err)
 			}
 			loggers[index] = logger.New(logFile)
-			keystores[index] = keystore.NewKeystore(folder)
+			keystores[index] = keystore.NewKeystore()
 		}(i, folder, &folderWg)
 	}
 	folderWg.Wait()
@@ -143,7 +143,7 @@ func createServers() {
 			defer wg.Done()
 			log := loggers[index]
 			params.SlotDuration = 4
-			db, err := blockdb.NewBadgerDB(folder, params, log)
+			db, err := blockdb.NewBadgerDB(params)
 			if err != nil {
 				panic(err)
 			}
