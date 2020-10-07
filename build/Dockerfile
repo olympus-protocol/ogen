@@ -1,4 +1,4 @@
-FROM eabz:ogen-builder as builder
+FROM eabz/ogen-builder:latest as builder
 
 RUN cd ogen && go mod download
 
