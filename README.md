@@ -24,3 +24,4 @@ bash <(wget --no-cache -qO- https://raw.githubusercontent.com/olympus-protocol/o
 ## Documentation
 
 The complete documentation can be found here: <https://doc.oly.tech>
+
