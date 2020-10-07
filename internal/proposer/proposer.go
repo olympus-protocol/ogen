@@ -1,17 +1,16 @@
 package proposer
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"sync"
 	"time"
-
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
@@ -32,6 +31,9 @@ type Proposer interface {
 	VoteForBlocks()
 	Start() error
 	Stop()
+	GetCurrentSlot() uint64
+	Voting() bool
+	Proposing() bool
 	Keystore() keystore.Keystore
 }
 
@@ -40,41 +42,34 @@ var _ Proposer = &proposer{}
 // proposer manages mining for the blockchain.
 type proposer struct {
 	log        logger.Logger
-	params     *params.ChainParams
+	netParams  *params.ChainParams
 	chain      chain.Blockchain
 	keystore   keystore.Keystore
 	mineActive bool
 	context    context.Context
 	stop       context.CancelFunc
 
+	proposerLock sync.Mutex
+	voteLock     sync.Mutex
+
+	voting    bool
+	proposing bool
+
 	voteMempool    mempool.VoteMempool
 	coinsMempool   mempool.CoinsMempool
 	actionsMempool mempool.ActionMempool
-	hostnode       hostnode.HostNode
-	blockTopic     *pubsub.Topic
-	voteTopic      *pubsub.Topic
+	host           hostnode.HostNode
 
 	lastActionManager actionmanager.LastActionManager
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, voteMempool mempool.VoteMempool, coinsMempool mempool.CoinsMempool, actionsMempool mempool.ActionMempool, manager actionmanager.LastActionManager, ks keystore.Keystore) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	blockTopic, err := hostnode.Topic(p2p.MsgBlockCmd)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-
-	voteTopic, err := hostnode.Topic(p2p.MsgVoteCmd)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
 
 	prop := &proposer{
-		log:               log,
-		params:            params,
+		log:               config.GlobalParams.Logger,
+		netParams:         config.GlobalParams.NetParams,
 		keystore:          ks,
 		chain:             chain,
 		mineActive:        true,
@@ -83,13 +78,13 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 		voteMempool:       voteMempool,
 		coinsMempool:      coinsMempool,
 		actionsMempool:    actionsMempool,
-		hostnode:          hostnode,
-		blockTopic:        blockTopic,
-		voteTopic:         voteTopic,
+		host:              hostnode,
 		lastActionManager: manager,
+		voting:            false,
+		proposing:         false,
 	}
 
-	err = prop.keystore.OpenKeystore()
+	err := prop.keystore.OpenKeystore()
 	if err != nil {
 		if err == keystore.ErrorNotInitialized {
 			err = prop.keystore.CreateKeystore()
@@ -103,6 +98,14 @@ func NewProposer(log logger.Logger, params *params.ChainParams, chain chain.Bloc
 	return prop, nil
 }
 
+func (p *proposer) Voting() bool {
+	return p.voting
+}
+
+func (p *proposer) Proposing() bool {
+	return p.proposing
+}
+
 // NewTip implements the BlockchainNotifee interface.
 func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt) {
 	p.voteMempool.Remove(block)
@@ -110,8 +113,12 @@ func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newSt
 	p.actionsMempool.RemoveByBlock(block, newState)
 }
 
+func (p *proposer) GetCurrentSlot() uint64 {
+	return p.getCurrentSlot()
+}
+
 func (p *proposer) getCurrentSlot() uint64 {
-	slot := time.Now().Sub(p.chain.GenesisTime()) / (time.Duration(p.params.SlotDuration) * time.Second)
+	slot := time.Now().Sub(p.chain.GenesisTime()) / (time.Duration(p.netParams.SlotDuration) * time.Second)
 	if slot < 0 {
 		return 0
 	}
@@ -120,44 +127,21 @@ func (p *proposer) getCurrentSlot() uint64 {
 
 // getNextSlotTime gets the next slot time.
 func (p *proposer) getNextBlockTime(nextSlot uint64) time.Time {
-	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second)
+	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.netParams.SlotDuration) * time.Second)
 }
 
 // getNextSlotTime gets the next slot time.
 func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
-	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.params.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.params.SlotDuration) / 2)
-}
-
-func (p *proposer) publishVotes(v *primitives.MultiValidatorVote) {
-	msg := &p2p.MsgVote{Data: v}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, p.hostnode.GetNetMagic())
-	if err != nil {
-		p.log.Errorf("error encoding vote: %s", err)
-		return
-	}
-	if err := p.voteTopic.Publish(p.context, buf.Bytes()); err != nil {
-		p.log.Errorf("error publishing vote: %s", err)
-	}
-}
-
-func (p *proposer) publishBlock(block *primitives.Block) {
-	msg := &p2p.MsgBlock{Data: block}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, p.hostnode.GetNetMagic())
-	if err != nil {
-		p.log.Errorf("error encoding vote: %s", err)
-		return
-	}
-	if err := p.blockTopic.Publish(p.context, buf.Bytes()); err != nil {
-		p.log.Errorf("error publishing block: %s", err)
-	}
+	return p.chain.GenesisTime().Add(time.Duration(nextSlot*p.netParams.SlotDuration) * time.Second).Add(-time.Second * time.Duration(p.netParams.SlotDuration) / 2)
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
 func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (p *proposer) ProposeBlocks() {
+	defer func() {
+		p.proposing = false
+	}()
 
 	slotToPropose := p.getCurrentSlot() + 1
 
@@ -166,27 +150,31 @@ func (p *proposer) ProposeBlocks() {
 	for {
 		select {
 		case <-blockTimer.C:
-
+			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+			if p.host.Syncing() {
+				p.proposing = false
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
+				p.proposerLock.Unlock()
 				continue
 			}
+			p.proposing = true
 
 			tip := p.chain.State().Tip()
 			tipHash := tip.Hash
 
-			voteState, err := p.chain.State().TipStateAtSlot(slotToPropose)
+			blockState, err := p.chain.State().TipStateAtSlot(slotToPropose)
 			if err != nil {
 				p.log.Errorf("unable to get tip state at slot %d", slotToPropose)
-				blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+				blockTimer = time.NewTimer(time.Second * 2)
+				p.proposerLock.Unlock()
 				continue
 			}
 
-			slotIndex := (slotToPropose + p.params.EpochLength - 1) % p.params.EpochLength
-			proposerIndex := voteState.GetProposerQueue()[slotIndex]
-			proposer := voteState.GetValidatorRegistry()[proposerIndex]
+			slotIndex := (slotToPropose + p.netParams.EpochLength - 1) % p.netParams.EpochLength
+			proposerIndex := blockState.GetProposerQueue()[slotIndex]
+			proposer := blockState.GetValidatorRegistry()[proposerIndex]
 
 			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
 
@@ -197,56 +185,63 @@ func (p *proposer) ProposeBlocks() {
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
-				votes, err := p.voteMempool.Get(slotToPropose, voteState, p.params, proposerIndex)
+				votes, err := p.voteMempool.Get(slotToPropose, blockState, proposerIndex)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				depositTxs, voteState, err := p.actionsMempool.GetDeposits(int(p.params.MaxDepositsPerBlock), voteState)
+				depositTxs, blockState, err := p.actionsMempool.GetDeposits(int(p.netParams.MaxDepositsPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				coinTxs, voteState := p.coinsMempool.Get(p.params.MaxTxsPerBlock, voteState)
+				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState)
 
-				coinTxMulti := p.coinsMempool.GetMulti(p.params.MaxTxsMultiPerBlock, voteState)
+				coinTxMulti := p.coinsMempool.GetMulti(p.netParams.MaxTxsMultiPerBlock, blockState)
 
-				exitTxs, err := p.actionsMempool.GetExits(int(p.params.MaxExitsPerBlock), voteState)
+				exitTxs, err := p.actionsMempool.GetExits(int(p.netParams.MaxExitsPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.params.MaxRANDAOSlashingsPerBlock), voteState)
+				randaoSlashings, err := p.actionsMempool.GetRANDAOSlashings(int(p.netParams.MaxRANDAOSlashingsPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.params.MaxVoteSlashingsPerBlock), voteState)
+				voteSlashings, err := p.actionsMempool.GetVoteSlashings(int(p.netParams.MaxVoteSlashingsPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.params.MaxProposerSlashingsPerBlock), voteState)
+				proposerSlashings, err := p.actionsMempool.GetProposerSlashings(int(p.netParams.MaxProposerSlashingsPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.params.MaxGovernanceVotesPerBlock), voteState)
+				governanceVotes, err := p.actionsMempool.GetGovernanceVotes(int(p.netParams.MaxGovernanceVotesPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
@@ -291,14 +286,24 @@ func (p *proposer) ProposeBlocks() {
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
 					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
 					continue
 				}
 
-				go p.publishBlock(&block)
+				msg := &p2p.MsgBlock{Data: &block}
+
+				err = p.host.Broadcast(msg)
+				if err != nil {
+					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
+					continue
+				}
 			}
 
 			slotToPropose++
+			p.proposerLock.Unlock()
 			blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 		case <-p.context.Done():
 			p.log.Info("stopping proposer")
@@ -308,6 +313,10 @@ func (p *proposer) ProposeBlocks() {
 }
 
 func (p *proposer) VoteForBlocks() {
+	defer func() {
+		p.voting = false
+	}()
+
 	slotToVote := p.getCurrentSlot() + 1
 	if slotToVote <= 0 {
 		slotToVote = 1
@@ -318,47 +327,53 @@ func (p *proposer) VoteForBlocks() {
 	for {
 		select {
 		case <-voteTimer.C:
-
+			p.voteLock.Lock()
 			// Check if we're an attester for this slot
-			if p.hostnode.PeersConnected() == 0 || p.hostnode.Syncing() {
+			if p.host.Syncing() {
+				p.voting = false
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
+				p.voteLock.Unlock()
 				continue
 			}
 
+			p.voting = true
 			s := p.chain.State()
 
 			voteState, err := s.TipStateAtSlot(slotToVote)
 			if err != nil {
 				p.log.Errorf("unable to get tip at slot %d", slotToVote)
-				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				voteTimer = time.NewTimer(time.Second * 2)
+				p.voteLock.Unlock()
 				continue
 			}
 
-			validators, err := voteState.GetVoteCommittee(slotToVote, p.params)
+			validators, err := voteState.GetVoteCommittee(slotToVote)
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
-				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				voteTimer = time.NewTimer(time.Second * 2)
+				p.voteLock.Unlock()
 				continue
 			}
 
 			p.log.Debugf("committing for slot %d with %d validators", slotToVote, len(validators))
 
-			toEpoch := (slotToVote - 1) / p.params.EpochLength
-
 			beaconBlock, found := s.Chain().GetNodeBySlot(slotToVote - 1)
 			if !found {
 				p.log.Errorf("unable to find block at slot %d", slotToVote-1)
-				voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
+				voteTimer = time.NewTimer(time.Second * 2)
+				p.voteLock.Unlock()
 				continue
 			}
+
+			toEpoch := (slotToVote - 1) / p.netParams.EpochLength
 
 			data := &primitives.VoteData{
 				Slot:            slotToVote,
 				FromEpoch:       voteState.GetJustifiedEpoch(),
 				FromHash:        voteState.GetJustifiedEpochHash(),
 				ToEpoch:         toEpoch,
-				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.params.EpochLength-1, p.params),
+				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.netParams.EpochLength - 1),
 				BeaconBlockHash: beaconBlock.Hash,
 				Nonce:           p.lastActionManager.GetNonce(),
 			}
@@ -398,15 +413,28 @@ func (p *proposer) VoteForBlocks() {
 					Sig:                   voteSig,
 				}
 
-				p.voteMempool.Add(vote)
+				err = p.voteMempool.AddValidate(vote, voteState)
+				if err != nil {
+					p.log.Error(err)
+					voteTimer = time.NewTimer(time.Second * 2)
+					p.voteLock.Unlock()
+					continue
+				}
 
 				p.log.Infof("sending votes for slot %d for %d validators", slotToVote, len(signatures))
 
-				go p.publishVotes(vote)
+				msg := &p2p.MsgVote{Data: vote}
+				err = p.host.Broadcast(msg)
+				if err != nil {
+					p.log.Error(err)
+					voteTimer = time.NewTimer(time.Second * 2)
+					p.voteLock.Unlock()
+					continue
+				}
 			}
 
 			slotToVote++
-
+			p.voteLock.Unlock()
 			voteTimer = time.NewTimer(time.Until(p.getNextVoteTime(slotToVote)))
 		case <-p.context.Done():
 			p.log.Info("stopping voter")

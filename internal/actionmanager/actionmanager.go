@@ -1,8 +1,10 @@
 package actionmanager
 
 import (
-	"bytes"
 	"context"
+	"errors"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"math/rand"
@@ -14,7 +16,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -43,23 +44,21 @@ var _ LastActionManager = &lastActionManager{}
 type lastActionManager struct {
 	log logger.Logger
 
-	hostNode hostnode.HostNode
-	ctx      context.Context
+	host hostnode.HostNode
+	ctx  context.Context
 
 	nonce uint64
 
 	// lastActions are the last recorded actions by a validator with a certain
 	// salted private key hash.
 	lastActions     map[[48]byte]time.Time
-	lastActionsLock sync.RWMutex
+	lastActionsLock sync.Mutex
 
-	startTopic *pubsub.Topic
-
-	params *params.ChainParams
+	netParams *params.ChainParams
 }
 
-func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt) {
-	slotIndex := (block.Header.Slot + l.params.EpochLength - 1) % l.params.EpochLength
+func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Block, state state.State, _ []*primitives.EpochReceipt) {
+	slotIndex := (block.Header.Slot + l.netParams.EpochLength - 1) % l.netParams.EpochLength
 
 	proposerIndex := state.GetProposerQueue()[slotIndex]
 	proposer := state.GetValidatorRegistry()[proposerIndex]
@@ -70,79 +69,59 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(ctx context.Context, node hostnode.HostNode, log logger.Logger, ch chain.Blockchain, params *params.ChainParams) (LastActionManager, error) {
-	topic, err := node.Topic(p2p.MsgValidatorStartCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	topicSub, err := topic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
+func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActionManager, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
 
 	l := &lastActionManager{
-		hostNode:    node,
+		host:        node,
 		ctx:         ctx,
 		lastActions: make(map[[48]byte]time.Time),
 		log:         log,
-		startTopic:  topic,
 		nonce:       rand.Uint64(),
-		params:      params,
+		netParams:   netParams,
+	}
+
+	if err := l.host.RegisterTopicHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart); err != nil {
+		return nil, err
 	}
 
 	ch.Notify(l)
 
-	go l.handleStartTopic(topicSub)
-
 	return l, nil
 }
 
-func (l *lastActionManager) handleStartTopic(topic *pubsub.Subscription) {
-	for {
-		msg, err := topic.Next(l.ctx)
-		if err != nil {
-			if err != l.ctx.Err() {
-				l.log.Warnf("error getting next message in start validator topic: %s", err)
-				return
-			}
-			return
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		p2pMsg, err := p2p.ReadMessage(buf, l.hostNode.GetNetMagic())
-
-		if err != nil {
-			return
-		}
-
-		validatorHello, ok := p2pMsg.(*p2p.MsgValidatorStart)
-		if !ok {
-			return
-		}
-
-		sig, err := bls.SignatureFromBytes(validatorHello.Data.Signature[:])
-		if err != nil {
-			l.log.Warnf("invalid signature: %s", err)
-		}
-
-		pub, err := bls.PublicKeyFromBytes(validatorHello.Data.PublicKey[:])
-		if err != nil {
-			l.log.Warnf("invalid pubkey: %s", err)
-		}
-
-		if !sig.Verify(pub, validatorHello.Data.SignatureMessage()) {
-			l.log.Warnf("validator hello signature did not verify")
-			return
-		}
+func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) error {
+	if id == l.host.GetHost().ID() {
+		return nil
 	}
+
+	data, ok := msg.(*p2p.MsgValidatorStart)
+	if !ok {
+		return errors.New("wrong message on start validator topic")
+	}
+	sig, err := bls.SignatureFromBytes(data.Data.Signature[:])
+	if err != nil {
+		return err
+	}
+
+	pub, err := bls.PublicKeyFromBytes(data.Data.PublicKey[:])
+	if err != nil {
+		return err
+	}
+	if !sig.Verify(pub, data.Data.SignatureMessage()) {
+		return err
+	}
+
+	// TODO apply
+	return nil
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
 func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
-	l.lastActionsLock.RLock()
-	defer l.lastActionsLock.RUnlock()
+	l.lastActionsLock.Lock()
+	defer l.lastActionsLock.Unlock()
 
 	if !l.ShouldRun(valPub) {
 		return false
@@ -158,24 +137,16 @@ func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitive
 	validatorHello.Signature = sig
 
 	msg := &p2p.MsgValidatorStart{Data: validatorHello}
-	buf := bytes.NewBuffer([]byte{})
-	err := p2p.WriteMessage(buf, msg, l.hostNode.GetNetMagic())
+	err := l.host.Broadcast(msg)
 	if err != nil {
 		return false
 	}
-
-	err = l.startTopic.Publish(l.ctx, buf.Bytes())
-
-	if err != nil {
-		return false
-	}
-
 	return true
 }
 
 func (l *lastActionManager) ShouldRun(val [48]byte) bool {
-	l.lastActionsLock.RLock()
-	defer l.lastActionsLock.RUnlock()
+	l.lastActionsLock.Lock()
+	defer l.lastActionsLock.Unlock()
 
 	return l.shouldRun(val)
 }

@@ -38,7 +38,7 @@ var genParamsCmd = &cobra.Command{
 
 		dirPath := "./cmd/ogen/initialization/"
 
-		ks := keystore.NewKeystore(dirPath)
+		ks := keystore.NewKeystore()
 
 		err := ks.CreateKeystore()
 		if err != nil {

@@ -5,21 +5,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/cjrd/allocate"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"reflect"
 )
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
-func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params.ChainParams) error {
-	err := allocate.Zero(vote)
-	if err != nil {
-		return err
-	}
+func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote) error {
+	netParams := config.GlobalParams.NetParams
+
 	if vote.VoteEpoch != s.VoteEpoch {
 		return fmt.Errorf("vote not valid with vote epoch: %d (expected: %d)", vote.VoteEpoch, s.VoteEpoch)
 	}
@@ -41,8 +37,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if err != nil {
 			return err
 		}
-		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
+		if s.CoinsState.Balances[pkh] < netParams.MinVotingBalance*netParams.UnitsPerCoin {
+			return fmt.Errorf("minimum balance is %d, but got %d", netParams.MinVotingBalance, s.CoinsState.Balances[pkh]/netParams.UnitsPerCoin)
 		}
 		if !vote.Valid() {
 			return fmt.Errorf("vote signature did not validate")
@@ -55,8 +51,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateVoting {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		if len(vote.Data) != len(p.GovernancePercentages)*20 {
-			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(p.GovernancePercentages)*32, len(vote.Data))
+		if len(vote.Data) != len(netParams.GovernancePercentages)*20 {
+			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(netParams.GovernancePercentages)*32, len(vote.Data))
 		}
 		// TODO check multisig as single signatures
 		pub, err := vote.Multisig.GetPublicKey()
@@ -67,8 +63,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if err != nil {
 			return err
 		}
-		if s.CoinsState.Balances[pkh] < p.MinVotingBalance*p.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %d", p.MinVotingBalance, s.CoinsState.Balances[pkh]/p.UnitsPerCoin)
+		if s.CoinsState.Balances[pkh] < netParams.MinVotingBalance*netParams.UnitsPerCoin {
+			return fmt.Errorf("minimum balance is %d, but got %d", netParams.MinVotingBalance, s.CoinsState.Balances[pkh]/netParams.UnitsPerCoin)
 		}
 		if _, ok := s.Governance.ReplaceVotes[pkh]; ok {
 			return fmt.Errorf("found existing vote for same public key hash")
@@ -82,8 +78,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 		if s.VotingState != GovernanceStateActive {
 			return fmt.Errorf("cannot vote for community vote during community vote period")
 		}
-		if len(vote.Data) != len(p.GovernancePercentages)*20 {
-			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(p.GovernancePercentages)*32)
+		if len(vote.Data) != len(netParams.GovernancePercentages)*20 {
+			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(netParams.GovernancePercentages)*32)
 		}
 		pub, err := vote.Multisig.GetPublicKey()
 		if err != nil {
@@ -151,8 +147,8 @@ func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote, p *params
 }
 
 // ProcessGovernanceVote processes governance votes.
-func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params.ChainParams) error {
-	if err := s.IsGovernanceVoteValid(vote, p); err != nil {
+func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote) error {
+	if err := s.IsGovernanceVoteValid(vote); err != nil {
 		return err
 	}
 	pub, err := vote.Multisig.GetPublicKey()
@@ -194,11 +190,9 @@ func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote, p *params
 }
 
 // ApplyTransactionSingle applies a transaction to the coin state.
-func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
-	err := allocate.Zero(tx)
-	if err != nil {
-		return err
-	}
+func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error {
+	netParams := config.GlobalParams.NetParams
+
 	u := s.CoinsState
 	pkh, err := tx.FromPubkeyHash()
 	if err != nil {
@@ -221,7 +215,7 @@ func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress
 	u.Balances[blockWithdrawalAddress] += tx.Fee
 	u.Nonces[pkh] = tx.Nonce
 
-	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < netParams.UnitsPerCoin*netParams.MinVotingBalance && ok {
 		delete(s.Governance.ReplaceVotes, pkh)
 	}
 
@@ -229,7 +223,9 @@ func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress
 }
 
 // ApplyTransactionMulti applies a multisig transaction to the coin state.
-func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte, p *params.ChainParams) error {
+func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error {
+	netParams := config.GlobalParams.NetParams
+
 	u := s.GetCoinsState()
 	pkh, err := tx.FromPubkeyHash()
 	if err != nil {
@@ -252,7 +248,7 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 	u.Balances[blockWithdrawalAddress] += tx.Fee
 	u.Nonces[pkh] = tx.Nonce
 
-	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < p.UnitsPerCoin*p.MinVotingBalance && ok {
+	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < netParams.UnitsPerCoin*netParams.MinVotingBalance && ok {
 		delete(s.Governance.ReplaceVotes, pkh)
 	}
 
@@ -261,10 +257,7 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 
 // IsProposerSlashingValid checks if a given proposer slashing is valid.
 func (s *state) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error) {
-	err := allocate.Zero(ps)
-	if err != nil {
-		return 0, err
-	}
+
 	h1 := ps.BlockHeader1.Hash()
 	h2 := ps.BlockHeader2.Hash()
 
@@ -312,21 +305,18 @@ func (s *state) IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64
 }
 
 // ApplyProposerSlashing applies the proposer slashing to the state.
-func (s *state) ApplyProposerSlashing(ps *primitives.ProposerSlashing, p *params.ChainParams) error {
+func (s *state) ApplyProposerSlashing(ps *primitives.ProposerSlashing) error {
 	proposerIndex, err := s.IsProposerSlashingValid(ps)
 	if err != nil {
 		return err
 	}
 
-	return s.UpdateValidatorStatus(proposerIndex, primitives.StatusExitedWithPenalty, p)
+	return s.UpdateValidatorStatus(proposerIndex, primitives.StatusExitedWithPenalty)
 }
 
 // IsVoteSlashingValid checks if the vote slashing is valid.
-func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.ChainParams) ([]uint64, error) {
-	err := allocate.Zero(vs)
-	if err != nil {
-		return nil, err
-	}
+func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, error) {
+
 	if vs.Vote1.Data.Equals(vs.Vote2.Data) {
 		return nil, fmt.Errorf("vote-slashing: votes are not distinct")
 	}
@@ -338,12 +328,12 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 	common := make([]uint64, 0)
 	voteCommittee1 := make(map[uint64]struct{})
 
-	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot, p)
+	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot)
 	if err != nil {
 		return nil, err
 	}
 
-	validators2, err := s.GetVoteCommittee(vs.Vote2.Data.Slot, p)
+	validators2, err := s.GetVoteCommittee(vs.Vote2.Data.Slot)
 	if err != nil {
 		return nil, err
 	}
@@ -406,14 +396,14 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing, p *params.Chain
 }
 
 // ApplyVoteSlashing applies a vote slashing to the state.
-func (s *state) ApplyVoteSlashing(vs *primitives.VoteSlashing, p *params.ChainParams) error {
-	common, err := s.IsVoteSlashingValid(vs, p)
+func (s *state) ApplyVoteSlashing(vs *primitives.VoteSlashing) error {
+	common, err := s.IsVoteSlashingValid(vs)
 	if err != nil {
 		return err
 	}
 
 	for _, v := range common {
-		if err := s.UpdateValidatorStatus(v, primitives.StatusExitedWithPenalty, p); err != nil {
+		if err := s.UpdateValidatorStatus(v, primitives.StatusExitedWithPenalty); err != nil {
 			return err
 		}
 	}
@@ -423,10 +413,7 @@ func (s *state) ApplyVoteSlashing(vs *primitives.VoteSlashing, p *params.ChainPa
 
 // IsRANDAOSlashingValid checks if the RANDAO slashing is valid.
 func (s *state) IsRANDAOSlashingValid(rs *primitives.RANDAOSlashing) (uint64, error) {
-	err := allocate.Zero(rs)
-	if err != nil {
-		return 0, err
-	}
+
 	if rs.Slot >= s.Slot {
 		return 0, fmt.Errorf("randao-slashing: RANDAO was already assumed to be revealed")
 	}
@@ -461,30 +448,31 @@ func (s *state) IsRANDAOSlashingValid(rs *primitives.RANDAOSlashing) (uint64, er
 }
 
 // ApplyRANDAOSlashing applies the RANDAO slashing to the state.
-func (s *state) ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing, p *params.ChainParams) error {
+func (s *state) ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing) error {
 	proposer, err := s.IsRANDAOSlashingValid(rs)
 	if err != nil {
 		return err
 	}
 
-	return s.UpdateValidatorStatus(proposer, primitives.StatusExitedWithPenalty, p)
+	return s.UpdateValidatorStatus(proposer, primitives.StatusExitedWithPenalty)
 }
 
 // GetVoteCommittee gets the committee for a certain block.
-func (s *state) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, error) {
+func (s *state) GetVoteCommittee(slot uint64) ([]uint64, error) {
+	netParams := config.GlobalParams.NetParams
 
-	if (slot-1)/p.EpochLength == s.EpochIndex {
+	if (slot-1)/netParams.EpochLength == s.EpochIndex {
 		assignments := s.CurrentEpochVoteAssignments
-		slotIndex := uint64(slot % p.EpochLength)
-		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
-		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
+		slotIndex := slot % netParams.EpochLength
+		min := (slotIndex * uint64(len(assignments))) / netParams.EpochLength
+		max := ((slotIndex + 1) * uint64(len(assignments))) / netParams.EpochLength
 		return assignments[min:max], nil
 
-	} else if (slot-1)/p.EpochLength == s.EpochIndex-1 {
+	} else if (slot-1)/netParams.EpochLength == s.EpochIndex-1 {
 		assignments := s.PreviousEpochVoteAssignments
-		slotIndex := uint64(slot % p.EpochLength)
-		min := (slotIndex * uint64(len(assignments))) / p.EpochLength
-		max := ((slotIndex + 1) * uint64(len(assignments))) / p.EpochLength
+		slotIndex := slot % netParams.EpochLength
+		min := (slotIndex * uint64(len(assignments))) / netParams.EpochLength
+		max := ((slotIndex + 1) * uint64(len(assignments))) / netParams.EpochLength
 		return assignments[min:max], nil
 	}
 
@@ -494,10 +482,6 @@ func (s *state) GetVoteCommittee(slot uint64, p *params.ChainParams) ([]uint64, 
 
 // IsExitValid checks if an exit is valid.
 func (s *state) IsExitValid(exit *primitives.Exit) error {
-	err := allocate.Zero(exit)
-	if err != nil {
-		return err
-	}
 	msgHash := chainhash.HashH(exit.ValidatorPubkey[:])
 	wPubKey, err := exit.GetWithdrawPubKey()
 	if err != nil {
@@ -555,12 +539,8 @@ func (s *state) ApplyExit(exit *primitives.Exit) error {
 }
 
 // IsDepositValid validates signatures and ensures that a deposit is valid.
-func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.ChainParams) error {
-
-	err := allocate.Zero(deposit)
-	if err != nil {
-		return err
-	}
+func (s *state) IsDepositValid(deposit *primitives.Deposit) error {
+	netParams := config.GlobalParams.NetParams
 
 	dPub, err := deposit.GetPublicKey()
 	if err != nil {
@@ -571,8 +551,8 @@ func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.Chain
 		return err
 	}
 
-	if s.CoinsState.Balances[pkh] < params.DepositAmount*params.UnitsPerCoin {
-		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], params.DepositAmount*params.UnitsPerCoin)
+	if s.CoinsState.Balances[pkh] < netParams.DepositAmount*netParams.UnitsPerCoin {
+		return fmt.Errorf("balance is too low for deposit (got: %d, expected at least: %d)", s.CoinsState.Balances[pkh], netParams.DepositAmount*netParams.UnitsPerCoin)
 	}
 
 	buf, err := deposit.Data.Marshal()
@@ -617,8 +597,10 @@ func (s *state) IsDepositValid(deposit *primitives.Deposit, params *params.Chain
 }
 
 // ApplyDeposit applies a deposit to the state.
-func (s *state) ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams) error {
-	if err := s.IsDepositValid(deposit, p); err != nil {
+func (s *state) ApplyDeposit(deposit *primitives.Deposit) error {
+	netParams := config.GlobalParams.NetParams
+
+	if err := s.IsDepositValid(deposit); err != nil {
 		return err
 	}
 	pub, err := deposit.GetPublicKey()
@@ -630,10 +612,10 @@ func (s *state) ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams)
 		return err
 	}
 
-	s.CoinsState.Balances[pkh] -= p.DepositAmount * p.UnitsPerCoin
+	s.CoinsState.Balances[pkh] -= netParams.DepositAmount * netParams.UnitsPerCoin
 
 	s.ValidatorRegistry = append(s.ValidatorRegistry, &primitives.Validator{
-		Balance:          p.DepositAmount * p.UnitsPerCoin,
+		Balance:          netParams.DepositAmount * netParams.UnitsPerCoin,
 		PubKey:           deposit.Data.PublicKey,
 		PayeeAddress:     deposit.Data.WithdrawalAddress,
 		Status:           primitives.StatusStarting,
@@ -644,8 +626,6 @@ func (s *state) ApplyDeposit(deposit *primitives.Deposit, p *params.ChainParams)
 }
 
 var (
-	// ErrorVoteEmpty returns when some information of a MultiValidatorVote is missing
-	ErrorVoteEmpty = errors.New("vote information is not complete")
 	// ErrorVoteSlot returns when the vote data slot is out of range
 	ErrorVoteSlot = errors.New("slot out of range")
 	// ErrorFromEpoch returns when the vote From Epoch doesn't match a justified epoch
@@ -663,14 +643,7 @@ var (
 )
 
 // IsVoteValid checks if a vote is valid.
-func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainParams) error {
-	err := allocate.Zero(v)
-	if err != nil {
-		return err
-	}
-	if v.Data == nil || v.ParticipationBitfield == nil || reflect.DeepEqual(v.Sig, [96]byte{}) {
-		return ErrorVoteEmpty
-	}
+func (s *state) IsVoteValid(v *primitives.MultiValidatorVote) error {
 
 	if v.Data.Slot == 0 {
 		return ErrorVoteSlot
@@ -695,7 +668,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 	}
 
 	aggPubs := make([]*bls.PublicKey, 0)
-	validators, err := s.GetVoteCommittee(v.Data.Slot, p)
+	validators, err := s.GetVoteCommittee(v.Data.Slot)
 	if err != nil {
 		return err
 	}
@@ -725,24 +698,22 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote, p *params.ChainPar
 	return nil
 }
 
-func (s *state) ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainParams, proposerIndex uint64) error {
-	err := allocate.Zero(v)
-	if err != nil {
-		return err
-	}
-	if v.Data.Slot+p.MinAttestationInclusionDelay > s.Slot {
-		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+p.MinAttestationInclusionDelay, s.Slot)
+func (s *state) ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error {
+	netParams := config.GlobalParams.NetParams
+
+	if v.Data.Slot+netParams.MinAttestationInclusionDelay > s.Slot {
+		return fmt.Errorf("vote included too soon (expected s.Slot > %d, got %d)", v.Data.Slot+netParams.MinAttestationInclusionDelay, s.Slot)
 	}
 
-	if v.Data.Slot+p.EpochLength <= s.Slot {
-		return fmt.Errorf("vote not included within 1 epoch (latest: %d, got: %d)", v.Data.Slot+p.EpochLength-1, s.Slot)
+	if v.Data.Slot+netParams.EpochLength <= s.Slot {
+		return fmt.Errorf("vote not included within 1 epoch (latest: %d, got: %d)", v.Data.Slot+netParams.EpochLength-1, s.Slot)
 	}
 
-	if (v.Data.Slot-1)/p.EpochLength != v.Data.ToEpoch {
+	if (v.Data.Slot-1)/netParams.EpochLength != v.Data.ToEpoch {
 		return errors.New("vote slot did not match target epoch")
 	}
 
-	err = s.IsVoteValid(v, p)
+	err := s.IsVoteValid(v)
 
 	if err != nil {
 		return err
@@ -774,12 +745,10 @@ func (s *state) ProcessVote(v *primitives.MultiValidatorVote, p *params.ChainPar
 }
 
 // GetProposerPublicKey gets the public key for the proposer of a block.
-func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams) (*bls.PublicKey, error) {
-	err := allocate.Zero(b)
-	if err != nil {
-		return nil, err
-	}
-	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
+func (s *state) GetProposerPublicKey(b *primitives.Block) (*bls.PublicKey, error) {
+	netParams := config.GlobalParams.NetParams
+
+	slotIndex := (b.Header.Slot + netParams.EpochLength - 1) % netParams.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 	proposer := s.ValidatorRegistry[proposerIndex]
@@ -788,18 +757,15 @@ func (s *state) GetProposerPublicKey(b *primitives.Block, p *params.ChainParams)
 }
 
 // CheckBlockSignature checks the block signature.
-func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) error {
-	err := allocate.Zero(b)
-	if err != nil {
-		return err
-	}
+func (s *state) CheckBlockSignature(b *primitives.Block) error {
+
 	blockHash := b.Hash()
 	blockSig, err := bls.SignatureFromBytes(b.Signature[:])
 	if err != nil {
 		return err
 	}
 
-	validatorPub, err := s.GetProposerPublicKey(b, p)
+	validatorPub, err := s.GetProposerPublicKey(b)
 	if err != nil {
 		return err
 	}
@@ -825,16 +791,14 @@ func (s *state) CheckBlockSignature(b *primitives.Block, p *params.ChainParams) 
 }
 
 // ProcessBlock runs a block transition on the state and mutates state.
-func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
-	err := allocate.Zero(b)
-	if err != nil {
-		return err
-	}
+func (s *state) ProcessBlock(b *primitives.Block) error {
+	netParams := config.GlobalParams.NetParams
+
 	if b.Header.Slot != s.Slot {
 		return fmt.Errorf("state is not updated to slot %d, instead got %d", b.Header.Slot, s.Slot)
 	}
 
-	if err := s.CheckBlockSignature(b, p); err != nil {
+	if err := s.CheckBlockSignature(b); err != nil {
 		return err
 	}
 
@@ -883,58 +847,58 @@ func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
 	}
 
-	if uint64(len(b.Votes)) > p.MaxVotesPerBlock {
-		return fmt.Errorf("block has too many votes (max: %d, got: %d)", p.MaxVotesPerBlock, len(b.Votes))
+	if uint64(len(b.Votes)) > netParams.MaxVotesPerBlock {
+		return fmt.Errorf("block has too many votes (max: %d, got: %d)", netParams.MaxVotesPerBlock, len(b.Votes))
 	}
 
-	if uint64(len(b.Txs)) > p.MaxTxsPerBlock {
-		return fmt.Errorf("block has too many txs (max: %d, got: %d)", p.MaxTxsPerBlock, len(b.Txs))
+	if uint64(len(b.Txs)) > netParams.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", netParams.MaxTxsPerBlock, len(b.Txs))
 	}
 
-	if uint64(len(b.Deposits)) > p.MaxDepositsPerBlock {
-		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", p.MaxDepositsPerBlock, len(b.Deposits))
+	if uint64(len(b.Deposits)) > netParams.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", netParams.MaxDepositsPerBlock, len(b.Deposits))
 	}
 
-	if uint64(len(b.Exits)) > p.MaxExitsPerBlock {
-		return fmt.Errorf("block has too many exits (max: %d, got: %d)", p.MaxExitsPerBlock, len(b.Exits))
+	if uint64(len(b.Exits)) > netParams.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", netParams.MaxExitsPerBlock, len(b.Exits))
 	}
 
-	if uint64(len(b.RANDAOSlashings)) > p.MaxRANDAOSlashingsPerBlock {
-		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", p.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
+	if uint64(len(b.RANDAOSlashings)) > netParams.MaxRANDAOSlashingsPerBlock {
+		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", netParams.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
 	}
 
-	if uint64(len(b.VoteSlashings)) > p.MaxVoteSlashingsPerBlock {
-		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", p.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
+	if uint64(len(b.VoteSlashings)) > netParams.MaxVoteSlashingsPerBlock {
+		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", netParams.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
 	}
 
-	if uint64(len(b.ProposerSlashings)) > p.MaxProposerSlashingsPerBlock {
-		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", p.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
+	if uint64(len(b.ProposerSlashings)) > netParams.MaxProposerSlashingsPerBlock {
+		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", netParams.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
 	for _, d := range b.Deposits {
-		if err := s.ApplyDeposit(d, p); err != nil {
+		if err := s.ApplyDeposit(d); err != nil {
 			return err
 		}
 	}
 
 	for _, tx := range b.Txs {
-		if err := s.ApplyTransactionSingle(tx, b.Header.FeeAddress, p); err != nil {
+		if err := s.ApplyTransactionSingle(tx, b.Header.FeeAddress); err != nil {
 			return err
 		}
 	}
 
 	for _, vote := range b.GovernanceVotes {
-		if err := s.ProcessGovernanceVote(vote, p); err != nil {
+		if err := s.ProcessGovernanceVote(vote); err != nil {
 			return err
 		}
 	}
 
-	slotIndex := (b.Header.Slot + p.EpochLength - 1) % p.EpochLength
+	slotIndex := (b.Header.Slot + netParams.EpochLength - 1) % netParams.EpochLength
 
 	proposerIndex := s.ProposerQueue[slotIndex]
 
 	for _, v := range b.Votes {
-		if err := s.ProcessVote(v, p, proposerIndex); err != nil {
+		if err := s.ProcessVote(v, proposerIndex); err != nil {
 			return err
 		}
 	}
@@ -946,19 +910,19 @@ func (s *state) ProcessBlock(b *primitives.Block, p *params.ChainParams) error {
 	}
 
 	for _, rs := range b.RANDAOSlashings {
-		if err := s.ApplyRANDAOSlashing(rs, p); err != nil {
+		if err := s.ApplyRANDAOSlashing(rs); err != nil {
 			return err
 		}
 	}
 
 	for _, vs := range b.VoteSlashings {
-		if err := s.ApplyVoteSlashing(vs, p); err != nil {
+		if err := s.ApplyVoteSlashing(vs); err != nil {
 			return err
 		}
 	}
 
 	for _, ps := range b.ProposerSlashings {
-		if err := s.ApplyProposerSlashing(ps, p); err != nil {
+		if err := s.ApplyProposerSlashing(ps); err != nil {
 			return err
 		}
 	}

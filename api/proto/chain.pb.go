@@ -77,23 +77,85 @@ func (x *SubscribeValidatorRequest) GetPublicKey() [][]byte {
 	return nil
 }
 
+type Head struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	Slot   uint64 `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty"`
+	Hash   string `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
+}
+
+func (x *Head) Reset() {
+	*x = Head{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_chain_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Head) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Head) ProtoMessage() {}
+
+func (x *Head) ProtoReflect() protoreflect.Message {
+	mi := &file_chain_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Head.ProtoReflect.Descriptor instead.
+func (*Head) Descriptor() ([]byte, []int) {
+	return file_chain_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Head) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *Head) GetSlot() uint64 {
+	if x != nil {
+		return x.Slot
+	}
+	return 0
+}
+
+func (x *Head) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
 type ChainInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BlockHash          string          `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	BlockHeight        uint64          `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	Validators         *ValidatorsInfo `protobuf:"bytes,3,opt,name=validators,proto3" json:"validators,omitempty"`
-	LastJustifiedEpoch uint64          `protobuf:"varint,4,opt,name=last_justified_epoch,json=lastJustifiedEpoch,proto3" json:"last_justified_epoch,omitempty"`
-	LastFinalizedEpoch uint64          `protobuf:"varint,5,opt,name=last_finalized_epoch,json=lastFinalizedEpoch,proto3" json:"last_finalized_epoch,omitempty"`
-	LastJustifiedHash  string          `protobuf:"bytes,6,opt,name=last_justified_hash,json=lastJustifiedHash,proto3" json:"last_justified_hash,omitempty"`
+	BlockHash     string          `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	BlockHeight   uint64          `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	Validators    *ValidatorsInfo `protobuf:"bytes,3,opt,name=validators,proto3" json:"validators,omitempty"`
+	JustifiedHead *Head           `protobuf:"bytes,4,opt,name=justified_head,json=justifiedHead,proto3" json:"justified_head,omitempty"`
+	FinalizedHead *Head           `protobuf:"bytes,5,opt,name=finalized_head,json=finalizedHead,proto3" json:"finalized_head,omitempty"`
 }
 
 func (x *ChainInfo) Reset() {
 	*x = ChainInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_chain_proto_msgTypes[1]
+		mi := &file_chain_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -106,7 +168,7 @@ func (x *ChainInfo) String() string {
 func (*ChainInfo) ProtoMessage() {}
 
 func (x *ChainInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_chain_proto_msgTypes[1]
+	mi := &file_chain_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -119,7 +181,7 @@ func (x *ChainInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChainInfo.ProtoReflect.Descriptor instead.
 func (*ChainInfo) Descriptor() ([]byte, []int) {
-	return file_chain_proto_rawDescGZIP(), []int{1}
+	return file_chain_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ChainInfo) GetBlockHash() string {
@@ -143,25 +205,18 @@ func (x *ChainInfo) GetValidators() *ValidatorsInfo {
 	return nil
 }
 
-func (x *ChainInfo) GetLastJustifiedEpoch() uint64 {
+func (x *ChainInfo) GetJustifiedHead() *Head {
 	if x != nil {
-		return x.LastJustifiedEpoch
+		return x.JustifiedHead
 	}
-	return 0
+	return nil
 }
 
-func (x *ChainInfo) GetLastFinalizedEpoch() uint64 {
+func (x *ChainInfo) GetFinalizedHead() *Head {
 	if x != nil {
-		return x.LastFinalizedEpoch
+		return x.FinalizedHead
 	}
-	return 0
-}
-
-func (x *ChainInfo) GetLastJustifiedHash() string {
-	if x != nil {
-		return x.LastJustifiedHash
-	}
-	return ""
+	return nil
 }
 
 type AccountInfo struct {
@@ -177,7 +232,7 @@ type AccountInfo struct {
 func (x *AccountInfo) Reset() {
 	*x = AccountInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_chain_proto_msgTypes[2]
+		mi := &file_chain_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -190,7 +245,7 @@ func (x *AccountInfo) String() string {
 func (*AccountInfo) ProtoMessage() {}
 
 func (x *AccountInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_chain_proto_msgTypes[2]
+	mi := &file_chain_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -203,7 +258,7 @@ func (x *AccountInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountInfo.ProtoReflect.Descriptor instead.
 func (*AccountInfo) Descriptor() ([]byte, []int) {
-	return file_chain_proto_rawDescGZIP(), []int{2}
+	return file_chain_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AccountInfo) GetAccount() string {
@@ -237,24 +292,25 @@ var file_chain_proto_rawDesc = []byte{
 	0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52,
 	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x63,
 	0x5f, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0c, 0x52, 0x09, 0x70, 0x75, 0x62, 0x6c,
-	0x69, 0x63, 0x4b, 0x65, 0x79, 0x22, 0x92, 0x02, 0x0a, 0x09, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49,
-	0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73,
-	0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61,
-	0x73, 0x68, 0x12, 0x21, 0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67,
-	0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48,
-	0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x2f, 0x0a, 0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
-	0x6f, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0a, 0x76, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x12, 0x30, 0x0a, 0x14, 0x6c, 0x61, 0x73, 0x74, 0x5f, 0x6a,
-	0x75, 0x73, 0x74, 0x69, 0x66, 0x69, 0x65, 0x64, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x04, 0x52, 0x12, 0x6c, 0x61, 0x73, 0x74, 0x4a, 0x75, 0x73, 0x74, 0x69, 0x66,
-	0x69, 0x65, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x12, 0x30, 0x0a, 0x14, 0x6c, 0x61, 0x73, 0x74,
-	0x5f, 0x66, 0x69, 0x6e, 0x61, 0x6c, 0x69, 0x7a, 0x65, 0x64, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68,
-	0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x52, 0x12, 0x6c, 0x61, 0x73, 0x74, 0x46, 0x69, 0x6e, 0x61,
-	0x6c, 0x69, 0x7a, 0x65, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x12, 0x2e, 0x0a, 0x13, 0x6c, 0x61,
-	0x73, 0x74, 0x5f, 0x6a, 0x75, 0x73, 0x74, 0x69, 0x66, 0x69, 0x65, 0x64, 0x5f, 0x68, 0x61, 0x73,
-	0x68, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x11, 0x6c, 0x61, 0x73, 0x74, 0x4a, 0x75, 0x73,
-	0x74, 0x69, 0x66, 0x69, 0x65, 0x64, 0x48, 0x61, 0x73, 0x68, 0x22, 0x61, 0x0a, 0x0b, 0x41, 0x63,
+	0x69, 0x63, 0x4b, 0x65, 0x79, 0x22, 0x46, 0x0a, 0x04, 0x48, 0x65, 0x61, 0x64, 0x12, 0x16, 0x0a,
+	0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x61, 0x73,
+	0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x61, 0x73, 0x68, 0x22, 0xda, 0x01,
+	0x0a, 0x09, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x62,
+	0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x21, 0x0a, 0x0c, 0x62, 0x6c,
+	0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04,
+	0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x2f, 0x0a,
+	0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x0f, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x49, 0x6e,
+	0x66, 0x6f, 0x52, 0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x12, 0x2c,
+	0x0a, 0x0e, 0x6a, 0x75, 0x73, 0x74, 0x69, 0x66, 0x69, 0x65, 0x64, 0x5f, 0x68, 0x65, 0x61, 0x64,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x52, 0x0d, 0x6a,
+	0x75, 0x73, 0x74, 0x69, 0x66, 0x69, 0x65, 0x64, 0x48, 0x65, 0x61, 0x64, 0x12, 0x2c, 0x0a, 0x0e,
+	0x66, 0x69, 0x6e, 0x61, 0x6c, 0x69, 0x7a, 0x65, 0x64, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x52, 0x0d, 0x66, 0x69, 0x6e,
+	0x61, 0x6c, 0x69, 0x7a, 0x65, 0x64, 0x48, 0x65, 0x61, 0x64, 0x22, 0x61, 0x0a, 0x0b, 0x41, 0x63,
 	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x63, 0x63,
 	0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x63, 0x63, 0x6f,
 	0x75, 0x6e, 0x74, 0x12, 0x22, 0x0a, 0x07, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x18, 0x02,
@@ -317,47 +373,50 @@ func file_chain_proto_rawDescGZIP() []byte {
 	return file_chain_proto_rawDescData
 }
 
-var file_chain_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_chain_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_chain_proto_goTypes = []interface{}{
 	(*SubscribeValidatorRequest)(nil), // 0: SubscribeValidatorRequest
-	(*ChainInfo)(nil),                 // 1: ChainInfo
-	(*AccountInfo)(nil),               // 2: AccountInfo
-	(*ValidatorsInfo)(nil),            // 3: ValidatorsInfo
-	(*Balance)(nil),                   // 4: Balance
-	(*Empty)(nil),                     // 5: Empty
-	(*Hash)(nil),                      // 6: Hash
-	(*Number)(nil),                    // 7: Number
-	(*Account)(nil),                   // 8: Account
-	(*KeyPairs)(nil),                  // 9: KeyPairs
-	(*Block)(nil),                     // 10: Block
-	(*RawData)(nil),                   // 11: RawData
+	(*Head)(nil),                      // 1: Head
+	(*ChainInfo)(nil),                 // 2: ChainInfo
+	(*AccountInfo)(nil),               // 3: AccountInfo
+	(*ValidatorsInfo)(nil),            // 4: ValidatorsInfo
+	(*Balance)(nil),                   // 5: Balance
+	(*Empty)(nil),                     // 6: Empty
+	(*Hash)(nil),                      // 7: Hash
+	(*Number)(nil),                    // 8: Number
+	(*Account)(nil),                   // 9: Account
+	(*KeyPairs)(nil),                  // 10: KeyPairs
+	(*Block)(nil),                     // 11: Block
+	(*RawData)(nil),                   // 12: RawData
 }
 var file_chain_proto_depIdxs = []int32{
-	3,  // 0: ChainInfo.validators:type_name -> ValidatorsInfo
-	4,  // 1: AccountInfo.balance:type_name -> Balance
-	5,  // 2: Chain.GetChainInfo:input_type -> Empty
-	6,  // 3: Chain.GetRawBlock:input_type -> Hash
-	6,  // 4: Chain.GetBlock:input_type -> Hash
-	7,  // 5: Chain.GetBlockHash:input_type -> Number
-	8,  // 6: Chain.GetAccountInfo:input_type -> Account
-	6,  // 7: Chain.Sync:input_type -> Hash
-	5,  // 8: Chain.SubscribeBlocks:input_type -> Empty
-	9,  // 9: Chain.SubscribeTransactions:input_type -> KeyPairs
-	9,  // 10: Chain.SubscribeValidatorTransactions:input_type -> KeyPairs
-	1,  // 11: Chain.GetChainInfo:output_type -> ChainInfo
-	10, // 12: Chain.GetRawBlock:output_type -> Block
-	10, // 13: Chain.GetBlock:output_type -> Block
-	6,  // 14: Chain.GetBlockHash:output_type -> Hash
-	2,  // 15: Chain.GetAccountInfo:output_type -> AccountInfo
-	11, // 16: Chain.Sync:output_type -> RawData
-	11, // 17: Chain.SubscribeBlocks:output_type -> RawData
-	11, // 18: Chain.SubscribeTransactions:output_type -> RawData
-	11, // 19: Chain.SubscribeValidatorTransactions:output_type -> RawData
-	11, // [11:20] is the sub-list for method output_type
-	2,  // [2:11] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	4,  // 0: ChainInfo.validators:type_name -> ValidatorsInfo
+	1,  // 1: ChainInfo.justified_head:type_name -> Head
+	1,  // 2: ChainInfo.finalized_head:type_name -> Head
+	5,  // 3: AccountInfo.balance:type_name -> Balance
+	6,  // 4: Chain.GetChainInfo:input_type -> Empty
+	7,  // 5: Chain.GetRawBlock:input_type -> Hash
+	7,  // 6: Chain.GetBlock:input_type -> Hash
+	8,  // 7: Chain.GetBlockHash:input_type -> Number
+	9,  // 8: Chain.GetAccountInfo:input_type -> Account
+	7,  // 9: Chain.Sync:input_type -> Hash
+	6,  // 10: Chain.SubscribeBlocks:input_type -> Empty
+	10, // 11: Chain.SubscribeTransactions:input_type -> KeyPairs
+	10, // 12: Chain.SubscribeValidatorTransactions:input_type -> KeyPairs
+	2,  // 13: Chain.GetChainInfo:output_type -> ChainInfo
+	11, // 14: Chain.GetRawBlock:output_type -> Block
+	11, // 15: Chain.GetBlock:output_type -> Block
+	7,  // 16: Chain.GetBlockHash:output_type -> Hash
+	3,  // 17: Chain.GetAccountInfo:output_type -> AccountInfo
+	12, // 18: Chain.Sync:output_type -> RawData
+	12, // 19: Chain.SubscribeBlocks:output_type -> RawData
+	12, // 20: Chain.SubscribeTransactions:output_type -> RawData
+	12, // 21: Chain.SubscribeValidatorTransactions:output_type -> RawData
+	13, // [13:22] is the sub-list for method output_type
+	4,  // [4:13] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_chain_proto_init() }
@@ -380,7 +439,7 @@ func file_chain_proto_init() {
 			}
 		}
 		file_chain_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ChainInfo); i {
+			switch v := v.(*Head); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -392,6 +451,18 @@ func file_chain_proto_init() {
 			}
 		}
 		file_chain_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ChainInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_chain_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*AccountInfo); i {
 			case 0:
 				return &v.state
@@ -410,7 +481,7 @@ func file_chain_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_chain_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

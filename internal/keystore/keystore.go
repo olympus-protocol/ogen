@@ -2,6 +2,7 @@ package keystore
 
 import (
 	"errors"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"go.etcd.io/bbolt"
 	"path"
@@ -43,7 +44,7 @@ type keystore struct {
 	// db is a reference to the bbolt database
 	db *bbolt.DB
 	// datadir is the folder where the database is located
-	datadir string
+	datapath string
 	// open prevents accessing the database when is closed
 	open bool
 }
@@ -64,7 +65,7 @@ func (k *keystore) CreateKeystore() error {
 		return ErrorAlreadyOpen
 	}
 	// Open the database
-	db, err := bbolt.Open(path.Join(k.datadir, "keystore.db"), 0600, nil)
+	db, err := bbolt.Open(path.Join(k.datapath, "keystore.db"), 0600, nil)
 	if err != nil {
 		return err
 	}
@@ -85,7 +86,7 @@ func (k *keystore) OpenKeystore() error {
 		return ErrorAlreadyOpen
 	}
 	// Open the database
-	db, err := bbolt.Open(path.Join(k.datadir, "keystore.db"), 0600, nil)
+	db, err := bbolt.Open(path.Join(k.datapath, "keystore.db"), 0600, nil)
 	if err != nil {
 		return err
 	}
@@ -137,9 +138,9 @@ func (k *keystore) Close() error {
 }
 
 // NewKeystore creates a new keystore instance.
-func NewKeystore(datadir string) Keystore {
+func NewKeystore() Keystore {
 	return &keystore{
-		open:    false,
-		datadir: datadir,
+		open:     false,
+		datapath: config.GlobalFlags.DataPath,
 	}
 }

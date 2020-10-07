@@ -430,22 +430,33 @@
         "validators": {
           "$ref": "#/definitions/ValidatorsInfo"
         },
-        "last_justified_epoch": {
-          "type": "string",
-          "format": "uint64"
+        "justified_head": {
+          "$ref": "#/definitions/Head"
         },
-        "last_finalized_epoch": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "last_justified_hash": {
-          "type": "string"
+        "finalized_head": {
+          "$ref": "#/definitions/Head"
         }
       }
     },
     "Hash": {
       "type": "object",
       "properties": {
+        "hash": {
+          "type": "string"
+        }
+      }
+    },
+    "Head": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "slot": {
+          "type": "string",
+          "format": "uint64"
+        },
         "hash": {
           "type": "string"
         }

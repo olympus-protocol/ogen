@@ -1,6 +1,10 @@
 package state
 
 import (
+	"encoding/hex"
+	"fmt"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -16,9 +20,6 @@ type ValidatorsInfo struct {
 	Exited      int64
 	Starting    int64
 }
-
-// LastBlockHashesSize is the size of the last block hashes.
-const LastBlockHashesSize = 8
 
 const (
 	// GovernanceStateActive is the enum to an active Governance voting state
@@ -358,8 +359,8 @@ func NewState(cs primitives.CoinsState, gs primitives.Governance, validators []*
 		LastPaidSlot:                  0,
 	}
 	activeValidators := s.GetValidatorIndicesActiveAt(0)
-	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
-	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators, p)
+	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators)
+	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators)
 	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)) * 8)
@@ -368,4 +369,61 @@ func NewState(cs primitives.CoinsState, gs primitives.Governance, validators []*
 
 func NewEmptyState() State {
 	return new(state)
+}
+
+// GetGenesisStateWithInitializationParameters gets the genesis state with certain parameters.
+func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip *initialization.InitializationParameters, p *params.ChainParams) (State, error) {
+	initialValidators := make([]*primitives.Validator, len(ip.InitialValidators))
+
+	for i, v := range ip.InitialValidators {
+		_, pkh, err := bech32.Decode(v.PayeeAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(pkh) != 20 {
+			return nil, fmt.Errorf("expected payee address to be length 20, got %d", len(pkh))
+		}
+
+		var pkhBytes [20]byte
+		var pubKey [48]byte
+		copy(pkhBytes[:], pkh)
+		pubKeyBytes, err := hex.DecodeString(v.PubKey)
+		if err != nil {
+			return nil, fmt.Errorf("unable to decode pubkey to bytes")
+		}
+		copy(pubKey[:], pubKeyBytes)
+		initialValidators[i] = &primitives.Validator{
+			Balance:          p.DepositAmount * p.UnitsPerCoin,
+			PubKey:           pubKey,
+			PayeeAddress:     pkhBytes,
+			Status:           primitives.StatusActive,
+			FirstActiveEpoch: 0,
+			LastActiveEpoch:  0,
+		}
+	}
+
+	_, premineAddr, err := bech32.Decode(ip.PremineAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	var premineAddrArr [20]byte
+	copy(premineAddrArr[:], premineAddr)
+
+	cs := primitives.CoinsState{
+		Balances: map[[20]byte]uint64{
+			premineAddrArr: 400000 * p.UnitsPerCoin,
+		},
+		Nonces: make(map[[20]byte]uint64),
+	}
+
+	gs := primitives.Governance{
+		ReplaceVotes:   make(map[[20]byte]chainhash.Hash),
+		CommunityVotes: make(map[chainhash.Hash]primitives.CommunityVoteData),
+	}
+
+	s := NewState(cs, gs, initialValidators, genesisHash, p)
+
+	return s, nil
 }

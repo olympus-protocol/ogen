@@ -27,8 +27,11 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 
 	st := s.chain.State()
 	tip := st.Tip()
-	tipState := st.TipState()
+
+	finalized, _ := st.GetFinalizedHead()
+	justified, _ := st.GetJustifiedHead()
 	validators := st.TipState().GetValidators()
+
 	return &proto.ChainInfo{
 		BlockHash:   tip.Hash.String(),
 		BlockHeight: tip.Height,
@@ -39,9 +42,8 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 			Exited:      validators.Exited,
 			Starting:    validators.Starting,
 		},
-		LastJustifiedEpoch: tipState.GetJustifiedEpoch(),
-		LastFinalizedEpoch: tipState.GetFinalizedEpoch(),
-		LastJustifiedHash:  tipState.GetJustifiedEpochHash().String(),
+		JustifiedHead: &proto.Head{Height: justified.Height, Slot: justified.Slot, Hash: hex.EncodeToString(justified.Hash[:])},
+		FinalizedHead: &proto.Head{Height: finalized.Height, Slot: finalized.Slot, Hash: hex.EncodeToString(finalized.Hash[:])},
 	}, nil
 }
 

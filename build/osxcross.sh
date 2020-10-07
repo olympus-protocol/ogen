@@ -5,7 +5,7 @@ set -eu
 OSXCROSS_REPO=tpoechtrager/osxcross
 OSXCROSS_SHA1=c2ad5e8
 OSX_SDK=MacOSX10.15.sdk
-OSX_SDK_SUM=2408d07df7f324d3beea818585a6d990ba99587c218a3969f924dfcc4de93b62
+OSX_SDK_SUM=b6ba29a1219593dee432563c493b1c0db2c9788b99bfa7fdf329ef37e02e11b7
 
 # darwin
 mkdir -p /usr/x86_64-apple-darwin/osxcross

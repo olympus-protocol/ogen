@@ -1,48 +1,20 @@
 package server
 
 import (
-	"context"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
-	"github.com/olympus-protocol/ogen/internal/keystore"
-	"github.com/olympus-protocol/ogen/internal/state"
-	"github.com/olympus-protocol/ogen/pkg/bls"
-	"net/http"
-
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
+	"github.com/olympus-protocol/ogen/internal/dashboard"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/internal/wallet"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/logger"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
-
-type GlobalConfig struct {
-	DataFolder string
-
-	NetworkName string
-	Port        string
-
-	InitConfig state.InitializationParameters
-
-	RPCProxy     bool
-	RPCProxyPort string
-	RPCProxyAddr string
-	RPCPort      string
-	RPCWallet    bool
-	RPCAuthToken string
-
-	Debug   bool
-	LogFile bool
-	Pprof   bool
-}
-type Mempools struct {
-	Votes   mempool.VoteMempool
-	Coins   mempool.CoinsMempool
-	Actions mempool.ActionMempool
-}
 
 type Server interface {
 	HostNode() hostnode.HostNode
@@ -54,16 +26,13 @@ type Server interface {
 
 // Server is the main struct that contains ogen services
 type server struct {
-	log    logger.Logger
-	config *GlobalConfig
-	params params.ChainParams
+	log logger.Logger
 
-	ch   chain.Blockchain
-	hn   hostnode.HostNode
-	rpc  chainrpc.RPCServer
-	prop proposer.Proposer
-
-	pools Mempools
+	ch        chain.Blockchain
+	hn        hostnode.HostNode
+	rpc       chainrpc.RPCServer
+	prop      proposer.Proposer
+	dashboard *dashboard.Dashboard
 }
 
 var _ Server = &server{}
@@ -82,18 +51,9 @@ func (s *server) Chain() chain.Blockchain {
 
 // Start starts running the multiple ogen services.
 func (s *server) Start() {
-	if s.config.Pprof {
-		go func() {
-			http.ListenAndServe("localhost:6060", nil)
-		}()
-	}
 	err := s.ch.Start()
 	if err != nil {
 		s.log.Fatal("unable to start chain instance")
-	}
-	err = s.hn.Start()
-	if err != nil {
-		s.log.Fatal("unable to start host node")
 	}
 	go func() {
 		err := s.rpc.Start()
@@ -105,117 +65,99 @@ func (s *server) Start() {
 	if err != nil {
 		s.log.Fatal("unable to start proposer")
 	}
+	if config.GlobalFlags.Dashboard {
+		go func() {
+			err = s.dashboard.Start()
+			if err != nil {
+				s.log.Fatal(err)
+			}
+		}()
+	}
 }
 
 // Stop closes the ogen services.
 func (s *server) Stop() error {
 	s.ch.Stop()
 	s.rpc.Stop()
-	s.hn.Stop()
 	return nil
 }
 
 // NewServer creates a server instance and initializes the ogen services.
-func NewServer(ctx context.Context, configParams *GlobalConfig, logger logger.Logger, p *params.ChainParams, db blockdb.Database, ip state.InitializationParameters) (Server, error) {
+func NewServer(db blockdb.Database) (Server, error) {
 
-	logger.Tracef("Loading network parameters for %v", p.Name)
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
 
-	logger.Tracef("Initializing bls module with params for %v", p.Name)
+	log.Tracef("Loading network parameters for %v", netParams.Name)
 
-	bls.Initialize(p)
+	log.Tracef("Initializing bls module with params for %v", netParams.Name)
 
-	ch, err := chain.NewBlockchain(loadChainConfig(configParams, logger), p, db, ip)
+	bls.Initialize(netParams)
+
+	ch, err := chain.NewBlockchain(db)
 	if err != nil {
 		return nil, err
 	}
 
-	hn, err := hostnode.NewHostNode(ctx, loadPeersManConfig(configParams, logger), ch, p)
+	hn, err := hostnode.NewHostNode(ch)
 	if err != nil {
 		return nil, err
 	}
 
-	lastActionManager, err := actionmanager.NewLastActionManager(ctx, hn, logger, ch, p)
+	lam, err := actionmanager.NewLastActionManager(hn, ch)
 	if err != nil {
 		return nil, err
 	}
 
-	coinsMempool, err := mempool.NewCoinsMempool(ctx, logger, ch, hn, p)
+	cpool, err := mempool.NewCoinsMempool(ch, hn)
 	if err != nil {
 		return nil, err
 	}
 
-	voteMempool, err := mempool.NewVoteMempool(ctx, logger, p, ch, hn, lastActionManager)
+	vpool, err := mempool.NewVoteMempool(ch, hn, lam)
 	if err != nil {
 		return nil, err
 	}
 
-	actionsMempool, err := mempool.NewActionMempool(ctx, logger, p, ch, hn)
+	apool, err := mempool.NewActionMempool(ch, hn)
 	if err != nil {
 		return nil, err
 	}
 
-	voteMempool.Notify(actionsMempool)
+	vpool.Notify(apool)
 
-	w, err := wallet.NewWallet(ctx, logger, configParams.DataFolder, p, ch, hn, coinsMempool, actionsMempool)
+	w, err := wallet.NewWallet(ch, hn, cpool, apool)
 	if err != nil {
 		return nil, err
 	}
 
-	ks := keystore.NewKeystore(configParams.DataFolder)
+	ks := keystore.NewKeystore()
 
-	prop, err := proposer.NewProposer(logger, p, ch, hn, voteMempool, coinsMempool, actionsMempool, lastActionManager, ks)
+	prop, err := proposer.NewProposer(ch, hn, vpool, cpool, apool, lam, ks)
 	if err != nil {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(loadRPCConfig(configParams, logger), ch, hn, w, p, prop)
+	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &server{
-		config: configParams,
-		log:    logger,
+		log: log,
 
 		ch:   ch,
 		hn:   hn,
 		rpc:  rpc,
 		prop: prop,
-		pools: Mempools{
-			Votes:   voteMempool,
-			Coins:   coinsMempool,
-			Actions: actionsMempool,
-		},
 	}
+
+	if config.GlobalFlags.Dashboard {
+		s.dashboard, err = dashboard.NewDashboard(hn, ch, prop)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return s, nil
-}
-
-func loadChainConfig(config *GlobalConfig, logger logger.Logger) chain.Config {
-	cfg := chain.Config{
-		Log:     logger,
-		Datadir: config.DataFolder,
-	}
-	return cfg
-}
-
-func loadPeersManConfig(config *GlobalConfig, logger logger.Logger) hostnode.Config {
-	cfg := hostnode.Config{
-		Log:  logger,
-		Port: config.Port,
-		Path: config.DataFolder,
-	}
-	return cfg
-}
-
-func loadRPCConfig(config *GlobalConfig, logger logger.Logger) chainrpc.Config {
-	return chainrpc.Config{
-		DataDir:      config.DataFolder,
-		Log:          logger,
-		RPCWallet:    config.RPCWallet,
-		RPCProxy:     config.RPCProxy,
-		RPCProxyPort: config.RPCProxyPort,
-		RPCProxyAddr: config.RPCProxyAddr,
-		RPCPort:      config.RPCPort,
-		Network:      "tcp",
-	}
 }

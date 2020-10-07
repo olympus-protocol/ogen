@@ -5,12 +5,14 @@ go 1.14
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
-	github.com/cjrd/allocate v0.0.0-20191115010018-022b87fe59fc
 	github.com/dgraph-io/badger v1.6.1
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/fatih/color v1.9.0
 	github.com/ferranbt/fastssz v0.0.0-20200826142241-3a913c5a1313
-	github.com/golang/mock v1.3.1
+	github.com/gin-gonic/gin v1.6.3
+	github.com/gobuffalo/envy v1.9.0 // indirect
+	github.com/gobuffalo/packd v1.0.0 // indirect
+	github.com/gobuffalo/packr v1.30.1
 	github.com/golang/protobuf v1.4.2
 	github.com/google/gofuzz v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
@@ -32,14 +34,19 @@ require (
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
+	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.0.0
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	go.etcd.io/bbolt v1.3.5
-	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
+	golang.org/x/sync v0.0.0-20200930132711-30421366ff76 // indirect
+	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf // indirect
+	golang.org/x/tools v0.0.0-20200308013534-11ec41452d41 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.25.0

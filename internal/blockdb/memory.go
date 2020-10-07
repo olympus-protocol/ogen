@@ -27,14 +27,14 @@ type memoryDB struct {
 	tip chainhash.Hash
 
 	blockRows     map[chainhash.Hash]*primitives.BlockNodeDisk
-	blockRowsLock sync.RWMutex
+	blockRowsLock sync.Mutex
 
 	blocks     map[chainhash.Hash]*primitives.Block
-	blocksLock sync.RWMutex
+	blocksLock sync.Mutex
 
 	log    logger.Logger
 	params params.ChainParams
-	lock   sync.RWMutex
+	lock   sync.Mutex
 }
 
 // NewBadgerDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
