@@ -1,4 +1,4 @@
-FROM docker.pkg.github.com/olympus-protocol/ogen-builder/ogen-builder:main as build
+FROM eabz/ogen-builder:latest as build
 
 COPY .. /build/ogen
 

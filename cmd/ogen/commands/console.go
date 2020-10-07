@@ -234,7 +234,7 @@ func newCli(rpcClient *rpcclient.Client) *CLI {
 }
 
 func StartConsole(host string, args []string) {
-	rpcClient := rpcclient.NewRPCClient(host, DataPath, false)
+	rpcClient := rpcclient.NewRPCClient(host, false)
 	cli := newCli(rpcClient)
 	cli.Run(args)
 }

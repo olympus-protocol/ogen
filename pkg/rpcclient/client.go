@@ -44,7 +44,7 @@ func (c *Client) Wallet() proto.WalletClient {
 }
 
 // NewRPCClient creates a new RPC client.
-func NewRPCClient(addr string, datadir string, insecure bool) *Client {
+func NewRPCClient(addr string, insecure bool) *Client {
 	var creds credentials.TransportCredentials
 	if insecure {
 		creds = credentials.NewTLS(&tls.Config{

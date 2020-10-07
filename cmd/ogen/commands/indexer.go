@@ -158,7 +158,7 @@ var indexerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log := logger.New(os.Stdin)
 
-		rpcClient := rpcclient.NewRPCClient(rpcHost, DataPath, true)
+		rpcClient := rpcclient.NewRPCClient(rpcHost, true)
 
 		dbp := &indexer.Config{
 			Hostname:     hostname,
@@ -168,6 +168,7 @@ var indexerCmd = &cobra.Command{
 			DatabaseName: dbname,
 			DriverName:   driver,
 		}
+
 		dbClient := indexer.NewDBClient(dbp, DataPath, log)
 
 		indexer := Indexer{
