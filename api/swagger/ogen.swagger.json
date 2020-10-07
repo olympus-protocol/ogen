@@ -1,0 +1,1902 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "chain.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/chain/account/{account}": {
+      "get": {
+        "operationId": "Chain_GetAccountInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/AccountInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/block/{hash}": {
+      "get": {
+        "operationId": "Chain_GetBlock",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Block"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/blockhash/{number}": {
+      "get": {
+        "operationId": "Chain_GetBlockHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Hash"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/chaininfo": {
+      "get": {
+        "operationId": "Chain_GetChainInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ChainInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/rawblock/{hash}": {
+      "get": {
+        "operationId": "Chain_GetRawBlock",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Block"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/subscribe/account": {
+      "post": {
+        "operationId": "Chain_SubscribeTransactions",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/RawData"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of RawData"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/subscribe/blocks": {
+      "get": {
+        "operationId": "Chain_SubscribeBlocks",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/RawData"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of RawData"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/subscribe/validator": {
+      "post": {
+        "operationId": "Chain_SubscribeValidatorTransactions",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/RawData"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of RawData"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/chain/sync/{hash}": {
+      "get": {
+        "operationId": "Chain_Sync",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/RawData"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of RawData"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Chain"
+        ]
+      }
+    },
+    "/consensus/getepochinfo/{number}": {
+      "get": {
+        "operationId": "Consensus_GetEpochInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EpochInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Consensus"
+        ]
+      }
+    },
+    "/consensus/getslotinfo/{number}": {
+      "get": {
+        "operationId": "Consensus_GetSlotInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SlotInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Consensus"
+        ]
+      }
+    },
+    "/consensus/participation": {
+      "get": {
+        "operationId": "Consensus_GetParticipationStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ParticipationStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Consensus"
+        ]
+      }
+    },
+    "/indexer/account/{account}": {
+      "get": {
+        "operationId": "Indexer_GetAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/AccountDetail"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Indexer"
+        ]
+      }
+    },
+    "/indexer/block/{hash}": {
+      "get": {
+        "operationId": "Indexer_GetBlockTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BlockTxs"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Indexer"
+        ]
+      }
+    },
+    "/indexer/blockhash/{number}": {
+      "get": {
+        "operationId": "Indexer_GetBlockHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Hash"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Indexer"
+        ]
+      }
+    },
+    "/indexer/status": {
+      "get": {
+        "operationId": "Indexer_GetIndexerStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/IndexerStatus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Indexer"
+        ]
+      }
+    },
+    "/indexer/tx-detail/{hash}": {
+      "get": {
+        "operationId": "Indexer_GetDetailedTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/TxDetail"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Indexer"
+        ]
+      }
+    },
+    "/indexer/tx/{hash}": {
+      "get": {
+        "operationId": "Indexer_GetTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Tx"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Indexer"
+        ]
+      }
+    },
+    "/network/addpeer/{host}": {
+      "get": {
+        "operationId": "Network_AddPeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "host",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Network"
+        ]
+      }
+    },
+    "/network/networkinfo": {
+      "get": {
+        "operationId": "Network_GetNetworkInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NetworkInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Network"
+        ]
+      }
+    },
+    "/network/peers": {
+      "get": {
+        "operationId": "Network_GetPeersInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Peers"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Network"
+        ]
+      }
+    },
+    "/utils/decoderawblock": {
+      "post": {
+        "operationId": "Utils_DecodeRawBlock",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Block"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RawData"
+            }
+          }
+        ],
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/utils/decoderawtransaction": {
+      "post": {
+        "operationId": "Utils_DecodeRawTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Tx"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RawData"
+            }
+          }
+        ],
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/utils/genvalidatorkey": {
+      "post": {
+        "operationId": "Utils_GenValidatorKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GenValidatorKeys"
+            }
+          }
+        ],
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/utils/getparticipationinfo": {
+      "get": {
+        "operationId": "Utils_GetParticipationStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ParticipationInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/utils/submitrawdata": {
+      "post": {
+        "operationId": "Utils_SubmitRawData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RawData"
+            }
+          }
+        ],
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/validators/account/{account}": {
+      "get": {
+        "operationId": "Validators_GetAccountValidators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ValidatorsRegistry"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Validators"
+        ]
+      }
+    },
+    "/validators/list": {
+      "get": {
+        "operationId": "Validators_GetValidatorsList",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ValidatorsRegistry"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Validators"
+        ]
+      }
+    },
+    "/wallet/account": {
+      "get": {
+        "operationId": "Wallet_GetAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/balance": {
+      "get": {
+        "operationId": "Wallet_GetBalance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Balance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/close": {
+      "get": {
+        "operationId": "Wallet_CloseWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/create": {
+      "post": {
+        "operationId": "Wallet_CreateWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WalletReference"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/dump": {
+      "get": {
+        "operationId": "Wallet_DumpWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/exitvalidator/{public}": {
+      "get": {
+        "operationId": "Wallet_ExitValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "public",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "private",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/exitvalidatorbulk": {
+      "post": {
+        "operationId": "Wallet_ExitValidatorBulk",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/import": {
+      "post": {
+        "operationId": "Wallet_ImportWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ImportWalletData"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/list": {
+      "get": {
+        "operationId": "Wallet_ListWallets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Wallets"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/open": {
+      "post": {
+        "operationId": "Wallet_OpenWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WalletReference"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/sendtransaction": {
+      "post": {
+        "operationId": "Wallet_SendTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Hash"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SendTransactionInfo"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/startvalidator/{private}": {
+      "get": {
+        "operationId": "Wallet_StartValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "private",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "public",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/startvalidatorbulk": {
+      "post": {
+        "operationId": "Wallet_StartValidatorBulk",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KeyPairs"
+            }
+          }
+        ],
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/validators": {
+      "get": {
+        "operationId": "Wallet_GetValidators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ValidatorsRegistry"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AccountDetail": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "balance": {
+          "$ref": "#/definitions/Balance"
+        },
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "total_received": {
+          "type": "string"
+        },
+        "total_sent": {
+          "type": "string"
+        },
+        "txs": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "tx_list": {
+          "$ref": "#/definitions/HashList"
+        }
+      }
+    },
+    "AccountInfo": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "balance": {
+          "$ref": "#/definitions/Balance"
+        },
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "Balance": {
+      "type": "object",
+      "properties": {
+        "confirmed": {
+          "type": "string"
+        },
+        "unconfirmed": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "string"
+        },
+        "total": {
+          "type": "string"
+        }
+      }
+    },
+    "Block": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "raw_block": {
+          "type": "string"
+        },
+        "header": {
+          "$ref": "#/definitions/BlockHeader"
+        },
+        "txs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signature": {
+          "type": "string"
+        },
+        "randao_signature": {
+          "type": "string"
+        }
+      }
+    },
+    "BlockHeader": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "tx_merkle_root": {
+          "type": "string"
+        },
+        "vote_merkle_root": {
+          "type": "string"
+        },
+        "deposit_merkle_root": {
+          "type": "string"
+        },
+        "exit_merkle_root": {
+          "type": "string"
+        },
+        "vote_slashing_merkle_root": {
+          "type": "string"
+        },
+        "randao_slashing_merkle_root": {
+          "type": "string"
+        },
+        "proposer_slashing_merkle_root": {
+          "type": "string"
+        },
+        "prev_block_hash": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "slot": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "state_root": {
+          "type": "string"
+        },
+        "fee_address": {
+          "type": "string"
+        }
+      }
+    },
+    "BlockTxs": {
+      "type": "object",
+      "properties": {
+        "tx_count": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "txs": {
+          "$ref": "#/definitions/HashList"
+        }
+      }
+    },
+    "ChainInfo": {
+      "type": "object",
+      "properties": {
+        "block_hash": {
+          "type": "string"
+        },
+        "block_height": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "validators": {
+          "$ref": "#/definitions/ValidatorsInfo"
+        },
+        "justified_head": {
+          "$ref": "#/definitions/Head"
+        },
+        "finalized_head": {
+          "$ref": "#/definitions/Head"
+        }
+      }
+    },
+    "ComitteeInformation": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "proposer": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "voted": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "EpochInfo": {
+      "type": "object",
+      "properties": {
+        "epoch_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "passed": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SlotInfo"
+          }
+        }
+      }
+    },
+    "GenValidatorKeys": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "Hash": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        }
+      }
+    },
+    "HashList": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Head": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "slot": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "hash": {
+          "type": "string"
+        }
+      }
+    },
+    "IP": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        }
+      }
+    },
+    "ImportWalletData": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "key": {
+          "$ref": "#/definitions/KeyPair"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "IndexerStatus": {
+      "type": "object",
+      "properties": {
+        "last_block_height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "last_block_time": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "db_size": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "initial_sync": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "in_sync": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "about": {
+          "type": "string"
+        }
+      }
+    },
+    "KeyPair": {
+      "type": "object",
+      "properties": {
+        "public": {
+          "type": "string"
+        },
+        "private": {
+          "type": "string"
+        }
+      }
+    },
+    "KeyPairs": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "NetworkInfo": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ID": {
+          "type": "string"
+        }
+      }
+    },
+    "ParticipationInfo": {
+      "type": "object",
+      "properties": {
+        "voting": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "proposing": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "total_validators": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "owned_validators": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "voting_validators": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "ParticipationStatus": {
+      "type": "object",
+      "properties": {
+        "global_slot_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "epoch_slot_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "expected_participation_balance": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "current_participation_balance": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "participation_percentage": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    },
+    "Peer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "host": {
+          "$ref": "#/definitions/IP"
+        }
+      }
+    },
+    "Peers": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Peer"
+          }
+        }
+      }
+    },
+    "RawData": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "SendTransactionInfo": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      }
+    },
+    "SlotInfo": {
+      "type": "object",
+      "properties": {
+        "slot_number": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "passed": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "required_comitters": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "comittees_indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComitteeInformation"
+          }
+        }
+      }
+    },
+    "Success": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "Tx": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "from_public_key": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "fee": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "signature": {
+          "type": "string"
+        }
+      }
+    },
+    "TxDetail": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/Tx"
+        },
+        "block_hash": {
+          "type": "string"
+        },
+        "block_height": {
+          "type": "string"
+        },
+        "confirmations": {
+          "type": "string",
+          "format": "int64"
+        },
+        "block_time": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "ValidatorRegistry": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string"
+        },
+        "public_key": {
+          "type": "string"
+        },
+        "payee_address": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "first_active_epoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "last_active_epoch": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "ValidatorsInfo": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "string",
+          "format": "int64"
+        },
+        "pending_exit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "penalty_exit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "exited": {
+          "type": "string",
+          "format": "int64"
+        },
+        "starting": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "ValidatorsRegistry": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/ValidatorsInfo"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValidatorRegistry"
+          }
+        }
+      }
+    },
+    "WalletReference": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "Wallets": {
+      "type": "object",
+      "properties": {
+        "wallets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    },
+    "grpc.gateway.runtime.StreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    }
+  }
+}
