@@ -39,7 +39,7 @@ func init() {
 	rootCmd.Flags().StringVar(&Port, "port", "24126", "Default port for p2p connections listener.")
 
 	rootCmd.Flags().BoolVar(&RPCProxy, "rpc_proxy", false, "Enable http proxy for RPC server.")
-	rootCmd.Flags().StringVar(&RPCProxyPort, "rpc_proxy_port", "8080", "Port for the http proxy.")
+	rootCmd.Flags().StringVar(&RPCProxyPort, "rpc_proxy_port", "8081", "Port for the http proxy.")
 	rootCmd.Flags().StringVar(&RPCPort, "rpc_port", "24127", "RPC server port.")
 	rootCmd.Flags().StringVar(&RPCPRoxyAddr, "rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
 	rootCmd.Flags().BoolVar(&RPCWallet, "rpc_wallet", false, "Enable wallet access through RPC.")
