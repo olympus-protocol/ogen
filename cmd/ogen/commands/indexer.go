@@ -46,6 +46,7 @@ func (i *Indexer) Run() {
 func (i *Indexer) blockSync() {
 sync:
 	i.initialSync()
+	i.log.Info("Listening for new blocks")
 	subscribe, err := i.rpcClient.Chain().SubscribeBlocks(context.Background(), &proto.Empty{})
 	if err != nil {
 		panic("unable to initialize subscription client")
@@ -59,21 +60,26 @@ sync:
 		// To make sure the explorer is always synced, every new block we reinsert the last 5
 		blockBytes, err := hex.DecodeString(res.Data)
 		if err != nil {
-			i.log.Error("unable to parse block")
+			i.log.Errorf("unable to parse error %s", err.Error())
 			continue
 		}
-		var blockOgen primitives.Block
-		err = blockOgen.Unmarshal(blockBytes)
+		var block primitives.Block
+		err = block.Unmarshal(blockBytes)
 		if err != nil {
-			i.log.Error("unable to parse block")
+			i.log.Errorf("unable to parse error %s", err.Error())
 			continue
 		}
-		err = i.dbClient.InsertBlock(blockOgen)
+		err = i.dbClient.InsertBlock(block)
 		if err != nil {
-			i.log.Error("unable to insert new block")
+			if err == indexer.ErrorPrevBlockHash {
+				i.log.Error(indexer.ErrorPrevBlockHash)
+				i.log.Info("Restarting sync...")
+				goto sync
+			}
+			i.log.Errorf("unable to insert error %s", err.Error())
 			continue
 		}
-		i.log.Info("received and parsed new block")
+		i.log.Infof("Received new block %s", block.Hash().String())
 	}
 }
 
@@ -105,6 +111,7 @@ func (i *Indexer) initialSync() {
 		latestBHash = indexState.LastBlockHash
 	}
 
+	i.log.Infof("Starting initial sync...")
 	syncClient, err := i.rpcClient.Chain().Sync(context.Background(), &proto.Hash{Hash: latestBHash})
 	if err != nil {
 		i.log.Fatal("unable to initialize initial sync")
@@ -127,13 +134,13 @@ func (i *Indexer) initialSync() {
 			i.log.Error("unable to parse block")
 			break
 		}
-		var blockOgen primitives.Block
-		err = blockOgen.Unmarshal(blockBytes)
+		var block primitives.Block
+		err = block.Unmarshal(blockBytes)
 		if err != nil {
 			i.log.Error("unable to parse block")
 			break
 		}
-		err = i.dbClient.InsertBlock(blockOgen)
+		err = i.dbClient.InsertBlock(block)
 		if err != nil {
 			i.log.Error("unable to insert block")
 			break
@@ -141,53 +148,7 @@ func (i *Indexer) initialSync() {
 			blockCount++
 		}
 	}
-	i.log.Infof("registered %v blocks", blockCount)
-}
-
-func (i *Indexer) customSync(blockGap int) {
-
-	//get the saved state
-	customState, err := i.dbClient.GetSpecificState(blockGap)
-	if err != nil {
-		panic(err)
-	}
-
-	syncClient, err := i.rpcClient.Chain().Sync(context.Background(), &proto.Hash{Hash: customState.LastBlockHash})
-	if err != nil {
-		panic("unable to initialize sync client")
-	}
-
-	blockCount := 0
-	for {
-		res, err := syncClient.Recv()
-		if err != nil {
-			if err == io.EOF {
-				_ = syncClient.CloseSend()
-				break
-			}
-			i.log.Error(err)
-			break
-		}
-		blockBytes, err := hex.DecodeString(res.Data)
-		if err != nil {
-			i.log.Error("unable to parse block")
-			break
-		}
-		var blockOgen primitives.Block
-		err = blockOgen.Unmarshal(blockBytes)
-		if err != nil {
-			i.log.Error("unable to parse block")
-			break
-		}
-		err = i.dbClient.InsertBlock(blockOgen)
-		if err != nil {
-			i.log.Error("unable to insert")
-			break
-		} else {
-			blockCount++
-		}
-	}
-	i.log.Infof("registered %v blocks", blockCount)
+	i.log.Infof("Initial sync finished, parsed %d blocks", blockCount)
 }
 
 var indexerCmd = &cobra.Command{
