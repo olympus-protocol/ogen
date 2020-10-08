@@ -16,7 +16,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/gofuzz v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
-	github.com/herumi/bls-eth-go-binary v0.0.0-20200923072303-32b29e5d8cbf
+	github.com/herumi/bls-eth-go-binary v0.0.0-20201008062400-71567a52ad65
 	github.com/ipfs/go-ds-badger v0.2.3
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/libp2p/go-libp2p v0.11.0
