@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -18,7 +19,16 @@ type utilsServer struct {
 	proto.UnimplementedUtilsServer
 }
 
+func (s *utilsServer) GenKeyPair(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
+	defer ctx.Done()
+
+	k := bls.RandKey()
+	return &proto.KeyPair{Private: k.ToWIF(), Public: k.PublicKey().ToAccount()}, nil
+}
+
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
+	defer ctx.Done()
+
 	key, err := s.keystore.GenerateNewValidatorKey(in.Keys)
 	if err != nil {
 		return nil, err
@@ -31,6 +41,8 @@ func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidato
 }
 
 func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {
+	defer ctx.Done()
+
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
 		return nil, err
@@ -99,6 +111,8 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 }
 
 func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawData) (*proto.Tx, error) {
+	defer ctx.Done()
+
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
 		return nil, err
@@ -119,7 +133,10 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 	}
 	return txParse, nil
 }
+
 func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (*proto.Block, error) {
+	defer ctx.Done()
+
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
 		return nil, err

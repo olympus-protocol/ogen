@@ -701,6 +701,28 @@
         ]
       }
     },
+    "/utils/genkeypair": {
+      "get": {
+        "operationId": "Utils_GenKeyPair",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
     "/utils/genvalidatorkey": {
       "post": {
         "operationId": "Utils_GenValidatorKey",
