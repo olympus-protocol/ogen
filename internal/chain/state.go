@@ -89,6 +89,7 @@ type StateService interface {
 	GetStateForHash(hash chainhash.Hash) (state.State, bool)
 	GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, view state.BlockView) (state.State, []*primitives.EpochReceipt, error)
 	Add(block *primitives.Block, isCheck bool) (state.State, []*primitives.EpochReceipt, error)
+	SetBlockState(h chainhash.Hash, st state.State) error
 	RemoveBeforeSlot(slot uint64)
 	GetRowByHash(h chainhash.Hash) (*chainindex.BlockRow, bool)
 	Height() uint64
@@ -261,6 +262,11 @@ func (s *stateService) GetStateForHashAtSlot(hash chainhash.Hash, slot uint64, v
 	return derivedState.deriveState(slot, view)
 }
 
+func (s *stateService) SetBlockState(h chainhash.Hash, st state.State) error {
+	s.setBlockState(h, st)
+	return nil
+}
+
 // Add adds a block to the blockchain.
 func (s *stateService) Add(block *primitives.Block, isCheck bool) (state.State, []*primitives.EpochReceipt, error) {
 	lastBlockHash := block.Header.PrevBlockHash
@@ -323,6 +329,7 @@ func (s *stateService) Height() uint64 {
 
 // TipState gets the state of the tip of the blockchain.
 func (s *stateService) TipState() state.State {
+	s.log.Infof("[StateService ==TipState] ==%s", s.chain.Tip().Hash)
 	return s.stateMap[s.chain.Tip().Hash].firstSlotState
 }
 

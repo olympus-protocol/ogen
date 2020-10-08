@@ -316,11 +316,15 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	/*********
 	  Finish all of checks.
 	*/
+	//_, _, _ = ch.State().Add(block, false)
+	_ = ch.State().SetBlockState(block.Hash(), newState)
+
 	if err := ch.UpdateChainHead(blockHash, false); err != nil {
 		ch.log.Infof("ProcessBlock==UpdateChainHead==Failed")
 		return err
 	}
-	_, _, _ = ch.State().Add(block, false)
+
+	ch.log.Infof("ProcessBlock == State Add finished")
 
 	for _, v := range block.Votes {
 		voted += len(v.ParticipationBitfield.BitIndices())
