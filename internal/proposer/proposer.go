@@ -318,6 +318,7 @@ func (p *proposer) VoteForBlocks() {
 			}
 
 			validators, err := voteState.GetVoteCommittee(slotToVote)
+			p.log.Debugf(" for slot %d with %d validators", slotToVote, len(validators))
 			if err != nil {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
 				voteTimer = time.NewTimer(time.Second * 2)
