@@ -291,10 +291,10 @@ func (s *stateService) Add(block *primitives.Block) (state.State, []*primitives.
 func (s *stateService) RemoveBeforeSlot(slot uint64) {
 	s.stateMapLock.Lock()
 	defer s.stateMapLock.Unlock()
-	if slot < 20 {
+	if slot < 1000 {
 		return
 	}
-	slot -= 20
+	slot -= 1000
 	statesCleaned := 0
 	for i, st := range s.stateMap {
 		if st.firstSlot < slot {
