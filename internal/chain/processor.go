@@ -218,6 +218,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		Eventually a block is manged into RawBlck and BlockRow.
 	*/
 	prev, err := ch.state.Index().Add(block, true)
+	//row, err := ch.state.Index().Add(block)
 	if err != nil {
 		ch.log.Infof("ProcessBlock==Index().Add==Failed")
 		return err
@@ -234,22 +235,6 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 	//	ch.log.Infof("ProcessBlock==SetBlockRow2==Failed")
 	//	return err
 	//}
-
-	for _, a := range block.Votes {
-		validators, err := newState.GetVoteCommittee(a.Data.Slot)
-		if err != nil {
-			return err
-		}
-
-		ch.state.SetLatestVotesIfNeeded(validators, a)
-	}
-	/*********
-	  Finish all of checks.
-	*/
-	if err := ch.UpdateChainHead(blockHash, true); err != nil {
-		ch.log.Infof("ProcessBlock==UpdateChainHead==Failed")
-		return err
-	}
 
 	view := NewChainView(prev)
 	//view, err := ch.State().GetSubView(block.Header.PrevBlockHash)
@@ -319,6 +304,22 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return err
 	}
 
+	for _, a := range block.Votes {
+		validators, err := newState.GetVoteCommittee(a.Data.Slot)
+		if err != nil {
+			return err
+		}
+
+		ch.state.SetLatestVotesIfNeeded(validators, a)
+	}
+
+	/*********
+	  Finish all of checks.
+	*/
+	if err := ch.UpdateChainHead(blockHash, false); err != nil {
+		ch.log.Infof("ProcessBlock==UpdateChainHead==Failed")
+		return err
+	}
 	_, _, _ = ch.State().Add(block, false)
 
 	for _, v := range block.Votes {

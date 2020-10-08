@@ -270,6 +270,7 @@ func (s *stateService) Add(block *primitives.Block, isCheck bool) (state.State, 
 		return nil, nil, err
 	}
 
+	//Get state for previous block hash
 	lastBlockState, receipts, err := s.GetStateForHashAtSlot(lastBlockHash, block.Header.Slot, &view)
 	if err != nil {
 		return nil, nil, err
