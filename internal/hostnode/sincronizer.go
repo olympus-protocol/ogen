@@ -64,12 +64,12 @@ type synchronizer struct {
 func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error) {
 
 	sp := &synchronizer{
-		host:               host,
-		log:                config.GlobalParams.Logger,
-		ctx:                config.GlobalParams.Context,
-		chain:              chain,
-		sync:               true,
-		peersTrack:         make(map[peer.ID]*peerInfo),
+		host:       host,
+		log:        config.GlobalParams.Logger,
+		ctx:        config.GlobalParams.Context,
+		chain:      chain,
+		sync:       true,
+		peersTrack: make(map[peer.ID]*peerInfo),
 	}
 
 	if err := host.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersionMsg); err != nil {

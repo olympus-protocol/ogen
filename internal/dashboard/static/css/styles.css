@@ -1,0 +1,68 @@
+  @font-face {
+    font-family: 'All Round Gothic';
+    src: url('../fonts/all-round-gothic.ttf');
+  }
+  
+  @font-face {
+    font-family: 'Century Gothic';
+    src: url('../fonts/gothic.ttf');
+  }
+
+
+  body{
+    font-family: 'Century Gothic', serif;
+  }
+
+  footer {
+    position: relative;
+  }
+
+  h1,h2,h3,h4,h5,h6 {
+    font-family: 'All Round Gothic', serif !important;
+  }
+
+  .abs-center{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container-lg{
+    width: 100%;
+    padding-left: 100px;
+    padding-right: 100px;
+}
+
+.main-footer-separator{
+  padding: 50px;
+}
+
+.row{
+  margin: 10px;
+}
+
+.text-overflow{
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+a {
+  color: #364999;
+  text-decoration: none;
+}
+
+a:hover{
+  color: #364999;
+  text-decoration: none;
+}
+
+/* Mobile Device Sizes */
+/* Extra Large xl*/
+  @media only screen and (max-width: 991px){}
+/* Large lg */
+  @media only screen and (max-width: 768px){}
+/* Medium md */
+  @media only screen and (max-width: 650px){}
+/* Small sm */
+  @media only screen and (max-width: 500px){}

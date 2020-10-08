@@ -35,6 +35,7 @@ type HostNode interface {
 	GetPeerInfos() []peer.AddrInfo
 	GetPeerDirection(id peer.ID) network.Direction
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
+	GetPeersStats() []*peerInfo
 	RegisterHandler(message string, handler MessageHandler) error
 	RegisterTopicHandler(message string, handler MessageHandler) error
 	HandleStream(s network.Stream)
@@ -100,6 +101,7 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		ctx,
 		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
 		libp2p.Identity(priv),
+		libp2p.NATPortMap(),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
 		libp2p.Peerstore(ps),
 		libp2p.ConnectionManager(connman),
@@ -233,6 +235,16 @@ func (node *hostNode) Broadcast(msg p2p.Message) error {
 		return err
 	}
 	return node.topic.Publish(node.ctx, buf.Bytes())
+}
+
+func (node *hostNode) GetPeersStats() []*peerInfo {
+	node.synchronizer.peersTrackLock.Lock()
+	var peers []*peerInfo
+	for _, p := range node.synchronizer.peersTrack {
+		peers = append(peers, p)
+	}
+	node.synchronizer.peersTrackLock.Unlock()
+	return peers
 }
 
 func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {

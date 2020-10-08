@@ -16,7 +16,7 @@ User=root
 LimitNOFILE=1024
 Restart=on-failure
 RestartSec=10
-ExecStart=/usr/local/bin/ogen --logfile
+ExecStart=/usr/local/bin/ogen --logfile --dashboard
 WorkingDirectory=/root/.config/ogen
 PermissionsStartOnly=true
 
@@ -60,6 +60,8 @@ cd /opt || exit
 rm -rf ogen
 
 git clone https://github.com/olympus-protocol/ogen &> /dev/null
+
+export PATH="/root/go/bin":$PATH
 
 cd ogen && bash ./scripts/build.sh &> /dev/null && cp ogen /usr/local/bin
 

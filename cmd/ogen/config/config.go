@@ -19,17 +19,19 @@ var (
 )
 
 type Flags struct {
-	DataPath     string
-	NetworkName  string
-	Port         string
-	RPCProxy     bool
-	RPCProxyPort string
-	RPCProxyAddr string
-	RPCPort      string
-	RPCWallet    bool
-	RPCAuthToken string
-	Debug        bool
-	LogFile      bool
+	DataPath      string
+	NetworkName   string
+	Port          string
+	RPCProxy      bool
+	RPCProxyPort  string
+	RPCProxyAddr  string
+	RPCPort       string
+	RPCWallet     bool
+	RPCAuthToken  string
+	Debug         bool
+	LogFile       bool
+	Dashboard     bool
+	DashboardPort string
 }
 
 type Params struct {
