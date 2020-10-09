@@ -99,3 +99,9 @@ message ValidatorsInfo {
     int64 exited = 4;
     int64 starting = 5;
 }
+
+message Head {
+    uint64 height = 1;
+    uint64 slot = 2;
+    string hash = 3;
+}

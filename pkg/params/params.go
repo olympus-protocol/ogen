@@ -3,6 +3,7 @@ package params
 import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"math"
 )
@@ -121,6 +122,22 @@ var Mainnet = ChainParams{
 	},
 }
 
+var _, daoTest1Bytes, _ = bech32.Decode("tlpub1tppnrl6hv7gs2je6vrpa0xzrxyjuh32pnw4uua")
+var _, daoTest2Bytes, _ = bech32.Decode("tlpub1nnpct659h9vwf2u3ty787txzy2kamwxp8zh42w")
+var _, daoTest3Bytes, _ = bech32.Decode("tlpub1sfeshmckryr8q2z906qpym25npt9hmtn7049g5")
+var _, daoTest4Bytes, _ = bech32.Decode("tlpub1xwl3hy063ml66x0qldekvjrnch8uakfzt8e3c7")
+var _, daoTest5Bytes, _ = bech32.Decode("tlpub14whaq4vf7al3qswsrmxlyy6cfv62w4sfjdwtnr")
+
+var daoTest1, daoTest2, daoTest3, daoTest4, daoTest5 [20]byte
+
+func init() {
+	copy(daoTest1[:], daoTest1Bytes)
+	copy(daoTest2[:], daoTest2Bytes)
+	copy(daoTest3[:], daoTest3Bytes)
+	copy(daoTest4[:], daoTest4Bytes)
+	copy(daoTest5[:], daoTest5Bytes)
+}
+
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
 	Name:           "testnet",
@@ -164,11 +181,11 @@ var TestNet = ChainParams{
 	CommunityOverrideQuotient: 3,
 	VotingPeriodSlots:         20160, // minutes in a week
 	InitialManagers: [][20]byte{
-		{252, 94, 117, 132, 63, 93, 202, 26, 36, 23, 195, 26, 169, 95, 74, 147, 72, 184, 66, 20},        // tlpub1l308tpplth9p5fqhcvd2jh62jdytsss54nt6d4
-		{192, 13, 158, 167, 115, 190, 56, 51, 43, 11, 156, 43, 27, 145, 143, 61, 40, 209, 114, 238},     // tlpub1cqxeafmnhcurx2ctns43hyv0855dzuhwnllx6w
-		{88, 192, 115, 125, 142, 126, 244, 13, 253, 225, 139, 36, 184, 34, 71, 31, 69, 205, 216, 125},   // tlpub1trq8xlvw0m6qml0p3vjtsgj8razumkrawvwzza
-		{143, 17, 152, 250, 184, 122, 141, 208, 109, 72, 148, 187, 248, 89, 83, 127, 113, 217, 23, 144}, // tlpub13uge374c02xaqm2gjjalsk2n0acaj9uswmr687
-		{162, 207, 33, 52, 96, 81, 17, 131, 72, 175, 180, 222, 125, 41, 3, 108, 43, 47, 231, 7},         // tlpub15t8jzdrq2ygcxj90kn0862grds4jlec8tjcg6j
+		daoTest1, // tlpub1tppnrl6hv7gs2je6vrpa0xzrxyjuh32pnw4uua | tlprv1pfmtg75uva0vdepd2w83ldlsrt3ayj7te8a95mrmuu8t0adylqvqxq9cz0
+		daoTest2, // tlpub1nnpct659h9vwf2u3ty787txzy2kamwxp8zh42w | tlprv1zplv47hw33y2ks3mt2pqywxmhg3g7ct5u06074qxfvk73cvtz3qqnyvjnv
+		daoTest3, // tlpub1sfeshmckryr8q2z906qpym25npt9hmtn7049g5 | tlprv1x4uewptrswvr7wxkhz2dzf7xvqejgghngqrpxemvnzhk0jr2cwtqd65adv
+		daoTest4, // tlpub1xwl3hy063ml66x0qldekvjrnch8uakfzt8e3c7 | tlprv1ptllcm85dw3cgsdlvh6xrytyzhadtlqfg5e0vv39a6vdr3zgjk5qqm6xnp
+		daoTest5, // tlpub14whaq4vf7al3qswsrmxlyy6cfv62w4sfjdwtnr | tlprv18nwwpaefghq8z568q6zs3tpqhlt7w8rygu6uksh9rtpcs9gue3jsx500gc
 	},
 	RendevouzStrings: map[int]string{
 		0: "do_not_go_gentle_into_that_good_night",

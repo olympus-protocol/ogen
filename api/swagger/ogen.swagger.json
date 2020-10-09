@@ -1534,17 +1534,14 @@
     "IndexerStatus": {
       "type": "object",
       "properties": {
-        "last_block_height": {
-          "type": "integer",
-          "format": "int64"
+        "tip": {
+          "$ref": "#/definitions/Head"
         },
-        "last_block_time": {
-          "type": "string",
-          "format": "uint64"
+        "justified": {
+          "$ref": "#/definitions/Head"
         },
-        "db_size": {
-          "type": "string",
-          "format": "uint64"
+        "finalized": {
+          "$ref": "#/definitions/Head"
         },
         "initial_sync": {
           "type": "boolean",
@@ -1769,6 +1766,10 @@
         "confirmations": {
           "type": "string",
           "format": "int64"
+        },
+        "finalized": {
+          "type": "boolean",
+          "format": "boolean"
         },
         "block_time": {
           "type": "string",
