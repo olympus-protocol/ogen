@@ -15,7 +15,6 @@ var chainCmd = []prompt.Suggest{
 	{Text: "getblock", Description: "Get the block data"},
 	{Text: "getblockhash", Description: "Get the block hash of specified height"},
 	{Text: "getaccountinfo", Description: "Get the specified account information"},
-	{Text: "gettransaction", Description: "Returns the transaction information"},
 }
 
 var validatorsCmd = []prompt.Suggest{

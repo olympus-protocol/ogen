@@ -1,6 +1,19 @@
 syntax = "proto3";
 option go_package = ".;proto";
 
+import "protoc-gen-swagger/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "Ogen API"
+        version: "1.0"
+        contact: {
+            name: "Enrique Berrueta"
+            email: "eabz@polispay.org"
+        };
+    };
+};
+
 message Empty{}
 
 message Hash {
