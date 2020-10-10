@@ -2,7 +2,7 @@ package csmt_test
 
 import (
 	"fmt"
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/olympus-protocol/ogen/internal/csmt"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/stretchr/testify/assert"
