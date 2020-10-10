@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const maxBlocksOnMemory = 1000
+
 var (
 	ErrorNoBlock    = errors.New("no block data")
 	ErrorNoBlockRow = errors.New("no block row data")
@@ -39,7 +41,7 @@ type memoryDB struct {
 	lock      sync.Mutex
 }
 
-// NewBadgerDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
+// NewMemoryDB returns a memory based database-like structure to use during initial sync.
 func NewMemoryDB() (Database, error) {
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -50,11 +52,11 @@ func NewMemoryDB() (Database, error) {
 	}
 
 	memoryDB := &memoryDB{
-		log:       log,
-		netParams: netParams,
+		log:         log,
+		netParams:   netParams,
 		genesisTime: time.Unix(initparams.GenesisTime, 0),
-		blockRows: make(map[chainhash.Hash]*primitives.BlockNodeDisk),
-		blocks:    make(map[chainhash.Hash]*primitives.Block),
+		blockRows:   make(map[chainhash.Hash]*primitives.BlockNodeDisk),
+		blocks:      make(map[chainhash.Hash]*primitives.Block),
 	}
 	return memoryDB, nil
 }

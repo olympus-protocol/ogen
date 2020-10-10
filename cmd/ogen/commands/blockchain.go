@@ -190,7 +190,7 @@ var rootCmd = &cobra.Command{
 
 		config.InterruptListener()
 
-		db, err := blockdb.NewMemoryDB()
+		db, err := blockdb.NewBoltDB()
 		if err != nil {
 			log.Fatal(err)
 		}
