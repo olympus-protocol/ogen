@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"github.com/golang/snappy"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -25,12 +26,20 @@ type Block struct {
 
 // Marshal encodes the block.
 func (b *Block) Marshal() ([]byte, error) {
-	return b.MarshalSSZ()
+	ser, err := b.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, ser), nil
 }
 
 // Unmarshal decodes the block.
 func (b *Block) Unmarshal(bb []byte) error {
-	return b.UnmarshalSSZ(bb)
+	des, err := snappy.Decode(nil, bb)
+	if err != nil {
+		return err
+	}
+	return b.UnmarshalSSZ(des)
 }
 
 // Hash calculates the hash of the block.
@@ -143,7 +152,7 @@ func merkleRootVotes(votes []*MultiValidatorVote) chainhash.Hash {
 		return chainhash.Hash{}
 	}
 	if len(votes) == 1 {
-		return votes[0].Hash()
+		return votes[0].Data.Hash()
 	}
 	mid := len(votes) / 2
 	h1 := merkleRootVotes(votes[:mid])

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	dsbadger "github.com/ipfs/go-ds-badger"
+	dsleveldb "github.com/ipfs/go-ds-leveldb"
 	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
 	"github.com/libp2p/go-libp2p-connmgr"
@@ -76,7 +76,7 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		datapath: config.GlobalFlags.DataPath,
 	}
 
-	ds, err := dsbadger.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
+	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -189,13 +189,6 @@ type MultiValidatorVote struct {
 	// Sig is the aggregated signature for all validators voting for the VoteData.
 	Sig [96]byte
 	// ParticipationBitfield is a bitlist that marks the index of the validators voting.
-	// The maximum size of the bitfield is based upon the maximum theoretical amount of validators voting.
-	// Maximum theoretical amount of validators = MaxSupply / Deposit amount = 25000000 / 100 = 250000
-	// The vote commitments define that validators should vote once per epoch.
-	// Each block should contain only (TotalValidators / EpochLength) votes.
-	// Ex. TotalValidators = 6,000, EpochLength = 5.
-	// Each block should contain only votes from (6000 / 5) =  1200 validators.
-	// This size assumes the EpochLength is set to 5 slots.
 	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6258"`
 }
 
@@ -212,10 +205,4 @@ func (m *MultiValidatorVote) Marshal() ([]byte, error) {
 // Unmarshal decodes the data.
 func (m *MultiValidatorVote) Unmarshal(b []byte) error {
 	return m.UnmarshalSSZ(b)
-}
-
-// Hash calculates the hash of the vote.
-func (m *MultiValidatorVote) Hash() chainhash.Hash {
-	b, _ := m.Marshal()
-	return chainhash.HashH(b)
 }

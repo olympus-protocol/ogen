@@ -1,11 +1,9 @@
 package execution
 
 import (
-	"github.com/dgraph-io/badger"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/csmt"
 	"github.com/olympus-protocol/ogen/pkg/logger"
-	"path"
 )
 
 type Execution interface {
@@ -23,14 +21,7 @@ func NewExecutionInstance() (Execution, error) {
 	datapath := config.GlobalFlags.DataPath
 	log := config.GlobalParams.Logger
 
-	opts := badger.DefaultOptions(path.Join(datapath, "modules"))
-
-	db, err := badger.Open(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	tree := csmt.NewTree(csmt.NewBadgerTreeDB(db))
+	tree := csmt.NewTree(csmt.NewInMemoryTreeDB())
 
 	return &execution{
 		datapath: datapath,

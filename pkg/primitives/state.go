@@ -1,6 +1,9 @@
 package primitives
 
-import "github.com/olympus-protocol/ogen/pkg/bitfield"
+import (
+	"github.com/golang/snappy"
+	"github.com/olympus-protocol/ogen/pkg/bitfield"
+)
 
 // SerializableState is a serializable copy of the state
 type SerializableState struct {
@@ -85,4 +88,20 @@ type SerializableState struct {
 	VotingState        uint64
 
 	LastPaidSlot uint64
+}
+
+func (s *SerializableState) Marshal() ([]byte, error) {
+	ser, err := s.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, ser), nil
+}
+
+func (s *SerializableState) Unmarshal(b []byte) error {
+	dec, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return s.UnmarshalSSZ(dec)
 }

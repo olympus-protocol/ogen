@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"github.com/dgraph-io/badger"
 	"os"
 	"path"
 
@@ -17,15 +16,7 @@ var resetCmd = &cobra.Command{
 	Short: "Removes all chain data and chain.json",
 	Long:  `Removes all chain data and chain.json`,
 	Run: func(cmd *cobra.Command, args []string) {
-		badgerdb, err := badger.Open(badger.DefaultOptions(DataPath + "/chain").WithLogger(nil))
-		if err != nil {
-			panic(err)
-		}
-		err = badgerdb.DropAll()
-		if err != nil {
-			panic(err)
-		}
-		_ = os.Remove(path.Join(DataPath, "chain.json"))
 		_ = os.RemoveAll(path.Join(DataPath, "peerstore"))
+		_ = os.RemoveAll(path.Join(DataPath, "chain"))
 	},
 }

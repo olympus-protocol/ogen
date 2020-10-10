@@ -10,44 +10,44 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
-type badgerDB struct {
+type levelDB struct {
 	log       logger.Logger
 	netParams *params.ChainParams
 
 	lock     sync.Mutex
-	badgerdb *badger.DB
+	db       *leveldb.DB
 	canClose sync.WaitGroup
 }
 
-// NewBadgerDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
-func NewBadgerDB() (Database, error) {
+// NewLevelDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
+func NewLevelDB() (Database, error) {
 	datapath := config.GlobalFlags.DataPath
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	badgerdb, err := badger.Open(badger.DefaultOptions(datapath + "/chain").WithLogger(nil))
+	db, err := leveldb.OpenFile(datapath+"/chain", nil)
 	if err != nil {
 		return nil, err
 	}
-	blockdb := &badgerDB{
+	blockdb := &levelDB{
 		log:       log,
-		badgerdb:  badgerdb,
+		db:        db,
 		netParams: netParams,
 	}
 	return blockdb, nil
 }
 
 // Close closes the database.
-func (db *badgerDB) Close() {
+func (db *levelDB) Close() {
 	db.canClose.Wait()
-	_ = db.badgerdb.Close()
+	_ = db.db.Close()
 }
 
 // GetBlock gets a block from the database.
-func (db *badgerDB) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
+func (db *levelDB) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
 	blockBytes, err := db.getKey(hash[:])
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (db *badgerDB) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
 }
 
 // GetRawBlock gets a block serialized from the database.
-func (db *badgerDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
+func (db *levelDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
 	blockBytes, err := db.getKey(hash[:])
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (db *badgerDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
 }
 
 // AddRawBlock adds a raw block to the database.
-func (db *badgerDB) AddRawBlock(block *primitives.Block) error {
+func (db *levelDB) AddRawBlock(block *primitives.Block) error {
 	blockHash := block.Hash()
 	blockBytes, err := block.Marshal()
 	if err != nil {
@@ -77,33 +77,29 @@ func (db *badgerDB) AddRawBlock(block *primitives.Block) error {
 	return db.setKey(blockHash[:], blockBytes)
 }
 
-var tipKey = []byte("chain-tip")
-
 // SetTip sets the current best tip of the blockchain.
-func (db *badgerDB) SetTip(c chainhash.Hash) error {
+func (db *levelDB) SetTip(c chainhash.Hash) error {
 	return db.setKeyHash(tipKey, c)
 }
 
 // GetTip gets the current best tip of the blockchain.
-func (db *badgerDB) GetTip() (chainhash.Hash, error) {
+func (db *levelDB) GetTip() (chainhash.Hash, error) {
 	return db.getKeyHash(tipKey)
 }
 
-var finalizedStateKey = []byte("finalized-state")
-
 // SetFinalizedState sets the finalized state of the blockchain.
-func (db *badgerDB) SetFinalizedState(s state.State) error {
+func (db *levelDB) SetFinalizedState(s state.State) error {
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
 	}
 
-	return db.setKey(finalizedStateKey, buf)
+	return db.setKey(finStateKey, buf)
 }
 
 // GetFinalizedState gets the finalized state of the blockchain.
-func (db *badgerDB) GetFinalizedState() (state.State, error) {
-	stateBytes, err := db.getKey(finalizedStateKey)
+func (db *levelDB) GetFinalizedState() (state.State, error) {
+	stateBytes, err := db.getKey(finStateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -112,21 +108,19 @@ func (db *badgerDB) GetFinalizedState() (state.State, error) {
 	return s, err
 }
 
-var justifiedStateKey = []byte("justified-state")
-
 // SetJustifiedState sets the justified state of the blockchain.
-func (db *badgerDB) SetJustifiedState(s state.State) error {
+func (db *levelDB) SetJustifiedState(s state.State) error {
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
 	}
 
-	return db.setKey(justifiedStateKey, buf)
+	return db.setKey(jusStateKey, buf)
 }
 
 // GetJustifiedState gets the justified state of the blockchain.
-func (db *badgerDB) GetJustifiedState() (state.State, error) {
-	stateBytes, err := db.getKey(justifiedStateKey)
+func (db *levelDB) GetJustifiedState() (state.State, error) {
+	stateBytes, err := db.getKey(jusStateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +129,8 @@ func (db *badgerDB) GetJustifiedState() (state.State, error) {
 	return s, err
 }
 
-var blockRowPrefix = []byte("block-row")
-
 // SetBlockRow sets a block row on disk to store the block index.
-func (db *badgerDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
+func (db *levelDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 	key := append(blockRowPrefix, disk.Hash[:]...)
 	diskSer, err := disk.Marshal()
 	if err != nil {
@@ -148,7 +140,7 @@ func (db *badgerDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 }
 
 // GetBlockRow gets the block row on disk.
-func (db *badgerDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
+func (db *levelDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
 	key := append(blockRowPrefix, c[:]...)
 	diskSer, err := db.getKey(key)
 	if err != nil {
@@ -160,44 +152,38 @@ func (db *badgerDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, er
 	return d, err
 }
 
-var justifiedHeadKey = []byte("justified-head")
-
 // SetJustifiedHead sets the latest justified head.
-func (db *badgerDB) SetJustifiedHead(c chainhash.Hash) error {
-	return db.setKeyHash(justifiedHeadKey, c)
+func (db *levelDB) SetJustifiedHead(c chainhash.Hash) error {
+	return db.setKeyHash(jusHeadKey, c)
 }
 
 // GetJustifiedHead gets the latest justified head.
-func (db *badgerDB) GetJustifiedHead() (chainhash.Hash, error) {
-	return db.getKeyHash(justifiedHeadKey)
+func (db *levelDB) GetJustifiedHead() (chainhash.Hash, error) {
+	return db.getKeyHash(jusHeadKey)
 }
 
-var finalizedHeadKey = []byte("finalized-head")
-
 // SetFinalizedHead sets the finalized head of the blockchain.
-func (db *badgerDB) SetFinalizedHead(c chainhash.Hash) error {
-	return db.setKeyHash(finalizedHeadKey, c)
+func (db *levelDB) SetFinalizedHead(c chainhash.Hash) error {
+	return db.setKeyHash(finHeadKey, c)
 }
 
 // GetFinalizedHead gets the finalized head of the blockchain.
-func (db *badgerDB) GetFinalizedHead() (chainhash.Hash, error) {
-	return db.getKeyHash(finalizedHeadKey)
+func (db *levelDB) GetFinalizedHead() (chainhash.Hash, error) {
+	return db.getKeyHash(finHeadKey)
 }
 
-var genesisTimeKey = []byte("genesisTime")
-
 // SetGenesisTime sets the genesis time of the blockchain.
-func (db *badgerDB) SetGenesisTime(t time.Time) error {
+func (db *levelDB) SetGenesisTime(t time.Time) error {
 	bs, err := t.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	return db.setKey(genesisTimeKey, bs)
+	return db.setKey(genTimeKey, bs)
 }
 
 // GetGenesisTime gets the genesis time of the blockchain.
-func (db *badgerDB) GetGenesisTime() (time.Time, error) {
-	bs, err := db.getKey(genesisTimeKey)
+func (db *levelDB) GetGenesisTime() (time.Time, error) {
+	bs, err := db.getKey(genTimeKey)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -207,87 +193,54 @@ func (db *badgerDB) GetGenesisTime() (time.Time, error) {
 	return t, err
 }
 
-func (db *badgerDB) getKeyHash(key []byte) (chainhash.Hash, error) {
+func (db *levelDB) getKeyHash(key []byte) (chainhash.Hash, error) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
 	db.canClose.Add(1)
 	defer db.canClose.Done()
 	var out chainhash.Hash
-	err := db.badgerdb.View(func(txn *badger.Txn) error {
-		i, err := txn.Get(key)
-		if err != nil {
-			return err
-		}
-		h, err := i.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		copy(out[:], h)
-		return nil
-	})
+	h, err := db.db.Get(key, nil)
 	if err != nil {
 		return chainhash.Hash{}, err
 	}
+	copy(out[:], h)
 	return out, nil
 }
 
-func (db *badgerDB) getKey(key []byte) ([]byte, error) {
+func (db *levelDB) getKey(key []byte) ([]byte, error) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
 	db.canClose.Add(1)
 	defer db.canClose.Done()
-	var out []byte
-	err := db.badgerdb.View(func(txn *badger.Txn) error {
-		i, err := txn.Get(key)
-		if err != nil {
-			return err
-		}
-		out, err = i.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	out, err := db.db.Get(key, nil)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (db *badgerDB) setKeyHash(key []byte, to chainhash.Hash) error {
+func (db *levelDB) setKeyHash(key []byte, to chainhash.Hash) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
 	db.canClose.Add(1)
 	defer db.canClose.Done()
-	err := db.badgerdb.Update(func(txn *badger.Txn) error {
-		err := txn.Set(key, to[:])
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	err := db.db.Put(key, to[:], nil)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *badgerDB) setKey(key []byte, to []byte) error {
+func (db *levelDB) setKey(key []byte, to []byte) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
 	db.canClose.Add(1)
 	defer db.canClose.Done()
-	err := db.badgerdb.Update(func(txn *badger.Txn) error {
-		err := txn.Set(key, to)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	err := db.db.Put(key, to, nil)
 	if err != nil {
 		return err
 	}
