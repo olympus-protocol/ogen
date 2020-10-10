@@ -28,5 +28,5 @@ type Database interface {
 	GetGenesisTime() (time.Time, error)
 }
 
-var _ Database = &badgerDB{}
+var _ Database = &boltDB{}
 var _ Database = &memoryDB{}

@@ -17,13 +17,17 @@ import (
 
 var (
 	blockBkt    = []byte("blocks")
-	tipBkt      = []byte("tip")
-	finStateBkt = []byte("finalized_state")
-	jusStateBkt = []byte("justified_state")
+	tipsBkt     = []byte("tip")
+	statesBkt   = []byte("state")
 	genesisBkt  = []byte("genesis")
-	finHeadBkt  = []byte("finalized_head")
-	jusHeadBkt  = []byte("justified_head")
 	blockRowBkt = []byte("block_row")
+
+	tipKey = []byte("tip")
+	finHeadKey = []byte("finalized_head")
+	jusHeadKey = []byte("justified_head")
+	finStateKey = []byte("finalized_state")
+	jusStateKey = []byte("justified_state")
+	genTimeKey = []byte("genesis_key")
 )
 
 type boltDB struct {
@@ -70,15 +74,7 @@ func (db *boltDB) createBuckets() error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.CreateBucketIfNotExists(tipBkt)
-		if err != nil {
-			return err
-		}
-		_, err = tx.CreateBucketIfNotExists(finStateBkt)
-		if err != nil {
-			return err
-		}
-		_, err = tx.CreateBucketIfNotExists(jusStateBkt)
+		_, err = tx.CreateBucketIfNotExists(tipsBkt)
 		if err != nil {
 			return err
 		}
@@ -86,11 +82,7 @@ func (db *boltDB) createBuckets() error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.CreateBucketIfNotExists(finHeadBkt)
-		if err != nil {
-			return err
-		}
-		_, err = tx.CreateBucketIfNotExists(jusHeadBkt)
+		_, err = tx.CreateBucketIfNotExists(statesBkt)
 		if err != nil {
 			return err
 		}
@@ -162,7 +154,7 @@ func (db *boltDB) AddRawBlock(block *primitives.Block) error {
 // SetTip sets the current best tip of the blockchain.
 func (db *boltDB) SetTip(c chainhash.Hash) error {
 	err := db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(tipBkt)
+		bkt := tx.Bucket(tipsBkt)
 		err := bkt.Put(tipKey, c[:])
 		if err != nil {
 			return err
@@ -179,7 +171,7 @@ func (db *boltDB) SetTip(c chainhash.Hash) error {
 func (db *boltDB) GetTip() (chainhash.Hash, error) {
 	var tip chainhash.Hash
 	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(tipBkt)
+		bkt := tx.Bucket(tipsBkt)
 		tipBytes := bkt.Get(tipKey)
 		copy(tip[:], tipBytes)
 		return nil
@@ -197,8 +189,8 @@ func (db *boltDB) SetFinalizedState(s state.State) error {
 		return err
 	}
 	err = db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(finStateBkt)
-		err = bkt.Put(finalizedStateKey, buf)
+		bkt := tx.Bucket(statesBkt)
+		err = bkt.Put(finStateKey, buf)
 		if err != nil {
 			return err
 		}
@@ -214,8 +206,8 @@ func (db *boltDB) SetFinalizedState(s state.State) error {
 func (db *boltDB) GetFinalizedState() (state.State, error) {
 	var stateBytes []byte
 	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(finStateBkt)
-		stateBytes = bkt.Get(finalizedStateKey)
+		bkt := tx.Bucket(statesBkt)
+		stateBytes = bkt.Get(finStateKey)
 		return nil
 	})
 	if err != nil {
@@ -236,8 +228,8 @@ func (db *boltDB) SetJustifiedState(s state.State) error {
 		return err
 	}
 	err = db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(jusStateBkt)
-		err = bkt.Put(justifiedStateKey, buf)
+		bkt := tx.Bucket(statesBkt)
+		err = bkt.Put(jusStateKey, buf)
 		if err != nil {
 			return err
 		}
@@ -253,8 +245,8 @@ func (db *boltDB) SetJustifiedState(s state.State) error {
 func (db *boltDB) GetJustifiedState() (state.State, error) {
 	var stateBytes []byte
 	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(jusStateBkt)
-		stateBytes = bkt.Get(justifiedStateKey)
+		bkt := tx.Bucket(statesBkt)
+		stateBytes = bkt.Get(jusStateKey)
 		return nil
 	})
 	if err != nil {
@@ -270,14 +262,13 @@ func (db *boltDB) GetJustifiedState() (state.State, error) {
 
 // SetBlockRow sets a block row on disk to store the block index.
 func (db *boltDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
-	key := append(blockRowPrefix, disk.Hash[:]...)
 	diskSer, err := disk.Marshal()
 	if err != nil {
 		return err
 	}
 	err = db.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(blockRowBkt)
-		err = bkt.Put(key, diskSer)
+		err = bkt.Put(disk.Hash[:], diskSer)
 		if err != nil {
 			return err
 		}
@@ -291,11 +282,10 @@ func (db *boltDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 
 // GetBlockRow gets the block row on disk.
 func (db *boltDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
-	key := append(blockRowPrefix, c[:]...)
 	var diskSer []byte
 	err := db.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(blockRowBkt)
-		diskSer = bkt.Get(key)
+		diskSer = bkt.Get(c[:])
 		return nil
 	})
 	if err != nil {
@@ -310,8 +300,8 @@ func (db *boltDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, erro
 // SetJustifiedHead sets the latest justified head.
 func (db *boltDB) SetJustifiedHead(c chainhash.Hash) error {
 	err := db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(jusHeadBkt)
-		err := bkt.Put(justifiedHeadKey, c[:])
+		bkt := tx.Bucket(tipsBkt)
+		err := bkt.Put(jusHeadKey, c[:])
 		if err != nil {
 			return err
 		}
@@ -327,8 +317,8 @@ func (db *boltDB) SetJustifiedHead(c chainhash.Hash) error {
 func (db *boltDB) GetJustifiedHead() (chainhash.Hash, error) {
 	var head chainhash.Hash
 	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(jusHeadBkt)
-		headBytes := bkt.Get(justifiedHeadKey)
+		bkt := tx.Bucket(tipsBkt)
+		headBytes := bkt.Get(jusHeadKey)
 		copy(head[:], headBytes)
 		return nil
 	})
@@ -341,8 +331,8 @@ func (db *boltDB) GetJustifiedHead() (chainhash.Hash, error) {
 // SetFinalizedHead sets the finalized head of the blockchain.
 func (db *boltDB) SetFinalizedHead(c chainhash.Hash) error {
 	err := db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(finHeadBkt)
-		err := bkt.Put(finalizedHeadKey, c[:])
+		bkt := tx.Bucket(tipsBkt)
+		err := bkt.Put(finHeadKey, c[:])
 		if err != nil {
 			return err
 		}
@@ -358,8 +348,8 @@ func (db *boltDB) SetFinalizedHead(c chainhash.Hash) error {
 func (db *boltDB) GetFinalizedHead() (chainhash.Hash, error) {
 	var head chainhash.Hash
 	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(finHeadBkt)
-		headBytes := bkt.Get(finalizedHeadKey)
+		bkt := tx.Bucket(tipsBkt)
+		headBytes := bkt.Get(finHeadKey)
 		copy(head[:], headBytes)
 		return nil
 	})
@@ -377,7 +367,7 @@ func (db *boltDB) SetGenesisTime(t time.Time) error {
 	}
 	err = db.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(genesisBkt)
-		err := bkt.Put(genesisTimeKey, bs)
+		err := bkt.Put(genTimeKey, bs)
 		if err != nil {
 			return err
 		}
@@ -394,7 +384,7 @@ func (db *boltDB) GetGenesisTime() (time.Time, error) {
 	var genBytes []byte
 	err := db.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(genesisBkt)
-		genBytes = bkt.Get(genesisTimeKey)
+		genBytes = bkt.Get(genTimeKey)
 		return nil
 	})
 	if err != nil {
