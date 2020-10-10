@@ -181,7 +181,7 @@ func (s *state) FromSerializable(ser *primitives.SerializableState) {
 // Marshal encodes the data.
 func (s *state) Marshal() ([]byte, error) {
 	ser := s.ToSerializable()
-	b, err := ser.MarshalSSZ()
+	b, err := ser.Marshal()
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *state) Marshal() ([]byte, error) {
 // Unmarshal decodes the data.
 func (s *state) Unmarshal(b []byte) error {
 	ser := new(primitives.SerializableState)
-	err := ser.UnmarshalSSZ(b)
+	err := ser.Unmarshal(b)
 	if err != nil {
 		return err
 	}

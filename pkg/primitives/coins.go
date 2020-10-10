@@ -1,5 +1,7 @@
 package primitives
 
+import "github.com/golang/snappy"
+
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
 type AccountInfo struct {
 	Account [20]byte
@@ -12,6 +14,22 @@ type CoinsStateSerializable struct {
 	Nonces   []*AccountInfo `ssz-max:"2097152"`
 }
 
+func (c *CoinsStateSerializable) Marshal() ([]byte, error) {
+	b, err := c.MarshalSSZ()
+	if err != nil {
+		return nil, err
+	}
+	return snappy.Encode(nil, b), nil
+}
+
+func (c *CoinsStateSerializable) Unmarshal(b []byte) error {
+	des, err := snappy.Decode(nil, b)
+	if err != nil {
+		return err
+	}
+	return c.UnmarshalSSZ(des)
+}
+
 // CoinsState is the state that we use to store accounts balances and Nonces
 type CoinsState struct {
 	Balances map[[20]byte]uint64
@@ -21,7 +39,7 @@ type CoinsState struct {
 // Marshal serialize to bytes the struct
 func (u *CoinsState) Marshal() ([]byte, error) {
 	s := u.ToSerializable()
-	b, err := s.MarshalSSZ()
+	b, err := s.Marshal()
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +49,7 @@ func (u *CoinsState) Marshal() ([]byte, error) {
 // Unmarshal deserialize the bytes to struct
 func (u *CoinsState) Unmarshal(b []byte) error {
 	us := new(CoinsStateSerializable)
-	err := us.UnmarshalSSZ(b)
+	err := us.Unmarshal(b)
 	if err != nil {
 		return err
 	}
