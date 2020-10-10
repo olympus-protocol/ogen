@@ -190,7 +190,7 @@ var rootCmd = &cobra.Command{
 
 		config.InterruptListener()
 
-		db, err := blockdb.NewBoltDB()
+		db, err := blockdb.NewLevelDB()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -204,7 +204,6 @@ var rootCmd = &cobra.Command{
 
 		<-config.GlobalParams.Context.Done()
 
-		db.Close()
 		err = s.Stop()
 		if err != nil {
 			log.Fatal(err)
