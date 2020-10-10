@@ -2,6 +2,8 @@ package blockdb
 
 import (
 	"errors"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -32,16 +34,25 @@ type memoryDB struct {
 	blocks     map[chainhash.Hash]*primitives.Block
 	blocksLock sync.Mutex
 
-	log    logger.Logger
-	params params.ChainParams
-	lock   sync.Mutex
+	log       logger.Logger
+	netParams *params.ChainParams
+	lock      sync.Mutex
 }
 
 // NewBadgerDB returns a database instance with a rawBlockDatabase and BadgerDB to use on the selected path.
-func NewMemoryDB(params params.ChainParams, log logger.Logger) (Database, error) {
+func NewMemoryDB() (Database, error) {
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
+	initparams, err := initialization.LoadParams(config.GlobalFlags.NetworkName)
+	if err != nil {
+		log.Error("no params specified for that network")
+		panic(err)
+	}
+
 	memoryDB := &memoryDB{
 		log:       log,
-		params:    params,
+		netParams: netParams,
+		genesisTime: time.Unix(initparams.GenesisTime, 0),
 		blockRows: make(map[chainhash.Hash]*primitives.BlockNodeDisk),
 		blocks:    make(map[chainhash.Hash]*primitives.Block),
 	}

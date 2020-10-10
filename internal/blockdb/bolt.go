@@ -22,21 +22,23 @@ var (
 	genesisBkt  = []byte("genesis")
 	blockRowBkt = []byte("block_row")
 
-	tipKey = []byte("tip")
-	finHeadKey = []byte("finalized_head")
-	jusHeadKey = []byte("justified_head")
+	tipKey      = []byte("tip")
+	finHeadKey  = []byte("finalized_head")
+	jusHeadKey  = []byte("justified_head")
 	finStateKey = []byte("finalized_state")
 	jusStateKey = []byte("justified_state")
-	genTimeKey = []byte("genesis_key")
+	genTimeKey  = []byte("genesis_key")
 )
 
 type boltDB struct {
 	log       logger.Logger
 	netParams *params.ChainParams
 
-	lock     sync.Mutex
-	db       *bolt.DB
-	canClose sync.WaitGroup
+	lock       sync.Mutex
+	db         *bolt.DB
+	canClose   sync.WaitGroup
+	writableTx *bolt.Tx
+	readableTx *bolt.Tx
 }
 
 // NewBoltDB returns a database instance with a rawBlockDatabase and boltDB to use on the selected path.
@@ -54,11 +56,14 @@ func NewBoltDB() (Database, error) {
 		return nil, err
 	}
 	db.AllocSize = 8 * 1024 * 1024
-
+	writable, err := db.Begin(true)
+	readable, err := db.Begin(false)
 	blockdb := &boltDB{
-		log:       log,
-		db:        db,
-		netParams: netParams,
+		log:        log,
+		db:         db,
+		netParams:  netParams,
+		writableTx: writable,
+		readableTx: readable,
 	}
 
 	err = blockdb.createBuckets()
@@ -102,36 +107,24 @@ func (db *boltDB) Close() {
 
 // GetBlock gets a block from the database.
 func (db *boltDB) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
-	var blockBytes []byte
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(blockBkt)
-		blockBytes = bkt.Get(hash[:])
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
+	bkt := db.readableTx.Bucket(blockBkt)
+	blockBytes := bkt.Get(hash[:])
 	block := new(primitives.Block)
-	err = block.Unmarshal(blockBytes)
+	err := block.Unmarshal(blockBytes)
 	return block, err
 }
 
 // GetRawBlock gets a block serialized from the database.
 func (db *boltDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
-	var blockBytes []byte
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(blockBkt)
-		blockBytes = bkt.Get(hash[:])
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return blockBytes, err
+	bkt := db.readableTx.Bucket(blockBkt)
+	blockBytes := bkt.Get(hash[:])
+	return blockBytes, nil
 }
 
 // AddRawBlock adds a raw block to the database.
 func (db *boltDB) AddRawBlock(block *primitives.Block) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
 	blockHash := block.Hash()
 	blockBytes, err := block.Marshal()
 	if err != nil {
@@ -153,6 +146,8 @@ func (db *boltDB) AddRawBlock(block *primitives.Block) error {
 
 // SetTip sets the current best tip of the blockchain.
 func (db *boltDB) SetTip(c chainhash.Hash) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
 	err := db.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(tipsBkt)
 		err := bkt.Put(tipKey, c[:])
@@ -170,20 +165,70 @@ func (db *boltDB) SetTip(c chainhash.Hash) error {
 // GetTip gets the current best tip of the blockchain.
 func (db *boltDB) GetTip() (chainhash.Hash, error) {
 	var tip chainhash.Hash
-	err := db.db.View(func(tx *bolt.Tx) error {
+	bkt := db.readableTx.Bucket(tipsBkt)
+	tipBytes := bkt.Get(tipKey)
+	copy(tip[:], tipBytes)
+	return tip, nil
+}
+
+// SetJustifiedHead sets the latest justified head.
+func (db *boltDB) SetJustifiedHead(c chainhash.Hash) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
+	err := db.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(tipsBkt)
-		tipBytes := bkt.Get(tipKey)
-		copy(tip[:], tipBytes)
+		err := bkt.Put(jusHeadKey, c[:])
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
-		return chainhash.Hash{}, err
+		return err
 	}
-	return tip, nil
+	return nil
+}
+
+// GetJustifiedHead gets the latest justified head.
+func (db *boltDB) GetJustifiedHead() (chainhash.Hash, error) {
+	var head chainhash.Hash
+	bkt := db.readableTx.Bucket(tipsBkt)
+	headBytes := bkt.Get(jusHeadKey)
+	copy(head[:], headBytes)
+	return head, nil
+}
+
+// SetFinalizedHead sets the finalized head of the blockchain.
+func (db *boltDB) SetFinalizedHead(c chainhash.Hash) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
+	err := db.db.Update(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(tipsBkt)
+		err := bkt.Put(finHeadKey, c[:])
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetFinalizedHead gets the finalized head of the blockchain.
+func (db *boltDB) GetFinalizedHead() (chainhash.Hash, error) {
+	var head chainhash.Hash
+	bkt := db.readableTx.Bucket(tipsBkt)
+	headBytes := bkt.Get(finHeadKey)
+	copy(head[:], headBytes)
+	return head, nil
 }
 
 // SetFinalizedState sets the finalized state of the blockchain.
 func (db *boltDB) SetFinalizedState(s state.State) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
@@ -205,16 +250,10 @@ func (db *boltDB) SetFinalizedState(s state.State) error {
 // GetFinalizedState gets the finalized state of the blockchain.
 func (db *boltDB) GetFinalizedState() (state.State, error) {
 	var stateBytes []byte
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(statesBkt)
-		stateBytes = bkt.Get(finStateKey)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
+	bkt := db.readableTx.Bucket(statesBkt)
+	stateBytes = bkt.Get(finStateKey)
 	s := state.NewEmptyState()
-	err = s.Unmarshal(stateBytes)
+	err := s.Unmarshal(stateBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +262,8 @@ func (db *boltDB) GetFinalizedState() (state.State, error) {
 
 // SetJustifiedState sets the justified state of the blockchain.
 func (db *boltDB) SetJustifiedState(s state.State) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
 	buf, err := s.Marshal()
 	if err != nil {
 		return err
@@ -244,16 +285,10 @@ func (db *boltDB) SetJustifiedState(s state.State) error {
 // GetJustifiedState gets the justified state of the blockchain.
 func (db *boltDB) GetJustifiedState() (state.State, error) {
 	var stateBytes []byte
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(statesBkt)
-		stateBytes = bkt.Get(jusStateKey)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
+	bkt := db.readableTx.Bucket(statesBkt)
+	stateBytes = bkt.Get(jusStateKey)
 	s := state.NewEmptyState()
-	err = s.Unmarshal(stateBytes)
+	err := s.Unmarshal(stateBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -262,6 +297,8 @@ func (db *boltDB) GetJustifiedState() (state.State, error) {
 
 // SetBlockRow sets a block row on disk to store the block index.
 func (db *boltDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
 	diskSer, err := disk.Marshal()
 	if err != nil {
 		return err
@@ -283,84 +320,17 @@ func (db *boltDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
 // GetBlockRow gets the block row on disk.
 func (db *boltDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
 	var diskSer []byte
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(blockRowBkt)
-		diskSer = bkt.Get(c[:])
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
+	bkt := db.readableTx.Bucket(blockRowBkt)
+	diskSer = bkt.Get(c[:])
 	d := new(primitives.BlockNodeDisk)
-	err = d.Unmarshal(diskSer)
+	err := d.Unmarshal(diskSer)
 	return d, err
-}
-
-// SetJustifiedHead sets the latest justified head.
-func (db *boltDB) SetJustifiedHead(c chainhash.Hash) error {
-	err := db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(tipsBkt)
-		err := bkt.Put(jusHeadKey, c[:])
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetJustifiedHead gets the latest justified head.
-func (db *boltDB) GetJustifiedHead() (chainhash.Hash, error) {
-	var head chainhash.Hash
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(tipsBkt)
-		headBytes := bkt.Get(jusHeadKey)
-		copy(head[:], headBytes)
-		return nil
-	})
-	if err != nil {
-		return chainhash.Hash{}, err
-	}
-	return head, nil
-}
-
-// SetFinalizedHead sets the finalized head of the blockchain.
-func (db *boltDB) SetFinalizedHead(c chainhash.Hash) error {
-	err := db.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(tipsBkt)
-		err := bkt.Put(finHeadKey, c[:])
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetFinalizedHead gets the finalized head of the blockchain.
-func (db *boltDB) GetFinalizedHead() (chainhash.Hash, error) {
-	var head chainhash.Hash
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(tipsBkt)
-		headBytes := bkt.Get(finHeadKey)
-		copy(head[:], headBytes)
-		return nil
-	})
-	if err != nil {
-		return chainhash.Hash{}, err
-	}
-	return head, nil
 }
 
 // SetGenesisTime sets the genesis time of the blockchain.
 func (db *boltDB) SetGenesisTime(t time.Time) error {
+	db.canClose.Add(1)
+	defer db.canClose.Done()
 	bs, err := t.MarshalBinary()
 	if err != nil {
 		return err
@@ -382,15 +352,9 @@ func (db *boltDB) SetGenesisTime(t time.Time) error {
 // GetGenesisTime gets the genesis time of the blockchain.
 func (db *boltDB) GetGenesisTime() (time.Time, error) {
 	var genBytes []byte
-	err := db.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(genesisBkt)
-		genBytes = bkt.Get(genTimeKey)
-		return nil
-	})
-	if err != nil {
-		return time.Time{}, err
-	}
+	bkt := db.readableTx.Bucket(genesisBkt)
+	genBytes = bkt.Get(genTimeKey)
 	var t time.Time
-	err = t.UnmarshalBinary(genBytes)
+	err := t.UnmarshalBinary(genBytes)
 	return t, err
 }
