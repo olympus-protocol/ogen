@@ -8,7 +8,6 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/wallet"
-	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/shopspring/decimal"
@@ -37,10 +36,10 @@ func (s *walletServer) ListWallets(ctx context.Context, _ *proto.Empty) (*proto.
 
 	return &proto.Wallets{Wallets: walletFiles}, nil
 }
-func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.KeyPair, error) {
+func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.NewWalletInfo, error) {
 	defer ctx.Done()
 
-	err := s.wallet.NewWallet(ref.Name, nil, ref.Password)
+	err := s.wallet.NewWallet(ref.Name, "", ref.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +49,12 @@ func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletRefere
 		return nil, err
 	}
 
-	return &proto.KeyPair{Public: pubKey}, nil
+	mnemonic, err := s.wallet.GetMnemonic()
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.NewWalletInfo{Name: ref.Name, Account: pubKey, Mnemonic: mnemonic}, nil
 }
 
 func (s *walletServer) OpenWallet(ctx context.Context, ref *proto.WalletReference) (*proto.Success, error) {
@@ -89,20 +93,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 		return nil, errors.New("please specify a name for the wallet")
 	}
 
-	prefix, priv, err := bech32.Decode(in.Key.Private)
-	if err != nil {
-		return nil, err
-	}
-	if prefix != s.netParams.AccountPrefixes.Private {
-		return nil, errors.New("wrong wallet format for current network")
-	}
-
-	blsPriv, err := bls.SecretKeyFromBytes(priv)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.wallet.NewWallet(name, blsPriv, in.Password)
+	err := s.wallet.NewWallet(name, in.Mnemonic, in.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +115,17 @@ func (s *walletServer) DumpWallet(ctx context.Context, _ *proto.Empty) (*proto.K
 	}
 
 	return &proto.KeyPair{Private: priv.ToWIF()}, nil
+}
+
+func (s *walletServer) DumpHDWallet(ctx context.Context, _ *proto.Empty) (*proto.DumpHDWalletInfo, error) {
+	defer ctx.Done()
+
+	mnemonic, err := s.wallet.GetMnemonic()
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.DumpHDWalletInfo{Mnemonic: mnemonic}, nil
 }
 
 func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.Balance, error) {

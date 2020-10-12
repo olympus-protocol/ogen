@@ -44,6 +44,7 @@ var walletCmd = []prompt.Suggest{
 	{Text: "closewallet", Description: "Closes current open wallet"},
 	{Text: "importwallet", Description: "Creates a new wallet based on the wif string private key"},
 	{Text: "dumpwallet", Description: "Exports the private key on wif format of the open wallet"},
+	{Text: "dumphdinfo", Description: "Exports the mnemonic string of a wallet"},
 	{Text: "getbalance", Description: "Get the current open wallet balance"},
 	{Text: "getvalidators", Description: "Get validator list for open wallet"},
 	{Text: "getaccount", Description: "Returns the public account of the open wallet"},
@@ -197,6 +198,8 @@ func (c *CLI) Run(optArgs []string) {
 			out, err = c.rpcClient.ImportWallet(args[1:])
 		case "dumpwallet":
 			out, err = c.rpcClient.DumpWallet()
+		case "dumphdinfo":
+			out, err = c.rpcClient.DumpHDInfo()
 		case "getbalance":
 			out, err = c.rpcClient.GetBalance()
 		case "getvalidators":

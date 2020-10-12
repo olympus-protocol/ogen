@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bip39/wordlists"
 	"testing"
-
 )
 
 type vector struct {

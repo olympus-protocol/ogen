@@ -9,7 +9,7 @@ import (
 )
 
 func TestCreateHDWallet(t *testing.T) {
-	for i := 0 ; i < 100; i++ {
+	for i := 0; i < 100; i++ {
 		entropy, err := bip39.NewEntropy(256)
 		assert.NoError(t, err)
 

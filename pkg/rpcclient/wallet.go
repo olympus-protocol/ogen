@@ -12,37 +12,45 @@ import (
 func (c *Client) ListWallets() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	res, err := c.wallet.ListWallets(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) CreateWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	if len(args) < 2 {
 		return "", errors.New("Usage: createwallet <name> <password>")
 	}
+
 	res, err := c.wallet.CreateWallet(ctx, &proto.WalletReference{Name: args[0], Password: args[1]})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) OpenWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	if len(args) < 2 {
 		return "", errors.New("Usage: openwallet <name> <password>")
 	}
@@ -50,97 +58,135 @@ func (c *Client) OpenWallet(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) CloseWallet() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	res, err := c.wallet.CloseWallet(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) ImportWallet(args []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	if len(args) < 3 {
-		return "", errors.New("Usage: importwallet <name> <wif> <password>")
+		return "", errors.New("Usage: importwallet <name> <mnemonic> <password>")
 	}
-	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Key: &proto.KeyPair{Private: args[1]}, Password: args[2]})
+
+	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Mnemonic: args[1], Password: args[2]})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) DumpWallet() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	res, err := c.wallet.DumpWallet(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
+	return string(b), nil
+}
+
+func (c *Client) DumpHDInfo() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.wallet.DumpHDWallet(ctx, &proto.Empty{})
+	if err != nil {
+		return "", err
+	}
+
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
 	return string(b), nil
 }
 
 func (c *Client) GetBalance() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	res, err := c.wallet.GetBalance(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) GetValidators() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	res, err := c.wallet.GetValidators(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
 func (c *Client) GetAccount() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	res, err := c.wallet.GetAccount(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}
+
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err
 	}
+
 	return string(b), nil
 }
 
