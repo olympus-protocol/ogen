@@ -109,17 +109,21 @@ type coinsMempool struct {
 	ctx context.Context
 	log logger.Logger
 
-	mempool      map[[20]byte]*coinMempoolItem
-	mempoolMulti map[[20]byte]*coinMempoolItemMulti
+	mempool    map[[20]byte]*coinMempoolItem
+	lockSingle sync.Mutex
 
-	balances map[[20]byte]uint64
-	lock     sync.Mutex
+	mempoolMulti map[[20]byte]*coinMempoolItemMulti
+	lockMulti    sync.Mutex
+
+	balances  map[[20]byte]uint64
+	nonces    map[[20]byte]uint64
+	lockStats sync.Mutex
 }
 
 // AddMulti adds an item to the coins mempool.
 func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
+	cm.lockMulti.Lock()
+	defer cm.lockMulti.Unlock()
 	fpkh, err := item.FromPubkeyHash()
 	if err != nil {
 		return err
@@ -148,8 +152,8 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.Coi
 
 // Add adds an item to the coins mempool.
 func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) error {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
+	cm.lockSingle.Lock()
+	defer cm.lockSingle.Unlock()
 	fpkh, err := item.FromPubkeyHash()
 	if err != nil {
 		return err
@@ -177,8 +181,10 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 
 // RemoveByBlock removes transactions that were in an accepted block.
 func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
+	cm.lockSingle.Lock()
+	cm.lockMulti.Lock()
+	defer cm.lockSingle.Unlock()
+	defer cm.lockMulti.Unlock()
 	for _, tx := range b.Txs {
 		fpkh, err := tx.FromPubkeyHash()
 		if err != nil {
@@ -197,8 +203,9 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 
 // Get gets transactions to be included in a block. Mutates state.
 func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State) {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
+	cm.lockSingle.Lock()
+	defer cm.lockSingle.Unlock()
+
 	allTransactions := make([]*primitives.Tx, 0, maxTransactions)
 
 outer:
@@ -220,8 +227,8 @@ outer:
 
 // Get gets transactions to be included in a block. Mutates state.
 func (cm *coinsMempool) GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
+	cm.lockMulti.Lock()
+	defer cm.lockMulti.Unlock()
 	allTransactions := make([]*primitives.TxMulti, 0, maxTransactions)
 
 outer:
