@@ -21,6 +21,7 @@ type State interface {
 	ProcessEpochTransition() ([]*primitives.EpochReceipt, error)
 	IsGovernanceVoteValid(vote *primitives.GovernanceVote) error
 	ProcessGovernanceVote(vote *primitives.GovernanceVote) error
+	ApplyTransactionsSingle(txs []*primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
@@ -32,7 +33,9 @@ type State interface {
 	GetVoteCommittee(slot uint64) ([]uint64, error)
 	IsExitValid(exit *primitives.Exit) error
 	ApplyExit(exit *primitives.Exit) error
+	AreDepositsValid(deposits []*primitives.Deposit) error
 	IsDepositValid(deposit *primitives.Deposit) error
+	ApplyDeposits(deposits []*primitives.Deposit) error
 	ApplyDeposit(deposit *primitives.Deposit) error
 	IsVoteValid(v *primitives.MultiValidatorVote) error
 	ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error
