@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -92,7 +93,13 @@ func (c *Client) ImportWallet(args []string) (string, error) {
 		return "", errors.New("Usage: importwallet <name> <mnemonic> <password>")
 	}
 
-	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: args[0], Mnemonic: args[1], Password: args[2]})
+	name := args[0]
+
+	password := args[len(args) - 1]
+
+	mnemonic := strings.Join(args[1:len(args)-1], " ")
+
+	res, err := c.wallet.ImportWallet(ctx, &proto.ImportWalletData{Name: name, Mnemonic: mnemonic, Password: password})
 	if err != nil {
 		return "", err
 	}
