@@ -3,6 +3,8 @@ package wallet
 import (
 	"context"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/pkg/bip39"
+	"github.com/olympus-protocol/ogen/pkg/hdwallet"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,21 +17,23 @@ import (
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 
-	"github.com/olympus-protocol/ogen/pkg/aesbls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
+const defaultWalletPath = "m/12381/0/1997/0/0"
+
 // Wallet is the interface for wallet
 type Wallet interface {
-	NewWallet(name string, priv *bls.SecretKey, password string) error
+	NewWallet(name string, mnemonic string, password string) error
 	OpenWallet(name string, password string) error
 	CloseWallet() error
 	HasWallet(name string) bool
 	GetAvailableWallets() (map[string]string, error)
 	GetAccount() (string, error)
 	GetSecret() (*bls.SecretKey, error)
+	GetMnemonic() (string, error)
 	GetPublic() (*bls.PublicKey, error)
 	GetAccountRaw() ([20]byte, error)
 	GetBalance() (uint64, error)
@@ -87,25 +91,39 @@ func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.
 }
 
 // NewWallet creates a new wallet database.
-func (w *wallet) NewWallet(name string, priv *bls.SecretKey, password string) error {
+func (w *wallet) NewWallet(name string, mnemonic string, password string) error {
 	if w.open {
 		w.CloseWallet()
 	}
 	passhash := chainhash.HashH([]byte(password))
-	var secret *bls.SecretKey
+
+	var mnemonicPhrase string
 	var err error
-	if priv == nil {
-		secret = bls.RandKey()
+	if mnemonic == "" {
+		entropy, err := bip39.NewEntropy(256)
+		if err != nil {
+			return err
+		}
+		mnemonicPhrase, err = bip39.NewMnemonic(entropy)
 	} else {
-		secret = priv
+		mnemonicPhrase = mnemonic
 	}
+	
 	if _, err := os.Stat(path.Join(w.directory, "wallets")); os.IsNotExist(err) {
-		os.Mkdir(path.Join(w.directory, "wallets"), 0700)
+		_ = os.Mkdir(path.Join(w.directory, "wallets"), 0700)
 	}
 	db, err := bbolt.Open(path.Join(w.directory, "wallets", name+".db"), 0600, nil)
 	if err != nil {
 		return err
 	}
+
+	seed := bip39.NewSeed(mnemonicPhrase, password)
+
+	secret, err := hdwallet.CreateHDWallet(seed, defaultWalletPath)
+	if err != nil {
+		return err
+	}
+
 	w.db = db
 	w.name = name
 	w.priv = secret
@@ -116,11 +134,7 @@ func (w *wallet) NewWallet(name string, priv *bls.SecretKey, password string) er
 	if err != nil {
 		return err
 	}
-	nonce, salt, cipher, err := aesbls.Encrypt(secret.Marshal(), []byte(password))
-	if err != nil {
-		return err
-	}
-	return w.initialize(cipher, salt, nonce, passhash)
+	return w.initialize(passhash, mnemonicPhrase)
 }
 
 // OpenWallet opens an already created wallet database.
@@ -211,6 +225,14 @@ func (w *wallet) GetSecret() (*bls.SecretKey, error) {
 		return nil, errorNotOpen
 	}
 	return w.priv, nil
+}
+
+// GetSecret returns the secret key of the current wallet.
+func (w *wallet) GetMnemonic() (string, error) {
+	if !w.open {
+		return "", errorNotOpen
+	}
+	return w.getMnemonic()
 }
 
 // GetPublic returns the public key of the current wallet.

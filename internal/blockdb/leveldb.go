@@ -7,10 +7,12 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"github.com/syndtr/goleveldb/leveldb/filter"
 	"sync"
 	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 type levelDB struct {
@@ -28,7 +30,14 @@ func NewLevelDB() (Database, error) {
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	db, err := leveldb.OpenFile(datapath+"/chain", nil)
+	opts := &opt.Options{
+		ErrorIfExist:           false,
+		Strict:                 opt.DefaultStrict,
+		Compression:            opt.SnappyCompression,
+		Filter:                 filter.NewBloomFilter(10),
+		OpenFilesCacheCapacity: 5,
+	}
+	db, err := leveldb.OpenFile(datapath+"/chain", opts)
 	if err != nil {
 		return nil, err
 	}

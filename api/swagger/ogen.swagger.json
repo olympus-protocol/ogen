@@ -938,7 +938,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/KeyPair"
+              "$ref": "#/definitions/NewWalletInfo"
             }
           },
           "default": {
@@ -971,6 +971,28 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/KeyPair"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallet/dumphd": {
+      "get": {
+        "operationId": "Wallet_DumpHDWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DumpHDWalletInfo"
             }
           },
           "default": {
@@ -1450,6 +1472,14 @@
         }
       }
     },
+    "DumpHDWalletInfo": {
+      "type": "object",
+      "properties": {
+        "mnemonic": {
+          "type": "string"
+        }
+      }
+    },
     "EpochInfo": {
       "type": "object",
       "properties": {
@@ -1527,8 +1557,8 @@
         "name": {
           "type": "string"
         },
-        "key": {
-          "$ref": "#/definitions/KeyPair"
+        "mnemonic": {
+          "type": "string"
         },
         "password": {
           "type": "string"
@@ -1590,6 +1620,20 @@
           "format": "int32"
         },
         "ID": {
+          "type": "string"
+        }
+      }
+    },
+    "NewWalletInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "account": {
+          "type": "string"
+        },
+        "mnemonic": {
           "type": "string"
         }
       }

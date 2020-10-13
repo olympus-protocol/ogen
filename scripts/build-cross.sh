@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OGEN_VERSION=0.1.0-alpha.4
+export OGEN_VERSION=0.1.0-alpha.5
 export FOLDER_NAME=ogen-$OGEN_VERSION
 
 echo "Building linux_amd64"

@@ -24,10 +24,10 @@
         Method: CreateWallet 
         Input: message Name
         Response: message KeyPair
-        Description: Creates a new wallet on the local datadir and returns the public key.
+        Description: Creates a new wallet on the local datapath and returns the wallet information.
     */
 
-    rpc CreateWallet(WalletReference) returns (KeyPair) {
+    rpc CreateWallet(WalletReference) returns (NewWalletInfo) {
         option (google.api.http) = {
             post: "/wallet/create"
             body: "*"
@@ -73,6 +73,19 @@
         option (google.api.http) = {
             get: "/wallet/dump"
         };
+    }
+
+    /**
+      Method: DumpWallet
+      Input: message Empty
+      Response: message KeyPair
+      Description: Returns the wallet private key on wif format.
+    */
+
+    rpc DumpHDWallet(Empty) returns (DumpHDWalletInfo) {
+      option (google.api.http) = {
+        get: "/wallet/dumphd"
+      };
     }
 
     /** 
@@ -210,8 +223,19 @@ message WalletReference {
     string password = 2;
 }
 
+
+message NewWalletInfo {
+    string name = 1;
+    string account = 2;
+    string mnemonic = 3;
+}
+
 message ImportWalletData {
     string name = 1;
-    KeyPair key = 2;
+    string mnemonic = 2;
     string password = 3;
+}
+
+message DumpHDWalletInfo {
+    string mnemonic = 1;
 }
