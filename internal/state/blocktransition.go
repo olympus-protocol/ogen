@@ -200,12 +200,8 @@ func (s *state) ApplyTransactionsSingle(txs []*primitives.Tx, blockWithdrawalAdd
 	txsMsgs := make([][32]byte, txsAmount)
 	txsPubs := make([]*bls.PublicKey, txsAmount)
 
-	var pkh [20]byte
-
 	for i, tx := range txs {
-		var err error
-
-		pkh, err = tx.FromPubkeyHash()
+		pkh, err := tx.FromPubkeyHash()
 		if err != nil {
 			return err
 		}
@@ -241,6 +237,10 @@ func (s *state) ApplyTransactionsSingle(txs []*primitives.Tx, blockWithdrawalAdd
 	}
 
 	for _, tx := range txs {
+		pkh, err := tx.FromPubkeyHash()
+		if err != nil {
+			return err
+		}
 		u.Balances[pkh] -= tx.Amount + tx.Fee
 		u.Balances[tx.To] += tx.Amount
 		u.Balances[blockWithdrawalAddress] += tx.Fee
