@@ -32,7 +32,9 @@ type State interface {
 	GetVoteCommittee(slot uint64) ([]uint64, error)
 	IsExitValid(exit *primitives.Exit) error
 	ApplyExit(exit *primitives.Exit) error
+	AreDepositsValid(deposits []*primitives.Deposit) error
 	IsDepositValid(deposit *primitives.Deposit) error
+	ApplyDeposits(deposits []*primitives.Deposit) error
 	ApplyDeposit(deposit *primitives.Deposit) error
 	IsVoteValid(v *primitives.MultiValidatorVote) error
 	ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error
