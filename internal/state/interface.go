@@ -21,6 +21,7 @@ type State interface {
 	ProcessEpochTransition() ([]*primitives.EpochReceipt, error)
 	IsGovernanceVoteValid(vote *primitives.GovernanceVote) error
 	ProcessGovernanceVote(vote *primitives.GovernanceVote) error
+	ApplyTransactionsSingle(txs []*primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
