@@ -7,6 +7,17 @@ import (
 	"time"
 )
 
+var (
+	tipKey      = []byte("tip")
+	finHeadKey  = []byte("finalized_head")
+	jusHeadKey  = []byte("justified_head")
+	finStateKey = []byte("finalized_state")
+	jusStateKey = []byte("justified_state")
+	genTimeKey  = []byte("genesis_key")
+
+	blockRowPrefix = []byte("block-row-")
+)
+
 type Database interface {
 	Close()
 	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
@@ -28,5 +39,4 @@ type Database interface {
 	GetGenesisTime() (time.Time, error)
 }
 
-var _ Database = &badgerDB{}
-var _ Database = &memoryDB{}
+var _ Database = &levelDB{}

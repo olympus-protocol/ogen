@@ -183,7 +183,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		queryVars = nil
 		queryVars = append(queryVars, bHash, hex.EncodeToString(vote.Sig[:]), hex.EncodeToString(vote.ParticipationBitfield), int(vote.Data.Slot), int(vote.Data.FromEpoch),
 			hex.EncodeToString(vote.Data.FromHash[:]), int(vote.Data.ToEpoch), hex.EncodeToString(vote.Data.ToHash[:]), hex.EncodeToString(vote.Data.BeaconBlockHash[:]),
-			int(vote.Data.Nonce), vote.Hash().String())
+			int(vote.Data.Nonce), vote.Data.Hash().String())
 		err = d.insert("multi_votes", queryVars)
 		if err != nil {
 			continue
@@ -245,11 +245,11 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	for _, vs := range block.VoteSlashings {
 
 		// find votes id
-		v1, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote1.Hash().String())
+		v1, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote1.Data.Hash().String())
 		if err != nil {
 			continue
 		}
-		v2, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote2.Hash().String())
+		v2, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote2.Data.Hash().String())
 		if err != nil {
 			continue
 		}

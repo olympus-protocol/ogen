@@ -9,7 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-func (s *stateService) initializeDatabase(txn blockdb.Database, blockNode *chainindex.BlockRow, state state.State) error {
+func (s *stateService) initializeDatabase(db blockdb.Database, blockNode *chainindex.BlockRow, state state.State) error {
 	s.chain.SetTip(blockNode)
 
 	err := s.SetFinalizedHead(blockNode.Hash, state)
@@ -21,24 +21,24 @@ func (s *stateService) initializeDatabase(txn blockdb.Database, blockNode *chain
 		return err
 	}
 
-	if err := txn.SetBlockRow(blockNode.ToBlockNodeDisk()); err != nil {
+	if err := db.SetBlockRow(blockNode.ToBlockNodeDisk()); err != nil {
 		return err
 	}
 
-	if err := txn.SetFinalizedHead(blockNode.Hash); err != nil {
+	if err := db.SetFinalizedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := txn.SetJustifiedHead(blockNode.Hash); err != nil {
+	if err := db.SetJustifiedHead(blockNode.Hash); err != nil {
 		return err
 	}
-	if err := txn.SetFinalizedState(state); err != nil {
+	if err := db.SetFinalizedState(state); err != nil {
 		return err
 	}
-	if err := txn.SetJustifiedState(state); err != nil {
+	if err := db.SetJustifiedState(state); err != nil {
 		return err
 	}
 
-	if err := txn.SetTip(blockNode.Hash); err != nil {
+	if err := db.SetTip(blockNode.Hash); err != nil {
 		return err
 	}
 

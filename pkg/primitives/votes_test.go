@@ -240,7 +240,7 @@ func TestMultiValidatorVote(t *testing.T) {
 	copy(sig[:], bls.NewAggregateSignature().Marshal())
 	d.Sig = sig
 
-	assert.Equal(t, "61694599a4a0aff51ceb05b69fd48137de37e670987185b98328f3a20e998b33", d.Hash().String())
+	assert.Equal(t, "1f2fffad96474211ab3b06df31c9657557ec38bc39e0a5aa15e98ac8dc0bdba6", d.Data.Hash().String())
 	newSig, err := d.Signature()
 	assert.NoError(t, err)
 	assert.NotNil(t, newSig)

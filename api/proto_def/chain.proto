@@ -131,12 +131,6 @@ message SubscribeValidatorRequest {
     repeated bytes public_key = 1;
 }
 
-message Head {
-    uint64 height = 1;
-    uint64 slot = 2;
-    string hash = 3;
-}
-
 message ChainInfo {
     string block_hash = 1;
     uint64 block_height = 2;

@@ -232,7 +232,7 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 			if err != nil {
 				m.log.Error(err)
 				m.poolLock.Lock()
-				voteHash := vote.Hash()
+				voteHash := vote.Data.Hash()
 				delete(m.pool, voteHash)
 				m.poolLock.Unlock()
 				continue

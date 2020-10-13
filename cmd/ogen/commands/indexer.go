@@ -13,13 +13,11 @@ import (
 	"os"
 )
 
-// TODO provide a dynanmic way for the user to load the info
-
 const (
 	hostname = "localhost"
 	hostport = 5432
-	username = "postgres"
-	password = "testpass"
+	username = "admin"
+	password = "admin"
 	dbname   = "olympus_data"
 	driver   = "sqlite3"
 )

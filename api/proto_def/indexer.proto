@@ -100,9 +100,9 @@ service Indexer {
 
 
 message IndexerStatus {
-  uint32 last_block_height = 1;
-  uint64 last_block_time = 2;
-  uint64 db_size = 3;
+  Head tip = 1;
+  Head justified = 2;
+  Head finalized = 3;
   bool initial_sync = 4;
   bool in_sync = 5;
   string about = 6;
@@ -132,5 +132,6 @@ message TxDetail {
   string block_hash = 2;
   string block_height = 3;
   int64 confirmations = 4;
-  uint64 block_time = 5;
+  bool finalized = 5;
+  uint64 block_time = 6;
 }

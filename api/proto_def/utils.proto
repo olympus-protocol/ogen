@@ -7,6 +7,18 @@ import "common.proto";
 
 service Utils {
 
+    /**
+        Method: GenKeyPair
+        Input: message Empty
+        Response: message KeyPair
+        Description: Generates a new bls bech32 encoded key pair.
+    */
+    rpc GenKeyPair(Empty) returns (KeyPair) {
+        option (google.api.http) = {
+            get: "/utils/genkeypair"
+        };
+    }
+
     /** 
         Method: GenValidatorKey 
         Input: message GenValidatorKeys
