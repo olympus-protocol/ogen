@@ -95,7 +95,7 @@ func (c *Client) ImportWallet(args []string) (string, error) {
 
 	name := args[0]
 
-	password := args[len(args) - 1]
+	password := args[len(args)-1]
 
 	mnemonic := strings.Join(args[1:len(args)-1], " ")
 

@@ -108,7 +108,7 @@ func (w *wallet) NewWallet(name string, mnemonic string, password string) error 
 	} else {
 		mnemonicPhrase = mnemonic
 	}
-	
+
 	if _, err := os.Stat(path.Join(w.directory, "wallets")); os.IsNotExist(err) {
 		_ = os.Mkdir(path.Join(w.directory, "wallets"), 0700)
 	}

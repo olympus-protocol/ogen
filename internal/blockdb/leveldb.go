@@ -35,7 +35,7 @@ func NewLevelDB() (Database, error) {
 		Strict:                 opt.DefaultStrict,
 		Compression:            opt.SnappyCompression,
 		Filter:                 filter.NewBloomFilter(10),
-		OpenFilesCacheCapacity: 5,
+		DisableSeeksCompaction: true,
 	}
 	db, err := leveldb.OpenFile(datapath+"/chain", opts)
 	if err != nil {
