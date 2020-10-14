@@ -61,6 +61,7 @@ type hostNode struct {
 
 	topic    *pubsub.Topic
 	topicSub *pubsub.Subscription
+	listening bool
 }
 
 // NewHostNode creates a host node
@@ -163,6 +164,7 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	node.discover = discovery
 
 	go node.listenTopics()
+	go node.listenerWatcher()
 
 	return node, nil
 }
@@ -281,7 +283,23 @@ func (node *hostNode) createPrivateKey() (crypto.PrivKey, error) {
 	return priv, nil
 }
 
+func (node *hostNode) listenerWatcher() {
+	for {
+		time.Sleep(time.Second * 5)
+		if node.listening {
+			continue
+		} else {
+			go node.listenTopics()
+		}
+	}
+}
+
 func (node *hostNode) listenTopics() {
+	node.listening = true
+	defer func() {
+		node.listening = false
+	}()
+
 	for {
 		msg, err := node.topicSub.Next(node.ctx)
 		if err != nil {
