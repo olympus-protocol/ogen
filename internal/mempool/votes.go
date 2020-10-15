@@ -249,6 +249,7 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 
 // Remove removes mempool items that are no longer relevant.
 func (m *voteMempool) Remove(b *primitives.Block) {
+	netParams := config.GlobalParams.NetParams
 	m.poolLock.Lock()
 	defer m.poolLock.Unlock()
 
@@ -262,6 +263,10 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 			if bytes.Equal(poolVote.Sig[:], v.Sig[:]) {
 				delete(m.pool, voteHash)
 			}
+		}
+
+		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
+			delete(m.pool, voteHash)
 		}
 	}
 
