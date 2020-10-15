@@ -257,9 +257,11 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		voteHash := v.Data.Hash()
 
 		// If the vote is on pool and included on the block, remove it.
-		_, ok := m.pool[voteHash]
+		poolVote, ok := m.pool[voteHash]
 		if ok {
-			delete(m.pool, voteHash)
+			if bytes.Equal(poolVote.Sig[:], v.Sig[:]) {
+				delete(m.pool, voteHash)
+			}
 		}
 	}
 
