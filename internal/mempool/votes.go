@@ -258,11 +258,9 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		voteHash := v.Data.Hash()
 
 		// If the vote is on pool and included on the block, remove it.
-		poolVote, ok := m.pool[voteHash]
+		_, ok := m.pool[voteHash]
 		if ok {
-			if bytes.Equal(poolVote.Sig[:], v.Sig[:]) {
-				delete(m.pool, voteHash)
-			}
+			delete(m.pool, voteHash)
 		}
 
 		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
