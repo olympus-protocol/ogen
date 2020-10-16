@@ -29,14 +29,13 @@ type VoteMempool interface {
 	Notify(notifee VoteSlashingNotifee)
 }
 
-type voteMempoolItem struct {
-	vote *primitives.MultiValidatorVote
-}
-
 // voteMempool is a mempool that keeps track of votes.
 type voteMempool struct {
 	poolLock sync.Mutex
 	pool     map[chainhash.Hash]*primitives.MultiValidatorVote
+
+	poolIndividuals map[chainhash.Hash][]*primitives.MultiValidatorVote
+	poolIndividualsLock sync.Mutex
 
 	netParams *params.ChainParams
 	log       logger.Logger
@@ -65,7 +64,10 @@ func (m *voteMempool) AddValidate(vote *primitives.MultiValidatorVote, s state.S
 // Add adds a vote to the mempool.
 func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 	m.poolLock.Lock()
+	m.poolIndividualsLock.Lock()
 	defer m.poolLock.Unlock()
+	defer m.poolIndividualsLock.Unlock()
+
 	voteData := vote.Data
 	voteHash := voteData.Hash()
 
@@ -215,10 +217,12 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			}
 
 			m.pool[voteHash] = newVote
+			m.poolIndividuals[voteHash] = append(m.poolIndividuals[voteHash], vote)
 		}
 	} else {
 		m.log.Debugf("adding vote to the mempool with %d votes", len(vote.ParticipationBitfield.BitIndices()))
 		m.pool[voteHash] = vote
+		m.poolIndividuals[voteHash] = []*primitives.MultiValidatorVote{vote}
 	}
 }
 
@@ -264,13 +268,19 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		// If the vote is on pool and included on the block, remove it.
 		poolVote, ok := m.pool[voteHash]
 		if ok {
-			m.log.Debugf("removing vote from mempool block vote contains %d votes and vote on mempool contains %d votes", v.ParticipationBitfield.Len(), poolVote.ParticipationBitfield.Len())
+			m.log.Debugf("removing vote from mempool block vote contains %d votes and vote on mempool contains %d votes", len(v.ParticipationBitfield.BitIndices()), len(poolVote.ParticipationBitfield.BitIndices()))
 			delete(m.pool, voteHash)
 			m.log.Debugf("votes on pool %d", len(m.pool))
+
+			// If the voted validators on block don't match the voted validators on mempool
+			// we should use the poolIndividuals, remove included votes and aggregate a new vote to the mempool
+			// including the missing votes.
+			
 		}
 
 		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
 			delete(m.pool, voteHash)
+			delete(m.poolIndividuals, voteHash)
 		}
 	}
 
