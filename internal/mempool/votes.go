@@ -10,6 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -169,6 +170,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			voteCommittee, err := currentState.GetVoteCommittee(v.Data.Slot)
 			if err != nil {
 				m.log.Error(err)
+				return
 			}
 
 			var common []uint64
@@ -193,16 +195,19 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 			newBitfield, err := v.ParticipationBitfield.Merge(vote.ParticipationBitfield)
 			if err != nil {
 				m.log.Error(err)
+				return
 			}
 
 			sig1, err := bls.SignatureFromBytes(v.Sig[:])
 			if err != nil {
 				m.log.Error(err)
+				return
 			}
 
 			sig2, err := bls.SignatureFromBytes(vote.Sig[:])
 			if err != nil {
 				m.log.Error(err)
+				return
 			}
 
 			newVoteSig := bls.AggregateSignatures([]*bls.Signature{sig1, sig2})
@@ -259,28 +264,71 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 func (m *voteMempool) Remove(b *primitives.Block) {
 	netParams := config.GlobalParams.NetParams
 	m.poolLock.Lock()
+	m.poolIndividualsLock.Lock()
 	defer m.poolLock.Unlock()
+	defer m.poolIndividualsLock.Unlock()
+	
+	for _, v := range m.pool {
+		voteHash := v.Data.Hash()
+		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
+			delete(m.pool, voteHash)
+			delete(m.poolIndividuals, voteHash)
+		}
+	}
 
 	// Check for votes on the block and remove them
-	for _, v := range b.Votes {
-		voteHash := v.Data.Hash()
+	for _, blockVote := range b.Votes {
+		voteHash := blockVote.Data.Hash()
 
 		// If the vote is on pool and included on the block, remove it.
 		poolVote, ok := m.pool[voteHash]
 		if ok {
-			m.log.Debugf("removing vote from mempool block vote contains %d votes and vote on mempool contains %d votes", len(v.ParticipationBitfield.BitIndices()), len(poolVote.ParticipationBitfield.BitIndices()))
 			delete(m.pool, voteHash)
-			m.log.Debugf("votes on pool %d", len(m.pool))
 
-			// If the voted validators on block don't match the voted validators on mempool
-			// we should use the poolIndividuals, remove included votes and aggregate a new vote to the mempool
+			// If the mempool vote participation is greater than votes included on block we check the poolIndividuals
+			// if there are more votes on the poolIndividuals that were not included on the block, we aggregate them and
+			// add a new vote to the mempool.
 			// including the missing votes.
-			
-		}
+			if len(poolVote.ParticipationBitfield.BitIndices()) > len(blockVote.ParticipationBitfield.BitIndices()) {
+				m.log.Debug("incomplete vote submission detected aggregating and constructing missing vote")
+				individuals := m.poolIndividuals[voteHash]
+				// First we extract the included vote for the individuals slice
+				var votesToAggregate []*primitives.MultiValidatorVote
+				for _, iv := range individuals {
+					intersect := iv.ParticipationBitfield.Intersect(blockVote.ParticipationBitfield)
+					if len(intersect) == 0 {
+						votesToAggregate = append(votesToAggregate, iv)
+					}
+				}
+				m.log.Debugf("found %d individual votes not included", len(votesToAggregate))
 
-		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
-			delete(m.pool, voteHash)
-			delete(m.poolIndividuals, voteHash)
+				newBitfield := bitfield.NewBitlist(poolVote.ParticipationBitfield.Len())
+
+				var sigs []*bls.Signature
+				for _, missingVote := range votesToAggregate {
+					sig, err := missingVote.Signature()
+					if err != nil {
+						return
+					}
+					sigs = append(sigs, sig)
+
+					for _, idx := range missingVote.ParticipationBitfield.BitIndices() {
+						newBitfield.Set(uint(idx))
+					}
+				}
+
+				aggSig := bls.AggregateSignatures(sigs)
+				var voteSig [96]byte
+				copy(voteSig[:], aggSig.Marshal())
+
+				newVote := &primitives.MultiValidatorVote{
+					Data:                  poolVote.Data,
+					ParticipationBitfield: newBitfield,
+					Sig:                   voteSig,
+				}
+
+				m.pool[voteHash] = newVote
+			}
 		}
 	}
 
@@ -350,6 +398,7 @@ func NewVoteMempool(ch chain.Blockchain, hostnode hostnode.HostNode, manager act
 
 	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
+		poolIndividuals: make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
 		netParams:         netParams,
 		log:               log,
 		ctx:               ctx,
