@@ -29,6 +29,10 @@ type VoteMempool interface {
 	Notify(notifee VoteSlashingNotifee)
 }
 
+type voteMempoolItem struct {
+	vote *primitives.MultiValidatorVote
+}
+
 // voteMempool is a mempool that keeps track of votes.
 type voteMempool struct {
 	poolLock sync.Mutex
@@ -258,9 +262,11 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		voteHash := v.Data.Hash()
 
 		// If the vote is on pool and included on the block, remove it.
-		_, ok := m.pool[voteHash]
+		poolVote, ok := m.pool[voteHash]
 		if ok {
+			m.log.Debugf("removing vote from mempool block vote contains %d votes and vote on mempool contains %d votes", v.ParticipationBitfield.Len(), poolVote.ParticipationBitfield.Len())
 			delete(m.pool, voteHash)
+			m.log.Debugf("votes on pool %d", len(m.pool))
 		}
 
 		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {

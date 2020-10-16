@@ -21,15 +21,6 @@ var (
 	ErrorAcceptedVoteDataSize = errors.New("accepted vote data too big")
 )
 
-const (
-	// MaxVoteDataSize is the maximum size in bytes of vote data.
-	MaxVoteDataSize = 128
-	// MaxAcceptedVoteInfoSize is the maximum size in bytes an accepted vote info can contain.
-	MaxAcceptedVoteInfoSize = MaxVoteDataSize + 6266
-	// MaxMultiValidatorVoteSize is the maximum size in bytes a multi validator vote can contain.
-	MaxMultiValidatorVoteSize = MaxVoteDataSize + 6346
-)
-
 // AcceptedVoteInfo is vote data and participation for accepted votes.
 type AcceptedVoteInfo struct {
 	// Data is the data of the vote which specifies the signed part of the attestation.
@@ -52,17 +43,11 @@ func (a *AcceptedVoteInfo) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxAcceptedVoteInfoSize {
-		return nil, ErrorAcceptedVoteDataSize
-	}
 	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (a *AcceptedVoteInfo) Unmarshal(b []byte) error {
-	if len(b) > MaxAcceptedVoteInfoSize {
-		return ErrorAcceptedVoteDataSize
-	}
 	return a.UnmarshalSSZ(b)
 }
 
@@ -113,17 +98,11 @@ func (v *VoteData) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) > MaxVoteDataSize {
-		return nil, ErrorVoteDataSize
-	}
 	return b, nil
 }
 
 // Unmarshal decodes the data.
 func (v *VoteData) Unmarshal(b []byte) error {
-	if len(b) > MaxVoteDataSize {
-		return ErrorVoteDataSize
-	}
 	return v.UnmarshalSSZ(b)
 }
 
