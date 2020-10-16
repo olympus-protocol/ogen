@@ -5,15 +5,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-const (
-	// MaxRandaoSlashingSize is the maximum amount of bytes a randao slashing can contain.
-	MaxRandaoSlashingSize = 152
-	// MaxProposerSlashingSize is the maximum amount of bytes a proposer slashing can contain.
-	MaxProposerSlashingSize = MaxBlockHeaderBytes*2 + 96*2 + 48
-	// MaxVoteSlashingSize is the maximum amount of bytes a vote slashing can contain.
-	MaxVoteSlashingSize = MaxMultiValidatorVoteSize * 2
-)
-
 // VoteSlashing is a slashing where validators vote in the span of their other votes.
 type VoteSlashing struct {
 	Vote1 *MultiValidatorVote
