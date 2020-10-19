@@ -35,7 +35,7 @@ type voteMempool struct {
 	poolLock sync.Mutex
 	pool     map[chainhash.Hash]*primitives.MultiValidatorVote
 
-	poolIndividuals map[chainhash.Hash][]*primitives.MultiValidatorVote
+	poolIndividuals     map[chainhash.Hash][]*primitives.MultiValidatorVote
 	poolIndividualsLock sync.Mutex
 
 	netParams *params.ChainParams
@@ -267,7 +267,7 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 	m.poolIndividualsLock.Lock()
 	defer m.poolLock.Unlock()
 	defer m.poolIndividualsLock.Unlock()
-	
+
 	for _, v := range m.pool {
 		voteHash := v.Data.Hash()
 		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
@@ -332,6 +332,7 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 		}
 	}
 
+	m.log.Debugf("tracking %d aggregated votes and %d individual votes in vote mempool", len(m.pool), len(m.poolIndividuals))
 }
 
 func (m *voteMempool) getCurrentSlot() uint64 {
@@ -398,7 +399,7 @@ func NewVoteMempool(ch chain.Blockchain, hostnode hostnode.HostNode, manager act
 
 	vm := &voteMempool{
 		pool:              make(map[chainhash.Hash]*primitives.MultiValidatorVote),
-		poolIndividuals: make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
+		poolIndividuals:   make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
 		netParams:         netParams,
 		log:               log,
 		ctx:               ctx,

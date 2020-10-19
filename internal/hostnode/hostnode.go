@@ -59,8 +59,8 @@ type hostNode struct {
 	synchronizer *synchronizer
 	handler      *handler
 
-	topic    *pubsub.Topic
-	topicSub *pubsub.Subscription
+	topic     *pubsub.Topic
+	topicSub  *pubsub.Subscription
 	listening bool
 }
 
