@@ -9,9 +9,8 @@ CREATE TABLE IF NOT EXISTS `deposits` (
     UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     UNIQUE INDEX `data_public_key_UNIQUE` (`data_public_key` ASC) VISIBLE,
     UNIQUE INDEX `data_proof_of_possession_UNIQUE` (`data_proof_of_possession` ASC) VISIBLE,
-    CONSTRAINT `block_hash`
-        FOREIGN KEY (`block_hash`)
-            REFERENCES `blocks` (`block_hash`)
-            ON DELETE NO ACTION
-            ON UPDATE NO ACTION
+    FOREIGN KEY (`block_hash`)
+        REFERENCES `blocks` (`block_hash`)
+        ON DELETE NO ACTION
+        ON UPDATE NO ACTION
 );
