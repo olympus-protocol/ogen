@@ -1,7 +1,7 @@
 CREATE TABLE `indexer`.`vote_slashing` (
-    `block_hash` BINARY(32) NOT NULL,
-    `vote_1` BINARY(32) NOT NULL,
-    `vote_2` BINARY(32) NOT NULL,
+    `block_hash` binary(64) NOT NULL,
+    `vote_1` binary(64) NOT NULL,
+    `vote_2` binary(64) NOT NULL,
     PRIMARY KEY (`block_hash`, `vote_1`, `vote_2`),
     UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     FOREIGN KEY (`block_hash`)

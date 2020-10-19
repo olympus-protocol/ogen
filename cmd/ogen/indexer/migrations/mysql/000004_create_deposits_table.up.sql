@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS `deposits` (
-    `block_hash` BINARY(32) NOT NULL,
+    `block_hash` binary(64) NOT NULL,
     `public_key` BINARY(48) NOT NULL,
-    `signature` BINARY(96) NOT NULL,
+    `signature` binary(192) NOT NULL,
     `data_public_key` BINARY(48) NOT NULL,
-    `data_proof_of_possession` BINARY(96) NOT NULL,
+    `data_proof_of_possession` binary(192) NOT NULL,
     `data_withdrawal_address` BINARY(20) NOT NULL,
     PRIMARY KEY (`block_hash`),
     UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,

@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS `exits` (
-    `block_hash` BINARY(32) NOT NULL,
-    `validator_public_key` BINARY(96) NOT NULL,
+    `block_hash` binary(64) NOT NULL,
+    `validator_public_key` binary(192) NOT NULL,
     `withdrawal_public_key` BINARY(20) NOT NULL,
-    `signature` BINARY(96) NOT NULL,
+    `signature` binary(192) NOT NULL,
     PRIMARY KEY (`block_hash`, `validator_public_key`),
     UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     UNIQUE INDEX `validator_public_key_UNIQUE` (`validator_public_key` ASC) VISIBLE,

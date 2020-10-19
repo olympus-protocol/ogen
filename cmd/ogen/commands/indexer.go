@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	rpcEndpoint string
+	rpcEndpoint  string
 	dbConnString string
 )
 
@@ -17,7 +17,6 @@ func init() {
 
 	rootCmd.AddCommand(indexerCmd)
 }
-
 
 var indexerCmd = &cobra.Command{
 	Use:   "indexer",
@@ -31,6 +30,7 @@ var indexerCmd = &cobra.Command{
 
 		idx := indexer.NewIndexer(dbConnString, rpcEndpoint)
 
+		idx.Start()
 		<-idx.Context().Done()
 		idx.Close()
 	},

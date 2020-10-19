@@ -1,6 +1,6 @@
 CREATE TABLE `randao_slashing` (
-    `block_hash` BINARY(32) NOT NULL,
-    `randao_reveal` BINARY(96) NOT NULL,
+    `block_hash` binary(64) NOT NULL,
+    `randao_reveal` binary(192) NOT NULL,
     `slot` INT NOT NULL,
     `validator_public_key` BINARY(48) NOT NULL,
     PRIMARY KEY (`block_hash`),
