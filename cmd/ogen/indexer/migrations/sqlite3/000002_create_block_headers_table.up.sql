@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS `block_headers` (
     `slot` INT NOT NULL,
     `state_root` binary(64) NOT NULL,
     `fee_address` BINARY(20) NOT NULL,
-    UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     CONSTRAINT `block_hash`
         FOREIGN KEY (`block_hash`)
             REFERENCES `blocks` (`block_hash`)

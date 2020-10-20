@@ -8,7 +8,8 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
-	"path"
+	"github.com/golang-migrate/migrate/database"
+	_ "github.com/mattn/go-sqlite3"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate"
@@ -33,6 +34,7 @@ type Database struct {
 	log      logger.Logger
 	db       *sql.DB
 	canClose *sync.WaitGroup
+	driver   string
 }
 
 func (d *Database) GetCurrentState() (State, error) {
@@ -257,7 +259,7 @@ func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
 }
 
 func (d *Database) insertBlockRow(queryVars []interface{}) error {
-	dw := goqu.Dialect("mysql")
+	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("blocks").Rows(
 		goqu.Record{
 			"block_hash":             queryVars[0],
@@ -278,7 +280,7 @@ func (d *Database) insertBlockRow(queryVars []interface{}) error {
 }
 
 func (d *Database) insertBlockHeadersRow(queryVars []interface{}) error {
-	dw := goqu.Dialect("mysql")
+	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("block_headers").Rows(
 		goqu.Record{
 			"block_hash":                    queryVars[0],
@@ -312,7 +314,7 @@ func (d *Database) insertBlockHeadersRow(queryVars []interface{}) error {
 }
 
 func (d *Database) insertVote(queryVars []interface{}) error {
-	dw := goqu.Dialect("mysql")
+	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("votes").Rows(
 		goqu.Record{
 			"block_hash":             queryVars[0],
@@ -339,10 +341,10 @@ func (d *Database) insertVote(queryVars []interface{}) error {
 	return nil
 }
 
-// NewDBClient creates a db client
+// NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver string) *Database {
-
-	db, err := sql.Open("mysql", "root:pass@tcp(localhost)/indexer")
+	fmt.Println(driver, dbConnString)
+	db, err := sql.Open(driver, dbConnString)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -352,14 +354,8 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver st
 		log.Fatal(err)
 	}
 
-	driver, _ := mysql.WithInstance(db, &mysql.Config{})
-	m, _ := migrate.NewWithDatabaseInstance(
-		"file://cmd/ogen/indexer/migrations/mysql",
-		"mysql",
-		driver,
-	)
-
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	err = runMigrations(driver, db)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -367,6 +363,7 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver st
 		log:      log,
 		db:       db,
 		canClose: wg,
+		driver:   driver,
 	}
 
 	dbclient.log.Info("Database connection established")
@@ -374,19 +371,34 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver st
 	return dbclient
 }
 
-func getConnString(driver string) (string, error) {
-
-	var connString string
+func runMigrations(driver string, db *sql.DB) error {
+	var driverWrapper database.Driver
+	var err error
+	var migrationsString string
 	switch driver {
-	case "sqlite3":
-		connString = path.Join("./db.db?_foreign_keys=on")
 	case "mysql":
-
+		migrationsString = "file://cmd/ogen/indexer/migrations/mysql"
+		driverWrapper, err = mysql.WithInstance(db, &mysql.Config{})
+		if err != nil {
+			return err
+		}
+	case "sqlite3":
+		migrationsString = "file://cmd/ogen/indexer/migrations/sqlite3"
+		driverWrapper, err = sqlite3.WithInstance(db, &sqlite3.Config{})
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("driver not supported")
 	}
 
-	if connString == "" {
-		return "", errors.New("dbms not specified")
+	m, _ := migrate.NewWithDatabaseInstance(
+		migrationsString,
+		driver,
+		driverWrapper,
+	)
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
 	}
-	return connString, nil
-
+	return nil
 }

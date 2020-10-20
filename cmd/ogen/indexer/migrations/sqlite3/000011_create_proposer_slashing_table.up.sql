@@ -6,7 +6,6 @@ CREATE TABLE `indexer`.`proposer_slashing` (
     `signature_2` binary(192) NOT NULL,
     `validator_public_key` BINARY(48) NOT NULL,
     PRIMARY KEY (`block_hash`),
-    UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     FOREIGN KEY (`block_hash`)
         REFERENCES `blocks` (`block_hash`)
         ON DELETE NO ACTION

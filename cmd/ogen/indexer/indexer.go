@@ -138,12 +138,12 @@ func (i *Indexer) Context() context.Context {
 	return i.ctx
 }
 
-func NewIndexer(dbConnString, rpcEndpoint string) *Indexer {
+func NewIndexer(dbConnString, rpcEndpoint, dbDriver string) *Indexer {
 	log := logger.New(os.Stdin)
 
 	rpcClient := rpcclient.NewRPCClient(rpcEndpoint, true)
 	var wg sync.WaitGroup
-	db := NewDB(dbConnString, log, &wg)
+	db := NewDB(dbConnString, log, &wg, dbDriver)
 
 	indexer := &Indexer{
 		log:      log,

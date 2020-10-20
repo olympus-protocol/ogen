@@ -10,9 +10,6 @@ CREATE TABLE IF NOT EXISTS `votes` (
     `data_beacon_block_hash` binary(64) NOT NULL,
     `data_nonce` INT NOT NULL,
     `vote_hash` binary(64) NOT NULL,
-    UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
-    UNIQUE INDEX `signature_UNIQUE` (`signature` ASC) VISIBLE,
-    UNIQUE INDEX `vote_hash_UNIQUE` (`vote_hash` ASC) VISIBLE,
     FOREIGN KEY (`block_hash`)
         REFERENCES `blocks` (`block_hash`)
         ON DELETE NO ACTION

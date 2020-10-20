@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS `tx_single` (
     `fee` INT NOT NULL,
     `signature` binary(192) NOT NULL,
     PRIMARY KEY (`block_hash`),
-    UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     FOREIGN KEY (`block_hash`)
         REFERENCES `blocks` (`block_hash`)
         ON DELETE NO ACTION
