@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS `accounts` (
-    `account` BINARY(20) NOT NULL,
+    `account` binary(40) NOT NULL,
     `confirmed` INT NULL,
     `unconfirmed` INT NULL,
     `locked` INT NULL,

@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	"github.com/golang-migrate/migrate/database"
 	_ "github.com/mattn/go-sqlite3"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate"
@@ -19,7 +19,6 @@ import (
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
-	"strconv"
 	"sync"
 )
 
@@ -71,7 +70,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	queryVars = append(queryVars, hash.String(), hex.EncodeToString(block.Signature[:]), hex.EncodeToString(block.RandaoSignature[:]), nextHeight)
 	err = d.insertRow("blocks", queryVars)
 	if err != nil {
-		return err
+		d.log.Error(err)
 	}
 
 	// Block Headers
@@ -85,7 +84,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		hex.EncodeToString(block.Header.FeeAddress[:]))
 	err = d.insertRow("block_headers", queryVars)
 	if err != nil {
-		return err
+		d.log.Error(err)
 	}
 
 	// Votes
@@ -96,46 +95,30 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			int(vote.Data.Nonce), vote.Data.Hash().String())
 		err = d.insertRow("votes", queryVars)
 		if err != nil {
+			d.log.Error(err)
 			continue
 		}
 	}
 
-	// Transactions (single and multi)
+	// Transactions Single
 	for _, tx := range block.Txs {
 		queryVars = nil
-		queryVars = append(queryVars, hash, 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]),
-			tx.Amount, tx.Nonce, tx.Fee, 0, hex.EncodeToString(tx.Signature[:]))
-		err = d.insertRow("transactions_0", queryVars)
+		queryVars = append(queryVars, hash.String(), 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]),
+			int(tx.Amount), int(tx.Nonce), int(tx.Fee), hex.EncodeToString(tx.Signature[:]))
+		err = d.insertRow("tx_single", queryVars)
 		if err != nil {
-			continue
-		}
-	}
-	for _, tx := range block.TxsMulti {
-		queryVars = nil
-		multiSig, err := tx.Signature.MarshalSSZ()
-		if err != nil {
-			return err
-		}
-		queryVars = append(queryVars, hash, 1, hex.EncodeToString(tx.To[:]),
-			tx.Amount, tx.Nonce, tx.Fee, 1, hex.EncodeToString(multiSig))
-		err = d.insertRow("transactions_1", queryVars)
-		if err != nil {
+			d.log.Error(err)
 			continue
 		}
 	}
 
-	for _, depo := range block.Deposits {
+	for _, deposit := range block.Deposits {
 		queryVars = nil
-		queryVars = append(queryVars, hash, hex.EncodeToString(depo.PublicKey[:]), hex.EncodeToString(depo.Signature[:]),
-			hex.EncodeToString(depo.Data.PublicKey[:]), hex.EncodeToString(depo.Data.ProofOfPossession[:]), hex.EncodeToString(depo.Data.WithdrawalAddress[:]))
+		queryVars = append(queryVars, hash.String(), hex.EncodeToString(deposit.PublicKey[:]), hex.EncodeToString(deposit.Signature[:]),
+			hex.EncodeToString(deposit.Data.PublicKey[:]), hex.EncodeToString(deposit.Data.ProofOfPossession[:]), hex.EncodeToString(deposit.Data.WithdrawalAddress[:]))
 		err = d.insertRow("deposits", queryVars)
 		if err != nil {
-			continue
-		}
-		queryVars = nil
-		queryVars = append(queryVars, hex.EncodeToString(depo.Data.PublicKey[:]))
-		err = d.insertRow("validators", queryVars)
-		if err != nil {
+			d.log.Error(err)
 			continue
 		}
 	}
@@ -143,103 +126,80 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	// Exits
 	for _, exits := range block.Exits {
 		queryVars = nil
-		queryVars = append(queryVars, hash, hex.EncodeToString(exits.ValidatorPubkey[:]), hex.EncodeToString(exits.WithdrawPubkey[:]),
+		queryVars = append(queryVars, hash.String(), hex.EncodeToString(exits.ValidatorPubkey[:]), hex.EncodeToString(exits.WithdrawPubkey[:]),
 			hex.EncodeToString(exits.Signature[:]))
 		err = d.insertRow("exits", queryVars)
 		if err != nil {
+			d.log.Error(err)
 			continue
 		}
 	}
 
 	// Vote Slashings
-	for _, vs := range block.VoteSlashings {
-
-		// find votes id
-		v1, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote1.Data.Hash().String())
-		if err != nil {
-			continue
-		}
-		v2, err := d.querySingleRow("select id from multi_votes where vote_hash = " + vs.Vote2.Data.Hash().String())
-		if err != nil {
-			continue
-		}
-
-		vote1Int, err := strconv.Atoi(v1)
-		if err != nil {
-			return err
-		}
-		vote2Int, err := strconv.Atoi(v2)
-		if err != nil {
-			return err
-		}
-		queryVars = nil
-		queryVars = append(queryVars, hash, vote1Int, vote2Int)
-		err = d.insertRow("vote_slashings", queryVars)
-		if err != nil {
-			continue
-		}
-	}
-
-	// RANDAO Slashings
-	for _, rs := range block.RANDAOSlashings {
-		queryVars = nil
-		queryVars = append(queryVars, hash, hex.EncodeToString(rs.RandaoReveal[:]), int(rs.Slot), hex.EncodeToString(rs.ValidatorPubkey[:]))
-		err = d.insertRow("RANDAO_slashings", queryVars)
-		if err != nil {
-			continue
-		}
-	}
-
-	// Proposer Slashings
-	for _, ps := range block.ProposerSlashings {
-
-		// find blockheader id
-
-		bh1, err := d.querySingleRow("select id from block_headers where header_hash = " + ps.BlockHeader1.Hash().String())
-		if err != nil {
-			continue
-		}
-		bh1Int, err := strconv.Atoi(bh1)
-		bh2, err := d.querySingleRow("select id from block_headers where header_hash = " + ps.BlockHeader2.Hash().String())
-		if err != nil {
-			continue
-		}
-		bh2Int, err := strconv.Atoi(bh2)
-		queryVars = nil
-		queryVars = append(queryVars, hash, bh1Int, bh2Int, hex.EncodeToString(ps.Signature1[:]),
-			hex.EncodeToString(ps.Signature2[:]))
-		err = d.insertRow("proposer_slashings", queryVars)
-		if err != nil {
-			continue
-		}
-	}
+	//for _, vs := range block.VoteSlashings {
+	//	queryVars = nil
+	//	queryVars = append(queryVars, hash, vote1Int, vote2Int)
+	//	err = d.insertRow("vote_slashings", queryVars)
+	//	if err != nil {
+	//		d.log.Error(err)
+	//		continue
+	//	}
+	//}
+	//
+	//// RANDAO Slashings
+	//for _, rs := range block.RANDAOSlashings {
+	//	queryVars = nil
+	//	queryVars = append(queryVars, hash, hex.EncodeToString(rs.RandaoReveal[:]), int(rs.Slot), hex.EncodeToString(rs.ValidatorPubkey[:]))
+	//	err = d.insertRow("RANDAO_slashings", queryVars)
+	//	if err != nil {
+	//		d.log.Error(err)
+	//		continue
+	//	}
+	//}
+	//
+	//// Proposer Slashings
+	//for _, ps := range block.ProposerSlashings {
+	//	queryVars = nil
+	//	queryVars = append(queryVars, hash, bh1Int, bh2Int, hex.EncodeToString(ps.Signature1[:]),
+	//		hex.EncodeToString(ps.Signature2[:]))
+	//	err = d.insertRow("proposer_slashings", queryVars)
+	//	if err != nil {
+	//		d.log.Error(err)
+	//		continue
+	//	}
+	//}
 
 	return nil
 }
 
 func (d *Database) getNextHeight() (int, string, error) {
-	idS, err := d.querySingleRow("select max(height) from blocks;")
+	dw := goqu.Dialect(d.driver)
+	ds := dw.From("blocks").Select("height")
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return 0, "", err
+	}
+	var height string
+	err = d.db.QueryRow(query).Scan(&height)
 	if err != nil {
 		return 0, "", nil
 	}
-	id, err := strconv.Atoi(idS)
+	dw = goqu.Dialect(d.driver)
+	ds = dw.From("blocks").Select("block_hash").Where(goqu.C("height").Eq(height))
+	query, _, err = ds.ToSQL()
 	if err != nil {
-		return -1, "", err
+		return 0, "", err
 	}
-	lasHash, err := d.querySingleRow("select block_hash from blocks where height = " + idS + ";")
+	var blockhash string
+	err = d.db.QueryRow(query).Scan(&blockhash)
 	if err != nil {
-		return id + 1, "", err
+		return 0, "", err
 	}
-	return id + 1, lasHash, nil
-}
-
-func (d *Database) querySingleRow(query string) (string, error) {
-	var res string
-	err := d.db.QueryRow(query).Scan(&res)
+	heightNum, err := strconv.Atoi(height)
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
-	return res, nil
+	return heightNum, blockhash, nil
 }
 
 func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
@@ -253,6 +213,12 @@ func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
 		return d.insertBlockHeadersRow(queryVars)
 	case "votes":
 		return d.insertVote(queryVars)
+	case "tx_single":
+		return d.insertTxSingle(queryVars)
+	case "deposits":
+		return d.insertDeposit(queryVars)
+	case "exits":
+		return d.insertExit(queryVars)
 
 	}
 	return nil
@@ -341,9 +307,118 @@ func (d *Database) insertVote(queryVars []interface{}) error {
 	return nil
 }
 
+func (d *Database) insertTxSingle(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("tx_single").Rows(
+		goqu.Record{
+			"block_hash":      queryVars[0],
+			"tx_type":         queryVars[1],
+			"to_addr":         queryVars[2],
+			"from_public_key": queryVars[3],
+			"amount":          queryVars[4],
+			"nonce":           queryVars[5],
+			"fee":             queryVars[6],
+			"signature":       queryVars[7],
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Database) insertDeposit(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("deposits").Rows(
+		goqu.Record{
+			"block_hash":               queryVars[0],
+			"public_key":               queryVars[1],
+			"signature":                queryVars[2],
+			"data_public_key":          queryVars[3],
+			"data_proof_of_possession": queryVars[4],
+			"data_withdrawal_address":  queryVars[5],
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	return d.addValidator(queryVars[1])
+}
+
+func (d *Database) insertExit(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("exits").Rows(
+		goqu.Record{
+			"block_hash":            queryVars[0],
+			"validator_public_key":  queryVars[1],
+			"withdrawal_public_key": queryVars[2],
+			"signature":             queryVars[3],
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return d.exitValidator(queryVars[1])
+}
+
+func (d *Database) addValidator(valPubKey interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("validators").Rows(
+		goqu.Record{
+			"public_key": valPubKey,
+			"exit":       false,
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Database) exitValidator(valPubKey interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Update("validators").Set(
+		goqu.Record{
+			"exit": true,
+		}).Where(
+		goqu.Ex{
+			"public_key": valPubKey,
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver string) *Database {
-	fmt.Println(driver, dbConnString)
 	db, err := sql.Open(driver, dbConnString)
 	if err != nil {
 		log.Fatal(err)

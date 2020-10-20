@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -80,7 +79,6 @@ func (i *Indexer) initialSync() {
 		genesisHash := genesis.Hash()
 		err = i.db.InsertBlock(genesis)
 		if err != nil {
-			fmt.Println(err)
 			i.log.Error("unable to register genesis block")
 			return
 		}

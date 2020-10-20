@@ -4,7 +4,7 @@ CREATE TABLE `indexer`.`proposer_slashing` (
     `blockheader_2` binary(64) NOT NULL,
     `signature_1` binary(192) NOT NULL,
     `signature_2` binary(192) NOT NULL,
-    `validator_public_key` BINARY(48) NOT NULL,
+    `validator_public_key` BINARY(96) NOT NULL,
     PRIMARY KEY (`block_hash`),
     UNIQUE INDEX `block_hash_UNIQUE` (`block_hash` ASC) VISIBLE,
     FOREIGN KEY (`block_hash`)
