@@ -3,11 +3,18 @@ package indexer
 import (
 	"database/sql"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
+	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
+	"path"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/mysql"
+	"github.com/golang-migrate/migrate/database/sqlite3"
+
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -333,9 +340,9 @@ func (d *Database) insertVote(queryVars []interface{}) error {
 }
 
 // NewDBClient creates a db client
-func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup) *Database {
+func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver string) *Database {
 
-	db, err := sql.Open("mysql", "root:9563287421@tcp(localhost)/indexer")
+	db, err := sql.Open("mysql", "root:pass@tcp(localhost)/indexer")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -365,4 +372,21 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup) *Database
 	dbclient.log.Info("Database connection established")
 
 	return dbclient
+}
+
+func getConnString(driver string) (string, error) {
+
+	var connString string
+	switch driver {
+	case "sqlite3":
+		connString = path.Join("./db.db?_foreign_keys=on")
+	case "mysql":
+
+	}
+
+	if connString == "" {
+		return "", errors.New("dbms not specified")
+	}
+	return connString, nil
+
 }
