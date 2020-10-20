@@ -112,6 +112,23 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			d.log.Error(err)
 			continue
 		}
+
+		// update the receiver account
+		queryVars = nil
+		queryVars = append(queryVars, hex.EncodeToString(tx.To[:]), int(tx.Amount), 0, int(tx.Amount), int(tx.Amount), 0, int(tx.Amount))
+		err = d.insertRow("accounts", queryVars)
+		if err != nil {
+			continue
+		}
+
+		// update the sender account
+		queryVars = nil
+		fromAccount, err := tx.FromPubkeyHash()
+		queryVars = append(queryVars, hex.EncodeToString(fromAccount[:]), (-1)*int(tx.Amount), int(tx.Amount), 0, (-1)*int(tx.Amount), int(tx.Amount), 0)
+		err = d.insertRow("accounts", queryVars)
+		if err != nil {
+			continue
+		}
 	}
 
 	for _, deposit := range block.Deposits {
@@ -231,6 +248,8 @@ func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
 		return d.insertRandaoSlashing(queryVars)
 	case "proposer_slashings":
 		return d.insertProposerSlashing(queryVars)
+	case "accounts":
+		return d.modifyAccountRow(queryVars)
 	}
 	return nil
 }
@@ -511,6 +530,10 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (d *Database) modifyAccountRow(queryVars []interface{}) error {
 	return nil
 }
 
