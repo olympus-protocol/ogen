@@ -1,0 +1,20 @@
+create table block_headers (
+    block_hash text unique not null,
+    version integer not null,
+    nonce integer not null,
+    tx_merkle_root text not null,
+    tx_multi_merkle_root text not null,
+    vote_merkle_root text not null,
+    deposit_merkle_root text not null,
+    exit_merkle_root text not null,
+    vote_slashing_merkle_root text not null,
+    randao_slashing_merkle_root text not null,
+    proposer_slashing_merkle_root text not null,
+    governance_votes_merkle_root text not null,
+    previous_block_hash text not null,
+    timestamp integer not null,
+    slot integer not null,
+    state_root text not null,
+    fee_address text not null,
+    foreign key (block_hash) references blocks (block_hash)
+);

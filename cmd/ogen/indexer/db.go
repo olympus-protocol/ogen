@@ -174,32 +174,36 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 
 func (d *Database) getNextHeight() (int, string, error) {
 	dw := goqu.Dialect(d.driver)
-	ds := dw.From("blocks").Select("height")
+	ds := dw.From("blocks").Select(goqu.MAX("height"))
 	query, _, err := ds.ToSQL()
 	if err != nil {
-		return 0, "", err
+		return -1, "", err
 	}
+
+	// This will fail when the db is empty return 0 to load genesis
 	var height string
 	err = d.db.QueryRow(query).Scan(&height)
 	if err != nil {
 		return 0, "", nil
 	}
+	heightNum, err := strconv.Atoi(height)
+	if err != nil {
+		return -1, "", err
+	}
+
 	dw = goqu.Dialect(d.driver)
 	ds = dw.From("blocks").Select("block_hash").Where(goqu.C("height").Eq(height))
 	query, _, err = ds.ToSQL()
 	if err != nil {
-		return 0, "", err
+		return heightNum + 1, "", err
 	}
 	var blockhash string
 	err = d.db.QueryRow(query).Scan(&blockhash)
 	if err != nil {
-		return 0, "", err
+		return heightNum + 1, "", err
 	}
-	heightNum, err := strconv.Atoi(height)
-	if err != nil {
-		return 0, "", err
-	}
-	return heightNum, blockhash, nil
+
+	return heightNum + 1, blockhash, nil
 }
 
 func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
@@ -252,7 +256,7 @@ func (d *Database) insertBlockHeadersRow(queryVars []interface{}) error {
 			"block_hash":                    queryVars[0],
 			"version":                       queryVars[1],
 			"nonce":                         queryVars[2],
-			"tx_mekle_root":                 queryVars[3],
+			"tx_merkle_root":                 queryVars[3],
 			"tx_multi_merkle_root":          queryVars[4],
 			"vote_merkle_root":              queryVars[5],
 			"deposit_merkle_root":           queryVars[6],
@@ -353,7 +357,7 @@ func (d *Database) insertDeposit(queryVars []interface{}) error {
 		return err
 	}
 
-	return d.addValidator(queryVars[1])
+	return d.addValidator(queryVars[3])
 }
 
 func (d *Database) insertExit(queryVars []interface{}) error {

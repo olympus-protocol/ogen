@@ -1,0 +1,1 @@
+drop table if exists proposer_slashing;

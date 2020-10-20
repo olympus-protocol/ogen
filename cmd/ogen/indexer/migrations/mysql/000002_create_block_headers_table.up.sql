@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS `block_headers` (
     `block_hash` binary(64) NOT NULL,
     `version` INT NOT NULL,
     `nonce` INT NOT NULL,
-    `tx_mekle_root` binary(64) NOT NULL,
+    `tx_merkle_root` binary(64) NOT NULL,
     `tx_multi_merkle_root` binary(64) NOT NULL,
     `vote_merkle_root` binary(64) NOT NULL,
     `deposit_merkle_root` binary(64) NOT NULL,

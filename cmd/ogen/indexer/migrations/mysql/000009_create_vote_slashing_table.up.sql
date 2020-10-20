@@ -1,4 +1,4 @@
-CREATE TABLE `indexer`.`vote_slashing` (
+CREATE TABLE `vote_slashing` (
     `block_hash` binary(64) NOT NULL,
     `vote_1` binary(64) NOT NULL,
     `vote_2` binary(64) NOT NULL,

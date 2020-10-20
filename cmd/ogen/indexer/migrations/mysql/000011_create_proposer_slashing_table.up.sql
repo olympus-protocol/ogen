@@ -1,4 +1,4 @@
-CREATE TABLE `indexer`.`proposer_slashing` (
+CREATE TABLE `proposer_slashing` (
     `block_hash` binary(64) NOT NULL,
     `blockheader_1` binary(64) NOT NULL,
     `blockheader_2` binary(64) NOT NULL,
