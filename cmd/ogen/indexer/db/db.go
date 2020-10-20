@@ -534,6 +534,25 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 }
 
 func (d *Database) modifyAccountRow(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("accounts").Rows(
+		goqu.Record{
+			"block_hash":           queryVars[0],
+			"blockheader_1":        queryVars[1],
+			"blockheader_2":        queryVars[2],
+			"signature_1":          queryVars[3],
+			"signature_2":          queryVars[4],
+			"validator_public_key": queryVars[5],
+		})
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

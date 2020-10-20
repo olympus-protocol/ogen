@@ -116,6 +116,15 @@ type Balance {
 
 type Query {
   block: Block
-  txs: TxSingle
+  blocks: [Block]
+  tx: TxSingle
+  txs: [TxSingle]
   account: Account
+  accounts: [Account]
+  deposit: Deposit
+  deposits: [Deposit]
+  exit: Exit
+  exits: [Exit]
+  vote: Votes
+  votes: [Votes]
 }

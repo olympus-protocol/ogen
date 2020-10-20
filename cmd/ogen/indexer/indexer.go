@@ -7,7 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/db"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/graph"
-	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/graph/generated"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
@@ -28,7 +27,7 @@ type Indexer struct {
 }
 
 func (i *Indexer) Start() {
-	http.Handle("/query", handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: graph.NewResolver(i.db)})))
+	http.Handle("/query", handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: graph.NewResolver(i.db)})))
 	go func() {
 		http.ListenAndServe(":8080", nil)
 	}()
