@@ -19,5 +19,7 @@
   "create_RANDAO_slashings": "create table RANDAO_slashings ( block_hash text not null, randao_reveal text not null, slot integer not null, validator_pub_key text not null,foreign key (block_hash) references blocks (block_hash));",
   "insert_RANDAO_slashings": "insert into RANDAO_slashings(block_hash,randao_reveal,slot,validator_pub_key) values(?,?,?,?);",
   "create_proposer_slashings": "create table proposer_slashings( block_hash text not null,  blockheader_id_1 integer not null, blockheader_id_2 integer not null, signature_1 text not null,signature_2 text not null, validator_pub_key text not null,foreign key (block_hash) references blocks (block_hash),foreign key (blockheader_id_1) references block_headers (id),foreign key (blockheader_id_2) references block_headers (id));",
-  "insert_proposer_slashings": "insert into proposer_slashings(block_hash,blockheader_id_1,blockheader_id_2,signature_1,signature_2,validator_pub_key) values(?,?,?,?,?,?);"
+  "insert_proposer_slashings": "insert into proposer_slashings(block_hash,blockheader_id_1,blockheader_id_2,signature_1,signature_2,validator_pub_key) values(?,?,?,?,?,?);",
+  "create_accounts": "create table accounts(addr text primary key unique not null, balance integer default 0, total_sent integer default 0, total_received integer default 0);",
+  "insert_accounts": "insert into accounts(addr, balance, total_sent, total_received) values(?,?,?,?) on conflict(addr) do update set balance=balance+?, total_sent=total_sent+?,total_received=total_received+?;"
 }

@@ -92,6 +92,10 @@ func (d *Database) InitializeTables() error {
 	if err != nil {
 		return err
 	}
+	err = d.CreateTable("accounts")
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -190,12 +194,27 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 		}
 	}
 
-	// Transactions (single and multi)
+	// Transactions (single and multi) and Accounts
 	for _, tx := range block.Txs {
 		queryVars = nil
 		queryVars = append(queryVars, bHash, 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]),
 			tx.Amount, tx.Nonce, tx.Fee, 0, hex.EncodeToString(tx.Signature[:]))
 		err = d.insert("transactions_0", queryVars)
+		if err != nil {
+			continue
+		}
+		// update the receiver account
+		queryVars = nil
+		queryVars = append(queryVars, hex.EncodeToString(tx.To[:]), int(tx.Amount), 0, int(tx.Amount), int(tx.Amount), 0, int(tx.Amount))
+		err = d.insert("accounts", queryVars)
+		if err != nil {
+			continue
+		}
+		// update the sender account
+		queryVars = nil
+		fromAccount, err := tx.FromPubkeyHash()
+		queryVars = append(queryVars, hex.EncodeToString(fromAccount[:]), (-1)*int(tx.Amount), int(tx.Amount), 0, (-1)*int(tx.Amount), int(tx.Amount), 0)
+		err = d.insert("accounts", queryVars)
 		if err != nil {
 			continue
 		}
