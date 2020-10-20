@@ -3,17 +3,19 @@ package indexer
 import (
 	"context"
 	"encoding/hex"
-	"errors"
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/db"
+	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/graph"
+	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/graph/generated"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"io"
+	"net/http"
 	"os"
 	"sync"
 )
-
-var errorPrevBlockHash = errors.New("block previous hash doesn't match")
 
 // Indexer is the module that allows operations across multiple services.
 type Indexer struct {
@@ -21,11 +23,15 @@ type Indexer struct {
 	ctx context.Context
 
 	client   *rpcclient.Client
-	db       *Database
+	db       *db.Database
 	canClose *sync.WaitGroup
 }
 
 func (i *Indexer) Start() {
+	http.Handle("/query", handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: graph.NewResolver(i.db)})))
+	go func() {
+		http.ListenAndServe(":8080", nil)
+	}()
 sync:
 	i.initialSync()
 	i.log.Info("Listening for new blocks")
@@ -53,8 +59,8 @@ sync:
 		}
 		err = i.db.InsertBlock(block)
 		if err != nil {
-			if err == errorPrevBlockHash {
-				i.log.Error(errorPrevBlockHash)
+			if err == db.ErrorPrevBlockHash {
+				i.log.Error(db.ErrorPrevBlockHash)
 				i.log.Info("Restarting sync...")
 				goto sync
 			}
@@ -128,8 +134,7 @@ func (i *Indexer) initialSync() {
 }
 
 func (i *Indexer) Close() {
-	i.canClose.Wait()
-	_ = i.db.db.Close()
+	i.db.Close()
 }
 
 func (i *Indexer) Context() context.Context {
@@ -141,14 +146,15 @@ func NewIndexer(dbConnString, rpcEndpoint, dbDriver string) *Indexer {
 
 	rpcClient := rpcclient.NewRPCClient(rpcEndpoint, true)
 	var wg sync.WaitGroup
-	db := NewDB(dbConnString, log, &wg, dbDriver)
+	database := db.NewDB(dbConnString, log, &wg, dbDriver)
 
 	indexer := &Indexer{
 		log:      log,
 		ctx:      context.Background(),
 		client:   rpcClient,
-		db:       db,
+		db:       database,
 		canClose: &wg,
 	}
+
 	return indexer
 }

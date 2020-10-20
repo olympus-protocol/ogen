@@ -1,4 +1,4 @@
-package indexer
+package db
 
 import (
 	"database/sql"
@@ -21,6 +21,8 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sync"
 )
+
+var ErrorPrevBlockHash = errors.New("block previous hash doesn't match")
 
 // State represents the last block saved
 type State struct {
@@ -60,8 +62,8 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	}
 
 	if nextHeight > 0 && hex.EncodeToString(block.Header.PrevBlockHash[:]) != prevHash {
-		d.log.Error(errorPrevBlockHash)
-		return errorPrevBlockHash
+		d.log.Error(ErrorPrevBlockHash)
+		return ErrorPrevBlockHash
 	}
 
 	// Insert into blocks table
@@ -510,6 +512,12 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func (d *Database) Close() {
+	d.canClose.Wait()
+	_ = d.db.Close()
+	return
 }
 
 // NewDB creates a db client

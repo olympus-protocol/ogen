@@ -1,5 +1,0 @@
-package graph
-
-func NewServer() {
-
-}

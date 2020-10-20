@@ -113,3 +113,9 @@ type Balance {
   unconfirmed: Int
   locked: Int
 }
+
+type Query {
+  block: Block
+  txs: TxSingle
+  account: Account
+}
