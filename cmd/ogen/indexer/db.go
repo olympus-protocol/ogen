@@ -136,38 +136,38 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	}
 
 	// Vote Slashings
-	//for _, vs := range block.VoteSlashings {
-	//	queryVars = nil
-	//	queryVars = append(queryVars, hash, vote1Int, vote2Int)
-	//	err = d.insertRow("vote_slashings", queryVars)
-	//	if err != nil {
-	//		d.log.Error(err)
-	//		continue
-	//	}
-	//}
-	//
-	//// RANDAO Slashings
-	//for _, rs := range block.RANDAOSlashings {
-	//	queryVars = nil
-	//	queryVars = append(queryVars, hash, hex.EncodeToString(rs.RandaoReveal[:]), int(rs.Slot), hex.EncodeToString(rs.ValidatorPubkey[:]))
-	//	err = d.insertRow("RANDAO_slashings", queryVars)
-	//	if err != nil {
-	//		d.log.Error(err)
-	//		continue
-	//	}
-	//}
-	//
-	//// Proposer Slashings
-	//for _, ps := range block.ProposerSlashings {
-	//	queryVars = nil
-	//	queryVars = append(queryVars, hash, bh1Int, bh2Int, hex.EncodeToString(ps.Signature1[:]),
-	//		hex.EncodeToString(ps.Signature2[:]))
-	//	err = d.insertRow("proposer_slashings", queryVars)
-	//	if err != nil {
-	//		d.log.Error(err)
-	//		continue
-	//	}
-	//}
+	for _, vs := range block.VoteSlashings {
+		queryVars = nil
+		queryVars = append(queryVars, hash.String(), vs.Vote1.Data.Hash().String(), vs.Vote2.Data.Hash().String())
+		err = d.insertRow("vote_slashings", queryVars)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+	}
+
+	// RANDAO Slashings
+	for _, rs := range block.RANDAOSlashings {
+		queryVars = nil
+		queryVars = append(queryVars, hash.String(), hex.EncodeToString(rs.RandaoReveal[:]), int(rs.Slot), hex.EncodeToString(rs.ValidatorPubkey[:]))
+		err = d.insertRow("randao_slashings", queryVars)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+	}
+
+	// Proposer Slashings
+	for _, ps := range block.ProposerSlashings {
+		queryVars = nil
+		queryVars = append(queryVars, hash.String(), ps.BlockHeader1.Hash().String(), ps.BlockHeader2.Hash().String(), hex.EncodeToString(ps.Signature1[:]),
+			hex.EncodeToString(ps.Signature2[:]), hex.EncodeToString(ps.ValidatorPublicKey[:]))
+		err = d.insertRow("proposer_slashings", queryVars)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+	}
 
 	return nil
 }
@@ -223,7 +223,12 @@ func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
 		return d.insertDeposit(queryVars)
 	case "exits":
 		return d.insertExit(queryVars)
-
+	case "vote_slashings":
+		return d.insertVoteSlashing(queryVars)
+	case "randao_slashings":
+		return d.insertRandaoSlashing(queryVars)
+	case "proposer_slashings":
+		return d.insertProposerSlashing(queryVars)
 	}
 	return nil
 }
@@ -256,7 +261,7 @@ func (d *Database) insertBlockHeadersRow(queryVars []interface{}) error {
 			"block_hash":                    queryVars[0],
 			"version":                       queryVars[1],
 			"nonce":                         queryVars[2],
-			"tx_merkle_root":                 queryVars[3],
+			"tx_merkle_root":                queryVars[3],
 			"tx_multi_merkle_root":          queryVars[4],
 			"vote_merkle_root":              queryVars[5],
 			"deposit_merkle_root":           queryVars[6],
@@ -381,6 +386,70 @@ func (d *Database) insertExit(queryVars []interface{}) error {
 	return d.exitValidator(queryVars[1])
 }
 
+func (d *Database) insertVoteSlashing(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("vote_slashings").Rows(
+		goqu.Record{
+			"block_hash": queryVars[0],
+			"vote_1":     queryVars[1],
+			"vote_2":     queryVars[2],
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Database) insertRandaoSlashing(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("randao_slashing").Rows(
+		goqu.Record{
+			"block_hash":           queryVars[0],
+			"randao_reveal":        queryVars[1],
+			"slot":                 queryVars[2],
+			"validator_public_key": queryVars[3],
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return d.exitPenalizeValidator(queryVars[3])
+}
+
+func (d *Database) insertProposerSlashing(queryVars []interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("proposer_slashing").Rows(
+		goqu.Record{
+			"block_hash":           queryVars[0],
+			"blockheader_1":        queryVars[1],
+			"blockheader_2":        queryVars[2],
+			"signature_1":          queryVars[3],
+			"signature_2":          queryVars[4],
+			"validator_public_key": queryVars[5],
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return d.exitPenalizeValidator(queryVars[5])
+}
+
 func (d *Database) addValidator(valPubKey interface{}) error {
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("validators").Rows(
@@ -405,6 +474,28 @@ func (d *Database) exitValidator(valPubKey interface{}) error {
 	ds := dw.Update("validators").Set(
 		goqu.Record{
 			"exit": true,
+		}).Where(
+		goqu.Ex{
+			"public_key": valPubKey,
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Update("validators").Set(
+		goqu.Record{
+			"exit":      true,
+			"penalized": true,
 		}).Where(
 		goqu.Ex{
 			"public_key": valPubKey,

@@ -1,4 +1,4 @@
-CREATE TABLE `randao_slashing` (
+CREATE TABLE `randao_slashings` (
     `block_hash` binary(64) NOT NULL,
     `randao_reveal` binary(192) NOT NULL,
     `slot` INT NOT NULL,
