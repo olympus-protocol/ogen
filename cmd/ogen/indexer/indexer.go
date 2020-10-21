@@ -3,15 +3,12 @@ package indexer
 import (
 	"context"
 	"encoding/hex"
-	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/db"
-	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/graph"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"io"
-	"net/http"
 	"os"
 	"sync"
 )
@@ -27,10 +24,6 @@ type Indexer struct {
 }
 
 func (i *Indexer) Start() {
-	http.Handle("/query", handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: graph.NewResolver(i.db)})))
-	go func() {
-		http.ListenAndServe(":8080", nil)
-	}()
 sync:
 	i.initialSync()
 	i.log.Info("Listening for new blocks")
