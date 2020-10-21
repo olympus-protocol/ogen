@@ -3,13 +3,14 @@ CREATE TABLE IF NOT EXISTS blocks (
     block_signature bytea NOT NULL,
     block_randao_signature bytea NOT NULL,
     height int NOT NULL,
+    UNIQUE(block_hash),
     PRIMARY KEY (block_hash)
 );
 
 CREATE TABLE IF NOT EXISTS block_headers (
     block_hash bytea NOT NULL,
-    version INT NOT NULL,
-    nonce INT NOT NULL,
+    version BIGINT NOT NULL,
+    nonce BIGINT NOT NULL,
     tx_merkle_root bytea NOT NULL,
     tx_multi_merkle_root bytea NOT NULL,
     vote_merkle_root bytea NOT NULL,
@@ -20,8 +21,8 @@ CREATE TABLE IF NOT EXISTS block_headers (
     proposer_slashing_merkle_root bytea NOT NULL,
     governance_votes_merkle_root bytea NOT NULL,
     previous_block_hash bytea NOT NULL,
-    timestamp INT NOT NULL,
-    slot INT NOT NULL,
+    timestamp BIGINT NOT NULL,
+    slot BIGINT NOT NULL,
     state_root bytea NOT NULL,
     fee_address bytea NOT NULL,
     CONSTRAINT block_hash
@@ -35,13 +36,13 @@ CREATE TABLE IF NOT EXISTS votes (
     block_hash bytea NOT NULL,
     signature bytea NOT NULL,
     participation_bitfield bytea NOT NULL,
-    data_slot INT NOT NULL,
-    data_from_epoch INT NOT NULL,
+    data_slot BIGINT NOT NULL,
+    data_from_epoch BIGINT NOT NULL,
     data_from_hash bytea NOT NULL,
-    data_to_epoch INT NOT NULL,
+    data_to_epoch BIGINT NOT NULL,
     data_to_hash bytea NOT NULL,
     data_beacon_block_hash bytea NOT NULL,
-    data_nonce INT NOT NULL,
+    data_nonce BIGINT NOT NULL,
     vote_hash bytea NOT NULL,
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS deposits (
     data_public_key BYTEA NOT NULL,
     data_proof_of_possession bytea NOT NULL,
     data_withdrawal_address bytea NOT NULL,
+    UNIQUE(data_public_key),
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
@@ -64,17 +66,17 @@ CREATE TABLE IF NOT EXISTS deposits (
 
 CREATE TABLE IF NOT EXISTS accounts (
     account bytea NOT NULL,
-    confirmed INT DEFAULT 0,
-    unconfirmed INT DEFAULT 0,
-    locked INT DEFAULT 0,
-    total_sent INT DEFAULT 0,
-    total_received INT DEFAULT 0
+    confirmed BIGINT DEFAULT 0,
+    unconfirmed BIGINT DEFAULT 0,
+    locked BIGINT DEFAULT 0,
+    total_sent BIGINT DEFAULT 0,
+    total_received BIGINT DEFAULT 0
 );
 
 CREATE SEQUENCE validators_seq;
 
 CREATE TABLE IF NOT EXISTS validators (
-    id INT NOT NULL DEFAULT NEXTVAL ('validators_seq'),
+    id BIGINT NOT NULL DEFAULT NEXTVAL ('validators_seq'),
     public_key BYTEA NOT NULL,
     exit BOOLEAN NOT NULL,
     penalized BOOLEAN NOT NULL,
@@ -94,12 +96,12 @@ CREATE TABLE IF NOT EXISTS exits (
 
 CREATE TABLE IF NOT EXISTS tx_single (
     block_hash bytea NOT NULL,
-    tx_type INT NOT NULL,
+    tx_type BIGINT NOT NULL,
     to_addr BYTEA NOT NULL,
     from_public_key BYTEA NOT NULL,
-    amount INT NOT NULL,
-    nonce INT NOT NULL,
-    fee INT NOT NULL,
+    amount BIGINT NOT NULL,
+    nonce BIGINT NOT NULL,
+    fee BIGINT NOT NULL,
     signature bytea NOT NULL,
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
@@ -121,7 +123,7 @@ CREATE TABLE IF NOT EXISTS vote_slashing (
 CREATE TABLE IF NOT EXISTS randao_slashing (
     block_hash bytea NOT NULL,
     randao_reveal bytea NOT NULL,
-    slot INT NOT NULL,
+    slot BIGINT NOT NULL,
     validator_public_key BYTEA NOT NULL,
     PRIMARY KEY (block_hash),
     FOREIGN KEY (block_hash)

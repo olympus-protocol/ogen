@@ -480,6 +480,7 @@ func (d *Database) addValidator(valPubKey interface{}) error {
 		goqu.Record{
 			"public_key": valPubKey,
 			"exit":       false,
+			"penalized":  false,
 		},
 	)
 	query, _, err := ds.ToSQL()
