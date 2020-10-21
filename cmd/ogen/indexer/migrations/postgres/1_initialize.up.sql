@@ -1,30 +1,30 @@
 CREATE TABLE IF NOT EXISTS blocks (
-    block_hash bytea NOT NULL,
-    block_signature bytea NOT NULL,
-    block_randao_signature bytea NOT NULL,
-    height int NOT NULL,
+    block_hash text NOT NULL,
+    block_signature text NOT NULL,
+    block_randao_signature text NOT NULL,
+    height integer NOT NULL,
     UNIQUE(block_hash),
     PRIMARY KEY (block_hash)
 );
 
 CREATE TABLE IF NOT EXISTS block_headers (
-    block_hash bytea NOT NULL,
+    block_hash text NOT NULL,
     version BIGINT NOT NULL,
     nonce BIGINT NOT NULL,
-    tx_merkle_root bytea NOT NULL,
-    tx_multi_merkle_root bytea NOT NULL,
-    vote_merkle_root bytea NOT NULL,
-    deposit_merkle_root bytea NOT NULL,
-    exit_merkle_root bytea NOT NULL,
-    vote_slashing_merkle_root bytea NOT NULL,
-    randao_slashing_merkle_root bytea NOT NULL,
-    proposer_slashing_merkle_root bytea NOT NULL,
-    governance_votes_merkle_root bytea NOT NULL,
-    previous_block_hash bytea NOT NULL,
+    tx_merkle_root text NOT NULL,
+    tx_multi_merkle_root text NOT NULL,
+    vote_merkle_root text NOT NULL,
+    deposit_merkle_root text NOT NULL,
+    exit_merkle_root text NOT NULL,
+    vote_slashing_merkle_root text NOT NULL,
+    randao_slashing_merkle_root text NOT NULL,
+    proposer_slashing_merkle_root text NOT NULL,
+    governance_votes_merkle_root text NOT NULL,
+    previous_block_hash text NOT NULL,
     timestamp BIGINT NOT NULL,
     slot BIGINT NOT NULL,
-    state_root bytea NOT NULL,
-    fee_address bytea NOT NULL,
+    state_root text NOT NULL,
+    fee_address text NOT NULL,
     CONSTRAINT block_hash
         FOREIGN KEY (block_hash)
             REFERENCES blocks (block_hash)
@@ -33,17 +33,17 @@ CREATE TABLE IF NOT EXISTS block_headers (
 );
 
 CREATE TABLE IF NOT EXISTS votes (
-    block_hash bytea NOT NULL,
-    signature bytea NOT NULL,
-    participation_bitfield bytea NOT NULL,
+    block_hash text NOT NULL,
+    signature text NOT NULL,
+    participation_bitfield text NOT NULL,
     data_slot BIGINT NOT NULL,
     data_from_epoch BIGINT NOT NULL,
-    data_from_hash bytea NOT NULL,
+    data_from_hash text NOT NULL,
     data_to_epoch BIGINT NOT NULL,
-    data_to_hash bytea NOT NULL,
-    data_beacon_block_hash bytea NOT NULL,
+    data_to_hash text NOT NULL,
+    data_beacon_block_hash text NOT NULL,
     data_nonce BIGINT NOT NULL,
-    vote_hash bytea NOT NULL,
+    vote_hash text NOT NULL,
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
@@ -51,12 +51,12 @@ CREATE TABLE IF NOT EXISTS votes (
 );
 
 CREATE TABLE IF NOT EXISTS deposits (
-    block_hash bytea NOT NULL,
+    block_hash text NOT NULL,
     public_key BYTEA NOT NULL,
-    signature bytea NOT NULL,
+    signature text NOT NULL,
     data_public_key BYTEA NOT NULL,
-    data_proof_of_possession bytea NOT NULL,
-    data_withdrawal_address bytea NOT NULL,
+    data_proof_of_possession text NOT NULL,
+    data_withdrawal_address text NOT NULL,
     UNIQUE(data_public_key),
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS deposits (
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
-    account bytea NOT NULL,
+    account text NOT NULL,
     confirmed BIGINT DEFAULT 0,
     unconfirmed BIGINT DEFAULT 0,
     locked BIGINT DEFAULT 0,
@@ -84,10 +84,10 @@ CREATE TABLE IF NOT EXISTS validators (
 );
 
 CREATE TABLE IF NOT EXISTS exits (
-    block_hash bytea NOT NULL,
-    validator_public_key bytea NOT NULL,
-    withdrawal_public_key bytea NOT NULL,
-    signature bytea NOT NULL,
+    block_hash text NOT NULL,
+    validator_public_key text NOT NULL,
+    withdrawal_public_key text NOT NULL,
+    signature text NOT NULL,
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
@@ -95,14 +95,14 @@ CREATE TABLE IF NOT EXISTS exits (
 );
 
 CREATE TABLE IF NOT EXISTS tx_single (
-    block_hash bytea NOT NULL,
+    block_hash text NOT NULL,
     tx_type BIGINT NOT NULL,
     to_addr BYTEA NOT NULL,
     from_public_key BYTEA NOT NULL,
     amount BIGINT NOT NULL,
     nonce BIGINT NOT NULL,
     fee BIGINT NOT NULL,
-    signature bytea NOT NULL,
+    signature text NOT NULL,
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
@@ -110,9 +110,9 @@ CREATE TABLE IF NOT EXISTS tx_single (
 );
 
 CREATE TABLE IF NOT EXISTS vote_slashing (
-    block_hash bytea NOT NULL,
-    vote_1 bytea NOT NULL,
-    vote_2 bytea NOT NULL,
+    block_hash text NOT NULL,
+    vote_1 text NOT NULL,
+    vote_2 text NOT NULL,
     PRIMARY KEY (block_hash, vote_1, vote_2),
     FOREIGN KEY (block_hash)
         REFERENCES blocks (block_hash)
@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS vote_slashing (
 );
 
 CREATE TABLE IF NOT EXISTS randao_slashing (
-    block_hash bytea NOT NULL,
-    randao_reveal bytea NOT NULL,
+    block_hash text NOT NULL,
+    randao_reveal text NOT NULL,
     slot BIGINT NOT NULL,
     validator_public_key BYTEA NOT NULL,
     PRIMARY KEY (block_hash),
@@ -137,11 +137,11 @@ CREATE TABLE IF NOT EXISTS randao_slashing (
 );
 
 CREATE TABLE IF NOT EXISTS proposer_slashing (
-    block_hash bytea NOT NULL,
-    blockheader_1 bytea NOT NULL,
-    blockheader_2 bytea NOT NULL,
-    signature_1 bytea NOT NULL,
-    signature_2 bytea NOT NULL,
+    block_hash text NOT NULL,
+    blockheader_1 text NOT NULL,
+    blockheader_2 text NOT NULL,
+    signature_1 text NOT NULL,
+    signature_2 text NOT NULL,
     validator_public_key BYTEA NOT NULL,
     PRIMARY KEY (block_hash),
     FOREIGN KEY (block_hash)
