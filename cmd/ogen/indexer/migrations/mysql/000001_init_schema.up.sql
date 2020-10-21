@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS `votes` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
 CREATE TABLE IF NOT EXISTS `deposits` (
     `block_hash` binary(64) NOT NULL,
     `public_key` BINARY(96) NOT NULL,
@@ -66,7 +65,6 @@ CREATE TABLE IF NOT EXISTS `deposits` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
 CREATE TABLE IF NOT EXISTS `accounts` (
     `account` binary(40) NOT NULL,
     `confirmed` INT DEFAULT 0,
@@ -76,7 +74,6 @@ CREATE TABLE IF NOT EXISTS `accounts` (
     `total_received`INT DEFAULT 0,
     UNIQUE INDEX `account_UNIQUE` (`account` ASC) VISIBLE
 );
-
 CREATE TABLE IF NOT EXISTS `validators` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `public_key` BINARY(96) NOT NULL,
@@ -84,7 +81,6 @@ CREATE TABLE IF NOT EXISTS `validators` (
     `penalized` BOOLEAN NOT NULL,
     PRIMARY KEY (`id`)
 );
-
 CREATE TABLE IF NOT EXISTS `exits` (
     `block_hash` binary(64) NOT NULL,
     `validator_public_key` binary(192) NOT NULL,
@@ -95,7 +91,6 @@ CREATE TABLE IF NOT EXISTS `exits` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
 CREATE TABLE IF NOT EXISTS `tx_single` (
     `block_hash` binary(64) NOT NULL,
     `tx_type` INT NOT NULL,
@@ -110,7 +105,6 @@ CREATE TABLE IF NOT EXISTS `tx_single` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
 CREATE TABLE IF NOT EXISTS `vote_slashing` (
     `block_hash` binary(64) NOT NULL,
     `vote_1` binary(64) NOT NULL,
@@ -122,7 +116,6 @@ CREATE TABLE IF NOT EXISTS `vote_slashing` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
 CREATE TABLE IF NOT EXISTS `randao_slashing` (
     `block_hash` binary(64) NOT NULL,
     `randao_reveal` binary(192) NOT NULL,
@@ -139,7 +132,6 @@ CREATE TABLE IF NOT EXISTS `randao_slashing` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
 CREATE TABLE IF NOT EXISTS `proposer_slashing` (
     `block_hash` binary(64) NOT NULL,
     `blockheader_1` binary(64) NOT NULL,
@@ -166,5 +158,3 @@ CREATE TABLE IF NOT EXISTS `proposer_slashing` (
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
-
-

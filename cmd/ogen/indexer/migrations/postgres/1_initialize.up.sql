@@ -3,9 +3,7 @@ CREATE TABLE IF NOT EXISTS blocks (
     block_signature bytea NOT NULL,
     block_randao_signature bytea NOT NULL,
     height int NOT NULL,
-    PRIMARY KEY (block_hash),
-    CONSTRAINT block_hash_UNIQUE UNIQUE (block_hash),
-    CONSTRAINT height_UNIQUE UNIQUE  (height)
+    PRIMARY KEY (block_hash)
 );
 
 CREATE TABLE IF NOT EXISTS block_headers (
@@ -26,10 +24,9 @@ CREATE TABLE IF NOT EXISTS block_headers (
     slot INT NOT NULL,
     state_root bytea NOT NULL,
     fee_address bytea NOT NULL,
-    CONSTRAINT block_hash_UNIQUE UNIQUE (block_hash ASC) VISIBLE,
     CONSTRAINT block_hash
         FOREIGN KEY (block_hash)
-            REFERENCES `blocks` (block_hash)
+            REFERENCES blocks (block_hash)
             ON DELETE NO ACTION
             ON UPDATE NO ACTION
 );
@@ -59,10 +56,8 @@ CREATE TABLE IF NOT EXISTS deposits (
     data_public_key BYTEA NOT NULL,
     data_proof_of_possession bytea NOT NULL,
     data_withdrawal_address bytea NOT NULL,
-    CONSTRAINT data_public_key_UNIQUE UNIQUE (data_public_key ASC) VISIBLE,
-    UNIQUE INDEX data_proof_of_possession_UNIQUE (data_proof_of_possession ASC) VISIBLE,
     FOREIGN KEY (block_hash)
-        REFERENCES `blocks` (block_hash)
+        REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
@@ -71,10 +66,9 @@ CREATE TABLE IF NOT EXISTS accounts (
     account bytea NOT NULL,
     confirmed INT DEFAULT 0,
     unconfirmed INT DEFAULT 0,
-    lockedINT DEFAULT 0,
+    locked INT DEFAULT 0,
     total_sent INT DEFAULT 0,
-    total_receivedINT DEFAULT 0,
-    CONSTRAINT account_UNIQUE UNIQUE (account ASC) VISIBLE
+    total_received INT DEFAULT 0
 );
 
 CREATE SEQUENCE validators_seq;
@@ -118,9 +112,8 @@ CREATE TABLE IF NOT EXISTS vote_slashing (
     vote_1 bytea NOT NULL,
     vote_2 bytea NOT NULL,
     PRIMARY KEY (block_hash, vote_1, vote_2),
-    CONSTRAINT block_hash_UNIQUE UNIQUE (block_hash ASC) VISIBLE,
     FOREIGN KEY (block_hash)
-        REFERENCES `blocks` (block_hash)
+        REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
@@ -131,13 +124,12 @@ CREATE TABLE IF NOT EXISTS randao_slashing (
     slot INT NOT NULL,
     validator_public_key BYTEA NOT NULL,
     PRIMARY KEY (block_hash),
-    CONSTRAINT block_hash_UNIQUE UNIQUE (block_hash ASC) VISIBLE,
     FOREIGN KEY (block_hash)
-        REFERENCES `blocks` (block_hash)
+        REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION,
     FOREIGN KEY (validator_public_key)
-        REFERENCES `deposits` (data_public_key)
+        REFERENCES deposits (data_public_key)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );
@@ -150,21 +142,20 @@ CREATE TABLE IF NOT EXISTS proposer_slashing (
     signature_2 bytea NOT NULL,
     validator_public_key BYTEA NOT NULL,
     PRIMARY KEY (block_hash),
-    CONSTRAINT block_hash_UNIQUE UNIQUE (block_hash ASC) VISIBLE,
     FOREIGN KEY (block_hash)
-        REFERENCES `blocks` (block_hash)
+        REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION,
     FOREIGN KEY (blockheader_1)
-        REFERENCES `blocks` (block_hash)
+        REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION,
     FOREIGN KEY (blockheader_2)
-        REFERENCES `blocks` (block_hash)
+        REFERENCES blocks (block_hash)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION,
     FOREIGN KEY (validator_public_key)
-        REFERENCES `deposits` (data_public_key)
+        REFERENCES deposits (data_public_key)
         ON DELETE NO ACTION
         ON UPDATE NO ACTION
 );

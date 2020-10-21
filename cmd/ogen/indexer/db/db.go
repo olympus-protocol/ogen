@@ -626,7 +626,7 @@ func runMigrations(driver string, db *sql.DB) error {
 		driver,
 		driverWrapper,
 	)
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil {
 		return err
 	}
 	return nil
