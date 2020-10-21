@@ -6,14 +6,17 @@ import (
 	"errors"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
+	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	"github.com/golang-migrate/migrate/database"
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/mysql"
+	"github.com/golang-migrate/migrate/database/postgres"
 	"github.com/golang-migrate/migrate/database/sqlite3"
 
 	_ "github.com/golang-migrate/migrate/source/file"
@@ -605,6 +608,12 @@ func runMigrations(driver string, db *sql.DB) error {
 	case "sqlite3":
 		migrationsString = "file://cmd/ogen/indexer/migrations/sqlite3"
 		driverWrapper, err = sqlite3.WithInstance(db, &sqlite3.Config{})
+		if err != nil {
+			return err
+		}
+	case "postgres":
+		migrationsString = "file://cmd/ogen/indexer/migrations/postgres"
+		driverWrapper, err = postgres.WithInstance(db, &postgres.Config{})
 		if err != nil {
 			return err
 		}

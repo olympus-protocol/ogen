@@ -1,1 +1,0 @@
-drop table if exists randao_slashing;
