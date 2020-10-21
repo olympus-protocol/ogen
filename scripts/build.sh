@@ -1,3 +1,4 @@
 #!/bin/bash
 
-go run github.com/gobuffalo/packr/packr build cmd/ogen/ogen.go
+go run github.com/markbates/pkger/cmd/pkger -o cmd/ogen
+go build cmd/ogen/ogen.go
