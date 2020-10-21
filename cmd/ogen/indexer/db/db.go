@@ -538,25 +538,29 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 }
 
 func (d *Database) modifyAccountRow(queryVars []interface{}) error {
-	dw := goqu.Dialect(d.driver)
-	ds := dw.Insert("accounts").Rows(
-		goqu.Record{
-			"block_hash":           queryVars[0],
-			"blockheader_1":        queryVars[1],
-			"blockheader_2":        queryVars[2],
-			"signature_1":          queryVars[3],
-			"signature_2":          queryVars[4],
-			"validator_public_key": queryVars[5],
-		})
+	// TODO
+	// Modify query to match:
+	// "insert_accounts": "insert into accounts(addr, balance, total_sent, total_received) values(?,?,?,?) on conflict(addr) do update set balance=balance+?, total_sent=total_sent+?,total_received=total_received+?;"
 
-	query, _, err := ds.ToSQL()
-	if err != nil {
-		return err
-	}
-	_, err = d.db.Exec(query)
-	if err != nil {
-		return err
-	}
+	//dw := goqu.Dialect(d.driver)
+	//ds := dw.Insert("accounts").Rows(
+	//	goqu.Record{
+	//		"block_hash":           queryVars[0],
+	//		"blockheader_1":        queryVars[1],
+	//		"blockheader_2":        queryVars[2],
+	//		"signature_1":          queryVars[3],
+	//		"signature_2":          queryVars[4],
+	//		"validator_public_key": queryVars[5],
+	//	})
+	//
+	//query, _, err := ds.ToSQL()
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = d.db.Exec(query)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
