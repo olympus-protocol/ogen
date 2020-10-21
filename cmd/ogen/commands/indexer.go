@@ -32,7 +32,11 @@ var indexerCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		idx := indexer.NewIndexer(dbConnString, rpcEndpoint, dbDriver)
+		idx, err := indexer.NewIndexer(dbConnString, rpcEndpoint, dbDriver)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(0)
+		}
 
 		idx.Start()
 		<-idx.Context().Done()

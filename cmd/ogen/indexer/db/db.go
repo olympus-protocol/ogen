@@ -4,24 +4,23 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
-	"github.com/golang-migrate/migrate/database"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/pkger"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	"strconv"
-
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/mysql"
-	"github.com/golang-migrate/migrate/database/postgres"
-	"github.com/golang-migrate/migrate/database/sqlite3"
-
-	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"strconv"
 	"sync"
 )
 
@@ -570,6 +569,39 @@ func (d *Database) Close() {
 	return
 }
 
+func (d *Database) Migrate() error {
+	var dbdriver database.Driver
+	var err error
+
+	switch d.driver {
+	case "sqlite3":
+		dbdriver, err = sqlite3.WithInstance(d.db, &sqlite3.Config{})
+		if err != nil {
+			return err
+		}
+	case "postgres":
+		dbdriver, err = postgres.WithInstance(d.db, &postgres.Config{})
+		if err != nil {
+			return err
+		}
+	case "mysql":
+		dbdriver, err = mysql.WithInstance(d.db, &mysql.Config{})
+		if err != nil {
+			return err
+		}
+	}
+
+	m, err := migrate.NewWithDatabaseInstance("pkger:///cmd/ogen/indexer/migrations/"+d.driver, d.driver, dbdriver)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	if err := m.Up(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver string) *Database {
 	db, err := sql.Open(driver, dbConnString)
@@ -578,11 +610,6 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver st
 	}
 
 	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = runMigrations(driver, db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -597,42 +624,4 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver st
 	dbclient.log.Info("Database connection established")
 
 	return dbclient
-}
-
-func runMigrations(driver string, db *sql.DB) error {
-	var driverWrapper database.Driver
-	var err error
-	var migrationsString string
-	switch driver {
-	case "mysql":
-		migrationsString = "file://cmd/ogen/indexer/migrations/mysql"
-		driverWrapper, err = mysql.WithInstance(db, &mysql.Config{})
-		if err != nil {
-			return err
-		}
-	case "sqlite3":
-		migrationsString = "file://cmd/ogen/indexer/migrations/sqlite3"
-		driverWrapper, err = sqlite3.WithInstance(db, &sqlite3.Config{})
-		if err != nil {
-			return err
-		}
-	case "postgres":
-		migrationsString = "file://cmd/ogen/indexer/migrations/postgres"
-		driverWrapper, err = postgres.WithInstance(db, &postgres.Config{})
-		if err != nil {
-			return err
-		}
-	default:
-		return errors.New("driver not supported")
-	}
-
-	m, _ := migrate.NewWithDatabaseInstance(
-		migrationsString,
-		driver,
-		driverWrapper,
-	)
-	if err := m.Up(); err != nil {
-		return err
-	}
-	return nil
 }

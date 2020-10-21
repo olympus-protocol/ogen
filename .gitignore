@@ -53,3 +53,4 @@ certs/
 # Binaries
 ogen
 !ogen/
+pkged.go
