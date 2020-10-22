@@ -11,9 +11,8 @@ require (
 	github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gobuffalo/packd v0.3.0
 	github.com/gobuffalo/packr v1.30.1
-	github.com/gobuffalo/packr/v2 v2.5.1
+	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang-migrate/migrate/v4 v4.13.0
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
@@ -42,7 +41,7 @@ require (
 	github.com/wealdtech/go-eth2-util v1.6.0
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	google.golang.org/genproto v0.0.0-20201021134325-0d71844de594
+	google.golang.org/genproto v0.0.0-20201022181438-0ff5f38871d5
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
 )

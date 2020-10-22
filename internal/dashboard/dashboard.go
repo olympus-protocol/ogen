@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"github.com/gin-gonic/gin"
-	"github.com/gobuffalo/packr/v2"
+	"github.com/gobuffalo/packr"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
@@ -118,7 +118,7 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 }
 
 func (d *Dashboard) loadStatic() {
-	box := packr.New("static", "./static")
+	box := packr.NewBox( "./static")
 	d.r.StaticFS("/static/", box)
 }
 
@@ -128,7 +128,7 @@ func (d *Dashboard) loadTemplate() error {
 
 	tmpl := t.New("index.html")
 
-	box := packr.New("views", "./views")
+	box := packr.NewBox("./views")
 
 	data, err := box.FindString("index.html")
 	if err != nil {

@@ -9,16 +9,15 @@ import (
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gobuffalo/packr/v2"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"strconv"
@@ -573,36 +572,37 @@ func (d *Database) Close() {
 func (d *Database) Migrate() error {
 	var dbdriver database.Driver
 	var err error
-
+	var migrationsString string
 	switch d.driver {
 	case "sqlite3":
+		migrationsString = "file://cmd/ogen/indexer/migrations/sqlite3"
 		dbdriver, err = sqlite3.WithInstance(d.db, &sqlite3.Config{})
 		if err != nil {
 			return err
 		}
 	case "postgres":
+		migrationsString = "file://cmd/ogen/indexer/migrations/postgres"
 		dbdriver, err = postgres.WithInstance(d.db, &postgres.Config{})
 		if err != nil {
 			return err
 		}
 	case "mysql":
+		migrationsString = "file://cmd/ogen/indexer/migrations/mysql"
 		dbdriver, err = mysql.WithInstance(d.db, &mysql.Config{})
 		if err != nil {
 			return err
 		}
 	}
 
-	box := packr.New("migrations", "./migrations/")
-
-	src, err := httpfs.New(box, "")
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationsString,
+		d.driver,
+		dbdriver,
+	)
 	if err != nil {
 		return err
 	}
 
-	m, err := migrate.NewWithInstance("httpfs", src,  d.driver, dbdriver)
-	if err != nil {
-		return err
-	}
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
 	}
