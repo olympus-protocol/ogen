@@ -107,7 +107,7 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	// Transactions Single
 	for _, tx := range block.Txs {
 		queryVars = nil
-		queryVars = append(queryVars, hash.String(), 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]),
+		queryVars = append(queryVars, tx.Hash().String(), hash.String(), 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]),
 			int(tx.Amount), int(tx.Nonce), int(tx.Fee), hex.EncodeToString(tx.Signature[:]))
 		err = d.insertRow("tx_single", queryVars)
 		if err != nil {
@@ -343,14 +343,15 @@ func (d *Database) insertTxSingle(queryVars []interface{}) error {
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("tx_single").Rows(
 		goqu.Record{
-			"block_hash":      queryVars[0],
-			"tx_type":         queryVars[1],
-			"to_addr":         queryVars[2],
-			"from_public_key": queryVars[3],
-			"amount":          queryVars[4],
-			"nonce":           queryVars[5],
-			"fee":             queryVars[6],
-			"signature":       queryVars[7],
+			"hash":            queryVars[0],
+			"block_hash":      queryVars[1],
+			"tx_type":         queryVars[2],
+			"to_addr":         queryVars[3],
+			"from_public_key": queryVars[4],
+			"amount":          queryVars[5],
+			"nonce":           queryVars[6],
+			"fee":             queryVars[7],
+			"signature":       queryVars[8],
 		},
 	)
 	query, _, err := ds.ToSQL()

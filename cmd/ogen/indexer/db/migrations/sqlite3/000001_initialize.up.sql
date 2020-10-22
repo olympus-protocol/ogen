@@ -76,6 +76,7 @@ create table exits (
 );
 
 create table tx_single (
+    hash text not null,
     block_hash text not null,
     tx_type integer not null,
     to_addr text not null,

@@ -118,7 +118,7 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 }
 
 func (d *Dashboard) loadStatic() {
-	box := packr.NewBox( "./static")
+	box := packr.NewBox("./static")
 	d.r.StaticFS("/static/", box)
 }
 

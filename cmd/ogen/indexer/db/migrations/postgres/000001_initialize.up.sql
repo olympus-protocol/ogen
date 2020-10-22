@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS exits (
 );
 
 CREATE TABLE IF NOT EXISTS tx_single (
+    hash text NOT NULL,
     block_hash text NOT NULL,
     tx_type BIGINT NOT NULL,
     to_addr BYTEA NOT NULL,

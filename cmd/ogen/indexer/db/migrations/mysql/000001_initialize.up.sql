@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS `exits` (
         ON UPDATE NO ACTION
 );
 CREATE TABLE IF NOT EXISTS `tx_single` (
+    `hash` binary(64) NOT NULL,
     `block_hash` binary(64) NOT NULL,
     `tx_type` INT NOT NULL,
     `to_addr` BINARY(40) NOT NULL,
