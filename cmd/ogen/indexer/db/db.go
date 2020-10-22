@@ -575,19 +575,19 @@ func (d *Database) Migrate() error {
 	var migrationsString string
 	switch d.driver {
 	case "sqlite3":
-		migrationsString = "file://cmd/ogen/indexer/migrations/sqlite3"
+		migrationsString = "file://cmd/ogen/indexer/db/migrations/sqlite3"
 		dbdriver, err = sqlite3.WithInstance(d.db, &sqlite3.Config{})
 		if err != nil {
 			return err
 		}
 	case "postgres":
-		migrationsString = "file://cmd/ogen/indexer/migrations/postgres"
+		migrationsString = "file://cmd/ogen/indexer/db/migrations/postgres"
 		dbdriver, err = postgres.WithInstance(d.db, &postgres.Config{})
 		if err != nil {
 			return err
 		}
 	case "mysql":
-		migrationsString = "file://cmd/ogen/indexer/migrations/mysql"
+		migrationsString = "file://cmd/ogen/indexer/db/migrations/mysql"
 		dbdriver, err = mysql.WithInstance(d.db, &mysql.Config{})
 		if err != nil {
 			return err
