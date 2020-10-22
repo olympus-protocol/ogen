@@ -4,18 +4,19 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/pkger"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -591,14 +592,21 @@ func (d *Database) Migrate() error {
 		}
 	}
 
-	m, err := migrate.NewWithDatabaseInstance("pkger:///cmd/ogen/indexer/migrations/"+d.driver, d.driver, dbdriver)
+	box := packr.New("migrations", "./migrations/")
+
+	src, err := httpfs.New(box, "")
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-	if err := m.Up(); err != nil {
+
+	m, err := migrate.NewWithInstance("httpfs", src,  d.driver, dbdriver)
+	if err != nil {
 		return err
 	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
 	return nil
 }
 

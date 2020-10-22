@@ -11,7 +11,9 @@ require (
 	github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/gobuffalo/packd v0.3.0
 	github.com/gobuffalo/packr v1.30.1
+	github.com/gobuffalo/packr/v2 v2.5.1
 	github.com/golang-migrate/migrate/v4 v4.13.0
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
@@ -29,7 +31,6 @@ require (
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/magiconair/properties v1.8.4
-	github.com/markbates/pkger v0.17.1
 	github.com/mattn/go-sqlite3 v1.14.4
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/rs/cors v1.7.0

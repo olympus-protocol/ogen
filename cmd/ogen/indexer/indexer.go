@@ -3,7 +3,6 @@ package indexer
 import (
 	"context"
 	"encoding/hex"
-	"github.com/markbates/pkger"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/db"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -140,8 +139,6 @@ func NewIndexer(dbConnString, rpcEndpoint, dbDriver string) (*Indexer, error) {
 	rpcClient := rpcclient.NewRPCClient(rpcEndpoint, true)
 	var wg sync.WaitGroup
 	database := db.NewDB(dbConnString, log, &wg, dbDriver)
-
-	pkger.Include("/cmd/ogen/indexer/migrations/")
 
 	err := database.Migrate()
 	if err != nil {
