@@ -168,3 +168,27 @@ ALTER TABLE "slots" ADD FOREIGN KEY ("slot") REFERENCES "epochs" ("slot_3");
 ALTER TABLE "slots" ADD FOREIGN KEY ("slot") REFERENCES "epochs" ("slot_4");
 
 ALTER TABLE "slots" ADD FOREIGN KEY ("slot") REFERENCES "epochs" ("slot_5");
+
+CREATE UNIQUE INDEX ON "blocks" ("block_hash");
+
+CREATE UNIQUE INDEX ON "blocks" ("height");
+
+CREATE UNIQUE INDEX ON "block_headers" ("block_hash");
+
+CREATE UNIQUE INDEX ON "block_headers" ("slot");
+
+CREATE UNIQUE INDEX ON "block_headers" ("timestamp");
+
+CREATE UNIQUE INDEX ON "deposits" ("data_public_key");
+
+CREATE UNIQUE INDEX ON "accounts" ("account");
+
+CREATE UNIQUE INDEX ON "validators" ("id");
+
+CREATE UNIQUE INDEX ON "exits" ("validator_public_key");
+
+CREATE UNIQUE INDEX ON "tx_single" ("hash");
+
+CREATE UNIQUE INDEX ON "slots" ("slot");
+
+CREATE UNIQUE INDEX ON "epochs" ("epoch");
