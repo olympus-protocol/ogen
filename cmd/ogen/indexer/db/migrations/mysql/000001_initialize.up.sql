@@ -6,7 +6,7 @@ CREATE TABLE `blocks` (
 );
 
 CREATE TABLE `block_headers` (
-    `block_hash` varchar(255) NOT NULL,
+    `block_hash` varchar(255) PRIMARY KEY NOT NULL,
     `version` int NOT NULL,
     `nonce` bigint NOT NULL,
     `tx_merkle_root` varchar(255) NOT NULL,
@@ -43,13 +43,13 @@ CREATE TABLE `deposits` (
     `block_hash` varchar(255) NOT NULL,
     `public_key` varchar(255) NOT NULL,
     `signature` varchar(255) NOT NULL,
-    `data_public_key` varchar(255) NOT NULL,
+    `data_public_key` varchar(255) PRIMARY KEY NOT NULL,
     `data_proof_of_possession` varchar(255) NOT NULL,
     `data_withdrawal_address` varchar(255) NOT NULL
 );
 
 CREATE TABLE `accounts` (
-    `account` varchar(255) NOT NULL,
+    `account` varchar(255) PRIMARY KEY NOT NULL,
     `confirmed` bigint DEFAULT 0,
     `unconfirmed` bigint DEFAULT 0,
     `locked` bigint DEFAULT 0,
@@ -60,9 +60,9 @@ CREATE TABLE `accounts` (
 CREATE TABLE `validators` (
     `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
     `public_key` varchar(255) NOT NULL,
-    `status` int NOT NULL,
-    `exit` boolean NOT NULL,
-    `penalized` boolean NOT NULL,
+    `status` int DEFAULT 0,
+    `exit` boolean DEFAULT false,
+    `penalized` boolean DEFAULT false,
     `balance` bigint DEFAULT 0
 );
 
@@ -127,47 +127,41 @@ CREATE TABLE `epochs` (
     `participation_percentage` int NOT NULL
 );
 
-ALTER TABLE `blocks` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
+ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `blocks` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `votes` (`block_hash`);
+ALTER TABLE `vote_slashing` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `deposits` (`block_hash`);
+ALTER TABLE `votes` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `exits` (`block_hash`);
+ALTER TABLE `deposits` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `vote_slashing` (`block_hash`);
+ALTER TABLE `exits` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `randao_slashing` (`block_hash`);
+ALTER TABLE `proposer_slashing` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `proposer_slashing` (`block_hash`);
+ALTER TABLE `randao_slashing` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `proposer_slashing` (`blockheader_1`);
+ALTER TABLE `tx_single` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `proposer_slashing` (`blockheader_2`);
+ALTER TABLE `slots` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
-ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `tx_single` (`block_hash`);
+ALTER TABLE `epochs` ADD FOREIGN KEY (`slot_1`) REFERENCES `slots` (`slot`);
 
-ALTER TABLE `deposits` ADD FOREIGN KEY (`data_public_key`) REFERENCES `validators` (`public_key`);
+ALTER TABLE `epochs` ADD FOREIGN KEY (`slot_2`) REFERENCES `slots` (`slot`);
 
-ALTER TABLE `deposits` ADD FOREIGN KEY (`data_public_key`) REFERENCES `proposer_slashing` (`validator_public_key`);
+ALTER TABLE `epochs` ADD FOREIGN KEY (`slot_3`) REFERENCES `slots` (`slot`);
 
-ALTER TABLE `deposits` ADD FOREIGN KEY (`public_key`) REFERENCES `exits` (`validator_public_key`);
+ALTER TABLE `epochs` ADD FOREIGN KEY (`slot_4`) REFERENCES `slots` (`slot`);
 
-ALTER TABLE `deposits` ADD FOREIGN KEY (`public_key`) REFERENCES `randao_slashing` (`validator_public_key`);
+ALTER TABLE `epochs` ADD FOREIGN KEY (`slot_5`) REFERENCES `slots` (`slot`);
 
-ALTER TABLE `accounts` ADD FOREIGN KEY (`account`) REFERENCES `tx_single` (`to_addr`);
+ALTER TABLE `validators` ADD FOREIGN KEY (`public_key`) REFERENCES `deposits` (`data_public_key`);
 
-ALTER TABLE `accounts` ADD FOREIGN KEY (`account`) REFERENCES `tx_single` (`from_public_key_hash`);
+ALTER TABLE `proposer_slashing` ADD FOREIGN KEY (`validator_public_key`) REFERENCES `deposits` (`data_public_key`);
 
-ALTER TABLE `slots` ADD FOREIGN KEY (`slot`) REFERENCES `epochs` (`slot_1`);
+ALTER TABLE `exits` ADD FOREIGN KEY (`validator_public_key`) REFERENCES `deposits` (`data_public_key`);
 
-ALTER TABLE `slots` ADD FOREIGN KEY (`slot`) REFERENCES `epochs` (`slot_2`);
-
-ALTER TABLE `slots` ADD FOREIGN KEY (`slot`) REFERENCES `epochs` (`slot_3`);
-
-ALTER TABLE `slots` ADD FOREIGN KEY (`slot`) REFERENCES `epochs` (`slot_4`);
-
-ALTER TABLE `slots` ADD FOREIGN KEY (`slot`) REFERENCES `epochs` (`slot_5`);
+ALTER TABLE `tx_single` ADD FOREIGN KEY (`from_public_key_hash`) REFERENCES `accounts` (`account`);
 
 CREATE UNIQUE INDEX `blocks_index_0` ON `blocks` (`block_hash`);
 

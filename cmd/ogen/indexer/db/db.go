@@ -14,6 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -52,7 +53,12 @@ func (d *Database) GetCurrentState() (State, error) {
 	}
 }
 
-func (d *Database) InsertBlock(block primitives.Block) error {
+func (d *Database) InsertBlock(block *primitives.Block) error {
+
+	err := d.ProcessEpochTransition(block)
+	if err != nil {
+		return err
+	}
 
 	nextHeight, prevHash, err := d.getNextHeight()
 	if err != nil {
@@ -104,7 +110,37 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 	// Transactions Single
 	for _, tx := range block.Txs {
 		queryVars = nil
-		queryVars = append(queryVars, tx.Hash().String(), hash.String(), 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]),
+		pkh, err := tx.FromPubkeyHash()
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+
+		var receiverAccInfo = &AccountInfo{
+			Account:       hex.EncodeToString(tx.To[:]),
+			Confirmed:     int(tx.Amount),
+			TotalReceived: int(tx.Amount),
+		}
+
+		var senderAccInfo = &AccountInfo{
+			Account:   hex.EncodeToString(pkh[:]),
+			Confirmed: -1 * int(tx.Amount),
+			TotalSent: int(tx.Amount),
+		}
+
+		err = d.modifyAccountRow(receiverAccInfo)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+
+		err = d.modifyAccountRow(senderAccInfo)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+
+		queryVars = append(queryVars, tx.Hash().String(), hash.String(), 0, hex.EncodeToString(tx.To[:]), hex.EncodeToString(tx.FromPublicKey[:]), hex.EncodeToString(pkh[:]),
 			int(tx.Amount), int(tx.Nonce), int(tx.Fee), hex.EncodeToString(tx.Signature[:]))
 		err = d.insertRow("tx_single", queryVars)
 		if err != nil {
@@ -112,25 +148,22 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 			continue
 		}
 
-		// update the receiver account
-		queryVars = nil
-		queryVars = append(queryVars, hex.EncodeToString(tx.To[:]), int(tx.Amount), 0, int(tx.Amount), int(tx.Amount), 0, int(tx.Amount))
-		err = d.insertRow("accounts", queryVars)
-		if err != nil {
-			continue
-		}
-
-		// update the sender account
-		queryVars = nil
-		fromAccount, err := tx.FromPubkeyHash()
-		queryVars = append(queryVars, hex.EncodeToString(fromAccount[:]), (-1)*int(tx.Amount), int(tx.Amount), 0, (-1)*int(tx.Amount), int(tx.Amount), 0)
-		err = d.insertRow("accounts", queryVars)
-		if err != nil {
-			continue
-		}
 	}
 
 	for _, deposit := range block.Deposits {
+
+		var lockedAccountInfo = &AccountInfo{
+			Account:   hex.EncodeToString(deposit.Data.WithdrawalAddress[:]),
+			Confirmed: -1 * int(100*1e8),
+			Locked:    1 * int(100*1e8),
+		}
+
+		err = d.modifyAccountRow(lockedAccountInfo)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+
 		queryVars = nil
 		queryVars = append(queryVars, hash.String(), hex.EncodeToString(deposit.PublicKey[:]), hex.EncodeToString(deposit.Signature[:]),
 			hex.EncodeToString(deposit.Data.PublicKey[:]), hex.EncodeToString(deposit.Data.ProofOfPossession[:]), hex.EncodeToString(deposit.Data.WithdrawalAddress[:]))
@@ -143,6 +176,28 @@ func (d *Database) InsertBlock(block primitives.Block) error {
 
 	// Exits
 	for _, exits := range block.Exits {
+
+		balance, err := d.GetValidatorBalance(hex.EncodeToString(exits.ValidatorPubkey[:]))
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+		var pkh [20]byte
+		pkhHash := chainhash.HashB(exits.WithdrawPubkey[:])
+		copy(pkh[:], pkhHash[:])
+
+		var unlockedAccountInfo = &AccountInfo{
+			Account:   hex.EncodeToString(pkh[:]),
+			Confirmed: balance,
+			Locked:    -1 * balance,
+		}
+
+		err = d.modifyAccountRow(unlockedAccountInfo)
+		if err != nil {
+			d.log.Error(err)
+			continue
+		}
+
 		queryVars = nil
 		queryVars = append(queryVars, hash.String(), hex.EncodeToString(exits.ValidatorPubkey[:]), hex.EncodeToString(exits.WithdrawPubkey[:]),
 			hex.EncodeToString(exits.Signature[:]))
@@ -247,8 +302,6 @@ func (d *Database) insertRow(tableName string, queryVars []interface{}) error {
 		return d.insertRandaoSlashing(queryVars)
 	case "proposer_slashings":
 		return d.insertProposerSlashing(queryVars)
-	case "accounts":
-		return d.modifyAccountRow(queryVars)
 	}
 	return nil
 }
@@ -340,15 +393,16 @@ func (d *Database) insertTxSingle(queryVars []interface{}) error {
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("tx_single").Rows(
 		goqu.Record{
-			"hash":            queryVars[0],
-			"block_hash":      queryVars[1],
-			"tx_type":         queryVars[2],
-			"to_addr":         queryVars[3],
-			"from_public_key": queryVars[4],
-			"amount":          queryVars[5],
-			"nonce":           queryVars[6],
-			"fee":             queryVars[7],
-			"signature":       queryVars[8],
+			"hash":                 queryVars[0],
+			"block_hash":           queryVars[1],
+			"tx_type":              queryVars[2],
+			"to_addr":              queryVars[3],
+			"from_public_key":      queryVars[4],
+			"from_public_key_hash": queryVars[5],
+			"amount":               queryVars[6],
+			"nonce":                queryVars[7],
+			"fee":                  queryVars[8],
+			"signature":            queryVars[9],
 		},
 	)
 	query, _, err := ds.ToSQL()
@@ -476,6 +530,7 @@ func (d *Database) addValidator(valPubKey interface{}) error {
 	ds := dw.Insert("validators").Rows(
 		goqu.Record{
 			"public_key": valPubKey,
+			"balance":    100 * 1e8,
 			"exit":       false,
 			"penalized":  false,
 		},
@@ -534,30 +589,81 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 	return nil
 }
 
-func (d *Database) modifyAccountRow(queryVars []interface{}) error {
-	// TODO
-	// Modify query to match:
-	// "insert_accounts": "insert into accounts(addr, balance, total_sent, total_received) values(?,?,?,?) on conflict(addr) do update set balance=balance+?, total_sent=total_sent+?,total_received=total_received+?;"
+func (d *Database) modifyAccountRow(accInfo *AccountInfo) error {
 
-	//dw := goqu.Dialect(d.driver)
-	//ds := dw.Insert("accounts").Rows(
-	//	goqu.Record{
-	//		"block_hash":           queryVars[0],
-	//		"blockheader_1":        queryVars[1],
-	//		"blockheader_2":        queryVars[2],
-	//		"signature_1":          queryVars[3],
-	//		"signature_2":          queryVars[4],
-	//		"validator_public_key": queryVars[5],
-	//	})
-	//
-	//query, _, err := ds.ToSQL()
-	//if err != nil {
-	//	return err
-	//}
-	//_, err = d.db.Exec(query)
-	//if err != nil {
-	//	return err
-	//}
+	dw := goqu.Dialect(d.driver)
+
+	ds := dw.From("accounts").Select("*").Where(goqu.Ex{
+		"account": accInfo.Account,
+	})
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	row := d.db.QueryRow(query)
+
+	var accountResult AccountInfo
+
+	err = row.Scan(&accountResult.Account, &accountResult.Confirmed, &accountResult.Unconfirmed, &accountResult.Locked, &accountResult.TotalSent, &accountResult.TotalReceived)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ds := dw.Insert("accounts").Rows(
+				goqu.Record{
+					"account":        accInfo.Account,
+					"confirmed":      accInfo.Confirmed,
+					"unconfirmed":    0,
+					"locked":         0,
+					"total_sent":     accInfo.TotalSent,
+					"total_received": accInfo.TotalReceived,
+				},
+			)
+
+			query, _, err := ds.ToSQL()
+			if err != nil {
+				return err
+			}
+
+			_, err = d.db.Exec(query)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	newAccountData := &AccountInfo{
+		Account:       accInfo.Account,
+		Confirmed:     accountResult.Confirmed + accInfo.Confirmed,
+		Unconfirmed:   accountResult.Unconfirmed + accInfo.Unconfirmed,
+		Locked:        accountResult.Locked + accInfo.Locked,
+		TotalSent:     accountResult.TotalSent + accInfo.TotalSent,
+		TotalReceived: accountResult.TotalReceived + accInfo.TotalReceived,
+	}
+
+	nds := dw.Update("accounts").Set(
+		goqu.Record{
+			"confirmed":      newAccountData.Confirmed,
+			"unconfirmed":    newAccountData.Unconfirmed,
+			"locked":         newAccountData.Locked,
+			"total_sent":     newAccountData.TotalSent,
+			"total_received": newAccountData.TotalReceived,
+		}).Where(
+		goqu.Ex{
+			"account": accountResult.Account,
+		},
+	)
+	nquery, _, err := nds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(nquery)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -596,6 +702,66 @@ func (d *Database) Migrate() error {
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
+}
+
+// ProcessEpochTransition process the database storing for validation activation, exits, slots and epochs information.
+func (d *Database) ProcessEpochTransition(b *primitives.Block) error {
+
+	return nil
+}
+
+func (d *Database) GetValidatorBalance(pubkey string) (int, error) {
+	dw := goqu.Dialect(d.driver)
+
+	ds := dw.From("validators").Select("balance").Where(
+		goqu.Ex{
+			"public_key": pubkey,
+		},
+	)
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return 0, err
+	}
+
+	row := d.db.QueryRow(query)
+
+	var balance int
+	err = row.Scan(&balance)
+	if err != nil {
+		return 0, err
+	}
+	return balance, nil
+}
+
+func (d *Database) ModifyValidatorBalance(pubkey string, balance int) error {
+	currBalance, err := d.GetValidatorBalance(pubkey)
+	if err != nil {
+		return err
+	}
+
+	dw := goqu.Dialect(d.driver)
+
+	ds := dw.Update("validators").Set(
+		goqu.Record{
+			"balance": currBalance + balance,
+		}).Where(
+		goqu.Ex{
+			"public_key": pubkey,
+		},
+	)
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(query)
+	if err != nil {
 		return err
 	}
 

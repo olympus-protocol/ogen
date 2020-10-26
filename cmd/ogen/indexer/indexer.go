@@ -43,7 +43,7 @@ sync:
 			i.log.Errorf("unable to parse error %s", err.Error())
 			continue
 		}
-		var block primitives.Block
+		block := new(primitives.Block)
 		err = block.Unmarshal(blockBytes)
 		if err != nil {
 			i.log.Errorf("unable to parse error %s", err.Error())
@@ -75,7 +75,7 @@ func (i *Indexer) initialSync() {
 	if indexState.Blocks == 0 && indexState.LastBlockHash == "" {
 		genesis := primitives.GetGenesisBlock()
 		genesisHash := genesis.Hash()
-		err = i.db.InsertBlock(genesis)
+		err = i.db.InsertBlock(&genesis)
 		if err != nil {
 			i.log.Error("unable to register genesis block")
 			return
@@ -108,7 +108,7 @@ func (i *Indexer) initialSync() {
 			i.log.Error("unable to parse block")
 			break
 		}
-		var block primitives.Block
+		block := new(primitives.Block)
 		err = block.Unmarshal(blockBytes)
 		if err != nil {
 			i.log.Error("unable to parse block")
