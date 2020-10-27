@@ -63,6 +63,14 @@ sync:
 	}
 }
 
+func (i *Indexer) subscribeBlocks() {
+
+}
+
+func (i *Indexer) subscribeMempool() {
+
+}
+
 func (i *Indexer) initialSync() {
 
 	// get the saved state

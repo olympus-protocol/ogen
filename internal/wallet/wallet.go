@@ -106,6 +106,9 @@ func (w *wallet) NewWallet(name string, mnemonic string, password string) error 
 		}
 		mnemonicPhrase, err = bip39.NewMnemonic(entropy)
 	} else {
+		if !bip39.IsMnemonicValid(mnemonic) {
+			return bip39.ErrInvalidMnemonic
+		}
 		mnemonicPhrase = mnemonic
 	}
 
