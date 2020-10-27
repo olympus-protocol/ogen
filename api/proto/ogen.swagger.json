@@ -26,9 +26,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -56,9 +56,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -86,9 +86,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -117,9 +117,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -139,9 +139,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -171,16 +171,16 @@
                   "$ref": "#/definitions/RawData"
                 },
                 "error": {
-                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                  "$ref": "#/definitions/rpcStatus"
                 }
               },
               "title": "Stream result of RawData"
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -212,16 +212,16 @@
                   "$ref": "#/definitions/RawData"
                 },
                 "error": {
-                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                  "$ref": "#/definitions/rpcStatus"
                 }
               },
               "title": "Stream result of RawData"
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -243,16 +243,16 @@
                   "$ref": "#/definitions/RawData"
                 },
                 "error": {
-                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                  "$ref": "#/definitions/rpcStatus"
                 }
               },
               "title": "Stream result of RawData"
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -284,16 +284,16 @@
                   "$ref": "#/definitions/RawData"
                 },
                 "error": {
-                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                  "$ref": "#/definitions/rpcStatus"
                 }
               },
               "title": "Stream result of RawData"
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -321,9 +321,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -352,9 +352,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -383,9 +383,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -405,9 +405,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -435,9 +435,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -465,9 +465,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -496,9 +496,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -518,9 +518,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -548,9 +548,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -578,9 +578,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -608,9 +608,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -630,9 +630,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -643,6 +643,7 @@
     },
     "/utils/decoderawblock": {
       "post": {
+        "summary": "* \nMethod: DecodeRawBlock \nInput: message RawData\nResponse: message Block\nDescription: Returns a raw block on human readable format.",
         "operationId": "Utils_DecodeRawBlock",
         "responses": {
           "200": {
@@ -652,9 +653,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -675,6 +676,7 @@
     },
     "/utils/decoderawtransaction": {
       "post": {
+        "summary": "* \nMethod: DecodeRawTransaction \nInput: message RawData\nResponse: message Tx\nDescription: Returns a raw transaction on human readable format.",
         "operationId": "Utils_DecodeRawTransaction",
         "responses": {
           "200": {
@@ -684,9 +686,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -707,6 +709,7 @@
     },
     "/utils/genkeypair": {
       "get": {
+        "summary": "*\nMethod: GenKeyPair\nInput: message Empty\nResponse: message KeyPair\nDescription: Generates a new bls bech32 encoded key pair.",
         "operationId": "Utils_GenKeyPair",
         "responses": {
           "200": {
@@ -716,9 +719,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -729,6 +732,7 @@
     },
     "/utils/genvalidatorkey": {
       "post": {
+        "summary": "* \nMethod: GenValidatorKey \nInput: message GenValidatorKeys\nResponse: message KeyPairs\nDescription: Returns private keys generated for validators start.",
         "operationId": "Utils_GenValidatorKey",
         "responses": {
           "200": {
@@ -738,9 +742,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -761,6 +765,7 @@
     },
     "/utils/getparticipationinfo": {
       "get": {
+        "summary": "*\nMethod: GetParticipationStatus\nInput: Empty\nResponse: ParticipationInfo\nDescription: Returns current internal status of consensus participation.",
         "operationId": "Utils_GetParticipationStatus",
         "responses": {
           "200": {
@@ -770,9 +775,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -783,6 +788,7 @@
     },
     "/utils/submitrawdata": {
       "post": {
+        "summary": "* \nMethod: SubmitRawData \nInput: message RawData\nResponse: message Success\nDescription: Broadcast a raw elements of different transactions.",
         "operationId": "Utils_SubmitRawData",
         "responses": {
           "200": {
@@ -792,9 +798,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -815,6 +821,7 @@
     },
     "/utils/subscribemempool": {
       "get": {
+        "summary": "*\nMethod: SubscribeMempool\nInput: Empty\nResponse: Tx\nDescription: Returns a stream of transactions. Relaying a transaction when arrives the mempool.",
         "operationId": "Utils_SubscribeMempool",
         "responses": {
           "200": {
@@ -826,16 +833,48 @@
                   "$ref": "#/definitions/Tx"
                 },
                 "error": {
-                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                  "$ref": "#/definitions/rpcStatus"
                 }
               },
               "title": "Stream result of Tx"
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/utils/syncmempool": {
+      "get": {
+        "summary": "*\nMethod: SyncMempool\nInput: Empty\nResponse: Tx\nDescription: Returns a stream of transactions on the mempool to sync it.",
+        "operationId": "Utils_SyncMempool",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/Tx"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of Tx"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -855,9 +894,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -885,9 +924,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -907,9 +946,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -929,9 +968,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -951,9 +990,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -973,9 +1012,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1005,9 +1044,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1027,9 +1066,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1049,9 +1088,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1085,9 +1124,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1117,9 +1156,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1149,9 +1188,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1171,9 +1210,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1203,9 +1242,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1235,9 +1274,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1271,9 +1310,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1303,9 +1342,9 @@
             }
           },
           "default": {
-            "description": "An unexpected error response",
+            "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/rpcStatus"
             }
           }
         },
@@ -1329,17 +1368,17 @@
           "type": "string",
           "format": "uint64"
         },
-        "total_received": {
+        "totalReceived": {
           "type": "string"
         },
-        "total_sent": {
+        "totalSent": {
           "type": "string"
         },
         "txs": {
           "type": "string",
           "format": "uint64"
         },
-        "tx_list": {
+        "txList": {
           "$ref": "#/definitions/HashList"
         }
       }
@@ -1382,7 +1421,7 @@
         "hash": {
           "type": "string"
         },
-        "raw_block": {
+        "rawBlock": {
           "type": "string"
         },
         "header": {
@@ -1397,7 +1436,7 @@
         "signature": {
           "type": "string"
         },
-        "randao_signature": {
+        "randaoSignature": {
           "type": "string"
         }
       }
@@ -1413,28 +1452,28 @@
           "type": "string",
           "format": "uint64"
         },
-        "tx_merkle_root": {
+        "txMerkleRoot": {
           "type": "string"
         },
-        "vote_merkle_root": {
+        "voteMerkleRoot": {
           "type": "string"
         },
-        "deposit_merkle_root": {
+        "depositMerkleRoot": {
           "type": "string"
         },
-        "exit_merkle_root": {
+        "exitMerkleRoot": {
           "type": "string"
         },
-        "vote_slashing_merkle_root": {
+        "voteSlashingMerkleRoot": {
           "type": "string"
         },
-        "randao_slashing_merkle_root": {
+        "randaoSlashingMerkleRoot": {
           "type": "string"
         },
-        "proposer_slashing_merkle_root": {
+        "proposerSlashingMerkleRoot": {
           "type": "string"
         },
-        "prev_block_hash": {
+        "prevBlockHash": {
           "type": "string"
         },
         "timestamp": {
@@ -1445,10 +1484,10 @@
           "type": "string",
           "format": "uint64"
         },
-        "state_root": {
+        "stateRoot": {
           "type": "string"
         },
-        "fee_address": {
+        "feeAddress": {
           "type": "string"
         }
       }
@@ -1456,7 +1495,7 @@
     "BlockTxs": {
       "type": "object",
       "properties": {
-        "tx_count": {
+        "txCount": {
           "type": "string",
           "format": "uint64"
         },
@@ -1468,20 +1507,20 @@
     "ChainInfo": {
       "type": "object",
       "properties": {
-        "block_hash": {
+        "blockHash": {
           "type": "string"
         },
-        "block_height": {
+        "blockHeight": {
           "type": "string",
           "format": "uint64"
         },
         "validators": {
           "$ref": "#/definitions/ValidatorsInfo"
         },
-        "justified_head": {
+        "justifiedHead": {
           "$ref": "#/definitions/Head"
         },
-        "finalized_head": {
+        "finalizedHead": {
           "$ref": "#/definitions/Head"
         }
       }
@@ -1494,12 +1533,10 @@
           "format": "uint64"
         },
         "proposer": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "voted": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         }
       }
     },
@@ -1514,13 +1551,12 @@
     "EpochInfo": {
       "type": "object",
       "properties": {
-        "epoch_number": {
+        "epochNumber": {
           "type": "string",
           "format": "uint64"
         },
         "passed": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "slots": {
           "type": "array",
@@ -1608,13 +1644,11 @@
         "finalized": {
           "$ref": "#/definitions/Head"
         },
-        "initial_sync": {
-          "type": "boolean",
-          "format": "boolean"
+        "initialSync": {
+          "type": "boolean"
         },
-        "in_sync": {
-          "type": "boolean",
-          "format": "boolean"
+        "inSync": {
+          "type": "boolean"
         },
         "about": {
           "type": "string"
@@ -1673,22 +1707,20 @@
       "type": "object",
       "properties": {
         "voting": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "proposing": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
-        "total_validators": {
+        "totalValidators": {
           "type": "string",
           "format": "uint64"
         },
-        "owned_validators": {
+        "ownedValidators": {
           "type": "string",
           "format": "uint64"
         },
-        "voting_validators": {
+        "votingValidators": {
           "type": "string",
           "format": "uint64"
         }
@@ -1697,23 +1729,23 @@
     "ParticipationStatus": {
       "type": "object",
       "properties": {
-        "global_slot_number": {
+        "globalSlotNumber": {
           "type": "string",
           "format": "uint64"
         },
-        "epoch_slot_number": {
+        "epochSlotNumber": {
           "type": "string",
           "format": "uint64"
         },
-        "expected_participation_balance": {
+        "expectedParticipationBalance": {
           "type": "string",
           "format": "uint64"
         },
-        "current_participation_balance": {
+        "currentParticipationBalance": {
           "type": "string",
           "format": "uint64"
         },
-        "participation_percentage": {
+        "participationPercentage": {
           "type": "number",
           "format": "float"
         }
@@ -1766,19 +1798,18 @@
     "SlotInfo": {
       "type": "object",
       "properties": {
-        "slot_number": {
+        "slotNumber": {
           "type": "string",
           "format": "uint64"
         },
         "passed": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
-        "required_comitters": {
+        "requiredComitters": {
           "type": "string",
           "format": "uint64"
         },
-        "comittees_indexes": {
+        "comitteesIndexes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ComitteeInformation"
@@ -1790,8 +1821,7 @@
       "type": "object",
       "properties": {
         "success": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "error": {
           "type": "string"
@@ -1810,7 +1840,7 @@
         "to": {
           "type": "string"
         },
-        "from_public_key": {
+        "fromPublicKey": {
           "type": "string"
         },
         "amount": {
@@ -1836,10 +1866,10 @@
         "tx": {
           "$ref": "#/definitions/Tx"
         },
-        "block_hash": {
+        "blockHash": {
           "type": "string"
         },
-        "block_height": {
+        "blockHeight": {
           "type": "string"
         },
         "confirmations": {
@@ -1847,10 +1877,9 @@
           "format": "int64"
         },
         "finalized": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
-        "block_time": {
+        "blockTime": {
           "type": "string",
           "format": "uint64"
         }
@@ -1862,20 +1891,20 @@
         "balance": {
           "type": "string"
         },
-        "public_key": {
+        "publicKey": {
           "type": "string"
         },
-        "payee_address": {
+        "payeeAddress": {
           "type": "string"
         },
         "status": {
           "type": "string"
         },
-        "first_active_epoch": {
+        "firstActiveEpoch": {
           "type": "string",
           "format": "uint64"
         },
-        "last_active_epoch": {
+        "lastActiveEpoch": {
           "type": "string",
           "format": "uint64"
         }
@@ -1888,11 +1917,11 @@
           "type": "string",
           "format": "int64"
         },
-        "pending_exit": {
+        "pendingExit": {
           "type": "string",
           "format": "int64"
         },
-        "penalty_exit": {
+        "penaltyExit": {
           "type": "string",
           "format": "int64"
         },
@@ -1942,10 +1971,10 @@
         }
       }
     },
-    "google.protobuf.Any": {
+    "protobufAny": {
       "type": "object",
       "properties": {
-        "type_url": {
+        "typeUrl": {
           "type": "string"
         },
         "value": {
@@ -1954,12 +1983,9 @@
         }
       }
     },
-    "grpc.gateway.runtime.Error": {
+    "rpcStatus": {
       "type": "object",
       "properties": {
-        "error": {
-          "type": "string"
-        },
         "code": {
           "type": "integer",
           "format": "int32"
@@ -1970,32 +1996,7 @@
         "details": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          }
-        }
-      }
-    },
-    "grpc.gateway.runtime.StreamError": {
-      "type": "object",
-      "properties": {
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
-          "type": "string"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
+            "$ref": "#/definitions/protobufAny"
           }
         }
       }

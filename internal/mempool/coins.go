@@ -98,6 +98,7 @@ type CoinsMempool interface {
 	Add(item *primitives.Tx, state *primitives.CoinsState) error
 	RemoveByBlock(b *primitives.Block)
 	Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State)
+	GetWithoutApply() []*primitives.Tx
 	AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error
 	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
 	GetMempoolRemovals(pkh [20]byte) (uint64, error)
@@ -253,6 +254,21 @@ outer:
 
 	// we can prioritize here, but we aren't to keep it simple
 	return allTransactions, s
+}
+
+// GetWithoutApply gets the transactions in the mempool without mutating the state
+func (cm *coinsMempool) GetWithoutApply() []*primitives.Tx {
+	cm.lockSingle.Lock()
+	defer cm.lockSingle.Unlock()
+
+	var txs []*primitives.Tx
+	for _, addr := range cm.mempool {
+		for _, tx := range addr.transactions {
+			txs = append(txs, tx)
+		}
+	}
+
+	return txs
 }
 
 // Get gets transactions to be included in a block. Mutates state.

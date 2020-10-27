@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/mempool"
 	"net"
 	"net/http"
 	"path"
@@ -148,7 +149,7 @@ func (s *rpcServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wallet.Wallet, ks keystore.Keystore) (RPCServer, error) {
+func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wallet.Wallet, ks keystore.Keystore, cm mempool.CoinsMempool) (RPCServer, error) {
 	datapath := config.GlobalFlags.DataPath
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -185,8 +186,9 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 			host: hostnode,
 		},
 		utilsServer: &utilsServer{
-			keystore: ks,
-			host:     hostnode,
+			keystore:     ks,
+			host:         hostnode,
+			coinsMempool: cm,
 		},
 		walletServer: &walletServer{
 			wallet:    wallet,
