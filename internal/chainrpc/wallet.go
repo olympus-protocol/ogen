@@ -136,12 +136,11 @@ func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.B
 		return nil, err
 	}
 
-	balance, err := s.wallet.GetBalance()
+	confirmed, unconfirmed, err := s.wallet.GetBalance()
 	if err != nil {
 		return nil, err
 	}
 
-	balanceStr := decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e8), 8).String()
 	validators := s.getValidators(acc)
 	lock := decimal.NewFromInt(0)
 	for _, v := range validators.Validators {
@@ -152,7 +151,12 @@ func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.B
 		lock = lock.Add(b)
 	}
 
-	return &proto.Balance{Confirmed: balanceStr, Locked: lock.StringFixed(3), Total: decimal.NewFromInt(int64(balance)).DivRound(decimal.NewFromInt(1e8), 8).Add(lock).StringFixed(3)}, nil
+	return &proto.Balance{
+			Confirmed:   decimal.NewFromInt(int64(confirmed)).DivRound(decimal.NewFromInt(1e8), 8).String(),
+			Unconfirmed: decimal.NewFromInt(int64(unconfirmed)).DivRound(decimal.NewFromInt(1e8), 8).String(),
+			Locked:      lock.StringFixed(3),
+			Total:       decimal.NewFromInt(int64(confirmed)).DivRound(decimal.NewFromInt(1e8), 8).Add(lock).StringFixed(3)},
+		nil
 }
 
 func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {

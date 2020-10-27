@@ -138,7 +138,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks)
+	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, cpool)
 	if err != nil {
 		return nil, err
 	}

@@ -13,14 +13,14 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/golang/protobuf/descriptor"
-	"github.com/golang/protobuf/proto"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/grpc-ecosystem/grpc-gateway/utilities"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 // Suppress "imported and not used" errors
@@ -29,7 +29,7 @@ var _ io.Reader
 var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
-var _ = descriptor.ForMessage
+var _ = metadata.Join
 
 func request_Utils_GenKeyPair_0(ctx context.Context, marshaler runtime.Marshaler, client UtilsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq Empty
@@ -203,21 +203,59 @@ func local_request_Utils_GetParticipationStatus_0(ctx context.Context, marshaler
 
 }
 
+func request_Utils_SyncMempool_0(ctx context.Context, marshaler runtime.Marshaler, client UtilsClient, req *http.Request, pathParams map[string]string) (Utils_SyncMempoolClient, runtime.ServerMetadata, error) {
+	var protoReq Empty
+	var metadata runtime.ServerMetadata
+
+	stream, err := client.SyncMempool(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+
+}
+
+func request_Utils_SubscribeMempool_0(ctx context.Context, marshaler runtime.Marshaler, client UtilsClient, req *http.Request, pathParams map[string]string) (Utils_SubscribeMempoolClient, runtime.ServerMetadata, error) {
+	var protoReq Empty
+	var metadata runtime.ServerMetadata
+
+	stream, err := client.SubscribeMempool(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+
+}
+
 // RegisterUtilsHandlerServer registers the http handlers for service Utils to "mux".
 // UnaryRPC     :call UtilsServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterUtilsHandlerFromEndpoint instead.
 func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server UtilsServer) error {
 
 	mux.Handle("GET", pattern_Utils_GenKeyPair_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Utils/GenKeyPair")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 		resp, md, err := local_request_Utils_GenKeyPair_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -231,13 +269,16 @@ func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("POST", pattern_Utils_GenValidatorKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Utils/GenValidatorKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 		resp, md, err := local_request_Utils_GenValidatorKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -251,13 +292,16 @@ func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("POST", pattern_Utils_SubmitRawData_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Utils/SubmitRawData")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 		resp, md, err := local_request_Utils_SubmitRawData_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -271,13 +315,16 @@ func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("POST", pattern_Utils_DecodeRawTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Utils/DecodeRawTransaction")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 		resp, md, err := local_request_Utils_DecodeRawTransaction_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -291,13 +338,16 @@ func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("POST", pattern_Utils_DecodeRawBlock_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Utils/DecodeRawBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 		resp, md, err := local_request_Utils_DecodeRawBlock_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -311,13 +361,16 @@ func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("GET", pattern_Utils_GetParticipationStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Utils/GetParticipationStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 		resp, md, err := local_request_Utils_GetParticipationStatus_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -326,6 +379,20 @@ func RegisterUtilsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 		forward_Utils_GetParticipationStatus_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
+	})
+
+	mux.Handle("GET", pattern_Utils_SyncMempool_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
+	mux.Handle("GET", pattern_Utils_SubscribeMempool_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
 	})
 
 	return nil
@@ -373,7 +440,7 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/GenKeyPair")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -393,7 +460,7 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/GenValidatorKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -413,7 +480,7 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/SubmitRawData")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -433,7 +500,7 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/DecodeRawTransaction")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -453,7 +520,7 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/DecodeRawBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -473,7 +540,7 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/GetParticipationStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -489,21 +556,65 @@ func RegisterUtilsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
+	mux.Handle("GET", pattern_Utils_SyncMempool_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/SyncMempool")
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Utils_SyncMempool_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Utils_SyncMempool_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Utils_SubscribeMempool_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Utils/SubscribeMempool")
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Utils_SubscribeMempool_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Utils_SubscribeMempool_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
 var (
-	pattern_Utils_GenKeyPair_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "genkeypair"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Utils_GenKeyPair_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "genkeypair"}, ""))
 
-	pattern_Utils_GenValidatorKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "genvalidatorkey"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Utils_GenValidatorKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "genvalidatorkey"}, ""))
 
-	pattern_Utils_SubmitRawData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "submitrawdata"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Utils_SubmitRawData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "submitrawdata"}, ""))
 
-	pattern_Utils_DecodeRawTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "decoderawtransaction"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Utils_DecodeRawTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "decoderawtransaction"}, ""))
 
-	pattern_Utils_DecodeRawBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "decoderawblock"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Utils_DecodeRawBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "decoderawblock"}, ""))
 
-	pattern_Utils_GetParticipationStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "getparticipationinfo"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Utils_GetParticipationStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "getparticipationinfo"}, ""))
+
+	pattern_Utils_SyncMempool_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "syncmempool"}, ""))
+
+	pattern_Utils_SubscribeMempool_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"utils", "subscribemempool"}, ""))
 )
 
 var (
@@ -518,4 +629,8 @@ var (
 	forward_Utils_DecodeRawBlock_0 = runtime.ForwardResponseMessage
 
 	forward_Utils_GetParticipationStatus_0 = runtime.ForwardResponseMessage
+
+	forward_Utils_SyncMempool_0 = runtime.ForwardResponseStream
+
+	forward_Utils_SubscribeMempool_0 = runtime.ForwardResponseStream
 )

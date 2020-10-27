@@ -36,7 +36,7 @@ type Wallet interface {
 	GetMnemonic() (string, error)
 	GetPublic() (*bls.PublicKey, error)
 	GetAccountRaw() ([20]byte, error)
-	GetBalance() (uint64, error)
+	GetBalance() (uint64, uint64, error)
 	StartValidatorBulk(k []*bls.SecretKey) (bool, error)
 	ExitValidatorBulk(k []*bls.PublicKey) (bool, error)
 	StartValidator(validatorPrivBytes *bls.SecretKey) (bool, error)

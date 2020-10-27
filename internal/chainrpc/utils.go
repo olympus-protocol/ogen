@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
@@ -14,8 +15,9 @@ import (
 )
 
 type utilsServer struct {
-	keystore keystore.Keystore
-	host     hostnode.HostNode
+	keystore     keystore.Keystore
+	host         hostnode.HostNode
+	coinsMempool mempool.CoinsMempool
 	proto.UnimplementedUtilsServer
 }
 
@@ -169,4 +171,67 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
+}
+
+func (s *utilsServer) SyncMempool(_ *proto.Empty, stream proto.Utils_SyncMempoolServer) error {
+	_, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	txs := s.coinsMempool.GetWithoutApply()
+	for _, tx := range txs {
+		protoTx := &proto.Tx{
+			Hash:          tx.Hash().String(),
+			To:            hex.EncodeToString(tx.To[:]),
+			FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
+			Amount:        tx.Amount,
+			Nonce:         tx.Nonce,
+			Fee:           tx.Fee,
+			Signature:     hex.EncodeToString(tx.Signature[:]),
+		}
+		err := stream.Send(protoTx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *utilsServer) SubscribeMempool(_ *proto.Empty, stream proto.Utils_SubscribeMempoolServer) error {
+	txn := newCoinsNotifee()
+	s.coinsMempool.Notify(txn)
+	for {
+		select {
+		case tx := <-txn.tx:
+			protoTx := &proto.Tx{
+				Hash:          tx.Hash().String(),
+				To:            hex.EncodeToString(tx.To[:]),
+				FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
+				Amount:        tx.Amount,
+				Nonce:         tx.Nonce,
+				Fee:           tx.Fee,
+				Signature:     hex.EncodeToString(tx.Signature[:]),
+			}
+			err := stream.Send(protoTx)
+			if err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
+
+}
+
+type coinNotifee struct {
+	tx chan *primitives.Tx
+}
+
+func (c *coinNotifee) NotifyTx(tx *primitives.Tx) {
+	c.tx <- tx
+}
+
+func newCoinsNotifee() *coinNotifee {
+	bn := &coinNotifee{
+		tx: make(chan *primitives.Tx),
+	}
+	return bn
 }
