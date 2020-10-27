@@ -80,8 +80,8 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 		fee += int(tx.Fee)
 	}
 	var feeReceiver = &AccountInfo{
-		Account:   hex.EncodeToString(block.Header.FeeAddress[:]),
-		Confirmed: fee,
+		Account:       hex.EncodeToString(block.Header.FeeAddress[:]),
+		Confirmed:     fee,
 		TotalReceived: fee,
 	}
 
@@ -134,7 +134,7 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 
 		var senderAccInfo = &AccountInfo{
 			Account:   hex.EncodeToString(pkh[:]),
-			Confirmed: -1 * int(tx.Amount + tx.Fee),
+			Confirmed: -1 * int(tx.Amount+tx.Fee),
 			TotalSent: int(tx.Amount + tx.Fee),
 		}
 

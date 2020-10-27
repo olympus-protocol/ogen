@@ -252,6 +252,7 @@ func (p *proposer) ProposeBlocks() {
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
+						FeeAddress:    proposer.PayeeAddress,
 					},
 					Votes:             votes,
 					Txs:               coinTxs,
