@@ -25,10 +25,10 @@ type Validators struct {
 }
 
 type NetworkInitialParams struct {
-	Validators        []Validators `json:"validators"`
-	PremineAddress    string       `json:"premine_address"`
+	Validators      []Validators `json:"validators"`
+	PremineAddress  string       `json:"premine_address"`
 	PremineMnemonic string       `json:"premine_mnemonic"`
-	GenesisTime       int64        `json:"genesis_time"`
+	GenesisTime     int64        `json:"genesis_time"`
 }
 
 // LoadParams returns the initialization params required for the network specified.

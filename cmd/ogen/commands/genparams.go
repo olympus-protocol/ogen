@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/keystore"
+	"github.com/olympus-protocol/ogen/pkg/bip39"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/hdwallet"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -34,13 +36,28 @@ var genParamsCmd = &cobra.Command{
 
 		bls.Initialize(netParams)
 
-		premine := bls.RandKey()
+		entropy, err := bip39.NewEntropy(256)
+		if err != nil {
+			panic(err)
+		}
+
+		mnemonic, err := bip39.NewMnemonic(entropy)
+		if err != nil {
+			panic(err)
+		}
+
+		seed := bip39.NewSeed(mnemonic, "no password")
+
+		premine, err := hdwallet.CreateHDWallet(seed, "m/12381/0/1997/0/0")
+		if err != nil {
+			panic(err)
+		}
 
 		dirPath := "./cmd/ogen/initialization/"
 
 		ks := keystore.NewKeystore()
 
-		err := ks.CreateKeystore()
+		err = ks.CreateKeystore()
 		if err != nil {
 			panic(err)
 		}
@@ -68,7 +85,7 @@ var genParamsCmd = &cobra.Command{
 		}
 
 		if network != "mainnet" {
-			initParams.PreminePrivateKey = premine.ToWIF()
+			initParams.PremineMnemonic = mnemonic
 		}
 
 		b, err := json.MarshalIndent(initParams, "", " ")
