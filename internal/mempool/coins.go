@@ -18,6 +18,10 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+type CoinsNotifee interface {
+	NotifyTx(tx *primitives.Tx)
+}
+
 var (
 	ErrorAccountNotOnMempool = errors.New("the account is not being tracked by the memppol")
 )
@@ -104,6 +108,7 @@ type CoinsMempool interface {
 	GetMempoolRemovals(pkh [20]byte) (uint64, error)
 	GetMempoolAdditions(pkh [20]byte) (uint64, error)
 	GetMempoolNonce(pkh [20]byte) (uint64, error)
+	Notify(notifee CoinsNotifee)
 }
 
 var _ CoinsMempool = &coinsMempool{}
@@ -127,7 +132,9 @@ type coinsMempool struct {
 	removals    map[[20]byte]uint64
 	latestNonce map[[20]byte]uint64
 
-	lockStats sync.Mutex
+	notifeesLock sync.Mutex
+	notifees     []CoinsNotifee
+	lockStats    sync.Mutex
 }
 
 // AddMulti adds an item to the coins mempool.
@@ -197,6 +204,12 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 		cm.additions[item.To] += item.Amount
 		cm.removals[fpkh] += item.Amount + item.Fee
 		cm.latestNonce[fpkh] = item.Nonce
+	}
+
+	cm.notifeesLock.Lock()
+	defer cm.notifeesLock.Unlock()
+	for _, n := range cm.notifees {
+		n.NotifyTx(item)
 	}
 
 	return nil
@@ -368,6 +381,12 @@ func (cm *coinsMempool) GetMempoolNonce(pkh [20]byte) (uint64, error) {
 	return nonce, nil
 }
 
+func (cm *coinsMempool) Notify(n CoinsNotifee) {
+	cm.notifeesLock.Lock()
+	defer cm.notifeesLock.Unlock()
+	cm.notifees = append(cm.notifees, n)
+}
+
 // NewCoinsMempool constructs a new coins mempool.
 func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMempool, error) {
 	ctx := config.GlobalParams.Context
@@ -386,6 +405,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		additions:   make(map[[20]byte]uint64),
 		removals:    make(map[[20]byte]uint64),
 		latestNonce: make(map[[20]byte]uint64),
+		notifees:    make([]CoinsNotifee, 0),
 	}
 
 	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {
