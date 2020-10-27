@@ -515,7 +515,7 @@ var TestNet = NetworkInitialParams{
 			PrivateKey: "2817a819361017c876a873504828530315aad105ae2edfd0a9c8e8f24af0c51c",
 		},
 	},
-	PremineAddress:  "tlpub167u68qxt82pmqgpr8g3nu4acu6x0ydwvrrps4e",
+	PremineAddress:  "tlpub17gvgcpd42p00txmf2tq8ktz5tyuvpeusuxcp90",
 	PremineMnemonic: "mercy shuffle cherry solar road moral sleep attend chuckle father canyon race view model valid chalk fog disease vendor sand use hybrid element mirror",
-	GenesisTime:     1603829700,
+	GenesisTime:     1603830000,
 }
