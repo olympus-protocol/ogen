@@ -2,7 +2,7 @@
 
 go run github.com/markbates/pkger/cmd/pkger -o cmd/ogen
 
-export OGEN_VERSION=0.1.0-alpha.5
+export OGEN_VERSION=0.1.0-alpha.6
 export FOLDER_NAME=ogen-$OGEN_VERSION
 
 echo "Building linux_amd64"
