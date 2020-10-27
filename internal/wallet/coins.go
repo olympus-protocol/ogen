@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -9,16 +10,28 @@ import (
 )
 
 // GetBalance returns the balance of the current open wallet.
-func (w *wallet) GetBalance() (uint64, error) {
+func (w *wallet) GetBalance() (uint64, uint64, error) {
 	if !w.open {
-		return 0, errorNotOpen
+		return 0, 0, errorNotOpen
 	}
 	acc, err := w.GetAccountRaw()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	out := w.chain.State().TipState().GetCoinsState().Balances[acc]
-	return out, nil
+
+	confirmed := w.chain.State().TipState().GetCoinsState().Balances[acc]
+
+	mempoolAddition, err := w.coinsmempool.GetMempoolAdditions(acc)
+	if err != nil && err != mempool.ErrorAccountNotOnMempool {
+		return 0, 0, err
+	}
+
+	mempoolRemove, err := w.coinsmempool.GetMempoolRemovals(acc)
+	if err != nil && err != mempool.ErrorAccountNotOnMempool {
+		return 0, 0, err
+	}
+
+	return confirmed - mempoolRemove, mempoolAddition, nil
 }
 
 // SendToAddress sends an amount to an account using the current open wallet private key.
@@ -50,7 +63,15 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		return nil, err
 	}
 
-	nonce := w.chain.State().TipState().GetCoinsState().Nonces[acc] + 1
+	var latestNonce uint64
+	latestNonce, err = w.coinsmempool.GetMempoolNonce(acc)
+	if err != nil {
+		if err == mempool.ErrorAccountNotOnMempool {
+			latestNonce = w.chain.State().TipState().GetCoinsState().Nonces[acc]
+		} else {
+			return nil, err
+		}
+	}
 	var p [48]byte
 	copy(p[:], pub.Marshal())
 
@@ -58,7 +79,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		To:            toPkh,
 		FromPublicKey: p,
 		Amount:        amount,
-		Nonce:         nonce,
+		Nonce:         latestNonce + 1,
 		Fee:           5000,
 	}
 
