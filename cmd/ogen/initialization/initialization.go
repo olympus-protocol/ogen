@@ -27,7 +27,7 @@ type Validators struct {
 type NetworkInitialParams struct {
 	Validators        []Validators `json:"validators"`
 	PremineAddress    string       `json:"premine_address"`
-	PreminePrivateKey string       `json:"premine_private_key"`
+	PremineMnemonic string       `json:"premine_mnemonic"`
 	GenesisTime       int64        `json:"genesis_time"`
 }
 
