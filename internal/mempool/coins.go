@@ -108,7 +108,8 @@ type CoinsMempool interface {
 	GetMempoolRemovals(pkh [20]byte) (uint64, error)
 	GetMempoolAdditions(pkh [20]byte) (uint64, error)
 	GetMempoolNonce(pkh [20]byte) (uint64, error)
-	Notify(notifee CoinsNotifee)
+	Notify(n CoinsNotifee)
+	Unnotify(n CoinsNotifee)
 }
 
 var _ CoinsMempool = &coinsMempool{}
@@ -133,7 +134,7 @@ type coinsMempool struct {
 	latestNonce map[[20]byte]uint64
 
 	notifeesLock sync.Mutex
-	notifees     []CoinsNotifee
+	notifees     map[CoinsNotifee]struct{}
 	lockStats    sync.Mutex
 }
 
@@ -208,7 +209,7 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 
 	cm.notifeesLock.Lock()
 	defer cm.notifeesLock.Unlock()
-	for _, n := range cm.notifees {
+	for n := range cm.notifees {
 		n.NotifyTx(item)
 	}
 
@@ -384,7 +385,13 @@ func (cm *coinsMempool) GetMempoolNonce(pkh [20]byte) (uint64, error) {
 func (cm *coinsMempool) Notify(n CoinsNotifee) {
 	cm.notifeesLock.Lock()
 	defer cm.notifeesLock.Unlock()
-	cm.notifees = append(cm.notifees, n)
+	cm.notifees[n] = struct{}{}
+}
+
+func (cm *coinsMempool) Unnotify(n CoinsNotifee) {
+	cm.notifeesLock.Lock()
+	defer cm.notifeesLock.Unlock()
+	delete(cm.notifees, n)
 }
 
 // NewCoinsMempool constructs a new coins mempool.
@@ -405,7 +412,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		additions:   make(map[[20]byte]uint64),
 		removals:    make(map[[20]byte]uint64),
 		latestNonce: make(map[[20]byte]uint64),
-		notifees:    make([]CoinsNotifee, 0),
+		notifees:    make(map[CoinsNotifee]struct{}),
 	}
 
 	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {
