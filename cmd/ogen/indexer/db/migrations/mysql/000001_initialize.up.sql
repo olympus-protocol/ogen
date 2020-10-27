@@ -63,7 +63,10 @@ CREATE TABLE `validators` (
     `status` int DEFAULT 0,
     `exit` boolean DEFAULT false,
     `penalized` boolean DEFAULT false,
-    `balance` bigint DEFAULT 0
+    `balance` bigint DEFAULT 0,
+    `payee_address` varchar(255) NOT NULL,
+    `first_active_epoch` int DEFAULT 0,
+    `last_active_epoch` int DEFAULT 0
 );
 
 CREATE TABLE `exits` (

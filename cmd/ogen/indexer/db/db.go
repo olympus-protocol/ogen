@@ -55,11 +55,6 @@ func (d *Database) GetCurrentState() (State, error) {
 
 func (d *Database) InsertBlock(block *primitives.Block) error {
 
-	err := d.ProcessEpochTransition(block)
-	if err != nil {
-		return err
-	}
-
 	nextHeight, prevHash, err := d.getNextHeight()
 	if err != nil {
 		d.log.Error(err)
@@ -76,6 +71,21 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 	hash := block.Hash()
 	queryVars = append(queryVars, hash.String(), hex.EncodeToString(block.Signature[:]), hex.EncodeToString(block.RandaoSignature[:]), nextHeight)
 	err = d.insertRow("blocks", queryVars)
+	if err != nil {
+		d.log.Error(err)
+	}
+
+	fee := 0
+	for _, tx := range block.Txs {
+		fee += int(tx.Fee)
+	}
+	var feeReceiver = &AccountInfo{
+		Account:   hex.EncodeToString(block.Header.FeeAddress[:]),
+		Confirmed: fee,
+		TotalReceived: fee,
+	}
+
+	err = d.modifyAccountRow(feeReceiver)
 	if err != nil {
 		d.log.Error(err)
 	}
@@ -124,8 +134,8 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 
 		var senderAccInfo = &AccountInfo{
 			Account:   hex.EncodeToString(pkh[:]),
-			Confirmed: -1 * int(tx.Amount),
-			TotalSent: int(tx.Amount),
+			Confirmed: -1 * int(tx.Amount + tx.Fee),
+			TotalSent: int(tx.Amount + tx.Fee),
 		}
 
 		err = d.modifyAccountRow(receiverAccInfo)
@@ -240,6 +250,11 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 			d.log.Error(err)
 			continue
 		}
+	}
+
+	err = d.ProcessEpochTransition(block)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -437,7 +452,7 @@ func (d *Database) insertDeposit(queryVars []interface{}) error {
 		return err
 	}
 
-	return d.addValidator(queryVars[3])
+	return d.addValidator(queryVars[3], queryVars[5])
 }
 
 func (d *Database) insertExit(queryVars []interface{}) error {
@@ -525,14 +540,17 @@ func (d *Database) insertProposerSlashing(queryVars []interface{}) error {
 	return d.exitPenalizeValidator(queryVars[5])
 }
 
-func (d *Database) addValidator(valPubKey interface{}) error {
+func (d *Database) addValidator(valPubKey interface{}, payee interface{}) error {
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("validators").Rows(
 		goqu.Record{
-			"public_key": valPubKey,
-			"balance":    100 * 1e8,
-			"exit":       false,
-			"penalized":  false,
+			"public_key":         valPubKey,
+			"balance":            100 * 1e8,
+			"exit":               false,
+			"penalized":          false,
+			"payee_address":      payee,
+			"first_active_epoch": 0,
+			"last_active_epoch":  0,
 		},
 	)
 	query, _, err := ds.ToSQL()
@@ -547,6 +565,8 @@ func (d *Database) addValidator(valPubKey interface{}) error {
 }
 
 func (d *Database) exitValidator(valPubKey interface{}) error {
+	// TODO mark last active epoch
+
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Update("validators").Set(
 		goqu.Record{
@@ -556,6 +576,7 @@ func (d *Database) exitValidator(valPubKey interface{}) error {
 			"public_key": valPubKey,
 		},
 	)
+
 	query, _, err := ds.ToSQL()
 	if err != nil {
 		return err
