@@ -460,6 +460,33 @@ func (d *Database) insertDeposit(queryVars []interface{}) error {
 	return d.addValidator(queryVars[3], queryVars[5], nil)
 }
 
+func (d *Database) insertMockDeposit(genesisHash string, valPubKey string, preminepkh string) error {
+	emptySig := [96]byte{}
+	emptyPub := [48]byte{}
+
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("deposits").Rows(
+		goqu.Record{
+			"block_hash":               genesisHash,
+			"public_key":               hex.EncodeToString(emptyPub[:]),
+			"signature":                hex.EncodeToString(emptySig[:]),
+			"data_public_key":          valPubKey,
+			"data_proof_of_possession": hex.EncodeToString(emptySig[:]),
+			"data_withdrawal_address":  preminepkh,
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *Database) insertExit(queryVars []interface{}) error {
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("exits").Rows(
@@ -744,10 +771,13 @@ func (d *Database) modifyAccountRow(accInfo *AccountInfo) error {
 	newAccountData := &AccountInfo{
 		Account:       accInfo.Account,
 		Confirmed:     accountResult.Confirmed + accInfo.Confirmed,
-		Unconfirmed:   accountResult.Unconfirmed - accInfo.Confirmed,
 		Locked:        accountResult.Locked + accInfo.Locked,
 		TotalSent:     accountResult.TotalSent + accInfo.TotalSent,
 		TotalReceived: accountResult.TotalReceived + accInfo.TotalReceived,
+	}
+
+	if accountResult.Unconfirmed != 0 {
+		newAccountData.Unconfirmed = accountResult.Unconfirmed - accInfo.Confirmed
 	}
 
 	nds := dw.Update("accounts").Set(
@@ -887,7 +917,7 @@ func (d *Database) ProcessMempoolTransaction(tx *proto.Tx) {
 
 	senderInfo := &AccountInfo{
 		Account:     hex.EncodeToString(pkh[:]),
-		Unconfirmed: -1 * int(tx.Amount),
+		Unconfirmed: -1 * int(tx.Amount+tx.Fee),
 	}
 
 	err = d.modifyAccountRowForMempoolTxs(senderInfo)
@@ -912,18 +942,24 @@ func (d *Database) Initialize() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Add genesis
+	genesis := primitives.GetGenesisBlock()
+	err = d.InsertBlock(&genesis)
+	if err != nil {
+		return "", err
+	}
+	genesisHash := genesis.Hash()
+
 	_, premine, err := bech32.Decode(init.PremineAddress)
 	if err != nil {
 		return "", err
 	}
-	var preminepkh [20]byte
-	premineHash := chainhash.HashB(premine)
-	copy(preminepkh[:], premineHash[:])
 
 	// This is just for testing purposes TODO: remove for production.
 	// Add 400,000 tPOLIS hardcoded in the state
 	premineAddr := &AccountInfo{
-		Account:       hex.EncodeToString(preminepkh[:]),
+		Account:       hex.EncodeToString(premine[:]),
 		Confirmed:     int(400000 * d.netParams.UnitsPerCoin),
 		TotalReceived: int(400000 * d.netParams.UnitsPerCoin),
 	}
@@ -934,21 +970,17 @@ func (d *Database) Initialize() (string, error) {
 
 	// Add validators to the validator registry
 	for _, v := range init.Validators {
-		err = d.addValidator(v.PublicKey, preminepkh, primitives.StatusActive)
+		err = d.insertMockDeposit(genesisHash.String(), v.PublicKey, hex.EncodeToString(premine[:]))
+		if err != nil {
+			return "", err
+		}
+		err = d.addValidator(v.PublicKey, hex.EncodeToString(premine[:]), primitives.StatusActive)
 		if err != nil {
 			return "", err
 		}
 	}
 
 	// Add first epoch and slots
-
-	// Add genesis
-	genesis := primitives.GetGenesisBlock()
-	err = d.InsertBlock(&genesis)
-	if err != nil {
-		return "", err
-	}
-	genesisHash := genesis.Hash()
 
 	return genesisHash.String(), nil
 }

@@ -39,36 +39,42 @@ func (i *Indexer) subscribeBlocks() {
 		panic("unable to initialize subscription client")
 	}
 	for {
-		res, err := subscribe.Recv()
-		if err == io.EOF || err != nil {
-			// listener closed restart with sync
-			i.initialSync()
-			continue
-		}
-		// To make sure the explorer is always synced, every new block we reinsert the last 5
-		blockBytes, err := hex.DecodeString(res.Data)
-		if err != nil {
-			i.log.Errorf("unable to parse error %s", err.Error())
-			continue
-		}
-		block := new(primitives.Block)
-		err = block.Unmarshal(blockBytes)
-		if err != nil {
-			i.log.Errorf("unable to parse error %s", err.Error())
-			continue
-		}
-		err = i.db.InsertBlock(block)
-		if err != nil {
-			if err == db.ErrorPrevBlockHash {
-				i.log.Error(db.ErrorPrevBlockHash)
-				i.log.Info("Restarting sync...")
+		select {
+		case <-i.ctx.Done():
+			subscribe.CloseSend()
+			break
+		default:
+			res, err := subscribe.Recv()
+			if err == io.EOF || err != nil {
+				// listener closed restart with sync
 				i.initialSync()
 				continue
 			}
-			i.log.Errorf("unable to insert error %s", err.Error())
-			continue
+			// To make sure the explorer is always synced, every new block we reinsert the last 5
+			blockBytes, err := hex.DecodeString(res.Data)
+			if err != nil {
+				i.log.Errorf("unable to parse error %s", err.Error())
+				continue
+			}
+			block := new(primitives.Block)
+			err = block.Unmarshal(blockBytes)
+			if err != nil {
+				i.log.Errorf("unable to parse error %s", err.Error())
+				continue
+			}
+			err = i.db.InsertBlock(block)
+			if err != nil {
+				if err == db.ErrorPrevBlockHash {
+					i.log.Error(db.ErrorPrevBlockHash)
+					i.log.Info("Restarting sync...")
+					i.initialSync()
+					continue
+				}
+				i.log.Errorf("unable to insert error %s", err.Error())
+				continue
+			}
+			i.log.Infof("Received new block %s", block.Hash().String())
 		}
-		i.log.Infof("Received new block %s", block.Hash().String())
 	}
 }
 
@@ -78,12 +84,19 @@ func (i *Indexer) subscribeMempool() {
 		i.log.Fatal(err)
 	}
 	for {
-		tx, err := syncClient.Recv()
-		if err != nil {
-			continue
+		select {
+		case <-i.ctx.Done():
+			syncClient.CloseSend()
+			break
+		default:
+			tx, err := syncClient.Recv()
+			if err != nil {
+				continue
+			}
+			i.log.Info("Received mempool transaction, indexing...")
+			i.db.ProcessMempoolTransaction(tx)
 		}
-		i.log.Info("Received mempool transaction, indexing...")
-		i.db.ProcessMempoolTransaction(tx)
+
 	}
 }
 
