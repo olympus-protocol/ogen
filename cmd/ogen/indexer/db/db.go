@@ -612,7 +612,73 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 }
 
 func (d *Database) modifyAccountRowForMempoolTxs(accInfo *AccountInfo) error {
-	// TODO
+	dw := goqu.Dialect(d.driver)
+
+	ds := dw.From("accounts").Select("*").Where(goqu.Ex{
+		"account": accInfo.Account,
+	})
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	row := d.db.QueryRow(query)
+
+	var accountResult AccountInfo
+
+	err = row.Scan(&accountResult.Account, &accountResult.Confirmed, &accountResult.Unconfirmed, &accountResult.Locked, &accountResult.TotalSent, &accountResult.TotalReceived)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ds := dw.Insert("accounts").Rows(
+				goqu.Record{
+					"account":        accInfo.Account,
+					"confirmed":      0,
+					"unconfirmed":    accInfo.Unconfirmed,
+					"locked":         0,
+					"total_sent":     0,
+					"total_received": 0,
+				},
+			)
+
+			query, _, err := ds.ToSQL()
+			if err != nil {
+				return err
+			}
+
+			_, err = d.db.Exec(query)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	newAccountData := &AccountInfo{
+		Account:     accInfo.Account,
+		Unconfirmed: accountResult.Unconfirmed + accInfo.Unconfirmed,
+	}
+
+	nds := dw.Update("accounts").Set(
+		goqu.Record{
+			"unconfirmed": newAccountData.Unconfirmed,
+		}).Where(
+		goqu.Ex{
+			"account": accountResult.Account,
+		},
+	)
+
+	nquery, _, err := nds.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(nquery)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -640,8 +706,6 @@ func (d *Database) modifyAccountRow(accInfo *AccountInfo) error {
 				goqu.Record{
 					"account":        accInfo.Account,
 					"confirmed":      accInfo.Confirmed,
-					"unconfirmed":    0,
-					"locked":         0,
 					"total_sent":     accInfo.TotalSent,
 					"total_received": accInfo.TotalReceived,
 				},
@@ -661,10 +725,10 @@ func (d *Database) modifyAccountRow(accInfo *AccountInfo) error {
 		return err
 	}
 
-	// TODO remove unconfirmed ammount
 	newAccountData := &AccountInfo{
 		Account:       accInfo.Account,
 		Confirmed:     accountResult.Confirmed + accInfo.Confirmed,
+		Unconfirmed:   accountResult.Unconfirmed - accInfo.Confirmed,
 		Locked:        accountResult.Locked + accInfo.Locked,
 		TotalSent:     accountResult.TotalSent + accInfo.TotalSent,
 		TotalReceived: accountResult.TotalReceived + accInfo.TotalReceived,
