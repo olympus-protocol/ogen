@@ -24,9 +24,14 @@ type Indexer struct {
 }
 
 func (i *Indexer) Start() {
-sync:
 	i.initialSync()
 	i.log.Info("Listening for new blocks")
+	go i.subscribeBlocks()
+	i.mempoolSync()
+	go i.subscribeMempool()
+}
+
+func (i *Indexer) subscribeBlocks() {
 	subscribe, err := i.client.Chain().SubscribeBlocks(context.Background(), &proto.Empty{})
 	if err != nil {
 		panic("unable to initialize subscription client")
@@ -35,7 +40,8 @@ sync:
 		res, err := subscribe.Recv()
 		if err == io.EOF || err != nil {
 			// listener closed restart with sync
-			goto sync
+			i.initialSync()
+			continue
 		}
 		// To make sure the explorer is always synced, every new block we reinsert the last 5
 		blockBytes, err := hex.DecodeString(res.Data)
@@ -54,7 +60,8 @@ sync:
 			if err == db.ErrorPrevBlockHash {
 				i.log.Error(db.ErrorPrevBlockHash)
 				i.log.Info("Restarting sync...")
-				goto sync
+				i.initialSync()
+				continue
 			}
 			i.log.Errorf("unable to insert error %s", err.Error())
 			continue
@@ -63,12 +70,37 @@ sync:
 	}
 }
 
-func (i *Indexer) subscribeBlocks() {
-
+func (i *Indexer) subscribeMempool() {
+	syncClient, err := i.client.Utils().SubscribeMempool(i.ctx, &proto.Empty{})
+	if err != nil {
+		i.log.Fatal(err)
+	}
+	for {
+		_, err := syncClient.Recv()
+		if err != nil {
+			continue
+		}
+		// TODO manage mempool tx to do a pseudo mutation.
+	}
 }
 
-func (i *Indexer) subscribeMempool() {
-
+func (i *Indexer) mempoolSync() {
+	syncClient, err := i.client.Utils().SyncMempool(i.ctx, &proto.Empty{})
+	if err != nil {
+		i.log.Fatal(err)
+	}
+	for {
+		_, err := syncClient.Recv()
+		if err != nil {
+			if err == io.EOF {
+				_ = syncClient.CloseSend()
+				break
+			}
+			i.log.Error(err)
+			break
+		}
+		// TODO manage mempool tx to do a pseudo mutation.
+	}
 }
 
 func (i *Indexer) initialSync() {
