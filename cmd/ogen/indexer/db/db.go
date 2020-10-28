@@ -62,7 +62,7 @@ func (d *Database) GetCurrentState() (State, error) {
 
 func (d *Database) InsertBlock(block *primitives.Block) error {
 	blockSlot := int64(block.Header.Slot) - 1
-
+	currentEpoch := blockSlot / int64(d.netParams.EpochLength)
 	// Check if the remainder of the blockSlot - 1 and the EpochLength is 0, if it is, then we are on a epoch transition
 	if blockSlot > 0 && blockSlot%int64(d.netParams.EpochLength) == 0 {
 		epoch := blockSlot / int64(d.netParams.EpochLength)
@@ -229,7 +229,7 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 
 		queryVars = nil
 		queryVars = append(queryVars, hash.String(), hex.EncodeToString(exits.ValidatorPubkey[:]), hex.EncodeToString(exits.WithdrawPubkey[:]),
-			hex.EncodeToString(exits.Signature[:]))
+			hex.EncodeToString(exits.Signature[:]), currentEpoch)
 		err = d.insertRow("exits", queryVars)
 		if err != nil {
 			d.log.Error(err)
@@ -271,6 +271,11 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 		}
 	}
 
+	err = d.ProcessSlotTransition(block)
+	if err != nil {
+		return err
+	}
+
 	err = d.ProcessEpochTransition(block)
 	if err != nil {
 		return err
@@ -297,12 +302,16 @@ func (d *Database) initializeEpoch(epoch int64) error {
 	}
 
 	for i, slot := range slots {
+		comittee, err := d.getVoteComitteeStringForSlot(slot)
+		if err != nil {
+			return err
+		}
 		dw := goqu.Dialect(d.driver)
 		ds := dw.Insert("slots").Rows(
 			goqu.Record{
 				"slot":                     slot,
 				"block_hash":               "",
-				"committee":                "",
+				"committee":                comittee,
 				"proposer_index":           int(proposers[i]),
 				"proposed":                 false,
 				"participation_percentage": 0,
@@ -330,6 +339,8 @@ func (d *Database) initializeEpoch(epoch int64) error {
 			"slot_4":                   slots[3],
 			"slot_5":                   slots[4],
 			"participation_percentage": 0,
+			"finalized":                false,
+			"justified":                false,
 		},
 	)
 
@@ -612,7 +623,7 @@ func (d *Database) insertExit(queryVars []interface{}) error {
 	if err != nil {
 		return err
 	}
-	return d.exitValidator(queryVars[1])
+	return d.exitValidator(queryVars[1], queryVars[4])
 }
 
 func (d *Database) insertVoteSlashing(queryVars []interface{}) error {
@@ -715,13 +726,12 @@ func (d *Database) addValidator(valPubKey interface{}, payee interface{}, status
 	return nil
 }
 
-func (d *Database) exitValidator(valPubKey interface{}) error {
-	// TODO mark last active epoch
-
+func (d *Database) exitValidator(valPubKey interface{}, epoch interface{}) error {
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Update("validators").Set(
 		goqu.Record{
-			"exit": true,
+			"exit":              true,
+			"last_active_epoch": epoch,
 		}).Where(
 		goqu.Ex{
 			"public_key": valPubKey,
@@ -952,9 +962,13 @@ func (d *Database) Migrate() error {
 	return nil
 }
 
-// ProcessEpochTransition process the database storing for validation activation, exits, slots and epochs information.
-func (d *Database) ProcessEpochTransition(b *primitives.Block) error {
+// ProcessSlotTransition process the block slot and modifies the database.
+func (d *Database) ProcessSlotTransition(b *primitives.Block) error {
+	return nil
+}
 
+// ProcessEpochTransition process the block information and modifies the epoch information.
+func (d *Database) ProcessEpochTransition(b *primitives.Block) error {
 	return nil
 }
 

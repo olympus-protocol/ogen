@@ -130,6 +130,7 @@ CREATE TABLE `epochs` (
     `participation_percentage` int NOT NULL,
     `finalized` bool NOT NULL,
     `justified` bool NOT NULL,
+    `randao` varchar(255)
 );
 
 ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `blocks` (`block_hash`);
