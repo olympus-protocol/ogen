@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -22,17 +23,35 @@ func init() {
 }
 
 var indexerCmd = &cobra.Command{
-	Use:   "indexer",
+	Use:   "indexer <network>",
 	Short: "Execute the and indexer to organize the blockchain information through RPC",
 	Long:  `Execute the and indexer to organize the blockchain information through RPC`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if len(args) < 1 {
+			fmt.Println("indexer <network> [flags]")
+			os.Exit(0)
+		}
+
+		network := args[0]
+
+		var netParams *params.ChainParams
+		switch network {
+		case "testnet":
+			netParams = &params.TestNet
+		case "mainnet":
+			netParams = &params.Mainnet
+		default:
+			fmt.Println("unknown network parameters")
+			os.Exit(0)
+		}
 
 		if dbConnString == "" || dbDriver == "" {
 			fmt.Println("Missing database connection string or driver")
 			os.Exit(0)
 		}
 
-		idx, err := indexer.NewIndexer(dbConnString, rpcEndpoint, dbDriver)
+		idx, err := indexer.NewIndexer(dbConnString, rpcEndpoint, dbDriver, netParams)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(0)

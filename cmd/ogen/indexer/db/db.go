@@ -15,7 +15,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/olympus-protocol/ogen/api/proto"
+	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -33,10 +36,11 @@ type State struct {
 
 // Database represents an DB connection
 type Database struct {
-	log      logger.Logger
-	db       *sql.DB
-	canClose *sync.WaitGroup
-	driver   string
+	log       logger.Logger
+	db        *sql.DB
+	canClose  *sync.WaitGroup
+	driver    string
+	netParams *params.ChainParams
 }
 
 func (d *Database) GetCurrentState() (State, error) {
@@ -453,7 +457,7 @@ func (d *Database) insertDeposit(queryVars []interface{}) error {
 		return err
 	}
 
-	return d.addValidator(queryVars[3], queryVars[5])
+	return d.addValidator(queryVars[3], queryVars[5], nil)
 }
 
 func (d *Database) insertExit(queryVars []interface{}) error {
@@ -541,11 +545,23 @@ func (d *Database) insertProposerSlashing(queryVars []interface{}) error {
 	return d.exitPenalizeValidator(queryVars[5])
 }
 
-func (d *Database) addValidator(valPubKey interface{}, payee interface{}) error {
+func (d *Database) addValidator(valPubKey interface{}, payee interface{}, status interface{}) error {
+	var addStatus uint64
+	if status == nil {
+		addStatus = primitives.StatusStarting
+	} else {
+		statusUint, ok := status.(uint64)
+		if !ok {
+			return errors.New("wrong status interface parse")
+		}
+		addStatus = statusUint
+	}
+
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("validators").Rows(
 		goqu.Record{
 			"public_key":         valPubKey,
+			"status":             int(addStatus),
 			"balance":            100 * 1e8,
 			"exit":               false,
 			"penalized":          false,
@@ -891,8 +907,54 @@ func (d *Database) ProcessMempoolTransaction(tx *proto.Tx) {
 
 }
 
+func (d *Database) Initialize() (string, error) {
+	init, err := initialization.LoadParams(d.netParams.Name)
+	if err != nil {
+		return "", err
+	}
+	_, premine, err := bech32.Decode(init.PremineAddress)
+	if err != nil {
+		return "", err
+	}
+	var preminepkh [20]byte
+	premineHash := chainhash.HashB(premine)
+	copy(preminepkh[:], premineHash[:])
+
+	// This is just for testing purposes TODO: remove for production.
+	// Add 400,000 tPOLIS hardcoded in the state
+	premineAddr := &AccountInfo{
+		Account:       hex.EncodeToString(preminepkh[:]),
+		Confirmed:     int(400000 * d.netParams.UnitsPerCoin),
+		TotalReceived: int(400000 * d.netParams.UnitsPerCoin),
+	}
+	err = d.modifyAccountRow(premineAddr)
+	if err != nil {
+		return "", err
+	}
+
+	// Add validators to the validator registry
+	for _, v := range init.Validators {
+		err = d.addValidator(v.PublicKey, preminepkh, primitives.StatusActive)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Add first epoch and slots
+
+	// Add genesis
+	genesis := primitives.GetGenesisBlock()
+	err = d.InsertBlock(&genesis)
+	if err != nil {
+		return "", err
+	}
+	genesisHash := genesis.Hash()
+
+	return genesisHash.String(), nil
+}
+
 // NewDB creates a db client
-func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver string) *Database {
+func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver string, netParams *params.ChainParams) *Database {
 	db, err := sql.Open(driver, dbConnString)
 	if err != nil {
 		log.Fatal(err)
@@ -904,10 +966,11 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, driver st
 	}
 
 	dbclient := &Database{
-		log:      log,
-		db:       db,
-		canClose: wg,
-		driver:   driver,
+		log:       log,
+		db:        db,
+		canClose:  wg,
+		driver:    driver,
+		netParams: netParams,
 	}
 
 	dbclient.log.Info("Database connection established")

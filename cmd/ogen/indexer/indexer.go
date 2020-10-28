@@ -6,6 +6,7 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/db"
 	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"io"
@@ -18,9 +19,10 @@ type Indexer struct {
 	log logger.Logger
 	ctx context.Context
 
-	client   *rpcclient.Client
-	db       *db.Database
-	canClose *sync.WaitGroup
+	client    *rpcclient.Client
+	db        *db.Database
+	canClose  *sync.WaitGroup
+	netParams *params.ChainParams
 }
 
 func (i *Indexer) Start() {
@@ -114,14 +116,12 @@ func (i *Indexer) initialSync() {
 
 	var latestBHash string
 	if indexState.Blocks == 0 && indexState.LastBlockHash == "" {
-		genesis := primitives.GetGenesisBlock()
-		genesisHash := genesis.Hash()
-		err = i.db.InsertBlock(&genesis)
+		// Initialize the database with initialization parameters
+		latestBHash, err = i.db.Initialize()
 		if err != nil {
-			i.log.Error("unable to register genesis block")
+			i.log.Fatal("unable to initialize database")
 			return
 		}
-		latestBHash = genesisHash.String()
 	} else {
 		latestBHash = indexState.LastBlockHash
 	}
@@ -174,12 +174,12 @@ func (i *Indexer) Context() context.Context {
 	return i.ctx
 }
 
-func NewIndexer(dbConnString, rpcEndpoint, dbDriver string) (*Indexer, error) {
+func NewIndexer(dbConnString, rpcEndpoint, dbDriver string, netParams *params.ChainParams) (*Indexer, error) {
 	log := logger.New(os.Stdin)
 
 	rpcClient := rpcclient.NewRPCClient(rpcEndpoint, true)
 	var wg sync.WaitGroup
-	database := db.NewDB(dbConnString, log, &wg, dbDriver)
+	database := db.NewDB(dbConnString, log, &wg, dbDriver, netParams)
 
 	err := database.Migrate()
 	if err != nil {
@@ -187,11 +187,12 @@ func NewIndexer(dbConnString, rpcEndpoint, dbDriver string) (*Indexer, error) {
 	}
 
 	indexer := &Indexer{
-		log:      log,
-		ctx:      context.Background(),
-		client:   rpcClient,
-		db:       database,
-		canClose: &wg,
+		log:       log,
+		ctx:       context.Background(),
+		client:    rpcClient,
+		db:        database,
+		canClose:  &wg,
+		netParams: netParams,
 	}
 
 	return indexer, nil
