@@ -806,8 +806,8 @@ func (d *Database) ProcessMempoolTransaction(tx *proto.Tx) {
 	copy(pkh[:], hash[:])
 
 	senderInfo := &AccountInfo{
-		Account:       hex.EncodeToString(pkh[:]),
-		Unconfirmed:   -1 * int(tx.Amount),
+		Account:     hex.EncodeToString(pkh[:]),
+		Unconfirmed: -1 * int(tx.Amount),
 	}
 
 	err = d.modifyAccountRowForMempoolTxs(senderInfo)
@@ -816,8 +816,8 @@ func (d *Database) ProcessMempoolTransaction(tx *proto.Tx) {
 	}
 
 	receiverInfo := &AccountInfo{
-		Account:       tx.To,
-		Unconfirmed:   int(tx.Amount),
+		Account:     tx.To,
+		Unconfirmed: int(tx.Amount),
 	}
 
 	err = d.modifyAccountRowForMempoolTxs(receiverInfo)
