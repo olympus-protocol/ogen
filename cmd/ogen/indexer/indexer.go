@@ -76,11 +76,11 @@ func (i *Indexer) subscribeMempool() {
 		i.log.Fatal(err)
 	}
 	for {
-		_, err := syncClient.Recv()
+		tx, err := syncClient.Recv()
 		if err != nil {
 			continue
 		}
-		// TODO manage mempool tx to do a pseudo mutation.
+		i.db.ProcessMempoolTransaction(tx)
 	}
 }
 
@@ -90,7 +90,7 @@ func (i *Indexer) mempoolSync() {
 		i.log.Fatal(err)
 	}
 	for {
-		_, err := syncClient.Recv()
+		tx, err := syncClient.Recv()
 		if err != nil {
 			if err == io.EOF {
 				_ = syncClient.CloseSend()
@@ -99,7 +99,7 @@ func (i *Indexer) mempoolSync() {
 			i.log.Error(err)
 			break
 		}
-		// TODO manage mempool tx to do a pseudo mutation.
+		i.db.ProcessMempoolTransaction(tx)
 	}
 }
 

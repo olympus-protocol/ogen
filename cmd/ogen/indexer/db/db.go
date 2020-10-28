@@ -14,6 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -610,6 +611,11 @@ func (d *Database) exitPenalizeValidator(valPubKey interface{}) error {
 	return nil
 }
 
+func (d *Database) modifyAccountRowForMempoolTxs(accInfo *AccountInfo) error {
+	// TODO
+	return nil
+}
+
 func (d *Database) modifyAccountRow(accInfo *AccountInfo) error {
 
 	dw := goqu.Dialect(d.driver)
@@ -655,10 +661,10 @@ func (d *Database) modifyAccountRow(accInfo *AccountInfo) error {
 		return err
 	}
 
+	// TODO remove unconfirmed ammount
 	newAccountData := &AccountInfo{
 		Account:       accInfo.Account,
 		Confirmed:     accountResult.Confirmed + accInfo.Confirmed,
-		Unconfirmed:   accountResult.Unconfirmed + accInfo.Unconfirmed,
 		Locked:        accountResult.Locked + accInfo.Locked,
 		TotalSent:     accountResult.TotalSent + accInfo.TotalSent,
 		TotalReceived: accountResult.TotalReceived + accInfo.TotalReceived,
@@ -787,6 +793,38 @@ func (d *Database) ModifyValidatorBalance(pubkey string, balance int) error {
 	}
 
 	return nil
+}
+
+func (d *Database) ProcessMempoolTransaction(tx *proto.Tx) {
+
+	publicKey, err := hex.DecodeString(tx.FromPublicKey)
+	if err != nil {
+		d.log.Error(err)
+	}
+	var pkh [20]byte
+	hash := chainhash.HashB(publicKey)
+	copy(pkh[:], hash[:])
+
+	senderInfo := &AccountInfo{
+		Account:       hex.EncodeToString(pkh[:]),
+		Unconfirmed:   -1 * int(tx.Amount),
+	}
+
+	err = d.modifyAccountRowForMempoolTxs(senderInfo)
+	if err != nil {
+		d.log.Error(err)
+	}
+
+	receiverInfo := &AccountInfo{
+		Account:       tx.To,
+		Unconfirmed:   int(tx.Amount),
+	}
+
+	err = d.modifyAccountRowForMempoolTxs(receiverInfo)
+	if err != nil {
+		d.log.Error(err)
+	}
+
 }
 
 // NewDB creates a db client
