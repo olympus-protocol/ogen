@@ -127,7 +127,9 @@ CREATE TABLE `epochs` (
     `slot_3` int NOT NULL,
     `slot_4` int NOT NULL,
     `slot_5` int NOT NULL,
-    `participation_percentage` int NOT NULL
+    `participation_percentage` int NOT NULL,
+    `finalized` bool NOT NULL,
+    `justified` bool NOT NULL,
 );
 
 ALTER TABLE `block_headers` ADD FOREIGN KEY (`block_hash`) REFERENCES `blocks` (`block_hash`);
@@ -145,8 +147,6 @@ ALTER TABLE `proposer_slashing` ADD FOREIGN KEY (`block_hash`) REFERENCES `block
 ALTER TABLE `randao_slashing` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
 ALTER TABLE `tx_single` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
-
-ALTER TABLE `slots` ADD FOREIGN KEY (`block_hash`) REFERENCES `block_headers` (`block_hash`);
 
 ALTER TABLE `epochs` ADD FOREIGN KEY (`slot_1`) REFERENCES `slots` (`slot`);
 

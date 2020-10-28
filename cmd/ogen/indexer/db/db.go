@@ -16,7 +16,9 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
+	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
@@ -59,6 +61,18 @@ func (d *Database) GetCurrentState() (State, error) {
 }
 
 func (d *Database) InsertBlock(block *primitives.Block) error {
+	blockSlot := int64(block.Header.Slot) - 1
+
+	// Check if the remainder of the blockSlot - 1 and the EpochLength is 0, if it is, then we are on a epoch transition
+	if blockSlot > 0 && blockSlot%int64(d.netParams.EpochLength) == 0 {
+		epoch := blockSlot / int64(d.netParams.EpochLength)
+		err := d.initializeEpoch(epoch)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Check if this block finishes an epoch and creates a new one
 
 	nextHeight, prevHash, err := d.getNextHeight()
 	if err != nil {
@@ -263,6 +277,99 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 	}
 
 	return nil
+}
+
+func (d *Database) initializeEpoch(epoch int64) error {
+
+	lastSlotFromEpoch := int(epoch)*int(d.netParams.EpochLength) + 1
+
+	slots := make([]int, 5)
+
+	slots[4] = lastSlotFromEpoch
+
+	for i := 0; i < int(d.netParams.EpochLength)-1; i++ {
+		slots[i] = lastSlotFromEpoch - (int(d.netParams.EpochLength) - (i + 1))
+	}
+
+	proposers, err := d.getEpochProposers()
+	if err != nil {
+		return err
+	}
+
+	for i, slot := range slots {
+		dw := goqu.Dialect(d.driver)
+		ds := dw.Insert("slots").Rows(
+			goqu.Record{
+				"slot":                     slot,
+				"block_hash":               "",
+				"committee":                "",
+				"proposer_index":           int(proposers[i]),
+				"proposed":                 false,
+				"participation_percentage": 0,
+			},
+		)
+
+		query, _, err := ds.ToSQL()
+		if err != nil {
+			return err
+		}
+		_, err = d.db.Exec(query)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Insert("epochs").Rows(
+		goqu.Record{
+			"epoch":                    int(epoch),
+			"slot_1":                   slots[0],
+			"slot_2":                   slots[1],
+			"slot_3":                   slots[2],
+			"slot_4":                   slots[3],
+			"slot_5":                   slots[4],
+			"participation_percentage": 0,
+		},
+	)
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Database) getVoteComitteeStringForSlot(slot int) (string, error) {
+	validators, err := d.GetActiveValidatorIndices()
+	if err != nil {
+		return "", err
+	}
+
+	// TODO Calculate the RANDAO
+	votes := state.Shuffle(chainhash.Hash{}, validators)
+	votesBifield := bitfield.NewBitlist(uint64(len(votes)))
+	for _, v := range votes {
+		votesBifield.Set(uint(v))
+	}
+
+	return hex.EncodeToString(votesBifield), nil
+}
+
+func (d *Database) getEpochProposers() ([]uint64, error) {
+	validators, err := d.GetActiveValidatorIndices()
+	if err != nil {
+		return nil, err
+	}
+	// TODO Calculate the RANDAO
+	proposers := state.DetermineNextProposers(chainhash.Hash{}, validators)
+	return proposers, nil
 }
 
 func (d *Database) getNextHeight() (int, string, error) {
@@ -873,6 +980,30 @@ func (d *Database) GetValidatorBalance(pubkey string) (int, error) {
 		return 0, err
 	}
 	return balance, nil
+}
+
+func (d *Database) GetActiveValidatorIndices() ([]uint64, error) {
+	dw := goqu.Dialect(d.driver)
+
+	ds := dw.From("validators").Select("id").Where(
+		goqu.Ex{
+			"status": int(primitives.StatusActive),
+		},
+	)
+
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	row := d.db.QueryRow(query)
+
+	var indexes []uint64
+	err = row.Scan(&indexes)
+	if err != nil {
+		return nil, err
+	}
+	return indexes, nil
 }
 
 func (d *Database) ModifyValidatorBalance(pubkey string, balance int) error {

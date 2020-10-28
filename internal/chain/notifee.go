@@ -6,8 +6,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-// BlockchainNotifee is a type that is notified when something changes with the
-// blockchain.
+// BlockchainNotifee is a type that is notified when something changes with the blockchain.
 type BlockchainNotifee interface {
 	// NewTip notifies of a new tip added to the blockchain. Do not mutate state.
 	NewTip(*chainindex.BlockRow, *primitives.Block, state.State, []*primitives.EpochReceipt)
