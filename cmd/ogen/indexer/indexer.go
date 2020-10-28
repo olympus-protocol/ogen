@@ -80,6 +80,7 @@ func (i *Indexer) subscribeMempool() {
 		if err != nil {
 			continue
 		}
+		i.log.Info("Received mempool transaction, indexing...")
 		i.db.ProcessMempoolTransaction(tx)
 	}
 }
