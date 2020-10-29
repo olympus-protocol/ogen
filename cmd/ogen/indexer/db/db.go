@@ -299,12 +299,12 @@ func (d *Database) initializeEpoch(epoch int64) error {
 		slots[i] = lastSlotFromEpoch - (int(d.netParams.EpochLength) - (i + 1))
 	}
 
-	proposers, err := d.getEpochProposers(epoch)
-	if err != nil {
-		return err
-	}
+	//proposers, err := d.getEpochProposers(epoch)
+	//if err != nil {
+	//	return err
+	//}
 
-	for i, slot := range slots {
+	for _, slot := range slots {
 		d.log.Infof("initializing slot %d", slot)
 
 		dw := goqu.Dialect(d.driver)
@@ -312,7 +312,7 @@ func (d *Database) initializeEpoch(epoch int64) error {
 			goqu.Record{
 				"slot":           slot,
 				"block_hash":     "",
-				"proposer_index": proposers[i],
+				"proposer_index": -1,
 				"proposed":       false,
 			},
 		)
@@ -981,34 +981,33 @@ func (d *Database) ProcessSlot(b *primitives.Block) error {
 
 // ProcessEpoch process the block information and modifies the epoch information.
 func (d *Database) ProcessEpoch(b *primitives.Block, epoch int64) error {
-
-	epochRandao, err := d.getEpochRandao(epoch)
-	if err != nil {
-		return err
-	}
-
-	for i := range epochRandao {
-		epochRandao[i] ^= b.RandaoSignature[i]
-	}
-
-	dw := goqu.Dialect(d.driver)
-	ds := dw.Update("epochs").Set(
-		goqu.Record{
-			"randao": hex.EncodeToString(epochRandao[:]),
-		}).Where(
-		goqu.Ex{
-			"epoch": int(epoch),
-		},
-	)
-	query, _, err := ds.ToSQL()
-	if err != nil {
-		return err
-	}
-	_, err = d.db.Exec(query)
-	if err != nil {
-		return err
-	}
-
+	//
+	//epochRandao, err := d.getEpochRandao(epoch)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for i := range epochRandao {
+	//	epochRandao[i] ^= b.RandaoSignature[i]
+	//}
+	//
+	//dw := goqu.Dialect(d.driver)
+	//ds := dw.Update("epochs").Set(
+	//	goqu.Record{
+	//		"randao": hex.EncodeToString(epochRandao[:]),
+	//	}).Where(
+	//	goqu.Ex{
+	//		"epoch": int(epoch),
+	//	},
+	//)
+	//query, _, err := ds.ToSQL()
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = d.db.Exec(query)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
