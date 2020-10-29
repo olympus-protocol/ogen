@@ -514,6 +514,9 @@ func (s *SerializableState) UnmarshalSSZ(buf []byte) error {
 		if err = ssz.ValidateBitlist(buf, 2048); err != nil {
 			return err
 		}
+		if cap(s.ManagerReplacement) == 0 {
+			s.ManagerReplacement = make([]byte, 0, len(buf))
+		}
 		s.ManagerReplacement = append(s.ManagerReplacement, buf...)
 	}
 
@@ -769,6 +772,10 @@ func (s *SerializableState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (21) 'ManagerReplacement'
+	if len(s.ManagerReplacement) == 0 {
+		err = ssz.ErrEmptyBitlist
+		return
+	}
 	hh.PutBitlist(s.ManagerReplacement, 2048)
 
 	// Field (22) 'Governance'

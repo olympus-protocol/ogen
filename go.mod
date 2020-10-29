@@ -14,7 +14,6 @@ require (
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
-	github.com/gobuffalo/packr/v2 v2.8.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.13.0
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
@@ -22,7 +21,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
 	github.com/herumi/bls-eth-go-binary v0.0.0-20201027164522-f7dd8401dd57
 	github.com/ipfs/go-ds-leveldb v0.4.2
-	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/libp2p/go-libp2p v0.11.0
 	github.com/libp2p/go-libp2p-circuit v0.3.1

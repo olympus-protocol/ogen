@@ -79,6 +79,9 @@ func (a *AcceptedVoteInfo) UnmarshalSSZ(buf []byte) error {
 		if err = ssz.ValidateBitlist(buf, 6250); err != nil {
 			return err
 		}
+		if cap(a.ParticipationBitfield) == 0 {
+			a.ParticipationBitfield = make([]byte, 0, len(buf))
+		}
 		a.ParticipationBitfield = append(a.ParticipationBitfield, buf...)
 	}
 	return err
@@ -109,6 +112,10 @@ func (a *AcceptedVoteInfo) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (1) 'ParticipationBitfield'
+	if len(a.ParticipationBitfield) == 0 {
+		err = ssz.ErrEmptyBitlist
+		return
+	}
 	hh.PutBitlist(a.ParticipationBitfield, 6250)
 
 	// Field (2) 'Proposer'
@@ -294,6 +301,9 @@ func (m *MultiValidatorVote) UnmarshalSSZ(buf []byte) error {
 		if err = ssz.ValidateBitlist(buf, 6258); err != nil {
 			return err
 		}
+		if cap(m.ParticipationBitfield) == 0 {
+			m.ParticipationBitfield = make([]byte, 0, len(buf))
+		}
 		m.ParticipationBitfield = append(m.ParticipationBitfield, buf...)
 	}
 	return err
@@ -327,6 +337,10 @@ func (m *MultiValidatorVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutBytes(m.Sig[:])
 
 	// Field (2) 'ParticipationBitfield'
+	if len(m.ParticipationBitfield) == 0 {
+		err = ssz.ErrEmptyBitlist
+		return
+	}
 	hh.PutBitlist(m.ParticipationBitfield, 6258)
 
 	hh.Merkleize(indx)
