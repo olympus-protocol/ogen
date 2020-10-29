@@ -18,7 +18,6 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
-	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
@@ -61,12 +60,16 @@ func (d *Database) GetCurrentState() (State, error) {
 }
 
 func (d *Database) InsertBlock(block *primitives.Block) error {
+	// TODO fix, initialize epoch/slot tables for non produced block tables.
+
 	blockSlot := int64(block.Header.Slot) - 1
+
 	currentEpoch := blockSlot / int64(d.netParams.EpochLength)
+
 	// Check if the remainder of the blockSlot - 1 and the EpochLength is 0, if it is, then we are on a epoch transition
 	if blockSlot > 0 && blockSlot%int64(d.netParams.EpochLength) == 0 {
 		epoch := blockSlot / int64(d.netParams.EpochLength)
-		err := d.initializeEpoch(epoch)
+		err := d.initializeEpoch(epoch + 1)
 		if err != nil {
 			return err
 		}
@@ -271,12 +274,12 @@ func (d *Database) InsertBlock(block *primitives.Block) error {
 		}
 	}
 
-	err = d.ProcessSlotTransition(block)
+	err = d.ProcessSlot(block)
 	if err != nil {
 		return err
 	}
 
-	err = d.ProcessEpochTransition(block)
+	err = d.ProcessEpoch(block, currentEpoch)
 	if err != nil {
 		return err
 	}
@@ -296,25 +299,21 @@ func (d *Database) initializeEpoch(epoch int64) error {
 		slots[i] = lastSlotFromEpoch - (int(d.netParams.EpochLength) - (i + 1))
 	}
 
-	proposers, err := d.getEpochProposers()
+	proposers, err := d.getEpochProposers(epoch)
 	if err != nil {
 		return err
 	}
 
 	for i, slot := range slots {
-		comittee, err := d.getVoteComitteeStringForSlot(slot)
-		if err != nil {
-			return err
-		}
+		d.log.Infof("initializing slot %d", slot)
+
 		dw := goqu.Dialect(d.driver)
 		ds := dw.Insert("slots").Rows(
 			goqu.Record{
-				"slot":                     slot,
-				"block_hash":               "",
-				"committee":                comittee,
-				"proposer_index":           int(proposers[i]),
-				"proposed":                 false,
-				"participation_percentage": 0,
+				"slot":           slot,
+				"block_hash":     "",
+				"proposer_index": proposers[i],
+				"proposed":       false,
 			},
 		)
 
@@ -329,6 +328,9 @@ func (d *Database) initializeEpoch(epoch int64) error {
 
 	}
 
+	hash := chainhash.Hash{}
+
+	d.log.Infof("initializing epoch %d", epoch)
 	dw := goqu.Dialect(d.driver)
 	ds := dw.Insert("epochs").Rows(
 		goqu.Record{
@@ -341,6 +343,7 @@ func (d *Database) initializeEpoch(epoch int64) error {
 			"participation_percentage": 0,
 			"finalized":                false,
 			"justified":                false,
+			"randao":                   hash.String(),
 		},
 	)
 
@@ -357,30 +360,39 @@ func (d *Database) initializeEpoch(epoch int64) error {
 	return nil
 }
 
-func (d *Database) getVoteComitteeStringForSlot(slot int) (string, error) {
-	validators, err := d.GetActiveValidatorIndices()
-	if err != nil {
-		return "", err
-	}
-
-	// TODO Calculate the RANDAO
-	votes := state.Shuffle(chainhash.Hash{}, validators)
-	votesBifield := bitfield.NewBitlist(uint64(len(votes)))
-	for _, v := range votes {
-		votesBifield.Set(uint(v))
-	}
-
-	return hex.EncodeToString(votesBifield), nil
-}
-
-func (d *Database) getEpochProposers() ([]uint64, error) {
+func (d *Database) getEpochProposers(epoch int64) ([]uint64, error) {
 	validators, err := d.GetActiveValidatorIndices()
 	if err != nil {
 		return nil, err
 	}
-	// TODO Calculate the RANDAO
-	proposers := state.DetermineNextProposers(chainhash.Hash{}, validators)
-	return proposers, nil
+
+	randao, err := d.getEpochRandao(epoch - 1)
+	if err != nil {
+		return nil, err
+	}
+	return state.DetermineNextProposers(randao, validators), nil
+}
+
+func (d *Database) getEpochRandao(epoch int64) (chainhash.Hash, error) {
+	if epoch == 0 {
+		return chainhash.Hash{}, nil
+	}
+	dw := goqu.Dialect(d.driver)
+	ds := dw.From("epochs").Select("randao").Where(goqu.Ex{
+		"epoch": int(epoch),
+	})
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	var hashB []byte
+	err = d.db.QueryRow(query).Scan(&hashB)
+	if err != nil {
+		return chainhash.Hash{}, err
+	}
+	var hash [32]byte
+	copy(hash[:], hashB)
+	return hash, nil
 }
 
 func (d *Database) getNextHeight() (int, string, error) {
@@ -962,13 +974,42 @@ func (d *Database) Migrate() error {
 	return nil
 }
 
-// ProcessSlotTransition process the block slot and modifies the database.
-func (d *Database) ProcessSlotTransition(b *primitives.Block) error {
+// ProcessSlot process the block slot and modifies the database.
+func (d *Database) ProcessSlot(b *primitives.Block) error {
 	return nil
 }
 
-// ProcessEpochTransition process the block information and modifies the epoch information.
-func (d *Database) ProcessEpochTransition(b *primitives.Block) error {
+// ProcessEpoch process the block information and modifies the epoch information.
+func (d *Database) ProcessEpoch(b *primitives.Block, epoch int64) error {
+
+	epochRandao, err := d.getEpochRandao(epoch)
+	if err != nil {
+		return err
+	}
+
+	for i := range epochRandao {
+		epochRandao[i] ^= b.RandaoSignature[i]
+	}
+
+	dw := goqu.Dialect(d.driver)
+	ds := dw.Update("epochs").Set(
+		goqu.Record{
+			"randao": hex.EncodeToString(epochRandao[:]),
+		}).Where(
+		goqu.Ex{
+			"epoch": int(epoch),
+		},
+	)
+	query, _, err := ds.ToSQL()
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+
 	return nil
 }
 
@@ -1010,13 +1051,24 @@ func (d *Database) GetActiveValidatorIndices() ([]uint64, error) {
 		return nil, err
 	}
 
-	row := d.db.QueryRow(query)
-
-	var indexes []uint64
-	err = row.Scan(&indexes)
+	row, err := d.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
+
+	var indexes []uint64
+	for {
+		if !row.Next() {
+			break
+		}
+		var index uint64
+		err = row.Scan(&index)
+		if err != nil {
+			return nil, err
+		}
+		indexes = append(indexes, index)
+	}
+
 	return indexes, nil
 }
 
@@ -1126,7 +1178,10 @@ func (d *Database) Initialize() (string, error) {
 	}
 
 	// Add first epoch and slots
-
+	err = d.initializeEpoch(1)
+	if err != nil {
+		return "", err
+	}
 	return genesisHash.String(), nil
 }
 

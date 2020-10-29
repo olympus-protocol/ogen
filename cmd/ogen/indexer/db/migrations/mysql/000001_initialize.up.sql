@@ -114,10 +114,8 @@ CREATE TABLE `proposer_slashing` (
 CREATE TABLE `slots` (
     `slot` int PRIMARY KEY NOT NULL,
     `block_hash` varchar(255) NOT NULL,
-    `committee` varchar(12518) NOT NULL,
     `proposer_index` int NOT NULL,
-    `proposed` boolean NOT NULL,
-    `participation_percentage` int NOT NULL
+    `proposed` boolean NOT NULL
 );
 
 CREATE TABLE `epochs` (
