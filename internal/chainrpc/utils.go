@@ -24,7 +24,11 @@ type utilsServer struct {
 func (s *utilsServer) GenKeyPair(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
 	defer ctx.Done()
 
-	k := bls.RandKey()
+	k, err := bls.RandKey()
+	if err != nil {
+		return nil, err
+	}
+
 	return &proto.KeyPair{Private: k.ToWIF(), Public: k.PublicKey().ToAccount()}, nil
 }
 

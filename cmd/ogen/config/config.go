@@ -111,8 +111,8 @@ func testInitParams() *initialization.InitializationParameters {
 
 	addrHash, _ := testdata.PremineAddr.PublicKey().Hash()
 	for i := 0; i < 100; i++ {
-		key := bls.RandKey()
-		validatorsKeys = append(validatorsKeys, bls.RandKey())
+		key, _ := bls.RandKey()
+		validatorsKeys = append(validatorsKeys, key)
 		val := &primitives.Validator{
 			Balance:          100 * 1e8,
 			PayeeAddress:     addrHash,

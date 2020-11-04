@@ -114,7 +114,7 @@ func FuzzRANDAOSlashing(n int) []*primitives.RANDAOSlashing {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
-		k := bls.RandKey()
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.RandaoReveal = sig
@@ -135,7 +135,7 @@ func FuzzProposerSlashing(n int, complete bool) []*primitives.ProposerSlashing {
 		}
 		var sig [96]byte
 		var pub [48]byte
-		k := bls.RandKey()
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature1 = sig
@@ -193,7 +193,7 @@ func FuzzDeposit(n int, complete bool) []*primitives.Deposit {
 		}
 		var sig [96]byte
 		var pub [48]byte
-		k := bls.RandKey()
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.PublicKey = pub
@@ -213,7 +213,7 @@ func FuzzDepositData() *primitives.DepositData {
 	f.Fuzz(d)
 	var sig [96]byte
 	var pub [48]byte
-	k := bls.RandKey()
+	k, _ := bls.RandKey()
 	copy(sig[:], bls.NewAggregateSignature().Marshal())
 	copy(pub[:], k.PublicKey().Marshal())
 	d.PublicKey = pub
@@ -265,7 +265,7 @@ func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
 		f.Fuzz(d)
 		var sig [96]byte
 		var pub [48]byte
-		k := bls.RandKey()
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d.Signature = sig
@@ -283,7 +283,7 @@ func FuzzExits(n int) []*primitives.Exit {
 	for i := 0; i < n; i++ {
 		var sig [96]byte
 		var pub [48]byte
-		k := bls.RandKey()
+		k, _ := bls.RandKey()
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		copy(pub[:], k.PublicKey().Marshal())
 		d := &primitives.Exit{
@@ -311,7 +311,7 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 		publicKeys := make([]*bls.PublicKey, 10)
 
 		for i := range secretKeys {
-			secretKeys[i] = bls.RandKey()
+			secretKeys[i], _ = bls.RandKey()
 			publicKeys[i] = secretKeys[i].PublicKey()
 		}
 
@@ -396,7 +396,7 @@ func FuzzTx(n int) []*primitives.Tx {
 	for i := 0; i < n; i++ {
 		d := new(primitives.Tx)
 		f.Fuzz(d)
-		k := bls.RandKey()
+		k, _ := bls.RandKey()
 		pubBytes := k.PublicKey().Marshal()
 		copy(d.FromPublicKey[:], pubBytes)
 		msg := d.SignatureMessage()
@@ -419,7 +419,7 @@ func FuzzTxMulti(n int) []*primitives.TxMulti {
 		publicKeys := make([]*bls.PublicKey, 10)
 
 		for i := range secretKeys {
-			secretKeys[i] = bls.RandKey()
+			secretKeys[i], _ = bls.RandKey()
 			publicKeys[i] = secretKeys[i].PublicKey()
 		}
 
