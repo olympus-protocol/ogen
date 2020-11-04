@@ -63,11 +63,13 @@ func TestPublicKeyFromBytes(t *testing.T) {
 }
 
 func TestPublicKey_Copy(t *testing.T) {
-	pubkeyA := bls.RandKey().PublicKey()
+	k, _ := bls.RandKey()
+	pubkeyA := k.PublicKey()
 	pubkeyBytes := pubkeyA.Marshal()
 
 	pubkeyB := pubkeyA.Copy()
-	pubkeyB.Aggregate(bls.RandKey().PublicKey())
+	nk, _ := bls.RandKey()
+	pubkeyB.Aggregate(nk.PublicKey())
 
 	if !bytes.Equal(pubkeyA.Marshal(), pubkeyBytes) {
 		t.Fatal("Pubkey was mutated after copy")

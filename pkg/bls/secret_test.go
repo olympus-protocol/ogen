@@ -8,7 +8,9 @@ import (
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
-	b := bls.RandKey().Marshal()
+	k, err := bls.RandKey()
+	assert.NoError(t, err)
+	b := k.Marshal()
 	pk, err := bls.SecretKeyFromBytes(b)
 	require.NoError(t, err)
 	pk2, err := bls.SecretKeyFromBytes(b)
@@ -66,10 +68,12 @@ func TestSecretKeyFromBytes(t *testing.T) {
 }
 
 func TestSerialize(t *testing.T) {
-	rk := bls.RandKey()
+	rk, err := bls.RandKey()
+	assert.NoError(t, err)
+
 	b := rk.Marshal()
 
-	_, err := bls.SecretKeyFromBytes(b)
+	_, err = bls.SecretKeyFromBytes(b)
 	assert.NoError(t, err)
 }
 

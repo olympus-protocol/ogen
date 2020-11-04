@@ -19,6 +19,9 @@ type Signature struct {
 // In ETH2.0 specification:
 // def Verify(PK: BLSPubkey, message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
+	if pubKey.IsInfinite() {
+		return false
+	}
 	return s.s.VerifyByte(pubKey.p, msg)
 }
 

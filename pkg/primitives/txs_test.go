@@ -66,7 +66,7 @@ func TestTxMulti(t *testing.T) {
 	publicKeys := make([]*bls.PublicKey, 5)
 
 	for i := range secretKeys {
-		secretKeys[i] = bls.RandKey()
+		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 

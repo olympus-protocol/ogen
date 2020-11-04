@@ -14,7 +14,7 @@ var Node2Folder = "./data_node2"
 // Node3Folder is the folder where node 3 stores its data
 var Node3Folder = "./data_node3"
 
-var PremineAddr = bls.RandKey()
+var PremineAddr, _ = bls.RandKey()
 
 // TestParams network parameters for test chains.
 var TestParams = params.ChainParams{

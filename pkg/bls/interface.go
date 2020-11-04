@@ -3,6 +3,7 @@ package bls
 import (
 	"encoding/binary"
 	"errors"
+	"github.com/dgraph-io/ristretto"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
@@ -20,7 +21,18 @@ var (
 	ErrorSigSize = errors.New("signature should be 96 bytes")
 	// ErrorSigUnmarshal returned when the pubkey is not valid
 	ErrorSigUnmarshal = errors.New("could not unmarshal bytes into signature")
+	// ErrInfinitePubKey returned when the pubkey is zero
+	ErrInfinitePubKey = errors.New("public key is zero")
+	// ErrZeroSecKey returned when the secret key is zero
+	ErrZeroSecKey = errors.New("secret key is zero")
 )
+
+var maxKeys = int64(100000)
+var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
+	NumCounters: maxKeys,
+	MaxCost:     1 << 22, // ~4mb is cache max size
+	BufferItems: 64,
+})
 
 // KeyPair is an interface struct to serve keypairs
 type KeyPair struct {
@@ -51,14 +63,39 @@ func PublicKeyFromBytes(pubKey []byte) (*PublicKey, error) {
 	if cv, ok := pubkeyCache.Get(string(pubKey)); ok {
 		return cv.(*PublicKey).Copy(), nil
 	}
+	if cv, ok := pubkeyCache.Get(string(pubKey)); ok {
+		return cv.(*PublicKey).Copy(), nil
+	}
 	p := &bls12.PublicKey{}
 	err := p.Deserialize(pubKey)
 	if err != nil {
 		return nil, ErrorPubKeyUnmarshal
 	}
 	pubKeyObj := &PublicKey{p: p}
+	if pubKeyObj.IsInfinite() {
+		return nil, ErrInfinitePubKey
+	}
 	pubkeyCache.Set(string(pubKey), pubKeyObj.Copy(), 48)
 	return pubKeyObj, nil
+}
+
+// AggregatePublicKeys aggregates the provided raw public keys into a single key.
+func AggregatePublicKeys(pubs [][]byte) (*PublicKey, error) {
+	if len(pubs) == 0 {
+		return &PublicKey{}, nil
+	}
+	p, err := PublicKeyFromBytes(pubs[0])
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range pubs[1:] {
+		pubkey, err := PublicKeyFromBytes(k)
+		if err != nil {
+			return nil, err
+		}
+		p.Aggregate(pubkey)
+	}
+	return p, nil
 }
 
 // SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.

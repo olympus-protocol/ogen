@@ -1,18 +1,10 @@
 package bls
 
 import (
-	"github.com/dgraph-io/ristretto"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
-
-var maxKeys = int64(100000)
-var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
-	NumCounters: maxKeys,
-	MaxCost:     1 << 22, // ~4mb is cache max size
-	BufferItems: 64,
-})
 
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
@@ -49,4 +41,9 @@ func (p *PublicKey) Hash() ([20]byte, error) {
 func (p *PublicKey) ToAccount() string {
 	hash, _ := p.Hash()
 	return bech32.Encode(Prefix.Public, hash[:])
+}
+
+// IsInfinite checks if the public key is infinite.
+func (p *PublicKey) IsInfinite() bool {
+	return p.p.IsZero()
 }

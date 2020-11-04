@@ -11,10 +11,13 @@ type SecretKey struct {
 }
 
 // RandKey creates a new private key using a random method provided as an io.Reader.
-func RandKey() *SecretKey {
+func RandKey() (*SecretKey, error) {
 	secKey := &bls12.SecretKey{}
 	secKey.SetByCSPRNG()
-	return &SecretKey{secKey}
+	if secKey.IsZero() {
+		return nil, ErrZeroSecKey
+	}
+	return &SecretKey{secKey}, nil
 }
 
 // PublicKey obtains the public key corresponding to the BLS secret key.

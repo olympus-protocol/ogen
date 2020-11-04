@@ -32,7 +32,10 @@ func (c *Client) SubmitRawData(args []string) (string, error) {
 }
 
 func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
-	blsKeyPair := bls.RandKey()
+	blsKeyPair, err := bls.RandKey()
+	if err != nil {
+		return "", err
+	}
 
 	if !raw {
 		if len(args) < 1 {

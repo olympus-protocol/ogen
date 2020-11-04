@@ -19,7 +19,7 @@ func TestCorrectnessMultisig(t *testing.T) {
 	publicKeys := make([]*bls.PublicKey, 20)
 	var err error
 	for i := range secretKeys {
-		secretKeys[i] = bls.RandKey()
+		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
@@ -67,7 +67,7 @@ func TestMultisigSerializeSign(t *testing.T) {
 	var err error
 
 	for i := range secretKeys {
-		secretKeys[i] = bls.RandKey()
+		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
@@ -96,7 +96,7 @@ func TestMultipubCopy(t *testing.T) {
 	secretKeys := make([]*bls.SecretKey, 20)
 	publicKeys := make([]*bls.PublicKey, 20)
 	for i := range secretKeys {
-		secretKeys[i] = bls.RandKey()
+		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
@@ -115,7 +115,7 @@ func TestMultisigCopy(t *testing.T) {
 	secretKeys := make([]*bls.SecretKey, 20)
 	publicKeys := make([]*bls.PublicKey, 20)
 	for i := range secretKeys {
-		secretKeys[i] = bls.RandKey()
+		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
