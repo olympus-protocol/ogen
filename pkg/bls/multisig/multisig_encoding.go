@@ -213,6 +213,9 @@ func (m *Multisig) UnmarshalSSZ(buf []byte) error {
 		if err = ssz.ValidateBitlist(buf, 32); err != nil {
 			return err
 		}
+		if cap(m.KeysSigned) == 0 {
+			m.KeysSigned = make([]byte, 0, len(buf))
+		}
 		m.KeysSigned = append(m.KeysSigned, buf...)
 	}
 	return err
@@ -266,6 +269,10 @@ func (m *Multisig) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 
 	// Field (2) 'KeysSigned'
+	if len(m.KeysSigned) == 0 {
+		err = ssz.ErrEmptyBitlist
+		return
+	}
 	hh.PutBitlist(m.KeysSigned, 32)
 
 	hh.Merkleize(indx)

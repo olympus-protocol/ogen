@@ -70,10 +70,10 @@ CREATE TABLE "validators" (
 );
 
 CREATE TABLE "exits" (
-    "block_hash" varchar NOT NULL,
-    "validator_public_key" varchar NOT NULL,
-    "withdrawal_public_key" varchar NOT NULL,
-    "signature" varchar NOT NULL
+     "block_hash" varchar NOT NULL,
+     "validator_public_key" varchar NOT NULL,
+     "withdrawal_public_key" varchar NOT NULL,
+     "signature" varchar NOT NULL
 );
 
 CREATE TABLE "tx_single" (
@@ -114,10 +114,8 @@ CREATE TABLE "proposer_slashing" (
 CREATE TABLE "slots" (
     "slot" int PRIMARY KEY NOT NULL,
     "block_hash" varchar NOT NULL,
-    "committee" varchar(12518) NOT NULL,
     "proposer_index" int NOT NULL,
-    "proposed" boolean NOT NULL,
-    "participation_percentage" int NOT NULL
+    "proposed" boolean NOT NULL
 );
 
 CREATE TABLE "epochs" (
@@ -127,7 +125,10 @@ CREATE TABLE "epochs" (
     "slot_3" int NOT NULL,
     "slot_4" int NOT NULL,
     "slot_5" int NOT NULL,
-    "participation_percentage" int NOT NULL
+    "participation_percentage" int NOT NULL,
+    "finalized" bool NOT NULL,
+    "justified" bool NOT NULL,
+    "randao" varchar NOT NULL
 );
 
 ALTER TABLE "block_headers" ADD FOREIGN KEY ("block_hash") REFERENCES "blocks" ("block_hash");
@@ -145,8 +146,6 @@ ALTER TABLE "proposer_slashing" ADD FOREIGN KEY ("block_hash") REFERENCES "block
 ALTER TABLE "randao_slashing" ADD FOREIGN KEY ("block_hash") REFERENCES "block_headers" ("block_hash");
 
 ALTER TABLE "tx_single" ADD FOREIGN KEY ("block_hash") REFERENCES "block_headers" ("block_hash");
-
-ALTER TABLE "slots" ADD FOREIGN KEY ("block_hash") REFERENCES "block_headers" ("block_hash");
 
 ALTER TABLE "epochs" ADD FOREIGN KEY ("slot_1") REFERENCES "slots" ("slot");
 
