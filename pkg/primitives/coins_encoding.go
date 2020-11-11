@@ -73,7 +73,7 @@ func (c *CoinsStateSerializable) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the CoinsStateSerializable object to a target array
 func (c *CoinsStateSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(8)
+	offset := int(12)
 
 	// Offset (0) 'Balances'
 	dst = ssz.WriteOffset(dst, offset)
@@ -82,6 +82,10 @@ func (c *CoinsStateSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 	// Offset (1) 'Nonces'
 	dst = ssz.WriteOffset(dst, offset)
 	offset += len(c.Nonces) * 28
+
+	// Offset (2) 'Proofs'
+	dst = ssz.WriteOffset(dst, offset)
+	offset += len(c.Proofs) * 32
 
 	// Field (0) 'Balances'
 	if len(c.Balances) > 2097152 {
@@ -105,6 +109,15 @@ func (c *CoinsStateSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 		}
 	}
 
+	// Field (2) 'Proofs'
+	if len(c.Proofs) > 2097152 {
+		err = ssz.ErrListTooBig
+		return
+	}
+	for ii := 0; ii < len(c.Proofs); ii++ {
+		dst = append(dst, c.Proofs[ii][:]...)
+	}
+
 	return
 }
 
@@ -112,12 +125,12 @@ func (c *CoinsStateSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 func (c *CoinsStateSerializable) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 8 {
+	if size < 12 {
 		return ssz.ErrSize
 	}
 
 	tail := buf
-	var o0, o1 uint64
+	var o0, o1, o2 uint64
 
 	// Offset (0) 'Balances'
 	if o0 = ssz.ReadOffset(buf[0:4]); o0 > size {
@@ -126,6 +139,11 @@ func (c *CoinsStateSerializable) UnmarshalSSZ(buf []byte) error {
 
 	// Offset (1) 'Nonces'
 	if o1 = ssz.ReadOffset(buf[4:8]); o1 > size || o0 > o1 {
+		return ssz.ErrOffset
+	}
+
+	// Offset (2) 'Proofs'
+	if o2 = ssz.ReadOffset(buf[8:12]); o2 > size || o1 > o2 {
 		return ssz.ErrOffset
 	}
 
@@ -149,7 +167,7 @@ func (c *CoinsStateSerializable) UnmarshalSSZ(buf []byte) error {
 
 	// Field (1) 'Nonces'
 	{
-		buf = tail[o1:]
+		buf = tail[o1:o2]
 		num, err := ssz.DivideInt2(len(buf), 28, 2097152)
 		if err != nil {
 			return err
@@ -164,18 +182,34 @@ func (c *CoinsStateSerializable) UnmarshalSSZ(buf []byte) error {
 			}
 		}
 	}
+
+	// Field (2) 'Proofs'
+	{
+		buf = tail[o2:]
+		num, err := ssz.DivideInt2(len(buf), 32, 2097152)
+		if err != nil {
+			return err
+		}
+		c.Proofs = make([][32]byte, num)
+		for ii := 0; ii < num; ii++ {
+			copy(c.Proofs[ii][:], buf[ii*32:(ii+1)*32])
+		}
+	}
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the CoinsStateSerializable object
 func (c *CoinsStateSerializable) SizeSSZ() (size int) {
-	size = 8
+	size = 12
 
 	// Field (0) 'Balances'
 	size += len(c.Balances) * 28
 
 	// Field (1) 'Nonces'
 	size += len(c.Nonces) * 28
+
+	// Field (2) 'Proofs'
+	size += len(c.Proofs) * 32
 
 	return
 }
@@ -219,6 +253,20 @@ func (c *CoinsStateSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 			}
 		}
 		hh.MerkleizeWithMixin(subIndx, num, 2097152)
+	}
+
+	// Field (2) 'Proofs'
+	{
+		if len(c.Proofs) > 2097152 {
+			err = ssz.ErrListTooBig
+			return
+		}
+		subIndx := hh.Index()
+		for _, i := range c.Proofs {
+			hh.Append(i[:])
+		}
+		numItems := uint64(len(c.Proofs))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(2097152, numItems, 32))
 	}
 
 	hh.Merkleize(indx)

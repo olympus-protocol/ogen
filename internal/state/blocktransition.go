@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -315,6 +316,39 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 	if _, ok := s.Governance.ReplaceVotes[pkh]; u.Balances[pkh] < netParams.UnitsPerCoin*netParams.MinVotingBalance && ok {
 		delete(s.Governance.ReplaceVotes, pkh)
 	}
+
+	return nil
+}
+
+// ApplyMigrationProof applies a migration proof to the coin state.
+func (s *state) ApplyMigrationProof(p *burnproof.CoinsProof) error {
+	err := burnproof.VerifyBurnProof(p)
+	if err != nil {
+		return err
+	}
+
+	u := s.CoinsState
+
+	txHash := p.Transaction.TxHash()
+	hash, err := chainhash.NewHash(txHash[:])
+	if err != nil {
+		return err
+	}
+	if _, ok := u.ProofsVerified[hash]; ok {
+		return errors.New("proof already verified")
+	}
+
+	// Sum the txout balance to apply to the coin state
+	sumBalance := uint64(0)
+	for _, out := range p.Transaction.TxOut {
+		sumBalance += uint64(out.Value)
+	}
+
+	// Apply the coin balance to the CoinState
+	u.Balances[p.RedeemAccount] += sumBalance
+
+	// Mark the proof as verified
+	u.ProofsVerified[hash] = struct{}{}
 
 	return nil
 }
@@ -1059,6 +1093,10 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", netParams.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
+	if uint64(len(b.MigrationProofs)) > netParams.MaxMigrationsProofsPerBlock {
+		return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxMigrationsProofsPerBlock, len(b.MigrationProofs))
+	}
+
 	if len(b.Deposits) > 0 {
 		if err := s.ApplyDeposits(b.Deposits); err != nil {
 			return err
@@ -1073,6 +1111,12 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 
 	for _, vote := range b.GovernanceVotes {
 		if err := s.ProcessGovernanceVote(vote); err != nil {
+			return err
+		}
+	}
+
+	for _, m := range b.MigrationProofs {
+		if err := s.ApplyMigrationProof(m); err != nil {
 			return err
 		}
 	}

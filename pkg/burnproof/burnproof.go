@@ -22,9 +22,13 @@ func init() {
 // CoinsProof is a proof of coins on the old blockchain.
 type CoinsProof struct {
 	MerkleIndex  uint32
-	MerkleBranch []chainhash.Hash
+	MerkleBranch [][32]byte
 	PkScript     []byte
-	Transaction  wire.MsgTx
+	Transaction  *wire.MsgTx
+}
+
+func (c *CoinsProof) Marshal(w io.Writer) error {
+
 }
 
 // Unmarshal decodes the proof from a byte slice.
@@ -41,7 +45,7 @@ func (c *CoinsProof) Unmarshal(r io.Reader) error {
 		return err
 	}
 
-	c.MerkleBranch = make([]chainhash.Hash, merkleCount)
+	c.MerkleBranch = make([][32]byte, merkleCount)
 	for i := range c.MerkleBranch {
 		_, err := io.ReadFull(r, c.MerkleBranch[i][:])
 		if err != nil {
@@ -140,9 +144,9 @@ func verifyScript(proof *CoinsProof) error {
 		return fmt.Errorf("expected transaction to have 1 output, but got %d", len(proof.Transaction.TxOut))
 	}
 
-	eng, err := txscript.NewEngine(proof.PkScript, &proof.Transaction, 0,
+	eng, err := txscript.NewEngine(proof.PkScript, proof.Transaction, 0,
 		txscript.StandardVerifyFlags, cache,
-		txscript.NewTxSigHashes(&proof.Transaction), proof.Transaction.TxOut[0].Value)
+		txscript.NewTxSigHashes(proof.Transaction), proof.Transaction.TxOut[0].Value)
 	if err != nil {
 		return err
 	}
@@ -154,7 +158,7 @@ func verifyScript(proof *CoinsProof) error {
 	return nil
 }
 
-func verifyPkhMatchesAddress(script []byte, address string) error {
+func verifyPkhMatchesAddress(script []byte, address [20]byte) error {
 	if len(script) != 25 {
 		return fmt.Errorf("expected transaction pkscript to be 25, but got %d", len(script))
 	}
@@ -162,13 +166,12 @@ func verifyPkhMatchesAddress(script []byte, address string) error {
 	addrHash := script[3:23]
 
 	addrBuf := new(bytes.Buffer)
-	addrBytes := []byte(address)
 
-	if err := wire.WriteVarInt(addrBuf, 0, uint64(len(addrBytes))); err != nil {
+	if err := wire.WriteVarInt(addrBuf, 0, uint64(len(address[:]))); err != nil {
 		return err
 	}
 
-	if _, err := addrBuf.Write(addrBytes); err != nil {
+	if _, err := addrBuf.Write(address[:]); err != nil {
 		return err
 	}
 
@@ -181,7 +184,7 @@ func verifyPkhMatchesAddress(script []byte, address string) error {
 }
 
 // VerifyBurn verifies a burn proof.
-func VerifyBurn(proofBytes []byte, address string) error {
+func VerifyBurn(proofBytes []byte) error {
 	var proofs []*CoinsProof
 
 	buf := bytes.NewBuffer(proofBytes)
@@ -200,17 +203,27 @@ func VerifyBurn(proofBytes []byte, address string) error {
 	}
 
 	for _, c := range proofs {
-		if err := verifyMerkleRoot(merkleRootHash, c); err != nil {
+		err := VerifyBurnProof(c)
+		if err != nil {
 			return err
 		}
+	}
 
-		if err := verifyScript(c); err != nil {
-			return err
-		}
+	return nil
+}
 
-		if err := verifyPkhMatchesAddress(c.Transaction.TxOut[0].PkScript, address); err != nil {
-			return err
-		}
+// VerifyBurnProof verifies a single burn proof.
+func VerifyBurnProof(p *CoinsProof) error {
+	if err := verifyMerkleRoot(merkleRootHash, p); err != nil {
+		return err
+	}
+
+	if err := verifyScript(p); err != nil {
+		return err
+	}
+
+	if err := verifyPkhMatchesAddress(p.Transaction.TxOut[0].PkScript, [20]byte{}); err != nil {
+		return err
 	}
 
 	return nil

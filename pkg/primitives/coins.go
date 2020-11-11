@@ -1,6 +1,8 @@
 package primitives
 
-import "github.com/golang/snappy"
+import (
+	"github.com/golang/snappy"
+)
 
 // AccountInfo is the information contained into both slices. It represents the account hash and a value.
 type AccountInfo struct {
@@ -12,6 +14,7 @@ type AccountInfo struct {
 type CoinsStateSerializable struct {
 	Balances []*AccountInfo `ssz-max:"2097152"`
 	Nonces   []*AccountInfo `ssz-max:"2097152"`
+	Proofs   [][32]byte     `ssz-max:"2097152"`
 }
 
 func (c *CoinsStateSerializable) Marshal() ([]byte, error) {
@@ -32,8 +35,9 @@ func (c *CoinsStateSerializable) Unmarshal(b []byte) error {
 
 // CoinsState is the state that we use to store accounts balances and Nonces
 type CoinsState struct {
-	Balances map[[20]byte]uint64
-	Nonces   map[[20]byte]uint64
+	Balances       map[[20]byte]uint64
+	Nonces         map[[20]byte]uint64
+	ProofsVerified map[[32]byte]struct{}
 }
 
 // Marshal serialize to bytes the struct
@@ -71,11 +75,15 @@ func (u *CoinsState) Copy() CoinsState {
 	u2 := *u
 	u2.Balances = make(map[[20]byte]uint64)
 	u2.Nonces = make(map[[20]byte]uint64)
+	u2.ProofsVerified = make(map[[32]byte]struct{})
 	for i, c := range u.Balances {
 		u2.Balances[i] = c
 	}
 	for i, c := range u.Nonces {
 		u2.Nonces[i] = c
+	}
+	for k := range u.ProofsVerified {
+		u2.ProofsVerified[k] = struct{}{}
 	}
 	return u2
 }
@@ -90,6 +98,9 @@ func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
 	for _, n := range ser.Nonces {
 		u.Nonces[n.Account] = n.Info
 	}
+	for _, n := range ser.Proofs {
+		u.ProofsVerified[n] = struct{}{}
+	}
 	return
 }
 
@@ -97,11 +108,15 @@ func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
 func (u *CoinsState) ToSerializable() CoinsStateSerializable {
 	var balances []*AccountInfo
 	var nonces []*AccountInfo
+	var proofs [][32]byte
 	for k, v := range u.Balances {
 		balances = append(balances, &AccountInfo{Account: k, Info: v})
 	}
 	for k, v := range u.Nonces {
 		nonces = append(nonces, &AccountInfo{Account: k, Info: v})
 	}
-	return CoinsStateSerializable{Balances: balances, Nonces: nonces}
+	for k := range u.ProofsVerified {
+		proofs = append(proofs, k)
+	}
+	return CoinsStateSerializable{Balances: balances, Nonces: nonces, Proofs: proofs}
 }
