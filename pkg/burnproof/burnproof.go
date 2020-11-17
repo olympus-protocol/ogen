@@ -28,7 +28,7 @@ type CoinsProof struct {
 }
 
 func (c *CoinsProof) Marshal(w io.Writer) error {
-
+	return nil
 }
 
 // Unmarshal decodes the proof from a byte slice.

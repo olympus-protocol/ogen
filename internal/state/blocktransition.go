@@ -330,11 +330,8 @@ func (s *state) ApplyMigrationProof(p *burnproof.CoinsProof) error {
 	u := s.CoinsState
 
 	txHash := p.Transaction.TxHash()
-	hash, err := chainhash.NewHash(txHash[:])
-	if err != nil {
-		return err
-	}
-	if _, ok := u.ProofsVerified[hash]; ok {
+
+	if _, ok := u.ProofsVerified[txHash]; ok {
 		return errors.New("proof already verified")
 	}
 
@@ -344,11 +341,11 @@ func (s *state) ApplyMigrationProof(p *burnproof.CoinsProof) error {
 		sumBalance += uint64(out.Value)
 	}
 
-	// Apply the coin balance to the CoinState
-	u.Balances[p.RedeemAccount] += sumBalance
+	// TODO Apply the coin balance to the CoinState
+	//u.Balances[p.RedeemAccount] += sumBalance
 
 	// Mark the proof as verified
-	u.ProofsVerified[hash] = struct{}{}
+	u.ProofsVerified[txHash] = struct{}{}
 
 	return nil
 }
@@ -1093,9 +1090,9 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", netParams.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
-	if uint64(len(b.MigrationProofs)) > netParams.MaxMigrationsProofsPerBlock {
-		return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxMigrationsProofsPerBlock, len(b.MigrationProofs))
-	}
+	//if uint64(len(b.MigrationProofs)) > netParams.MaxMigrationsProofsPerBlock {
+	//	return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxMigrationsProofsPerBlock, len(b.MigrationProofs))
+	//}
 
 	if len(b.Deposits) > 0 {
 		if err := s.ApplyDeposits(b.Deposits); err != nil {
@@ -1115,11 +1112,11 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		}
 	}
 
-	for _, m := range b.MigrationProofs {
-		if err := s.ApplyMigrationProof(m); err != nil {
-			return err
-		}
-	}
+	//for _, m := range b.MigrationProofs {
+	//	if err := s.ApplyMigrationProof(m); err != nil {
+	//		return err
+	//	}
+	//}
 
 	slotIndex := (b.Header.Slot + netParams.EpochLength - 1) % netParams.EpochLength
 

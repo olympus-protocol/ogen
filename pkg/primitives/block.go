@@ -2,7 +2,6 @@ package primitives
 
 import (
 	"github.com/golang/snappy"
-	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -21,7 +20,6 @@ type Block struct {
 	RANDAOSlashings   []*RANDAOSlashing       `ssz-max:"20"`   // MaxRANDAOSlashingPerBlock   	152 * 20 		= 3040 bytes
 	ProposerSlashings []*ProposerSlashing     `ssz-max:"2"`    // MaxProposerSlashingPerBlock 	984 * 2 		= 1968 bytes
 	GovernanceVotes   []*GovernanceVote       `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
-	MigrationProofs   []*burnproof.CoinsProof `ssz-max:"5"`    // MaxMigrationsProofsPerBlock 	??
 	Signature         [96]byte                `ssz-size:"96"`  // 												= 96 bytes
 	RandaoSignature   [96]byte                `ssz-size:"96"`  // 												= 96 bytes
 }
