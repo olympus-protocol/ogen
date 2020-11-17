@@ -294,11 +294,12 @@ func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (
 	nonce := coinsState.Nonces[account]
 
 	confirmed := decimal.NewFromInt(int64(coinsState.Balances[account])).DivRound(decimal.NewFromInt(1e8), 8)
+
 	lock := decimal.NewFromInt(0)
 
 	for _, v := range s.chain.State().TipState().GetValidatorRegistry() {
 		if v.PayeeAddress == account {
-			lock = lock.Add(decimal.NewFromInt(int64(v.Balance)))
+			lock = lock.Add(decimal.NewFromInt(int64(v.Balance)).DivRound(decimal.NewFromInt(1e8), 8))
 		}
 	}
 
