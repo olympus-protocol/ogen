@@ -22,7 +22,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
-const defaultWalletPath = "m/12381/0/1997/0/0"
+const defaultWalletPath = "m/12381/1997/0/0"
 
 // Wallet is the interface for wallet
 type Wallet interface {
