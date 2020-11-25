@@ -515,7 +515,7 @@ var TestNet = NetworkInitialParams{
 			PrivateKey: "2817a819361017c876a873504828530315aad105ae2edfd0a9c8e8f24af0c51c",
 		},
 	},
-	PremineAddress:  "tlpub17gvgcpd42p00txmf2tq8ktz5tyuvpeusuxcp90",
-	PremineMnemonic: "mercy shuffle cherry solar road moral sleep attend chuckle father canyon race view model valid chalk fog disease vendor sand use hybrid element mirror",
-	GenesisTime:     1603830000,
+	PremineAddress:  "tlpub1wa3kk77yd96tzr3j93fjn4ecudjpz0p6r9vqkp",
+	PremineMnemonic: "industry genius february annual leg autumn reveal unlock pluck rather sustain umbrella fever pattern steel bone dolphin strike water obtain equal bubble perfect claw",
+	GenesisTime:     1606335300,
 }
