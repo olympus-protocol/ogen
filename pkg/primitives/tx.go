@@ -1,7 +1,6 @@
 package primitives
 
 import (
-	"encoding/binary"
 	"errors"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -55,13 +54,10 @@ func (t Tx) FromPubkeyHash() ([20]byte, error) {
 
 // SignatureMessage gets the message the needs to be signed.
 func (t Tx) SignatureMessage() chainhash.Hash {
-	buf := make([]byte, 92)
-	copy(buf[:20], t.To[:])
-	copy(buf[20:], t.FromPublicKey[:])
-	binary.LittleEndian.PutUint64(buf, t.Amount)
-	binary.LittleEndian.PutUint64(buf, t.Fee)
-	binary.LittleEndian.PutUint64(buf, t.Nonce)
-	return chainhash.HashH(buf)
+	cp := t
+	cp.Signature = [96]byte{}
+	b, _ := cp.Marshal()
+	return chainhash.HashH(b)
 }
 
 // GetSignature returns the bls signature of the transaction.
@@ -80,7 +76,6 @@ func (t *Tx) VerifySig() error {
 	sigMsg := t.SignatureMessage()
 
 	sig, err := t.GetSignature()
-
 	if err != nil {
 		return err
 	}
@@ -98,3 +93,5 @@ func (t *Tx) VerifySig() error {
 	}
 	return nil
 }
+
+
