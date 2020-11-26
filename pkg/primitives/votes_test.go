@@ -57,7 +57,7 @@ func TestVoteData(t *testing.T) {
 	assert.Equal(t, uint64(6), d.FirstSlotValid(&testdata.TestParams))
 	assert.Equal(t, uint64(9), d.LastSlotValid(&testdata.TestParams))
 	assert.True(t, d.Equals(d))
-	assert.Equal(t, "1f2fffad96474211ab3b06df31c9657557ec38bc39e0a5aa15e98ac8dc0bdba6", d.Hash().String())
+	assert.Equal(t, "17008d96724b9e850800cab96953e1bcc6013005dfaa0ce6e8d733cc331f63cd", d.Hash().String())
 	assert.False(t, d.IsDoubleVote(d))
 	assert.False(t, d.IsSurroundVote(d))
 	assert.True(t, d.IsDoubleVote(dv))
@@ -240,7 +240,7 @@ func TestMultiValidatorVote(t *testing.T) {
 	copy(sig[:], bls.NewAggregateSignature().Marshal())
 	d.Sig = sig
 
-	assert.Equal(t, "1f2fffad96474211ab3b06df31c9657557ec38bc39e0a5aa15e98ac8dc0bdba6", d.Data.Hash().String())
+	assert.Equal(t, "17008d96724b9e850800cab96953e1bcc6013005dfaa0ce6e8d733cc331f63cd", d.Data.Hash().String())
 	newSig, err := d.Signature()
 	assert.NoError(t, err)
 	assert.NotNil(t, newSig)

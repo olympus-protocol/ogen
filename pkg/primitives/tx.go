@@ -93,5 +93,3 @@ func (t *Tx) VerifySig() error {
 	}
 	return nil
 }
-
-

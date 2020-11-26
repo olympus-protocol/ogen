@@ -115,9 +115,9 @@ func (g *GovernanceVote) Valid() bool {
 // SignatureHash gets the signed part of the hash.
 func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	buf := make([]byte, 116)
-	copy(buf[:], g.Data[:])
-	binary.LittleEndian.PutUint64(buf, g.Type)
-	binary.LittleEndian.PutUint64(buf, g.VoteEpoch)
+	binary.LittleEndian.PutUint64(buf[0:8], g.Type)
+	binary.LittleEndian.PutUint64(buf[8:16], g.VoteEpoch)
+	copy(buf[16:], g.Data[:])
 	return chainhash.HashH(buf)
 }
 

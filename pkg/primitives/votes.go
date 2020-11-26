@@ -3,22 +3,13 @@ package primitives
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	ssz "github.com/ferranbt/fastssz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-var (
-	// ErrorVoteDataSize is returned when a vote data is above MaxVoteDataSize
-	ErrorVoteDataSize = errors.New("vote data too big")
-	// ErrorAcceptedVoteDataSize is returned when a vote data is above MaxAcceptedVoteInfoSize
-	ErrorAcceptedVoteDataSize = errors.New("accepted vote data too big")
 )
 
 // AcceptedVoteInfo is vote data and participation for accepted votes.
@@ -151,14 +142,10 @@ func (v *VoteData) Copy() VoteData {
 
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() chainhash.Hash {
-	var dst []byte
-	dst = ssz.MarshalUint64(dst, v.Slot)
-	dst = ssz.MarshalUint64(dst, v.FromEpoch)
-	dst = append(dst, v.FromHash[:]...)
-	dst = ssz.MarshalUint64(dst, v.ToEpoch)
-	dst = append(dst, v.ToHash[:]...)
-	dst = append(dst, v.BeaconBlockHash[:]...)
-	return chainhash.HashH(dst)
+	cp := v.Copy()
+	cp.Nonce = 0
+	b, _ := cp.Marshal()
+	return chainhash.HashH(b)
 }
 
 // MultiValidatorVote is a vote signed by one or many validators.

@@ -57,7 +57,7 @@ func TestBlocksMerkle(t *testing.T) {
 	err = b.Unmarshal(blockRaw)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "f29a8df6f0d7c9b0de11a170264f63477f5b1e122965d1758b18131f1248c4d0", b.VotesMerkleRoot().String())
+	assert.Equal(t, "32323c0bc53334a74c9cfc4be6c883cccd4001d74f479c50eb4391df6a2fe3d9", b.VotesMerkleRoot().String())
 	assert.Equal(t, "eb60073f9735fe2fbb02676c74325a42372fe1f81cdfee5fc4c5d4c2da861cc9", b.TransactionMerkleRoot().String())
 	assert.Equal(t, "f255f8b292396fe0c662f8d8620731b76c40577948672375dfb915020ddd17cd", b.TransactionMultiMerkleRoot().String())
 	assert.Equal(t, "ea75e992b2855001bfa46a212ad836d2b0f56c5a51f89295889f8ddad7d7af9a", b.DepositMerkleRoot().String())

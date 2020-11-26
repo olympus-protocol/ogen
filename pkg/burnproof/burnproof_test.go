@@ -36,6 +36,6 @@ func TestBurnVerify(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	err = burnproof.VerifyBurn(proofBytes)
+	err = burnproof.VerifyBurn(proofBytes, "12345")
 	assert.NoError(t, err)
 }

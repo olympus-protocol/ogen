@@ -322,7 +322,7 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 
 // ApplyMigrationProof applies a migration proof to the coin state.
 func (s *state) ApplyMigrationProof(p *burnproof.CoinsProof) error {
-	err := burnproof.VerifyBurnProof(p)
+	err := burnproof.VerifyBurnProof(p, "")
 	if err != nil {
 		return err
 	}
