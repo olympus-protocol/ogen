@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"

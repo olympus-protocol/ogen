@@ -60,6 +60,8 @@ type State interface {
 	GetFinalizedEpoch() uint64
 	GetJustifiedEpoch() uint64
 	GetJustifiedEpochHash() chainhash.Hash
+	Transition(primitives.Block) (*State, *primitives.Undo)
+	Undo(primitives.Undo) *State
 }
 
 func (s *state) GetCoinsState() primitives.CoinsState {
