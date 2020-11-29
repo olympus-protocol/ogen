@@ -166,12 +166,14 @@ github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymF
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/ethereum/evmc/v7 v7.4.0 h1:6m8t5uVkop9nOrkIMAKuh571bPBx3R1cywl+SeCM0ms=
+github.com/ethereum/evmc/v7 v7.4.0/go.mod h1:q2Q0rCSUlIkngd+mZwfCzEUbvB0IIopH1+7hcs9QuDg=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0 h1:8xPHl4/q1VyqGIPif1F+1V3Y3lSmrq01EabUW3CoW5s=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/ferranbt/fastssz v0.0.0-20200514094935-99fccaf93472/go.mod h1:LlFXPmgrgVYsuoFDwV8rDJ9tvt1pLQdjKvU1b5IRES0=
-github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3 h1:FnpkCo1TAj/eq0ETLPhAplYYB4KlFQy3kVb8cLludAc=
-github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3/go.mod h1:DyEu2iuLBnb/T51BlsiO3yLYdJC6UbGMrIkqK1KmQxM=
+github.com/ferranbt/fastssz v0.0.0-20201207112544-98a5de30d648 h1:TBgYVQ5wP1iSjg53BnlXibpYzmAZJLsZhOcGDtu0FlQ=
+github.com/ferranbt/fastssz v0.0.0-20201207112544-98a5de30d648/go.mod h1:DyEu2iuLBnb/T51BlsiO3yLYdJC6UbGMrIkqK1KmQxM=
 github.com/flynn/noise v0.0.0-20180327030543-2492fe189ae6 h1:u/UEqS66A5ckRmS4yNpjmVH56sVtS/RfclBAYocb4as=
 github.com/flynn/noise v0.0.0-20180327030543-2492fe189ae6/go.mod h1:1i71OnUq3iUe1ma7Lr6yG6/rjvM3emb6yoL7xLFzcVQ=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=

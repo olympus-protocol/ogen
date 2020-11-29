@@ -31,3 +31,4 @@ sszgen -path ./pkg/primitives/tx_multi.go -include ./pkg/bls/multisig/multisig.g
 sszgen -path ./pkg/primitives/state.go -objs SerializableState -include ./pkg/primitives/coins.go,./pkg/primitives/validator.go,./pkg/primitives/votes.go,./pkg/primitives/governance.go,./pkg/primitives/governance_votes.go,./pkg/bls/multisig/multisig.go
 sszgen -path ./pkg/bls/multisig/multisig.go
 sszgen -path ./pkg/primitives/blocknodedisk.go
+sszgen -path ./pkg/primitives/contract.go

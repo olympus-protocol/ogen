@@ -7,8 +7,9 @@ require (
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/doug-martin/goqu/v9 v9.10.0
+	github.com/ethereum/evmc/v7 v7.4.0
 	github.com/fatih/color v1.9.0
-	github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3
+	github.com/ferranbt/fastssz v0.0.0-20201207112544-98a5de30d648
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobuffalo/envy v1.9.0 // indirect
