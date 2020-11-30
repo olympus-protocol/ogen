@@ -22,6 +22,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
 	github.com/herumi/bls-eth-go-binary v0.0.0-20201027164522-f7dd8401dd57
 	github.com/ipfs/go-ds-leveldb v0.4.2
+	github.com/leaanthony/mewn v0.10.7
 	github.com/leaanthony/slicer v1.5.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/libp2p/go-libp2p v0.11.0
@@ -33,7 +34,6 @@ require (
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/magiconair/properties v1.8.4
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/pkg/browser v0.0.0-20201112035734-206646e67786 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
-	github.com/wailsapp/wails v1.9.1 // indirect
+	github.com/wailsapp/wails v1.9.1
 	github.com/wealdtech/go-eth2-util v1.6.0
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
@@ -55,6 +55,5 @@ require (
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/AlecAivazis/survey.v1 v1.8.8 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
