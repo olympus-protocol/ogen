@@ -1,15 +1,15 @@
 import React, { ChangeEvent } from 'react';
 
-interface Props {
+interface HeaderProps {
     header: string;
 }
 
-interface IState {
+interface HeaderState {
     selected: string;
 }
 
-class Header extends React.Component<Props, IState>{
-    constructor(props: Props) {
+export class Header extends React.Component<HeaderProps, HeaderState>{
+    constructor(props: HeaderProps) {
         super(props);
         this.state = {
             selected: "00",
@@ -43,5 +43,3 @@ class Header extends React.Component<Props, IState>{
         );
     }
 }
-
-export default Header;

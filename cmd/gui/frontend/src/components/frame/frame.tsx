@@ -1,24 +1,24 @@
 import React from 'react';
-import Footer from '../footer/footer';
-import Header from '../header/header';
-import Sidebar from '../sidebar/sidebar';
+import { Footer } from '../footer/footer';
+import { Header } from '../header/header';
+import { Sidebar } from '../sidebar/sidebar';
 
-interface Props {
+interface FrameProps {
     body: object,
     header: string
 }
 
-const Frame: React.FC<Props> = ({ body, header }) => {
-    return (
-        <div id="wrapper">
-            <Sidebar selected={header}/>
-            <div id="wrapper-content">
-                <Header header={header}/>
-                {body}
-                <Footer />
+export class Frame extends React.Component<FrameProps, any> {
+    render() {
+        return (
+            <div id="wrapper">
+                <Sidebar selected={this.props.header}/>
+                <div id="wrapper-content">
+                    <Header header={this.props.header}/>
+                    {this.props.body}
+                    <Footer />
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 }
-
-export default Frame;
