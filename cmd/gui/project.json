@@ -1,0 +1,25 @@
+{
+ "name": "Olympus",
+ "description": "Olympus is a scalable peer to peer electronic cash system",
+ "author": {
+  "name": "Enrique Berrueta",
+  "email": "eabz@polispay.org"
+ },
+ "version": "0.1.0",
+ "binaryname": "olympus",
+ "frontend": {
+  "dir": "frontend",
+  "install": "yarn install",
+  "build": "yarn run build",
+  "bridge": "src",
+  "serve": "yarn run start"
+ },
+ "tags": "",
+ "WailsVersion": "",
+ "CrossCompile": false,
+ "Platform": "",
+ "Architecture": "",
+ "LdFlags": "",
+ "GoPath": "",
+ "UseFirebug": false
+}

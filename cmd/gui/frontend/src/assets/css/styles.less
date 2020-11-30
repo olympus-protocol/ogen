@@ -1,0 +1,651 @@
+@import 'colors.less';
+
+@font-face {
+    font-family: 'All Round Gothic';
+    src        : url('../fonts/AllRoundGothic.ttf');
+}
+
+@font-face {
+    font-family: 'Font Awesome Regular';
+    src        : url('../fonts/FAR.otf');
+}
+
+@font-face {
+    font-family: 'Font Awesome Solid';
+    src        : url('../fonts/FAS.otf');
+}
+
+@font-face {
+    font-family: 'Century Gothic';
+    src        : url('../fonts/GOTHIC.TTF');
+}
+
+#App {
+
+    h1,
+    h2,
+    h3 {
+        font-family: 'All Round Gothic';
+    }
+
+    p {
+        font-family: 'Century Gothic';
+    }
+
+    .fas-icon {
+        font-family: 'Font Awesome Solid';
+    }
+
+    .far-icon {
+        font-family: 'Font Awesome Regular';
+    }
+
+    .abs-center {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+    }
+
+    .btn {
+        font-family: 'All Round Gothic' !important;
+    }
+
+    .button-icon {
+        max-height: 2em;
+    }
+
+    .btn-white {
+        background-color: white;
+        color           : @main-blue;
+    }
+
+    .btn-blue {
+        background-color: @main-blue;
+        color           : white;
+    }
+
+    .dropzone {
+        background-color: @light-gray;
+        padding         : 3em;
+        border-radius   : 1em;
+        border          : 3px dashed black;
+
+        p {
+            margin: 0;
+        }
+    }
+
+    .code-box {
+        background-color: #e8e8e8;
+        padding         : 1em;
+    }
+
+    .thead-blue {
+        background-color: @main-blue;
+        color           : white;
+
+    }
+
+    #wrapper {
+        align-items     : stretch;
+        background-color: #f5f5f5;
+        padding-left    : 250px;
+        font-family     : 'Century Gothic';
+        height          : 100vh;
+
+        @media only screen and (max-width: 1200px) {
+            padding-left: 75px;
+        }
+
+
+
+        .header {
+            span {
+                margin-left: auto;
+            }
+
+            .wallet-select {
+                margin-left: auto;
+
+                select {
+                    border          : none;
+                    background-color: @main-blue;
+                    color           : white;
+                }
+            }
+        }
+
+        .sidebar {
+            position        : fixed;
+            left            : 250px;
+            margin-left     : -250px;
+            background-color: @light-blue;
+            min-height      : 100vh;
+            width           : 250px;
+
+            @media only screen and (max-width: 1200px) {
+
+                width: 75px;
+
+            }
+
+            .sidebar-logo {
+                background-color: #44569D;
+
+                @media only screen and (max-width: 1200px) {
+                    display: none;
+                }
+            }
+
+            .sidebar-logo-alt {
+                background-color: #44569D;
+                display         : none;
+
+                @media only screen and (max-width: 1200px) {
+                    display: block;
+                }
+            }
+
+            .brand {
+                max-height: 40px;
+                margin    : 1em;
+            }
+
+            ul {
+
+                font-family: 'All Round Gothic';
+                list-style : none;
+                color      : white;
+                padding    : 0;
+                margin     : 1em 0;
+
+                a {
+                    color          : white;
+                    text-decoration: none;
+                    transition: all 0.1s;
+                }
+
+                .sidebar-li {
+                    width     : 100%;
+                    display: block;
+                    padding: 1em;
+
+                    &:hover {
+                        background-color: @main-blue-light;
+                    }
+
+                    span {
+                        margin-right: 0.5em;
+                    }
+
+                    .fas-icon {
+                        font-size: 1.25em;
+                    }
+
+                    @media only screen and (max-width: 1200px) {
+                        span {
+                            margin-left: 0.5em;
+                        }
+
+                        .sidebar-li-text {
+                            display: none;
+                        }
+                    }
+                }
+
+                .sidebar-li-active {
+                    background-color: @main-blue;
+                    border-left     : white 3px solid;
+                }
+            }
+        }
+
+        #wrapper-content {
+            word-wrap: break-word;
+
+            .header {
+                font-family     : 'All Round Gothic';
+                min-height      : 72px;
+                background-color: @main-blue;
+                padding         : 1em;
+                color           : white;
+                font-size       : 1.25em;
+            }
+
+            .wrapper-body {
+                position: relative;
+            }
+
+            .page-container {
+                position        : relative;
+                margin          : 1em;
+                border-radius   : 15px;
+                box-shadow      : 4px 4px 4px rgba(170, 170, 170, 25);
+                background-color: white;
+            }
+
+            footer {
+                font-family     : 'All Round Gothic';
+                color           : white;
+                position        : fixed;
+                bottom          : 0;
+                width           : 100%;
+                padding         : 1em;
+                left            : 0;
+                background-color: @main-blue;
+                display         : flex;
+                justify-content : space-between;
+            }
+        }
+    }
+
+    #dashboard {
+        .dashboard-container {
+            padding: 1em;
+        }
+
+        .dashboard-item {
+            box-shadow   : 4px 4px 4px rgba(170, 170, 170, 25);
+            margin       : 1em;
+            padding      : 1em;
+            border-radius: 15px;
+            height       : 90%;
+        }
+
+        .dashboard-item-alt {
+            margin       : 1em;
+            border-radius: 15px;
+            height       : 90%;
+        }
+
+        .dashboard-balance {
+            background-color: @main-blue;
+            color           : white;
+            text-align      : center;
+            font-family     : 'All Round Gothic';
+
+            .dashboard-balance-info {
+                margin: 1em;
+            }
+        }
+
+        .dashboard-dao {
+            background-color: @light-gray;
+        }
+
+        .dashboard-txhistory {
+            text-align: center;
+        }
+
+        .dashboard-news {
+            h3 {
+                text-align: center;
+            }
+
+            .dashboard-news-item-main {
+                @media only screen and (max-width: 1200px) {
+                    flex-direction: column;
+                }
+
+                img {
+                    margin       : 1em;
+                    max-width    : 250px;
+                    border-radius: 15px;
+                    box-shadow   : 4px 4px 4px rgba(170, 170, 170, 25);
+                }
+
+                display: flex;
+
+                .dashboard-news-item-main-text {
+                    padding: 1em;
+
+                }
+
+                .dashboard-news-item-main-title {
+                    font-family: 'All Round Gothic';
+                    font-size  : 1.75em;
+                }
+            }
+
+            .dashboard-news-item {
+                width          : 100%;
+                margin         : 0.5em 1em;
+                display        : flex;
+                justify-content: space-between;
+
+                @media only screen and (max-width: 1200px) {
+                    flex-direction: column;
+                }
+
+                .dashboard-news-item-title {
+                    font-family: 'All Round Gothic';
+                }
+            }
+        }
+    }
+
+    #wallet {
+        .wallet-tabs {
+            width      : 100%;
+            text-align : center;
+            color      : white;
+            font-family: 'All Round Gothic';
+            display    : flex;
+
+            @media only screen and (max-width: 1200px) {
+                flex-direction: column;
+            }
+
+            .wallet-tab-1 {
+                border-radius   : 15px 0px 0 0;
+                padding         : 1em;
+                background-color: @light-blue;
+                width           : 33.33%;
+                transition      : all 0.1s;
+
+                @media only screen and (max-width: 1200px) {
+                    width        : 100%;
+                    border-radius: 15px 15px 0 0;
+                }
+            }
+
+            .wallet-tab-2 {
+                padding         : 1em;
+                background-color: @light-blue;
+                width           : 33.33%;
+                transition      : all 0.1s;
+
+                @media only screen and (max-width: 1200px) {
+                    width        : 100%;
+                    border-radius: 0;
+                }
+            }
+
+            .wallet-tab-3 {
+                border-radius   : 0 15px 0 0;
+                padding         : 1em;
+                background-color: @light-blue;
+                width           : 33.33%;
+                transition      : all 0.1s;
+
+                @media only screen and (max-width: 1200px) {
+                    width        : 100%;
+                    border-radius: 0;
+                }
+            }
+
+            .wallet-tab-active {
+                background-color: @main-blue;
+            }
+        }
+
+        .wallet-container {
+            padding: 1em;
+        }
+
+        #tx-history {
+            table {
+                text-align: center;
+            }
+
+            .export-btn {
+                justify-content: flex-end;
+                margin         : 1em;
+
+            }
+        }
+
+        #send {
+            background-color: @main-blue;
+            color           : white;
+            border-radius   : 0 0 15px 15px;
+            text-align      : center;
+
+            .send-row {
+                margin: 1.5em 0;
+            }
+
+            input {
+                background-color: @main-blue;
+                color           : #f5f5f5;
+                border          : white 1px solid;
+                border-radius   : 10px;
+                padding         : 0.25em;
+            }
+
+            .send-address {
+                input {
+                    min-width: 250px;
+                }
+            }
+
+            .send-info {
+
+                .send-info-title {
+                    font-family : 'All Round Gothic';
+                    font-size   : 1.25em;
+                    margin-right: 0.5em;
+                }
+
+                .send-info-item {
+                    margin-right: 1em;
+                }
+            }
+
+            .btn-send {
+
+                font-size: 1.5em;
+                min-width: 250px;
+            }
+
+        }
+
+        #receive {
+            text-align: center;
+
+            .receive-img {
+                background-color: @main-gray;
+                border-radius   : 15px;
+                padding         : 0.5em;
+                margin          : 1em;
+                max-width       : 195px;
+            }
+
+            .receive-row {
+                display      : flex;
+                margin       : 1em;
+                text-overflow: ellipsis;
+
+                @media only screen and (max-width: 1200px) {
+                    flex-direction: column;
+                }
+
+                .receive-amount {
+                    min-height: 39px;
+                    max-width : 200px;
+                }
+            }
+        }
+    }
+
+    #settings {
+        .settings-container {
+            padding: 1em;
+
+            h3 {
+                padding: 0.5em;
+            }
+
+            .settings-item {
+                display         : flex;
+                justify-content : space-between;
+                padding         : 0.5em 1em;
+                background-color: @light-gray;
+                margin          : 1em 0;
+                select {
+                    background: none;
+                    border: none;
+                }
+            }
+        }
+    }
+
+    #network {
+        padding: 1em;
+
+        .network-header {
+            display        : flex;
+            justify-content: space-between;
+            padding        : 1em;
+        }
+
+        .network-info {
+            background-color: @light-gray;
+            margin          : 0 1em;
+            padding         : 1em;
+            width           : 100%;
+            border-radius   : 1em;
+            font-size       : 1.25em;
+
+            p {
+                margin: 0;
+            }
+
+            span {
+                font-family: 'All Round Gothic';
+                font-size  : 1.5em;
+                margin-left: 0.5em;
+            }
+        }
+
+        .network-summary {
+            text-align : center;
+            font-size  : 1.25em;
+            font-family: 'All Round Gothic';
+            height     : 100%;
+
+            p {
+                font-family: 'All Round Gothic';
+            }
+
+            .vsum-a {
+                margin: 0 1em;
+                color : #06D6A0;
+            }
+
+            .vsum-s {
+                margin: 0 1em;
+                color : #FFAD05;
+            }
+
+            .vsum-e {
+                margin: 0 1em;
+                color : #BB4430;
+            }
+        }
+
+        .validators {
+            margin: 1em 0;
+
+            h3 {
+                margin: 0.5em;
+            }
+
+            .validator {
+                margin          : 0.5em 0;
+                background-color: @main-blue;
+                padding         : 0.5em 1.5em;
+                border-radius   : 1em;
+                color           : white;
+                font-size       : 1.5em;
+
+                .validator-title {
+                    font-family : 'All Round Gothic';
+                    margin-right: 0.5em;
+                }
+
+                .validator-status {
+                    justify-content: flex-end;
+                }
+
+                .validator-active {
+                    background-color: #06D6A0;
+                    height          : 2em;
+                    width           : 2em;
+                    border-radius   : 50%;
+                }
+
+                .validator-starting {
+                    background-color: #FFAD05;
+                    height          : 2em;
+                    width           : 2em;
+                    border-radius   : 50%;
+                }
+
+                .validator-error {
+                    background-color: #BB4430;
+                    height          : 2em;
+                    width           : 2em;
+                    border-radius   : 50%;
+                }
+            }
+
+        }
+    }
+
+    .modal-container {
+        border-radius: 1em;
+        box-shadow   : 4px 4px 4px rgba(170, 170, 170, 25);
+
+        .add-btn {
+            margin: 0.5em;
+        }
+
+        .modal-header {
+            background-color: @main-blue;
+            padding         : 1em;
+            color           : white;
+            border-radius   : 1em 1em 0 0;
+            font-family     : 'All Round Gothic';
+
+            span {
+                margin-left: auto;
+                font-size  : 1.5em;
+            }
+        }
+
+        .modal-content {
+            padding   : 1em;
+            border    : none;
+            text-align: center;
+
+            .wallet-name {
+                min-width: 350px;
+            }
+
+            input {
+                text-align: center;
+                margin    : 0.5em;
+            }
+
+            textarea {
+                margin          : 2em;
+                resize          : none;
+                background-color: @light-gray;
+            }
+        }
+
+        .modal-bottom-button {
+            background-color: @main-blue;
+            color           : white;
+            padding         : 0.75em;
+            border-radius   : 0 0 1em 1em;
+            border          : none;
+            width           : 100%;
+            font-size       : 1.25em;
+            font-family     : 'All Round Gothic';
+            text-align      : center;
+            cursor          : pointer;
+        }
+    }
+}

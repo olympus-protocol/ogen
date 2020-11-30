@@ -1,0 +1,528 @@
+@font-face {
+  font-family: 'All Round Gothic';
+  src: url('../fonts/AllRoundGothic.ttf');
+}
+@font-face {
+  font-family: 'Font Awesome Regular';
+  src: url('../fonts/FAR.otf');
+}
+@font-face {
+  font-family: 'Font Awesome Solid';
+  src: url('../fonts/FAS.otf');
+}
+@font-face {
+  font-family: 'Century Gothic';
+  src: url('../fonts/GOTHIC.TTF');
+}
+#App h1,
+#App h2,
+#App h3 {
+  font-family: 'All Round Gothic';
+}
+#App p {
+  font-family: 'Century Gothic';
+}
+#App .fas-icon {
+  font-family: 'Font Awesome Solid';
+}
+#App .far-icon {
+  font-family: 'Font Awesome Regular';
+}
+#App .abs-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#App .btn {
+  font-family: 'All Round Gothic' !important;
+}
+#App .button-icon {
+  max-height: 2em;
+}
+#App .btn-white {
+  background-color: white;
+  color: #384b97;
+}
+#App .btn-blue {
+  background-color: #384b97;
+  color: white;
+}
+#App .dropzone {
+  background-color: #f5f5f5;
+  padding: 3em;
+  border-radius: 1em;
+  border: 3px dashed black;
+}
+#App .dropzone p {
+  margin: 0;
+}
+#App .code-box {
+  background-color: #e8e8e8;
+  padding: 1em;
+}
+#App .thead-blue {
+  background-color: #384b97;
+  color: white;
+}
+#App #wrapper {
+  align-items: stretch;
+  background-color: #f5f5f5;
+  padding-left: 250px;
+  font-family: 'Century Gothic';
+  height: 100vh;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wrapper {
+    padding-left: 75px;
+  }
+}
+#App #wrapper .header span {
+  margin-left: auto;
+}
+#App #wrapper .header .wallet-select {
+  margin-left: auto;
+}
+#App #wrapper .header .wallet-select select {
+  border: none;
+  background-color: #384b97;
+  color: white;
+}
+#App #wrapper .sidebar {
+  position: fixed;
+  left: 250px;
+  margin-left: -250px;
+  background-color: #6A79B1;
+  min-height: 100vh;
+  width: 250px;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wrapper .sidebar {
+    width: 75px;
+  }
+}
+#App #wrapper .sidebar .sidebar-logo {
+  background-color: #44569D;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wrapper .sidebar .sidebar-logo {
+    display: none;
+  }
+}
+#App #wrapper .sidebar .sidebar-logo-alt {
+  background-color: #44569D;
+  display: none;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wrapper .sidebar .sidebar-logo-alt {
+    display: block;
+  }
+}
+#App #wrapper .sidebar .brand {
+  max-height: 40px;
+  margin: 1em;
+}
+#App #wrapper .sidebar ul {
+  font-family: 'All Round Gothic';
+  list-style: none;
+  color: white;
+  padding: 0;
+  margin: 1em 0;
+}
+#App #wrapper .sidebar ul a {
+  color: white;
+  text-decoration: none;
+  transition: all 0.1s;
+}
+#App #wrapper .sidebar ul .sidebar-li {
+  width: 100%;
+  display: block;
+  padding: 1em;
+}
+#App #wrapper .sidebar ul .sidebar-li:hover {
+  background-color: #44569D;
+}
+#App #wrapper .sidebar ul .sidebar-li span {
+  margin-right: 0.5em;
+}
+#App #wrapper .sidebar ul .sidebar-li .fas-icon {
+  font-size: 1.25em;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wrapper .sidebar ul .sidebar-li span {
+    margin-left: 0.5em;
+  }
+  #App #wrapper .sidebar ul .sidebar-li .sidebar-li-text {
+    display: none;
+  }
+}
+#App #wrapper .sidebar ul .sidebar-li-active {
+  background-color: #384b97;
+  border-left: white 3px solid;
+}
+#App #wrapper #wrapper-content {
+  word-wrap: break-word;
+}
+#App #wrapper #wrapper-content .header {
+  font-family: 'All Round Gothic';
+  min-height: 72px;
+  background-color: #384b97;
+  padding: 1em;
+  color: white;
+  font-size: 1.25em;
+}
+#App #wrapper #wrapper-content .wrapper-body {
+  position: relative;
+}
+#App #wrapper #wrapper-content .page-container {
+  position: relative;
+  margin: 1em;
+  border-radius: 15px;
+  box-shadow: 4px 4px 4px #aaaaaa;
+  background-color: white;
+}
+#App #wrapper #wrapper-content footer {
+  font-family: 'All Round Gothic';
+  color: white;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: 1em;
+  left: 0;
+  background-color: #384b97;
+  display: flex;
+  justify-content: space-between;
+}
+#App #dashboard .dashboard-container {
+  padding: 1em;
+}
+#App #dashboard .dashboard-item {
+  box-shadow: 4px 4px 4px #aaaaaa;
+  margin: 1em;
+  padding: 1em;
+  border-radius: 15px;
+  height: 90%;
+}
+#App #dashboard .dashboard-item-alt {
+  margin: 1em;
+  border-radius: 15px;
+  height: 90%;
+}
+#App #dashboard .dashboard-balance {
+  background-color: #384b97;
+  color: white;
+  text-align: center;
+  font-family: 'All Round Gothic';
+}
+#App #dashboard .dashboard-balance .dashboard-balance-info {
+  margin: 1em;
+}
+#App #dashboard .dashboard-dao {
+  background-color: #f5f5f5;
+}
+#App #dashboard .dashboard-txhistory {
+  text-align: center;
+}
+#App #dashboard .dashboard-news h3 {
+  text-align: center;
+}
+#App #dashboard .dashboard-news .dashboard-news-item-main {
+  display: flex;
+}
+@media only screen and (max-width: 1200px) {
+  #App #dashboard .dashboard-news .dashboard-news-item-main {
+    flex-direction: column;
+  }
+}
+#App #dashboard .dashboard-news .dashboard-news-item-main img {
+  margin: 1em;
+  max-width: 250px;
+  border-radius: 15px;
+  box-shadow: 4px 4px 4px #aaaaaa;
+}
+#App #dashboard .dashboard-news .dashboard-news-item-main .dashboard-news-item-main-text {
+  padding: 1em;
+}
+#App #dashboard .dashboard-news .dashboard-news-item-main .dashboard-news-item-main-title {
+  font-family: 'All Round Gothic';
+  font-size: 1.75em;
+}
+#App #dashboard .dashboard-news .dashboard-news-item {
+  width: 100%;
+  margin: 0.5em 1em;
+  display: flex;
+  justify-content: space-between;
+}
+@media only screen and (max-width: 1200px) {
+  #App #dashboard .dashboard-news .dashboard-news-item {
+    flex-direction: column;
+  }
+}
+#App #dashboard .dashboard-news .dashboard-news-item .dashboard-news-item-title {
+  font-family: 'All Round Gothic';
+}
+#App #wallet .wallet-tabs {
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-family: 'All Round Gothic';
+  display: flex;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wallet .wallet-tabs {
+    flex-direction: column;
+  }
+}
+#App #wallet .wallet-tabs .wallet-tab-1 {
+  border-radius: 15px 0px 0 0;
+  padding: 1em;
+  background-color: #6A79B1;
+  width: 33.33%;
+  transition: all 0.1s;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wallet .wallet-tabs .wallet-tab-1 {
+    width: 100%;
+    border-radius: 15px 15px 0 0;
+  }
+}
+#App #wallet .wallet-tabs .wallet-tab-2 {
+  padding: 1em;
+  background-color: #6A79B1;
+  width: 33.33%;
+  transition: all 0.1s;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wallet .wallet-tabs .wallet-tab-2 {
+    width: 100%;
+    border-radius: 0;
+  }
+}
+#App #wallet .wallet-tabs .wallet-tab-3 {
+  border-radius: 0 15px 0 0;
+  padding: 1em;
+  background-color: #6A79B1;
+  width: 33.33%;
+  transition: all 0.1s;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wallet .wallet-tabs .wallet-tab-3 {
+    width: 100%;
+    border-radius: 0;
+  }
+}
+#App #wallet .wallet-tabs .wallet-tab-active {
+  background-color: #384b97;
+}
+#App #wallet .wallet-container {
+  padding: 1em;
+}
+#App #wallet #tx-history table {
+  text-align: center;
+}
+#App #wallet #tx-history .export-btn {
+  justify-content: flex-end;
+  margin: 1em;
+}
+#App #wallet #send {
+  background-color: #384b97;
+  color: white;
+  border-radius: 0 0 15px 15px;
+  text-align: center;
+}
+#App #wallet #send .send-row {
+  margin: 1.5em 0;
+}
+#App #wallet #send input {
+  background-color: #384b97;
+  color: #f5f5f5;
+  border: white 1px solid;
+  border-radius: 10px;
+  padding: 0.25em;
+}
+#App #wallet #send .send-address input {
+  min-width: 250px;
+}
+#App #wallet #send .send-info .send-info-title {
+  font-family: 'All Round Gothic';
+  font-size: 1.25em;
+  margin-right: 0.5em;
+}
+#App #wallet #send .send-info .send-info-item {
+  margin-right: 1em;
+}
+#App #wallet #send .btn-send {
+  font-size: 1.5em;
+  min-width: 250px;
+}
+#App #wallet #receive {
+  text-align: center;
+}
+#App #wallet #receive .receive-img {
+  background-color: #c4c4c4;
+  border-radius: 15px;
+  padding: 0.5em;
+  margin: 1em;
+  max-width: 195px;
+}
+#App #wallet #receive .receive-row {
+  display: flex;
+  margin: 1em;
+  text-overflow: ellipsis;
+}
+@media only screen and (max-width: 1200px) {
+  #App #wallet #receive .receive-row {
+    flex-direction: column;
+  }
+}
+#App #wallet #receive .receive-row .receive-amount {
+  min-height: 39px;
+  max-width: 200px;
+}
+#App #settings .settings-container {
+  padding: 1em;
+}
+#App #settings .settings-container h3 {
+  padding: 0.5em;
+}
+#App #settings .settings-container .settings-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5em 1em;
+  background-color: #f5f5f5;
+  margin: 1em 0;
+}
+#App #settings .settings-container .settings-item select {
+  background: none;
+  border: none;
+}
+#App #network {
+  padding: 1em;
+}
+#App #network .network-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 1em;
+}
+#App #network .network-info {
+  background-color: #f5f5f5;
+  margin: 0 1em;
+  padding: 1em;
+  width: 100%;
+  border-radius: 1em;
+  font-size: 1.25em;
+}
+#App #network .network-info p {
+  margin: 0;
+}
+#App #network .network-info span {
+  font-family: 'All Round Gothic';
+  font-size: 1.5em;
+  margin-left: 0.5em;
+}
+#App #network .network-summary {
+  text-align: center;
+  font-size: 1.25em;
+  font-family: 'All Round Gothic';
+  height: 100%;
+}
+#App #network .network-summary p {
+  font-family: 'All Round Gothic';
+}
+#App #network .network-summary .vsum-a {
+  margin: 0 1em;
+  color: #06D6A0;
+}
+#App #network .network-summary .vsum-s {
+  margin: 0 1em;
+  color: #FFAD05;
+}
+#App #network .network-summary .vsum-e {
+  margin: 0 1em;
+  color: #BB4430;
+}
+#App #network .validators {
+  margin: 1em 0;
+}
+#App #network .validators h3 {
+  margin: 0.5em;
+}
+#App #network .validators .validator {
+  margin: 0.5em 0;
+  background-color: #384b97;
+  padding: 0.5em 1.5em;
+  border-radius: 1em;
+  color: white;
+  font-size: 1.5em;
+}
+#App #network .validators .validator .validator-title {
+  font-family: 'All Round Gothic';
+  margin-right: 0.5em;
+}
+#App #network .validators .validator .validator-status {
+  justify-content: flex-end;
+}
+#App #network .validators .validator .validator-active {
+  background-color: #06D6A0;
+  height: 2em;
+  width: 2em;
+  border-radius: 50%;
+}
+#App #network .validators .validator .validator-starting {
+  background-color: #FFAD05;
+  height: 2em;
+  width: 2em;
+  border-radius: 50%;
+}
+#App #network .validators .validator .validator-error {
+  background-color: #BB4430;
+  height: 2em;
+  width: 2em;
+  border-radius: 50%;
+}
+#App .modal-container {
+  border-radius: 1em;
+  box-shadow: 4px 4px 4px #aaaaaa;
+}
+#App .modal-container .add-btn {
+  margin: 0.5em;
+}
+#App .modal-container .modal-header {
+  background-color: #384b97;
+  padding: 1em;
+  color: white;
+  border-radius: 1em 1em 0 0;
+  font-family: 'All Round Gothic';
+}
+#App .modal-container .modal-header span {
+  margin-left: auto;
+  font-size: 1.5em;
+}
+#App .modal-container .modal-content {
+  padding: 1em;
+  border: none;
+  text-align: center;
+}
+#App .modal-container .modal-content .wallet-name {
+  min-width: 350px;
+}
+#App .modal-container .modal-content input {
+  text-align: center;
+  margin: 0.5em;
+}
+#App .modal-container .modal-content textarea {
+  margin: 2em;
+  resize: none;
+  background-color: #f5f5f5;
+}
+#App .modal-container .modal-bottom-button {
+  background-color: #384b97;
+  color: white;
+  padding: 0.75em;
+  border-radius: 0 0 1em 1em;
+  border: none;
+  width: 100%;
+  font-size: 1.25em;
+  font-family: 'All Round Gothic';
+  text-align: center;
+  cursor: pointer;
+}

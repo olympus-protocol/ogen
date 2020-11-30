@@ -1,0 +1,41 @@
+{
+  "name": "olympus",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@types/node": "14.14.10",
+    "@types/react": "17.0.0",
+    "@types/react-dom": "17.0.0",
+    "@types/react-router-dom": "5.1.6",
+    "bootstrap": "4.5.3",
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
+    "react-dropzone": "11.2.4",
+    "react-router-dom": "5.2.0",
+    "redux-form": "8.3.7",
+    "typescript": "4.1.2",
+    "wails-react-scripts": "3.0.1-2",
+    "@wailsapp/runtime": "1.1.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
