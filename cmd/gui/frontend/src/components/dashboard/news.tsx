@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class NewsComponent extends React.Component<any, any> {
+export default class NewsComponent extends React.Component<any, any> {
     render() {
         return (
             <div className="abs-center">

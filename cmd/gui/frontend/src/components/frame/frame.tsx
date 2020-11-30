@@ -8,7 +8,7 @@ interface FrameProps {
     header: string
 }
 
-export class Frame extends React.Component<FrameProps, any> {
+export default class Frame extends React.Component<FrameProps, any> {
     render() {
         return (
             <div id="wrapper">

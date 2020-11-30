@@ -3,7 +3,7 @@ interface Props {
 
 }
 
-const TxHistory: React.FC<Props> = ({ }) => {
+const TxHistory: React.FC<Props> = () => {
     return (
         <div id="receive" className="wallet-container abs-center">
             <div>

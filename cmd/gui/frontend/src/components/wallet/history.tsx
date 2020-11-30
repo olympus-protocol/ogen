@@ -4,7 +4,7 @@ interface Props {
 
 }
 
-const History: React.FC<Props> = ({ }) => {
+const History: React.FC<Props> = () => {
     return (
         <div id="tx-history" className="wallet-container">
             <div className="input-group mb-3">

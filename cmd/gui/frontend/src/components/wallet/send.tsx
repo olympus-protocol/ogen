@@ -4,7 +4,7 @@ interface Props {
 
 }
 
-const Send: React.FC<Props> = ({ }) => {
+const Send: React.FC<Props> = () => {
     return (
         <div id="send" className="wallet-container">
             <div className="send-row">

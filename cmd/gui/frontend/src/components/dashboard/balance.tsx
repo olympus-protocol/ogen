@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class BalanceComponent extends React.Component<any, any> {
+export default class BalanceComponent extends React.Component<any, any> {
     render() {
         return (
             <div className="dashboard-item dashboard-balance abs-center">

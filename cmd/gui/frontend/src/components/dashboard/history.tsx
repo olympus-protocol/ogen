@@ -1,6 +1,6 @@
 import React from 'react';
 
-export class HistoryComponent extends React.Component<any, any> {
+export default class HistoryComponent extends React.Component<any, any> {
     render() {
         return (
             <div className="dashboard-txhistory dashboard-item-alt">

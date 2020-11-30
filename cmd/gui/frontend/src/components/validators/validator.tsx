@@ -7,8 +7,9 @@ interface ValidatorProps {
     status: string
 }
 
-export class Validator extends React.Component<ValidatorProps, any> {
+export default class Validator extends React.Component<ValidatorProps, any> {
     render() {
+        const { status } = this.props
         return (
             <div className="col-lg-6">
                 <div className="validator">
