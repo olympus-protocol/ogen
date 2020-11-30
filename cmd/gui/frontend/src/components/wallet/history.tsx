@@ -4,7 +4,7 @@ interface Props {
 
 }
 
-const TxHistory: React.FC<Props> = ({ }) => {
+const History: React.FC<Props> = ({ }) => {
     return (
         <div id="tx-history" className="wallet-container">
             <div className="input-group mb-3">
@@ -84,4 +84,4 @@ const TxHistory: React.FC<Props> = ({ }) => {
     );
 }
 
-export default TxHistory;
+export default History;

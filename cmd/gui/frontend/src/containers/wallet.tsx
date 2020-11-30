@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import AppFrame from '../components/common/AppFrame';
-import TxHistory from '../components/Wallet/TxHistory';
-import Receive from '../components/Wallet/Receive';
-import Send from '../components/Wallet/Send';
+import Frame from '../components/frame/frame';
+import History from '../components/wallet/history';
+import Receive from '../components/wallet/receive';
+import Send from '../components/wallet/send';
 
 interface IState {
     activeTab: number,
@@ -11,7 +11,7 @@ interface IState {
     tab3: string,
 }
 
-class WalletContainer extends Component<{}, IState> {
+class Wallet extends Component<{}, IState> {
 
     constructor(props: any) {
         super(props);
@@ -83,7 +83,7 @@ class WalletContainer extends Component<{}, IState> {
                 </div>
                 {
                     this.state.activeTab === 0 ?
-                        <TxHistory />
+                        <History />
                         : this.state.activeTab === 1 ?
                             <Send />
                             : this.state.activeTab === 2 ?
@@ -93,8 +93,8 @@ class WalletContainer extends Component<{}, IState> {
         );
     }
     render() {
-        return <AppFrame body={this.renderBody()} header={"Wallet"} />
+        return <Frame body={this.renderBody()} header={"wallet"} />
     }
 }
 
-export default WalletContainer;
+export default Wallet;

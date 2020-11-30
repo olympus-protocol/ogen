@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import AppFrame from '../components/common/AppFrame';
+import Frame from '../components/frame/frame';
 
-class SettingsContainer extends Component {
+class Settings extends Component {
     renderBody() {
         return (
             <div id="settings" className="page-container">
@@ -43,9 +43,9 @@ class SettingsContainer extends Component {
     }
     render() {
         return (
-            <AppFrame body={this.renderBody()} header={"Settings"} />
+            <Frame body={this.renderBody()} header={"Settings"} />
         );
     }
 }
 
-export default SettingsContainer;
+export default Settings;

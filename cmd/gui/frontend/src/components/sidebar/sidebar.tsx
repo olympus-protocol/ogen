@@ -1,23 +1,21 @@
 import React from 'react';
-import logo from 'assets/img/olympus-logo.png';
-import logoAlt from 'assets/img/olympus-logo-alt.png';
 import { NavLink } from "react-router-dom";
 
 interface Props {
     selected: string
 }
 
-const AppSidebar: React.FC<Props> = ({ selected }) => {
+const Sidebar: React.FC<Props> = ({ selected }) => {
     return (
         <div className="sidebar">
             <NavLink exact to="/">
                 <div className="sidebar-logo abs-center">
-                    <img className="brand" src={logo} alt="" />
+                    <img className="brand" src={"/assets/img/olympus-logo.png"} alt="" />
                 </div>
             </NavLink>
 
             <div className="sidebar-logo-alt abs-center">
-                <img className="brand" src={logoAlt} alt="" />
+                <img className="brand" src={"/assets/img/olympus.png"} alt="" />
             </div>
             <ul>
                 <NavLink exact to="/" className="sidebar-li" activeClassName="sidebar-li-active">
@@ -40,4 +38,4 @@ const AppSidebar: React.FC<Props> = ({ selected }) => {
     );
 }
 
-export default AppSidebar;
+export default Sidebar;

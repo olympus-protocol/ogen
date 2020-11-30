@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'All Round Gothic';
-  src: url('../fonts/AllRoundGothic.ttf');
+  src: url('../fonts/all-round-gothic.ttf');
 }
 @font-face {
   font-family: 'Font Awesome Regular';
@@ -12,7 +12,7 @@
 }
 @font-face {
   font-family: 'Century Gothic';
-  src: url('../fonts/GOTHIC.TTF');
+  src: url('../fonts/gothic.ttf');
 }
 #App h1,
 #App h2,

@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import AppFrame from '../components/common/AppFrame';
-import Balance from '../components/Dashboard/Balance';
-import DAO from '../components/Dashboard/DAO';
-import News from '../components/Dashboard/News';
-import TxHistory from '../components/Dashboard/TxHistory';
+import Frame from '../components/frame/frame';
+import Balance from '../components/dashboard/balance';
+import Dao from '../components/dashboard/dao';
+import News from '../components/dashboard/news';
+import History from '../components/dashboard/history';
 
 class DashboardContainer extends Component {
     renderBody() {
@@ -15,13 +15,13 @@ class DashboardContainer extends Component {
                             <Balance />
                         </div>
                         <div className="col-lg-6">
-                            <DAO />
+                            <Dao />
                         </div>
                     </div>
 
                     <div className="row">
                         <div className="col-lg-6">
-                            <TxHistory />
+                            <History />
                         </div>
                         <div className="col-lg-6">
                             <News />
@@ -33,7 +33,7 @@ class DashboardContainer extends Component {
     }
     render() {
         return (
-            <AppFrame body={this.renderBody()} header={"Dashboard"} />
+            <Frame body={this.renderBody()} header={"dashboard"} />
         );
     }
 }

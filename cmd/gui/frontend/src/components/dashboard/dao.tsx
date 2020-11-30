@@ -4,7 +4,7 @@ interface Props {
 
 }
 
-const DAO: React.FC<Props> = ({ }) => {
+const Dao: React.FC<Props> = ({ }) => {
     return(
         <div className="dashboard-item dashboard-dao abs-center">
             <h1>TBD CONTENT</h1>
@@ -12,4 +12,4 @@ const DAO: React.FC<Props> = ({ }) => {
     );
 }
 
-export default DAO;
+export default Dao;

@@ -4,7 +4,7 @@ interface Props {
 
 }
 
-const AppFooter: React.FC<Props> = ({ }) => {
+const Footer: React.FC<Props> = ({ }) => {
     return (
         <footer>
             <span>Olympus vX.XX</span>
@@ -13,4 +13,4 @@ const AppFooter: React.FC<Props> = ({ }) => {
     );
 }
 
-export default AppFooter;
+export default Footer;

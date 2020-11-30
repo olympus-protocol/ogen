@@ -1,6 +1,6 @@
 import React from 'react';
 
-class Add extends React.Component<{}>{
+class CreateWallet extends React.Component<{}>{
     render() {
         return (
             <div id="add-wallet-modal" className="modal-container">
@@ -19,4 +19,4 @@ class Add extends React.Component<{}>{
     }
 }
 
-export default Add;
+export default CreateWallet;

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import AppFrame from '../components/common/AppFrame';
-import Validator from '../components/Validator';
+import Frame from '../components/frame/frame';
+import Validator from '../components/validators/validator';
 
-class NetworkContainer extends Component {
+class Network extends Component {
     renderBody() {
         return (
             <div id="network" className="page-container">
@@ -69,10 +69,10 @@ class NetworkContainer extends Component {
     }
     render() {
         return (
-            <AppFrame body={this.renderBody()} header={"Network"} />
+            <Frame body={this.renderBody()} header={"Network"} />
         );
     }
 }
 
 
-export default NetworkContainer;
+export default Network;

@@ -1,6 +1,4 @@
 import React from 'react';
-import QR from '../../assets/img/qr.svg';
-import ArrowRight from '../../assets/img/arrow-right-solid.svg';
 interface Props {
 
 }
@@ -12,7 +10,7 @@ const TxHistory: React.FC<Props> = ({ }) => {
                 <h1>Wallet 1</h1>
                 <div className="abs-center">
                     <div className="receive-img">
-                        <img src={QR} alt="" />
+                        <img src={""} alt="" />
                     </div>
                 </div>
                 <div className="abs-center receive-row">

@@ -1,6 +1,6 @@
 import React from 'react';
 
-class TxHistory extends React.Component {
+class History extends React.Component {
     render() {
         return (
             <div className="dashboard-txhistory dashboard-item-alt">
@@ -48,4 +48,4 @@ class TxHistory extends React.Component {
     }
 }
 
-export default TxHistory;
+export default History;

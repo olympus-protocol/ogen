@@ -8,7 +8,7 @@ interface IState {
     selected: string;
 }
 
-class AppHeader extends React.Component<Props, IState>{
+class Header extends React.Component<Props, IState>{
     constructor(props: Props) {
         super(props);
         this.state = {
@@ -44,4 +44,4 @@ class AppHeader extends React.Component<Props, IState>{
     }
 }
 
-export default AppHeader;
+export default Header;

@@ -1,6 +1,6 @@
 import React from 'react';
 
-class ImportMnemonic extends React.Component<{}> {
+class ImportWallet extends React.Component<{}> {
 
     render() {
         const words = [];
@@ -40,4 +40,4 @@ class ImportMnemonic extends React.Component<{}> {
     }
 }
 
-export default ImportMnemonic;
+export default ImportWallet;
