@@ -22,6 +22,7 @@ type Server interface {
 	Chain() chain.Blockchain
 	Start()
 	Stop() error
+	Wallet() wallet.Wallet
 }
 
 // Server is the main struct that contains ogen services
@@ -33,6 +34,7 @@ type server struct {
 	rpc       chainrpc.RPCServer
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
+	wallet    wallet.Wallet
 }
 
 var _ Server = &server{}
@@ -146,10 +148,11 @@ func NewServer(db blockdb.Database) (Server, error) {
 	s := &server{
 		log: log,
 
-		ch:   ch,
-		hn:   hn,
-		rpc:  rpc,
-		prop: prop,
+		ch:     ch,
+		hn:     hn,
+		rpc:    rpc,
+		prop:   prop,
+		wallet: w,
 	}
 
 	if config.GlobalFlags.Dashboard {

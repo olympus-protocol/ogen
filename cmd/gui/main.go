@@ -218,6 +218,8 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
+		app.Bind(s.Wallet())
+
 		err = s.Stop()
 		if err != nil {
 			log.Fatal(err)
