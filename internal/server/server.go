@@ -51,6 +51,10 @@ func (s *server) Chain() chain.Blockchain {
 	return s.ch
 }
 
+func (s *server) Wallet() wallet.Wallet {
+	return s.wallet
+}
+
 // Start starts running the multiple ogen services.
 func (s *server) Start() {
 	err := s.ch.Start()
