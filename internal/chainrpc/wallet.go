@@ -136,7 +136,7 @@ func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.B
 		return nil, err
 	}
 
-	confirmed, unconfirmed, err := s.wallet.GetBalance()
+	balance, err := s.wallet.GetBalance()
 	if err != nil {
 		return nil, err
 	}
@@ -152,10 +152,10 @@ func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.B
 	}
 
 	return &proto.Balance{
-			Confirmed:   decimal.NewFromInt(int64(confirmed)).DivRound(decimal.NewFromInt(1e8), 8).StringFixed(8),
-			Unconfirmed: decimal.NewFromInt(int64(unconfirmed)).DivRound(decimal.NewFromInt(1e8), 8).StringFixed(8),
+			Confirmed:   decimal.NewFromInt(int64(balance.Confirmed)).DivRound(decimal.NewFromInt(1e8), 8).StringFixed(8),
+			Unconfirmed: decimal.NewFromInt(int64(balance.Pending)).DivRound(decimal.NewFromInt(1e8), 8).StringFixed(8),
 			Locked:      lock.StringFixed(8),
-			Total:       decimal.NewFromInt(int64(confirmed)).DivRound(decimal.NewFromInt(1e8), 8).Add(lock).StringFixed(8)},
+			Total:       decimal.NewFromInt(int64(balance.Confirmed)).DivRound(decimal.NewFromInt(1e8), 8).Add(lock).StringFixed(8)},
 		nil
 }
 

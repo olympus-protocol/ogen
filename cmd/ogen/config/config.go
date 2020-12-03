@@ -14,10 +14,6 @@ import (
 	"time"
 )
 
-var (
-	DataPath string
-)
-
 type Flags struct {
 	DataPath      string
 	NetworkName   string

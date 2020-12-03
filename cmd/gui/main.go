@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/leaanthony/mewn"
 	config "github.com/olympus-protocol/ogen/cmd/ogen/config"
@@ -21,16 +22,6 @@ var (
 	DataPath string
 	NetName  string
 	Port     string
-	Debug    bool
-	LogFile  bool
-
-	RPCPort       string
-	RPCWallet     bool
-	RPCProxy      bool
-	RPCProxyPort  string
-	RPCPRoxyAddr  string
-	Dashboard     bool
-	DashboardPort string
 )
 
 func init() {
@@ -39,18 +30,6 @@ func init() {
 
 	rootCmd.Flags().StringVar(&NetName, "network", "testnet", "String of the network to connect.")
 	rootCmd.Flags().StringVar(&Port, "port", "24126", "Default port for p2p connections listener.")
-
-	rootCmd.Flags().BoolVar(&RPCProxy, "rpc_proxy", false, "Enable http proxy for RPC server.")
-	rootCmd.Flags().StringVar(&RPCProxyPort, "rpc_proxy_port", "8081", "Port for the http proxy.")
-	rootCmd.Flags().StringVar(&RPCPort, "rpc_port", "24127", "RPC server port.")
-	rootCmd.Flags().StringVar(&RPCPRoxyAddr, "rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
-	rootCmd.Flags().BoolVar(&RPCWallet, "rpc_wallet", false, "Enable wallet access through RPC.")
-
-	rootCmd.Flags().StringVar(&DashboardPort, "dashboard_port", "8080", "Port to expose node dashboard.")
-	rootCmd.Flags().BoolVar(&Dashboard, "dashboard", false, "Expose node dashboard.")
-
-	rootCmd.PersistentFlags().BoolVar(&Debug, "debug", false, "Displays debug information.")
-	rootCmd.PersistentFlags().BoolVar(&LogFile, "logfile", false, "Display log information to file.")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
@@ -108,31 +87,26 @@ func initConfig() {
 	}
 
 	config.GlobalFlags = &config.Flags{
-		DataPath:      DataPath,
-		NetworkName:   NetName,
-		Port:          Port,
-		RPCProxy:      RPCProxy,
-		RPCProxyPort:  RPCProxyPort,
-		RPCProxyAddr:  RPCPRoxyAddr,
-		RPCPort:       RPCPort,
-		RPCWallet:     RPCWallet,
-		Debug:         Debug,
-		LogFile:       LogFile,
-		DashboardPort: DashboardPort,
-		Dashboard:     Dashboard,
+		DataPath: DataPath,
+		NetworkName: NetName,
+		Port: Port,
+		RPCProxy: false,
+		RPCProxyPort: "",
+		RPCProxyAddr: "",
+		RPCPort: "",
+		RPCWallet: false,
+		RPCAuthToken: "",
+		Debug: false,
+		LogFile: true,
+		Dashboard: false,
+		DashboardPort: "",
 	}
-
-	var log logger.Logger
 
 	logFile, err := os.OpenFile(path.Join(DataPath, "logger.log"), os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
 		panic(err)
 	}
-	log = logger.New(logFile)
-
-	if config.GlobalFlags.Debug {
-		log = log.WithDebug()
-	}
+	log := logger.New(logFile)
 
 	var netParams *params.ChainParams
 	switch config.GlobalFlags.NetworkName {
@@ -171,32 +145,27 @@ func initConfig() {
 	}
 
 	config.GlobalParams = &config.Params{
-		Logger:     log,
+		Logger: log,
 		NetParams:  netParams,
 		InitParams: ip,
+		Context: context.Background(),
 	}
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "ogen",
-	Short: "Ogen is a Go Olympus implementation",
+	Use:   "ogen-gui",
+	Short: "Ogen GUI is binded GUI for the ogen binary",
 	Long:  "A Golang implementation of the Olympus protocol. Next generation blockchain secured by CASPER.",
 	Run: func(cmd *cobra.Command, args []string) {
-		log := config.GlobalParams.Logger
-
-		log.Infof("Starting Ogen v%v", params.Version)
-		log.Trace("Loading log on debug mode")
-
-		config.InterruptListener()
 
 		db, err := blockdb.NewLevelDB()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		s, err := server.NewServer(db)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		go s.Start()
@@ -213,16 +182,16 @@ var rootCmd = &cobra.Command{
 			Colour: "#131313",
 		})
 
+		app.Bind(s.Wallet())
+
 		err = app.Run()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
-
-		app.Bind(s.Wallet())
 
 		err = s.Stop()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	},
 }
