@@ -11,7 +11,7 @@ import (
 const (
 	mayor = 0
 	minor = 1
-	patch = 1
+	patch = 2
 )
 
 var (
