@@ -202,7 +202,6 @@ func (p *proposer) ProposeBlocks() {
 				}
 
 				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState, proposerValidator.PayeeAddress)
-				fmt.Println(len(coinTxs))
 
 				coinTxMulti := p.coinsMempool.GetMulti(p.netParams.MaxTxsMultiPerBlock, blockState)
 
