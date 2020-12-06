@@ -173,7 +173,7 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti) error {
 
 // Add adds an item to the coins mempool.
 func (cm *coinsMempool) Add(item *primitives.Tx) error {
-
+	fmt.Println(item)
 	cm.lockSingle.Lock()
 	defer cm.lockSingle.Unlock()
 
