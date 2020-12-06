@@ -105,9 +105,6 @@ type CoinsMempool interface {
 	GetWithoutApply() []*primitives.Tx
 	AddMulti(item *primitives.TxMulti) error
 	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
-	GetMempoolRemovals(pkh [20]byte) (uint64, error)
-	GetMempoolAdditions(pkh [20]byte) (uint64, error)
-	GetMempoolNonce(pkh [20]byte) (uint64, error)
 	Notify(n CoinsNotifee)
 	Unnotify(n CoinsNotifee)
 }
@@ -129,14 +126,8 @@ type coinsMempool struct {
 	mempoolMulti map[[20]byte]*coinMempoolItemMulti
 	lockMulti    sync.Mutex
 
-	additions   map[[20]byte]uint64
-	removals    map[[20]byte]uint64
-	latestNonce map[[20]byte]uint64
-
 	notifeesLock sync.Mutex
-	notifees     map[CoinsNotifee]struct{}
-	lockStats    sync.Mutex
-}
+	notifees     map[CoinsNotifee]struct{}}
 
 // AddMulti adds an item to the coins mempool.
 func (cm *coinsMempool) AddMulti(item *primitives.TxMulti) error {
@@ -173,7 +164,7 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti) error {
 
 // Add adds an item to the coins mempool.
 func (cm *coinsMempool) Add(item *primitives.Tx) error {
-	fmt.Println(item)
+
 	cm.lockSingle.Lock()
 	defer cm.lockSingle.Unlock()
 
@@ -182,14 +173,6 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 	fpkh, err := item.FromPubkeyHash()
 	if err != nil {
 		return err
-	}
-
-	// Check first if there is a nonce to be tracked on the mempool.
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-
-	if latestNonce, ok := cm.latestNonce[fpkh]; ok && item.Nonce < latestNonce {
-		return errors.New("invalid nonce")
 	}
 
 	// Check the state for a nonce lower than the used in transaction
@@ -209,10 +192,6 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 		if err := mpi.add(item, cs.Balances[fpkh]); err != nil {
 			return err
 		}
-
-		cm.additions[item.To] += item.Amount
-		cm.removals[fpkh] += item.Amount + item.Fee
-		cm.latestNonce[fpkh] = item.Nonce
 	}
 
 	cm.notifeesLock.Lock()
@@ -229,10 +208,8 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 	cm.lockSingle.Lock()
 	cm.lockMulti.Lock()
-	cm.lockStats.Lock()
 	defer cm.lockSingle.Unlock()
 	defer cm.lockMulti.Unlock()
-	defer cm.lockStats.Unlock()
 	for _, tx := range b.Txs {
 		fpkh, err := tx.FromPubkeyHash()
 		if err != nil {
@@ -245,12 +222,6 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 		mempoolItem.removeBefore(tx.Nonce)
 		if mempoolItem.balanceSpent == 0 {
 			delete(cm.mempool, fpkh)
-		}
-
-		cm.additions[tx.To] -= tx.Amount
-		cm.removals[fpkh] -= tx.Amount + tx.Fee
-		if tx.Nonce == cm.latestNonce[fpkh] {
-			delete(cm.latestNonce, fpkh)
 		}
 	}
 }
@@ -355,39 +326,6 @@ func (cm *coinsMempool) handleTxMulti(id peer.ID, msg p2p.Message) error {
 	return nil
 }
 
-// GetMempoolRemovals returns the amount of coins being tracked on mempool for account balance remove.
-func (cm *coinsMempool) GetMempoolRemovals(pkh [20]byte) (uint64, error) {
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-	amount, ok := cm.removals[pkh]
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-	return amount, nil
-}
-
-// GetMempoolAdditions returns the amount of coins being tracked on mempool for account balance addition.
-func (cm *coinsMempool) GetMempoolAdditions(pkh [20]byte) (uint64, error) {
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-	amount, ok := cm.additions[pkh]
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-	return amount, nil
-}
-
-// GetMempoolNonce returns the latest nonce tracked by an account in mempool.
-func (cm *coinsMempool) GetMempoolNonce(pkh [20]byte) (uint64, error) {
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-	nonce, ok := cm.latestNonce[pkh]
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-	return nonce, nil
-}
-
 func (cm *coinsMempool) Notify(n CoinsNotifee) {
 	cm.notifeesLock.Lock()
 	defer cm.notifeesLock.Unlock()
@@ -415,9 +353,6 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		netParams:    netParams,
 		log:          log,
 
-		additions:   make(map[[20]byte]uint64),
-		removals:    make(map[[20]byte]uint64),
-		latestNonce: make(map[[20]byte]uint64),
 		notifees:    make(map[CoinsNotifee]struct{}),
 	}
 
