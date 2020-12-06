@@ -53,7 +53,6 @@ var indexerCmd = &cobra.Command{
 
 		idx, err := indexer.NewIndexer(dbConnString, rpcEndpoint, dbDriver, netParams)
 		if err != nil {
-			fmt.Println(err)
 			os.Exit(0)
 		}
 

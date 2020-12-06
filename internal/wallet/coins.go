@@ -89,9 +89,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	copy(s[:], sig.Marshal())
 	tx.Signature = s
 
-	currentState := w.chain.State().TipState()
-	cs := currentState.GetCoinsState()
-	if err := w.coinsmempool.Add(tx, &cs); err != nil {
+	if err := w.coinsmempool.Add(tx); err != nil {
 		return nil, err
 	}
 

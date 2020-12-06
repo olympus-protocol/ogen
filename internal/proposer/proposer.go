@@ -174,9 +174,9 @@ func (p *proposer) ProposeBlocks() {
 
 			slotIndex := (slotToPropose + p.netParams.EpochLength - 1) % p.netParams.EpochLength
 			proposerIndex := blockState.GetProposerQueue()[slotIndex]
-			proposer := blockState.GetValidatorRegistry()[proposerIndex]
+			proposerValidator := blockState.GetValidatorRegistry()[proposerIndex]
 
-			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
+			if k, found := p.keystore.GetValidatorKey(proposerValidator.PubKey); found {
 
 				//if !p.lastActionManager.ShouldRun(proposer.PubKey) {
 				//	blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -201,7 +201,8 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState)
+				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState, proposerValidator.PayeeAddress)
+				fmt.Println(len(coinTxs))
 
 				coinTxMulti := p.coinsMempool.GetMulti(p.netParams.MaxTxsMultiPerBlock, blockState)
 
@@ -252,7 +253,7 @@ func (p *proposer) ProposeBlocks() {
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
-						FeeAddress:    proposer.PayeeAddress,
+						FeeAddress:    proposerValidator.PayeeAddress,
 					},
 					Votes:             votes,
 					Txs:               coinTxs,

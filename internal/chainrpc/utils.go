@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
@@ -18,6 +19,7 @@ type utilsServer struct {
 	keystore     keystore.Keystore
 	host         hostnode.HostNode
 	coinsMempool mempool.CoinsMempool
+	chain        chain.Blockchain
 	proto.UnimplementedUtilsServer
 }
 
@@ -48,23 +50,26 @@ func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidato
 
 func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {
 	defer ctx.Done()
-
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
 		return nil, err
 	}
 	switch data.Type {
 	case "tx":
-
 		tx := new(primitives.Tx)
 
 		err := tx.Unmarshal(dataBytes)
 		if err != nil {
-			return nil, errors.New("unable to decode raw data")
+			return &proto.Success{Success: false, Error: "unable to decode raw data"}, nil
 		}
 
 		msg := &p2p.MsgTx{Data: tx}
-		// TODO apply to ourselves first.
+
+		err = s.coinsMempool.Add(tx)
+
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
 
 		err = s.host.Broadcast(msg)
 		if err != nil {
