@@ -194,8 +194,8 @@ var TestNet = ChainParams{
 		0: "do_not_go_gentle_into_that_good_night",
 	},
 	Relayers: map[string]string{
-		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooWMXYnAd4vLNZ1h4yB964o2yK5rm3dWnmRvEp5UErZjqKZ",
-		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWQG52UmSjJWbiksovwnNEQw8oEsWL2uiFVNvQ8ij4ig3w",
+		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooWDv5BH9bQhv198TXGkXygNoXrEdvEfLkKL6C5eD3EAHvi",
+		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWLDdEF8zAK7tQqDN23CmC4TFZqKeo2n95BJUBaJH69h5P",
 	},
 }
 
