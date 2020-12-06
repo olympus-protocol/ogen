@@ -29,8 +29,6 @@ func (i *Indexer) Start() {
 	i.initialSync()
 	i.log.Info("Listening for new blocks")
 	go i.subscribeBlocks()
-	i.mempoolSync()
-	go i.subscribeMempool()
 }
 
 func (i *Indexer) subscribeBlocks() {
@@ -75,47 +73,6 @@ func (i *Indexer) subscribeBlocks() {
 			}
 			i.log.Infof("Received new block %s", block.Hash().String())
 		}
-	}
-}
-
-func (i *Indexer) subscribeMempool() {
-	syncClient, err := i.client.Utils().SubscribeMempool(i.ctx, &proto.Empty{})
-	if err != nil {
-		i.log.Fatal(err)
-	}
-	for {
-		select {
-		case <-i.ctx.Done():
-			syncClient.CloseSend()
-			break
-		default:
-			tx, err := syncClient.Recv()
-			if err != nil {
-				continue
-			}
-			i.log.Info("Received mempool transaction, indexing...")
-			i.db.ProcessMempoolTransaction(tx)
-		}
-
-	}
-}
-
-func (i *Indexer) mempoolSync() {
-	syncClient, err := i.client.Utils().SyncMempool(i.ctx, &proto.Empty{})
-	if err != nil {
-		i.log.Fatal(err)
-	}
-	for {
-		tx, err := syncClient.Recv()
-		if err != nil {
-			if err == io.EOF {
-				_ = syncClient.CloseSend()
-				break
-			}
-			i.log.Error(err)
-			break
-		}
-		i.db.ProcessMempoolTransaction(tx)
 	}
 }
 
