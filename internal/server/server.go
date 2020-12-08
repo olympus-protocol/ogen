@@ -51,16 +51,17 @@ func (s *server) Chain() chain.Blockchain {
 
 // Start starts running the multiple ogen services.
 func (s *server) Start() {
-	err := s.ch.Start()
-	if err != nil {
-		s.log.Fatal("unable to start chain instance")
-	}
 	go func() {
 		err := s.rpc.Start()
 		if err != nil {
 			s.log.Fatal("unable to start rpc server")
 		}
 	}()
+	err := s.ch.Start()
+	if err != nil {
+		s.log.Fatal("unable to start chain instance")
+	}
+
 	err = s.prop.Start()
 	if err != nil {
 		s.log.Fatal("unable to start proposer")
@@ -138,7 +139,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, cpool)
+	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, cpool, apool)
 	if err != nil {
 		return nil, err
 	}
