@@ -127,7 +127,8 @@ type coinsMempool struct {
 	lockMulti    sync.Mutex
 
 	notifeesLock sync.Mutex
-	notifees     map[CoinsNotifee]struct{}}
+	notifees     map[CoinsNotifee]struct{}
+}
 
 // AddMulti adds an item to the coins mempool.
 func (cm *coinsMempool) AddMulti(item *primitives.TxMulti) error {
@@ -353,7 +354,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		netParams:    netParams,
 		log:          log,
 
-		notifees:    make(map[CoinsNotifee]struct{}),
+		notifees: make(map[CoinsNotifee]struct{}),
 	}
 
 	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {

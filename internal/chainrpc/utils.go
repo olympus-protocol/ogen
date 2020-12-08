@@ -16,10 +16,11 @@ import (
 )
 
 type utilsServer struct {
-	keystore     keystore.Keystore
-	host         hostnode.HostNode
-	coinsMempool mempool.CoinsMempool
-	chain        chain.Blockchain
+	keystore       keystore.Keystore
+	host           hostnode.HostNode
+	coinsMempool   mempool.CoinsMempool
+	actionsMempool mempool.ActionMempool
+	chain          chain.Blockchain
 	proto.UnimplementedUtilsServer
 }
 
@@ -84,18 +85,22 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		err := deposit.Unmarshal(dataBytes)
 		if err != nil {
-			return nil, errors.New("unable to decode raw data")
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		err = s.actionsMempool.AddDeposit(deposit)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
 		msg := &p2p.MsgDeposit{Data: deposit}
-		// TODO apply to ourselves first.
 
 		err = s.host.Broadcast(msg)
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
-		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
+		return &proto.Success{Success: true}, nil
 
 	case "exit":
 
@@ -103,18 +108,66 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		err := exit.Unmarshal(dataBytes)
 		if err != nil {
-			return nil, errors.New("unable to decode raw data")
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		err = s.actionsMempool.AddExit(exit)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
 		msg := &p2p.MsgExit{Data: exit}
-		// TODO apply to ourselves first.
 
 		err = s.host.Broadcast(msg)
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
-		return &proto.Success{Success: true, Data: exit.Hash().String()}, nil
+		return &proto.Success{Success: true}, nil
+
+	case "deposits_bulk":
+		deposits := new(p2p.MsgDeposits)
+
+		err := deposits.Unmarshal(dataBytes)
+		if err != nil {
+			return nil, errors.New("unable to decode raw data")
+		}
+
+		for _, d := range deposits.Data {
+			err = s.actionsMempool.AddDeposit(d)
+			if err != nil {
+				return &proto.Success{Success: false, Error: err.Error()}, nil
+			}
+		}
+
+		err = s.host.Broadcast(deposits)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		return &proto.Success{Success: true}, nil
+
+	case "exits_bulk":
+		exits := new(p2p.MsgExits)
+
+		err := exits.Unmarshal(dataBytes)
+		if err != nil {
+			return nil, errors.New("unable to decode raw data")
+		}
+
+		for _, d := range exits.Data {
+			err = s.actionsMempool.AddExit(d)
+			if err != nil {
+				return &proto.Success{Success: false, Error: err.Error()}, nil
+			}
+		}
+
+		err = s.host.Broadcast(exits)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		return &proto.Success{Success: true}, nil
 
 	default:
 		return &proto.Success{Success: false, Error: "unknown raw data type"}, nil

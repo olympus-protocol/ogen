@@ -25,11 +25,11 @@ type ActionMempool interface {
 	NotifyIllegalVotes(slashing *primitives.VoteSlashing)
 	NewTip(_ *chainindex.BlockRow, _ *primitives.Block, _ state.State, _ []*primitives.EpochReceipt)
 	ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing)
-	AddDeposit(deposit *primitives.Deposit, state state.State) error
+	AddDeposit(deposit *primitives.Deposit) error
 	GetDeposits(num int, withState state.State) ([]*primitives.Deposit, state.State, error)
 	RemoveByBlock(b *primitives.Block, tipState state.State)
 	AddGovernanceVote(vote *primitives.GovernanceVote, state state.State) error
-	AddExit(exit *primitives.Exit, state state.State) error
+	AddExit(exit *primitives.Exit) error
 	GetProposerSlashings(num int, state state.State) ([]*primitives.ProposerSlashing, error)
 	GetExits(num int, state state.State) ([]*primitives.Exit, error)
 	GetVoteSlashings(num int, state state.State) ([]*primitives.VoteSlashing, error)
@@ -190,8 +190,7 @@ func (am *actionMempool) handleDeposit(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return errors.New("wrong message on deposit topic")
 	}
-	s := am.chain.State().TipState()
-	err := am.AddDeposit(data.Data, s)
+	err := am.AddDeposit(data.Data)
 	if err != nil {
 		return err
 	}
@@ -207,13 +206,14 @@ func (am *actionMempool) handleDeposits(id peer.ID, msg p2p.Message) error {
 	if !ok {
 		return errors.New("wrong message on deposits topic")
 	}
-	s := am.chain.State().TipState()
+
 	for _, d := range data.Data {
-		err := am.AddDeposit(d, s)
+		err := am.AddDeposit(d)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -228,9 +228,7 @@ func (am *actionMempool) handleExit(id peer.ID, msg p2p.Message) error {
 		return errors.New("wrong message on exit topic")
 	}
 
-	s := am.chain.State().TipState()
-
-	err := am.AddExit(data.Data, s)
+	err := am.AddExit(data.Data)
 	if err != nil {
 		return err
 	}
@@ -249,11 +247,9 @@ func (am *actionMempool) handleExits(id peer.ID, msg p2p.Message) error {
 		return errors.New("wrong message on exits topic")
 	}
 
-	s := am.chain.State().TipState()
-
 	for _, d := range data.Data {
 
-		err := am.AddExit(d, s)
+		err := am.AddExit(d)
 		if err != nil {
 			return err
 		}
@@ -285,8 +281,10 @@ func (am *actionMempool) handleGovernance(id peer.ID, msg p2p.Message) error {
 }
 
 // AddDeposit adds a deposit to the mempool.
-func (am *actionMempool) AddDeposit(deposit *primitives.Deposit, state state.State) error {
-	if err := state.IsDepositValid(deposit); err != nil {
+func (am *actionMempool) AddDeposit(deposit *primitives.Deposit) error {
+	s := am.chain.State().TipState()
+
+	if err := s.IsDepositValid(deposit); err != nil {
 		return err
 	}
 
@@ -499,8 +497,10 @@ func (am *actionMempool) AddGovernanceVote(vote *primitives.GovernanceVote, stat
 }
 
 // AddExit adds a exit to the mempool.
-func (am *actionMempool) AddExit(exit *primitives.Exit, state state.State) error {
-	if err := state.IsExitValid(exit); err != nil {
+func (am *actionMempool) AddExit(exit *primitives.Exit) error {
+	s := am.chain.State().TipState()
+
+	if err := s.IsExitValid(exit); err != nil {
 		return err
 	}
 

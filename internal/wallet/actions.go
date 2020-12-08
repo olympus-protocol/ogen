@@ -22,7 +22,6 @@ func (w *wallet) StartValidatorBulk(valSecKeys []*bls.SecretKey) (bool, error) {
 	}
 
 	deposits := make([]*primitives.Deposit, len(valSecKeys))
-	currentState := w.chain.State().TipState()
 
 	for i := range deposits {
 		deposit, err := w.createDeposit(priv, addr, valSecKeys[i])
@@ -31,7 +30,7 @@ func (w *wallet) StartValidatorBulk(valSecKeys []*bls.SecretKey) (bool, error) {
 		}
 		deposits[i] = deposit
 
-		if err := w.actionsmempool.AddDeposit(deposit, currentState); err != nil {
+		if err := w.actionsmempool.AddDeposit(deposit); err != nil {
 			return false, err
 		}
 	}
@@ -64,9 +63,7 @@ func (w *wallet) StartValidator(valPrivBytes *bls.SecretKey) (bool, error) {
 
 	deposit, err := w.createDeposit(priv, addr, valPrivBytes)
 
-	currentState := w.chain.State().TipState()
-
-	if err := w.actionsmempool.AddDeposit(deposit, currentState); err != nil {
+	if err := w.actionsmempool.AddDeposit(deposit); err != nil {
 		return false, err
 	}
 
@@ -134,8 +131,6 @@ func (w *wallet) ExitValidatorBulk(valPubKeys []*bls.PublicKey) (bool, error) {
 
 	exits := make([]*primitives.Exit, len(valPubKeys))
 
-	currentState := w.chain.State().TipState()
-
 	for i := range exits {
 		exit, err := w.createExit(priv, valPubKeys[i])
 		if err != nil {
@@ -143,7 +138,7 @@ func (w *wallet) ExitValidatorBulk(valPubKeys []*bls.PublicKey) (bool, error) {
 		}
 		exits[i] = exit
 
-		if err := w.actionsmempool.AddExit(exit, currentState); err != nil {
+		if err := w.actionsmempool.AddExit(exit); err != nil {
 			return false, err
 		}
 	}
@@ -174,9 +169,7 @@ func (w *wallet) ExitValidator(valPubKey *bls.PublicKey) (bool, error) {
 		return false, err
 	}
 
-	currentState := w.chain.State().TipState()
-
-	if err := w.actionsmempool.AddExit(exit, currentState); err != nil {
+	if err := w.actionsmempool.AddExit(exit); err != nil {
 		return false, err
 	}
 
