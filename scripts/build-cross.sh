@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OGEN_VERSION=0.1.2-alpha.8
+export OGEN_VERSION=0.1.3-alpha.9
 export FOLDER_NAME=ogen-$OGEN_VERSION
 
 go get -u github.com/gobuffalo/packr/packr
