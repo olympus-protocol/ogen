@@ -8,3 +8,6 @@ type AccountInfo struct {
 	TotalSent     int    `json:"total_sent"`
 	TotalReceived int    `json:"total_received"`
 }
+
+type State struct {
+}

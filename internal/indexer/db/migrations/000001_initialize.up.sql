@@ -1,3 +1,7 @@
+CREATE TABLE "state" (
+    "serialized_state" varchar NOT NULL
+);
+
 CREATE TABLE "blocks" (
     "block_hash" varchar PRIMARY KEY NOT NULL,
     "block_signature" varchar NOT NULL,
