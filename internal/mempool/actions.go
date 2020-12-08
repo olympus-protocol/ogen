@@ -203,7 +203,6 @@ func (am *actionMempool) handleDeposits(id peer.ID, msg p2p.Message) error {
 	if id == am.host.GetHost().ID() {
 		return nil
 	}
-	// TODO relay and filter already received objects.
 	data, ok := msg.(*p2p.MsgDeposits)
 	if !ok {
 		return errors.New("wrong message on deposits topic")
