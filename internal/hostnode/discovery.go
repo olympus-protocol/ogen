@@ -115,7 +115,7 @@ func (d *discover) findPeers() {
 			select {
 			case pi, ok := <-peers:
 				if !ok {
-					time.Sleep(time.Second * 10)
+					time.Sleep(time.Second * 5)
 					break peerLoop
 				}
 
@@ -131,8 +131,8 @@ func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
-const connectionTimeout = 10 * time.Second
-const connectionCooldown = 60 * time.Second
+const connectionTimeout = 3 * time.Second
+const connectionCooldown = 30 * time.Second
 
 // Connect connects to a peer.
 func (d *discover) Connect(pi peer.AddrInfo) error {
