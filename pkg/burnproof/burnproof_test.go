@@ -27,7 +27,11 @@ func TestCoinProofDecode(t *testing.T) {
 }
 
 func TestBurnVerify(t *testing.T) {
-	err := burnproof.VerifyBurn(proofBytes, "12345")
+	acc := []byte("12345")
+	var accBytes [20]byte
+	copy(accBytes[:], acc)
+
+	err := burnproof.VerifyBurn(proofBytes, accBytes)
 	assert.NoError(t, err)
 }
 
@@ -46,8 +50,12 @@ func TestBurnProofsToSerializable(t *testing.T) {
 		}
 	}
 
+	acc := []byte("12345")
+	var accBytes [20]byte
+	copy(accBytes[:], acc)
+
 	for _, proof := range proofs {
-		serProof, err := proof.ToSerializable()
+		serProof, err := proof.ToSerializable(accBytes)
 		assert.NoError(t, err)
 
 		ser, err := serProof.Marshal()

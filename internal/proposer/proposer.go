@@ -274,6 +274,7 @@ func (p *proposer) ProposeBlocks() {
 				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
 				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
 				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
+				block.Header.CoinProofsMerkleRoot = block.CoinProofsMerkleRoot()
 
 				blockHash := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))

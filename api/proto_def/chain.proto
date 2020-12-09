@@ -104,27 +104,6 @@ service Chain {
         Response: message SubscribeResponse
         Description: Return a stream when an account is found on a transaction
     */
-
-    rpc SubscribeTransactions(KeyPairs) returns (stream RawData) {
-        option (google.api.http) = {
-            post: "/chain/subscribe/account"
-            body: "*"
-        };
-    }
-
-    /** 
-        Method: SubscribeValidatorTransactions 
-        Input: message SubscribeValidatorRequest
-        Response: message SubscribeResponse
-        Description: Return a stream when validator pubkey is modified on the ValidatorRegistry
-    */
-
-    rpc SubscribeValidatorTransactions(KeyPairs) returns (stream RawData) {
-        option (google.api.http) = {
-            post: "/chain/subscribe/validator"
-            body: "*"
-        };
-    }
 }
 
 message SubscribeValidatorRequest {

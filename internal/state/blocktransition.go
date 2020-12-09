@@ -320,32 +320,34 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 	return nil
 }
 
-// ApplyMigrationProof applies a migration proof to the coin state.
-func (s *state) ApplyMigrationProof(p *burnproof.CoinsProof) error {
-	err := burnproof.VerifyBurnProof(p, "")
+// ApplyCoinProof applies a migration proof to the coin state.
+func (s *state) ApplyCoinProof(p *burnproof.CoinsProofSerializable) error {
+	proof, err := p.ToCoinProof()
+	if err != nil {
+		return err
+	}
+
+	err = burnproof.VerifyBurnProof(proof, p.RedeemAccount)
 	if err != nil {
 		return err
 	}
 
 	u := s.CoinsState
 
-	txHash := p.Transaction.TxHash()
+	hash := p.Hash()
 
-	if _, ok := u.ProofsVerified[txHash]; ok {
+	if _, ok := u.ProofsVerified[hash]; ok {
 		return errors.New("proof already verified")
 	}
 
-	// Sum the txout balance to apply to the coin state
 	sumBalance := uint64(0)
-	for _, out := range p.Transaction.TxOut {
+	for _, out := range proof.Transaction.TxOut {
 		sumBalance += uint64(out.Value)
 	}
 
-	// TODO Apply the coin balance to the CoinState
-	//u.Balances[p.RedeemAccount] += sumBalance
+	u.Balances[p.RedeemAccount] += sumBalance
 
-	// Mark the proof as verified
-	u.ProofsVerified[txHash] = struct{}{}
+	u.ProofsVerified[hash] = struct{}{}
 
 	return nil
 }
@@ -1026,6 +1028,7 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	proposerSlashingMerkleRoot := b.ProposerSlashingsRoot()
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
+	coinProofsMerkleRoot := b.CoinProofsMerkleRoot()
 
 	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
@@ -1047,19 +1050,23 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	}
 
 	if !bytes.Equal(voteSlashingMerkleRoot[:], b.Header.VoteSlashingMerkleRoot[:]) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(voteSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.VoteSlashingMerkleRoot[:]))
+		return fmt.Errorf("expected vote slashing merkle root to be %s but got %s", hex.EncodeToString(voteSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.VoteSlashingMerkleRoot[:]))
 	}
 
 	if !bytes.Equal(proposerSlashingMerkleRoot[:], b.Header.ProposerSlashingMerkleRoot[:]) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(proposerSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.ProposerSlashingMerkleRoot[:]))
+		return fmt.Errorf("expected proposer slashing merkle root to be %s but got %s", hex.EncodeToString(proposerSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.ProposerSlashingMerkleRoot[:]))
 	}
 
 	if !bytes.Equal(randaoSlashingMerkleRoot[:], b.Header.RANDAOSlashingMerkleRoot[:]) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(randaoSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.RANDAOSlashingMerkleRoot[:]))
+		return fmt.Errorf("expected randao slashing merkle root to be %s but got %s", hex.EncodeToString(randaoSlashingMerkleRoot[:]), hex.EncodeToString(b.Header.RANDAOSlashingMerkleRoot[:]))
 	}
 
 	if !bytes.Equal(governanceVoteMerkleRoot[:], b.Header.GovernanceVotesMerkleRoot[:]) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
+		return fmt.Errorf("expected governance votes merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
+	}
+
+	if !bytes.Equal(coinProofsMerkleRoot[:], b.Header.CoinProofsMerkleRoot[:]) {
+		return fmt.Errorf("expected coin proofs merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
 	}
 
 	if uint64(len(b.Votes)) > netParams.MaxVotesPerBlock {
@@ -1090,9 +1097,9 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", netParams.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
-	//if uint64(len(b.MigrationProofs)) > netParams.MaxMigrationsProofsPerBlock {
-	//	return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxMigrationsProofsPerBlock, len(b.MigrationProofs))
-	//}
+	if uint64(len(b.CoinProofs)) > netParams.MaxCoinProofsPerBlock {
+		return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxCoinProofsPerBlock, len(b.CoinProofs))
+	}
 
 	if len(b.Deposits) > 0 {
 		if err := s.ApplyDeposits(b.Deposits); err != nil {
@@ -1112,11 +1119,11 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		}
 	}
 
-	//for _, m := range b.MigrationProofs {
-	//	if err := s.ApplyMigrationProof(m); err != nil {
-	//		return err
-	//	}
-	//}
+	for _, p := range b.CoinProofs {
+		if err := s.ApplyCoinProof(p); err != nil {
+			return err
+		}
+	}
 
 	slotIndex := (b.Header.Slot + netParams.EpochLength - 1) % netParams.EpochLength
 
