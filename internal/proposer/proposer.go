@@ -245,6 +245,14 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
+				coinproofs, err := p.actionsMempool.GetProofs(int(p.netParams.MaxCoinProofsPerBlock), blockState)
+				if err != nil {
+					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
+					continue
+				}
+
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
@@ -263,6 +271,7 @@ func (p *proposer) ProposeBlocks() {
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
 					GovernanceVotes:   governanceVotes,
+					CoinProofs:        coinproofs,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
