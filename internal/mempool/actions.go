@@ -500,6 +500,29 @@ outer1:
 	}
 	am.governanceVotes = newGovernanceVotes
 	am.governanceVoteLock.Unlock()
+
+	am.coinProofsLock.Lock()
+	newProofsPool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
+
+	for k, proof := range am.coinProofs {
+		proofHash := proof.Hash()
+
+		for _, proof := range b.CoinProofs {
+			blockProofHash := proof.Hash()
+
+			if blockProofHash.IsEqual(&proofHash) {
+				continue
+			}
+		}
+
+		if err := tipState.IsCoinProofValid(proof); err != nil {
+			continue
+		}
+
+		newProofsPool[k] = proof
+	}
+	am.coinProofs = newProofsPool
+	am.coinProofsLock.Unlock()
 }
 
 // AddGovernanceVote adds a governance vote to the mempool.

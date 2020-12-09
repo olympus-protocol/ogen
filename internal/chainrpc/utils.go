@@ -331,13 +331,33 @@ func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemP
 		proofs = append(proofs, proof)
 	}
 
-	for _, p := range proofs {
-		_, err := p.ToSerializable(address)
+	if len(proofs) > 2048 {
+		return &proto.Success{Error: "too many proofs submited, max number is 2048"}, nil
+	}
+
+	serializableProofs := make([]*burnproof.CoinsProofSerializable, len(proofs))
+
+	for i, p := range proofs {
+		pser, err := p.ToSerializable(address)
 		if err != nil {
 			return &proto.Success{Error: err.Error()}, nil
 		}
 
+		serializableProofs[i] = pser
+
 		// Add to a mempool and broadcast
+		err = s.actionsMempool.AddProof(pser)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+
+	}
+
+	msg := &p2p.MsgProofs{Proofs: serializableProofs}
+
+	err = s.host.Broadcast(msg)
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
 	}
 
 	return &proto.Success{Success: true}, nil

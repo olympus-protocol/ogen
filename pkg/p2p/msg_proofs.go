@@ -4,7 +4,7 @@ import "github.com/olympus-protocol/ogen/pkg/burnproof"
 
 // MsgProofs is the struct that contains the node information during the version handshake.
 type MsgProofs struct {
-	Proofs []*burnproof.CoinsProofSerializable `ssz-max:"128"`
+	Proofs []*burnproof.CoinsProofSerializable `ssz-max:"2048"`
 }
 
 // Marshal serializes the data to bytes
@@ -24,5 +24,5 @@ func (m *MsgProofs) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgVersion message.
 func (m *MsgProofs) MaxPayloadLength() uint64 {
-	return 2297 * 128
+	return 2297 * 1024
 }

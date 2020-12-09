@@ -24,7 +24,7 @@ func (m *MsgProofs) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (0) 'Proofs'
-	if len(m.Proofs) > 128 {
+	if len(m.Proofs) > 2048 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -63,7 +63,7 @@ func (m *MsgProofs) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Proofs'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DecodeDynamicLength(buf, 128)
+		num, err := ssz.DecodeDynamicLength(buf, 2048)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (m *MsgProofs) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(m.Proofs))
-		if num > 128 {
+		if num > 2048 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -119,7 +119,7 @@ func (m *MsgProofs) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 128)
+		hh.MerkleizeWithMixin(subIndx, num, 2048)
 	}
 
 	hh.Merkleize(indx)
