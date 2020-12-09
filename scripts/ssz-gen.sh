@@ -29,5 +29,7 @@ sszgen -path ./pkg/primitives/slashing.go -include ./pkg/primitives/votes.go,./p
 sszgen -path ./pkg/primitives/tx.go
 sszgen -path ./pkg/primitives/tx_multi.go -include ./pkg/bls/multisig/multisig.go
 sszgen -path ./pkg/primitives/state.go -objs SerializableState -include ./pkg/primitives/coins.go,./pkg/primitives/validator.go,./pkg/primitives/votes.go,./pkg/primitives/governance.go,./pkg/primitives/governance_votes.go,./pkg/bls/multisig/multisig.go
-sszgen -path ./pkg/bls/multisig/multisig.go
 sszgen -path ./pkg/primitives/blocknodedisk.go
+sszgen -path ./pkg/bls/multisig/multisig.go
+sszgen -path ./pkg/burnproof/burnproof.go -objs CoinsProofSerializable -include ./pkg/primitives/dynamicbytes.go
+sszgen -path ./pkg/primitives/dynamicbytes.go

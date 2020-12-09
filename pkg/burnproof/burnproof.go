@@ -14,21 +14,86 @@ import (
 
 var merkleRootHash [32]byte
 
+type CoinsProofSerializable struct {
+	MerkleIndex  uint64
+	MerkleBranch [][32]byte `ssz-max:"128"`
+	PkScript     [25]byte
+	Transaction  [192]byte
+}
+
+func (c *CoinsProofSerializable) Marshal() ([]byte, error) {
+	return c.MarshalSSZ()
+}
+
+func (c *CoinsProofSerializable) Unmarshal(b []byte) error {
+	return c.UnmarshalSSZ(b)
+}
+
+func (c *CoinsProofSerializable) ToCoinProof() (*CoinsProof, error) {
+	merkle := make([]chainhash.Hash, len(c.MerkleBranch))
+
+	for i := range c.MerkleBranch {
+		merkle[i] = c.MerkleBranch[i]
+	}
+
+	tx := wire.MsgTx{}
+
+	buf := bytes.NewBuffer(c.Transaction[:])
+
+	err := tx.Deserialize(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	cp := &CoinsProof{
+		MerkleIndex:  c.MerkleIndex,
+		MerkleBranch: merkle,
+		PkScript:     c.PkScript,
+		Transaction:  tx,
+	}
+
+	return cp, nil
+}
+
 func init() {
+	//hashBytes, _ := hex.DecodeString("58aa5397cd9f30381d08240f1b6d2c2720bd14e049c60ed25581cf75d6f79271")
 	hashBytes, _ := hex.DecodeString("0be71bd3e3ec9046901b21f066407f8413c73dc3145d6a515d0fa03b28e0140f")
 	copy(merkleRootHash[:], hashBytes)
 }
 
 // CoinsProof is a proof of coins on the old blockchain.
 type CoinsProof struct {
-	MerkleIndex  uint32
+	MerkleIndex  uint64
 	MerkleBranch []chainhash.Hash
-	PkScript     []byte
+	PkScript     [25]byte
 	Transaction  wire.MsgTx
 }
 
-func (c *CoinsProof) Marshal(w io.Writer) error {
-	return nil
+func (c *CoinsProof) ToSerializable() (*CoinsProofSerializable, error) {
+	merkles := make([][32]byte, len(c.MerkleBranch))
+
+	for i := range merkles {
+		merkles[i] = c.MerkleBranch[i]
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+
+	err := c.Transaction.Serialize(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	var tx [192]byte
+	copy(tx[:], buf.Bytes())
+
+	cps := &CoinsProofSerializable{
+		MerkleIndex:  c.MerkleIndex,
+		MerkleBranch: merkles,
+		PkScript:     c.PkScript,
+		Transaction:  tx,
+	}
+
+	return cps, nil
 }
 
 // Unmarshal decodes the proof from a byte slice.
@@ -38,7 +103,7 @@ func (c *CoinsProof) Unmarshal(r io.Reader) error {
 		return err
 	}
 
-	c.MerkleIndex = binary.LittleEndian.Uint32(indexBytes)
+	c.MerkleIndex = uint64(binary.LittleEndian.Uint32(indexBytes))
 
 	merkleCount, err := wire.ReadVarInt(r, 0)
 	if err != nil {
@@ -61,7 +126,8 @@ func (c *CoinsProof) Unmarshal(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	c.PkScript = script
+
+	copy(c.PkScript[:], script)
 
 	return nil
 }
@@ -116,7 +182,7 @@ func calcLeafHash(proof *CoinsProof) (*chainhash.Hash, error) {
 		return nil, err
 	}
 
-	if err := wire.WriteVarBytes(leafHashBytes, 0, proof.PkScript); err != nil {
+	if err := wire.WriteVarBytes(leafHashBytes, 0, proof.PkScript[:]); err != nil {
 		return nil, err
 	}
 
@@ -144,7 +210,7 @@ func verifyScript(proof *CoinsProof) error {
 		return fmt.Errorf("expected transaction to have 1 output, but got %d", len(proof.Transaction.TxOut))
 	}
 
-	eng, err := txscript.NewEngine(proof.PkScript, &proof.Transaction, 0,
+	eng, err := txscript.NewEngine(proof.PkScript[:], &proof.Transaction, 0,
 		txscript.StandardVerifyFlags, cache,
 		txscript.NewTxSigHashes(&proof.Transaction), proof.Transaction.TxOut[0].Value)
 	if err != nil {
