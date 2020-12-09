@@ -7,6 +7,7 @@ sszgen -path ./pkg/p2p/msg_block.go -include ./pkg/primitives/block.go,./pkg/pri
 sszgen -path ./pkg/p2p/msg_deposits.go -include ./pkg/primitives/deposit.go
 sszgen -path ./pkg/p2p/msg_deposit.go -include ./pkg/primitives/deposit.go
 sszgen -path ./pkg/p2p/msg_getblocks.go
+sszgen -path ./pkg/p2p/msg_proofs.go -include ./pkg/burnproof/burnproof.go
 sszgen -path ./pkg/p2p/msg_tx.go -include ./pkg/primitives/tx.go
 sszgen -path ./pkg/p2p/msg_vote.go -include ./pkg/primitives/votes.go
 sszgen -path ./pkg/p2p/msg_exit.go -include ./pkg/primitives/exit.go

@@ -25,6 +25,7 @@ type State interface {
 	ApplyTransactionsSingle(txs []*primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error
+	IsCoinProofValid(p *burnproof.CoinsProofSerializable) error
 	ApplyCoinProof(p *burnproof.CoinsProofSerializable) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
 	ApplyProposerSlashing(ps *primitives.ProposerSlashing) error

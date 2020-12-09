@@ -16,7 +16,7 @@ var merkleRootHash [32]byte
 
 type CoinsProofSerializable struct {
 	MerkleIndex   uint64
-	MerkleBranch  [][32]byte `ssz-max:"128"`
+	MerkleBranch  [][32]byte `ssz-max:"64"`
 	PkScript      [25]byte
 	Transaction   [192]byte
 	RedeemAccount [20]byte
@@ -230,7 +230,7 @@ func verifyScript(proof *CoinsProof) error {
 	return nil
 }
 
-func verifyPkhMatchesAddress(script []byte, addrBytes [20]byte) error {
+func verifyPkhMatchesAddress(script []byte, address [20]byte) error {
 	if len(script) != 25 {
 		return fmt.Errorf("expected transaction pkscript to be 25, but got %d", len(script))
 	}
@@ -239,11 +239,11 @@ func verifyPkhMatchesAddress(script []byte, addrBytes [20]byte) error {
 
 	addrBuf := new(bytes.Buffer)
 
-	if err := wire.WriteVarInt(addrBuf, 0, uint64(len(addrBytes))); err != nil {
+	if err := wire.WriteVarInt(addrBuf, 0, uint64(len(address))); err != nil {
 		return err
 	}
 
-	if _, err := addrBuf.Write(addrBytes[:]); err != nil {
+	if _, err := addrBuf.Write(address[:]); err != nil {
 		return err
 	}
 

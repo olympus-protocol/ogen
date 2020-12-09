@@ -737,6 +737,39 @@
         ]
       }
     },
+    "/utils/submitredeemproof": {
+      "post": {
+        "summary": "*\nMethod: SubmitRedeemProof\nInput: RedeemProof\nResponse: Tx\nDescription: Returns a stream of transactions. Relaying a transaction when arrives the mempool.",
+        "operationId": "Utils_SubmitRedeemProof",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RedeemProof"
+            }
+          }
+        ],
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
     "/utils/subscribemempool": {
       "get": {
         "summary": "*\nMethod: SubscribeMempool\nInput: Empty\nResponse: Tx\nDescription: Returns a stream of transactions. Relaying a transaction when arrives the mempool.",
@@ -1698,6 +1731,17 @@
           "type": "string"
         },
         "type": {
+          "type": "string"
+        }
+      }
+    },
+    "RedeemProof": {
+      "type": "object",
+      "properties": {
+        "proof": {
+          "type": "string"
+        },
+        "address": {
           "type": "string"
         }
       }

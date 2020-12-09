@@ -32,7 +32,7 @@ func (c *CoinsProofSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 	dst = append(dst, c.RedeemAccount[:]...)
 
 	// Field (1) 'MerkleBranch'
-	if len(c.MerkleBranch) > 128 {
+	if len(c.MerkleBranch) > 64 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -74,7 +74,7 @@ func (c *CoinsProofSerializable) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'MerkleBranch'
 	{
 		buf = tail[o1:]
-		num, err := ssz.DivideInt2(len(buf), 32, 128)
+		num, err := ssz.DivideInt2(len(buf), 32, 64)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (c *CoinsProofSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (1) 'MerkleBranch'
 	{
-		if len(c.MerkleBranch) > 128 {
+		if len(c.MerkleBranch) > 64 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -119,7 +119,7 @@ func (c *CoinsProofSerializable) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 			hh.Append(i[:])
 		}
 		numItems := uint64(len(c.MerkleBranch))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(128, numItems, 32))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(64, numItems, 32))
 	}
 
 	// Field (2) 'PkScript'

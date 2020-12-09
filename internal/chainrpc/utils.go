@@ -1,6 +1,7 @@
 package chainrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -296,4 +298,47 @@ func newCoinsNotifee() *coinNotifee {
 		tx: make(chan *primitives.Tx),
 	}
 	return bn
+}
+
+func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemProof) (*proto.Success, error) {
+	defer ctx.Done()
+	proofBytes, err := hex.DecodeString(data.Proof)
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := hex.DecodeString(data.Address)
+	if err != nil {
+		return &proto.Success{Error: err.Error()}, nil
+	}
+	if len(addr) != 20 {
+		return &proto.Success{Error: errors.New("invalid address size").Error()}, nil
+	}
+	var address [20]byte
+	copy(address[:], addr)
+
+	proofs := make([]*burnproof.CoinsProof, 0)
+	buf := bytes.NewBuffer(proofBytes)
+	for {
+		proof := new(burnproof.CoinsProof)
+		err = proof.Unmarshal(buf)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+		if buf.Len() < 0 {
+			break
+		}
+		proofs = append(proofs, proof)
+	}
+
+	for _, p := range proofs {
+		_, err := p.ToSerializable(address)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+
+		// Add to a mempool and broadcast
+	}
+
+	return &proto.Success{Success: true}, nil
 }

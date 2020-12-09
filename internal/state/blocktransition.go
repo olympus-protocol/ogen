@@ -320,8 +320,8 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 	return nil
 }
 
-// ApplyCoinProof applies a migration proof to the coin state.
-func (s *state) ApplyCoinProof(p *burnproof.CoinsProofSerializable) error {
+// IsCoinProofValid checks if an coin proof is valid.
+func (s *state) IsCoinProofValid(p *burnproof.CoinsProofSerializable) error {
 	proof, err := p.ToCoinProof()
 	if err != nil {
 		return err
@@ -332,13 +332,26 @@ func (s *state) ApplyCoinProof(p *burnproof.CoinsProofSerializable) error {
 		return err
 	}
 
-	u := s.CoinsState
-
-	hash := p.Hash()
-
-	if _, ok := u.ProofsVerified[hash]; ok {
+	if _, ok := s.CoinsState.ProofsVerified[p.Hash()]; ok {
 		return errors.New("proof already verified")
 	}
+
+	return nil
+}
+
+// ApplyCoinProof applies a migration proof to the coin state.
+func (s *state) ApplyCoinProof(p *burnproof.CoinsProofSerializable) error {
+	err := s.IsCoinProofValid(p)
+	if err != nil {
+		return err
+	}
+
+	proof, err := p.ToCoinProof()
+	if err != nil {
+		return err
+	}
+
+	u := s.CoinsState
 
 	sumBalance := uint64(0)
 	for _, out := range proof.Transaction.TxOut {
@@ -347,7 +360,7 @@ func (s *state) ApplyCoinProof(p *burnproof.CoinsProofSerializable) error {
 
 	u.Balances[p.RedeemAccount] += sumBalance
 
-	u.ProofsVerified[hash] = struct{}{}
+	u.ProofsVerified[p.Hash()] = struct{}{}
 
 	return nil
 }

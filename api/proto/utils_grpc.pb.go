@@ -65,6 +65,12 @@ type UtilsClient interface {
 	//Response: Tx
 	//Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
 	SubscribeMempool(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Utils_SubscribeMempoolClient, error)
+	//*
+	//Method: SubmitRedeemProof
+	//Input: RedeemProof
+	//Response: Tx
+	//Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
+	SubmitRedeemProof(ctx context.Context, in *RedeemProof, opts ...grpc.CallOption) (*Success, error)
 }
 
 type utilsClient struct {
@@ -193,6 +199,15 @@ func (x *utilsSubscribeMempoolClient) Recv() (*Tx, error) {
 	return m, nil
 }
 
+func (c *utilsClient) SubmitRedeemProof(ctx context.Context, in *RedeemProof, opts ...grpc.CallOption) (*Success, error) {
+	out := new(Success)
+	err := c.cc.Invoke(ctx, "/Utils/SubmitRedeemProof", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UtilsServer is the server API for Utils service.
 // All implementations must embed UnimplementedUtilsServer
 // for forward compatibility
@@ -245,6 +260,12 @@ type UtilsServer interface {
 	//Response: Tx
 	//Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
 	SubscribeMempool(*Empty, Utils_SubscribeMempoolServer) error
+	//*
+	//Method: SubmitRedeemProof
+	//Input: RedeemProof
+	//Response: Tx
+	//Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
+	SubmitRedeemProof(context.Context, *RedeemProof) (*Success, error)
 	mustEmbedUnimplementedUtilsServer()
 }
 
@@ -275,6 +296,9 @@ func (UnimplementedUtilsServer) SyncMempool(*Empty, Utils_SyncMempoolServer) err
 }
 func (UnimplementedUtilsServer) SubscribeMempool(*Empty, Utils_SubscribeMempoolServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeMempool not implemented")
+}
+func (UnimplementedUtilsServer) SubmitRedeemProof(context.Context, *RedeemProof) (*Success, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitRedeemProof not implemented")
 }
 func (UnimplementedUtilsServer) mustEmbedUnimplementedUtilsServer() {}
 
@@ -439,6 +463,24 @@ func (x *utilsSubscribeMempoolServer) Send(m *Tx) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Utils_SubmitRedeemProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeemProof)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UtilsServer).SubmitRedeemProof(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Utils/SubmitRedeemProof",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UtilsServer).SubmitRedeemProof(ctx, req.(*RedeemProof))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Utils_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "Utils",
 	HandlerType: (*UtilsServer)(nil),
@@ -466,6 +508,10 @@ var _Utils_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetParticipationStatus",
 			Handler:    _Utils_GetParticipationStatus_Handler,
+		},
+		{
+			MethodName: "SubmitRedeemProof",
+			Handler:    _Utils_SubmitRedeemProof_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
