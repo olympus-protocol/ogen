@@ -1,9 +1,9 @@
 package models
 
 type Block struct {
-	Hash            string `gorm:"primarykey"`
-	Header          BlockHeader
-	Signature       string
-	RandaoSignature string
-	Height          int
+	Hash            [32]byte    `gorm:"primarykey"`
+	Header          BlockHeader `gorm:"foreignkey:Hash"`
+	Signature       [96]byte
+	RandaoSignature [96]byte
+	Height          uint64
 }

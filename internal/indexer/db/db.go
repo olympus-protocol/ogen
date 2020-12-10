@@ -27,14 +27,62 @@ func (d *Database) Close() {
 }
 
 func (d *Database) Migrate() error {
+
 	err := d.db.AutoMigrate(&models.Block{})
 	if err != nil {
 		return err
 	}
+
 	err = d.db.AutoMigrate(&models.BlockHeader{})
 	if err != nil {
 		return err
 	}
+
+	err = d.db.AutoMigrate(&models.Deposit{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.Epoch{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.Exit{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.ProposerSlashing{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.RandaoSlashing{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.Slot{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.Tx{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.Vote{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.VoteSlashing{})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

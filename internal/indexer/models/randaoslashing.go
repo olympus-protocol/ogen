@@ -1,9 +1,9 @@
 package models
 
 type RandaoSlashing struct {
-	Hash               string `gorm:"primarykey"`
-	BlockHash          string
-	RandaoReveal       string
-	Slot               int
-	ValidatorPublicKey string
+	Hash               [32]byte `gorm:"primarykey"`
+	BlockHash          [32]byte
+	RandaoReveal       [32]byte
+	Slot               uint64
+	ValidatorPublicKey [96]byte
 }

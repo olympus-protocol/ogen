@@ -1,8 +1,8 @@
 package models
 
 type Slot struct {
-	Slot          int `gorm:"primarykey"`
-	BlockHash     string
-	ProposerIndex int
+	Slot          uint64 `gorm:"primarykey"`
+	BlockHash     [96]byte
+	ProposerIndex uint64
 	Proposed      bool
 }

@@ -1,8 +1,8 @@
 package models
 
 type VoteSlashing struct {
-	Hash      string `gorm:"primarykey"`
-	BlockHash string
-	Vote1     Vote
-	Vote2     Vote
+	Hash      [32]byte `gorm:"primarykey"`
+	BlockHash [32]byte
+	Vote1     Vote `gorm:"foreignkey:Hash"`
+	Vote2     Vote `gorm:"foreignkey:Hash"`
 }

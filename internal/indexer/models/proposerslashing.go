@@ -1,11 +1,11 @@
 package models
 
 type ProposerSlashing struct {
-	Hash               string `gorm:"primarykey"`
-	BlockHash          string
-	BlockHeader1       BlockHeader
-	BlockHeader2       BlockHeader
-	Signature1         string
-	Signature2         string
-	ValidatorPublicKey string
+	Hash               [32]byte `gorm:"primarykey"`
+	BlockHash          [32]byte
+	BlockHeader1       BlockHeader `gorm:"foreignkey:Hash"`
+	BlockHeader2       BlockHeader `gorm:"foreignkey:Hash"`
+	Signature1         [96]byte
+	Signature2         [96]byte
+	ValidatorPublicKey [48]byte
 }

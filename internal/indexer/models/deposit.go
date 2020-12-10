@@ -1,16 +1,16 @@
 package models
 
 type Deposit struct {
-	Hash      string `gorm:"primarykey"`
-	BlockHash string
-	PublicKey string
-	Signature string
-	Data      DepositData
+	Hash      [32]byte `gorm:"primarykey"`
+	BlockHash [32]byte
+	PublicKey [48]byte
+	Signature [96]byte
+	Data      DepositData `gorm:"foreignkey:Hash"`
 }
 
 type DepositData struct {
-	Hash              string `gorm:"primarykey"`
-	PublicKey         string
-	ProofOfPossession string
-	WithdrawalAddress string
+	Hash              [32]byte `gorm:"primarykey"`
+	PublicKey         [48]byte
+	ProofOfPossession [96]byte
+	WithdrawalAddress [20]byte
 }
