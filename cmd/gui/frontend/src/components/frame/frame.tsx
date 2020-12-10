@@ -1,6 +1,6 @@
 import React from 'react';
 import { Footer } from '../footer/footer';
-import { Header } from '../header/header';
+import Header from '../header/header';
 import { Sidebar } from '../sidebar/sidebar';
 
 interface FrameProps {

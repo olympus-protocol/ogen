@@ -526,3 +526,15 @@
   text-align: center;
   cursor: pointer;
 }
+
+.form-control-error {
+  display: block;
+  margin-bottom: 1rem;
+  color: red;
+}
+
+.ReactModal__Content {
+  max-width: 500px;
+  height: 400px;
+  margin: 0 auto;
+}
