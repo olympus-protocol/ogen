@@ -21,7 +21,7 @@ func (m *MsgPartialExits) Unmarshal(b []byte) error {
 
 // Command returns the message topic
 func (m *MsgPartialExits) Command() string {
-	return MsgPartialExitCmd
+	return MsgPartialExitsCmd
 }
 
 // MaxPayloadLength returns the maximum size of the MsgExits message.
