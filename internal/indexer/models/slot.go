@@ -1,7 +1,7 @@
 package models
 
 type Slot struct {
-	Slot          int
+	Slot          int `gorm:"primarykey"`
 	BlockHash     string
 	ProposerIndex int
 	Proposed      bool

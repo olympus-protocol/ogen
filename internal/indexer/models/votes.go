@@ -4,11 +4,12 @@ type Vote struct {
 	BlockHash             string
 	Signature             string
 	ParticipationBitfield string
-	Hash                  string
+	Hash                  string `gorm:"primarykey"`
 	Data                  VoteData
 }
 
 type VoteData struct {
+	Hash            string `gorm:"primarykey"`
 	Slot            int
 	FromEpoch       int
 	FromHash        string

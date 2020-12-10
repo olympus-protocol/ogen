@@ -1,7 +1,7 @@
 package models
 
 type Epoch struct {
-	Epoch                   int
+	Epoch                   int `gorm:"primarykey"`
 	Slot1                   Slot
 	Slot2                   Slot
 	Slot3                   Slot

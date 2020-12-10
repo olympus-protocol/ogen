@@ -1,7 +1,7 @@
 package models
 
 type BlockHeader struct {
-	Hash                       string
+	Hash                       string `gorm:"primarykey"`
 	Version                    string
 	Nonce                      string
 	TxMerkleRoot               string

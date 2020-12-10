@@ -2,7 +2,7 @@ package models
 
 type Tx struct {
 	BlockHash         string
-	Hash              string
+	Hash              string `gorm:"primarykey"`
 	TxType            int
 	ToAddress         string
 	FromPublicKey     string

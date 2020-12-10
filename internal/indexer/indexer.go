@@ -47,6 +47,7 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 
 	rpcClient := rpcclient.NewRPCClient(rpcEndpoint, true)
 	var wg sync.WaitGroup
+
 	database := db.NewDB(dbConnString, log, &wg, netParams)
 
 	err := database.Migrate()
