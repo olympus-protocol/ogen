@@ -49,8 +49,10 @@ const (
 	MsgSyncEndCmd = "syncend"
 	// MsgFinalizationCmd announce a peer to reached state finalization
 	MsgFinalizationCmd = "finalized"
-	// MsgProofsCmd is for version handshake
+	// MsgProofsCmd is coin redeem
 	MsgProofsCmd = "proofs"
+	// MsgPartialExitsCmd subtract coins from a contract
+	MsgPartialExitsCmd = "partialexit"
 )
 
 // Message interface for all the messages
@@ -112,6 +114,8 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgFinalization{}
 	case MsgProofsCmd:
 		msg = &MsgProofs{}
+	case MsgPartialExitsCmd:
+		msg = &MsgPartialExits{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}
