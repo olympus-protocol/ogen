@@ -8,21 +8,22 @@ import (
 type BlockHeader struct {
 	Version                    uint64
 	Nonce                      uint64
-	TxMerkleRoot               [32]byte `ssz-size:"32"`
-	TxMultiMerkleRoot          [32]byte `ssz-size:"32"`
-	VoteMerkleRoot             [32]byte `ssz-size:"32"`
-	DepositMerkleRoot          [32]byte `ssz-size:"32"`
-	ExitMerkleRoot             [32]byte `ssz-size:"32"`
-	VoteSlashingMerkleRoot     [32]byte `ssz-size:"32"`
-	RANDAOSlashingMerkleRoot   [32]byte `ssz-size:"32"`
-	ProposerSlashingMerkleRoot [32]byte `ssz-size:"32"`
-	GovernanceVotesMerkleRoot  [32]byte `ssz-size:"32"`
-	CoinProofsMerkleRoot       [32]byte `ssz-size:"32"`
-	PrevBlockHash              [32]byte `ssz-size:"32"`
+	TxMerkleRoot               [32]byte
+	TxMultiMerkleRoot          [32]byte
+	VoteMerkleRoot             [32]byte
+	DepositMerkleRoot          [32]byte
+	ExitMerkleRoot             [32]byte
+	PartialExitMerkleRoot      [32]byte
+	VoteSlashingMerkleRoot     [32]byte
+	RANDAOSlashingMerkleRoot   [32]byte
+	ProposerSlashingMerkleRoot [32]byte
+	GovernanceVotesMerkleRoot  [32]byte
+	CoinProofsMerkleRoot       [32]byte
+	PrevBlockHash              [32]byte
 	Timestamp                  uint64
 	Slot                       uint64
-	StateRoot                  [32]byte `ssz-size:"32"`
-	FeeAddress                 [20]byte `ssz-size:"20"`
+	StateRoot                  [32]byte
+	FeeAddress                 [20]byte
 }
 
 // Marshal encodes the data.

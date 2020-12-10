@@ -235,6 +235,7 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 			TxsMulti:          FuzzTxMulti(2),
 			Deposits:          FuzzDeposit(5, true),
 			Exits:             FuzzExits(5),
+			PartialExit:       FuzzPartialExits(5),
 			VoteSlashings:     FuzzVoteSlashing(2, true, true),
 			RANDAOSlashings:   FuzzRANDAOSlashing(2),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
@@ -292,6 +293,26 @@ func FuzzExits(n int) []*primitives.Exit {
 			ValidatorPubkey: pub,
 			Signature:       sig,
 			WithdrawPubkey:  pub,
+		}
+		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzPartialExits return an slice of PartialExits
+func FuzzPartialExits(n int) []*primitives.PartialExit {
+	var v []*primitives.PartialExit
+	for i := 0; i < n; i++ {
+		var sig [96]byte
+		var pub [48]byte
+		k, _ := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
+		d := &primitives.PartialExit{
+			ValidatorPubkey: pub,
+			Signature:       sig,
+			WithdrawPubkey:  pub,
+			Amount:          10 * 1e8,
 		}
 		v = append(v, d)
 	}
