@@ -358,7 +358,12 @@ func (s *state) ApplyCoinProof(p *burnproof.CoinsProofSerializable) error {
 		sumBalance += uint64(out.Value)
 	}
 
-	u.Balances[p.RedeemAccount] += sumBalance
+	pkh, err := p.RedeemAccountHash()
+	if err != nil {
+		return err
+	}
+
+	u.Balances[pkh] += sumBalance
 
 	u.ProofsVerified[p.Hash()] = struct{}{}
 

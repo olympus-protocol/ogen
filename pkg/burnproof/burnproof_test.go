@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var proofBytes, _ = ioutil.ReadFile("./merklebranch_test.dat")
+var proofBytes, _ = ioutil.ReadFile("./cronos_merklebranch.dat")
 
 func TestCoinProofDecode(t *testing.T) {
 	buf := bytes.NewBuffer(proofBytes)
@@ -27,8 +27,9 @@ func TestCoinProofDecode(t *testing.T) {
 }
 
 func TestBurnVerify(t *testing.T) {
-	acc := []byte("12345")
-	var accBytes [20]byte
+	acc := []byte("tlpub1wa3kk77yd96tzr3j93fjn4ecudjpz0p6r9vqkp")
+
+	var accBytes [44]byte
 	copy(accBytes[:], acc)
 
 	err := burnproof.VerifyBurn(proofBytes, accBytes)
@@ -43,15 +44,14 @@ func TestBurnProofsToSerializable(t *testing.T) {
 		coinProof := new(burnproof.CoinsProof)
 		err := coinProof.Unmarshal(buf)
 		assert.NoError(t, err)
-
 		proofs = append(proofs, coinProof)
 		if buf.Len() <= 0 {
 			break
 		}
 	}
 
-	acc := []byte("12345")
-	var accBytes [20]byte
+	acc := []byte("tlpub1wa3kk77yd96tzr3j93fjn4ecudjpz0p6r9vqkp")
+	var accBytes [44]byte
 	copy(accBytes[:], acc)
 
 	for _, proof := range proofs {
@@ -60,13 +60,15 @@ func TestBurnProofsToSerializable(t *testing.T) {
 
 		ser, err := serProof.Marshal()
 		assert.NoError(t, err)
-
 		var newSerProof burnproof.CoinsProofSerializable
 
 		err = newSerProof.Unmarshal(ser)
 		assert.NoError(t, err)
 
 		toCoinProof, err := newSerProof.ToCoinProof()
+		assert.NoError(t, err)
+
+		err = burnproof.VerifyBurn(proofBytes, accBytes)
 		assert.NoError(t, err)
 
 		assert.Equal(t, proof, toCoinProof)

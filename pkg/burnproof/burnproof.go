@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"io"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -15,7 +17,7 @@ import (
 var merkleRootHash [32]byte
 
 func init() {
-	hashBytes, _ := hex.DecodeString("804ffcff836450619901d6180c817b612cb94bb7ac0b6ebd3f50a0d2668d604b") //  PolisBlockchain "height": 742048
+	hashBytes, _ := hex.DecodeString("4b608d66d2a0503fbd6e0bacb74bb92c617b810c18d6019961506483fffc4f80") //  PolisBlockchain "height": 742048
 	copy(merkleRootHash[:], hashBytes)
 }
 
@@ -24,7 +26,7 @@ type CoinsProofSerializable struct {
 	MerkleBranch  [][32]byte `ssz-max:"64"`
 	PkScript      [25]byte
 	Transaction   [192]byte
-	RedeemAccount [20]byte
+	RedeemAccount [44]byte
 }
 
 func (c *CoinsProofSerializable) Marshal() ([]byte, error) {
@@ -38,6 +40,22 @@ func (c *CoinsProofSerializable) Unmarshal(b []byte) error {
 func (c *CoinsProofSerializable) Hash() chainhash.Hash {
 	b, _ := c.Marshal()
 	return chainhash.HashH(b)
+}
+
+func (c *CoinsProofSerializable) RedeemAccountHash() ([20]byte, error) {
+	accStr := string(c.RedeemAccount[:])
+	_, dec, err := bech32.Decode(accStr)
+	if err != nil {
+		return [20]byte{}, err
+	}
+	if len(dec) != 20 {
+		return [20]byte{}, errors.New("invalid account hash")
+	}
+
+	var acc [20]byte
+	copy(acc[:], dec)
+
+	return acc, nil
 }
 
 func (c *CoinsProofSerializable) ToCoinProof() (*CoinsProof, error) {
@@ -74,7 +92,7 @@ type CoinsProof struct {
 	Transaction  wire.MsgTx
 }
 
-func (c *CoinsProof) ToSerializable(acc [20]byte) (*CoinsProofSerializable, error) {
+func (c *CoinsProof) ToSerializable(acc [44]byte) (*CoinsProofSerializable, error) {
 	merkles := make([][32]byte, len(c.MerkleBranch))
 
 	for i := range merkles {
@@ -230,7 +248,7 @@ func verifyScript(proof *CoinsProof) error {
 	return nil
 }
 
-func verifyPkhMatchesAddress(script []byte, address [20]byte) error {
+func verifyPkhMatchesAddress(script []byte, address [44]byte) error {
 	if len(script) != 25 {
 		return fmt.Errorf("expected transaction pkscript to be 25, but got %d", len(script))
 	}
@@ -256,7 +274,7 @@ func verifyPkhMatchesAddress(script []byte, address [20]byte) error {
 }
 
 // VerifyBurn verifies a burn proof.
-func VerifyBurn(proofBytes []byte, address [20]byte) error {
+func VerifyBurn(proofBytes []byte, address [44]byte) error {
 	var proofs []*CoinsProof
 
 	buf := bytes.NewBuffer(proofBytes)
@@ -285,7 +303,7 @@ func VerifyBurn(proofBytes []byte, address [20]byte) error {
 }
 
 // VerifyBurnProof verifies a single burn proof.
-func VerifyBurnProof(p *CoinsProof, address [20]byte) error {
+func VerifyBurnProof(p *CoinsProof, address [44]byte) error {
 	if err := verifyMerkleRoot(merkleRootHash, p); err != nil {
 		return err
 	}

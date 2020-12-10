@@ -13,7 +13,7 @@ func (c *CoinsProofSerializable) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the CoinsProofSerializable object to a target array
 func (c *CoinsProofSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(249)
+	offset := int(273)
 
 	// Field (0) 'MerkleIndex'
 	dst = ssz.MarshalUint64(dst, c.MerkleIndex)
@@ -47,7 +47,7 @@ func (c *CoinsProofSerializable) MarshalSSZTo(buf []byte) (dst []byte, err error
 func (c *CoinsProofSerializable) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 249 {
+	if size < 273 {
 		return ssz.ErrSize
 	}
 
@@ -69,7 +69,7 @@ func (c *CoinsProofSerializable) UnmarshalSSZ(buf []byte) error {
 	copy(c.Transaction[:], buf[37:229])
 
 	// Field (4) 'RedeemAccount'
-	copy(c.RedeemAccount[:], buf[229:249])
+	copy(c.RedeemAccount[:], buf[229:273])
 
 	// Field (1) 'MerkleBranch'
 	{
@@ -88,7 +88,7 @@ func (c *CoinsProofSerializable) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the CoinsProofSerializable object
 func (c *CoinsProofSerializable) SizeSSZ() (size int) {
-	size = 249
+	size = 273
 
 	// Field (1) 'MerkleBranch'
 	size += len(c.MerkleBranch) * 32

@@ -307,15 +307,14 @@ func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemP
 		return nil, err
 	}
 
-	addr, err := hex.DecodeString(data.Address)
-	if err != nil {
-		return &proto.Success{Error: err.Error()}, nil
-	}
-	if len(addr) != 20 {
+	addrBytes := []byte(data.Address)
+
+	if len(addrBytes) != 44 {
 		return &proto.Success{Error: errors.New("invalid address size").Error()}, nil
 	}
-	var address [20]byte
-	copy(address[:], addr)
+
+	var address [44]byte
+	copy(address[:], addrBytes)
 
 	proofs := make([]*burnproof.CoinsProof, 0)
 	buf := bytes.NewBuffer(proofBytes)
