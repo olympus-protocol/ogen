@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
@@ -30,11 +31,13 @@ type ActionMempool interface {
 	RemoveByBlock(b *primitives.Block, tipState state.State)
 	AddGovernanceVote(vote *primitives.GovernanceVote, state state.State) error
 	AddExit(exit *primitives.Exit) error
+	AddProof(p *burnproof.CoinsProofSerializable) error
 	GetProposerSlashings(num int, state state.State) ([]*primitives.ProposerSlashing, error)
 	GetExits(num int, state state.State) ([]*primitives.Exit, error)
 	GetVoteSlashings(num int, state state.State) ([]*primitives.VoteSlashing, error)
 	GetRANDAOSlashings(num int, state state.State) ([]*primitives.RANDAOSlashing, error)
 	GetGovernanceVotes(num int, state state.State) ([]*primitives.GovernanceVote, error)
+	GetProofs(num int, state state.State) ([]*burnproof.CoinsProofSerializable, error)
 }
 
 var _ ActionMempool = &actionMempool{}
@@ -59,6 +62,9 @@ type actionMempool struct {
 
 	governanceVoteLock sync.Mutex
 	governanceVotes    map[chainhash.Hash]*primitives.GovernanceVote
+
+	coinProofsLock sync.Mutex
+	coinProofs     map[chainhash.Hash]*burnproof.CoinsProofSerializable
 
 	netParams *params.ChainParams
 	ctx       context.Context
@@ -178,6 +184,10 @@ func NewActionMempool(blockchain chain.Blockchain, hostnode hostnode.HostNode) (
 		return nil, err
 	}
 
+	if err := am.host.RegisterTopicHandler(p2p.MsgProofsCmd, am.handleProofs); err != nil {
+		return nil, err
+	}
+
 	return am, nil
 }
 
@@ -275,6 +285,27 @@ func (am *actionMempool) handleGovernance(id peer.ID, msg p2p.Message) error {
 	err := am.AddGovernanceVote(data.Data, s)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (am *actionMempool) handleProofs(id peer.ID, msg p2p.Message) error {
+
+	if id == am.host.GetHost().ID() {
+		return nil
+	}
+
+	data, ok := msg.(*p2p.MsgProofs)
+	if !ok {
+		return errors.New("wrong message on proofs topic")
+	}
+
+	for _, p := range data.Proofs {
+		err := am.AddProof(p)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -469,6 +500,29 @@ outer1:
 	}
 	am.governanceVotes = newGovernanceVotes
 	am.governanceVoteLock.Unlock()
+
+	am.coinProofsLock.Lock()
+	newProofsPool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
+
+	for k, proof := range am.coinProofs {
+		proofHash := proof.Hash()
+
+		for _, proof := range b.CoinProofs {
+			blockProofHash := proof.Hash()
+
+			if blockProofHash.IsEqual(&proofHash) {
+				continue
+			}
+		}
+
+		if err := tipState.IsCoinProofValid(proof); err != nil {
+			continue
+		}
+
+		newProofsPool[k] = proof
+	}
+	am.coinProofs = newProofsPool
+	am.coinProofsLock.Unlock()
 }
 
 // AddGovernanceVote adds a governance vote to the mempool.
@@ -508,7 +562,7 @@ func (am *actionMempool) AddExit(exit *primitives.Exit) error {
 	defer am.exitsLock.Unlock()
 
 	for _, e := range am.exits {
-		if bytes.Equal(e.ValidatorPubkey[:], e.ValidatorPubkey[:]) {
+		if bytes.Equal(e.ValidatorPubkey[:], exit.ValidatorPubkey[:]) {
 			return nil
 		}
 	}
@@ -516,6 +570,24 @@ func (am *actionMempool) AddExit(exit *primitives.Exit) error {
 	_, ok := am.exits[exit.Hash()]
 	if !ok {
 		am.exits[exit.Hash()] = exit
+	}
+
+	return nil
+}
+
+func (am *actionMempool) AddProof(p *burnproof.CoinsProofSerializable) error {
+	s := am.chain.State().TipState()
+
+	if err := s.IsCoinProofValid(p); err != nil {
+		return err
+	}
+
+	am.coinProofsLock.Lock()
+	defer am.coinProofsLock.Unlock()
+
+	_, ok := am.coinProofs[p.Hash()]
+	if !ok {
+		am.coinProofs[p.Hash()] = p
 	}
 
 	return nil
@@ -639,6 +711,30 @@ func (am *actionMempool) GetGovernanceVotes(num int, state state.State) ([]*prim
 	am.governanceVotes = newMempool
 
 	return votes, nil
+}
+
+// GetProofs gets redeem proofs to be included on the block.
+func (am *actionMempool) GetProofs(num int, state state.State) ([]*burnproof.CoinsProofSerializable, error) {
+	am.coinProofsLock.Lock()
+	defer am.coinProofsLock.Unlock()
+	proofs := make([]*burnproof.CoinsProofSerializable, 0, num)
+	newMempool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
+
+	for k, p := range am.coinProofs {
+		if err := state.ApplyCoinProof(p); err != nil {
+			continue
+		}
+		// if there is no error, it can be part of the new mempool
+		newMempool[k] = p
+
+		if len(proofs) < num {
+			proofs = append(proofs, p)
+		}
+	}
+
+	am.coinProofs = newMempool
+
+	return proofs, nil
 }
 
 var _ chain.BlockchainNotifee = &actionMempool{}

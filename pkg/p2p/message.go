@@ -49,6 +49,8 @@ const (
 	MsgSyncEndCmd = "syncend"
 	// MsgFinalizationCmd announce a peer to reached state finalization
 	MsgFinalizationCmd = "finalized"
+	// MsgProofsCmd is for version handshake
+	MsgProofsCmd = "proofs"
 )
 
 // Message interface for all the messages
@@ -108,6 +110,8 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgSyncEnd{}
 	case MsgFinalizationCmd:
 		msg = &MsgFinalization{}
+	case MsgProofsCmd:
+		msg = &MsgProofs{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

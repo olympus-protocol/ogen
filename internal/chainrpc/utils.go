@@ -1,6 +1,7 @@
 package chainrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -296,4 +298,66 @@ func newCoinsNotifee() *coinNotifee {
 		tx: make(chan *primitives.Tx),
 	}
 	return bn
+}
+
+func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemProof) (*proto.Success, error) {
+	defer ctx.Done()
+	proofBytes, err := hex.DecodeString(data.Proof)
+	if err != nil {
+		return nil, err
+	}
+
+	addrBytes := []byte(data.Address)
+
+	if len(addrBytes) != 44 {
+		return &proto.Success{Error: errors.New("invalid address size").Error()}, nil
+	}
+
+	var address [44]byte
+	copy(address[:], addrBytes)
+
+	proofs := make([]*burnproof.CoinsProof, 0)
+	buf := bytes.NewBuffer(proofBytes)
+	for {
+		proof := new(burnproof.CoinsProof)
+		err = proof.Unmarshal(buf)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+		if buf.Len() < 0 {
+			break
+		}
+		proofs = append(proofs, proof)
+	}
+
+	if len(proofs) > 2048 {
+		return &proto.Success{Error: "too many proofs submited, max number is 2048"}, nil
+	}
+
+	serializableProofs := make([]*burnproof.CoinsProofSerializable, len(proofs))
+
+	for i, p := range proofs {
+		pser, err := p.ToSerializable(address)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+
+		serializableProofs[i] = pser
+
+		// Add to a mempool and broadcast
+		err = s.actionsMempool.AddProof(pser)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+
+	}
+
+	msg := &p2p.MsgProofs{Proofs: serializableProofs}
+
+	err = s.host.Broadcast(msg)
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
+	}
+
+	return &proto.Success{Success: true}, nil
 }

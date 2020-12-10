@@ -10,7 +10,6 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3
 	github.com/gin-gonic/gin v1.6.3
-	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
@@ -48,4 +47,6 @@ require (
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
+	gorm.io/driver/sqlite v1.1.4
+	gorm.io/gorm v1.20.8
 )

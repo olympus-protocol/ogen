@@ -1,16 +1,8 @@
 package primitives
 
 import (
-	"errors"
-
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
-
-// ErrorBlockHeaderSize returns when the Blockheader decompresed size is above MaxBlockHeaderBytes
-var ErrorBlockHeaderSize = errors.New("blockheader size is too big")
-
-// MaxBlockHeaderBytes is the maximum amount of bytes a header can contain.
-const MaxBlockHeaderBytes = 372
 
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
@@ -25,6 +17,7 @@ type BlockHeader struct {
 	RANDAOSlashingMerkleRoot   [32]byte `ssz-size:"32"`
 	ProposerSlashingMerkleRoot [32]byte `ssz-size:"32"`
 	GovernanceVotesMerkleRoot  [32]byte `ssz-size:"32"`
+	CoinProofsMerkleRoot       [32]byte `ssz-size:"32"`
 	PrevBlockHash              [32]byte `ssz-size:"32"`
 	Timestamp                  uint64
 	Slot                       uint64

@@ -186,10 +186,10 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 			host: hostnode,
 		},
 		utilsServer: &utilsServer{
-			keystore:     ks,
-			host:         hostnode,
-			coinsMempool: cm,
-			chain:        chain,
+			keystore:       ks,
+			host:           hostnode,
+			coinsMempool:   cm,
+			chain:          chain,
 			actionsMempool: am,
 		},
 		walletServer: &walletServer{
