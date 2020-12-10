@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/api/proto"
-	"github.com/olympus-protocol/ogen/cmd/ogen/indexer/db"
+	"github.com/olympus-protocol/ogen/internal/indexer/db"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -31,55 +31,14 @@ func (i *Indexer) Start() {
 	go i.subscribeBlocks()
 }
 
-func (i *Indexer) subscribeBlocks() {
-	subscribe, err := i.client.Chain().SubscribeBlocks(context.Background(), &proto.Empty{})
-	if err != nil {
-		panic("unable to initialize subscription client")
-	}
-	for {
-		select {
-		case <-i.ctx.Done():
-			subscribe.CloseSend()
-			break
-		default:
-			res, err := subscribe.Recv()
-			if err == io.EOF || err != nil {
-				// listener closed restart with sync
-				i.initialSync()
-				continue
-			}
-			// To make sure the explorer is always synced, every new block we reinsert the last 5
-			blockBytes, err := hex.DecodeString(res.Data)
-			if err != nil {
-				i.log.Errorf("unable to parse error %s", err.Error())
-				continue
-			}
-			block := new(primitives.Block)
-			err = block.Unmarshal(blockBytes)
-			if err != nil {
-				i.log.Errorf("unable to parse error %s", err.Error())
-				continue
-			}
-			err = i.db.InsertBlock(block)
-			if err != nil {
-				if err == db.ErrorPrevBlockHash {
-					i.log.Error(db.ErrorPrevBlockHash)
-					i.log.Info("Restarting sync...")
-					i.initialSync()
-					continue
-				}
-				i.log.Errorf("unable to insert error %s", err.Error())
-				continue
-			}
-			i.log.Infof("Received new block %s", block.Hash().String())
-		}
-	}
+func (i *Indexer) Stop() {
+	i.db.Close()
 }
 
 func (i *Indexer) initialSync() {
+	// Get the saved state
 
-	// get the saved state
-	indexState, err := i.db.GetCurrentState()
+	indexState, err := i.db.GetState()
 	if err != nil {
 		i.log.Fatal(err)
 	}
@@ -136,20 +95,19 @@ func (i *Indexer) initialSync() {
 	i.log.Infof("Initial sync finished, parsed %d blocks", blockCount)
 }
 
-func (i *Indexer) Close() {
-	i.db.Close()
+func (i *Indexer) subscribeBlocks() {
 }
 
 func (i *Indexer) Context() context.Context {
 	return i.ctx
 }
 
-func NewIndexer(dbConnString, rpcEndpoint, dbDriver string, netParams *params.ChainParams) (*Indexer, error) {
+func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams) (*Indexer, error) {
 	log := logger.New(os.Stdin)
 
 	rpcClient := rpcclient.NewRPCClient(rpcEndpoint, true)
 	var wg sync.WaitGroup
-	database := db.NewDB(dbConnString, log, &wg, dbDriver, netParams)
+	database := db.NewDB(dbConnString, log, &wg, netParams)
 
 	err := database.Migrate()
 	if err != nil {

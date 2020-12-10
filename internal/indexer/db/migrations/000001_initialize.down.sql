@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS state;
+
 DROP TABLE IF EXISTS blocks;
 
 DROP TABLE IF EXISTS block_headers;
