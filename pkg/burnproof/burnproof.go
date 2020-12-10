@@ -19,7 +19,6 @@ func init() {
 	copy(merkleRootHash[:], hashBytes)
 }
 
-
 type CoinsProofSerializable struct {
 	MerkleIndex   uint64
 	MerkleBranch  [][32]byte `ssz-max:"64"`

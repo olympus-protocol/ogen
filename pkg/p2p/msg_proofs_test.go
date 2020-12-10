@@ -22,5 +22,5 @@ func TestMsgProofs(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgProofsCmd, v.Command())
-	assert.Equal(t, uint64(294016), v.MaxPayloadLength())
+	assert.Equal(t, uint64(4704256), v.MaxPayloadLength())
 }
