@@ -327,7 +327,7 @@ func (s *state) IsCoinProofValid(p *burnproof.CoinsProofSerializable) error {
 		return err
 	}
 
-	err = burnproof.VerifyBurnProof(proof, p.RedeemAccount)
+	err = burnproof.VerifyBurnProof(proof, p.RedeemAccount[:])
 	if err != nil {
 		return err
 	}

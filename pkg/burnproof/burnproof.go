@@ -17,7 +17,7 @@ import (
 var merkleRootHash [32]byte
 
 func init() {
-	hashBytes, _ := hex.DecodeString("4b608d66d2a0503fbd6e0bacb74bb92c617b810c18d6019961506483fffc4f80") //  PolisBlockchain "height": 742048
+	hashBytes, _ := hex.DecodeString("0be71bd3e3ec9046901b21f066407f8413c73dc3145d6a515d0fa03b28e0140f") //  PolisBlockchain "height": 742048
 	copy(merkleRootHash[:], hashBytes)
 }
 
@@ -248,7 +248,7 @@ func verifyScript(proof *CoinsProof) error {
 	return nil
 }
 
-func verifyPkhMatchesAddress(script []byte, address [44]byte) error {
+func verifyPkhMatchesAddress(script []byte, address []byte) error {
 	if len(script) != 25 {
 		return fmt.Errorf("expected transaction pkscript to be 25, but got %d", len(script))
 	}
@@ -274,7 +274,7 @@ func verifyPkhMatchesAddress(script []byte, address [44]byte) error {
 }
 
 // VerifyBurn verifies a burn proof.
-func VerifyBurn(proofBytes []byte, address [44]byte) error {
+func VerifyBurn(proofBytes []byte, address []byte) error {
 	var proofs []*CoinsProof
 
 	buf := bytes.NewBuffer(proofBytes)
@@ -303,7 +303,7 @@ func VerifyBurn(proofBytes []byte, address [44]byte) error {
 }
 
 // VerifyBurnProof verifies a single burn proof.
-func VerifyBurnProof(p *CoinsProof, address [44]byte) error {
+func VerifyBurnProof(p *CoinsProof, address []byte) error {
 	if err := verifyMerkleRoot(merkleRootHash, p); err != nil {
 		return err
 	}
