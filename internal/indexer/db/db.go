@@ -2,7 +2,6 @@ package db
 
 import (
 	"github.com/olympus-protocol/ogen/internal/indexer/models"
-	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"gorm.io/driver/sqlite"
@@ -17,8 +16,6 @@ type Database struct {
 
 	canClose  *sync.WaitGroup
 	netParams *params.ChainParams
-
-	state state.State
 }
 
 func (d *Database) Close() {
@@ -79,6 +76,16 @@ func (d *Database) Migrate() error {
 	}
 
 	err = d.db.AutoMigrate(&models.VoteSlashing{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.PartialExit{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&models.CoinProofs{})
 	if err != nil {
 		return err
 	}
