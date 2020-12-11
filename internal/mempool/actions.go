@@ -562,15 +562,15 @@ outer1:
 	newProofsPool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
 
 	for k, proof := range am.coinProofs {
-		proofHash := proof.Hash()
+		//proofHash := proof.Hash()
 
-		for _, proof := range b.CoinProofs {
-			blockProofHash := proof.Hash()
+		//for _, proof := range b.CoinProofs {
+		//	blockProofHash := proof.Hash()
 
-			if blockProofHash.IsEqual(&proofHash) {
-				continue
-			}
-		}
+		//	if blockProofHash.IsEqual(&proofHash) {
+		//		continue
+		//	}
+		//}
 
 		if err := tipState.IsCoinProofValid(proof); err != nil {
 			continue
@@ -585,19 +585,19 @@ outer1:
 	newPartialExitsPool := make(map[chainhash.Hash]*primitives.PartialExit)
 
 	for k, exit := range am.partialExits {
-		hash := exit.Hash()
+		//hash := exit.Hash()
 
-		for _, e := range b.PartialExit {
-			blockProofHash := e.Hash()
+		//for _, e := range b.PartialExit {
+		//	blockProofHash := e.Hash()
 
-			if blockProofHash.IsEqual(&hash) {
-				continue
-			}
-		}
+		//	if blockProofHash.IsEqual(&hash) {
+		//		continue
+		//	}
+		//}
 
-		if err := tipState.IsPartialExitValid(exit); err != nil {
-			continue
-		}
+		//if err := tipState.IsPartialExitValid(exit); err != nil {
+		//	continue
+		//}
 
 		newPartialExitsPool[k] = exit
 	}

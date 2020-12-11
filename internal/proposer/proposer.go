@@ -245,13 +245,13 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				coinproofs, err := p.actionsMempool.GetProofs(int(p.netParams.MaxCoinProofsPerBlock), blockState)
-				if err != nil {
-					p.log.Error(err)
-					blockTimer = time.NewTimer(time.Second * 2)
-					p.proposerLock.Unlock()
-					continue
-				}
+				//coinproofs, err := p.actionsMempool.GetProofs(int(p.netParams.MaxCoinProofsPerBlock), blockState)
+				//if err != nil {
+				//	p.log.Error(err)
+				//	blockTimer = time.NewTimer(time.Second * 2)
+				//	p.proposerLock.Unlock()
+				//	continue
+				//}
 
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
@@ -271,7 +271,7 @@ func (p *proposer) ProposeBlocks() {
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
 					GovernanceVotes:   governanceVotes,
-					CoinProofs:        coinproofs,
+					//CoinProofs:        coinproofs,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
@@ -283,7 +283,7 @@ func (p *proposer) ProposeBlocks() {
 				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
 				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
 				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
-				block.Header.CoinProofsMerkleRoot = block.CoinProofsMerkleRoot()
+				//block.Header.CoinProofsMerkleRoot = block.CoinProofsMerkleRoot()
 
 				blockHash := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))

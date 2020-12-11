@@ -18,6 +18,14 @@ type Database struct {
 	netParams *params.ChainParams
 }
 
+func (d *Database) AddBlock(b *models.Block) error {
+	res := d.db.Create(b)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
 func (d *Database) Close() {
 	d.canClose.Wait()
 	return
@@ -30,37 +38,7 @@ func (d *Database) Migrate() error {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.BlockHeader{})
-	if err != nil {
-		return err
-	}
-
 	err = d.db.AutoMigrate(&models.Deposit{})
-	if err != nil {
-		return err
-	}
-
-	err = d.db.AutoMigrate(&models.Epoch{})
-	if err != nil {
-		return err
-	}
-
-	err = d.db.AutoMigrate(&models.Exit{})
-	if err != nil {
-		return err
-	}
-
-	err = d.db.AutoMigrate(&models.ProposerSlashing{})
-	if err != nil {
-		return err
-	}
-
-	err = d.db.AutoMigrate(&models.RandaoSlashing{})
-	if err != nil {
-		return err
-	}
-
-	err = d.db.AutoMigrate(&models.Slot{})
 	if err != nil {
 		return err
 	}
@@ -75,17 +53,12 @@ func (d *Database) Migrate() error {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.VoteSlashing{})
+	err = d.db.AutoMigrate(&models.Epoch{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.PartialExit{})
-	if err != nil {
-		return err
-	}
-
-	err = d.db.AutoMigrate(&models.CoinProofs{})
+	err = d.db.AutoMigrate(&models.Exit{})
 	if err != nil {
 		return err
 	}

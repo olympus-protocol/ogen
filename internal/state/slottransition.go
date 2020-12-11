@@ -6,6 +6,11 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+// SetSlot runs a slot transition on state, mutating it.
+func (s *state) SetSlot(slot uint64) {
+	s.Slot = slot
+}
+
 // ProcessSlot runs a slot transition on state, mutating it.
 func (s *state) ProcessSlot(previousBlockRoot chainhash.Hash) {
 	netParams := config.GlobalParams.NetParams
