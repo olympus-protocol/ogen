@@ -53,4 +53,4 @@ certs/
 # Binaries
 ogen
 !ogen/
-pkged.go
+test.db

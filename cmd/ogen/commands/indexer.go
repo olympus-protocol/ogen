@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"github.com/olympus-protocol/ogen/cmd/ogen/indexer"
+	"github.com/olympus-protocol/ogen/internal/indexer"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"os"
@@ -11,13 +11,11 @@ import (
 var (
 	rpcEndpoint  string
 	dbConnString string
-	dbDriver     string
 )
 
 func init() {
 	indexerCmd.Flags().StringVar(&rpcEndpoint, "rpc_host", "127.0.0.1:24127", "IP and port of the RPC Server to connect")
 	indexerCmd.Flags().StringVar(&dbConnString, "dbconn", "", "Database connection string")
-	indexerCmd.Flags().StringVar(&dbDriver, "driver", "mysql", "Database driver to connect the database")
 
 	rootCmd.AddCommand(indexerCmd)
 }
@@ -46,12 +44,12 @@ var indexerCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		if dbConnString == "" || dbDriver == "" {
-			fmt.Println("Missing database connection string or driver")
+		if dbConnString == "" {
+			fmt.Println("Missing database connection string")
 			os.Exit(0)
 		}
 
-		idx, err := indexer.NewIndexer(dbConnString, rpcEndpoint, dbDriver, netParams)
+		idx, err := indexer.NewIndexer(dbConnString, rpcEndpoint, netParams)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(0)
@@ -59,6 +57,6 @@ var indexerCmd = &cobra.Command{
 
 		idx.Start()
 		<-idx.Context().Done()
-		idx.Close()
+		idx.Stop()
 	},
 }

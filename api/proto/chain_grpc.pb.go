@@ -24,8 +24,6 @@ type ChainClient interface {
 	GetAccountInfo(ctx context.Context, in *Account, opts ...grpc.CallOption) (*AccountInfo, error)
 	Sync(ctx context.Context, in *Hash, opts ...grpc.CallOption) (Chain_SyncClient, error)
 	SubscribeBlocks(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Chain_SubscribeBlocksClient, error)
-	SubscribeTransactions(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (Chain_SubscribeTransactionsClient, error)
-	SubscribeValidatorTransactions(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (Chain_SubscribeValidatorTransactionsClient, error)
 }
 
 type chainClient struct {
@@ -145,70 +143,6 @@ func (x *chainSubscribeBlocksClient) Recv() (*RawData, error) {
 	return m, nil
 }
 
-func (c *chainClient) SubscribeTransactions(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (Chain_SubscribeTransactionsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[2], "/Chain/SubscribeTransactions", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &chainSubscribeTransactionsClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Chain_SubscribeTransactionsClient interface {
-	Recv() (*RawData, error)
-	grpc.ClientStream
-}
-
-type chainSubscribeTransactionsClient struct {
-	grpc.ClientStream
-}
-
-func (x *chainSubscribeTransactionsClient) Recv() (*RawData, error) {
-	m := new(RawData)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *chainClient) SubscribeValidatorTransactions(ctx context.Context, in *KeyPairs, opts ...grpc.CallOption) (Chain_SubscribeValidatorTransactionsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Chain_serviceDesc.Streams[3], "/Chain/SubscribeValidatorTransactions", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &chainSubscribeValidatorTransactionsClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Chain_SubscribeValidatorTransactionsClient interface {
-	Recv() (*RawData, error)
-	grpc.ClientStream
-}
-
-type chainSubscribeValidatorTransactionsClient struct {
-	grpc.ClientStream
-}
-
-func (x *chainSubscribeValidatorTransactionsClient) Recv() (*RawData, error) {
-	m := new(RawData)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 // ChainServer is the server API for Chain service.
 // All implementations must embed UnimplementedChainServer
 // for forward compatibility
@@ -220,8 +154,6 @@ type ChainServer interface {
 	GetAccountInfo(context.Context, *Account) (*AccountInfo, error)
 	Sync(*Hash, Chain_SyncServer) error
 	SubscribeBlocks(*Empty, Chain_SubscribeBlocksServer) error
-	SubscribeTransactions(*KeyPairs, Chain_SubscribeTransactionsServer) error
-	SubscribeValidatorTransactions(*KeyPairs, Chain_SubscribeValidatorTransactionsServer) error
 	mustEmbedUnimplementedChainServer()
 }
 
@@ -249,12 +181,6 @@ func (UnimplementedChainServer) Sync(*Hash, Chain_SyncServer) error {
 }
 func (UnimplementedChainServer) SubscribeBlocks(*Empty, Chain_SubscribeBlocksServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeBlocks not implemented")
-}
-func (UnimplementedChainServer) SubscribeTransactions(*KeyPairs, Chain_SubscribeTransactionsServer) error {
-	return status.Errorf(codes.Unimplemented, "method SubscribeTransactions not implemented")
-}
-func (UnimplementedChainServer) SubscribeValidatorTransactions(*KeyPairs, Chain_SubscribeValidatorTransactionsServer) error {
-	return status.Errorf(codes.Unimplemented, "method SubscribeValidatorTransactions not implemented")
 }
 func (UnimplementedChainServer) mustEmbedUnimplementedChainServer() {}
 
@@ -401,48 +327,6 @@ func (x *chainSubscribeBlocksServer) Send(m *RawData) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Chain_SubscribeTransactions_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(KeyPairs)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChainServer).SubscribeTransactions(m, &chainSubscribeTransactionsServer{stream})
-}
-
-type Chain_SubscribeTransactionsServer interface {
-	Send(*RawData) error
-	grpc.ServerStream
-}
-
-type chainSubscribeTransactionsServer struct {
-	grpc.ServerStream
-}
-
-func (x *chainSubscribeTransactionsServer) Send(m *RawData) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _Chain_SubscribeValidatorTransactions_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(KeyPairs)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChainServer).SubscribeValidatorTransactions(m, &chainSubscribeValidatorTransactionsServer{stream})
-}
-
-type Chain_SubscribeValidatorTransactionsServer interface {
-	Send(*RawData) error
-	grpc.ServerStream
-}
-
-type chainSubscribeValidatorTransactionsServer struct {
-	grpc.ServerStream
-}
-
-func (x *chainSubscribeValidatorTransactionsServer) Send(m *RawData) error {
-	return x.ServerStream.SendMsg(m)
-}
-
 var _Chain_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "Chain",
 	HandlerType: (*ChainServer)(nil),
@@ -477,16 +361,6 @@ var _Chain_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "SubscribeBlocks",
 			Handler:       _Chain_SubscribeBlocks_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "SubscribeTransactions",
-			Handler:       _Chain_SubscribeTransactions_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "SubscribeValidatorTransactions",
-			Handler:       _Chain_SubscribeValidatorTransactions_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -39,5 +39,5 @@ func TestBlockHeader(t *testing.T) {
 		FeeAddress:                 [20]byte{1, 2, 3},
 	}
 
-	assert.Equal(t, "f485d6bb7dd7a305ec6de59e237c47b6c9e6d0ddd39c70e8cd3a770591620800", d.Hash().String())
+	assert.Equal(t, "d3f5389e43b628260ad8faa45a3f28d90f5d067884989161c0a0c9bdf5e6f80b", d.Hash().String())
 }

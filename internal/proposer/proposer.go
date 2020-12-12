@@ -174,9 +174,9 @@ func (p *proposer) ProposeBlocks() {
 
 			slotIndex := (slotToPropose + p.netParams.EpochLength - 1) % p.netParams.EpochLength
 			proposerIndex := blockState.GetProposerQueue()[slotIndex]
-			proposer := blockState.GetValidatorRegistry()[proposerIndex]
+			proposerValidator := blockState.GetValidatorRegistry()[proposerIndex]
 
-			if k, found := p.keystore.GetValidatorKey(proposer.PubKey); found {
+			if k, found := p.keystore.GetValidatorKey(proposerValidator.PubKey); found {
 
 				//if !p.lastActionManager.ShouldRun(proposer.PubKey) {
 				//	blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
@@ -201,7 +201,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState)
+				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState, proposerValidator.PayeeAddress)
 
 				coinTxMulti := p.coinsMempool.GetMulti(p.netParams.MaxTxsMultiPerBlock, blockState)
 
@@ -245,6 +245,22 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
+				coinproofs, err := p.actionsMempool.GetProofs(int(p.netParams.MaxCoinProofsPerBlock), blockState)
+				if err != nil {
+					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
+					continue
+				}
+
+				partialExits, err := p.actionsMempool.GetPartialExits(int(p.netParams.MaxPartialExitsPerBlock), blockState)
+				if err != nil {
+					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
+					continue
+				}
+
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
@@ -252,7 +268,7 @@ func (p *proposer) ProposeBlocks() {
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
-						FeeAddress:    proposer.PayeeAddress,
+						FeeAddress:    proposerValidator.PayeeAddress,
 					},
 					Votes:             votes,
 					Txs:               coinTxs,
@@ -263,6 +279,8 @@ func (p *proposer) ProposeBlocks() {
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
 					GovernanceVotes:   governanceVotes,
+					CoinProofs:        coinproofs,
+					PartialExit:       partialExits,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
@@ -274,6 +292,8 @@ func (p *proposer) ProposeBlocks() {
 				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
 				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
 				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
+				block.Header.CoinProofsMerkleRoot = block.CoinProofsMerkleRoot()
+				block.Header.PartialExitMerkleRoot = block.PartialExitsMerkleRoot()
 
 				blockHash := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))

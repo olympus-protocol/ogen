@@ -107,6 +107,18 @@ service Utils {
         };
     }
 
+    /**
+    Method: SubmitRedeemProof
+    Input: RedeemProof
+    Response: Tx
+    Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
+*/
+    rpc SubmitRedeemProof(RedeemProof) returns (Success) {
+        option (google.api.http) = {
+            post: "/utils/submitredeemproof"
+            body: "*"
+        };
+    }
 }
 
 message GenValidatorKeys {
@@ -119,4 +131,9 @@ message ParticipationInfo {
     uint64 total_validators = 3;
     uint64 owned_validators = 4;
     uint64 voting_validators = 5;
+}
+
+message RedeemProof {
+    string proof = 1;
+    string address = 2;
 }

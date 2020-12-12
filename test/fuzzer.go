@@ -5,6 +5,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -234,10 +235,12 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 			TxsMulti:          FuzzTxMulti(2),
 			Deposits:          FuzzDeposit(5, true),
 			Exits:             FuzzExits(5),
+			PartialExit:       FuzzPartialExits(5),
 			VoteSlashings:     FuzzVoteSlashing(2, true, true),
 			RANDAOSlashings:   FuzzRANDAOSlashing(2),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
 			GovernanceVotes:   FuzzGovernanceVote(5),
+			CoinProofs:        FuzzCoinProofs(10),
 		}
 
 		var sig [96]byte
@@ -290,6 +293,26 @@ func FuzzExits(n int) []*primitives.Exit {
 			ValidatorPubkey: pub,
 			Signature:       sig,
 			WithdrawPubkey:  pub,
+		}
+		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzPartialExits return an slice of PartialExits
+func FuzzPartialExits(n int) []*primitives.PartialExit {
+	var v []*primitives.PartialExit
+	for i := 0; i < n; i++ {
+		var sig [96]byte
+		var pub [48]byte
+		k, _ := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
+		d := &primitives.PartialExit{
+			ValidatorPubkey: pub,
+			Signature:       sig,
+			WithdrawPubkey:  pub,
+			Amount:          10 * 1e8,
 		}
 		v = append(v, d)
 	}
@@ -434,6 +457,17 @@ func FuzzTxMulti(n int) []*primitives.TxMulti {
 			}
 		}
 		d.Signature = ms
+		v = append(v, d)
+	}
+	return v
+}
+
+func FuzzCoinProofs(n int) []*burnproof.CoinsProofSerializable {
+	f := fuzz.New().NilChance(0)
+	var v []*burnproof.CoinsProofSerializable
+	for i := 0; i < n; i++ {
+		d := new(burnproof.CoinsProofSerializable)
+		f.Fuzz(d)
 		v = append(v, d)
 	}
 	return v

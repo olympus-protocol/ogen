@@ -91,142 +91,152 @@ func init() {
 // Run runs the CLI.
 func (c *CLI) Run(optArgs []string) {
 	color.Green("Welcome to the Ogen console")
-	for {
-		var t string
-		if len(optArgs) == 0 {
-			t = prompt.Input("> ", completer, prompt.OptionCompletionWordSeparator(" "))
-		} else {
-			t = strings.Join(optArgs, " ")
-			optArgs[0] = "exit"
-		}
-
-		args := strings.Split(t, " ")
-		if len(args) == 0 {
-			continue
-		}
-
-		if args[0] == "" {
-			continue
-		}
-
-		var out string
-		var err error
-
-		switch args[0] {
-		case "help":
-			out = "Ogen CLI command \n\n"
-
-			out += "Chain \n\n"
-			for _, c := range chainCmd {
-				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
-			}
-			out += "\n"
-
-			out += "Validators\n\n"
-			for _, c := range validatorsCmd {
-				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
-			}
-			out += "\n"
-
-			out += "Network\n\n"
-			for _, c := range netCmd {
-				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
-			}
-			out += "\n"
-
-			out += "Utils\n\n"
-			for _, c := range utilsCmd {
-				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
-			}
-			out += "\n"
-
-			out += "Wallet\n\n"
-			for _, c := range walletCmd {
-				out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
-			}
-			out += "\n"
-		// Chain methods
-		case "getchaininfo":
-			out, err = c.rpcClient.GetChainInfo()
-		case "getrawblock":
-			out, err = c.rpcClient.GetRawBlock(args[1:])
-		case "getblockhash":
-			out, err = c.rpcClient.GetBlockHash(args[1:])
-		case "getblock":
-			out, err = c.rpcClient.GetBlock(args[1:])
-		case "getaccountinfo":
-			out, err = c.rpcClient.GetAccountInfo(args[1:])
-
-		// Validator methods
-		case "getvalidatorslist":
-			out, err = c.rpcClient.GetValidatorsList()
-		case "getaccountvalidators":
-			out, err = c.rpcClient.GetAccountValidators(args[1:])
-
-		// Network methods
-		case "getnetworkinfo":
-			out, err = c.rpcClient.GetNetworkInfo()
-		case "getpeersinfo":
-			out, err = c.rpcClient.GetPeersInfo()
-		case "addpeer":
-			out, err = c.rpcClient.AddPeer(args[1:])
-
-		// Utils methods
-		case "submitrawdata":
-			out, err = c.rpcClient.SubmitRawData(args[1:])
-		case "genkeypair":
-			out, err = c.rpcClient.GenKeyPair(args[1:], false)
-		case "genrawkeypair":
-			out, err = c.rpcClient.GenKeyPair(args[1:], true)
-		case "genvalidatorkey":
-			out, err = c.rpcClient.GenValidatorKey(args[1:])
-		case "decoderawtransaction":
-			out, err = c.rpcClient.DecodeRawTransaction(args[1:])
-		case "decoderawblock":
-			out, err = c.rpcClient.DecodeRawBlock(args[1:])
-
-		// Wallet methods
-		case "listwallets":
-			out, err = c.rpcClient.ListWallets()
-		case "createwallet":
-			out, err = c.rpcClient.CreateWallet(args[1:])
-		case "openwallet":
-			out, err = c.rpcClient.OpenWallet(args[1:])
-		case "closewallet":
-			out, err = c.rpcClient.CloseWallet()
-		case "importwallet":
-			out, err = c.rpcClient.ImportWallet(args[1:])
-		case "dumpwallet":
-			out, err = c.rpcClient.DumpWallet()
-		case "dumphdinfo":
-			out, err = c.rpcClient.DumpHDInfo()
-		case "getbalance":
-			out, err = c.rpcClient.GetBalance()
-		case "getvalidators":
-			out, err = c.rpcClient.GetValidators()
-		case "getaccount":
-			out, err = c.rpcClient.GetAccount()
-		case "sendtransaction":
-			out, err = c.rpcClient.SendTransaction(args[1:])
-		case "startvalidator":
-			out, err = c.rpcClient.StartValidator(args[1:])
-		case "exitvalidator":
-			out, err = c.rpcClient.ExitValidator(args[1:])
-
-		// Misc methods
-		case "exit":
-			return
-
-		default:
-			err = fmt.Errorf("Unknown command: %s", args[0])
-		}
-
-		if err != nil {
-			color.Red("%s", err.Error())
-		} else {
-			color.Green("%s", out)
-		}
+	var t string
+	if len(optArgs) == 0 {
+		prompt.New(c.executor, completer, prompt.OptionSetExitCheckerOnInput(c.exit)).Run()
+	} else {
+		t = strings.Join(optArgs, " ")
+		optArgs[0] = "exit"
+		c.executor(t)
 	}
+}
+
+func (c *CLI) executor(str string) {
+	args := strings.Split(str, " ")
+
+	if len(args) == 0 {
+		return
+	}
+
+	if args[0] == "" {
+		return
+	}
+
+	var out string
+	var err error
+
+	switch args[0] {
+	case "help":
+		out = "Ogen CLI command \n\n"
+
+		out += "Chain \n\n"
+		for _, c := range chainCmd {
+			out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+		}
+		out += "\n"
+
+		out += "Validators\n\n"
+		for _, c := range validatorsCmd {
+			out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+		}
+		out += "\n"
+
+		out += "Network\n\n"
+		for _, c := range netCmd {
+			out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+		}
+		out += "\n"
+
+		out += "Utils\n\n"
+		for _, c := range utilsCmd {
+			out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+		}
+		out += "\n"
+
+		out += "Wallet\n\n"
+		for _, c := range walletCmd {
+			out += fmt.Sprintf("%-25s %s \n", c.Text, c.Description)
+		}
+		out += "\n"
+	// Chain methods
+	case "getchaininfo":
+		out, err = c.rpcClient.GetChainInfo()
+	case "getrawblock":
+		out, err = c.rpcClient.GetRawBlock(args[1:])
+	case "getblockhash":
+		out, err = c.rpcClient.GetBlockHash(args[1:])
+	case "getblock":
+		out, err = c.rpcClient.GetBlock(args[1:])
+	case "getaccountinfo":
+		out, err = c.rpcClient.GetAccountInfo(args[1:])
+
+	// Validator methods
+	case "getvalidatorslist":
+		out, err = c.rpcClient.GetValidatorsList()
+	case "getaccountvalidators":
+		out, err = c.rpcClient.GetAccountValidators(args[1:])
+
+	// Network methods
+	case "getnetworkinfo":
+		out, err = c.rpcClient.GetNetworkInfo()
+	case "getpeersinfo":
+		out, err = c.rpcClient.GetPeersInfo()
+	case "addpeer":
+		out, err = c.rpcClient.AddPeer(args[1:])
+
+	// Utils methods
+	case "submitrawdata":
+		out, err = c.rpcClient.SubmitRawData(args[1:])
+	case "genkeypair":
+		out, err = c.rpcClient.GenKeyPair(args[1:], false)
+	case "genrawkeypair":
+		out, err = c.rpcClient.GenKeyPair(args[1:], true)
+	case "genvalidatorkey":
+		out, err = c.rpcClient.GenValidatorKey(args[1:])
+	case "decoderawtransaction":
+		out, err = c.rpcClient.DecodeRawTransaction(args[1:])
+	case "decoderawblock":
+		out, err = c.rpcClient.DecodeRawBlock(args[1:])
+
+	// Wallet methods
+	case "listwallets":
+		out, err = c.rpcClient.ListWallets()
+	case "createwallet":
+		out, err = c.rpcClient.CreateWallet(args[1:])
+	case "openwallet":
+		out, err = c.rpcClient.OpenWallet(args[1:])
+	case "closewallet":
+		out, err = c.rpcClient.CloseWallet()
+	case "importwallet":
+		out, err = c.rpcClient.ImportWallet(args[1:])
+	case "dumpwallet":
+		out, err = c.rpcClient.DumpWallet()
+	case "dumphdinfo":
+		out, err = c.rpcClient.DumpHDInfo()
+	case "getbalance":
+		out, err = c.rpcClient.GetBalance()
+	case "getvalidators":
+		out, err = c.rpcClient.GetValidators()
+	case "getaccount":
+		out, err = c.rpcClient.GetAccount()
+	case "sendtransaction":
+		out, err = c.rpcClient.SendTransaction(args[1:])
+	case "startvalidator":
+		out, err = c.rpcClient.StartValidator(args[1:])
+	case "exitvalidator":
+		out, err = c.rpcClient.ExitValidator(args[1:])
+
+	// Misc methods
+	case "exit":
+		return
+
+	default:
+		err = fmt.Errorf("unknown command: %s", args[0])
+	}
+
+	if err != nil {
+		color.Red("%s", err.Error())
+	} else {
+		color.Green("%s", out)
+	}
+}
+
+func (c *CLI) exit(in string, breakline bool) bool {
+	if in == "exit" {
+		breakline = true
+		return true
+	}
+	return false
 }
 
 func newCli(rpcClient *rpcclient.Client) *CLI {

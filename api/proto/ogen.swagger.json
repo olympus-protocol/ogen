@@ -158,47 +158,6 @@
         ]
       }
     },
-    "/chain/subscribe/account": {
-      "post": {
-        "operationId": "Chain_SubscribeTransactions",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/RawData"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of RawData"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/KeyPairs"
-            }
-          }
-        ],
-        "tags": [
-          "Chain"
-        ]
-      }
-    },
     "/chain/subscribe/blocks": {
       "get": {
         "operationId": "Chain_SubscribeBlocks",
@@ -225,47 +184,6 @@
             }
           }
         },
-        "tags": [
-          "Chain"
-        ]
-      }
-    },
-    "/chain/subscribe/validator": {
-      "post": {
-        "operationId": "Chain_SubscribeValidatorTransactions",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/RawData"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of RawData"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/KeyPairs"
-            }
-          }
-        ],
         "tags": [
           "Chain"
         ]
@@ -811,6 +729,39 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/RawData"
+            }
+          }
+        ],
+        "tags": [
+          "Utils"
+        ]
+      }
+    },
+    "/utils/submitredeemproof": {
+      "post": {
+        "summary": "*\nMethod: SubmitRedeemProof\nInput: RedeemProof\nResponse: Tx\nDescription: Returns a stream of transactions. Relaying a transaction when arrives the mempool.",
+        "operationId": "Utils_SubmitRedeemProof",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Success"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RedeemProof"
             }
           }
         ],
@@ -1780,6 +1731,17 @@
           "type": "string"
         },
         "type": {
+          "type": "string"
+        }
+      }
+    },
+    "RedeemProof": {
+      "type": "object",
+      "properties": {
+        "proof": {
+          "type": "string"
+        },
+        "address": {
           "type": "string"
         }
       }
