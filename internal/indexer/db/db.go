@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"gorm.io/driver/postgres"
@@ -8,6 +9,8 @@ import (
 	"gorm.io/gorm/clause"
 	"sync"
 )
+
+var stateKey = "state"
 
 // Database represents an DB connection
 type Database struct {
@@ -35,6 +38,37 @@ func (d *Database) AddAccounts(a *[]Account) error {
 		return res.Error
 	}
 	return nil
+}
+
+func (d *Database) StoreState(s state.State) error {
+	ser := s.ToSerializable()
+	buf, err := ser.Marshal()
+	if err != nil {
+		return err
+	}
+
+	dbState := State{
+		Key: "state",
+		Raw: buf,
+	}
+
+	res := d.db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&dbState)
+
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) GetState() (state.State, error) {
+	res := d.db.First(&State{}, stateKey)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	return nil, nil
 }
 
 func (d *Database) AddValidators(v *[]Validator) error {
@@ -116,7 +150,7 @@ func (d *Database) Migrate() error {
 // NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams *params.ChainParams) *Database {
 
-	gdb, err := gorm.Open(postgres.Open(dbConnString), &gorm.Config{})
+	gdb, err := gorm.Open(postgres.Open(dbConnString, &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}
