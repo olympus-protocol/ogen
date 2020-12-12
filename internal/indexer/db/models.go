@@ -17,7 +17,7 @@ type Block struct {
 }
 
 type Account struct {
-	Account []byte `gorm:"primaryKey"`
+	Account string `gorm:"primaryKey"`
 	Balance uint64
 	Nonce   uint64
 }
@@ -64,11 +64,11 @@ type DepositData struct {
 
 type Epoch struct {
 	Epoch                   uint64 `gorm:"primaryKey"`
-	Slot1                   Slot   `gorm:"foreignKey:Slot"`
-	Slot2                   Slot   `gorm:"foreignKey:Slot"`
-	Slot3                   Slot   `gorm:"foreignKey:Slot"`
-	Slot4                   Slot   `gorm:"foreignKey:Slot"`
-	Slot5                   Slot   `gorm:"foreignKey:Slot"`
+	Slot1                   uint64
+	Slot2                   uint64
+	Slot3                   uint64
+	Slot4                   uint64
+	Slot5                   uint64
 	ParticipationPercentage []byte
 	Finalized               bool
 	Justified               bool
@@ -136,6 +136,8 @@ type VoteData struct {
 }
 
 type State struct {
-	Key string `gorm:"primaryKey"`
-	Raw []byte
+	Key             string `gorm:"primaryKey"`
+	Raw             []byte
+	LastBlock       []byte
+	LastBlockHeight uint64
 }

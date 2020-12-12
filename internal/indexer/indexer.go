@@ -10,6 +10,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -34,7 +35,7 @@ type Indexer struct {
 	index     *chainindex.BlockIndex
 }
 
-func (i *Indexer) ProcessBlock(b *primitives.Block) error {
+func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error) {
 	i.log.Infof("Processing block at slot %d", b.Header.Slot)
 
 	tip, _ := i.index.Get(b.Header.PrevBlockHash)
@@ -42,26 +43,86 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 
 	_, err := i.state.ProcessSlots(b.Header.Slot, &v)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	hash := b.Header.Hash()
+
+	dbSlot := db.Slot{
+		Slot:      b.Header.Slot,
+		BlockHash: hash[:],
+		Proposed:  true,
+	}
+	err = i.db.MarkSlotProposed(&dbSlot)
+	if err != nil {
+		return nil, err
 	}
 
 	if b.Header.Slot/i.netParams.EpochLength > i.state.GetEpochIndex() {
+		serState := i.state.ToSerializable()
 
+		// Mark justified and finalized
+		err = i.db.SetFinalized(i.state.GetFinalizedEpoch())
+		if err != nil {
+			return nil, err
+		}
+
+		err = i.db.SetJustified(i.state.GetJustifiedEpoch())
+		if err != nil {
+			return nil, err
+		}
+
+		currSlot := b.Header.Slot
+		proposers := i.state.GetProposerQueue()
+
+		slots := make([]db.Slot, 5)
+		for j := 0; j <= 4; j++ {
+			currSlot++
+			dbSlot := db.Slot{
+				Slot:          currSlot,
+				BlockHash:     nil,
+				ProposerIndex: proposers[j],
+				Proposed:      false,
+			}
+			slots[j] = dbSlot
+			err = i.db.AddSlot(&dbSlot)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		epoch := &db.Epoch{
+			Epoch:                   i.state.GetEpochIndex(),
+			Slot1:                   slots[0].Slot,
+			Slot2:                   slots[1].Slot,
+			Slot3:                   slots[2].Slot,
+			Slot4:                   slots[3].Slot,
+			Slot5:                   slots[4].Slot,
+			ParticipationPercentage: nil,
+			Finalized:               false,
+			Justified:               false,
+			Randao:                  serState.NextRANDAO[:],
+		}
+
+		err = i.db.AddEpoch(epoch)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = i.state.ProcessBlock(b)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	row, err := i.index.Add(b)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	rawBlock, err := b.Marshal()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	nonce := make([]byte, 8)
@@ -98,7 +159,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 			txHash := b.Txs[i].Hash()
 			fpkh, err := b.Txs[i].FromPubkeyHash()
 			if err != nil {
-				return err
+				return nil, err
 			}
 			dbTxs[i] = db.Tx{
 				BlockHash:         row.Hash[:],
@@ -174,10 +235,10 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 
 	err = i.db.AddBlock(dbBlock)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return row, nil
 }
 
 func (i *Indexer) Start() error {
@@ -198,12 +259,19 @@ func (i *Indexer) Stop() {
 
 func (i *Indexer) initialSync() error {
 
-	lastJustifiedHash := i.state.GetJustifiedEpochHash()
+	var askBlock chainhash.Hash
+	_, lastBlock, _, err := i.db.GetState()
+	if err != nil {
+		genesis := primitives.GetGenesisBlock()
+		askBlock = genesis.Hash()
+	} else {
+		askBlock = lastBlock
+	}
 
 	i.log.Infof("Starting initial sync")
 initSync:
 	time.Sleep(5 * time.Second)
-	syncClient, err := i.client.Chain().Sync(context.Background(), &proto.Hash{Hash: lastJustifiedHash.String()})
+	syncClient, err := i.client.Chain().Sync(context.Background(), &proto.Hash{Hash: askBlock.String()})
 	if err != nil {
 		i.log.Warn("Unable to connect to RPC server. Trying again...")
 		goto initSync
@@ -229,14 +297,14 @@ initSync:
 			i.log.Error("unable to parse block")
 			break
 		}
-		err = i.ProcessBlock(block)
+		_, err = i.ProcessBlock(block)
 		if err != nil {
 			i.log.Error("unable to process block")
 			break
 		}
 	}
 
-	err = i.StoreStateData()
+	err = i.StoreStateData(nil)
 	if err != nil {
 		return err
 	}
@@ -246,12 +314,15 @@ initSync:
 	return nil
 }
 
-func (i *Indexer) StoreStateData() error {
-	i.log.Info("Storing raw state information")
-	err := i.db.StoreState(i.state)
-	if err != nil {
-		return err
+func (i *Indexer) StoreStateData(lastBlock *chainindex.BlockRow) error {
+	i.log.Info("Storing latest state information")
+	if lastBlock != nil {
+		err := i.db.StoreState(i.state, lastBlock)
+		if err != nil {
+			return err
+		}
 	}
+
 	i.log.Info("Storing validators and account balances tables")
 	u := i.state.GetCoinsState()
 
@@ -264,14 +335,13 @@ func (i *Indexer) StoreStateData() error {
 			nonce = 0
 		}
 		dbAcc := db.Account{
-			Account: acc[:],
+			Account: bech32.Encode(i.netParams.AccountPrefixes.Public, acc[:]),
 			Balance: bal,
 			Nonce:   nonce,
 		}
 		dbAccounts = append(dbAccounts, dbAcc)
 	}
-
-	err = i.db.AddAccounts(&dbAccounts)
+	err := i.db.AddAccounts(&dbAccounts)
 	if err != nil {
 		return err
 	}
@@ -330,12 +400,12 @@ func (i *Indexer) subscribeBlocks() {
 				continue
 			}
 
-			err = i.ProcessBlock(block)
+			row, err := i.ProcessBlock(block)
 			if err != nil {
 				i.log.Error("unable to process block")
 				break
 			}
-			err = i.StoreStateData()
+			err = i.StoreStateData(row)
 			if err != nil {
 				i.log.Error("unable to store state data")
 				break
@@ -419,7 +489,7 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 		index:     idx,
 	}
 
-	s, err := indexer.db.GetState()
+	s, lastBlockHash, lastBlockHeight, err := indexer.db.GetState()
 	if err != nil {
 
 		err = indexer.SetGenesisState()
@@ -428,31 +498,30 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 		}
 
 		return indexer, nil
-
 	}
 
 	indexer.state = s
 
-	lastJustifiedBlock, lastJustifiedHeight, err := indexer.db.GetRawBlock(s.GetJustifiedEpochHash())
+	lastBlock, _, err := indexer.db.GetRawBlock(lastBlockHash)
 	if err != nil {
 		return nil, err
 	}
 
-	prevJustifiedBlock, prevJustifiedHeight, err := indexer.db.GetRawBlock(lastJustifiedBlock.Header.PrevBlockHash)
+	prevLastBlock, prevLastBlockHeight, err := indexer.db.GetRawBlock(lastBlock.Header.PrevBlockHash)
 	if err != nil {
 		return nil, err
 	}
 
 	initBlockRow := &chainindex.BlockRow{
-		StateRoot: lastJustifiedBlock.Header.StateRoot,
-		Height:    lastJustifiedHeight,
-		Slot:      lastJustifiedBlock.Header.Slot,
-		Hash:      lastJustifiedBlock.Header.Hash(),
+		StateRoot: lastBlock.Header.StateRoot,
+		Height:    lastBlockHeight,
+		Slot:      lastBlock.Header.Slot,
+		Hash:      lastBlock.Header.Hash(),
 		Parent: &chainindex.BlockRow{
-			StateRoot: prevJustifiedBlock.Header.StateRoot,
-			Height:    prevJustifiedHeight,
-			Slot:      prevJustifiedBlock.Header.Slot,
-			Hash:      prevJustifiedBlock.Header.Hash(),
+			StateRoot: prevLastBlock.Header.StateRoot,
+			Height:    prevLastBlockHeight,
+			Slot:      prevLastBlock.Header.Slot,
+			Hash:      prevLastBlock.Header.Hash(),
 			Parent:    nil,
 		},
 	}

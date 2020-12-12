@@ -1,6 +1,8 @@
 package db
 
 import (
+	"errors"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -23,8 +25,52 @@ type Database struct {
 	netParams *params.ChainParams
 }
 
-func (d *Database) AddSlot(b *Slot) error {
-	res := d.db.Create(b)
+func (d *Database) SetFinalized(e uint64) error {
+	res := d.db.Model(&Epoch{}).Where("epoch = ?", e).Update("finalized", true)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) SetJustified(e uint64) error {
+	res := d.db.Model(&Epoch{}).Where("epoch = ?", e).Update("justified", true)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) AddEpoch(e *Epoch) error {
+	res := d.db.Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(e)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) AddSlot(s *Slot) error {
+	res := d.db.Create(s)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) MarkSlotProposed(s *Slot) error {
+	res := d.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "slot"}},
+		DoUpdates: []clause.Assignment{{
+			Column: clause.Column{Name: "block_hash"},
+			Value:  s.BlockHash,
+		}, {
+			Column: clause.Column{Name: "proposed"},
+			Value:  true,
+		}},
+		UpdateAll: false,
+	}).Create(s)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -32,31 +78,50 @@ func (d *Database) AddSlot(b *Slot) error {
 }
 
 func (d *Database) AddAccounts(a *[]Account) error {
+
 	res := d.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "account"}},
 		UpdateAll: true,
-	}).Create(&a)
+	}).Create(a)
 
 	if res.Error != nil {
 		return res.Error
 	}
+
 	return nil
 }
 
-func (d *Database) StoreState(s state.State) error {
+func (d *Database) AddValidators(v *[]Validator) error {
+
+	res := d.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "pub_key"}},
+		UpdateAll: true,
+	}).Create(v)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+func (d *Database) StoreState(s state.State, lastBlock *chainindex.BlockRow) error {
 	ser := s.ToSerializable()
 	buf, err := ser.Marshal()
 	if err != nil {
 		return err
 	}
 
-	dbState := State{
-		Key: "state",
-		Raw: buf,
+	dbState := &State{
+		Key:             stateKey,
+		Raw:             buf,
+		LastBlock:       lastBlock.Hash[:],
+		LastBlockHeight: lastBlock.Height,
 	}
 
 	res := d.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
 		UpdateAll: true,
-	}).Create(&dbState)
+	}).Create(dbState)
 
 	if res.Error != nil {
 		return res.Error
@@ -64,40 +129,29 @@ func (d *Database) StoreState(s state.State) error {
 	return nil
 }
 
-func (d *Database) GetState() (state.State, error) {
+func (d *Database) GetState() (state.State, chainhash.Hash, uint64, error) {
 	var s State
-	res := d.db.Order("raw").Find(&State{}).Scan(&s)
-	if res.Error != nil {
-		return nil, res.Error
+	res := d.db.Find(&State{}, &State{
+		Key: stateKey,
+	}).Scan(&s)
+	if res.Error != nil || res.RowsAffected == -1 {
+		return nil, [32]byte{}, 0, errors.New("no state found")
 	}
 	storedState := state.NewEmptyState()
 	err := storedState.Unmarshal(s.Raw)
 	if err != nil {
-		return nil, err
+		return nil, [32]byte{}, 0, res.Error
 	}
-	return storedState, nil
-}
+	var lastBlockHash [32]byte
+	copy(lastBlockHash[:], s.LastBlock)
 
-func (d *Database) AddValidators(v *[]Validator) error {
-	res := d.db.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&v)
-	if res.Error != nil {
-		return res.Error
-	}
-	return nil
-}
-
-func (d *Database) AddEpoch(b *Epoch) error {
-	res := d.db.Create(b)
-	if res.Error != nil {
-		return res.Error
-	}
-	return nil
+	return storedState, lastBlockHash, s.LastBlockHeight, nil
 }
 
 func (d *Database) AddBlock(b *Block) error {
-	res := d.db.Create(b)
+	res := d.db.Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(b)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -166,6 +220,11 @@ func (d *Database) Migrate() error {
 	}
 
 	err = d.db.AutoMigrate(&State{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&Slot{})
 	if err != nil {
 		return err
 	}
