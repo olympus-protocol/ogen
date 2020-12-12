@@ -106,7 +106,7 @@ func (d *Database) AddBlock(b *Block) error {
 
 func (d *Database) GetRawBlock(hash chainhash.Hash) (*primitives.Block, error) {
 	var block Block
-	res := d.db.First(&Block{}, hash).Scan(&block)
+	res := d.db.Find(&Block{}, &Block{Hash: hash[:]}).Scan(&block)
 	if res.Error != nil {
 		return nil, res.Error
 	}
