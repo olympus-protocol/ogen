@@ -10,7 +10,7 @@ import (
 
 type Balance struct {
 	Confirmed uint64
-	Pending uint64
+	Pending   uint64
 }
 
 // GetBalance returns the balance of the current open wallet.
@@ -25,7 +25,7 @@ func (w *wallet) GetBalance() (*Balance, error) {
 
 	confirmed := w.chain.State().TipState().GetCoinsState().Balances[acc]
 
-	return confirmed, 0, nil
+	return &Balance{Confirmed: confirmed}, nil
 }
 
 // SendToAddress sends an amount to an account using the current open wallet private key.

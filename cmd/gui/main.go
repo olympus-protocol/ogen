@@ -87,18 +87,18 @@ func initConfig() {
 	}
 
 	config.GlobalFlags = &config.Flags{
-		DataPath: DataPath,
-		NetworkName: NetName,
-		Port: Port,
-		RPCProxy: false,
-		RPCProxyPort: "",
-		RPCProxyAddr: "",
-		RPCPort: "",
-		RPCWallet: false,
-		RPCAuthToken: "",
-		Debug: false,
-		LogFile: true,
-		Dashboard: false,
+		DataPath:      DataPath,
+		NetworkName:   NetName,
+		Port:          Port,
+		RPCProxy:      false,
+		RPCProxyPort:  "",
+		RPCProxyAddr:  "",
+		RPCPort:       "",
+		RPCWallet:     false,
+		RPCAuthToken:  "",
+		Debug:         false,
+		LogFile:       true,
+		Dashboard:     false,
 		DashboardPort: "",
 	}
 
@@ -145,10 +145,10 @@ func initConfig() {
 	}
 
 	config.GlobalParams = &config.Params{
-		Logger: log,
+		Logger:     log,
 		NetParams:  netParams,
 		InitParams: ip,
-		Context: context.Background(),
+		Context:    context.Background(),
 	}
 }
 
