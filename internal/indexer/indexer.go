@@ -16,6 +16,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"io"
+	"math/big"
 	"os"
 	"sync"
 	"time"
@@ -66,7 +67,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		Header: db.BlockHeader{
 			Hash:                       row.Hash[:],
 			Version:                    b.Header.Version,
-			Nonce:                      b.Header.Nonce,
+			Nonce:                      *big.NewInt(int64(b.Header.Nonce)),
 			TxMerkleRoot:               b.Header.TxMerkleRoot[:],
 			TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot[:],
 			VoteMerkleRoot:             b.Header.VoteMerkleRoot[:],
@@ -99,7 +100,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 				FromPublicKey:     b.Txs[i].FromPublicKey[:],
 				FromPublicKeyHash: fpkh[:],
 				Amount:            b.Txs[i].Amount,
-				Nonce:             b.Txs[i].Nonce,
+				Nonce:             *big.NewInt(int64(b.Txs[i].Nonce)),
 				Fee:               b.Txs[i].Fee,
 			}
 		}
@@ -143,7 +144,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 					ToEpoch:         b.Votes[i].Data.ToEpoch,
 					ToHash:          b.Votes[i].Data.ToHash[:],
 					BeaconBlockHash: b.Votes[i].Data.BeaconBlockHash[:],
-					Nonce:           b.Votes[i].Data.Nonce,
+					Nonce:           *big.NewInt(int64(b.Votes[i].Data.Nonce)),
 				},
 			}
 		}
@@ -258,7 +259,7 @@ func (i *Indexer) StoreStateData() error {
 		dbAcc := db.Account{
 			Account: acc[:],
 			Balance: bal,
-			Nonce:   nonce,
+			Nonce:   *big.NewInt(int64(nonce)),
 		}
 		dbAccounts = append(dbAccounts, dbAcc)
 	}

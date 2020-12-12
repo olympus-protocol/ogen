@@ -1,6 +1,9 @@
 package db
 
-import "time"
+import (
+	"math/big"
+	"time"
+)
 
 type Block struct {
 	Hash     []byte `gorm:"primaryKey"`
@@ -17,13 +20,13 @@ type Block struct {
 type Account struct {
 	Account []byte `gorm:"primaryKey"`
 	Balance uint64
-	Nonce   uint64
+	Nonce   big.Int
 }
 
 type BlockHeader struct {
 	Hash                       []byte `gorm:"primaryKey"`
 	Version                    uint64
-	Nonce                      uint64
+	Nonce                      big.Int
 	TxMerkleRoot               []byte
 	TxMultiMerkleRoot          []byte
 	VoteMerkleRoot             []byte
@@ -102,7 +105,7 @@ type Tx struct {
 	FromPublicKeyHash []byte
 	FromPublicKey     []byte
 	Amount            uint64
-	Nonce             uint64
+	Nonce             big.Int
 	Fee               uint64
 }
 
@@ -118,7 +121,7 @@ type Validator struct {
 type Vote struct {
 	BlockHash             []byte
 	ParticipationBitfield []byte
-	Hash                  []byte `gorm:"primaryKey"`
+	Hash                  []byte   `gorm:"primaryKey"`
 	Data                  VoteData `gorm:"foreignKey:Hash"`
 }
 
@@ -130,7 +133,7 @@ type VoteData struct {
 	ToEpoch         uint64
 	ToHash          []byte
 	BeaconBlockHash []byte
-	Nonce           uint64
+	Nonce           big.Int
 }
 
 type State struct {
