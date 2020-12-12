@@ -104,18 +104,18 @@ func (d *Database) AddBlock(b *Block) error {
 	return nil
 }
 
-func (d *Database) GetRawBlock(hash chainhash.Hash) (*primitives.Block, error) {
+func (d *Database) GetRawBlock(hash chainhash.Hash) (*primitives.Block, uint64, error) {
 	var block Block
 	res := d.db.Find(&Block{}, &Block{Hash: hash[:]}).Scan(&block)
 	if res.Error != nil {
-		return nil, res.Error
+		return nil, 0, res.Error
 	}
 	b := new(primitives.Block)
 	err := b.Unmarshal(block.RawBlock)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return b, nil
+	return b, block.Height, nil
 }
 
 func (d *Database) Close() {

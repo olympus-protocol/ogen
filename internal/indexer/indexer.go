@@ -429,24 +429,38 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 
 		return indexer, nil
 
-	} else {
-		indexer.state = s
-
-		lastJustifiedBlock, err := indexer.db.GetRawBlock(s.GetJustifiedEpochHash())
-		if err != nil {
-			return nil, err
-		}
-
-		indexer.index, err = chainindex.InitBlocksIndex(genesisBlock)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = indexer.index.Add(lastJustifiedBlock)
-		if err != nil {
-			return nil, err
-		}
-
-		return indexer, nil
 	}
+
+	indexer.state = s
+
+	lastJustifiedBlock, lastJustifiedHeight, err := indexer.db.GetRawBlock(s.GetJustifiedEpochHash())
+	if err != nil {
+		return nil, err
+	}
+
+	prevJustifiedBlock, prevJustifiedHeight, err := indexer.db.GetRawBlock(lastJustifiedBlock.Header.PrevBlockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	initBlockRow := &chainindex.BlockRow{
+		StateRoot: lastJustifiedBlock.Header.StateRoot,
+		Height:    lastJustifiedHeight,
+		Slot:      lastJustifiedBlock.Header.Slot,
+		Hash:      lastJustifiedBlock.Header.Hash(),
+		Parent: &chainindex.BlockRow{
+			StateRoot: prevJustifiedBlock.Header.StateRoot,
+			Height:    prevJustifiedHeight,
+			Slot:      prevJustifiedBlock.Header.Slot,
+			Hash:      prevJustifiedBlock.Header.Hash(),
+			Parent:    nil,
+		},
+	}
+
+	indexer.index, err = chainindex.InitBlocksIndexWithCustomBlock(initBlockRow)
+	if err != nil {
+		return nil, err
+	}
+
+	return indexer, nil
 }
