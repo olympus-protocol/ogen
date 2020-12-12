@@ -150,7 +150,7 @@ func (d *Database) Migrate() error {
 // NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams *params.ChainParams) *Database {
 
-	gdb, err := gorm.Open(postgres.Open(dbConnString, &gorm.Config{})
+	gdb, err := gorm.Open(postgres.Open(dbConnString), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}
