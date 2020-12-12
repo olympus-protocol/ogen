@@ -9,7 +9,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
-	"github.com/olympus-protocol/ogen/internal/indexer/models"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -47,7 +46,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	}
 
 	if b.Header.Slot/i.netParams.EpochLength > i.state.GetEpochIndex() {
-		
+
 	}
 
 	err = i.state.ProcessBlock(b)
@@ -63,11 +62,11 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	nonce := make([]byte, 8)
 	binary.LittleEndian.PutUint64(nonce, b.Header.Nonce)
 
-	dbBlock := &models.Block{
+	dbBlock := &db.Block{
 		Hash:   hex.EncodeToString(row.Hash[:]),
 		Height: row.Height,
 		Slot:   row.Slot,
-		Header: models.BlockHeader{
+		Header: db.BlockHeader{
 			Hash:                       hex.EncodeToString(row.Hash[:]),
 			Version:                    b.Header.Version,
 			Nonce:                      hex.EncodeToString(nonce),
@@ -89,14 +88,14 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	}
 
 	if len(b.Txs) > 0 {
-		dbTxs := make([]models.Tx, len(b.Txs))
+		dbTxs := make([]db.Tx, len(b.Txs))
 		for i := range b.Txs {
 			txHash := b.Txs[i].Hash()
 			fpkh, err := b.Txs[i].FromPubkeyHash()
 			if err != nil {
 				return err
 			}
-			dbTxs[i] = models.Tx{
+			dbTxs[i] = db.Tx{
 				BlockHash:         hex.EncodeToString(row.Hash[:]),
 				Hash:              hex.EncodeToString(txHash[:]),
 				ToAddress:         hex.EncodeToString(b.Txs[i].To[:]),
@@ -111,14 +110,14 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	}
 
 	if len(b.Deposits) > 0 {
-		dbDeposits := make([]models.Deposit, len(b.Deposits))
+		dbDeposits := make([]db.Deposit, len(b.Deposits))
 		for i := range b.Deposits {
 			hash := chainhash.HashB(b.Deposits[i].Data.PublicKey[:])
-			dbDeposits[i] = models.Deposit{
+			dbDeposits[i] = db.Deposit{
 				Hash:      hex.EncodeToString(hash[:]),
 				BlockHash: hex.EncodeToString(row.Hash[:]),
 				PublicKey: hex.EncodeToString(b.Deposits[i].PublicKey[:]),
-				Data: models.DepositData{
+				Data: db.DepositData{
 					Hash:              hex.EncodeToString(hash[:]),
 					PublicKey:         hex.EncodeToString(b.Deposits[i].Data.PublicKey[:]),
 					ProofOfPossession: hex.EncodeToString(b.Deposits[i].Data.ProofOfPossession[:]),
@@ -130,16 +129,16 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	}
 
 	if len(b.Votes) > 0 {
-		dbVotes := make([]models.Vote, len(b.Votes))
+		dbVotes := make([]db.Vote, len(b.Votes))
 		for i := range b.Votes {
 			nonce := make([]byte, 8)
 			binary.LittleEndian.PutUint64(nonce, b.Votes[i].Data.Nonce)
 			hash := b.Votes[i].Data.Hash()
-			dbVotes[i] = models.Vote{
+			dbVotes[i] = db.Vote{
 				Hash:                  hex.EncodeToString(hash[:]),
 				BlockHash:             hex.EncodeToString(row.Hash[:]),
 				ParticipationBitfield: hex.EncodeToString(b.Votes[i].ParticipationBitfield[:]),
-				Data: models.VoteData{
+				Data: db.VoteData{
 					Hash:            hex.EncodeToString(hash[:]),
 					Slot:            b.Votes[i].Data.Slot,
 					FromEpoch:       b.Votes[i].Data.FromEpoch,
@@ -154,6 +153,20 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		dbBlock.Votes = dbVotes
 	}
 
+	if len(b.Exits) > 0 {
+		dbExits := make([]db.Exit, len(b.Exits))
+		for i := range b.Exits {
+			hash := b.Exits[i].Hash()
+			dbExits[i] = db.Exit{
+				Hash:                hex.EncodeToString(hash[:]),
+				BlockHash:           hex.EncodeToString(row.Hash[:]),
+				ValidatorPublicKey:  hex.EncodeToString(b.Exits[i].ValidatorPubkey[:]),
+				WithdrawalPublicKey: hex.EncodeToString(b.Exits[i].WithdrawPubkey[:]),
+			}
+		}
+		dbBlock.Exits = dbExits
+	}
+
 	err = i.db.AddBlock(dbBlock)
 	if err != nil {
 		return err
@@ -162,17 +175,23 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	return nil
 }
 
-func (i *Indexer) Start() {
-	i.initialSync()
+func (i *Indexer) Start() error {
+	err := i.initialSync()
+	if err != nil {
+		return err
+	}
+
 	i.log.Info("Listening for new blocks")
 	go i.subscribeBlocks()
+
+	return nil
 }
 
 func (i *Indexer) Stop() {
 	i.db.Close()
 }
 
-func (i *Indexer) initialSync() {
+func (i *Indexer) initialSync() error {
 	genesis := primitives.GetGenesisBlock()
 	genesisHash := genesis.Hash()
 
@@ -211,7 +230,61 @@ initSync:
 			break
 		}
 	}
+
+	err = i.StoreStateData()
+	if err != nil {
+		return err
+	}
+
 	i.log.Infof("Initial sync finished")
+
+	return nil
+}
+
+func (i *Indexer) StoreStateData() error {
+	i.log.Infof("Storing validators and account balances tables")
+	u := i.state.GetCoinsState()
+
+	var dbAccounts []db.Account
+	for acc, bal := range u.Balances {
+		var nonce uint64
+		var ok bool
+		nonce, ok = u.Nonces[acc]
+		if !ok {
+			nonce = 0
+		}
+		dbAcc := db.Account{
+			Account: hex.EncodeToString(acc[:]),
+			Balance: bal,
+			Nonce:   nonce,
+		}
+		dbAccounts = append(dbAccounts, dbAcc)
+	}
+
+	err := i.db.AddAccounts(&dbAccounts)
+	if err != nil {
+		return err
+	}
+
+	vr := i.state.GetValidatorRegistry()
+	dbValidators := make([]db.Validator, len(vr))
+	for i := range vr {
+		dbValidators[i] = db.Validator{
+			Balance:          vr[i].Balance,
+			PubKey:           hex.EncodeToString(vr[i].PubKey[:]),
+			PayeeAddress:     hex.EncodeToString(vr[i].PayeeAddress[:]),
+			Status:           vr[i].Status,
+			FirstActiveEpoch: vr[i].FirstActiveEpoch,
+			LastActiveEpoch:  vr[i].LastActiveEpoch,
+		}
+	}
+
+	err = i.db.AddValidators(&dbValidators)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (i *Indexer) subscribeBlocks() {
@@ -228,7 +301,10 @@ func (i *Indexer) subscribeBlocks() {
 			res, err := subscribe.Recv()
 			if err == io.EOF || err != nil {
 				// listener closed restart with sync
-				i.initialSync()
+				err = i.initialSync()
+				if err != nil {
+					i.log.Fatal(err)
+				}
 				continue
 			}
 			// To make sure the explorer is always synced, every new block we reinsert the last 5
@@ -247,6 +323,11 @@ func (i *Indexer) subscribeBlocks() {
 			err = i.ProcessBlock(block)
 			if err != nil {
 				i.log.Error("unable to process block")
+				break
+			}
+			err = i.StoreStateData()
+			if err != nil {
+				i.log.Error("unable to store state data")
 				break
 			}
 		}

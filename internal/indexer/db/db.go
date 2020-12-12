@@ -1,11 +1,11 @@
 package db
 
 import (
-	"github.com/olympus-protocol/ogen/internal/indexer/models"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"sync"
 )
 
@@ -18,7 +18,44 @@ type Database struct {
 	netParams *params.ChainParams
 }
 
-func (d *Database) AddBlock(b *models.Block) error {
+func (d *Database) AddSlot(b *Slot) error {
+	res := d.db.Create(b)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) AddAccounts(a *[]Account) error {
+	res := d.db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&a)
+
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) AddValidators(v *[]Validator) error {
+	res := d.db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&v)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) AddEpoch(b *Epoch) error {
+	res := d.db.Create(b)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
+func (d *Database) AddBlock(b *Block) error {
 	res := d.db.Create(b)
 	if res.Error != nil {
 		return res.Error
@@ -33,32 +70,42 @@ func (d *Database) Close() {
 
 func (d *Database) Migrate() error {
 
-	err := d.db.AutoMigrate(&models.Block{})
+	err := d.db.AutoMigrate(&Block{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.Deposit{})
+	err = d.db.AutoMigrate(&Deposit{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.Tx{})
+	err = d.db.AutoMigrate(&Tx{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.Vote{})
+	err = d.db.AutoMigrate(&Vote{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.Epoch{})
+	err = d.db.AutoMigrate(&Epoch{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&models.Exit{})
+	err = d.db.AutoMigrate(&Exit{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&Account{})
+	if err != nil {
+		return err
+	}
+
+	err = d.db.AutoMigrate(&Validator{})
 	if err != nil {
 		return err
 	}
@@ -69,7 +116,7 @@ func (d *Database) Migrate() error {
 // NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams *params.ChainParams) *Database {
 
-	gdb, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	gdb, err := gorm.Open(postgres.Open(dbConnString), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}
