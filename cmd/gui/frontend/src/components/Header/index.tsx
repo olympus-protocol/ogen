@@ -1,26 +1,26 @@
-import React, { ChangeEvent, useEffect, useState } from "react";
-import useGoToPath from "../../hooks/useGoToPath";
+import React, { ChangeEvent, useEffect, useState } from 'react';
+import useGoToPath from '../../hooks/useGoToPath';
 import {
   useWalletActionCreators,
   useWalletState,
-} from "../../state/wallets/hooks";
-import SelectWalletModal from "../SelectWalletModal";
+} from '../../state/wallets/hooks';
+import SelectWalletModal from '../SelectWalletModal';
 
 interface HeaderProps {
   header: string;
 }
 
 export default function Header({ header }: HeaderProps) {
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const { wallets, selectedWallet } = useWalletState();
   const { fetchWallets } = useWalletActionCreators();
-  const goToAddWallet = useGoToPath("/modals/add-wallet");
+  const goToAddWallet = useGoToPath('/modals/add-wallet');
 
   const handleSelect = (e: ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
 
-    if (value === "add") {
+    if (value === 'add') {
       goToAddWallet();
     } else if (value) {
       setSelected(value);

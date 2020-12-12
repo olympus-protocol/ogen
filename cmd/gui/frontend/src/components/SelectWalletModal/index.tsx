@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { openWallet } from "../../backend/wallet";
-import { useWalletActionCreators } from "../../state/wallets/hooks";
-import Modal from "../Modal";
+import React, { useState } from 'react';
+import { openWallet } from '../../backend/wallet';
+import { useWalletActionCreators } from '../../state/wallets/hooks';
+import Modal, { ModalBody, ModalHeader } from '../Modal';
 
 type SelectWalletModalProps = {
   selectedWallet: string;
@@ -14,8 +14,8 @@ export default function SelectWalletModal({
   isOpen,
   onClose,
 }: SelectWalletModalProps) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const { selectWallet, updateWalletInfo } = useWalletActionCreators();
 
   const onSubmit = async (e: any) => {
@@ -35,20 +35,24 @@ export default function SelectWalletModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <h2>Open {selectedWallet} Wallet</h2>
-      <form onSubmit={onSubmit}>
-        <label>Enter Wallet Password</label>
-        <br />
-        <input
-          className="form-control"
-          type="password"
-          placeholder="Enter wallet password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <br />
-        {error && <span className="form-control-error">{error}</span>}
-        <input className="btn btn-primary" type="submit" value="Submit" />
-      </form>
+      <ModalHeader>
+        <h2>Open {selectedWallet} Wallet</h2>
+      </ModalHeader>
+      <ModalBody>
+        <form onSubmit={onSubmit}>
+          <label>Enter Wallet Password</label>
+          <br />
+          <input
+            className="form-control"
+            type="password"
+            placeholder="Enter wallet password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <br />
+          {error && <span className="form-control-error">{error}</span>}
+          <input className="btn btn-primary" type="submit" value="Submit" />
+        </form>
+      </ModalBody>
     </Modal>
   );
 }

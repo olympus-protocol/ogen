@@ -1,12 +1,12 @@
-import { useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { walletBalance } from "../../backend/wallet";
-import { AppState } from "../index";
+import { useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { walletBalance } from '../../backend/wallet';
+import { AppState } from '../index';
 import {
   fetchUserBalance,
   fetchUserWallets,
   selectWallet as selectUserWallert,
-} from "./actions";
+} from './actions';
 
 export function useWalletState() {
   return useSelector((state: AppState) => state.wallet);
@@ -25,14 +25,14 @@ export function useWalletActionCreators() {
   );
 
   const updateWalletInfo = async () => {
-    const balance = await walletBalance()
+    const balance = await walletBalance();
 
-    dispatch(fetchUserBalance(balance))
-  }
+    dispatch(fetchUserBalance(balance));
+  };
 
   return {
     fetchWallets,
     selectWallet,
-    updateWalletInfo
+    updateWalletInfo,
   };
 }

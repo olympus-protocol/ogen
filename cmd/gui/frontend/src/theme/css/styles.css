@@ -297,7 +297,7 @@
     border-radius: 0;
   }
 }
-#App #wallet .wallet-tabs .wallet-tab-3 {
+#App #wallet .wallet-tabs .wallet-tab-0 {
   border-radius: 0 15px 0 0;
   padding: 1em;
   background-color: #6A79B1;
@@ -305,7 +305,7 @@
   transition: all 0.1s;
 }
 @media only screen and (max-width: 1200px) {
-  #App #wallet .wallet-tabs .wallet-tab-3 {
+  #App #wallet .wallet-tabs .wallet-tab-0 {
     width: 100%;
     border-radius: 0;
   }
@@ -537,4 +537,23 @@
   max-width: 500px;
   height: 400px;
   margin: 0 auto;
+  padding: 0 !important;
+  font-family: "All Round Gothic";
+}
+
+.ReactModal__Content .modal-header {
+  background-color: #384b97;
+  color: white;
+  font-family: "All Round Gothic";
+  font-size: 2rem;
+  text-align: 'center';
+}
+
+.ReactModal__Content .modal-header h2 {
+  margin-bottom: 0 !important;
+}
+
+.ReactModal__Content .btn {
+  margin-top: 24px;
+  background-color: #384b97;
 }

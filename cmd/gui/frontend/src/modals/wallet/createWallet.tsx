@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import NewWalletModal from "../../components/NewWalletModal";
+import React, { useState } from 'react';
+import NewWalletModal from '../../components/NewWalletModal';
 
 export default function CreateWallet() {
   const [modalOpen, setModalOpen] = useState(false);

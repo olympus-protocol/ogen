@@ -1,9 +1,9 @@
-type Wallet = {
+interface Wallet {
   NewWallet: (name: string, mnemonic: string, password: string) => void;
   GetAvailableWallets: () => any;
   OpenWallet: (name: string, password: string) => void;
   GetBalance: () => any;
-};
+}
 
 function getWallet(): Wallet {
   const win = window as any;
@@ -35,7 +35,7 @@ export async function newWallet(name: string, password: string): Promise<void> {
   const wallet = getWallet();
   if (!wallet) return;
 
-  await wallet.NewWallet(name, "", password);
+  await wallet.NewWallet(name, '', password);
 }
 
 export async function walletBalance(): Promise<any> {
