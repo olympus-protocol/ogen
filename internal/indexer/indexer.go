@@ -16,7 +16,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
 	"io"
-	"math/big"
 	"os"
 	"sync"
 	"time"
@@ -60,6 +59,8 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		return err
 	}
 
+	nonce := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonce, b.Header.Nonce)
 	dbBlock := &db.Block{
 		Hash:   row.Hash[:],
 		Height: row.Height,
@@ -67,7 +68,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		Header: db.BlockHeader{
 			Hash:                       row.Hash[:],
 			Version:                    b.Header.Version,
-			Nonce:                      *big.NewInt(int64(b.Header.Nonce)),
+			Nonce:                      nonce,
 			TxMerkleRoot:               b.Header.TxMerkleRoot[:],
 			TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot[:],
 			VoteMerkleRoot:             b.Header.VoteMerkleRoot[:],
@@ -100,7 +101,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 				FromPublicKey:     b.Txs[i].FromPublicKey[:],
 				FromPublicKeyHash: fpkh[:],
 				Amount:            b.Txs[i].Amount,
-				Nonce:             *big.NewInt(int64(b.Txs[i].Nonce)),
+				Nonce:             b.Txs[i].Nonce,
 				Fee:               b.Txs[i].Fee,
 			}
 		}
@@ -144,7 +145,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 					ToEpoch:         b.Votes[i].Data.ToEpoch,
 					ToHash:          b.Votes[i].Data.ToHash[:],
 					BeaconBlockHash: b.Votes[i].Data.BeaconBlockHash[:],
-					Nonce:           *big.NewInt(int64(b.Votes[i].Data.Nonce)),
+					Nonce:           nonce,
 				},
 			}
 		}
@@ -259,7 +260,7 @@ func (i *Indexer) StoreStateData() error {
 		dbAcc := db.Account{
 			Account: acc[:],
 			Balance: bal,
-			Nonce:   *big.NewInt(int64(nonce)),
+			Nonce:   nonce,
 		}
 		dbAccounts = append(dbAccounts, dbAcc)
 	}
