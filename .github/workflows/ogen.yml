@@ -21,6 +21,9 @@ jobs:
         go test -coverprofile=coverage.txt -covermode=atomic ./...
         bash <(curl -s https://codecov.io/bash)
         
+    - name: Install Deps
+      run: apt install build-essential libgtk-3-dev libwebkit2gtk-4.0-dev
+    
     - name: Build Ogen
       run: ./scripts/build.sh
         
