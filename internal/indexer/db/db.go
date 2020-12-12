@@ -2,8 +2,10 @@ package db
 
 import (
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -63,12 +65,17 @@ func (d *Database) StoreState(s state.State) error {
 }
 
 func (d *Database) GetState() (state.State, error) {
-	res := d.db.First(&State{}, stateKey)
+	var s State
+	res := d.db.Order("raw").Find(&State{}).Scan(&s)
 	if res.Error != nil {
 		return nil, res.Error
 	}
-
-	return nil, nil
+	storedState := state.NewEmptyState()
+	err := storedState.Unmarshal(s.Raw)
+	if err != nil {
+		return nil, err
+	}
+	return storedState, nil
 }
 
 func (d *Database) AddValidators(v *[]Validator) error {
@@ -95,6 +102,20 @@ func (d *Database) AddBlock(b *Block) error {
 		return res.Error
 	}
 	return nil
+}
+
+func (d *Database) GetRawBlock(hash chainhash.Hash) (*primitives.Block, error) {
+	var block Block
+	res := d.db.First(&Block{}, hash).Scan(&block)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	b := new(primitives.Block)
+	err := b.Unmarshal(block.RawBlock)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
 
 func (d *Database) Close() {

@@ -59,6 +59,11 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		return err
 	}
 
+	rawBlock, err := b.Marshal()
+	if err != nil {
+		return err
+	}
+
 	nonce := make([]byte, 8)
 	binary.LittleEndian.PutUint64(nonce, b.Header.Nonce)
 	dbBlock := &db.Block{
@@ -84,6 +89,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 			StateRoot:                  b.Header.StateRoot[:],
 			FeeAddress:                 b.Header.FeeAddress[:],
 		},
+		RawBlock: rawBlock,
 	}
 
 	if len(b.Txs) > 0 {
@@ -191,13 +197,13 @@ func (i *Indexer) Stop() {
 }
 
 func (i *Indexer) initialSync() error {
-	genesis := primitives.GetGenesisBlock()
-	genesisHash := genesis.Hash()
+
+	lastJustifiedHash := i.state.GetJustifiedEpochHash()
 
 	i.log.Infof("Starting initial sync")
 initSync:
 	time.Sleep(5 * time.Second)
-	syncClient, err := i.client.Chain().Sync(context.Background(), &proto.Hash{Hash: genesisHash.String()})
+	syncClient, err := i.client.Chain().Sync(context.Background(), &proto.Hash{Hash: lastJustifiedHash.String()})
 	if err != nil {
 		i.log.Warn("Unable to connect to RPC server. Trying again...")
 		goto initSync
@@ -418,7 +424,32 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 		index:     idx,
 	}
 
-	err = indexer.GetGenesisState()
+	s, err := indexer.db.GetState()
+	if err != nil {
+		// Initialize State and Index if not exits
+		err = indexer.GetGenesisState()
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, err
+	}
+
+	// Add the state and Index
+	indexer.state = s
+
+	// Populate Index since lastJustified
+	lastJustifiedBlock, err := indexer.db.GetRawBlock(s.GetJustifiedEpochHash())
+	if err != nil {
+		return nil, err
+	}
+
+	indexer.index, err = chainindex.InitBlocksIndex(genesisBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = indexer.index.Add(lastJustifiedBlock)
 	if err != nil {
 		return nil, err
 	}
