@@ -348,7 +348,7 @@ func (i *Indexer) Context() context.Context {
 	return i.ctx
 }
 
-func (i *Indexer) GetGenesisState() error {
+func (i *Indexer) SetGenesisState() error {
 	genesisBlock := primitives.GetGenesisBlock()
 	genesisHash := genesisBlock.Hash()
 
@@ -389,11 +389,6 @@ func (i *Indexer) GetGenesisState() error {
 	return nil
 }
 
-func (i *Indexer) LoadState() error {
-
-	return nil
-}
-
 func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams) (*Indexer, error) {
 	log := logger.New(os.Stdin)
 
@@ -426,33 +421,32 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 
 	s, err := indexer.db.GetState()
 	if err != nil {
-		// Initialize State and Index if not exits
-		err = indexer.GetGenesisState()
+
+		err = indexer.SetGenesisState()
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, err
+		return indexer, nil
+
+	} else {
+		indexer.state = s
+
+		lastJustifiedBlock, err := indexer.db.GetRawBlock(s.GetJustifiedEpochHash())
+		if err != nil {
+			return nil, err
+		}
+
+		indexer.index, err = chainindex.InitBlocksIndex(genesisBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = indexer.index.Add(lastJustifiedBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		return indexer, nil
 	}
-
-	// Add the state and Index
-	indexer.state = s
-
-	// Populate Index since lastJustified
-	lastJustifiedBlock, err := indexer.db.GetRawBlock(s.GetJustifiedEpochHash())
-	if err != nil {
-		return nil, err
-	}
-
-	indexer.index, err = chainindex.InitBlocksIndex(genesisBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = indexer.index.Add(lastJustifiedBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	return indexer, nil
 }
