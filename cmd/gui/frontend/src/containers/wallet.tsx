@@ -1,100 +1,73 @@
-import React, { Component } from 'react';
-import Frame from '../components/frame/frame';
+import React, { useEffect, useState } from 'react';
+import Frame from '../components/Frame';
 import History from '../components/wallet/history';
 import Receive from '../components/wallet/receive';
 import Send from '../components/wallet/send';
 
-interface IState {
-    activeTab: number,
-    tab1: string,
-    tab2: string,
-    tab3: string,
+type TabsProps = {
+  tabs: string[];
+  selectTab: (tab: string) => void;
+  selectedTab?: string;
+};
+
+function Tabs({ tabs, selectTab, selectedTab }: TabsProps) {
+  const isTabActive = (tab: string) => selectedTab === tab;
+  return (
+    <div className="wallet-tabs">
+      {tabs.map((tab, idx) => (
+        <div
+          key={idx}
+          className={`wallet-tab-${idx} ${
+            isTabActive(tab) ? 'wallet-tab-active' : ''
+          }`}
+          onClick={() => selectTab(tab)}
+        >
+          {tab}
+        </div>
+      ))}
+    </div>
+  );
 }
 
-class Wallet extends Component<{}, IState> {
+type TabBodyProps = {
+  selectedTab: string;
+  tabs: string[];
+};
 
-    constructor(props: any) {
-        super(props);
-        this.state = {
-            activeTab: 0,
-            tab1: "wallet-tab-1",
-            tab2: "wallet-tab-2",
-            tab3: "wallet-tab-3"
-        }
-    }
+function TabBody({ selectedTab, tabs }: TabBodyProps) {
+  if (selectedTab === tabs[0]) {
+    return <History />;
+  }
 
-    componentDidMount() {
-        this.setDefaultTab();
-    }
-    
-    setDefaultTab() {
-        let selectedTab = this.state.tab1 + " wallet-tab-active";
-        this.setState({
-            tab1: selectedTab
-        })
-    }
+  if (selectedTab === tabs[1]) {
+    return <Send />;
+  }
 
-    toggleSelect(num: number) {
-        let selectedTab = "";
-        switch (num) {
-            case 0:
-                selectedTab = this.state.tab1 + " wallet-tab-active";
-                this.setState({
-                    activeTab: num,
-                    tab1: selectedTab,
-                    tab2: "wallet-tab-2",
-                    tab3: "wallet-tab-3"
-                });
-                break;
-            case 1:
-                selectedTab = this.state.tab2 + " wallet-tab-active";
-                this.setState({
-                    activeTab: num,
-                    tab1: "wallet-tab-1",
-                    tab2: selectedTab,
-                    tab3: "wallet-tab-3",
-                });
-                break;
-            case 2:
-                selectedTab = this.state.tab3 + " wallet-tab-active";
-                this.setState({
-                    activeTab: num,
-                    tab1: "wallet-tab-1",
-                    tab2: "wallet-tab-2",
-                    tab3: selectedTab
-                });
-                break;
-        }
-    }
+  if (selectedTab === tabs[2]) {
+    return <Receive />;
+  }
 
-    renderBody() {
-        return (
-            <div id="wallet" className="page-container">
-                <div className="wallet-tabs">
-                    <div className={this.state.tab1} onClick={() => this.toggleSelect(0)}>
-                        Transaction History
-                    </div>
-                    <div className={this.state.tab2} onClick={() => this.toggleSelect(1)}>
-                        Send
-                    </div>
-                    <div className={this.state.tab3} onClick={() => this.toggleSelect(2)}>
-                        Receive
-                    </div>
-                </div>
-                {
-                    this.state.activeTab === 0 ?
-                        <History />
-                        : this.state.activeTab === 1 ?
-                            <Send />
-                            : this.state.activeTab === 2 ?
-                                <Receive /> : ''
-                }
-            </div>
-        );
-    }
-    render() {
-        return <Frame body={this.renderBody()} header={"wallet"} />
-    }
+  return <></>;
+}
+
+function Wallet() {
+  const [selectedTab, setSelectedTab] = useState('');
+  const [tabs] = useState(['Transaction History', 'Send', 'Receive']);
+
+  const selectTab = (tab: string) => setSelectedTab(tab);
+
+  useEffect(() => {
+    selectTab(tabs[0]);
+  }, [tabs]);
+
+  return (
+    <Frame header="wallet">
+      <div id="wallet" className="page-container">
+        <Tabs tabs={tabs} selectTab={selectTab} selectedTab={selectedTab} />
+        <TabBody selectedTab={selectedTab} tabs={tabs} />
+      </div>
+    </Frame>
+  );
 }
 
 export default Wallet;
