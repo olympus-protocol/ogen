@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"github.com/golang/snappy"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -10,20 +11,20 @@ const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header   *BlockHeader          // 													= 372 bytes
-	Votes    []*MultiValidatorVote `ssz-max:"32"`   // MaxVotesPerBlock 					32 * 6474 		= 207168 bytes
-	Txs      []*Tx                 `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
-	TxsMulti []*TxMulti            `ssz-max:"128"`  // MaxTxsMultiPerBlock
-	Deposits []*Deposit            `ssz-max:"128"`  // MaxDepositsPerBlock 				308 * 128 		= 39424 bytes
-	Exits    []*Exit               `ssz-max:"128"`  // MaxExitsPerBlock     				192 * 128 		= 24576 bytes
-	//PartialExit       []*PartialExit                      `ssz-max:"128"`  // MaxPartialExitsPerBlock           300 * 128		=
-	VoteSlashings     []*VoteSlashing     `ssz-max:"10"`  // MaxVoteSlashingPerBlock			666 * 10 		= 6660 bytes
-	RANDAOSlashings   []*RANDAOSlashing   `ssz-max:"20"`  // MaxRANDAOSlashingPerBlock   		152 * 20 		= 3040 bytes
-	ProposerSlashings []*ProposerSlashing `ssz-max:"2"`   // MaxProposerSlashingPerBlock 		984 * 2 		= 1968 bytes
-	GovernanceVotes   []*GovernanceVote   `ssz-max:"128"` // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
-	//CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
-	Signature       [96]byte `ssz-size:"96"` // 													= 96 bytes
-	RandaoSignature [96]byte `ssz-size:"96"` // 													= 96 bytes
+	Header            *BlockHeader                        // 													= 372 bytes
+	Votes             []*MultiValidatorVote               `ssz-max:"32"`   // MaxVotesPerBlock 					32 * 6474 		= 207168 bytes
+	Txs               []*Tx                               `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
+	TxsMulti          []*TxMulti                          `ssz-max:"128"`  // MaxTxsMultiPerBlock
+	Deposits          []*Deposit                          `ssz-max:"128"`  // MaxDepositsPerBlock 				308 * 128 		= 39424 bytes
+	Exits             []*Exit                             `ssz-max:"128"`  // MaxExitsPerBlock     				192 * 128 		= 24576 bytes
+	PartialExit       []*PartialExit                      `ssz-max:"128"`  // MaxPartialExitsPerBlock           300 * 128		=
+	VoteSlashings     []*VoteSlashing                     `ssz-max:"10"`   // MaxVoteSlashingPerBlock			666 * 10 		= 6660 bytes
+	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`   // MaxRANDAOSlashingPerBlock   		152 * 20 		= 3040 bytes
+	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`    // MaxProposerSlashingPerBlock 		984 * 2 		= 1968 bytes
+	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
+	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
+	Signature         [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
+	RandaoSignature   [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
 }
 
 // Marshal encodes the block.
@@ -221,44 +222,44 @@ func merkleRootVoteSlashing(slashings []*VoteSlashing) chainhash.Hash {
 }
 
 // CoinProofsMerkleRoot calculates the merkle root of the CoinProofs in the block.
-//func (b *Block) CoinProofsMerkleRoot() chainhash.Hash {
-//	return merkleRootCoinProofs(b.CoinProofs)
-//}
+func (b *Block) CoinProofsMerkleRoot() chainhash.Hash {
+	return merkleRootCoinProofs(b.CoinProofs)
+}
 
-//func merkleRootCoinProofs(proofs []*burnproof.CoinsProofSerializable) chainhash.Hash {
-//	if len(proofs) == 0 {
-//		return chainhash.Hash{}
-//	}
-//	if len(proofs) == 1 {
-//		return proofs[0].Hash()
-//	}
-//	mid := len(proofs) / 2
+func merkleRootCoinProofs(proofs []*burnproof.CoinsProofSerializable) chainhash.Hash {
+	if len(proofs) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(proofs) == 1 {
+		return proofs[0].Hash()
+	}
+	mid := len(proofs) / 2
 
-//	h1 := merkleRootCoinProofs(proofs[:mid])
-//	h2 := merkleRootCoinProofs(proofs[mid:])
+	h1 := merkleRootCoinProofs(proofs[:mid])
+	h2 := merkleRootCoinProofs(proofs[mid:])
 
-//	return chainhash.HashH(append(h1[:], h2[:]...))
-//}
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
 
 // PartialExitsMerkleRoot calculates the merkle root of the PartialExit in the block.
-//func (b *Block) PartialExitsMerkleRoot() chainhash.Hash {
-//	return merkleRootPartialExit(b.PartialExit)
-//}
+func (b *Block) PartialExitsMerkleRoot() chainhash.Hash {
+	return merkleRootPartialExit(b.PartialExit)
+}
 
-//func merkleRootPartialExit(e []*PartialExit) chainhash.Hash {
-//	if len(e) == 0 {
-//		return chainhash.Hash{}
-//	}
-//	if len(e) == 1 {
-//		return e[0].Hash()
-//	}
-//	mid := len(e) / 2
+func merkleRootPartialExit(e []*PartialExit) chainhash.Hash {
+	if len(e) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(e) == 1 {
+		return e[0].Hash()
+	}
+	mid := len(e) / 2
 
-//	h1 := merkleRootPartialExit(e[:mid])
-//	h2 := merkleRootPartialExit(e[mid:])
+	h1 := merkleRootPartialExit(e[:mid])
+	h2 := merkleRootPartialExit(e[mid:])
 
-//	return chainhash.HashH(append(h1[:], h2[:]...))
-//}
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
 
 // GetTxs returns a slice with tx hashes
 func (b *Block) GetTxs() []string {

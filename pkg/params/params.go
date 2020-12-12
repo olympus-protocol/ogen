@@ -58,6 +58,7 @@ type ChainParams struct {
 	MaxVoteSlashingsPerBlock     uint64
 	MaxGovernanceVotesPerBlock   uint64
 	MaxCoinProofsPerBlock        uint64
+	MaxPartialExitsPerBlock      uint64
 	WhistleblowerRewardQuotient  uint64
 	GovernancePercentages        []uint8
 	MinVotingBalance             uint64
@@ -101,6 +102,7 @@ var Mainnet = ChainParams{
 	MaxVoteSlashingsPerBlock:     10,
 	MaxGovernanceVotesPerBlock:   128,
 	MaxCoinProofsPerBlock:        128,
+	MaxPartialExitsPerBlock:      128,
 	WhistleblowerRewardQuotient:  2, // Validator loses half their deposit
 	GovernancePercentages: []uint8{
 		30, // tech
@@ -172,6 +174,7 @@ var TestNet = ChainParams{
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
 	MaxCoinProofsPerBlock:        128,
+	MaxPartialExitsPerBlock:      128,
 	WhistleblowerRewardQuotient:  2,
 	GovernancePercentages: []uint8{
 		30, // tech
