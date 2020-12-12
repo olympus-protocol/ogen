@@ -929,6 +929,7 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 	coinProofsMerkleRoot := b.CoinProofsMerkleRoot()
+	partialExitsMerkleRoot := b.PartialExitsMerkleRoot()
 
 	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
@@ -966,7 +967,11 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	}
 
 	if !bytes.Equal(coinProofsMerkleRoot[:], b.Header.CoinProofsMerkleRoot[:]) {
-		return fmt.Errorf("expected coin proofs merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
+		return fmt.Errorf("expected coin proofs merkle root to be %s but got %s", hex.EncodeToString(coinProofsMerkleRoot[:]), hex.EncodeToString(b.Header.CoinProofsMerkleRoot[:]))
+	}
+
+	if !bytes.Equal(partialExitsMerkleRoot[:], b.Header.PartialExitMerkleRoot[:]) {
+		return fmt.Errorf("expected partial exits merkle root to be %s but got %s", hex.EncodeToString(partialExitsMerkleRoot[:]), hex.EncodeToString(b.Header.PartialExitMerkleRoot[:]))
 	}
 
 	if uint64(len(b.Votes)) > netParams.MaxVotesPerBlock {
@@ -1001,6 +1006,10 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxCoinProofsPerBlock, len(b.CoinProofs))
 	}
 
+	if uint64(len(b.PartialExit)) > netParams.MaxPartialExitsPerBlock {
+		return fmt.Errorf("block has too many partial exits (max: %d, got: %d)", netParams.MaxPartialExitsPerBlock, len(b.PartialExit))
+	}
+
 	for _, d := range b.Deposits {
 		if err := s.ApplyDeposit(d); err != nil {
 			return err
@@ -1021,6 +1030,12 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 
 	for _, p := range b.CoinProofs {
 		if err := s.ApplyCoinProof(p); err != nil {
+			return err
+		}
+	}
+
+	for _, p := range b.PartialExit {
+		if err := s.ApplyPartialExit(p); err != nil {
 			return err
 		}
 	}

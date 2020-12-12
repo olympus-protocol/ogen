@@ -47,6 +47,7 @@ type State interface {
 	ApplyDeposit(deposit *primitives.Deposit) error
 	ApplyPartialExit(p *primitives.PartialExit) error
 	NextVoteEpoch(newState uint64)
+	SetSlot(slot uint64)
 
 	// Utils
 	Copy() State

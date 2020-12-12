@@ -253,6 +253,14 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
+				partialExits, err := p.actionsMempool.GetPartialExits(int(p.netParams.MaxPartialExitsPerBlock), blockState)
+				if err != nil {
+					p.log.Error(err)
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
+					continue
+				}
+
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
@@ -272,6 +280,7 @@ func (p *proposer) ProposeBlocks() {
 					ProposerSlashings: proposerSlashings,
 					GovernanceVotes:   governanceVotes,
 					CoinProofs:        coinproofs,
+					PartialExit:       partialExits,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
@@ -284,6 +293,7 @@ func (p *proposer) ProposeBlocks() {
 				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
 				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
 				block.Header.CoinProofsMerkleRoot = block.CoinProofsMerkleRoot()
+				block.Header.PartialExitMerkleRoot = block.PartialExitsMerkleRoot()
 
 				blockHash := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
