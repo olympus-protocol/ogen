@@ -3,7 +3,7 @@ package db
 import "time"
 
 type Block struct {
-	Hash     [32]byte `gorm:"primaryKey"`
+	Hash     []byte `gorm:"primaryKey"`
 	Height   uint64
 	Slot     uint64
 	Header   BlockHeader `gorm:"foreignKey:Hash"`
@@ -15,49 +15,49 @@ type Block struct {
 }
 
 type Account struct {
-	Account [20]byte `gorm:"primaryKey"`
+	Account []byte `gorm:"primaryKey"`
 	Balance uint64
 	Nonce   uint64
 }
 
 type BlockHeader struct {
-	Hash                       [32]byte `gorm:"primaryKey"`
+	Hash                       []byte `gorm:"primaryKey"`
 	Version                    uint64
 	Nonce                      uint64
-	TxMerkleRoot               [32]byte
-	TxMultiMerkleRoot          [32]byte
-	VoteMerkleRoot             [32]byte
-	DepositMerkleRoot          [32]byte
-	ExitMerkleRoot             [32]byte
-	VoteSlashingMerkleRoot     [32]byte
-	RandaoSlashingMerkleRoot   [32]byte
-	ProposerSlashingMerkleRoot [32]byte
-	GovernanceVotesMerkleRoot  [32]byte
-	PreviousBlockHash          [32]byte
+	TxMerkleRoot               []byte
+	TxMultiMerkleRoot          []byte
+	VoteMerkleRoot             []byte
+	DepositMerkleRoot          []byte
+	ExitMerkleRoot             []byte
+	VoteSlashingMerkleRoot     []byte
+	RandaoSlashingMerkleRoot   []byte
+	ProposerSlashingMerkleRoot []byte
+	GovernanceVotesMerkleRoot  []byte
+	PreviousBlockHash          []byte
 	Timestamp                  time.Time
 	Slot                       uint64
-	StateRoot                  [32]byte
-	FeeAddress                 [20]byte
+	StateRoot                  []byte
+	FeeAddress                 []byte
 }
 
 type CoinProofs struct {
-	Hash          [32]byte `gorm:"primarykey"`
-	Transaction   [192]byte
-	RedeemAccount [44]byte
+	Hash          []byte `gorm:"primarykey"`
+	Transaction   []byte
+	RedeemAccount []byte
 }
 
 type Deposit struct {
-	Hash      [32]byte `gorm:"primaryKey"`
-	BlockHash [32]byte
-	PublicKey [48]byte
+	Hash      []byte `gorm:"primaryKey"`
+	BlockHash []byte
+	PublicKey []byte
 	Data      DepositData `gorm:"foreignKey:Hash"`
 }
 
 type DepositData struct {
-	Hash              [32]byte
-	PublicKey         [48]byte `gorm:"primaryKey"`
-	ProofOfPossession [96]byte
-	WithdrawalAddress [20]byte
+	Hash              []byte
+	PublicKey         []byte `gorm:"primaryKey"`
+	ProofOfPossession []byte
+	WithdrawalAddress []byte
 }
 
 type Epoch struct {
@@ -70,37 +70,37 @@ type Epoch struct {
 	ParticipationPercentage []byte
 	Finalized               bool
 	Justified               bool
-	Randao                  [32]byte
+	Randao                  []byte
 }
 
 type Exit struct {
-	Hash                [32]byte `gorm:"primarykey"`
-	BlockHash           [32]byte
-	ValidatorPublicKey  [48]byte
-	WithdrawalPublicKey [48]byte
+	Hash                []byte `gorm:"primarykey"`
+	BlockHash           []byte
+	ValidatorPublicKey  []byte
+	WithdrawalPublicKey []byte
 }
 
 type PartialExit struct {
-	Hash                [32]byte
-	BlockHash           [32]byte
-	ValidatorPublicKey  [48]byte
-	WithdrawalPublicKey [48]byte
+	Hash                []byte
+	BlockHash           []byte
+	ValidatorPublicKey  []byte
+	WithdrawalPublicKey []byte
 	Amount              uint64
 }
 
 type Slot struct {
 	Slot          uint64 `gorm:"primaryKey"`
-	BlockHash     [32]byte
+	BlockHash     []byte
 	ProposerIndex uint64
 	Proposed      bool
 }
 
 type Tx struct {
-	BlockHash         [32]byte
-	Hash              [32]byte `gorm:"primarykey"`
-	ToAddress         [20]byte
-	FromPublicKeyHash [20]byte
-	FromPublicKey     [48]byte
+	BlockHash         []byte
+	Hash              []byte `gorm:"primarykey"`
+	ToAddress         []byte
+	FromPublicKeyHash []byte
+	FromPublicKey     []byte
 	Amount            uint64
 	Nonce             uint64
 	Fee               uint64
@@ -108,28 +108,28 @@ type Tx struct {
 
 type Validator struct {
 	Balance          uint64
-	PubKey           [48]byte `gorm:"primaryKey"`
-	PayeeAddress     [20]byte
+	PubKey           []byte `gorm:"primaryKey"`
+	PayeeAddress     []byte
 	Status           uint64
 	FirstActiveEpoch uint64
 	LastActiveEpoch  uint64
 }
 
 type Vote struct {
-	BlockHash             [32]byte
+	BlockHash             []byte
 	ParticipationBitfield []byte
-	Hash                  [32]byte `gorm:"primaryKey"`
+	Hash                  []byte `gorm:"primaryKey"`
 	Data                  VoteData `gorm:"foreignKey:Hash"`
 }
 
 type VoteData struct {
-	Hash            [32]byte `gorm:"primaryKey"`
+	Hash            []byte `gorm:"primaryKey"`
 	Slot            uint64
 	FromEpoch       uint64
-	FromHash        [32]byte
+	FromHash        []byte
 	ToEpoch         uint64
-	ToHash          [32]byte
-	BeaconBlockHash [32]byte
+	ToHash          []byte
+	BeaconBlockHash []byte
 	Nonce           uint64
 }
 

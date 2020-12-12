@@ -144,6 +144,11 @@ func (d *Database) Migrate() error {
 		return err
 	}
 
+	err = d.db.AutoMigrate(&State{})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

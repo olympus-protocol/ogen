@@ -60,27 +60,27 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 	}
 
 	dbBlock := &db.Block{
-		Hash:   row.Hash,
+		Hash:   row.Hash[:],
 		Height: row.Height,
 		Slot:   row.Slot,
 		Header: db.BlockHeader{
-			Hash:                       row.Hash,
+			Hash:                       row.Hash[:],
 			Version:                    b.Header.Version,
 			Nonce:                      b.Header.Nonce,
-			TxMerkleRoot:               b.Header.TxMerkleRoot,
-			TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot,
-			VoteMerkleRoot:             b.Header.VoteMerkleRoot,
-			DepositMerkleRoot:          b.Header.DepositMerkleRoot,
-			ExitMerkleRoot:             b.Header.ExitMerkleRoot,
-			VoteSlashingMerkleRoot:     b.Header.VoteSlashingMerkleRoot,
-			RandaoSlashingMerkleRoot:   b.Header.RANDAOSlashingMerkleRoot,
-			ProposerSlashingMerkleRoot: b.Header.ProposerSlashingMerkleRoot,
-			GovernanceVotesMerkleRoot:  b.Header.GovernanceVotesMerkleRoot,
-			PreviousBlockHash:          b.Header.PrevBlockHash,
+			TxMerkleRoot:               b.Header.TxMerkleRoot[:],
+			TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot[:],
+			VoteMerkleRoot:             b.Header.VoteMerkleRoot[:],
+			DepositMerkleRoot:          b.Header.DepositMerkleRoot[:],
+			ExitMerkleRoot:             b.Header.ExitMerkleRoot[:],
+			VoteSlashingMerkleRoot:     b.Header.VoteSlashingMerkleRoot[:],
+			RandaoSlashingMerkleRoot:   b.Header.RANDAOSlashingMerkleRoot[:],
+			ProposerSlashingMerkleRoot: b.Header.ProposerSlashingMerkleRoot[:],
+			GovernanceVotesMerkleRoot:  b.Header.GovernanceVotesMerkleRoot[:],
+			PreviousBlockHash:          b.Header.PrevBlockHash[:],
 			Timestamp:                  time.Unix(int64(b.Header.Timestamp), 0),
 			Slot:                       b.Header.Slot,
-			StateRoot:                  b.Header.StateRoot,
-			FeeAddress:                 b.Header.FeeAddress,
+			StateRoot:                  b.Header.StateRoot[:],
+			FeeAddress:                 b.Header.FeeAddress[:],
 		},
 	}
 
@@ -93,11 +93,11 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 				return err
 			}
 			dbTxs[i] = db.Tx{
-				BlockHash:         row.Hash,
-				Hash:              txHash,
-				ToAddress:         b.Txs[i].To,
-				FromPublicKey:     b.Txs[i].FromPublicKey,
-				FromPublicKeyHash: fpkh,
+				BlockHash:         row.Hash[:],
+				Hash:              txHash[:],
+				ToAddress:         b.Txs[i].To[:],
+				FromPublicKey:     b.Txs[i].FromPublicKey[:],
+				FromPublicKeyHash: fpkh[:],
 				Amount:            b.Txs[i].Amount,
 				Nonce:             b.Txs[i].Nonce,
 				Fee:               b.Txs[i].Fee,
@@ -111,14 +111,14 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		for i := range b.Deposits {
 			hash := chainhash.HashH(b.Deposits[i].Data.PublicKey[:])
 			dbDeposits[i] = db.Deposit{
-				Hash:      hash,
-				BlockHash: row.Hash,
-				PublicKey: b.Deposits[i].PublicKey,
+				Hash:      hash[:],
+				BlockHash: row.Hash[:],
+				PublicKey: b.Deposits[i].PublicKey[:],
 				Data: db.DepositData{
-					Hash:              hash,
-					PublicKey:         b.Deposits[i].Data.PublicKey,
-					ProofOfPossession: b.Deposits[i].Data.ProofOfPossession,
-					WithdrawalAddress: b.Deposits[i].Data.WithdrawalAddress,
+					Hash:              hash[:],
+					PublicKey:         b.Deposits[i].Data.PublicKey[:],
+					ProofOfPossession: b.Deposits[i].Data.ProofOfPossession[:],
+					WithdrawalAddress: b.Deposits[i].Data.WithdrawalAddress[:],
 				},
 			}
 		}
@@ -132,17 +132,17 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 			binary.LittleEndian.PutUint64(nonce, b.Votes[i].Data.Nonce)
 			hash := b.Votes[i].Data.Hash()
 			dbVotes[i] = db.Vote{
-				Hash:                  hash,
-				BlockHash:             row.Hash,
+				Hash:                  hash[:],
+				BlockHash:             row.Hash[:],
 				ParticipationBitfield: b.Votes[i].ParticipationBitfield,
 				Data: db.VoteData{
-					Hash:            hash,
+					Hash:            hash[:],
 					Slot:            b.Votes[i].Data.Slot,
 					FromEpoch:       b.Votes[i].Data.FromEpoch,
-					FromHash:        b.Votes[i].Data.FromHash,
+					FromHash:        b.Votes[i].Data.FromHash[:],
 					ToEpoch:         b.Votes[i].Data.ToEpoch,
-					ToHash:          b.Votes[i].Data.ToHash,
-					BeaconBlockHash: b.Votes[i].Data.BeaconBlockHash,
+					ToHash:          b.Votes[i].Data.ToHash[:],
+					BeaconBlockHash: b.Votes[i].Data.BeaconBlockHash[:],
 					Nonce:           b.Votes[i].Data.Nonce,
 				},
 			}
@@ -155,10 +155,10 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) error {
 		for i := range b.Exits {
 			hash := b.Exits[i].Hash()
 			dbExits[i] = db.Exit{
-				Hash:                hash,
-				BlockHash:           row.Hash,
-				ValidatorPublicKey:  b.Exits[i].ValidatorPubkey,
-				WithdrawalPublicKey: b.Exits[i].WithdrawPubkey,
+				Hash:                hash[:],
+				BlockHash:           row.Hash[:],
+				ValidatorPublicKey:  b.Exits[i].ValidatorPubkey[:],
+				WithdrawalPublicKey: b.Exits[i].WithdrawPubkey[:],
 			}
 		}
 		dbBlock.Exits = dbExits
@@ -256,7 +256,7 @@ func (i *Indexer) StoreStateData() error {
 			nonce = 0
 		}
 		dbAcc := db.Account{
-			Account: acc,
+			Account: acc[:],
 			Balance: bal,
 			Nonce:   nonce,
 		}
@@ -273,8 +273,8 @@ func (i *Indexer) StoreStateData() error {
 	for i := range vr {
 		dbValidators[i] = db.Validator{
 			Balance:          vr[i].Balance,
-			PubKey:           vr[i].PubKey,
-			PayeeAddress:     vr[i].PayeeAddress,
+			PubKey:           vr[i].PubKey[:],
+			PayeeAddress:     vr[i].PayeeAddress[:],
 			Status:           vr[i].Status,
 			FirstActiveEpoch: vr[i].FirstActiveEpoch,
 			LastActiveEpoch:  vr[i].LastActiveEpoch,
