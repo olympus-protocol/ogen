@@ -8,19 +8,24 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+type Balance struct {
+	Confirmed uint64
+	Pending   uint64
+}
+
 // GetBalance returns the balance of the current open wallet.
-func (w *wallet) GetBalance() (uint64, uint64, error) {
+func (w *wallet) GetBalance() (*Balance, error) {
 	if !w.open {
-		return 0, 0, errorNotOpen
+		return nil, errorNotOpen
 	}
 	acc, err := w.GetAccountRaw()
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 
 	confirmed := w.chain.State().TipState().GetCoinsState().Balances[acc]
 
-	return confirmed, 0, nil
+	return &Balance{Confirmed: confirmed}, nil
 }
 
 // SendToAddress sends an amount to an account using the current open wallet private key.
