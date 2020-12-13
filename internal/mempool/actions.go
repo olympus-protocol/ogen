@@ -561,7 +561,7 @@ outer1:
 	am.coinProofsLock.Lock()
 	newProofsPool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
 
-	for k, proof := range am.coinProofs {
+	/*for k, proof := range am.coinProofs {
 		proofHash := proof.Hash()
 
 		for _, proof := range b.CoinProofs {
@@ -577,14 +577,14 @@ outer1:
 		}
 
 		newProofsPool[k] = proof
-	}
+	}*/
 	am.coinProofs = newProofsPool
 	am.coinProofsLock.Unlock()
 
 	am.partialExitsLock.Lock()
 	newPartialExitsPool := make(map[chainhash.Hash]*primitives.PartialExit)
 
-	for k, exit := range am.partialExits {
+	/*for k, exit := range am.partialExits {
 		hash := exit.Hash()
 
 		for _, e := range b.PartialExit {
@@ -600,7 +600,7 @@ outer1:
 		}
 
 		newPartialExitsPool[k] = exit
-	}
+	}*/
 	am.partialExits = newPartialExitsPool
 	am.partialExitsLock.Unlock()
 

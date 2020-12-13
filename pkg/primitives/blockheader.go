@@ -13,12 +13,12 @@ type BlockHeader struct {
 	VoteMerkleRoot             [32]byte
 	DepositMerkleRoot          [32]byte
 	ExitMerkleRoot             [32]byte
-	PartialExitMerkleRoot      [32]byte
+	//PartialExitMerkleRoot      [32]byte
 	VoteSlashingMerkleRoot     [32]byte
 	RANDAOSlashingMerkleRoot   [32]byte
 	ProposerSlashingMerkleRoot [32]byte
 	GovernanceVotesMerkleRoot  [32]byte
-	CoinProofsMerkleRoot       [32]byte
+	//CoinProofsMerkleRoot       [32]byte
 	PrevBlockHash              [32]byte
 	Timestamp                  uint64
 	Slot                       uint64

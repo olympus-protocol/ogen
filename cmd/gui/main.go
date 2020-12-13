@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/leaanthony/mewn"
-	config "github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/server"
@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/wailsapp/wails"
-	os "os"
+	"os"
 	"path"
 	"time"
 )

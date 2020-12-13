@@ -2,7 +2,6 @@ package primitives
 
 import (
 	"github.com/golang/snappy"
-	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -17,12 +16,12 @@ type Block struct {
 	TxsMulti          []*TxMulti                          `ssz-max:"128"`  // MaxTxsMultiPerBlock
 	Deposits          []*Deposit                          `ssz-max:"128"`  // MaxDepositsPerBlock 				308 * 128 		= 39424 bytes
 	Exits             []*Exit                             `ssz-max:"128"`  // MaxExitsPerBlock     				192 * 128 		= 24576 bytes
-	PartialExit       []*PartialExit                      `ssz-max:"128"`  // MaxPartialExitsPerBlock           300 * 128		=
+	//PartialExit       []*PartialExit                      `ssz-max:"128"`  // MaxPartialExitsPerBlock           300 * 128		=
 	VoteSlashings     []*VoteSlashing                     `ssz-max:"10"`   // MaxVoteSlashingPerBlock			666 * 10 		= 6660 bytes
 	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`   // MaxRANDAOSlashingPerBlock   		152 * 20 		= 3040 bytes
 	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`    // MaxProposerSlashingPerBlock 		984 * 2 		= 1968 bytes
 	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
-	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
+	//CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
 	Signature         [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
 	RandaoSignature   [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
 }
@@ -221,7 +220,7 @@ func merkleRootVoteSlashing(slashings []*VoteSlashing) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
-// CoinProofsMerkleRoot calculates the merkle root of the CoinProofs in the block.
+/*// CoinProofsMerkleRoot calculates the merkle root of the CoinProofs in the block.
 func (b *Block) CoinProofsMerkleRoot() chainhash.Hash {
 	return merkleRootCoinProofs(b.CoinProofs)
 }
@@ -259,7 +258,7 @@ func merkleRootPartialExit(e []*PartialExit) chainhash.Hash {
 	h2 := merkleRootPartialExit(e[mid:])
 
 	return chainhash.HashH(append(h1[:], h2[:]...))
-}
+}*/
 
 // GetTxs returns a slice with tx hashes
 func (b *Block) GetTxs() []string {
