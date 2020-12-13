@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Frame from '../components/Frame';
+import Frame from '../components/frame/frame';
 import Balance from '../components/dashboard/balance';
 import Dao from '../components/dashboard/dao';
 import News from '../components/dashboard/news';

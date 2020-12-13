@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
-import Footer from '../Footer';
-import Header from '../Header';
-import Sidebar from '../Sidebar';
+import Footer from '../footer/footer';
+import Header from '../header/header';
+import Sidebar from '../sidebar/sidebar';
 
 interface FrameProps {
   header: string;

@@ -7,10 +7,10 @@ import Dashboard from './containers/dashboard';
 import Wallet from './containers/wallet';
 import Settings from './containers/settings';
 import Network from './containers/network';
-import CreateWallet from './modals/wallet/createWallet';
-import Migrate from './modals/wallet/migrate';
-import ImportWallet from './modals/wallet/importWallet';
-import CreateValidator from './modals/validators/createValidator';
+import CreateWallet from './components/modals/create-wallet';
+import Migrate from './components/modals/migrate';
+import ImportWallet from './components/modals/import-wallet';
+import CreateValidator from './components/modals/create-validator';
 
 function App() {
   return (

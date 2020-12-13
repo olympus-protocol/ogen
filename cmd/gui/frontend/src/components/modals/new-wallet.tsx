@@ -1,8 +1,8 @@
 import React from 'react';
 import { newWallet } from '../../backend/wallet';
-import useForm from '../../hooks/useForm';
-import useGoToPath from '../../hooks/useGoToPath';
-import Modal, { ModalHeader, ModalBody } from '../Modal';
+import useForm from '../../hooks/use-form';
+import useGoToPath from '../../hooks/use-go-to-path';
+import Modal, { ModalHeader, ModalBody } from './modal';
 
 type NewWalletModalProps = {
   isOpen: boolean;

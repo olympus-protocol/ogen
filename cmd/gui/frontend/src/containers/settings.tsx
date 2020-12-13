@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Frame from '../components/Frame';
+import Frame from '../components/frame/frame';
 
 class Settings extends Component {
   render() {

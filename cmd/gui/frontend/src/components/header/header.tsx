@@ -1,10 +1,10 @@
 import React, { ChangeEvent, useEffect, useState } from 'react';
-import useGoToPath from '../../hooks/useGoToPath';
+import useGoToPath from '../../hooks/use-go-to-path';
 import {
   useWalletActionCreators,
   useWalletState,
 } from '../../state/wallets/hooks';
-import SelectWalletModal from '../SelectWalletModal';
+import SelectWalletModal from '../modals/select-wallet';
 
 interface HeaderProps {
   header: string;

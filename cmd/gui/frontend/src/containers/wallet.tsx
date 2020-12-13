@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Frame from '../components/Frame';
+import Frame from '../components/frame/frame';
 import History from '../components/wallet/history';
 import Receive from '../components/wallet/receive';
 import Send from '../components/wallet/send';

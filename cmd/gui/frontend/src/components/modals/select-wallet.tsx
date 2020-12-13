@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { openWallet } from '../../backend/wallet';
 import { useWalletActionCreators } from '../../state/wallets/hooks';
-import Modal, { ModalBody, ModalHeader } from '../Modal';
+import Modal, { ModalBody, ModalHeader } from './modal';
 
 type SelectWalletModalProps = {
   selectedWallet: string;
@@ -28,7 +28,7 @@ export default function SelectWalletModal({
       selectWallet(selectedWallet);
       updateWalletInfo();
       onClose();
-    } catch (e: any) {
+    } catch (e) {
       setError(e);
     }
   };

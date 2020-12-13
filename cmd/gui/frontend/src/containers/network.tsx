@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import Frame from '../components/Frame';
-import Validator from '../components/Validators';
+import Frame from '../components/frame/frame';
+import Validator from '../components/validators/validators';
 
 class Network extends Component {
   render() {
