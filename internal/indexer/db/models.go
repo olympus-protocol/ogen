@@ -100,8 +100,8 @@ type Slot struct {
 type Tx struct {
 	BlockHash         []byte
 	Hash              []byte `gorm:"primarykey"`
-	ToAddress         []byte
-	FromPublicKeyHash []byte
+	ToAddress         string
+	FromPublicKeyHash string
 	FromPublicKey     []byte
 	Amount            uint64
 	Nonce             uint64
@@ -111,7 +111,7 @@ type Tx struct {
 type Validator struct {
 	Balance          uint64
 	PubKey           []byte `gorm:"primaryKey"`
-	PayeeAddress     []byte
+	PayeeAddress     string
 	Status           uint64
 	FirstActiveEpoch uint64
 	LastActiveEpoch  uint64

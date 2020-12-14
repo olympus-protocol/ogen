@@ -155,21 +155,23 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 
 	if len(b.Txs) > 0 {
 		dbTxs := make([]db.Tx, len(b.Txs))
-		for i := range b.Txs {
-			txHash := b.Txs[i].Hash()
-			fpkh, err := b.Txs[i].FromPubkeyHash()
+		for j := range b.Txs {
+			txHash := b.Txs[j].Hash()
+			fpkh, err := b.Txs[j].FromPubkeyHash()
 			if err != nil {
 				return nil, err
 			}
-			dbTxs[i] = db.Tx{
+			from := bech32.Encode(i.netParams.AccountPrefixes.Public, fpkh[:])
+			to := bech32.Encode(i.netParams.AccountPrefixes.Public, b.Txs[j].To[:])
+			dbTxs[j] = db.Tx{
 				BlockHash:         row.Hash[:],
 				Hash:              txHash[:],
-				ToAddress:         b.Txs[i].To[:],
-				FromPublicKey:     b.Txs[i].FromPublicKey[:],
-				FromPublicKeyHash: fpkh[:],
-				Amount:            b.Txs[i].Amount,
-				Nonce:             b.Txs[i].Nonce,
-				Fee:               b.Txs[i].Fee,
+				ToAddress:         to,
+				FromPublicKey:     b.Txs[j].FromPublicKey[:],
+				FromPublicKeyHash: from,
+				Amount:            b.Txs[j].Amount,
+				Nonce:             b.Txs[j].Nonce,
+				Fee:               b.Txs[j].Fee,
 			}
 		}
 		dbBlock.Txs = dbTxs
@@ -348,14 +350,15 @@ func (i *Indexer) StoreStateData(lastBlock *chainindex.BlockRow) error {
 
 	vr := i.state.GetValidatorRegistry()
 	dbValidators := make([]db.Validator, len(vr))
-	for i := range vr {
-		dbValidators[i] = db.Validator{
-			Balance:          vr[i].Balance,
-			PubKey:           vr[i].PubKey[:],
-			PayeeAddress:     vr[i].PayeeAddress[:],
-			Status:           vr[i].Status,
-			FirstActiveEpoch: vr[i].FirstActiveEpoch,
-			LastActiveEpoch:  vr[i].LastActiveEpoch,
+	for j := range vr {
+		payee := bech32.Encode(i.netParams.AccountPrefixes.Public, vr[j].PayeeAddress[:])
+		dbValidators[j] = db.Validator{
+			Balance:          vr[j].Balance,
+			PubKey:           vr[j].PubKey[:],
+			PayeeAddress:     payee,
+			Status:           vr[j].Status,
+			FirstActiveEpoch: vr[j].FirstActiveEpoch,
+			LastActiveEpoch:  vr[j].LastActiveEpoch,
 		}
 	}
 
