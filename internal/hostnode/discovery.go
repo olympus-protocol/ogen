@@ -74,19 +74,24 @@ func NewDiscover(host HostNode) (*discover, error) {
 		lastConnect: make(map[peer.ID]time.Time),
 	}
 
-	var initialNodes []peer.AddrInfo
-	peersIDs := dp.host.GetHost().Peerstore().Peers()
-	var peerstorePeers []peer.AddrInfo
-	for _, id := range peersIDs {
-		peerstorePeers = append(peerstorePeers, dp.host.GetHost().Peerstore().PeerInfo(id))
-	}
-	initialNodes = append(initialNodes, dp.getRelayers()...)
-	initialNodes = append(initialNodes, peerstorePeers...)
-	for _, addr := range initialNodes {
-		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
-			dp.log.Infof("unable to connect to peer %s", addr.ID)
+	go func() {
+		var initialNodes []peer.AddrInfo
+		peersIDs := dp.host.GetHost().Peerstore().Peers()
+		if len(peersIDs) > 10 {
+			peersIDs = peersIDs[0:9]
 		}
-	}
+		var peerstorePeers []peer.AddrInfo
+		for _, id := range peersIDs {
+			peerstorePeers = append(peerstorePeers, dp.host.GetHost().Peerstore().PeerInfo(id))
+		}
+		initialNodes = append(initialNodes, dp.getRelayers()...)
+		initialNodes = append(initialNodes, peerstorePeers...)
+		for _, addr := range initialNodes {
+			if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
+				dp.log.Infof("unable to connect to peer %s", addr.ID)
+			}
+		}
+	}()
 
 	go dp.advertise()
 	go dp.findPeers()
