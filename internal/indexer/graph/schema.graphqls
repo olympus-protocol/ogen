@@ -1,0 +1,134 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Block {
+  Hash: String!
+  Height: Int!
+  Slot: Int!
+  Header:   BlockHeader
+  Txs:      [Tx!]
+  Deposits: [Deposit!]
+  Votes:    [Vote!]
+  Exits:    [Exit!]
+  RawBlock: String!
+}
+
+type BlockHeader {
+  Hash: String!
+  Version: Int!
+  Nonce: String!
+  TxMerkleRoot: String!
+  TxMultiMerkleRoot: String!
+  VoteMerkleRoot: String!
+  DepositMerkleRoot: String!
+  ExitMerkleRoot: String!
+  VoteSlashingMerkleRoot: String!
+  RandaoSlashingMerkleRoot: String!
+  ProposerSlashingMerkleRoot: String!
+  GovernanceVotesMerkleRoot: String!
+  PreviousBlockHash: String!
+  Timestamp: String!
+  Slot: Int!
+  StateRoot: String!
+  FeeAddress: String!
+}
+
+type Deposit {
+  Hash: String!
+  BlockHash: String!
+  PublicKey: String!
+  Data:      DepositData
+}
+
+type DepositData {
+  Hash: String!
+  PublicKey: String!
+  ProofOfPossession: String!
+  WithdrawalAddress: String!
+}
+
+type Exit {
+  Hash: String!
+  BlockHash: String!
+  ValidatorPublicKey: String!
+  WithdrawalPublicKey: String!
+}
+
+type PartialExit {
+  Hash: String!
+  BlockHash: String!
+  ValidatorPublicKey: String!
+  WithdrawalPublicKey: String!
+  Amount : Int!
+}
+
+type Tx {
+  BlockHash: String!
+  Hash: String!
+  ToAddress: String!
+  FromPublicKeyHash: String!
+  FromPublicKey: String!
+  Amount: Int!
+  Nonce: Int!
+  Fee: Int!
+}
+
+type Validator {
+  Balance: Int!
+  PubKey: String!
+  PayeeAddress: String!
+  Status: Int!
+  FirstActiveEpoch: Int!
+  LastActiveEpoch: Int!
+}
+
+type Vote {
+  BlockHash: String!
+  ParticipationBitfield: String!
+  Hash: String!
+  Data: VoteData!
+}
+
+type VoteData {
+  Hash: String!
+  Slot: Int!
+  FromEpoch: Int!
+  FromHash: String!
+  ToEpoch: Int!
+  ToHash: String!
+  BeaconBlockHash: String!
+  Nonce: String!
+}
+
+type Account {
+  Account: String!
+  Balance: Int!
+  Nonce: Int!
+}
+
+type CoinProofs {
+  Hash: String!
+  Transaction: String!
+  RedeemAccount: String!
+}
+
+type Epoch {
+  Epoch: Int!
+  Slot1: Int!
+  Slot2: Int!
+  Slot3: Int!
+  Slot4: Int!
+  Slot5: Int!
+  ParticipationPercentage: String!
+  Finalized: Boolean!
+  Justified: Boolean!
+  Randao: String!
+}
+
+type Query {
+  blocks: [Block!]!
+  block_headers: [BlockHeader!]
+  txs: [Tx!]
+  account: [Account!]
+}

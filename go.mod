@@ -3,6 +3,7 @@ module github.com/olympus-protocol/ogen
 go 1.14
 
 require (
+	github.com/99designs/gqlgen v0.13.0
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/dgraph-io/ristretto v0.0.3
@@ -33,6 +34,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
+	github.com/vektah/gqlparser/v2 v2.1.0
 	github.com/wailsapp/wails v1.10.1
 	github.com/wealdtech/go-eth2-util v1.6.2
 	go.etcd.io/bbolt v1.3.5

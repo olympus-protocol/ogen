@@ -19,14 +19,14 @@ var stateKey = "state"
 // Database represents an DB connection
 type Database struct {
 	log logger.Logger
-	db  *gorm.DB
+	DB  *gorm.DB
 
 	canClose  *sync.WaitGroup
 	netParams *params.ChainParams
 }
 
 func (d *Database) SetFinalized(e uint64) error {
-	res := d.db.Model(&Epoch{}).Where("epoch = ?", e).Update("finalized", true)
+	res := d.DB.Model(&Epoch{}).Where("epoch = ?", e).Update("finalized", true)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -34,7 +34,7 @@ func (d *Database) SetFinalized(e uint64) error {
 }
 
 func (d *Database) SetJustified(e uint64) error {
-	res := d.db.Model(&Epoch{}).Where("epoch = ?", e).Update("justified", true)
+	res := d.DB.Model(&Epoch{}).Where("epoch = ?", e).Update("justified", true)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -42,7 +42,7 @@ func (d *Database) SetJustified(e uint64) error {
 }
 
 func (d *Database) AddEpoch(e *Epoch) error {
-	res := d.db.Clauses(clause.OnConflict{
+	res := d.DB.Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(e)
 	if res.Error != nil {
@@ -52,7 +52,7 @@ func (d *Database) AddEpoch(e *Epoch) error {
 }
 
 func (d *Database) AddSlot(s *Slot) error {
-	res := d.db.Create(s)
+	res := d.DB.Create(s)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -60,7 +60,7 @@ func (d *Database) AddSlot(s *Slot) error {
 }
 
 func (d *Database) MarkSlotProposed(s *Slot) error {
-	res := d.db.Clauses(clause.OnConflict{
+	res := d.DB.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "slot"}},
 		DoUpdates: []clause.Assignment{{
 			Column: clause.Column{Name: "block_hash"},
@@ -79,7 +79,7 @@ func (d *Database) MarkSlotProposed(s *Slot) error {
 
 func (d *Database) AddAccounts(a *[]Account) error {
 
-	res := d.db.Clauses(clause.OnConflict{
+	res := d.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "account"}},
 		UpdateAll: true,
 	}).Create(a)
@@ -93,7 +93,7 @@ func (d *Database) AddAccounts(a *[]Account) error {
 
 func (d *Database) AddValidators(v *[]Validator) error {
 
-	res := d.db.Clauses(clause.OnConflict{
+	res := d.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "pub_key"}},
 		UpdateAll: true,
 	}).Create(v)
@@ -118,7 +118,7 @@ func (d *Database) StoreState(s state.State, lastBlock *chainindex.BlockRow) err
 		LastBlockHeight: lastBlock.Height,
 	}
 
-	res := d.db.Clauses(clause.OnConflict{
+	res := d.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "key"}},
 		UpdateAll: true,
 	}).Create(dbState)
@@ -131,7 +131,7 @@ func (d *Database) StoreState(s state.State, lastBlock *chainindex.BlockRow) err
 
 func (d *Database) GetState() (state.State, chainhash.Hash, uint64, error) {
 	var s State
-	res := d.db.Find(&State{}, &State{
+	res := d.DB.Find(&State{}, &State{
 		Key: stateKey,
 	}).Scan(&s)
 	if res.Error != nil || res.RowsAffected == -1 {
@@ -149,7 +149,7 @@ func (d *Database) GetState() (state.State, chainhash.Hash, uint64, error) {
 }
 
 func (d *Database) AddBlock(b *Block) error {
-	res := d.db.Clauses(clause.OnConflict{
+	res := d.DB.Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(b)
 	if res.Error != nil {
@@ -160,7 +160,7 @@ func (d *Database) AddBlock(b *Block) error {
 
 func (d *Database) GetRawBlock(hash chainhash.Hash) (*primitives.Block, uint64, error) {
 	var block Block
-	res := d.db.Find(&Block{}, &Block{Hash: hash[:]}).Scan(&block)
+	res := d.DB.Find(&Block{}, &Block{Hash: hash[:]}).Scan(&block)
 	if res.Error != nil {
 		return nil, 0, res.Error
 	}
@@ -179,52 +179,52 @@ func (d *Database) Close() {
 
 func (d *Database) Migrate() error {
 
-	err := d.db.AutoMigrate(&Block{})
+	err := d.DB.AutoMigrate(&Block{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Deposit{})
+	err = d.DB.AutoMigrate(&Deposit{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Tx{})
+	err = d.DB.AutoMigrate(&Tx{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Vote{})
+	err = d.DB.AutoMigrate(&Vote{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Epoch{})
+	err = d.DB.AutoMigrate(&Epoch{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Exit{})
+	err = d.DB.AutoMigrate(&Exit{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Account{})
+	err = d.DB.AutoMigrate(&Account{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Validator{})
+	err = d.DB.AutoMigrate(&Validator{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&State{})
+	err = d.DB.AutoMigrate(&State{})
 	if err != nil {
 		return err
 	}
 
-	err = d.db.AutoMigrate(&Slot{})
+	err = d.DB.AutoMigrate(&Slot{})
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams
 
 	dbclient := &Database{
 		log:       log,
-		db:        gdb,
+		DB:        gdb,
 		canClose:  wg,
 		netParams: netParams,
 	}
