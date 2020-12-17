@@ -126,9 +126,23 @@ type Epoch {
   Randao: String!
 }
 
-type Query {
-  blocks: [Block!]!
-  block_headers: [BlockHeader!]
-  txs: [Tx!]
-  account: [Account!]
+type Slot {
+  Slot: Int!
+  BlockHash: String!
+  ProposerIndex: Int!
+  Proposed: Boolean!
 }
+
+type Query {
+  accounts: [Account!]
+  block_headers: [BlockHeader!]
+  blocks: [Block!]
+  deposits: [Deposit!]
+  epoches: [Epoch!]
+  exits: [Exit!]
+  slots: [Slot!]
+  txes: [Tx!]
+  validators: [Validator!]
+  votes: [Vote!]
+}
+

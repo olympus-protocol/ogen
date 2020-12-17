@@ -8,7 +8,6 @@ import (
 	"errors"
 	"strconv"
 	"sync"
-	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -129,10 +128,23 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Account      func(childComplexity int) int
+		Accounts     func(childComplexity int) int
 		BlockHeaders func(childComplexity int) int
 		Blocks       func(childComplexity int) int
-		Txs          func(childComplexity int) int
+		Deposits     func(childComplexity int) int
+		Epoches      func(childComplexity int) int
+		Exits        func(childComplexity int) int
+		Slots        func(childComplexity int) int
+		Txes         func(childComplexity int) int
+		Validators   func(childComplexity int) int
+		Votes        func(childComplexity int) int
+	}
+
+	Slot struct {
+		BlockHash     func(childComplexity int) int
+		Proposed      func(childComplexity int) int
+		ProposerIndex func(childComplexity int) int
+		Slot          func(childComplexity int) int
 	}
 
 	Tx struct {
@@ -175,10 +187,16 @@ type ComplexityRoot struct {
 }
 
 type QueryResolver interface {
-	Blocks(ctx context.Context) ([]*model.Block, error)
+	Accounts(ctx context.Context) ([]*model.Account, error)
 	BlockHeaders(ctx context.Context) ([]*model.BlockHeader, error)
-	Txs(ctx context.Context) ([]*model.Tx, error)
-	Account(ctx context.Context) ([]*model.Account, error)
+	Blocks(ctx context.Context) ([]*model.Block, error)
+	Deposits(ctx context.Context) ([]*model.Deposit, error)
+	Epoches(ctx context.Context) ([]*model.Epoch, error)
+	Exits(ctx context.Context) ([]*model.Exit, error)
+	Slots(ctx context.Context) ([]*model.Slot, error)
+	Txes(ctx context.Context) ([]*model.Tx, error)
+	Validators(ctx context.Context) ([]*model.Validator, error)
+	Votes(ctx context.Context) ([]*model.Vote, error)
 }
 
 type executableSchema struct {
@@ -609,12 +627,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PartialExit.WithdrawalPublicKey(childComplexity), true
 
-	case "Query.account":
-		if e.complexity.Query.Account == nil {
+	case "Query.accounts":
+		if e.complexity.Query.Accounts == nil {
 			break
 		}
 
-		return e.complexity.Query.Account(childComplexity), true
+		return e.complexity.Query.Accounts(childComplexity), true
 
 	case "Query.block_headers":
 		if e.complexity.Query.BlockHeaders == nil {
@@ -630,12 +648,82 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Blocks(childComplexity), true
 
-	case "Query.txs":
-		if e.complexity.Query.Txs == nil {
+	case "Query.deposits":
+		if e.complexity.Query.Deposits == nil {
 			break
 		}
 
-		return e.complexity.Query.Txs(childComplexity), true
+		return e.complexity.Query.Deposits(childComplexity), true
+
+	case "Query.epoches":
+		if e.complexity.Query.Epoches == nil {
+			break
+		}
+
+		return e.complexity.Query.Epoches(childComplexity), true
+
+	case "Query.exits":
+		if e.complexity.Query.Exits == nil {
+			break
+		}
+
+		return e.complexity.Query.Exits(childComplexity), true
+
+	case "Query.slots":
+		if e.complexity.Query.Slots == nil {
+			break
+		}
+
+		return e.complexity.Query.Slots(childComplexity), true
+
+	case "Query.txes":
+		if e.complexity.Query.Txes == nil {
+			break
+		}
+
+		return e.complexity.Query.Txes(childComplexity), true
+
+	case "Query.validators":
+		if e.complexity.Query.Validators == nil {
+			break
+		}
+
+		return e.complexity.Query.Validators(childComplexity), true
+
+	case "Query.votes":
+		if e.complexity.Query.Votes == nil {
+			break
+		}
+
+		return e.complexity.Query.Votes(childComplexity), true
+
+	case "Slot.BlockHash":
+		if e.complexity.Slot.BlockHash == nil {
+			break
+		}
+
+		return e.complexity.Slot.BlockHash(childComplexity), true
+
+	case "Slot.Proposed":
+		if e.complexity.Slot.Proposed == nil {
+			break
+		}
+
+		return e.complexity.Slot.Proposed(childComplexity), true
+
+	case "Slot.ProposerIndex":
+		if e.complexity.Slot.ProposerIndex == nil {
+			break
+		}
+
+		return e.complexity.Slot.ProposerIndex(childComplexity), true
+
+	case "Slot.Slot":
+		if e.complexity.Slot.Slot == nil {
+			break
+		}
+
+		return e.complexity.Slot.Slot(childComplexity), true
 
 	case "Tx.Amount":
 		if e.complexity.Tx.Amount == nil {
@@ -997,12 +1085,26 @@ type Epoch {
   Randao: String!
 }
 
-type Query {
-  blocks: [Block!]!
-  block_headers: [BlockHeader!]
-  txs: [Tx!]
-  account: [Account!]
+type Slot {
+  Slot: Int!
+  BlockHash: String!
+  ProposerIndex: Int!
+  Proposed: Boolean!
 }
+
+type Query {
+  accounts: [Account!]
+  block_headers: [BlockHeader!]
+  blocks: [Block!]
+  deposits: [Deposit!]
+  epoches: [Epoch!]
+  exits: [Exit!]
+  slots: [Slot!]
+  txes: [Tx!]
+  validators: [Validator!]
+  votes: [Vote!]
+}
+
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -3111,7 +3213,7 @@ func (ec *executionContext) _PartialExit_Amount(ctx context.Context, field graph
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_blocks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3129,21 +3231,18 @@ func (ec *executionContext) _Query_blocks(ctx context.Context, field graphql.Col
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Blocks(rctx)
+		return ec.resolvers.Query().Accounts(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Block)
+	res := resTmp.([]*model.Account)
 	fc.Result = res
-	return ec.marshalNBlock2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockᚄ(ctx, field.Selections, res)
+	return ec.marshalOAccount2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐAccountᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_block_headers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3178,7 +3277,7 @@ func (ec *executionContext) _Query_block_headers(ctx context.Context, field grap
 	return ec.marshalOBlockHeader2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockHeaderᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_txs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_blocks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3196,7 +3295,167 @@ func (ec *executionContext) _Query_txs(ctx context.Context, field graphql.Collec
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Txs(rctx)
+		return ec.resolvers.Query().Blocks(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Block)
+	fc.Result = res
+	return ec.marshalOBlock2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_deposits(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Deposits(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Deposit)
+	fc.Result = res
+	return ec.marshalODeposit2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐDepositᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_epoches(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Epoches(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Epoch)
+	fc.Result = res
+	return ec.marshalOEpoch2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐEpochᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_exits(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Exits(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Exit)
+	fc.Result = res
+	return ec.marshalOExit2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐExitᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_slots(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Slots(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Slot)
+	fc.Result = res
+	return ec.marshalOSlot2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐSlotᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_txes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Txes(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3210,7 +3469,7 @@ func (ec *executionContext) _Query_txs(ctx context.Context, field graphql.Collec
 	return ec.marshalOTx2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTxᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_account(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_validators(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3228,7 +3487,7 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Account(rctx)
+		return ec.resolvers.Query().Validators(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3237,9 +3496,41 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Account)
+	res := resTmp.([]*model.Validator)
 	fc.Result = res
-	return ec.marshalOAccount2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐAccountᚄ(ctx, field.Selections, res)
+	return ec.marshalOValidator2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐValidatorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_votes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Votes(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Vote)
+	fc.Result = res
+	return ec.marshalOVote2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐVoteᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3311,6 +3602,146 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Slot_Slot(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Slot",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Slot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Slot_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Slot",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BlockHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Slot_ProposerIndex(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Slot",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProposerIndex, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Slot_Proposed(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Slot",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Proposed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Tx_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
@@ -5808,7 +6239,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "blocks":
+		case "accounts":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -5816,10 +6247,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_blocks(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				res = ec._Query_accounts(ctx, field)
 				return res
 			})
 		case "block_headers":
@@ -5833,7 +6261,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_block_headers(ctx, field)
 				return res
 			})
-		case "txs":
+		case "blocks":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -5841,10 +6269,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_txs(ctx, field)
+				res = ec._Query_blocks(ctx, field)
 				return res
 			})
-		case "account":
+		case "deposits":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -5852,13 +6280,121 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_account(ctx, field)
+				res = ec._Query_deposits(ctx, field)
+				return res
+			})
+		case "epoches":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_epoches(ctx, field)
+				return res
+			})
+		case "exits":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_exits(ctx, field)
+				return res
+			})
+		case "slots":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_slots(ctx, field)
+				return res
+			})
+		case "txes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_txes(ctx, field)
+				return res
+			})
+		case "validators":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_validators(ctx, field)
+				return res
+			})
+		case "votes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_votes(ctx, field)
 				return res
 			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var slotImplementors = []string{"Slot"}
+
+func (ec *executionContext) _Slot(ctx context.Context, sel ast.SelectionSet, obj *model.Slot) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, slotImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Slot")
+		case "Slot":
+			out.Values[i] = ec._Slot_Slot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "BlockHash":
+			out.Values[i] = ec._Slot_BlockHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ProposerIndex":
+			out.Values[i] = ec._Slot_ProposerIndex(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Proposed":
+			out.Values[i] = ec._Slot_Proposed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6343,43 +6879,6 @@ func (ec *executionContext) marshalNAccount2ᚖgithubᚗcomᚋolympusᚑprotocol
 	return ec._Account(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNBlock2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Block) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNBlock2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlock(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
 func (ec *executionContext) marshalNBlock2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlock(ctx context.Context, sel ast.SelectionSet, v *model.Block) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -6425,6 +6924,16 @@ func (ec *executionContext) marshalNDeposit2ᚖgithubᚗcomᚋolympusᚑprotocol
 	return ec._Deposit(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNEpoch2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐEpoch(ctx context.Context, sel ast.SelectionSet, v *model.Epoch) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Epoch(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNExit2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐExit(ctx context.Context, sel ast.SelectionSet, v *model.Exit) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -6450,6 +6959,16 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) marshalNSlot2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐSlot(ctx context.Context, sel ast.SelectionSet, v *model.Slot) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Slot(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6473,6 +6992,16 @@ func (ec *executionContext) marshalNTx2ᚖgithubᚗcomᚋolympusᚑprotocolᚋog
 		return graphql.Null
 	}
 	return ec._Tx(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNValidator2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐValidator(ctx context.Context, sel ast.SelectionSet, v *model.Validator) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Validator(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNVote2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐVote(ctx context.Context, sel ast.SelectionSet, v *model.Vote) graphql.Marshaler {
@@ -6764,6 +7293,46 @@ func (ec *executionContext) marshalOAccount2ᚕᚖgithubᚗcomᚋolympusᚑproto
 	return ret
 }
 
+func (ec *executionContext) marshalOBlock2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Block) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNBlock2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlock(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) marshalOBlockHeader2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockHeaderᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.BlockHeader) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -6882,6 +7451,46 @@ func (ec *executionContext) marshalODepositData2ᚖgithubᚗcomᚋolympusᚑprot
 	return ec._DepositData(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOEpoch2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐEpochᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Epoch) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEpoch2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐEpoch(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) marshalOExit2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐExitᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Exit) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -6910,6 +7519,46 @@ func (ec *executionContext) marshalOExit2ᚕᚖgithubᚗcomᚋolympusᚑprotocol
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNExit2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐExit(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOSlot2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐSlotᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Slot) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSlot2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐSlot(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6974,6 +7623,46 @@ func (ec *executionContext) marshalOTx2ᚕᚖgithubᚗcomᚋolympusᚑprotocol�
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNTx2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTx(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOValidator2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐValidatorᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Validator) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNValidator2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐValidator(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

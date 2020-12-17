@@ -88,6 +88,13 @@ type PartialExit struct {
 	Amount              int    `json:"Amount"`
 }
 
+type Slot struct {
+	Slot          int    `json:"Slot"`
+	BlockHash     string `json:"BlockHash"`
+	ProposerIndex int    `json:"ProposerIndex"`
+	Proposed      bool   `json:"Proposed"`
+}
+
 type Tx struct {
 	BlockHash         string `json:"BlockHash"`
 	Hash              string `json:"Hash"`

@@ -11,21 +11,43 @@ import (
 	"github.com/olympus-protocol/ogen/internal/indexer/graph/model"
 )
 
-func (r *queryResolver) Blocks(ctx context.Context) ([]*model.Block, error) {
-	var blocks []*model.Block
-	r.Resolver.DB.DB.Preload("blocks").Find(&blocks)
-	return blocks, nil
+func (r *queryResolver) Accounts(ctx context.Context) ([]*model.Account, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) BlockHeaders(ctx context.Context) ([]*model.BlockHeader, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Txs(ctx context.Context) ([]*model.Tx, error) {
+func (r *queryResolver) Blocks(ctx context.Context) ([]*model.Block, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Account(ctx context.Context) ([]*model.Account, error) {
+func (r *queryResolver) Deposits(ctx context.Context) ([]*model.Deposit, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Epoches(ctx context.Context) ([]*model.Epoch, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Exits(ctx context.Context) ([]*model.Exit, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Slots(ctx context.Context) ([]*model.Slot, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Txes(ctx context.Context) ([]*model.Tx, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Validators(ctx context.Context) ([]*model.Validator, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Votes(ctx context.Context) ([]*model.Vote, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
