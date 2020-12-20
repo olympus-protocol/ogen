@@ -139,6 +139,8 @@ func initConfig() {
 	switch config.GlobalFlags.NetworkName {
 	case "mainnet":
 		netParams = &params.Mainnet
+	case "devnet":
+		netParams = &params.DevNet
 	default:
 		netParams = &params.TestNet
 	}

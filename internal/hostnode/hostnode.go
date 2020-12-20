@@ -145,7 +145,7 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		return nil, err
 	}
 
-	handler, err := newHandler(params.ProtocolID, node)
+	handler, err := newHandler(params.ProtocolID(config.GlobalParams.NetParams.Name), node)
 	if err != nil {
 		return nil, err
 	}
