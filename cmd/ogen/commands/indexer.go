@@ -37,8 +37,10 @@ var indexerCmd = &cobra.Command{
 		switch network {
 		case "testnet":
 			netParams = &params.TestNet
+		case "devnet":
+			netParams = &params.DevNet
 		case "mainnet":
-			netParams = &params.Mainnet
+			netParams = &params.MainNet
 		default:
 			fmt.Println("unknown network parameters")
 			os.Exit(0)

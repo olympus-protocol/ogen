@@ -28,10 +28,12 @@ var genParamsCmd = &cobra.Command{
 
 		var netParams *params.ChainParams
 		switch network {
-		case "mainnet":
-			netParams = &params.Mainnet
-		default:
+		case "testnet":
 			netParams = &params.TestNet
+		case "devnet":
+			netParams = &params.DevNet
+		default:
+			netParams = &params.MainNet
 		}
 
 		bls.Initialize(netParams)
@@ -48,7 +50,7 @@ var genParamsCmd = &cobra.Command{
 
 		seed := bip39.NewSeed(mnemonic, "no password")
 
-		premine, err := hdwallet.CreateHDWallet(seed, "m/12381/0/1997/0/0")
+		premine, err := hdwallet.CreateHDWallet(seed, "m/12381/1997/0/0")
 		if err != nil {
 			panic(err)
 		}
