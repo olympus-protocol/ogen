@@ -19,7 +19,6 @@ type BlockHeader struct {
 	ProposerSlashingMerkleRoot [32]byte
 	GovernanceVotesMerkleRoot  [32]byte
 	CoinProofsMerkleRoot       [32]byte
-	ContractCallsMerkleRoot    [32]byte
 	PrevBlockHash              [32]byte
 	Timestamp                  uint64
 	Slot                       uint64

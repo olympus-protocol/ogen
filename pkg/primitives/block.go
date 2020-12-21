@@ -23,9 +23,8 @@ type Block struct {
 	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`    // MaxProposerSlashingPerBlock 		984 * 2 		= 1968 bytes
 	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
 	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
-	ContractCalls     []*Contract                         `ssz-max:"32"`
-	Signature         [96]byte                            `ssz-size:"96"` // 													= 96 bytes
-	RandaoSignature   [96]byte                            `ssz-size:"96"` // 													= 96 bytes
+	Signature         [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
+	RandaoSignature   [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
 }
 
 // Marshal encodes the block.
@@ -258,26 +257,6 @@ func merkleRootPartialExit(e []*PartialExit) chainhash.Hash {
 
 	h1 := merkleRootPartialExit(e[:mid])
 	h2 := merkleRootPartialExit(e[mid:])
-
-	return chainhash.HashH(append(h1[:], h2[:]...))
-}
-
-// ContractCallsMerkleRoot calculates the merkle root of the PartialExit in the block.
-func (b *Block) ContractCallsMerkleRoot() chainhash.Hash {
-	return merkleRootContractCalls(b.ContractCalls)
-}
-
-func merkleRootContractCalls(e []*Contract) chainhash.Hash {
-	if len(e) == 0 {
-		return chainhash.Hash{}
-	}
-	if len(e) == 1 {
-		return e[0].Hash()
-	}
-	mid := len(e) / 2
-
-	h1 := merkleRootContractCalls(e[:mid])
-	h2 := merkleRootContractCalls(e[mid:])
 
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }

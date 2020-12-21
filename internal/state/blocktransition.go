@@ -930,7 +930,6 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 	coinProofsMerkleRoot := b.CoinProofsMerkleRoot()
 	partialExitsMerkleRoot := b.PartialExitsMerkleRoot()
-	contractCallsMerkleRoot := b.ContractCallsMerkleRoot()
 
 	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
@@ -975,10 +974,6 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("expected partial exits merkle root to be %s but got %s", hex.EncodeToString(partialExitsMerkleRoot[:]), hex.EncodeToString(b.Header.PartialExitMerkleRoot[:]))
 	}
 
-	if !bytes.Equal(contractCallsMerkleRoot[:], b.Header.ContractCallsMerkleRoot[:]) {
-		return fmt.Errorf("expected contract calls merkle root to be %s but got %s", hex.EncodeToString(contractCallsMerkleRoot[:]), hex.EncodeToString(b.Header.ContractCallsMerkleRoot[:]))
-	}
-
 	if uint64(len(b.Votes)) > netParams.MaxVotesPerBlock {
 		return fmt.Errorf("block has too many votes (max: %d, got: %d)", netParams.MaxVotesPerBlock, len(b.Votes))
 	}
@@ -1015,10 +1010,6 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("block has too many partial exits (max: %d, got: %d)", netParams.MaxPartialExitsPerBlock, len(b.PartialExit))
 	}
 
-	if uint64(len(b.ContractCalls)) > netParams.MaxContractCallsPerBlock {
-		return fmt.Errorf("block has too many contract calls (max: %d, got: %d)", netParams.MaxContractCallsPerBlock, len(b.ContractCalls))
-	}
-
 	for _, d := range b.Deposits {
 		if err := s.ApplyDeposit(d); err != nil {
 			return err
@@ -1047,10 +1038,6 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		if err := s.ApplyPartialExit(p); err != nil {
 			return err
 		}
-	}
-
-	for _, _ = range b.ContractCalls {
-		// TODO execute
 	}
 
 	slotIndex := (b.Header.Slot + netParams.EpochLength - 1) % netParams.EpochLength
