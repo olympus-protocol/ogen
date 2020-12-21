@@ -37,5 +37,5 @@ var DevNet = NetworkInitialParams{
 	},
 	PremineAddress:  "dlpub10negrvw98fw7zjty8qg0kyfr5c3wxafalrhn07",
 	PremineMnemonic: "snake angle spend afford problem harvest cherry clump clog dumb enact phone artist rail silver card extra impose stone wonder lecture apart kind floor",
-	GenesisTime:     0,
+	GenesisTime:     1608516600,
 }
