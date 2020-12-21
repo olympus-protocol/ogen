@@ -42,6 +42,7 @@ internal/chainrpc/cert/
 internal/wallet/wallets/
 keystore/*.db
 peers/*.db
+data-node/
 
 # Integration
 data/
