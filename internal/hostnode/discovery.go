@@ -2,6 +2,7 @@ package hostnode
 
 import (
 	"context"
+	"github.com/dgraph-io/ristretto"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -13,6 +14,14 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 )
+
+var maxPeers = int64(100000)
+
+var BadPeersCache, _ = ristretto.NewCache(&ristretto.Config{
+	NumCounters: maxPeers,
+	MaxCost:     1 << 22, // ~4mb is cache max size
+	BufferItems: 64,
+})
 
 func (d *discover) getRelayers() []peer.AddrInfo {
 	var r []peer.AddrInfo
@@ -84,6 +93,12 @@ func NewDiscover(host HostNode) (*discover, error) {
 	initialNodes = append(initialNodes, peerstorePeers...)
 	for _, addr := range initialNodes {
 		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
+			m, err := addr.MarshalJSON()
+			if err != nil {
+				continue
+			}
+			BadPeersCache.Set(addr.ID.String(), m, int64(len(m)))
+			dp.host.GetHost().Peerstore().ClearAddrs(addr.ID)
 			dp.log.Infof("unable to connect to peer %s", addr.ID)
 		}
 	}
@@ -98,8 +113,17 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
+	if _, ok := BadPeersCache.Get(pi.ID.String()); ok  {
+		return
+	}
 	err := d.Connect(pi)
 	if err != nil {
+		m, err := pi.MarshalJSON()
+		if err != nil {
+			return
+		}
+		BadPeersCache.Set(pi.ID.String(), m, int64(len(m)))
+		d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
 		d.log.Infof("unable to connect to peer %s", pi.ID.String())
 	}
 }
