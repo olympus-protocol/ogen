@@ -70,8 +70,8 @@ type ChainParams struct {
 	Relayers                     map[string]string
 }
 
-// Mainnet are chain parameters used for the main network.
-var Mainnet = ChainParams{
+// MainNet are chain parameters used for the main network.
+var MainNet = ChainParams{
 	Name:           "mainnet",
 	DefaultP2PPort: "24126",
 	NetMagic:       333999,
@@ -255,7 +255,7 @@ var DevNet = ChainParams{
 		0: "do_not_go_gentle_into_that_good_night",
 	},
 	Relayers: map[string]string{
-		"cronos-devnet-1": "",
+		"cronos-devnet-1": "/ip4/174.138.34.252/tcp/25000/p2p/12D3KooWDMH4ddviknJJocAJWAhGcTXXkhorkzvpdLAe2CdK8Fxd",
 	},
 }
 
