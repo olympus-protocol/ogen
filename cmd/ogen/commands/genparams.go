@@ -28,12 +28,12 @@ var genParamsCmd = &cobra.Command{
 
 		var netParams *params.ChainParams
 		switch network {
-		case "mainnet":
-			netParams = &params.Mainnet
+		case "testnet":
+			netParams = &params.TestNet
 		case "devnet":
 			netParams = &params.DevNet
 		default:
-			netParams = &params.TestNet
+			netParams = &params.MainNet
 		}
 
 		bls.Initialize(netParams)

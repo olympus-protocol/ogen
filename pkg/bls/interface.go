@@ -40,7 +40,7 @@ type KeyPair struct {
 	Private string `json:"private"`
 }
 
-var Prefix = params.Mainnet.AccountPrefixes
+var Prefix = params.MainNet.AccountPrefixes
 
 func Initialize(c *params.ChainParams) {
 	Prefix = c.AccountPrefixes

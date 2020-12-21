@@ -137,12 +137,12 @@ func initConfig() {
 	}
 	var netParams *params.ChainParams
 	switch config.GlobalFlags.NetworkName {
-	case "mainnet":
-		netParams = &params.Mainnet
+	case "testnet":
+		netParams = &params.TestNet
 	case "devnet":
 		netParams = &params.DevNet
 	default:
-		netParams = &params.TestNet
+		netParams = &params.MainNet
 	}
 
 	initparams, err := initialization.LoadParams(config.GlobalFlags.NetworkName)
