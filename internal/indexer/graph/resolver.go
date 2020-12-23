@@ -6,6 +6,6 @@ import "github.com/olympus-protocol/ogen/internal/indexer/db"
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Resolver struct{
+type Resolver struct {
 	DB *db.Database
 }

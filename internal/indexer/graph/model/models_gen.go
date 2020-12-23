@@ -3,132 +3,132 @@
 package model
 
 type Account struct {
-	Account string `json:"Account"`
-	Balance int    `json:"Balance"`
-	Nonce   int    `json:"Nonce"`
+	Account string `json:"account"`
+	Balance int    `json:"balance"`
+	Nonce   int    `json:"nonce"`
 }
 
 type Block struct {
-	Hash     string       `json:"Hash"`
-	Height   int          `json:"Height"`
-	Slot     int          `json:"Slot"`
-	Header   *BlockHeader `json:"Header"`
-	Txs      []*Tx        `json:"Txs"`
-	Deposits []*Deposit   `json:"Deposits"`
-	Votes    []*Vote      `json:"Votes"`
-	Exits    []*Exit      `json:"Exits"`
-	RawBlock string       `json:"RawBlock"`
+	Hash     string       `json:"hash"`
+	Height   int          `json:"height"`
+	Slot     int          `json:"slot"`
+	Header   *BlockHeader `json:"header"`
+	Txs      []*Tx        `json:"txs"`
+	Deposits []*Deposit   `json:"deposits"`
+	Votes    []*Vote      `json:"votes"`
+	Exits    []*Exit      `json:"exits"`
+	RawBlock string       `json:"rawBlock"`
 }
 
 type BlockHeader struct {
-	Hash                       string `json:"Hash"`
-	Version                    int    `json:"Version"`
-	Nonce                      string `json:"Nonce"`
-	TxMerkleRoot               string `json:"TxMerkleRoot"`
-	TxMultiMerkleRoot          string `json:"TxMultiMerkleRoot"`
-	VoteMerkleRoot             string `json:"VoteMerkleRoot"`
-	DepositMerkleRoot          string `json:"DepositMerkleRoot"`
-	ExitMerkleRoot             string `json:"ExitMerkleRoot"`
-	VoteSlashingMerkleRoot     string `json:"VoteSlashingMerkleRoot"`
-	RandaoSlashingMerkleRoot   string `json:"RandaoSlashingMerkleRoot"`
-	ProposerSlashingMerkleRoot string `json:"ProposerSlashingMerkleRoot"`
-	GovernanceVotesMerkleRoot  string `json:"GovernanceVotesMerkleRoot"`
-	PreviousBlockHash          string `json:"PreviousBlockHash"`
-	Timestamp                  string `json:"Timestamp"`
-	Slot                       int    `json:"Slot"`
-	StateRoot                  string `json:"StateRoot"`
-	FeeAddress                 string `json:"FeeAddress"`
+	Hash                       string `json:"hash"`
+	Version                    int    `json:"version"`
+	Nonce                      string `json:"nonce"`
+	TxMerkleRoot               string `json:"tx_merkle_root"`
+	TxMultiMerkleRoot          string `json:"tx_multi_merkle_root"`
+	VoteMerkleRoot             string `json:"vote_merkle_root"`
+	DepositMerkleRoot          string `json:"deposit_merkle_root"`
+	ExitMerkleRoot             string `json:"exit_merkle_root"`
+	VoteSlashingMerkleRoot     string `json:"vote_slashing_merkle_root"`
+	RandaoSlashingMerkleRoot   string `json:"randao_slashing_merkle_root"`
+	ProposerSlashingMerkleRoot string `json:"proposer_slashing_merkle_root"`
+	GovernanceVotesMerkleRoot  string `json:"governance_votes_merkle_root"`
+	PreviousBlockHash          string `json:"previous_block_hash"`
+	Timestamp                  string `json:"timestamp"`
+	Slot                       int    `json:"slot"`
+	StateRoot                  string `json:"state_root"`
+	FeeAddress                 string `json:"fee_address"`
 }
 
 type CoinProofs struct {
-	Hash          string `json:"Hash"`
-	Transaction   string `json:"Transaction"`
-	RedeemAccount string `json:"RedeemAccount"`
+	Hash          string `json:"hash"`
+	Transaction   string `json:"transaction"`
+	RedeemAccount string `json:"redeem_account"`
 }
 
 type Deposit struct {
-	Hash      string       `json:"Hash"`
-	BlockHash string       `json:"BlockHash"`
-	PublicKey string       `json:"PublicKey"`
-	Data      *DepositData `json:"Data"`
+	Hash      string       `json:"hash"`
+	BlockHash string       `json:"block_hash"`
+	PublicKey string       `json:"public_key"`
+	Data      *DepositData `json:"data"`
 }
 
 type DepositData struct {
-	Hash              string `json:"Hash"`
-	PublicKey         string `json:"PublicKey"`
-	ProofOfPossession string `json:"ProofOfPossession"`
-	WithdrawalAddress string `json:"WithdrawalAddress"`
+	Hash              string `json:"hash"`
+	PublicKey         string `json:"public_key"`
+	ProofOfPossession string `json:"proof_of_possession"`
+	WithdrawalAddress string `json:"withdrawal_address"`
 }
 
 type Epoch struct {
-	Epoch                   int    `json:"Epoch"`
-	Slot1                   int    `json:"Slot1"`
-	Slot2                   int    `json:"Slot2"`
-	Slot3                   int    `json:"Slot3"`
-	Slot4                   int    `json:"Slot4"`
-	Slot5                   int    `json:"Slot5"`
-	ParticipationPercentage string `json:"ParticipationPercentage"`
-	Finalized               bool   `json:"Finalized"`
-	Justified               bool   `json:"Justified"`
-	Randao                  string `json:"Randao"`
+	Epoch                   int    `json:"epoch"`
+	Slot1                   int    `json:"slot_1"`
+	Slot2                   int    `json:"slot_2"`
+	Slot3                   int    `json:"slot_3"`
+	Slot4                   int    `json:"slot_4"`
+	Slot5                   int    `json:"slot_5"`
+	ParticipationPercentage string `json:"participation_percentage"`
+	Finalized               bool   `json:"finalized"`
+	Justified               bool   `json:"justified"`
+	Randao                  string `json:"randao"`
 }
 
 type Exit struct {
-	Hash                string `json:"Hash"`
-	BlockHash           string `json:"BlockHash"`
-	ValidatorPublicKey  string `json:"ValidatorPublicKey"`
-	WithdrawalPublicKey string `json:"WithdrawalPublicKey"`
+	Hash                string `json:"hash"`
+	BlockHash           string `json:"block_hash"`
+	ValidatorPublicKey  string `json:"validator_public_key"`
+	WithdrawalPublicKey string `json:"withdrawal_public_key"`
 }
 
 type PartialExit struct {
-	Hash                string `json:"Hash"`
-	BlockHash           string `json:"BlockHash"`
-	ValidatorPublicKey  string `json:"ValidatorPublicKey"`
-	WithdrawalPublicKey string `json:"WithdrawalPublicKey"`
-	Amount              int    `json:"Amount"`
+	Hash                string `json:"hash"`
+	BlockHash           string `json:"block_hash"`
+	ValidatorPublicKey  string `json:"validator_public_key"`
+	WithdrawalPublicKey string `json:"withdrawal_public_key"`
+	Amount              int    `json:"amount"`
 }
 
 type Slot struct {
-	Slot          int    `json:"Slot"`
-	BlockHash     string `json:"BlockHash"`
-	ProposerIndex int    `json:"ProposerIndex"`
-	Proposed      bool   `json:"Proposed"`
+	Slot          int    `json:"slot"`
+	BlockHash     string `json:"block_hash"`
+	ProposerIndex int    `json:"proposer_index"`
+	Proposed      bool   `json:"proposed"`
 }
 
 type Tx struct {
-	BlockHash         string `json:"BlockHash"`
-	Hash              string `json:"Hash"`
-	ToAddress         string `json:"ToAddress"`
-	FromPublicKeyHash string `json:"FromPublicKeyHash"`
-	FromPublicKey     string `json:"FromPublicKey"`
-	Amount            int    `json:"Amount"`
-	Nonce             int    `json:"Nonce"`
-	Fee               int    `json:"Fee"`
+	BlockHash         string `json:"block_hash"`
+	Hash              string `json:"hash"`
+	ToAddress         string `json:"to_address"`
+	FromPublicKeyHash string `json:"from_public_key_hash"`
+	FromPublicKey     string `json:"from_public_key"`
+	Amount            int    `json:"amount"`
+	Nonce             int    `json:"nonce"`
+	Fee               int    `json:"fee"`
 }
 
 type Validator struct {
-	Balance          int    `json:"Balance"`
-	PubKey           string `json:"PubKey"`
-	PayeeAddress     string `json:"PayeeAddress"`
-	Status           int    `json:"Status"`
-	FirstActiveEpoch int    `json:"FirstActiveEpoch"`
-	LastActiveEpoch  int    `json:"LastActiveEpoch"`
+	Balance          int    `json:"balance"`
+	Pubkey           string `json:"pubkey"`
+	PayeeAddress     string `json:"payee_address"`
+	Status           int    `json:"status"`
+	FirstActiveEpoch int    `json:"first_active_epoch"`
+	LastActiveEpoch  int    `json:"last_active_epoch"`
 }
 
 type Vote struct {
-	BlockHash             string    `json:"BlockHash"`
-	ParticipationBitfield string    `json:"ParticipationBitfield"`
-	Hash                  string    `json:"Hash"`
-	Data                  *VoteData `json:"Data"`
+	BlockHash             string    `json:"block_hash"`
+	ParticipationBitfield string    `json:"participation_bitfield"`
+	Hash                  string    `json:"hash"`
+	Data                  *VoteData `json:"data"`
 }
 
 type VoteData struct {
-	Hash            string `json:"Hash"`
-	Slot            int    `json:"Slot"`
-	FromEpoch       int    `json:"FromEpoch"`
-	FromHash        string `json:"FromHash"`
-	ToEpoch         int    `json:"ToEpoch"`
-	ToHash          string `json:"ToHash"`
-	BeaconBlockHash string `json:"BeaconBlockHash"`
-	Nonce           string `json:"Nonce"`
+	Hash            string `json:"hash"`
+	Slot            int    `json:"slot"`
+	FromEpoch       int    `json:"from_epoch"`
+	FromHash        string `json:"from_hash"`
+	ToEpoch         int    `json:"to_epoch"`
+	ToHash          string `json:"to_hash"`
+	BeaconBlockHash string `json:"beacon_block_hash"`
+	Nonce           string `json:"nonce"`
 }

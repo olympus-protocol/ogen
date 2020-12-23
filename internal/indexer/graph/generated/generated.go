@@ -163,7 +163,7 @@ type ComplexityRoot struct {
 		FirstActiveEpoch func(childComplexity int) int
 		LastActiveEpoch  func(childComplexity int) int
 		PayeeAddress     func(childComplexity int) int
-		PubKey           func(childComplexity int) int
+		Pubkey           func(childComplexity int) int
 		Status           func(childComplexity int) int
 	}
 
@@ -214,413 +214,413 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Account.Account":
+	case "Account.account":
 		if e.complexity.Account.Account == nil {
 			break
 		}
 
 		return e.complexity.Account.Account(childComplexity), true
 
-	case "Account.Balance":
+	case "Account.balance":
 		if e.complexity.Account.Balance == nil {
 			break
 		}
 
 		return e.complexity.Account.Balance(childComplexity), true
 
-	case "Account.Nonce":
+	case "Account.nonce":
 		if e.complexity.Account.Nonce == nil {
 			break
 		}
 
 		return e.complexity.Account.Nonce(childComplexity), true
 
-	case "Block.Deposits":
+	case "Block.deposits":
 		if e.complexity.Block.Deposits == nil {
 			break
 		}
 
 		return e.complexity.Block.Deposits(childComplexity), true
 
-	case "Block.Exits":
+	case "Block.exits":
 		if e.complexity.Block.Exits == nil {
 			break
 		}
 
 		return e.complexity.Block.Exits(childComplexity), true
 
-	case "Block.Hash":
+	case "Block.hash":
 		if e.complexity.Block.Hash == nil {
 			break
 		}
 
 		return e.complexity.Block.Hash(childComplexity), true
 
-	case "Block.Header":
+	case "Block.header":
 		if e.complexity.Block.Header == nil {
 			break
 		}
 
 		return e.complexity.Block.Header(childComplexity), true
 
-	case "Block.Height":
+	case "Block.height":
 		if e.complexity.Block.Height == nil {
 			break
 		}
 
 		return e.complexity.Block.Height(childComplexity), true
 
-	case "Block.RawBlock":
+	case "Block.rawBlock":
 		if e.complexity.Block.RawBlock == nil {
 			break
 		}
 
 		return e.complexity.Block.RawBlock(childComplexity), true
 
-	case "Block.Slot":
+	case "Block.slot":
 		if e.complexity.Block.Slot == nil {
 			break
 		}
 
 		return e.complexity.Block.Slot(childComplexity), true
 
-	case "Block.Txs":
+	case "Block.txs":
 		if e.complexity.Block.Txs == nil {
 			break
 		}
 
 		return e.complexity.Block.Txs(childComplexity), true
 
-	case "Block.Votes":
+	case "Block.votes":
 		if e.complexity.Block.Votes == nil {
 			break
 		}
 
 		return e.complexity.Block.Votes(childComplexity), true
 
-	case "BlockHeader.DepositMerkleRoot":
+	case "BlockHeader.deposit_merkle_root":
 		if e.complexity.BlockHeader.DepositMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.DepositMerkleRoot(childComplexity), true
 
-	case "BlockHeader.ExitMerkleRoot":
+	case "BlockHeader.exit_merkle_root":
 		if e.complexity.BlockHeader.ExitMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.ExitMerkleRoot(childComplexity), true
 
-	case "BlockHeader.FeeAddress":
+	case "BlockHeader.fee_address":
 		if e.complexity.BlockHeader.FeeAddress == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.FeeAddress(childComplexity), true
 
-	case "BlockHeader.GovernanceVotesMerkleRoot":
+	case "BlockHeader.governance_votes_merkle_root":
 		if e.complexity.BlockHeader.GovernanceVotesMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.GovernanceVotesMerkleRoot(childComplexity), true
 
-	case "BlockHeader.Hash":
+	case "BlockHeader.hash":
 		if e.complexity.BlockHeader.Hash == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.Hash(childComplexity), true
 
-	case "BlockHeader.Nonce":
+	case "BlockHeader.nonce":
 		if e.complexity.BlockHeader.Nonce == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.Nonce(childComplexity), true
 
-	case "BlockHeader.PreviousBlockHash":
+	case "BlockHeader.previous_block_hash":
 		if e.complexity.BlockHeader.PreviousBlockHash == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.PreviousBlockHash(childComplexity), true
 
-	case "BlockHeader.ProposerSlashingMerkleRoot":
+	case "BlockHeader.proposer_slashing_merkle_root":
 		if e.complexity.BlockHeader.ProposerSlashingMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.ProposerSlashingMerkleRoot(childComplexity), true
 
-	case "BlockHeader.RandaoSlashingMerkleRoot":
+	case "BlockHeader.randao_slashing_merkle_root":
 		if e.complexity.BlockHeader.RandaoSlashingMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.RandaoSlashingMerkleRoot(childComplexity), true
 
-	case "BlockHeader.Slot":
+	case "BlockHeader.slot":
 		if e.complexity.BlockHeader.Slot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.Slot(childComplexity), true
 
-	case "BlockHeader.StateRoot":
+	case "BlockHeader.state_root":
 		if e.complexity.BlockHeader.StateRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.StateRoot(childComplexity), true
 
-	case "BlockHeader.Timestamp":
+	case "BlockHeader.timestamp":
 		if e.complexity.BlockHeader.Timestamp == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.Timestamp(childComplexity), true
 
-	case "BlockHeader.TxMerkleRoot":
+	case "BlockHeader.tx_merkle_root":
 		if e.complexity.BlockHeader.TxMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.TxMerkleRoot(childComplexity), true
 
-	case "BlockHeader.TxMultiMerkleRoot":
+	case "BlockHeader.tx_multi_merkle_root":
 		if e.complexity.BlockHeader.TxMultiMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.TxMultiMerkleRoot(childComplexity), true
 
-	case "BlockHeader.Version":
+	case "BlockHeader.version":
 		if e.complexity.BlockHeader.Version == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.Version(childComplexity), true
 
-	case "BlockHeader.VoteMerkleRoot":
+	case "BlockHeader.vote_merkle_root":
 		if e.complexity.BlockHeader.VoteMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.VoteMerkleRoot(childComplexity), true
 
-	case "BlockHeader.VoteSlashingMerkleRoot":
+	case "BlockHeader.vote_slashing_merkle_root":
 		if e.complexity.BlockHeader.VoteSlashingMerkleRoot == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.VoteSlashingMerkleRoot(childComplexity), true
 
-	case "CoinProofs.Hash":
+	case "CoinProofs.hash":
 		if e.complexity.CoinProofs.Hash == nil {
 			break
 		}
 
 		return e.complexity.CoinProofs.Hash(childComplexity), true
 
-	case "CoinProofs.RedeemAccount":
+	case "CoinProofs.redeem_account":
 		if e.complexity.CoinProofs.RedeemAccount == nil {
 			break
 		}
 
 		return e.complexity.CoinProofs.RedeemAccount(childComplexity), true
 
-	case "CoinProofs.Transaction":
+	case "CoinProofs.transaction":
 		if e.complexity.CoinProofs.Transaction == nil {
 			break
 		}
 
 		return e.complexity.CoinProofs.Transaction(childComplexity), true
 
-	case "Deposit.BlockHash":
+	case "Deposit.block_hash":
 		if e.complexity.Deposit.BlockHash == nil {
 			break
 		}
 
 		return e.complexity.Deposit.BlockHash(childComplexity), true
 
-	case "Deposit.Data":
+	case "Deposit.data":
 		if e.complexity.Deposit.Data == nil {
 			break
 		}
 
 		return e.complexity.Deposit.Data(childComplexity), true
 
-	case "Deposit.Hash":
+	case "Deposit.hash":
 		if e.complexity.Deposit.Hash == nil {
 			break
 		}
 
 		return e.complexity.Deposit.Hash(childComplexity), true
 
-	case "Deposit.PublicKey":
+	case "Deposit.public_key":
 		if e.complexity.Deposit.PublicKey == nil {
 			break
 		}
 
 		return e.complexity.Deposit.PublicKey(childComplexity), true
 
-	case "DepositData.Hash":
+	case "DepositData.hash":
 		if e.complexity.DepositData.Hash == nil {
 			break
 		}
 
 		return e.complexity.DepositData.Hash(childComplexity), true
 
-	case "DepositData.ProofOfPossession":
+	case "DepositData.proof_of_possession":
 		if e.complexity.DepositData.ProofOfPossession == nil {
 			break
 		}
 
 		return e.complexity.DepositData.ProofOfPossession(childComplexity), true
 
-	case "DepositData.PublicKey":
+	case "DepositData.public_key":
 		if e.complexity.DepositData.PublicKey == nil {
 			break
 		}
 
 		return e.complexity.DepositData.PublicKey(childComplexity), true
 
-	case "DepositData.WithdrawalAddress":
+	case "DepositData.withdrawal_address":
 		if e.complexity.DepositData.WithdrawalAddress == nil {
 			break
 		}
 
 		return e.complexity.DepositData.WithdrawalAddress(childComplexity), true
 
-	case "Epoch.Epoch":
+	case "Epoch.epoch":
 		if e.complexity.Epoch.Epoch == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Epoch(childComplexity), true
 
-	case "Epoch.Finalized":
+	case "Epoch.finalized":
 		if e.complexity.Epoch.Finalized == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Finalized(childComplexity), true
 
-	case "Epoch.Justified":
+	case "Epoch.justified":
 		if e.complexity.Epoch.Justified == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Justified(childComplexity), true
 
-	case "Epoch.ParticipationPercentage":
+	case "Epoch.participation_percentage":
 		if e.complexity.Epoch.ParticipationPercentage == nil {
 			break
 		}
 
 		return e.complexity.Epoch.ParticipationPercentage(childComplexity), true
 
-	case "Epoch.Randao":
+	case "Epoch.randao":
 		if e.complexity.Epoch.Randao == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Randao(childComplexity), true
 
-	case "Epoch.Slot1":
+	case "Epoch.slot_1":
 		if e.complexity.Epoch.Slot1 == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Slot1(childComplexity), true
 
-	case "Epoch.Slot2":
+	case "Epoch.slot_2":
 		if e.complexity.Epoch.Slot2 == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Slot2(childComplexity), true
 
-	case "Epoch.Slot3":
+	case "Epoch.slot_3":
 		if e.complexity.Epoch.Slot3 == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Slot3(childComplexity), true
 
-	case "Epoch.Slot4":
+	case "Epoch.slot_4":
 		if e.complexity.Epoch.Slot4 == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Slot4(childComplexity), true
 
-	case "Epoch.Slot5":
+	case "Epoch.slot_5":
 		if e.complexity.Epoch.Slot5 == nil {
 			break
 		}
 
 		return e.complexity.Epoch.Slot5(childComplexity), true
 
-	case "Exit.BlockHash":
+	case "Exit.block_hash":
 		if e.complexity.Exit.BlockHash == nil {
 			break
 		}
 
 		return e.complexity.Exit.BlockHash(childComplexity), true
 
-	case "Exit.Hash":
+	case "Exit.hash":
 		if e.complexity.Exit.Hash == nil {
 			break
 		}
 
 		return e.complexity.Exit.Hash(childComplexity), true
 
-	case "Exit.ValidatorPublicKey":
+	case "Exit.validator_public_key":
 		if e.complexity.Exit.ValidatorPublicKey == nil {
 			break
 		}
 
 		return e.complexity.Exit.ValidatorPublicKey(childComplexity), true
 
-	case "Exit.WithdrawalPublicKey":
+	case "Exit.withdrawal_public_key":
 		if e.complexity.Exit.WithdrawalPublicKey == nil {
 			break
 		}
 
 		return e.complexity.Exit.WithdrawalPublicKey(childComplexity), true
 
-	case "PartialExit.Amount":
+	case "PartialExit.amount":
 		if e.complexity.PartialExit.Amount == nil {
 			break
 		}
 
 		return e.complexity.PartialExit.Amount(childComplexity), true
 
-	case "PartialExit.BlockHash":
+	case "PartialExit.block_hash":
 		if e.complexity.PartialExit.BlockHash == nil {
 			break
 		}
 
 		return e.complexity.PartialExit.BlockHash(childComplexity), true
 
-	case "PartialExit.Hash":
+	case "PartialExit.hash":
 		if e.complexity.PartialExit.Hash == nil {
 			break
 		}
 
 		return e.complexity.PartialExit.Hash(childComplexity), true
 
-	case "PartialExit.ValidatorPublicKey":
+	case "PartialExit.validator_public_key":
 		if e.complexity.PartialExit.ValidatorPublicKey == nil {
 			break
 		}
 
 		return e.complexity.PartialExit.ValidatorPublicKey(childComplexity), true
 
-	case "PartialExit.WithdrawalPublicKey":
+	case "PartialExit.withdrawal_public_key":
 		if e.complexity.PartialExit.WithdrawalPublicKey == nil {
 			break
 		}
@@ -697,210 +697,210 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Votes(childComplexity), true
 
-	case "Slot.BlockHash":
+	case "Slot.block_hash":
 		if e.complexity.Slot.BlockHash == nil {
 			break
 		}
 
 		return e.complexity.Slot.BlockHash(childComplexity), true
 
-	case "Slot.Proposed":
+	case "Slot.proposed":
 		if e.complexity.Slot.Proposed == nil {
 			break
 		}
 
 		return e.complexity.Slot.Proposed(childComplexity), true
 
-	case "Slot.ProposerIndex":
+	case "Slot.proposer_index":
 		if e.complexity.Slot.ProposerIndex == nil {
 			break
 		}
 
 		return e.complexity.Slot.ProposerIndex(childComplexity), true
 
-	case "Slot.Slot":
+	case "Slot.slot":
 		if e.complexity.Slot.Slot == nil {
 			break
 		}
 
 		return e.complexity.Slot.Slot(childComplexity), true
 
-	case "Tx.Amount":
+	case "Tx.amount":
 		if e.complexity.Tx.Amount == nil {
 			break
 		}
 
 		return e.complexity.Tx.Amount(childComplexity), true
 
-	case "Tx.BlockHash":
+	case "Tx.block_hash":
 		if e.complexity.Tx.BlockHash == nil {
 			break
 		}
 
 		return e.complexity.Tx.BlockHash(childComplexity), true
 
-	case "Tx.Fee":
+	case "Tx.fee":
 		if e.complexity.Tx.Fee == nil {
 			break
 		}
 
 		return e.complexity.Tx.Fee(childComplexity), true
 
-	case "Tx.FromPublicKey":
+	case "Tx.from_public_key":
 		if e.complexity.Tx.FromPublicKey == nil {
 			break
 		}
 
 		return e.complexity.Tx.FromPublicKey(childComplexity), true
 
-	case "Tx.FromPublicKeyHash":
+	case "Tx.from_public_key_hash":
 		if e.complexity.Tx.FromPublicKeyHash == nil {
 			break
 		}
 
 		return e.complexity.Tx.FromPublicKeyHash(childComplexity), true
 
-	case "Tx.Hash":
+	case "Tx.hash":
 		if e.complexity.Tx.Hash == nil {
 			break
 		}
 
 		return e.complexity.Tx.Hash(childComplexity), true
 
-	case "Tx.Nonce":
+	case "Tx.nonce":
 		if e.complexity.Tx.Nonce == nil {
 			break
 		}
 
 		return e.complexity.Tx.Nonce(childComplexity), true
 
-	case "Tx.ToAddress":
+	case "Tx.to_address":
 		if e.complexity.Tx.ToAddress == nil {
 			break
 		}
 
 		return e.complexity.Tx.ToAddress(childComplexity), true
 
-	case "Validator.Balance":
+	case "Validator.balance":
 		if e.complexity.Validator.Balance == nil {
 			break
 		}
 
 		return e.complexity.Validator.Balance(childComplexity), true
 
-	case "Validator.FirstActiveEpoch":
+	case "Validator.first_active_epoch":
 		if e.complexity.Validator.FirstActiveEpoch == nil {
 			break
 		}
 
 		return e.complexity.Validator.FirstActiveEpoch(childComplexity), true
 
-	case "Validator.LastActiveEpoch":
+	case "Validator.last_active_epoch":
 		if e.complexity.Validator.LastActiveEpoch == nil {
 			break
 		}
 
 		return e.complexity.Validator.LastActiveEpoch(childComplexity), true
 
-	case "Validator.PayeeAddress":
+	case "Validator.payee_address":
 		if e.complexity.Validator.PayeeAddress == nil {
 			break
 		}
 
 		return e.complexity.Validator.PayeeAddress(childComplexity), true
 
-	case "Validator.PubKey":
-		if e.complexity.Validator.PubKey == nil {
+	case "Validator.pubkey":
+		if e.complexity.Validator.Pubkey == nil {
 			break
 		}
 
-		return e.complexity.Validator.PubKey(childComplexity), true
+		return e.complexity.Validator.Pubkey(childComplexity), true
 
-	case "Validator.Status":
+	case "Validator.status":
 		if e.complexity.Validator.Status == nil {
 			break
 		}
 
 		return e.complexity.Validator.Status(childComplexity), true
 
-	case "Vote.BlockHash":
+	case "Vote.block_hash":
 		if e.complexity.Vote.BlockHash == nil {
 			break
 		}
 
 		return e.complexity.Vote.BlockHash(childComplexity), true
 
-	case "Vote.Data":
+	case "Vote.data":
 		if e.complexity.Vote.Data == nil {
 			break
 		}
 
 		return e.complexity.Vote.Data(childComplexity), true
 
-	case "Vote.Hash":
+	case "Vote.hash":
 		if e.complexity.Vote.Hash == nil {
 			break
 		}
 
 		return e.complexity.Vote.Hash(childComplexity), true
 
-	case "Vote.ParticipationBitfield":
+	case "Vote.participation_bitfield":
 		if e.complexity.Vote.ParticipationBitfield == nil {
 			break
 		}
 
 		return e.complexity.Vote.ParticipationBitfield(childComplexity), true
 
-	case "VoteData.BeaconBlockHash":
+	case "VoteData.beacon_block_hash":
 		if e.complexity.VoteData.BeaconBlockHash == nil {
 			break
 		}
 
 		return e.complexity.VoteData.BeaconBlockHash(childComplexity), true
 
-	case "VoteData.FromEpoch":
+	case "VoteData.from_epoch":
 		if e.complexity.VoteData.FromEpoch == nil {
 			break
 		}
 
 		return e.complexity.VoteData.FromEpoch(childComplexity), true
 
-	case "VoteData.FromHash":
+	case "VoteData.from_hash":
 		if e.complexity.VoteData.FromHash == nil {
 			break
 		}
 
 		return e.complexity.VoteData.FromHash(childComplexity), true
 
-	case "VoteData.Hash":
+	case "VoteData.hash":
 		if e.complexity.VoteData.Hash == nil {
 			break
 		}
 
 		return e.complexity.VoteData.Hash(childComplexity), true
 
-	case "VoteData.Nonce":
+	case "VoteData.nonce":
 		if e.complexity.VoteData.Nonce == nil {
 			break
 		}
 
 		return e.complexity.VoteData.Nonce(childComplexity), true
 
-	case "VoteData.Slot":
+	case "VoteData.slot":
 		if e.complexity.VoteData.Slot == nil {
 			break
 		}
 
 		return e.complexity.VoteData.Slot(childComplexity), true
 
-	case "VoteData.ToEpoch":
+	case "VoteData.to_epoch":
 		if e.complexity.VoteData.ToEpoch == nil {
 			break
 		}
 
 		return e.complexity.VoteData.ToEpoch(childComplexity), true
 
-	case "VoteData.ToHash":
+	case "VoteData.to_hash":
 		if e.complexity.VoteData.ToHash == nil {
 			break
 		}
@@ -962,134 +962,134 @@ var sources = []*ast.Source{
 # https://gqlgen.com/getting-started/
 
 type Block {
-  Hash: String!
-  Height: Int!
-  Slot: Int!
-  Header:   BlockHeader
-  Txs:      [Tx!]
-  Deposits: [Deposit!]
-  Votes:    [Vote!]
-  Exits:    [Exit!]
-  RawBlock: String!
+  hash: String!
+  height: Int!
+  slot: Int!
+  header:   BlockHeader
+  txs:      [Tx!]
+  deposits: [Deposit!]
+  votes:    [Vote!]
+  exits:    [Exit!]
+  rawBlock: String!
 }
 
 type BlockHeader {
-  Hash: String!
-  Version: Int!
-  Nonce: String!
-  TxMerkleRoot: String!
-  TxMultiMerkleRoot: String!
-  VoteMerkleRoot: String!
-  DepositMerkleRoot: String!
-  ExitMerkleRoot: String!
-  VoteSlashingMerkleRoot: String!
-  RandaoSlashingMerkleRoot: String!
-  ProposerSlashingMerkleRoot: String!
-  GovernanceVotesMerkleRoot: String!
-  PreviousBlockHash: String!
-  Timestamp: String!
-  Slot: Int!
-  StateRoot: String!
-  FeeAddress: String!
+  hash: String!
+  version: Int!
+  nonce: String!
+  tx_merkle_root: String!
+  tx_multi_merkle_root: String!
+  vote_merkle_root: String!
+  deposit_merkle_root: String!
+  exit_merkle_root: String!
+  vote_slashing_merkle_root: String!
+  randao_slashing_merkle_root: String!
+  proposer_slashing_merkle_root: String!
+  governance_votes_merkle_root: String!
+  previous_block_hash: String!
+  timestamp: String!
+  slot: Int!
+  state_root: String!
+  fee_address: String!
 }
 
 type Deposit {
-  Hash: String!
-  BlockHash: String!
-  PublicKey: String!
-  Data:      DepositData
+  hash: String!
+  block_hash: String!
+  public_key: String!
+  data:      DepositData
 }
 
 type DepositData {
-  Hash: String!
-  PublicKey: String!
-  ProofOfPossession: String!
-  WithdrawalAddress: String!
+  hash: String!
+  public_key: String!
+  proof_of_possession: String!
+  withdrawal_address: String!
 }
 
 type Exit {
-  Hash: String!
-  BlockHash: String!
-  ValidatorPublicKey: String!
-  WithdrawalPublicKey: String!
+  hash: String!
+  block_hash: String!
+  validator_public_key: String!
+  withdrawal_public_key: String!
 }
 
 type PartialExit {
-  Hash: String!
-  BlockHash: String!
-  ValidatorPublicKey: String!
-  WithdrawalPublicKey: String!
-  Amount : Int!
+  hash: String!
+  block_hash: String!
+  validator_public_key: String!
+  withdrawal_public_key: String!
+  amount : Int!
 }
 
 type Tx {
-  BlockHash: String!
-  Hash: String!
-  ToAddress: String!
-  FromPublicKeyHash: String!
-  FromPublicKey: String!
-  Amount: Int!
-  Nonce: Int!
-  Fee: Int!
+  block_hash: String!
+  hash: String!
+  to_address: String!
+  from_public_key_hash: String!
+  from_public_key: String!
+  amount: Int!
+  nonce: Int!
+  fee: Int!
 }
 
 type Validator {
-  Balance: Int!
-  PubKey: String!
-  PayeeAddress: String!
-  Status: Int!
-  FirstActiveEpoch: Int!
-  LastActiveEpoch: Int!
+  balance: Int!
+  pubkey: String!
+  payee_address: String!
+  status: Int!
+  first_active_epoch: Int!
+  last_active_epoch: Int!
 }
 
 type Vote {
-  BlockHash: String!
-  ParticipationBitfield: String!
-  Hash: String!
-  Data: VoteData!
+  block_hash: String!
+  participation_bitfield: String!
+  hash: String!
+  data: VoteData!
 }
 
 type VoteData {
-  Hash: String!
-  Slot: Int!
-  FromEpoch: Int!
-  FromHash: String!
-  ToEpoch: Int!
-  ToHash: String!
-  BeaconBlockHash: String!
-  Nonce: String!
+  hash: String!
+  slot: Int!
+  from_epoch: Int!
+  from_hash: String!
+  to_epoch: Int!
+  to_hash: String!
+  beacon_block_hash: String!
+  nonce: String!
 }
 
 type Account {
-  Account: String!
-  Balance: Int!
-  Nonce: Int!
+  account: String!
+  balance: Int!
+  nonce: Int!
 }
 
 type CoinProofs {
-  Hash: String!
-  Transaction: String!
-  RedeemAccount: String!
+  hash: String!
+  transaction: String!
+  redeem_account: String!
 }
 
 type Epoch {
-  Epoch: Int!
-  Slot1: Int!
-  Slot2: Int!
-  Slot3: Int!
-  Slot4: Int!
-  Slot5: Int!
-  ParticipationPercentage: String!
-  Finalized: Boolean!
-  Justified: Boolean!
-  Randao: String!
+  epoch: Int!
+  slot_1: Int!
+  slot_2: Int!
+  slot_3: Int!
+  slot_4: Int!
+  slot_5: Int!
+  participation_percentage: String!
+  finalized: Boolean!
+  justified: Boolean!
+  randao: String!
 }
 
 type Slot {
-  Slot: Int!
-  BlockHash: String!
-  ProposerIndex: Int!
-  Proposed: Boolean!
+  slot: Int!
+  block_hash: String!
+  proposer_index: Int!
+  proposed: Boolean!
 }
 
 type Query {
@@ -1166,7 +1166,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Account_Account(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
+func (ec *executionContext) _Account_account(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1201,7 +1201,7 @@ func (ec *executionContext) _Account_Account(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Account_Balance(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
+func (ec *executionContext) _Account_balance(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1236,7 +1236,7 @@ func (ec *executionContext) _Account_Balance(ctx context.Context, field graphql.
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Account_Nonce(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
+func (ec *executionContext) _Account_nonce(ctx context.Context, field graphql.CollectedField, obj *model.Account) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1271,7 +1271,7 @@ func (ec *executionContext) _Account_Nonce(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Hash(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_hash(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1306,7 +1306,7 @@ func (ec *executionContext) _Block_Hash(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Height(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_height(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1341,7 +1341,7 @@ func (ec *executionContext) _Block_Height(ctx context.Context, field graphql.Col
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Slot(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_slot(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1376,7 +1376,7 @@ func (ec *executionContext) _Block_Slot(ctx context.Context, field graphql.Colle
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Header(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_header(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1408,7 +1408,7 @@ func (ec *executionContext) _Block_Header(ctx context.Context, field graphql.Col
 	return ec.marshalOBlockHeader2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockHeader(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Txs(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_txs(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1440,7 +1440,7 @@ func (ec *executionContext) _Block_Txs(ctx context.Context, field graphql.Collec
 	return ec.marshalOTx2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTxᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Deposits(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_deposits(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1472,7 +1472,7 @@ func (ec *executionContext) _Block_Deposits(ctx context.Context, field graphql.C
 	return ec.marshalODeposit2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐDepositᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Votes(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_votes(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1504,7 +1504,7 @@ func (ec *executionContext) _Block_Votes(ctx context.Context, field graphql.Coll
 	return ec.marshalOVote2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐVoteᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_Exits(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_exits(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1536,7 +1536,7 @@ func (ec *executionContext) _Block_Exits(ctx context.Context, field graphql.Coll
 	return ec.marshalOExit2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐExitᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_RawBlock(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_rawBlock(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1571,7 +1571,7 @@ func (ec *executionContext) _Block_RawBlock(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_Hash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_hash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1606,7 +1606,7 @@ func (ec *executionContext) _BlockHeader_Hash(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_Version(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_version(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1641,7 +1641,7 @@ func (ec *executionContext) _BlockHeader_Version(ctx context.Context, field grap
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_Nonce(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_nonce(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1676,7 +1676,7 @@ func (ec *executionContext) _BlockHeader_Nonce(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_TxMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_tx_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1711,7 +1711,7 @@ func (ec *executionContext) _BlockHeader_TxMerkleRoot(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_TxMultiMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_tx_multi_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1746,7 +1746,7 @@ func (ec *executionContext) _BlockHeader_TxMultiMerkleRoot(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_VoteMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_vote_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1781,7 +1781,7 @@ func (ec *executionContext) _BlockHeader_VoteMerkleRoot(ctx context.Context, fie
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_DepositMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_deposit_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1816,7 +1816,7 @@ func (ec *executionContext) _BlockHeader_DepositMerkleRoot(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_ExitMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_exit_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1851,7 +1851,7 @@ func (ec *executionContext) _BlockHeader_ExitMerkleRoot(ctx context.Context, fie
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_VoteSlashingMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_vote_slashing_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1886,7 +1886,7 @@ func (ec *executionContext) _BlockHeader_VoteSlashingMerkleRoot(ctx context.Cont
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_RandaoSlashingMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_randao_slashing_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1921,7 +1921,7 @@ func (ec *executionContext) _BlockHeader_RandaoSlashingMerkleRoot(ctx context.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_ProposerSlashingMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_proposer_slashing_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1956,7 +1956,7 @@ func (ec *executionContext) _BlockHeader_ProposerSlashingMerkleRoot(ctx context.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_GovernanceVotesMerkleRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_governance_votes_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1991,7 +1991,7 @@ func (ec *executionContext) _BlockHeader_GovernanceVotesMerkleRoot(ctx context.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_PreviousBlockHash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_previous_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2026,7 +2026,7 @@ func (ec *executionContext) _BlockHeader_PreviousBlockHash(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_Timestamp(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2061,7 +2061,7 @@ func (ec *executionContext) _BlockHeader_Timestamp(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_Slot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_slot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2096,7 +2096,7 @@ func (ec *executionContext) _BlockHeader_Slot(ctx context.Context, field graphql
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_StateRoot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_state_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2131,7 +2131,7 @@ func (ec *executionContext) _BlockHeader_StateRoot(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_FeeAddress(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_fee_address(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2166,7 +2166,7 @@ func (ec *executionContext) _BlockHeader_FeeAddress(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _CoinProofs_Hash(ctx context.Context, field graphql.CollectedField, obj *model.CoinProofs) (ret graphql.Marshaler) {
+func (ec *executionContext) _CoinProofs_hash(ctx context.Context, field graphql.CollectedField, obj *model.CoinProofs) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2201,7 +2201,7 @@ func (ec *executionContext) _CoinProofs_Hash(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _CoinProofs_Transaction(ctx context.Context, field graphql.CollectedField, obj *model.CoinProofs) (ret graphql.Marshaler) {
+func (ec *executionContext) _CoinProofs_transaction(ctx context.Context, field graphql.CollectedField, obj *model.CoinProofs) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2236,7 +2236,7 @@ func (ec *executionContext) _CoinProofs_Transaction(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _CoinProofs_RedeemAccount(ctx context.Context, field graphql.CollectedField, obj *model.CoinProofs) (ret graphql.Marshaler) {
+func (ec *executionContext) _CoinProofs_redeem_account(ctx context.Context, field graphql.CollectedField, obj *model.CoinProofs) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2271,7 +2271,7 @@ func (ec *executionContext) _CoinProofs_RedeemAccount(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Deposit_Hash(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Deposit_hash(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2306,7 +2306,7 @@ func (ec *executionContext) _Deposit_Hash(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Deposit_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Deposit_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2341,7 +2341,7 @@ func (ec *executionContext) _Deposit_BlockHash(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Deposit_PublicKey(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Deposit_public_key(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2376,7 +2376,7 @@ func (ec *executionContext) _Deposit_PublicKey(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Deposit_Data(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Deposit_data(ctx context.Context, field graphql.CollectedField, obj *model.Deposit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2408,7 +2408,7 @@ func (ec *executionContext) _Deposit_Data(ctx context.Context, field graphql.Col
 	return ec.marshalODepositData2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐDepositData(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _DepositData_Hash(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
+func (ec *executionContext) _DepositData_hash(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2443,7 +2443,7 @@ func (ec *executionContext) _DepositData_Hash(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _DepositData_PublicKey(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
+func (ec *executionContext) _DepositData_public_key(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2478,7 +2478,7 @@ func (ec *executionContext) _DepositData_PublicKey(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _DepositData_ProofOfPossession(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
+func (ec *executionContext) _DepositData_proof_of_possession(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2513,7 +2513,7 @@ func (ec *executionContext) _DepositData_ProofOfPossession(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _DepositData_WithdrawalAddress(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
+func (ec *executionContext) _DepositData_withdrawal_address(ctx context.Context, field graphql.CollectedField, obj *model.DepositData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2548,7 +2548,7 @@ func (ec *executionContext) _DepositData_WithdrawalAddress(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Epoch(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_epoch(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2583,7 +2583,7 @@ func (ec *executionContext) _Epoch_Epoch(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Slot1(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_slot_1(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2618,7 +2618,7 @@ func (ec *executionContext) _Epoch_Slot1(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Slot2(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_slot_2(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2653,7 +2653,7 @@ func (ec *executionContext) _Epoch_Slot2(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Slot3(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_slot_3(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2688,7 +2688,7 @@ func (ec *executionContext) _Epoch_Slot3(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Slot4(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_slot_4(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2723,7 +2723,7 @@ func (ec *executionContext) _Epoch_Slot4(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Slot5(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_slot_5(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2758,7 +2758,7 @@ func (ec *executionContext) _Epoch_Slot5(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_ParticipationPercentage(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_participation_percentage(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2793,7 +2793,7 @@ func (ec *executionContext) _Epoch_ParticipationPercentage(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Finalized(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_finalized(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2828,7 +2828,7 @@ func (ec *executionContext) _Epoch_Finalized(ctx context.Context, field graphql.
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Justified(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_justified(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2863,7 +2863,7 @@ func (ec *executionContext) _Epoch_Justified(ctx context.Context, field graphql.
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_Randao(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_randao(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2898,7 +2898,7 @@ func (ec *executionContext) _Epoch_Randao(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Exit_Hash(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Exit_hash(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2933,7 +2933,7 @@ func (ec *executionContext) _Exit_Hash(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Exit_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Exit_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2968,7 +2968,7 @@ func (ec *executionContext) _Exit_BlockHash(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Exit_ValidatorPublicKey(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Exit_validator_public_key(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3003,7 +3003,7 @@ func (ec *executionContext) _Exit_ValidatorPublicKey(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Exit_WithdrawalPublicKey(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Exit_withdrawal_public_key(ctx context.Context, field graphql.CollectedField, obj *model.Exit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3038,7 +3038,7 @@ func (ec *executionContext) _Exit_WithdrawalPublicKey(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PartialExit_Hash(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
+func (ec *executionContext) _PartialExit_hash(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3073,7 +3073,7 @@ func (ec *executionContext) _PartialExit_Hash(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PartialExit_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
+func (ec *executionContext) _PartialExit_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3108,7 +3108,7 @@ func (ec *executionContext) _PartialExit_BlockHash(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PartialExit_ValidatorPublicKey(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
+func (ec *executionContext) _PartialExit_validator_public_key(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3143,7 +3143,7 @@ func (ec *executionContext) _PartialExit_ValidatorPublicKey(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PartialExit_WithdrawalPublicKey(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
+func (ec *executionContext) _PartialExit_withdrawal_public_key(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3178,7 +3178,7 @@ func (ec *executionContext) _PartialExit_WithdrawalPublicKey(ctx context.Context
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PartialExit_Amount(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
+func (ec *executionContext) _PartialExit_amount(ctx context.Context, field graphql.CollectedField, obj *model.PartialExit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3604,7 +3604,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Slot_Slot(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Slot_slot(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3639,7 +3639,7 @@ func (ec *executionContext) _Slot_Slot(ctx context.Context, field graphql.Collec
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Slot_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Slot_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3674,7 +3674,7 @@ func (ec *executionContext) _Slot_BlockHash(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Slot_ProposerIndex(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Slot_proposer_index(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3709,7 +3709,7 @@ func (ec *executionContext) _Slot_ProposerIndex(ctx context.Context, field graph
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Slot_Proposed(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+func (ec *executionContext) _Slot_proposed(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3744,7 +3744,7 @@ func (ec *executionContext) _Slot_Proposed(ctx context.Context, field graphql.Co
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3779,7 +3779,7 @@ func (ec *executionContext) _Tx_BlockHash(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_Hash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_hash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3814,7 +3814,7 @@ func (ec *executionContext) _Tx_Hash(ctx context.Context, field graphql.Collecte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_ToAddress(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_to_address(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3849,7 +3849,7 @@ func (ec *executionContext) _Tx_ToAddress(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_FromPublicKeyHash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_from_public_key_hash(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3884,7 +3884,7 @@ func (ec *executionContext) _Tx_FromPublicKeyHash(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_FromPublicKey(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_from_public_key(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3919,7 +3919,7 @@ func (ec *executionContext) _Tx_FromPublicKey(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_Amount(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_amount(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3954,7 +3954,7 @@ func (ec *executionContext) _Tx_Amount(ctx context.Context, field graphql.Collec
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_Nonce(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_nonce(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3989,7 +3989,7 @@ func (ec *executionContext) _Tx_Nonce(ctx context.Context, field graphql.Collect
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tx_Fee(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tx_fee(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4024,7 +4024,7 @@ func (ec *executionContext) _Tx_Fee(ctx context.Context, field graphql.Collected
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Validator_Balance(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
+func (ec *executionContext) _Validator_balance(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4059,7 +4059,7 @@ func (ec *executionContext) _Validator_Balance(ctx context.Context, field graphq
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Validator_PubKey(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
+func (ec *executionContext) _Validator_pubkey(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4077,7 +4077,7 @@ func (ec *executionContext) _Validator_PubKey(ctx context.Context, field graphql
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.PubKey, nil
+		return obj.Pubkey, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4094,7 +4094,7 @@ func (ec *executionContext) _Validator_PubKey(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Validator_PayeeAddress(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
+func (ec *executionContext) _Validator_payee_address(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4129,7 +4129,7 @@ func (ec *executionContext) _Validator_PayeeAddress(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Validator_Status(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
+func (ec *executionContext) _Validator_status(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4164,7 +4164,7 @@ func (ec *executionContext) _Validator_Status(ctx context.Context, field graphql
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Validator_FirstActiveEpoch(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
+func (ec *executionContext) _Validator_first_active_epoch(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4199,7 +4199,7 @@ func (ec *executionContext) _Validator_FirstActiveEpoch(ctx context.Context, fie
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Validator_LastActiveEpoch(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
+func (ec *executionContext) _Validator_last_active_epoch(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4234,7 +4234,7 @@ func (ec *executionContext) _Validator_LastActiveEpoch(ctx context.Context, fiel
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Vote_BlockHash(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
+func (ec *executionContext) _Vote_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4269,7 +4269,7 @@ func (ec *executionContext) _Vote_BlockHash(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Vote_ParticipationBitfield(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
+func (ec *executionContext) _Vote_participation_bitfield(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4304,7 +4304,7 @@ func (ec *executionContext) _Vote_ParticipationBitfield(ctx context.Context, fie
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Vote_Hash(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
+func (ec *executionContext) _Vote_hash(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4339,7 +4339,7 @@ func (ec *executionContext) _Vote_Hash(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Vote_Data(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
+func (ec *executionContext) _Vote_data(ctx context.Context, field graphql.CollectedField, obj *model.Vote) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4374,7 +4374,7 @@ func (ec *executionContext) _Vote_Data(ctx context.Context, field graphql.Collec
 	return ec.marshalNVoteData2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐVoteData(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_Hash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_hash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4409,7 +4409,7 @@ func (ec *executionContext) _VoteData_Hash(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_Slot(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_slot(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4444,7 +4444,7 @@ func (ec *executionContext) _VoteData_Slot(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_FromEpoch(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_from_epoch(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4479,7 +4479,7 @@ func (ec *executionContext) _VoteData_FromEpoch(ctx context.Context, field graph
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_FromHash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_from_hash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4514,7 +4514,7 @@ func (ec *executionContext) _VoteData_FromHash(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_ToEpoch(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_to_epoch(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4549,7 +4549,7 @@ func (ec *executionContext) _VoteData_ToEpoch(ctx context.Context, field graphql
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_ToHash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_to_hash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4584,7 +4584,7 @@ func (ec *executionContext) _VoteData_ToHash(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_BeaconBlockHash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_beacon_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4619,7 +4619,7 @@ func (ec *executionContext) _VoteData_BeaconBlockHash(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _VoteData_Nonce(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
+func (ec *executionContext) _VoteData_nonce(ctx context.Context, field graphql.CollectedField, obj *model.VoteData) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5760,18 +5760,18 @@ func (ec *executionContext) _Account(ctx context.Context, sel ast.SelectionSet, 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Account")
-		case "Account":
-			out.Values[i] = ec._Account_Account(ctx, field, obj)
+		case "account":
+			out.Values[i] = ec._Account_account(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Balance":
-			out.Values[i] = ec._Account_Balance(ctx, field, obj)
+		case "balance":
+			out.Values[i] = ec._Account_balance(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Nonce":
-			out.Values[i] = ec._Account_Nonce(ctx, field, obj)
+		case "nonce":
+			out.Values[i] = ec._Account_nonce(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5797,33 +5797,33 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Block")
-		case "Hash":
-			out.Values[i] = ec._Block_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._Block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Height":
-			out.Values[i] = ec._Block_Height(ctx, field, obj)
+		case "height":
+			out.Values[i] = ec._Block_height(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot":
-			out.Values[i] = ec._Block_Slot(ctx, field, obj)
+		case "slot":
+			out.Values[i] = ec._Block_slot(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Header":
-			out.Values[i] = ec._Block_Header(ctx, field, obj)
-		case "Txs":
-			out.Values[i] = ec._Block_Txs(ctx, field, obj)
-		case "Deposits":
-			out.Values[i] = ec._Block_Deposits(ctx, field, obj)
-		case "Votes":
-			out.Values[i] = ec._Block_Votes(ctx, field, obj)
-		case "Exits":
-			out.Values[i] = ec._Block_Exits(ctx, field, obj)
-		case "RawBlock":
-			out.Values[i] = ec._Block_RawBlock(ctx, field, obj)
+		case "header":
+			out.Values[i] = ec._Block_header(ctx, field, obj)
+		case "txs":
+			out.Values[i] = ec._Block_txs(ctx, field, obj)
+		case "deposits":
+			out.Values[i] = ec._Block_deposits(ctx, field, obj)
+		case "votes":
+			out.Values[i] = ec._Block_votes(ctx, field, obj)
+		case "exits":
+			out.Values[i] = ec._Block_exits(ctx, field, obj)
+		case "rawBlock":
+			out.Values[i] = ec._Block_rawBlock(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5849,88 +5849,88 @@ func (ec *executionContext) _BlockHeader(ctx context.Context, sel ast.SelectionS
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("BlockHeader")
-		case "Hash":
-			out.Values[i] = ec._BlockHeader_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._BlockHeader_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Version":
-			out.Values[i] = ec._BlockHeader_Version(ctx, field, obj)
+		case "version":
+			out.Values[i] = ec._BlockHeader_version(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Nonce":
-			out.Values[i] = ec._BlockHeader_Nonce(ctx, field, obj)
+		case "nonce":
+			out.Values[i] = ec._BlockHeader_nonce(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "TxMerkleRoot":
-			out.Values[i] = ec._BlockHeader_TxMerkleRoot(ctx, field, obj)
+		case "tx_merkle_root":
+			out.Values[i] = ec._BlockHeader_tx_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "TxMultiMerkleRoot":
-			out.Values[i] = ec._BlockHeader_TxMultiMerkleRoot(ctx, field, obj)
+		case "tx_multi_merkle_root":
+			out.Values[i] = ec._BlockHeader_tx_multi_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "VoteMerkleRoot":
-			out.Values[i] = ec._BlockHeader_VoteMerkleRoot(ctx, field, obj)
+		case "vote_merkle_root":
+			out.Values[i] = ec._BlockHeader_vote_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "DepositMerkleRoot":
-			out.Values[i] = ec._BlockHeader_DepositMerkleRoot(ctx, field, obj)
+		case "deposit_merkle_root":
+			out.Values[i] = ec._BlockHeader_deposit_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ExitMerkleRoot":
-			out.Values[i] = ec._BlockHeader_ExitMerkleRoot(ctx, field, obj)
+		case "exit_merkle_root":
+			out.Values[i] = ec._BlockHeader_exit_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "VoteSlashingMerkleRoot":
-			out.Values[i] = ec._BlockHeader_VoteSlashingMerkleRoot(ctx, field, obj)
+		case "vote_slashing_merkle_root":
+			out.Values[i] = ec._BlockHeader_vote_slashing_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "RandaoSlashingMerkleRoot":
-			out.Values[i] = ec._BlockHeader_RandaoSlashingMerkleRoot(ctx, field, obj)
+		case "randao_slashing_merkle_root":
+			out.Values[i] = ec._BlockHeader_randao_slashing_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ProposerSlashingMerkleRoot":
-			out.Values[i] = ec._BlockHeader_ProposerSlashingMerkleRoot(ctx, field, obj)
+		case "proposer_slashing_merkle_root":
+			out.Values[i] = ec._BlockHeader_proposer_slashing_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "GovernanceVotesMerkleRoot":
-			out.Values[i] = ec._BlockHeader_GovernanceVotesMerkleRoot(ctx, field, obj)
+		case "governance_votes_merkle_root":
+			out.Values[i] = ec._BlockHeader_governance_votes_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "PreviousBlockHash":
-			out.Values[i] = ec._BlockHeader_PreviousBlockHash(ctx, field, obj)
+		case "previous_block_hash":
+			out.Values[i] = ec._BlockHeader_previous_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Timestamp":
-			out.Values[i] = ec._BlockHeader_Timestamp(ctx, field, obj)
+		case "timestamp":
+			out.Values[i] = ec._BlockHeader_timestamp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot":
-			out.Values[i] = ec._BlockHeader_Slot(ctx, field, obj)
+		case "slot":
+			out.Values[i] = ec._BlockHeader_slot(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "StateRoot":
-			out.Values[i] = ec._BlockHeader_StateRoot(ctx, field, obj)
+		case "state_root":
+			out.Values[i] = ec._BlockHeader_state_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "FeeAddress":
-			out.Values[i] = ec._BlockHeader_FeeAddress(ctx, field, obj)
+		case "fee_address":
+			out.Values[i] = ec._BlockHeader_fee_address(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5956,18 +5956,18 @@ func (ec *executionContext) _CoinProofs(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("CoinProofs")
-		case "Hash":
-			out.Values[i] = ec._CoinProofs_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._CoinProofs_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Transaction":
-			out.Values[i] = ec._CoinProofs_Transaction(ctx, field, obj)
+		case "transaction":
+			out.Values[i] = ec._CoinProofs_transaction(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "RedeemAccount":
-			out.Values[i] = ec._CoinProofs_RedeemAccount(ctx, field, obj)
+		case "redeem_account":
+			out.Values[i] = ec._CoinProofs_redeem_account(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5993,23 +5993,23 @@ func (ec *executionContext) _Deposit(ctx context.Context, sel ast.SelectionSet, 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Deposit")
-		case "Hash":
-			out.Values[i] = ec._Deposit_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._Deposit_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "BlockHash":
-			out.Values[i] = ec._Deposit_BlockHash(ctx, field, obj)
+		case "block_hash":
+			out.Values[i] = ec._Deposit_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "PublicKey":
-			out.Values[i] = ec._Deposit_PublicKey(ctx, field, obj)
+		case "public_key":
+			out.Values[i] = ec._Deposit_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Data":
-			out.Values[i] = ec._Deposit_Data(ctx, field, obj)
+		case "data":
+			out.Values[i] = ec._Deposit_data(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6032,23 +6032,23 @@ func (ec *executionContext) _DepositData(ctx context.Context, sel ast.SelectionS
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("DepositData")
-		case "Hash":
-			out.Values[i] = ec._DepositData_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._DepositData_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "PublicKey":
-			out.Values[i] = ec._DepositData_PublicKey(ctx, field, obj)
+		case "public_key":
+			out.Values[i] = ec._DepositData_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ProofOfPossession":
-			out.Values[i] = ec._DepositData_ProofOfPossession(ctx, field, obj)
+		case "proof_of_possession":
+			out.Values[i] = ec._DepositData_proof_of_possession(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "WithdrawalAddress":
-			out.Values[i] = ec._DepositData_WithdrawalAddress(ctx, field, obj)
+		case "withdrawal_address":
+			out.Values[i] = ec._DepositData_withdrawal_address(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6074,53 +6074,53 @@ func (ec *executionContext) _Epoch(ctx context.Context, sel ast.SelectionSet, ob
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Epoch")
-		case "Epoch":
-			out.Values[i] = ec._Epoch_Epoch(ctx, field, obj)
+		case "epoch":
+			out.Values[i] = ec._Epoch_epoch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot1":
-			out.Values[i] = ec._Epoch_Slot1(ctx, field, obj)
+		case "slot_1":
+			out.Values[i] = ec._Epoch_slot_1(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot2":
-			out.Values[i] = ec._Epoch_Slot2(ctx, field, obj)
+		case "slot_2":
+			out.Values[i] = ec._Epoch_slot_2(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot3":
-			out.Values[i] = ec._Epoch_Slot3(ctx, field, obj)
+		case "slot_3":
+			out.Values[i] = ec._Epoch_slot_3(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot4":
-			out.Values[i] = ec._Epoch_Slot4(ctx, field, obj)
+		case "slot_4":
+			out.Values[i] = ec._Epoch_slot_4(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot5":
-			out.Values[i] = ec._Epoch_Slot5(ctx, field, obj)
+		case "slot_5":
+			out.Values[i] = ec._Epoch_slot_5(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ParticipationPercentage":
-			out.Values[i] = ec._Epoch_ParticipationPercentage(ctx, field, obj)
+		case "participation_percentage":
+			out.Values[i] = ec._Epoch_participation_percentage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Finalized":
-			out.Values[i] = ec._Epoch_Finalized(ctx, field, obj)
+		case "finalized":
+			out.Values[i] = ec._Epoch_finalized(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Justified":
-			out.Values[i] = ec._Epoch_Justified(ctx, field, obj)
+		case "justified":
+			out.Values[i] = ec._Epoch_justified(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Randao":
-			out.Values[i] = ec._Epoch_Randao(ctx, field, obj)
+		case "randao":
+			out.Values[i] = ec._Epoch_randao(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6146,23 +6146,23 @@ func (ec *executionContext) _Exit(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Exit")
-		case "Hash":
-			out.Values[i] = ec._Exit_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._Exit_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "BlockHash":
-			out.Values[i] = ec._Exit_BlockHash(ctx, field, obj)
+		case "block_hash":
+			out.Values[i] = ec._Exit_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ValidatorPublicKey":
-			out.Values[i] = ec._Exit_ValidatorPublicKey(ctx, field, obj)
+		case "validator_public_key":
+			out.Values[i] = ec._Exit_validator_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "WithdrawalPublicKey":
-			out.Values[i] = ec._Exit_WithdrawalPublicKey(ctx, field, obj)
+		case "withdrawal_public_key":
+			out.Values[i] = ec._Exit_withdrawal_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6188,28 +6188,28 @@ func (ec *executionContext) _PartialExit(ctx context.Context, sel ast.SelectionS
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PartialExit")
-		case "Hash":
-			out.Values[i] = ec._PartialExit_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._PartialExit_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "BlockHash":
-			out.Values[i] = ec._PartialExit_BlockHash(ctx, field, obj)
+		case "block_hash":
+			out.Values[i] = ec._PartialExit_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ValidatorPublicKey":
-			out.Values[i] = ec._PartialExit_ValidatorPublicKey(ctx, field, obj)
+		case "validator_public_key":
+			out.Values[i] = ec._PartialExit_validator_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "WithdrawalPublicKey":
-			out.Values[i] = ec._PartialExit_WithdrawalPublicKey(ctx, field, obj)
+		case "withdrawal_public_key":
+			out.Values[i] = ec._PartialExit_withdrawal_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Amount":
-			out.Values[i] = ec._PartialExit_Amount(ctx, field, obj)
+		case "amount":
+			out.Values[i] = ec._PartialExit_amount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6375,23 +6375,23 @@ func (ec *executionContext) _Slot(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Slot")
-		case "Slot":
-			out.Values[i] = ec._Slot_Slot(ctx, field, obj)
+		case "slot":
+			out.Values[i] = ec._Slot_slot(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "BlockHash":
-			out.Values[i] = ec._Slot_BlockHash(ctx, field, obj)
+		case "block_hash":
+			out.Values[i] = ec._Slot_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ProposerIndex":
-			out.Values[i] = ec._Slot_ProposerIndex(ctx, field, obj)
+		case "proposer_index":
+			out.Values[i] = ec._Slot_proposer_index(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Proposed":
-			out.Values[i] = ec._Slot_Proposed(ctx, field, obj)
+		case "proposed":
+			out.Values[i] = ec._Slot_proposed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6417,43 +6417,43 @@ func (ec *executionContext) _Tx(ctx context.Context, sel ast.SelectionSet, obj *
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Tx")
-		case "BlockHash":
-			out.Values[i] = ec._Tx_BlockHash(ctx, field, obj)
+		case "block_hash":
+			out.Values[i] = ec._Tx_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Hash":
-			out.Values[i] = ec._Tx_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._Tx_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ToAddress":
-			out.Values[i] = ec._Tx_ToAddress(ctx, field, obj)
+		case "to_address":
+			out.Values[i] = ec._Tx_to_address(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "FromPublicKeyHash":
-			out.Values[i] = ec._Tx_FromPublicKeyHash(ctx, field, obj)
+		case "from_public_key_hash":
+			out.Values[i] = ec._Tx_from_public_key_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "FromPublicKey":
-			out.Values[i] = ec._Tx_FromPublicKey(ctx, field, obj)
+		case "from_public_key":
+			out.Values[i] = ec._Tx_from_public_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Amount":
-			out.Values[i] = ec._Tx_Amount(ctx, field, obj)
+		case "amount":
+			out.Values[i] = ec._Tx_amount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Nonce":
-			out.Values[i] = ec._Tx_Nonce(ctx, field, obj)
+		case "nonce":
+			out.Values[i] = ec._Tx_nonce(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Fee":
-			out.Values[i] = ec._Tx_Fee(ctx, field, obj)
+		case "fee":
+			out.Values[i] = ec._Tx_fee(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6479,33 +6479,33 @@ func (ec *executionContext) _Validator(ctx context.Context, sel ast.SelectionSet
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Validator")
-		case "Balance":
-			out.Values[i] = ec._Validator_Balance(ctx, field, obj)
+		case "balance":
+			out.Values[i] = ec._Validator_balance(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "PubKey":
-			out.Values[i] = ec._Validator_PubKey(ctx, field, obj)
+		case "pubkey":
+			out.Values[i] = ec._Validator_pubkey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "PayeeAddress":
-			out.Values[i] = ec._Validator_PayeeAddress(ctx, field, obj)
+		case "payee_address":
+			out.Values[i] = ec._Validator_payee_address(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Status":
-			out.Values[i] = ec._Validator_Status(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._Validator_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "FirstActiveEpoch":
-			out.Values[i] = ec._Validator_FirstActiveEpoch(ctx, field, obj)
+		case "first_active_epoch":
+			out.Values[i] = ec._Validator_first_active_epoch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "LastActiveEpoch":
-			out.Values[i] = ec._Validator_LastActiveEpoch(ctx, field, obj)
+		case "last_active_epoch":
+			out.Values[i] = ec._Validator_last_active_epoch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6531,23 +6531,23 @@ func (ec *executionContext) _Vote(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Vote")
-		case "BlockHash":
-			out.Values[i] = ec._Vote_BlockHash(ctx, field, obj)
+		case "block_hash":
+			out.Values[i] = ec._Vote_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ParticipationBitfield":
-			out.Values[i] = ec._Vote_ParticipationBitfield(ctx, field, obj)
+		case "participation_bitfield":
+			out.Values[i] = ec._Vote_participation_bitfield(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Hash":
-			out.Values[i] = ec._Vote_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._Vote_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Data":
-			out.Values[i] = ec._Vote_Data(ctx, field, obj)
+		case "data":
+			out.Values[i] = ec._Vote_data(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6573,43 +6573,43 @@ func (ec *executionContext) _VoteData(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("VoteData")
-		case "Hash":
-			out.Values[i] = ec._VoteData_Hash(ctx, field, obj)
+		case "hash":
+			out.Values[i] = ec._VoteData_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Slot":
-			out.Values[i] = ec._VoteData_Slot(ctx, field, obj)
+		case "slot":
+			out.Values[i] = ec._VoteData_slot(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "FromEpoch":
-			out.Values[i] = ec._VoteData_FromEpoch(ctx, field, obj)
+		case "from_epoch":
+			out.Values[i] = ec._VoteData_from_epoch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "FromHash":
-			out.Values[i] = ec._VoteData_FromHash(ctx, field, obj)
+		case "from_hash":
+			out.Values[i] = ec._VoteData_from_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ToEpoch":
-			out.Values[i] = ec._VoteData_ToEpoch(ctx, field, obj)
+		case "to_epoch":
+			out.Values[i] = ec._VoteData_to_epoch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ToHash":
-			out.Values[i] = ec._VoteData_ToHash(ctx, field, obj)
+		case "to_hash":
+			out.Values[i] = ec._VoteData_to_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "BeaconBlockHash":
-			out.Values[i] = ec._VoteData_BeaconBlockHash(ctx, field, obj)
+		case "beacon_block_hash":
+			out.Values[i] = ec._VoteData_beacon_block_hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Nonce":
-			out.Values[i] = ec._VoteData_Nonce(ctx, field, obj)
+		case "nonce":
+			out.Values[i] = ec._VoteData_nonce(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

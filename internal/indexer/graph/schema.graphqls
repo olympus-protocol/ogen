@@ -3,134 +3,134 @@
 # https://gqlgen.com/getting-started/
 
 type Block {
-  Hash: String!
-  Height: Int!
-  Slot: Int!
-  Header:   BlockHeader
-  Txs:      [Tx!]
-  Deposits: [Deposit!]
-  Votes:    [Vote!]
-  Exits:    [Exit!]
-  RawBlock: String!
+  hash: String!
+  height: Int!
+  slot: Int!
+  header:   BlockHeader
+  txs:      [Tx!]
+  deposits: [Deposit!]
+  votes:    [Vote!]
+  exits:    [Exit!]
+  rawBlock: String!
 }
 
 type BlockHeader {
-  Hash: String!
-  Version: Int!
-  Nonce: String!
-  TxMerkleRoot: String!
-  TxMultiMerkleRoot: String!
-  VoteMerkleRoot: String!
-  DepositMerkleRoot: String!
-  ExitMerkleRoot: String!
-  VoteSlashingMerkleRoot: String!
-  RandaoSlashingMerkleRoot: String!
-  ProposerSlashingMerkleRoot: String!
-  GovernanceVotesMerkleRoot: String!
-  PreviousBlockHash: String!
-  Timestamp: String!
-  Slot: Int!
-  StateRoot: String!
-  FeeAddress: String!
+  hash: String!
+  version: Int!
+  nonce: String!
+  tx_merkle_root: String!
+  tx_multi_merkle_root: String!
+  vote_merkle_root: String!
+  deposit_merkle_root: String!
+  exit_merkle_root: String!
+  vote_slashing_merkle_root: String!
+  randao_slashing_merkle_root: String!
+  proposer_slashing_merkle_root: String!
+  governance_votes_merkle_root: String!
+  previous_block_hash: String!
+  timestamp: String!
+  slot: Int!
+  state_root: String!
+  fee_address: String!
 }
 
 type Deposit {
-  Hash: String!
-  BlockHash: String!
-  PublicKey: String!
-  Data:      DepositData
+  hash: String!
+  block_hash: String!
+  public_key: String!
+  data:      DepositData
 }
 
 type DepositData {
-  Hash: String!
-  PublicKey: String!
-  ProofOfPossession: String!
-  WithdrawalAddress: String!
+  hash: String!
+  public_key: String!
+  proof_of_possession: String!
+  withdrawal_address: String!
 }
 
 type Exit {
-  Hash: String!
-  BlockHash: String!
-  ValidatorPublicKey: String!
-  WithdrawalPublicKey: String!
+  hash: String!
+  block_hash: String!
+  validator_public_key: String!
+  withdrawal_public_key: String!
 }
 
 type PartialExit {
-  Hash: String!
-  BlockHash: String!
-  ValidatorPublicKey: String!
-  WithdrawalPublicKey: String!
-  Amount : Int!
+  hash: String!
+  block_hash: String!
+  validator_public_key: String!
+  withdrawal_public_key: String!
+  amount : Int!
 }
 
 type Tx {
-  BlockHash: String!
-  Hash: String!
-  ToAddress: String!
-  FromPublicKeyHash: String!
-  FromPublicKey: String!
-  Amount: Int!
-  Nonce: Int!
-  Fee: Int!
+  block_hash: String!
+  hash: String!
+  to_address: String!
+  from_public_key_hash: String!
+  from_public_key: String!
+  amount: Int!
+  nonce: Int!
+  fee: Int!
 }
 
 type Validator {
-  Balance: Int!
-  PubKey: String!
-  PayeeAddress: String!
-  Status: Int!
-  FirstActiveEpoch: Int!
-  LastActiveEpoch: Int!
+  balance: Int!
+  pubkey: String!
+  payee_address: String!
+  status: Int!
+  first_active_epoch: Int!
+  last_active_epoch: Int!
 }
 
 type Vote {
-  BlockHash: String!
-  ParticipationBitfield: String!
-  Hash: String!
-  Data: VoteData!
+  block_hash: String!
+  participation_bitfield: String!
+  hash: String!
+  data: VoteData!
 }
 
 type VoteData {
-  Hash: String!
-  Slot: Int!
-  FromEpoch: Int!
-  FromHash: String!
-  ToEpoch: Int!
-  ToHash: String!
-  BeaconBlockHash: String!
-  Nonce: String!
+  hash: String!
+  slot: Int!
+  from_epoch: Int!
+  from_hash: String!
+  to_epoch: Int!
+  to_hash: String!
+  beacon_block_hash: String!
+  nonce: String!
 }
 
 type Account {
-  Account: String!
-  Balance: Int!
-  Nonce: Int!
+  account: String!
+  balance: Int!
+  nonce: Int!
 }
 
 type CoinProofs {
-  Hash: String!
-  Transaction: String!
-  RedeemAccount: String!
+  hash: String!
+  transaction: String!
+  redeem_account: String!
 }
 
 type Epoch {
-  Epoch: Int!
-  Slot1: Int!
-  Slot2: Int!
-  Slot3: Int!
-  Slot4: Int!
-  Slot5: Int!
-  ParticipationPercentage: String!
-  Finalized: Boolean!
-  Justified: Boolean!
-  Randao: String!
+  epoch: Int!
+  slot_1: Int!
+  slot_2: Int!
+  slot_3: Int!
+  slot_4: Int!
+  slot_5: Int!
+  participation_percentage: String!
+  finalized: Boolean!
+  justified: Boolean!
+  randao: String!
 }
 
 type Slot {
-  Slot: Int!
-  BlockHash: String!
-  ProposerIndex: Int!
-  Proposed: Boolean!
+  slot: Int!
+  block_hash: String!
+  proposer_index: Int!
+  proposed: Boolean!
 }
 
 type Query {
