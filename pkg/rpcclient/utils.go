@@ -47,8 +47,10 @@ func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 		switch netName {
 		case "testnet":
 			netParams = &params.TestNet
+		case "devnet":
+			netParams = &params.DevNet
 		case "mainnet":
-			netParams = &params.Mainnet
+			netParams = &params.MainNet
 		default:
 			return "", errors.New("no params for " + netName)
 		}

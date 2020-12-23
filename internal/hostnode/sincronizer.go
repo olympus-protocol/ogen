@@ -103,7 +103,7 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 			}
 
 			// open a stream for the sync protocol:
-			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.ProtocolID)
+			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.ProtocolID(config.GlobalParams.NetParams.Name))
 			if err != nil {
 				sp.log.Errorf("could not open stream for connection: %s", err)
 			}
