@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
+	"github.com/olympus-protocol/ogen/internal/indexer/graph"
+	"github.com/olympus-protocol/ogen/internal/indexer/graph/generated"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -16,7 +20,9 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
+
 	"io"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -244,6 +250,21 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 }
 
 func (i *Indexer) Start() error {
+	go func() {
+
+		srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+			DB: i.db,
+		}}))
+
+		http.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
+		http.Handle("/query", srv)
+
+		err := http.ListenAndServe(":8080", nil)
+		if err != nil {
+			i.log.Fatal(err)
+		}
+	}()
+
 	err := i.initialSync()
 	if err != nil {
 		return err
