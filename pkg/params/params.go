@@ -20,8 +20,10 @@ var (
 )
 
 func ProtocolID(net string) protocol.ID {
-	return protocol.ID("/ogen/" + net + " /" + Version)
+	return protocol.ID("/ogen/" + net)
 }
+
+
 
 // AccountPrefixes are prefixes used for account bech32 encoding.
 type AccountPrefixes struct {
