@@ -1,4 +1,4 @@
-FROM docker.pkg.github.com/olympus-protocol/ogen-builder/ogen-builder:main
+FROM golang:1.16beta1-buster
 
 WORKDIR /build
 
