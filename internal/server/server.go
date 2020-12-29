@@ -22,6 +22,7 @@ type Server interface {
 	Chain() chain.Blockchain
 	Start()
 	Stop() error
+	Wallet() wallet.Wallet
 }
 
 // Server is the main struct that contains ogen services
@@ -33,6 +34,7 @@ type server struct {
 	rpc       chainrpc.RPCServer
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
+	wallet    wallet.Wallet
 }
 
 var _ Server = &server{}
@@ -49,18 +51,23 @@ func (s *server) Chain() chain.Blockchain {
 	return s.ch
 }
 
+func (s *server) Wallet() wallet.Wallet {
+	return s.wallet
+}
+
 // Start starts running the multiple ogen services.
 func (s *server) Start() {
-	err := s.ch.Start()
-	if err != nil {
-		s.log.Fatal("unable to start chain instance")
-	}
 	go func() {
 		err := s.rpc.Start()
 		if err != nil {
 			s.log.Fatal("unable to start rpc server")
 		}
 	}()
+	err := s.ch.Start()
+	if err != nil {
+		s.log.Fatal("unable to start chain instance")
+	}
+
 	err = s.prop.Start()
 	if err != nil {
 		s.log.Fatal("unable to start proposer")
@@ -138,7 +145,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, cpool)
+	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, cpool, apool)
 	if err != nil {
 		return nil, err
 	}
@@ -146,10 +153,11 @@ func NewServer(db blockdb.Database) (Server, error) {
 	s := &server{
 		log: log,
 
-		ch:   ch,
-		hn:   hn,
-		rpc:  rpc,
-		prop: prop,
+		ch:     ch,
+		hn:     hn,
+		rpc:    rpc,
+		prop:   prop,
+		wallet: w,
 	}
 
 	if config.GlobalFlags.Dashboard {

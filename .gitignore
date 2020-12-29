@@ -3,7 +3,6 @@
 *.exe~
 *.dll
 *.so
-*.dylib
 
 #macOS
 .DS_Store
@@ -54,4 +53,4 @@ certs/
 # Binaries
 ogen
 !ogen/
-pkged.go
+test.db

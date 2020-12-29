@@ -1,0 +1,148 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Block {
+  hash: String!
+  height: Int!
+  slot: Int!
+  header:   BlockHeader
+  txs:      [Tx!]
+  deposits: [Deposit!]
+  votes:    [Vote!]
+  exits:    [Exit!]
+  rawBlock: String!
+}
+
+type BlockHeader {
+  hash: String!
+  version: Int!
+  nonce: String!
+  tx_merkle_root: String!
+  tx_multi_merkle_root: String!
+  vote_merkle_root: String!
+  deposit_merkle_root: String!
+  exit_merkle_root: String!
+  vote_slashing_merkle_root: String!
+  randao_slashing_merkle_root: String!
+  proposer_slashing_merkle_root: String!
+  governance_votes_merkle_root: String!
+  previous_block_hash: String!
+  timestamp: String!
+  slot: Int!
+  state_root: String!
+  fee_address: String!
+}
+
+type Deposit {
+  hash: String!
+  block_hash: String!
+  public_key: String!
+  data:      DepositData
+}
+
+type DepositData {
+  hash: String!
+  public_key: String!
+  proof_of_possession: String!
+  withdrawal_address: String!
+}
+
+type Exit {
+  hash: String!
+  block_hash: String!
+  validator_public_key: String!
+  withdrawal_public_key: String!
+}
+
+type PartialExit {
+  hash: String!
+  block_hash: String!
+  validator_public_key: String!
+  withdrawal_public_key: String!
+  amount : Int!
+}
+
+type Tx {
+  block_hash: String!
+  hash: String!
+  to_address: String!
+  from_public_key_hash: String!
+  from_public_key: String!
+  amount: Int!
+  nonce: Int!
+  fee: Int!
+}
+
+type Validator {
+  balance: Int!
+  pubkey: String!
+  payee_address: String!
+  status: Int!
+  first_active_epoch: Int!
+  last_active_epoch: Int!
+}
+
+type Vote {
+  block_hash: String!
+  participation_bitfield: String!
+  hash: String!
+  data: VoteData!
+}
+
+type VoteData {
+  hash: String!
+  slot: Int!
+  from_epoch: Int!
+  from_hash: String!
+  to_epoch: Int!
+  to_hash: String!
+  beacon_block_hash: String!
+  nonce: String!
+}
+
+type Account {
+  account: String!
+  balance: Int!
+  nonce: Int!
+}
+
+type CoinProofs {
+  hash: String!
+  transaction: String!
+  redeem_account: String!
+}
+
+type Epoch {
+  epoch: Int!
+  slot_1: Int!
+  slot_2: Int!
+  slot_3: Int!
+  slot_4: Int!
+  slot_5: Int!
+  participation_percentage: String!
+  finalized: Boolean!
+  justified: Boolean!
+  randao: String!
+}
+
+type Slot {
+  slot: Int!
+  block_hash: String!
+  proposer_index: Int!
+  proposed: Boolean!
+}
+
+type Query {
+  accounts: [Account!]
+  block_headers: [BlockHeader!]
+  blocks: [Block!]
+  deposits: [Deposit!]
+  epoches: [Epoch!]
+  exits: [Exit!]
+  slots: [Slot!]
+  txes: [Tx!]
+  validators: [Validator!]
+  votes: [Vote!]
+}
+

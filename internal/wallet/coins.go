@@ -2,36 +2,30 @@ package wallet
 
 import (
 	"fmt"
-	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
+type Balance struct {
+	Confirmed uint64
+	Pending   uint64
+}
+
 // GetBalance returns the balance of the current open wallet.
-func (w *wallet) GetBalance() (uint64, uint64, error) {
+func (w *wallet) GetBalance() (*Balance, error) {
 	if !w.open {
-		return 0, 0, errorNotOpen
+		return nil, errorNotOpen
 	}
 	acc, err := w.GetAccountRaw()
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 
 	confirmed := w.chain.State().TipState().GetCoinsState().Balances[acc]
 
-	mempoolAddition, err := w.coinsmempool.GetMempoolAdditions(acc)
-	if err != nil && err != mempool.ErrorAccountNotOnMempool {
-		return 0, 0, err
-	}
-
-	mempoolRemove, err := w.coinsmempool.GetMempoolRemovals(acc)
-	if err != nil && err != mempool.ErrorAccountNotOnMempool {
-		return 0, 0, err
-	}
-
-	return confirmed - mempoolRemove, mempoolAddition, nil
+	return &Balance{Confirmed: confirmed}, nil
 }
 
 // SendToAddress sends an amount to an account using the current open wallet private key.
@@ -63,15 +57,8 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		return nil, err
 	}
 
-	var latestNonce uint64
-	latestNonce, err = w.coinsmempool.GetMempoolNonce(acc)
-	if err != nil {
-		if err == mempool.ErrorAccountNotOnMempool {
-			latestNonce = w.chain.State().TipState().GetCoinsState().Nonces[acc]
-		} else {
-			return nil, err
-		}
-	}
+	latestNonce := w.chain.State().TipState().GetCoinsState().Nonces[acc]
+
 	var p [48]byte
 	copy(p[:], pub.Marshal())
 
@@ -89,9 +76,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	copy(s[:], sig.Marshal())
 	tx.Signature = s
 
-	currentState := w.chain.State().TipState()
-	cs := currentState.GetCoinsState()
-	if err := w.coinsmempool.Add(tx, &cs); err != nil {
+	if err := w.coinsmempool.Add(tx); err != nil {
 		return nil, err
 	}
 

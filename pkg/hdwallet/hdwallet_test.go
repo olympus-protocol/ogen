@@ -1,7 +1,6 @@
 package hdwallet_test
 
 import (
-	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bip39"
 	"github.com/olympus-protocol/ogen/pkg/hdwallet"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ func TestCreateHDWallet(t *testing.T) {
 		assert.NoError(t, err)
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
-		fmt.Println(mnemonic)
+
 		assert.NoError(t, err)
 
 		seed := bip39.NewSeed(mnemonic, "password")

@@ -1,13 +1,16 @@
 package chainrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -15,9 +18,11 @@ import (
 )
 
 type utilsServer struct {
-	keystore     keystore.Keystore
-	host         hostnode.HostNode
-	coinsMempool mempool.CoinsMempool
+	keystore       keystore.Keystore
+	host           hostnode.HostNode
+	coinsMempool   mempool.CoinsMempool
+	actionsMempool mempool.ActionMempool
+	chain          chain.Blockchain
 	proto.UnimplementedUtilsServer
 }
 
@@ -48,23 +53,26 @@ func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidato
 
 func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {
 	defer ctx.Done()
-
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
 		return nil, err
 	}
 	switch data.Type {
 	case "tx":
-
 		tx := new(primitives.Tx)
 
 		err := tx.Unmarshal(dataBytes)
 		if err != nil {
-			return nil, errors.New("unable to decode raw data")
+			return &proto.Success{Success: false, Error: "unable to decode raw data"}, nil
 		}
 
 		msg := &p2p.MsgTx{Data: tx}
-		// TODO apply to ourselves first.
+
+		err = s.coinsMempool.Add(tx)
+
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
 
 		err = s.host.Broadcast(msg)
 		if err != nil {
@@ -79,18 +87,22 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		err := deposit.Unmarshal(dataBytes)
 		if err != nil {
-			return nil, errors.New("unable to decode raw data")
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		err = s.actionsMempool.AddDeposit(deposit)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
 		msg := &p2p.MsgDeposit{Data: deposit}
-		// TODO apply to ourselves first.
 
 		err = s.host.Broadcast(msg)
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
-		return &proto.Success{Success: true, Data: deposit.Hash().String()}, nil
+		return &proto.Success{Success: true}, nil
 
 	case "exit":
 
@@ -98,18 +110,66 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		err := exit.Unmarshal(dataBytes)
 		if err != nil {
-			return nil, errors.New("unable to decode raw data")
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		err = s.actionsMempool.AddExit(exit)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
 		msg := &p2p.MsgExit{Data: exit}
-		// TODO apply to ourselves first.
 
 		err = s.host.Broadcast(msg)
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
-		return &proto.Success{Success: true, Data: exit.Hash().String()}, nil
+		return &proto.Success{Success: true}, nil
+
+	case "deposits_bulk":
+		deposits := new(p2p.MsgDeposits)
+
+		err := deposits.Unmarshal(dataBytes)
+		if err != nil {
+			return nil, errors.New("unable to decode raw data")
+		}
+
+		for _, d := range deposits.Data {
+			err = s.actionsMempool.AddDeposit(d)
+			if err != nil {
+				return &proto.Success{Success: false, Error: err.Error()}, nil
+			}
+		}
+
+		err = s.host.Broadcast(deposits)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		return &proto.Success{Success: true}, nil
+
+	case "exits_bulk":
+		exits := new(p2p.MsgExits)
+
+		err := exits.Unmarshal(dataBytes)
+		if err != nil {
+			return nil, errors.New("unable to decode raw data")
+		}
+
+		for _, d := range exits.Data {
+			err = s.actionsMempool.AddExit(d)
+			if err != nil {
+				return &proto.Success{Success: false, Error: err.Error()}, nil
+			}
+		}
+
+		err = s.host.Broadcast(exits)
+		if err != nil {
+			return &proto.Success{Success: false, Error: err.Error()}, nil
+		}
+
+		return &proto.Success{Success: true}, nil
 
 	default:
 		return &proto.Success{Success: false, Error: "unknown raw data type"}, nil
@@ -238,4 +298,66 @@ func newCoinsNotifee() *coinNotifee {
 		tx: make(chan *primitives.Tx),
 	}
 	return bn
+}
+
+func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemProof) (*proto.Success, error) {
+	defer ctx.Done()
+	proofBytes, err := hex.DecodeString(data.Proof)
+	if err != nil {
+		return nil, err
+	}
+
+	addrBytes := []byte(data.Address)
+
+	if len(addrBytes) != 44 {
+		return &proto.Success{Error: errors.New("invalid address size").Error()}, nil
+	}
+
+	var address [44]byte
+	copy(address[:], addrBytes)
+
+	proofs := make([]*burnproof.CoinsProof, 0)
+	buf := bytes.NewBuffer(proofBytes)
+	for {
+		proof := new(burnproof.CoinsProof)
+		err = proof.Unmarshal(buf)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+		if buf.Len() < 0 {
+			break
+		}
+		proofs = append(proofs, proof)
+	}
+
+	if len(proofs) > 2048 {
+		return &proto.Success{Error: "too many proofs submited, max number is 2048"}, nil
+	}
+
+	serializableProofs := make([]*burnproof.CoinsProofSerializable, len(proofs))
+
+	for i, p := range proofs {
+		pser, err := p.ToSerializable(address)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+
+		serializableProofs[i] = pser
+
+		// Add to a mempool and broadcast
+		err = s.actionsMempool.AddProof(pser)
+		if err != nil {
+			return &proto.Success{Error: err.Error()}, nil
+		}
+
+	}
+
+	msg := &p2p.MsgProofs{Proofs: serializableProofs}
+
+	err = s.host.Broadcast(msg)
+	if err != nil {
+		return &proto.Success{Success: false, Error: err.Error()}, nil
+	}
+
+	return &proto.Success{Success: true}, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"reflect"
 
@@ -204,72 +203,6 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 			}
 			err = stream.Send(&proto.RawData{
 				Data: hex.EncodeToString(buf),
-			})
-			if err != nil {
-				return err
-			}
-		case <-stream.Context().Done():
-			return nil
-		}
-	}
-}
-
-func (s *chainServer) SubscribeTransactions(in *proto.KeyPairs, stream proto.Chain_SubscribeTransactionsServer) error {
-	bn := newBlockNotifee(stream.Context(), s.chain)
-	accounts := make(map[[20]byte]struct{})
-	for _, a := range in.Keys {
-		account, err := hex.DecodeString(a)
-		if err != nil {
-			return err
-		}
-		if len(account) != 20 {
-			return fmt.Errorf("expected public key hashes to be 20 bytes but got %d", len(a))
-		}
-
-		var acc [20]byte
-		copy(acc[:], a)
-
-		accounts[acc] = struct{}{}
-	}
-
-	for {
-		select {
-		case bl := <-bn.blocks:
-			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(bl.block.SerializedTx(accounts)),
-			})
-			if err != nil {
-				return err
-			}
-		case <-stream.Context().Done():
-			return nil
-		}
-	}
-}
-
-func (s *chainServer) SubscribeValidatorTransaction(in *proto.KeyPairs, stream proto.Chain_SubscribeValidatorTransactionsServer) error {
-	bn := newBlockNotifee(stream.Context(), s.chain)
-	accounts := make(map[[48]byte]struct{})
-	for _, a := range in.Keys {
-		pubkey, err := hex.DecodeString(a)
-		if err != nil {
-			return err
-		}
-		if len(pubkey) != 48 {
-			return fmt.Errorf("expected public key to be 48 bytes but got %d", len(a))
-		}
-
-		var acc [48]byte
-		copy(acc[:], a)
-
-		accounts[acc] = struct{}{}
-	}
-
-	for {
-		select {
-		case bl := <-bn.blocks:
-			err := stream.Send(&proto.RawData{
-				Data: hex.EncodeToString(bl.block.SerializedEpochs(accounts)),
 			})
 			if err != nil {
 				return err

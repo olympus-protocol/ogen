@@ -353,7 +353,6 @@ func (s *state) ProcessEpochTransition() ([]*primitives.EpochReceipt, error) {
 		s.JustifiedEpoch = s.EpochIndex
 	}
 
-	// TODO move to params
 	const numRewards = 5
 
 	baseReward := func(index uint64) uint64 {

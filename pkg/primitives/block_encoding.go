@@ -3,6 +3,7 @@ package primitives
 
 import (
 	ssz "github.com/ferranbt/fastssz"
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
 )
 
 // MarshalSSZ ssz marshals the Block object
@@ -13,7 +14,7 @@ func (b *Block) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the Block object to a target array
 func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(632)
+	offset := int(740)
 
 	// Field (0) 'Header'
 	if b.Header == nil {
@@ -49,32 +50,50 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.WriteOffset(dst, offset)
 	offset += len(b.Exits) * 192
 
-	// Offset (6) 'VoteSlashings'
+	// Offset (6) 'PartialExit'
+	dst = ssz.WriteOffset(dst, offset)
+	offset += len(b.PartialExit) * 200
+
+	// Offset (7) 'VoteSlashings'
 	dst = ssz.WriteOffset(dst, offset)
 	for ii := 0; ii < len(b.VoteSlashings); ii++ {
 		offset += 4
 		offset += b.VoteSlashings[ii].SizeSSZ()
 	}
 
-	// Offset (7) 'RANDAOSlashings'
+	// Offset (8) 'RANDAOSlashings'
 	dst = ssz.WriteOffset(dst, offset)
 	offset += len(b.RANDAOSlashings) * 152
 
-	// Offset (8) 'ProposerSlashings'
+	// Offset (9) 'ProposerSlashings'
 	dst = ssz.WriteOffset(dst, offset)
-	offset += len(b.ProposerSlashings) * 1048
+	offset += len(b.ProposerSlashings) * 1240
 
-	// Offset (9) 'GovernanceVotes'
+	// Offset (10) 'GovernanceVotes'
 	dst = ssz.WriteOffset(dst, offset)
 	for ii := 0; ii < len(b.GovernanceVotes); ii++ {
 		offset += 4
 		offset += b.GovernanceVotes[ii].SizeSSZ()
 	}
 
-	// Field (10) 'Signature'
+	// Offset (11) 'CoinProofs'
+	dst = ssz.WriteOffset(dst, offset)
+	for ii := 0; ii < len(b.CoinProofs); ii++ {
+		offset += 4
+		offset += b.CoinProofs[ii].SizeSSZ()
+	}
+
+	// Offset (12) 'Executions'
+	dst = ssz.WriteOffset(dst, offset)
+	for ii := 0; ii < len(b.Executions); ii++ {
+		offset += 4
+		offset += b.Executions[ii].SizeSSZ()
+	}
+
+	// Field (13) 'Signature'
 	dst = append(dst, b.Signature[:]...)
 
-	// Field (11) 'RandaoSignature'
+	// Field (14) 'RandaoSignature'
 	dst = append(dst, b.RandaoSignature[:]...)
 
 	// Field (1) 'Votes'
@@ -146,7 +165,18 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 
-	// Field (6) 'VoteSlashings'
+	// Field (6) 'PartialExit'
+	if len(b.PartialExit) > 128 {
+		err = ssz.ErrListTooBig
+		return
+	}
+	for ii := 0; ii < len(b.PartialExit); ii++ {
+		if dst, err = b.PartialExit[ii].MarshalSSZTo(dst); err != nil {
+			return
+		}
+	}
+
+	// Field (7) 'VoteSlashings'
 	if len(b.VoteSlashings) > 10 {
 		err = ssz.ErrListTooBig
 		return
@@ -164,7 +194,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 
-	// Field (7) 'RANDAOSlashings'
+	// Field (8) 'RANDAOSlashings'
 	if len(b.RANDAOSlashings) > 20 {
 		err = ssz.ErrListTooBig
 		return
@@ -175,7 +205,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 
-	// Field (8) 'ProposerSlashings'
+	// Field (9) 'ProposerSlashings'
 	if len(b.ProposerSlashings) > 2 {
 		err = ssz.ErrListTooBig
 		return
@@ -186,7 +216,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 
-	// Field (9) 'GovernanceVotes'
+	// Field (10) 'GovernanceVotes'
 	if len(b.GovernanceVotes) > 128 {
 		err = ssz.ErrListTooBig
 		return
@@ -204,6 +234,42 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 
+	// Field (11) 'CoinProofs'
+	if len(b.CoinProofs) > 128 {
+		err = ssz.ErrListTooBig
+		return
+	}
+	{
+		offset = 4 * len(b.CoinProofs)
+		for ii := 0; ii < len(b.CoinProofs); ii++ {
+			dst = ssz.WriteOffset(dst, offset)
+			offset += b.CoinProofs[ii].SizeSSZ()
+		}
+	}
+	for ii := 0; ii < len(b.CoinProofs); ii++ {
+		if dst, err = b.CoinProofs[ii].MarshalSSZTo(dst); err != nil {
+			return
+		}
+	}
+
+	// Field (12) 'Executions'
+	if len(b.Executions) > 256 {
+		err = ssz.ErrListTooBig
+		return
+	}
+	{
+		offset = 4 * len(b.Executions)
+		for ii := 0; ii < len(b.Executions); ii++ {
+			dst = ssz.WriteOffset(dst, offset)
+			offset += b.Executions[ii].SizeSSZ()
+		}
+	}
+	for ii := 0; ii < len(b.Executions); ii++ {
+		if dst, err = b.Executions[ii].MarshalSSZTo(dst); err != nil {
+			return
+		}
+	}
+
 	return
 }
 
@@ -211,71 +277,86 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (b *Block) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 632 {
+	if size < 740 {
 		return ssz.ErrSize
 	}
 
 	tail := buf
-	var o1, o2, o3, o4, o5, o6, o7, o8, o9 uint64
+	var o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12 uint64
 
 	// Field (0) 'Header'
 	if b.Header == nil {
 		b.Header = new(BlockHeader)
 	}
-	if err = b.Header.UnmarshalSSZ(buf[0:404]); err != nil {
+	if err = b.Header.UnmarshalSSZ(buf[0:500]); err != nil {
 		return err
 	}
 
 	// Offset (1) 'Votes'
-	if o1 = ssz.ReadOffset(buf[404:408]); o1 > size {
+	if o1 = ssz.ReadOffset(buf[500:504]); o1 > size {
 		return ssz.ErrOffset
 	}
 
 	// Offset (2) 'Txs'
-	if o2 = ssz.ReadOffset(buf[408:412]); o2 > size || o1 > o2 {
+	if o2 = ssz.ReadOffset(buf[504:508]); o2 > size || o1 > o2 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (3) 'TxsMulti'
-	if o3 = ssz.ReadOffset(buf[412:416]); o3 > size || o2 > o3 {
+	if o3 = ssz.ReadOffset(buf[508:512]); o3 > size || o2 > o3 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (4) 'Deposits'
-	if o4 = ssz.ReadOffset(buf[416:420]); o4 > size || o3 > o4 {
+	if o4 = ssz.ReadOffset(buf[512:516]); o4 > size || o3 > o4 {
 		return ssz.ErrOffset
 	}
 
 	// Offset (5) 'Exits'
-	if o5 = ssz.ReadOffset(buf[420:424]); o5 > size || o4 > o5 {
+	if o5 = ssz.ReadOffset(buf[516:520]); o5 > size || o4 > o5 {
 		return ssz.ErrOffset
 	}
 
-	// Offset (6) 'VoteSlashings'
-	if o6 = ssz.ReadOffset(buf[424:428]); o6 > size || o5 > o6 {
+	// Offset (6) 'PartialExit'
+	if o6 = ssz.ReadOffset(buf[520:524]); o6 > size || o5 > o6 {
 		return ssz.ErrOffset
 	}
 
-	// Offset (7) 'RANDAOSlashings'
-	if o7 = ssz.ReadOffset(buf[428:432]); o7 > size || o6 > o7 {
+	// Offset (7) 'VoteSlashings'
+	if o7 = ssz.ReadOffset(buf[524:528]); o7 > size || o6 > o7 {
 		return ssz.ErrOffset
 	}
 
-	// Offset (8) 'ProposerSlashings'
-	if o8 = ssz.ReadOffset(buf[432:436]); o8 > size || o7 > o8 {
+	// Offset (8) 'RANDAOSlashings'
+	if o8 = ssz.ReadOffset(buf[528:532]); o8 > size || o7 > o8 {
 		return ssz.ErrOffset
 	}
 
-	// Offset (9) 'GovernanceVotes'
-	if o9 = ssz.ReadOffset(buf[436:440]); o9 > size || o8 > o9 {
+	// Offset (9) 'ProposerSlashings'
+	if o9 = ssz.ReadOffset(buf[532:536]); o9 > size || o8 > o9 {
 		return ssz.ErrOffset
 	}
 
-	// Field (10) 'Signature'
-	copy(b.Signature[:], buf[440:536])
+	// Offset (10) 'GovernanceVotes'
+	if o10 = ssz.ReadOffset(buf[536:540]); o10 > size || o9 > o10 {
+		return ssz.ErrOffset
+	}
 
-	// Field (11) 'RandaoSignature'
-	copy(b.RandaoSignature[:], buf[536:632])
+	// Offset (11) 'CoinProofs'
+	if o11 = ssz.ReadOffset(buf[540:544]); o11 > size || o10 > o11 {
+		return ssz.ErrOffset
+	}
+
+	// Offset (12) 'Executions'
+	if o12 = ssz.ReadOffset(buf[544:548]); o12 > size || o11 > o12 {
+		return ssz.ErrOffset
+	}
+
+	// Field (13) 'Signature'
+	copy(b.Signature[:], buf[548:644])
+
+	// Field (14) 'RandaoSignature'
+	copy(b.RandaoSignature[:], buf[644:740])
 
 	// Field (1) 'Votes'
 	{
@@ -375,9 +456,27 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 		}
 	}
 
-	// Field (6) 'VoteSlashings'
+	// Field (6) 'PartialExit'
 	{
 		buf = tail[o6:o7]
+		num, err := ssz.DivideInt2(len(buf), 200, 128)
+		if err != nil {
+			return err
+		}
+		b.PartialExit = make([]*PartialExit, num)
+		for ii := 0; ii < num; ii++ {
+			if b.PartialExit[ii] == nil {
+				b.PartialExit[ii] = new(PartialExit)
+			}
+			if err = b.PartialExit[ii].UnmarshalSSZ(buf[ii*200 : (ii+1)*200]); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Field (7) 'VoteSlashings'
+	{
+		buf = tail[o7:o8]
 		num, err := ssz.DecodeDynamicLength(buf, 10)
 		if err != nil {
 			return err
@@ -397,9 +496,9 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 		}
 	}
 
-	// Field (7) 'RANDAOSlashings'
+	// Field (8) 'RANDAOSlashings'
 	{
-		buf = tail[o7:o8]
+		buf = tail[o8:o9]
 		num, err := ssz.DivideInt2(len(buf), 152, 20)
 		if err != nil {
 			return err
@@ -415,10 +514,10 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 		}
 	}
 
-	// Field (8) 'ProposerSlashings'
+	// Field (9) 'ProposerSlashings'
 	{
-		buf = tail[o8:o9]
-		num, err := ssz.DivideInt2(len(buf), 1048, 2)
+		buf = tail[o9:o10]
+		num, err := ssz.DivideInt2(len(buf), 1240, 2)
 		if err != nil {
 			return err
 		}
@@ -427,15 +526,15 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 			if b.ProposerSlashings[ii] == nil {
 				b.ProposerSlashings[ii] = new(ProposerSlashing)
 			}
-			if err = b.ProposerSlashings[ii].UnmarshalSSZ(buf[ii*1048 : (ii+1)*1048]); err != nil {
+			if err = b.ProposerSlashings[ii].UnmarshalSSZ(buf[ii*1240 : (ii+1)*1240]); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Field (9) 'GovernanceVotes'
+	// Field (10) 'GovernanceVotes'
 	{
-		buf = tail[o9:]
+		buf = tail[o10:o11]
 		num, err := ssz.DecodeDynamicLength(buf, 128)
 		if err != nil {
 			return err
@@ -454,12 +553,56 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 			return err
 		}
 	}
+
+	// Field (11) 'CoinProofs'
+	{
+		buf = tail[o11:o12]
+		num, err := ssz.DecodeDynamicLength(buf, 128)
+		if err != nil {
+			return err
+		}
+		b.CoinProofs = make([]*burnproof.CoinsProofSerializable, num)
+		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
+			if b.CoinProofs[indx] == nil {
+				b.CoinProofs[indx] = new(burnproof.CoinsProofSerializable)
+			}
+			if err = b.CoinProofs[indx].UnmarshalSSZ(buf); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Field (12) 'Executions'
+	{
+		buf = tail[o12:]
+		num, err := ssz.DecodeDynamicLength(buf, 256)
+		if err != nil {
+			return err
+		}
+		b.Executions = make([]*Execution, num)
+		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
+			if b.Executions[indx] == nil {
+				b.Executions[indx] = new(Execution)
+			}
+			if err = b.Executions[indx].UnmarshalSSZ(buf); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Block object
 func (b *Block) SizeSSZ() (size int) {
-	size = 632
+	size = 740
 
 	// Field (1) 'Votes'
 	for ii := 0; ii < len(b.Votes); ii++ {
@@ -482,22 +625,37 @@ func (b *Block) SizeSSZ() (size int) {
 	// Field (5) 'Exits'
 	size += len(b.Exits) * 192
 
-	// Field (6) 'VoteSlashings'
+	// Field (6) 'PartialExit'
+	size += len(b.PartialExit) * 200
+
+	// Field (7) 'VoteSlashings'
 	for ii := 0; ii < len(b.VoteSlashings); ii++ {
 		size += 4
 		size += b.VoteSlashings[ii].SizeSSZ()
 	}
 
-	// Field (7) 'RANDAOSlashings'
+	// Field (8) 'RANDAOSlashings'
 	size += len(b.RANDAOSlashings) * 152
 
-	// Field (8) 'ProposerSlashings'
-	size += len(b.ProposerSlashings) * 1048
+	// Field (9) 'ProposerSlashings'
+	size += len(b.ProposerSlashings) * 1240
 
-	// Field (9) 'GovernanceVotes'
+	// Field (10) 'GovernanceVotes'
 	for ii := 0; ii < len(b.GovernanceVotes); ii++ {
 		size += 4
 		size += b.GovernanceVotes[ii].SizeSSZ()
+	}
+
+	// Field (11) 'CoinProofs'
+	for ii := 0; ii < len(b.CoinProofs); ii++ {
+		size += 4
+		size += b.CoinProofs[ii].SizeSSZ()
+	}
+
+	// Field (12) 'Executions'
+	for ii := 0; ii < len(b.Executions); ii++ {
+		size += 4
+		size += b.Executions[ii].SizeSSZ()
 	}
 
 	return
@@ -597,7 +755,23 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, num, 128)
 	}
 
-	// Field (6) 'VoteSlashings'
+	// Field (6) 'PartialExit'
+	{
+		subIndx := hh.Index()
+		num := uint64(len(b.PartialExit))
+		if num > 128 {
+			err = ssz.ErrIncorrectListSize
+			return
+		}
+		for i := uint64(0); i < num; i++ {
+			if err = b.PartialExit[i].HashTreeRootWith(hh); err != nil {
+				return
+			}
+		}
+		hh.MerkleizeWithMixin(subIndx, num, 128)
+	}
+
+	// Field (7) 'VoteSlashings'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.VoteSlashings))
@@ -613,7 +787,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, num, 10)
 	}
 
-	// Field (7) 'RANDAOSlashings'
+	// Field (8) 'RANDAOSlashings'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.RANDAOSlashings))
@@ -629,7 +803,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, num, 20)
 	}
 
-	// Field (8) 'ProposerSlashings'
+	// Field (9) 'ProposerSlashings'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.ProposerSlashings))
@@ -645,7 +819,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, num, 2)
 	}
 
-	// Field (9) 'GovernanceVotes'
+	// Field (10) 'GovernanceVotes'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.GovernanceVotes))
@@ -661,10 +835,42 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, num, 128)
 	}
 
-	// Field (10) 'Signature'
+	// Field (11) 'CoinProofs'
+	{
+		subIndx := hh.Index()
+		num := uint64(len(b.CoinProofs))
+		if num > 128 {
+			err = ssz.ErrIncorrectListSize
+			return
+		}
+		for i := uint64(0); i < num; i++ {
+			if err = b.CoinProofs[i].HashTreeRootWith(hh); err != nil {
+				return
+			}
+		}
+		hh.MerkleizeWithMixin(subIndx, num, 128)
+	}
+
+	// Field (12) 'Executions'
+	{
+		subIndx := hh.Index()
+		num := uint64(len(b.Executions))
+		if num > 256 {
+			err = ssz.ErrIncorrectListSize
+			return
+		}
+		for i := uint64(0); i < num; i++ {
+			if err = b.Executions[i].HashTreeRootWith(hh); err != nil {
+				return
+			}
+		}
+		hh.MerkleizeWithMixin(subIndx, num, 256)
+	}
+
+	// Field (13) 'Signature'
 	hh.PutBytes(b.Signature[:])
 
-	// Field (11) 'RandaoSignature'
+	// Field (14) 'RandaoSignature'
 	hh.PutBytes(b.RandaoSignature[:])
 
 	hh.Merkleize(indx)

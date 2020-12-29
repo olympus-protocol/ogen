@@ -170,6 +170,19 @@ func InitBlocksIndex(genesisBlock primitives.Block) (*BlockIndex, error) {
 	}, nil
 }
 
+// InitBlocksIndex creates a new block chainindex.
+func InitBlocksIndexWithCustomBlock(block *BlockRow) (*BlockIndex, error) {
+	return &BlockIndex{
+		index: map[chainhash.Hash]*BlockRow{
+			block.Hash: {
+				Height: block.Height,
+				Parent: block.Parent,
+				Hash:   block.Hash,
+			},
+		},
+	}, nil
+}
+
 // ToBlockNodeDisk converts an in-memory representation of a block row
 // to a serializable version.
 func (br *BlockRow) ToBlockNodeDisk() *primitives.BlockNodeDisk {

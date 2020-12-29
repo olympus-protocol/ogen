@@ -99,15 +99,12 @@ func newCoinMempoolItem() *coinMempoolItem {
 
 // CoinsMempool is an interface for coinMempool
 type CoinsMempool interface {
-	Add(item *primitives.Tx, state *primitives.CoinsState) error
+	Add(item *primitives.Tx) error
 	RemoveByBlock(b *primitives.Block)
-	Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State)
+	Get(maxTransactions uint64, s state.State, feeRedeemAccount [20]byte) ([]*primitives.Tx, state.State)
 	GetWithoutApply() []*primitives.Tx
-	AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error
+	AddMulti(item *primitives.TxMulti) error
 	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
-	GetMempoolRemovals(pkh [20]byte) (uint64, error)
-	GetMempoolAdditions(pkh [20]byte) (uint64, error)
-	GetMempoolNonce(pkh [20]byte) (uint64, error)
 	Notify(n CoinsNotifee)
 	Unnotify(n CoinsNotifee)
 }
@@ -129,25 +126,23 @@ type coinsMempool struct {
 	mempoolMulti map[[20]byte]*coinMempoolItemMulti
 	lockMulti    sync.Mutex
 
-	additions   map[[20]byte]uint64
-	removals    map[[20]byte]uint64
-	latestNonce map[[20]byte]uint64
-
 	notifeesLock sync.Mutex
 	notifees     map[CoinsNotifee]struct{}
-	lockStats    sync.Mutex
 }
 
 // AddMulti adds an item to the coins mempool.
-func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.CoinsState) error {
+func (cm *coinsMempool) AddMulti(item *primitives.TxMulti) error {
 	cm.lockMulti.Lock()
 	defer cm.lockMulti.Unlock()
+
+	s := cm.chain.State().TipState().GetCoinsState()
+
 	fpkh, err := item.FromPubkeyHash()
 	if err != nil {
 		return err
 	}
 
-	if item.Nonce != state.Nonces[fpkh]+1 {
+	if item.Nonce != s.Nonces[fpkh]+1 {
 		return errors.New("invalid nonce")
 	}
 
@@ -160,7 +155,7 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.Coi
 	if !ok {
 		cm.mempoolMulti[fpkh] = newCoinMempoolItemMulti()
 		mpi = cm.mempoolMulti[fpkh]
-		if err := mpi.add(item, state.Balances[fpkh]); err != nil {
+		if err := mpi.add(item, s.Balances[fpkh]); err != nil {
 			return err
 		}
 	}
@@ -169,24 +164,20 @@ func (cm *coinsMempool) AddMulti(item *primitives.TxMulti, state *primitives.Coi
 }
 
 // Add adds an item to the coins mempool.
-func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) error {
+func (cm *coinsMempool) Add(item *primitives.Tx) error {
+
 	cm.lockSingle.Lock()
 	defer cm.lockSingle.Unlock()
+
+	cs := cm.chain.State().TipState().GetCoinsState()
+
 	fpkh, err := item.FromPubkeyHash()
 	if err != nil {
 		return err
 	}
 
-	// Check first if there is a nonce to be tracked on the mempool.
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-
-	if latestNonce, ok := cm.latestNonce[fpkh]; ok && item.Nonce < latestNonce {
-		return errors.New("invalid nonce")
-	}
-
 	// Check the state for a nonce lower than the used in transaction
-	if stateNonce, ok := state.Nonces[fpkh]; ok && item.Nonce < stateNonce || !ok && item.Nonce != 1 {
+	if stateNonce, ok := cs.Nonces[fpkh]; ok && item.Nonce < stateNonce || !ok && item.Nonce != 1 {
 		return errors.New("invalid nonce")
 	}
 
@@ -195,20 +186,18 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 	}
 
 	mpi, ok := cm.mempool[fpkh]
+
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
-		if err := mpi.add(item, state.Balances[fpkh]); err != nil {
+		if err := mpi.add(item, cs.Balances[fpkh]); err != nil {
 			return err
 		}
-
-		cm.additions[item.To] += item.Amount
-		cm.removals[fpkh] += item.Amount + item.Fee
-		cm.latestNonce[fpkh] = item.Nonce
 	}
 
 	cm.notifeesLock.Lock()
 	defer cm.notifeesLock.Unlock()
+
 	for n := range cm.notifees {
 		n.NotifyTx(item)
 	}
@@ -220,10 +209,8 @@ func (cm *coinsMempool) Add(item *primitives.Tx, state *primitives.CoinsState) e
 func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 	cm.lockSingle.Lock()
 	cm.lockMulti.Lock()
-	cm.lockStats.Lock()
 	defer cm.lockSingle.Unlock()
 	defer cm.lockMulti.Unlock()
-	defer cm.lockStats.Unlock()
 	for _, tx := range b.Txs {
 		fpkh, err := tx.FromPubkeyHash()
 		if err != nil {
@@ -237,17 +224,11 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 		if mempoolItem.balanceSpent == 0 {
 			delete(cm.mempool, fpkh)
 		}
-
-		cm.additions[tx.To] -= tx.Amount
-		cm.removals[fpkh] -= tx.Amount + tx.Fee
-		if tx.Nonce == cm.latestNonce[fpkh] {
-			delete(cm.latestNonce, fpkh)
-		}
 	}
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitives.Tx, state.State) {
+func (cm *coinsMempool) Get(maxTransactions uint64, s state.State, feeRedeemAccount [20]byte) ([]*primitives.Tx, state.State) {
 	cm.lockSingle.Lock()
 	defer cm.lockSingle.Unlock()
 
@@ -256,7 +237,7 @@ func (cm *coinsMempool) Get(maxTransactions uint64, s state.State) ([]*primitive
 outer:
 	for _, addr := range cm.mempool {
 		for _, tx := range addr.transactions {
-			if err := s.ApplyTransactionSingle(tx, [20]byte{}); err != nil {
+			if err := s.ApplyTransactionSingle(tx, feeRedeemAccount); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, tx)
@@ -318,9 +299,8 @@ func (cm *coinsMempool) handleTx(id peer.ID, msg p2p.Message) error {
 		return errors.New("wrong message on tx topic")
 	}
 
-	cs := cm.chain.State().TipState().GetCoinsState()
+	err := cm.Add(data.Data)
 
-	err := cm.Add(data.Data, &cs)
 	if err != nil {
 		return err
 	}
@@ -338,48 +318,13 @@ func (cm *coinsMempool) handleTxMulti(id peer.ID, msg p2p.Message) error {
 		return errors.New("wrong message on txmulti topic")
 	}
 
-	cs := cm.chain.State().TipState().GetCoinsState()
-
-	err := cm.AddMulti(data.Data, &cs)
+	err := cm.AddMulti(data.Data)
 
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// GetMempoolRemovals returns the amount of coins being tracked on mempool for account balance remove.
-func (cm *coinsMempool) GetMempoolRemovals(pkh [20]byte) (uint64, error) {
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-	amount, ok := cm.removals[pkh]
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-	return amount, nil
-}
-
-// GetMempoolAdditions returns the amount of coins being tracked on mempool for account balance addition.
-func (cm *coinsMempool) GetMempoolAdditions(pkh [20]byte) (uint64, error) {
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-	amount, ok := cm.additions[pkh]
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-	return amount, nil
-}
-
-// GetMempoolNonce returns the latest nonce tracked by an account in mempool.
-func (cm *coinsMempool) GetMempoolNonce(pkh [20]byte) (uint64, error) {
-	cm.lockStats.Lock()
-	defer cm.lockStats.Unlock()
-	nonce, ok := cm.latestNonce[pkh]
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-	return nonce, nil
 }
 
 func (cm *coinsMempool) Notify(n CoinsNotifee) {
@@ -409,10 +354,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		netParams:    netParams,
 		log:          log,
 
-		additions:   make(map[[20]byte]uint64),
-		removals:    make(map[[20]byte]uint64),
-		latestNonce: make(map[[20]byte]uint64),
-		notifees:    make(map[CoinsNotifee]struct{}),
+		notifees: make(map[CoinsNotifee]struct{}),
 	}
 
 	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {

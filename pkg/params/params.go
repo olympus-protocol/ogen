@@ -11,7 +11,7 @@ import (
 const (
 	mayor = 0
 	minor = 1
-	patch = 1
+	patch = 2
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 )
 
 func ProtocolID(net string) protocol.ID {
-	return protocol.ID("/ogen/" + net + " /" + Version)
+	return protocol.ID("/ogen/" + net)
 }
 
 // AccountPrefixes are prefixes used for account bech32 encoding.
@@ -59,7 +59,9 @@ type ChainParams struct {
 	MaxProposerSlashingsPerBlock uint64
 	MaxVoteSlashingsPerBlock     uint64
 	MaxGovernanceVotesPerBlock   uint64
-	MaxMigrationsProofsPerBlock  uint64
+	MaxCoinProofsPerBlock        uint64
+	MaxPartialExitsPerBlock      uint64
+	MaxExecutionsPerBlock        uint64
 	WhistleblowerRewardQuotient  uint64
 	GovernancePercentages        []uint8
 	MinVotingBalance             uint64
@@ -102,7 +104,9 @@ var MainNet = ChainParams{
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
 	MaxGovernanceVotesPerBlock:   128,
-	MaxMigrationsProofsPerBlock:  5,
+	MaxCoinProofsPerBlock:        128,
+	MaxPartialExitsPerBlock:      128,
+	MaxExecutionsPerBlock:        256,
 	WhistleblowerRewardQuotient:  2, // Validator loses half their deposit
 	GovernancePercentages: []uint8{
 		30, // tech
@@ -173,7 +177,9 @@ var TestNet = ChainParams{
 	MaxRANDAOSlashingsPerBlock:   20,
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
-	MaxMigrationsProofsPerBlock:  5,
+	MaxCoinProofsPerBlock:        128,
+	MaxPartialExitsPerBlock:      128,
+	MaxExecutionsPerBlock:        256,
 	WhistleblowerRewardQuotient:  2,
 	GovernancePercentages: []uint8{
 		30, // tech
@@ -196,8 +202,8 @@ var TestNet = ChainParams{
 		0: "do_not_go_gentle_into_that_good_night",
 	},
 	Relayers: map[string]string{
-		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooWMXYnAd4vLNZ1h4yB964o2yK5rm3dWnmRvEp5UErZjqKZ",
-		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWQG52UmSjJWbiksovwnNEQw8oEsWL2uiFVNvQ8ij4ig3w",
+		"cronos-1": "/ip4/134.122.28.156/tcp/25000/p2p/12D3KooWDv5BH9bQhv198TXGkXygNoXrEdvEfLkKL6C5eD3EAHvi",
+		"cronos-2": "/ip4/159.65.233.200/tcp/25000/p2p/12D3KooWLDdEF8zAK7tQqDN23CmC4TFZqKeo2n95BJUBaJH69h5P",
 	},
 }
 
@@ -232,7 +238,9 @@ var DevNet = ChainParams{
 	MaxRANDAOSlashingsPerBlock:   20,
 	MaxProposerSlashingsPerBlock: 2,
 	MaxVoteSlashingsPerBlock:     10,
-	MaxMigrationsProofsPerBlock:  5,
+	MaxCoinProofsPerBlock:        128,
+	MaxPartialExitsPerBlock:      128,
+	MaxExecutionsPerBlock:        256,
 	WhistleblowerRewardQuotient:  2,
 	GovernancePercentages: []uint8{
 		30, // tech

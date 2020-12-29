@@ -101,6 +101,17 @@ func NewDiscover(host HostNode) (*discover, error) {
 			dp.host.GetHost().Peerstore().ClearAddrs(addr.ID)
 			dp.log.Infof("unable to connect to peer %s", addr.ID)
 		}
+		var peerstorePeers []peer.AddrInfo
+		for _, id := range peersIDs {
+			peerstorePeers = append(peerstorePeers, dp.host.GetHost().Peerstore().PeerInfo(id))
+		}
+		initialNodes = append(initialNodes, dp.getRelayers()...)
+		initialNodes = append(initialNodes, peerstorePeers...)
+		for _, addr := range initialNodes {
+			if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
+				dp.log.Infof("unable to connect to peer %s", addr.ID)
+			}
+		}
 	}
 
 	go dp.advertise()
@@ -113,7 +124,7 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
-	if _, ok := BadPeersCache.Get(pi.ID.String()); ok  {
+	if _, ok := BadPeersCache.Get(pi.ID.String()); ok {
 		return
 	}
 	err := d.Connect(pi)
@@ -139,7 +150,7 @@ func (d *discover) findPeers() {
 			select {
 			case pi, ok := <-peers:
 				if !ok {
-					time.Sleep(time.Second * 10)
+					time.Sleep(time.Second * 5)
 					break peerLoop
 				}
 
@@ -155,8 +166,8 @@ func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
-const connectionTimeout = 10 * time.Second
-const connectionCooldown = 60 * time.Second
+const connectionTimeout = 3 * time.Second
+const connectionCooldown = 30 * time.Second
 
 // Connect connects to a peer.
 func (d *discover) Connect(pi peer.AddrInfo) error {
