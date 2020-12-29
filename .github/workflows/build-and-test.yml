@@ -1,4 +1,4 @@
-name: Ogen
+name: Build and Test
 on: [push]
 jobs:
   
