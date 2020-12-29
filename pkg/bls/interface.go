@@ -1,12 +1,14 @@
 package bls
 
 import (
-	"encoding/binary"
+	"crypto/rand"
 	"errors"
 	"github.com/dgraph-io/ristretto"
-	bls12 "github.com/herumi/bls-eth-go-binary/bls"
+	"github.com/kilic/bls12-381"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
+
+var dst = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_")
 
 var (
 	// ErrorSecSize returned when the secrete key size is wrong
@@ -21,13 +23,10 @@ var (
 	ErrorSigSize = errors.New("signature should be 96 bytes")
 	// ErrorSigUnmarshal returned when the pubkey is not valid
 	ErrorSigUnmarshal = errors.New("could not unmarshal bytes into signature")
-	// ErrInfinitePubKey returned when the pubkey is zero
-	ErrInfinitePubKey = errors.New("public key is zero")
-	// ErrZeroSecKey returned when the secret key is zero
-	ErrZeroSecKey = errors.New("secret key is zero")
 )
 
 var maxKeys = int64(100000)
+
 var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 	NumCounters: maxKeys,
 	MaxCost:     1 << 22, // ~4mb is cache max size
@@ -46,13 +45,33 @@ func Initialize(c *params.ChainParams) {
 	Prefix = c.AccountPrefixes
 }
 
+var engine *bls12381.Engine
+
 func init() {
-	if err := bls12.Init(bls12.BLS12_381); err != nil {
-		panic(err)
+	engine = bls12381.NewEngine()
+}
+
+// SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
+func SecretKeyFromBytes(privKey []byte) (*SecretKey, error) {
+	if len(privKey) != 32 {
+		return nil, ErrorSecSize
 	}
-	if err := bls12.SetETHmode(bls12.EthModeDraft07); err != nil {
-		panic(err)
+
+	fr := bls12381.NewFr()
+	fr.FromBytes(privKey)
+	// TODO check if valid
+
+	return &SecretKey{p: fr}, nil
+}
+
+// RandKey creates a new private key using a random input.
+func RandKey() (*SecretKey, error) {
+	fr := bls12381.NewFr()
+	_, err := fr.Rand(rand.Reader)
+	if err != nil {
+		return nil, err
 	}
+	return &SecretKey{p: fr}, nil
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
@@ -63,20 +82,16 @@ func PublicKeyFromBytes(pubKey []byte) (*PublicKey, error) {
 	if cv, ok := pubkeyCache.Get(string(pubKey)); ok {
 		return cv.(*PublicKey).Copy(), nil
 	}
-	if cv, ok := pubkeyCache.Get(string(pubKey)); ok {
-		return cv.(*PublicKey).Copy(), nil
-	}
-	p := &bls12.PublicKey{}
-	err := p.Deserialize(pubKey)
+
+	p, err := bls12381.NewG1().FromCompressed(pubKey)
 	if err != nil {
 		return nil, ErrorPubKeyUnmarshal
 	}
-	pubKeyObj := &PublicKey{p: p}
-	if pubKeyObj.IsInfinite() {
-		return nil, ErrInfinitePubKey
-	}
-	pubkeyCache.Set(string(pubKey), pubKeyObj.Copy(), 48)
-	return pubKeyObj, nil
+
+	obj := &PublicKey{p: p}
+	pubkeyCache.Set(string(pubKey), obj.Copy(), 48)
+
+	return obj, nil
 }
 
 // AggregatePublicKeys aggregates the provided raw public keys into a single key.
@@ -84,36 +99,43 @@ func AggregatePublicKeys(pubs [][]byte) (*PublicKey, error) {
 	if len(pubs) == 0 {
 		return &PublicKey{}, nil
 	}
+
 	p, err := PublicKeyFromBytes(pubs[0])
 	if err != nil {
 		return nil, err
 	}
-	for _, k := range pubs[1:] {
-		pubkey, err := PublicKeyFromBytes(k)
+
+	for _, pub := range pubs[1:] {
+		pubkey, err := PublicKeyFromBytes(pub)
 		if err != nil {
 			return nil, err
 		}
 		p.Aggregate(pubkey)
 	}
+
 	return p, nil
 }
 
 // SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
 func SignatureFromBytes(sig []byte) (*Signature, error) {
-	if len(sig) != 96 {
+	size := len(sig)
+	if size != 96 {
 		return nil, ErrorSigSize
 	}
-	signature := &bls12.Sign{}
-	err := signature.Deserialize(sig)
+
+	p, err := bls12381.NewG2().FromCompressed(sig)
 	if err != nil {
 		return nil, ErrorSigUnmarshal
 	}
-	return &Signature{s: signature}, nil
+
+	return &Signature{s: p}, nil
 }
 
 // NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() *Signature {
-	return &Signature{s: bls12.HashAndMapToSignature([]byte{'m', 'o', 'c', 'k'})}
+	p, _ := bls12381.NewG2().HashToCurve([]byte{'m', 'o', 'c', 'k'}, dst)
+
+	return &Signature{s: p}
 }
 
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.
@@ -121,29 +143,15 @@ func AggregateSignatures(sigs []*Signature) *Signature {
 	if len(sigs) == 0 {
 		return nil
 	}
-	signature := *sigs[0].Copy().s
-	for i := 1; i < len(sigs); i++ {
-		signature.Add(sigs[i].s)
+	g2 := bls12381.NewG2()
+	sig := &bls12381.PointG2{}
+	for i := 0; i < len(sigs); i++ {
+		g2.Add(sig, sig, sigs[i].s)
 	}
-	return &Signature{s: &signature}
+	return &Signature{s: sig}
 }
 
-// Aggregate is an alias for AggregateSignatures, defined to conform to BLS specification.
-//
-// In IETF draft BLS specification:
-// Aggregate(signature_1, ..., signature_n) -> signature: an
-//      aggregation algorithm that compresses a collection of signatures
-//      into a single signature.
-//
-// In ETH2.0 specification:
-// def Aggregate(signatures: Sequence[BLSSignature]) -> BLSSignature
-//
-// Deprecated: Use AggregateSignatures.
-func Aggregate(sigs []*Signature) *Signature {
-	return AggregateSignatures(sigs)
-}
-
-// VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
+/*// VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
 // This method provides a safe way to verify multiple signatures at once. We pick a number randomly from 1 to max
 // uint64 and then multiply the signature by it. We continue doing this for all signatures and its respective pubkeys.
 // S* = S_1 * r_1 + S_2 * r_2 + ... + S_n * r_n
@@ -194,17 +202,4 @@ func VerifyMultipleSignatures(sigs []*Signature, msgs [][32]byte, pubKeys []*Pub
 	aggSig := bls12.CastToSign(finalSig)
 
 	return aggSig.AggregateVerifyNoCheck(multiKeys, msgSlices), nil
-}
-
-// SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
-func SecretKeyFromBytes(privKey []byte) (*SecretKey, error) {
-	if len(privKey) != 32 {
-		return nil, ErrorSecSize
-	}
-	secKey := &bls12.SecretKey{}
-	err := secKey.Deserialize(privKey)
-	if err != nil {
-		return nil, ErrorSecUnmarshal
-	}
-	return &SecretKey{p: secKey}, err
-}
+}*/

@@ -63,12 +63,16 @@ func TestPublicKeyFromBytes(t *testing.T) {
 }
 
 func TestPublicKey_Copy(t *testing.T) {
-	k, _ := bls.RandKey()
+	k, err := bls.RandKey()
+	assert.NoError(t, err)
+
 	pubkeyA := k.PublicKey()
 	pubkeyBytes := pubkeyA.Marshal()
 
 	pubkeyB := pubkeyA.Copy()
-	nk, _ := bls.RandKey()
+
+	nk, err := bls.RandKey()
+	assert.NoError(t, err)
 	pubkeyB.Aggregate(nk.PublicKey())
 
 	if !bytes.Equal(pubkeyA.Marshal(), pubkeyBytes) {

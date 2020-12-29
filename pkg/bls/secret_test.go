@@ -10,6 +10,7 @@ import (
 func TestMarshalUnmarshal(t *testing.T) {
 	k, err := bls.RandKey()
 	assert.NoError(t, err)
+
 	b := k.Marshal()
 	pk, err := bls.SecretKeyFromBytes(b)
 	require.NoError(t, err)

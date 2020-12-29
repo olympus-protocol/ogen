@@ -17,9 +17,7 @@
 .idea/
 
 # Production
-ogen-darwin*
-ogen-windows*
-ogen-linux*
+ogen-*
 datadir*
 coverage*
 *_test.dat

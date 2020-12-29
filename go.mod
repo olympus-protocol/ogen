@@ -10,13 +10,17 @@ require (
 	github.com/fatih/color v1.10.0
 	github.com/ferranbt/fastssz v0.0.0-20201210095258-318e164fe1dd
 	github.com/gin-gonic/gin v1.6.3
+	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
+	github.com/gobuffalo/packr/v2 v2.8.1 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
 	github.com/google/gofuzz v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
-	github.com/herumi/bls-eth-go-binary v0.0.0-20201104034342-d782bdf735de
 	github.com/ipfs/go-ds-leveldb v0.4.2
+	github.com/karrick/godirwalk v1.16.1 // indirect
+	github.com/kilic/bls12-381 v0.0.0-20201226121925-69dacb279461
+	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/libp2p/go-libp2p v0.13.0
 	github.com/libp2p/go-libp2p-circuit v0.4.0
 	github.com/libp2p/go-libp2p-connmgr v0.2.4
@@ -26,17 +30,23 @@ require (
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-pubsub v0.4.0
 	github.com/magiconair/properties v1.8.4
+	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0
+	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/vektah/gqlparser/v2 v2.1.0
-	github.com/wealdtech/go-eth2-util v1.6.2
+	github.com/wealdtech/go-bytesutil v1.1.1
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
+	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0

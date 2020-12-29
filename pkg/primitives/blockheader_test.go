@@ -36,10 +36,10 @@ func TestBlockHeader(t *testing.T) {
 		PartialExitMerkleRoot:      [32]byte{1, 2, 3},
 		CoinProofsMerkleRoot:       [32]byte{1, 2, 3},
 		ExecutionsMerkleRoot:       [32]byte{1, 2, 3},
-		Timestamp:  500,
-		Slot:       14,
-		StateRoot:  [32]byte{1, 2, 3},
-		FeeAddress: [20]byte{1, 2, 3},
+		Timestamp:                  500,
+		Slot:                       14,
+		StateRoot:                  [32]byte{1, 2, 3},
+		FeeAddress:                 [20]byte{1, 2, 3},
 	}
 
 	assert.Equal(t, "a564c7876a7d6bf529846ca2e871746c3b149eedd697bf89e6b0cf20f36261a5", d.Hash().String())
