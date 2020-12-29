@@ -1,8 +1,6 @@
 name: Publish Builder Image
 
-on:
-  push:
-    branches: master
+on: [push]
 
 jobs:
   multi-registries:
