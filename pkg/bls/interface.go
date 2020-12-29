@@ -6,9 +6,12 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/kilic/bls12-381"
 	"github.com/olympus-protocol/ogen/pkg/params"
+	"math/big"
 )
 
 var dst = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_")
+
+var qBig, _ = new(big.Int).SetString("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16)
 
 var (
 	// ErrorSecSize returned when the secrete key size is wrong
@@ -58,16 +61,22 @@ func SecretKeyFromBytes(privKey []byte) (*SecretKey, error) {
 	}
 
 	fr := bls12381.NewFr()
+
+	in := new(big.Int).SetBytes(privKey)
+	res := in.Cmp(qBig)
+
+	if res > 1 {
+		return nil, ErrorSecUnmarshal
+	}
+
 	fr.FromBytes(privKey)
-	// TODO check if valid
 
 	return &SecretKey{p: fr}, nil
 }
 
 // RandKey creates a new private key using a random input.
 func RandKey() (*SecretKey, error) {
-	fr := bls12381.NewFr()
-	_, err := fr.Rand(rand.Reader)
+	fr, err := bls12381.NewFr().Rand(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
