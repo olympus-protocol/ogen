@@ -3,7 +3,7 @@ name: Publish Builder Image
 on: [push]
 
 jobs:
-  multi-registries:
+  publish:
     runs-on: ubuntu-latest
     steps:
       -
