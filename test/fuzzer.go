@@ -7,6 +7,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
@@ -241,6 +242,7 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 			ProposerSlashings: FuzzProposerSlashing(2, true),
 			GovernanceVotes:   FuzzGovernanceVote(5),
 			CoinProofs:        FuzzCoinProofs(10),
+			Executions:        FuzzExecutions(10),
 		}
 
 		var sig [96]byte
@@ -468,6 +470,61 @@ func FuzzCoinProofs(n int) []*burnproof.CoinsProofSerializable {
 	for i := 0; i < n; i++ {
 		d := new(burnproof.CoinsProofSerializable)
 		f.Fuzz(d)
+		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzExecutions return an slice of Execution
+func FuzzExecutions(n int) []*primitives.Execution {
+	f := fuzz.New().NilChance(0)
+	var v []*primitives.Execution
+	for i := 0; i < n; i++ {
+		f.MaxDepth(32768)
+		var input []byte
+		f.Fuzz(&input)
+		var to [20]byte
+		f.Fuzz(&to)
+		var pub [48]byte
+		k, _ := bls.RandKey()
+		copy(pub[:], k.PublicKey().Marshal())
+		d := &primitives.Execution{
+			FromPubKey: pub,
+			Input:      input,
+			To:         to,
+		}
+		msg := d.SignatureMessage()
+		sig := k.Sign(msg[:])
+		var sigB [96]byte
+		copy(sigB[:], sig.Marshal())
+
+		d.Signature = sigB
+		v = append(v, d)
+	}
+	return v
+}
+
+// FuzzMsgExecutions return an slice of MsgExecution
+func FuzzMsgExecutions(n int) []*p2p.MsgExecution {
+	f := fuzz.New().NilChance(0)
+	var v []*p2p.MsgExecution
+	for i := 0; i < n; i++ {
+		f.MaxDepth(32768)
+		var input []byte
+		f.Fuzz(&input)
+		var to [20]byte
+		f.Fuzz(&to)
+		var pub [48]byte
+		var sig [96]byte
+		k, _ := bls.RandKey()
+		copy(sig[:], bls.NewAggregateSignature().Marshal())
+		copy(pub[:], k.PublicKey().Marshal())
+		d := &p2p.MsgExecution{
+			FromPubKey: pub,
+			Input:      input,
+			To:         to,
+			Signature:  sig,
+		}
 		v = append(v, d)
 	}
 	return v

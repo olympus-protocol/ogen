@@ -53,19 +53,22 @@ func (b *BlockHeader) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (12) 'CoinProofsMerkleRoot'
 	dst = append(dst, b.CoinProofsMerkleRoot[:]...)
 
-	// Field (13) 'PrevBlockHash'
+	// Field (13) 'ExecutionsMerkleRoot'
+	dst = append(dst, b.ExecutionsMerkleRoot[:]...)
+
+	// Field (14) 'PrevBlockHash'
 	dst = append(dst, b.PrevBlockHash[:]...)
 
-	// Field (14) 'Timestamp'
+	// Field (15) 'Timestamp'
 	dst = ssz.MarshalUint64(dst, b.Timestamp)
 
-	// Field (15) 'Slot'
+	// Field (16) 'Slot'
 	dst = ssz.MarshalUint64(dst, b.Slot)
 
-	// Field (16) 'StateRoot'
+	// Field (17) 'StateRoot'
 	dst = append(dst, b.StateRoot[:]...)
 
-	// Field (17) 'FeeAddress'
+	// Field (18) 'FeeAddress'
 	dst = append(dst, b.FeeAddress[:]...)
 
 	return
@@ -75,7 +78,7 @@ func (b *BlockHeader) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (b *BlockHeader) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 468 {
+	if size != 500 {
 		return ssz.ErrSize
 	}
 
@@ -118,27 +121,30 @@ func (b *BlockHeader) UnmarshalSSZ(buf []byte) error {
 	// Field (12) 'CoinProofsMerkleRoot'
 	copy(b.CoinProofsMerkleRoot[:], buf[336:368])
 
-	// Field (13) 'PrevBlockHash'
-	copy(b.PrevBlockHash[:], buf[368:400])
+	// Field (13) 'ExecutionsMerkleRoot'
+	copy(b.ExecutionsMerkleRoot[:], buf[368:400])
 
-	// Field (14) 'Timestamp'
-	b.Timestamp = ssz.UnmarshallUint64(buf[400:408])
+	// Field (14) 'PrevBlockHash'
+	copy(b.PrevBlockHash[:], buf[400:432])
 
-	// Field (15) 'Slot'
-	b.Slot = ssz.UnmarshallUint64(buf[408:416])
+	// Field (15) 'Timestamp'
+	b.Timestamp = ssz.UnmarshallUint64(buf[432:440])
 
-	// Field (16) 'StateRoot'
-	copy(b.StateRoot[:], buf[416:448])
+	// Field (16) 'Slot'
+	b.Slot = ssz.UnmarshallUint64(buf[440:448])
 
-	// Field (17) 'FeeAddress'
-	copy(b.FeeAddress[:], buf[448:468])
+	// Field (17) 'StateRoot'
+	copy(b.StateRoot[:], buf[448:480])
+
+	// Field (18) 'FeeAddress'
+	copy(b.FeeAddress[:], buf[480:500])
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BlockHeader object
 func (b *BlockHeader) SizeSSZ() (size int) {
-	size = 468
+	size = 500
 	return
 }
 
@@ -190,19 +196,22 @@ func (b *BlockHeader) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	// Field (12) 'CoinProofsMerkleRoot'
 	hh.PutBytes(b.CoinProofsMerkleRoot[:])
 
-	// Field (13) 'PrevBlockHash'
+	// Field (13) 'ExecutionsMerkleRoot'
+	hh.PutBytes(b.ExecutionsMerkleRoot[:])
+
+	// Field (14) 'PrevBlockHash'
 	hh.PutBytes(b.PrevBlockHash[:])
 
-	// Field (14) 'Timestamp'
+	// Field (15) 'Timestamp'
 	hh.PutUint64(b.Timestamp)
 
-	// Field (15) 'Slot'
+	// Field (16) 'Slot'
 	hh.PutUint64(b.Slot)
 
-	// Field (16) 'StateRoot'
+	// Field (17) 'StateRoot'
 	hh.PutBytes(b.StateRoot[:])
 
-	// Field (17) 'FeeAddress'
+	// Field (18) 'FeeAddress'
 	hh.PutBytes(b.FeeAddress[:])
 
 	hh.Merkleize(indx)

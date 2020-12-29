@@ -11,7 +11,7 @@ const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header            *BlockHeader                        // 													= 372 bytes
+	Header            *BlockHeader                        // 																	= 372 bytes
 	Votes             []*MultiValidatorVote               `ssz-max:"32"`   // MaxVotesPerBlock 					32 * 6474 		= 207168 bytes
 	Txs               []*Tx                               `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
 	TxsMulti          []*TxMulti                          `ssz-max:"128"`  // MaxTxsMultiPerBlock
@@ -23,6 +23,7 @@ type Block struct {
 	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`    // MaxProposerSlashingPerBlock 		984 * 2 		= 1968 bytes
 	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
 	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
+	Executions        []*Execution                        `ssz-max:"256"`  // MaxExecutionsPerBlock
 	Signature         [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
 	RandaoSignature   [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
 }
@@ -257,6 +258,26 @@ func merkleRootPartialExit(e []*PartialExit) chainhash.Hash {
 
 	h1 := merkleRootPartialExit(e[:mid])
 	h2 := merkleRootPartialExit(e[mid:])
+
+	return chainhash.HashH(append(h1[:], h2[:]...))
+}
+
+// ExecutionsMarkleRoot calculates the merkle root of the Executions in the block.
+func (b *Block) ExecutionsMerkleRoot() chainhash.Hash {
+	return merkleRootExecutions(b.Executions)
+}
+
+func merkleRootExecutions(e []*Execution) chainhash.Hash {
+	if len(e) == 0 {
+		return chainhash.Hash{}
+	}
+	if len(e) == 1 {
+		return e[0].Hash()
+	}
+	mid := len(e) / 2
+
+	h1 := merkleRootExecutions(e[:mid])
+	h2 := merkleRootExecutions(e[mid:])
 
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }

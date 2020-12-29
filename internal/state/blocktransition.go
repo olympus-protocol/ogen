@@ -930,6 +930,7 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
 	coinProofsMerkleRoot := b.CoinProofsMerkleRoot()
 	partialExitsMerkleRoot := b.PartialExitsMerkleRoot()
+	executionsMerkleRoot := b.ExecutionsMerkleRoot()
 
 	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
 		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
@@ -974,6 +975,10 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("expected partial exits merkle root to be %s but got %s", hex.EncodeToString(partialExitsMerkleRoot[:]), hex.EncodeToString(b.Header.PartialExitMerkleRoot[:]))
 	}
 
+	if !bytes.Equal(executionsMerkleRoot[:], b.Header.ExecutionsMerkleRoot[:]) {
+		return fmt.Errorf("expected executions merkle root to be %s but got %s", hex.EncodeToString(executionsMerkleRoot[:]), hex.EncodeToString(b.Header.ExecutionsMerkleRoot[:]))
+	}
+
 	if uint64(len(b.Votes)) > netParams.MaxVotesPerBlock {
 		return fmt.Errorf("block has too many votes (max: %d, got: %d)", netParams.MaxVotesPerBlock, len(b.Votes))
 	}
@@ -1008,6 +1013,10 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 
 	if uint64(len(b.PartialExit)) > netParams.MaxPartialExitsPerBlock {
 		return fmt.Errorf("block has too many partial exits (max: %d, got: %d)", netParams.MaxPartialExitsPerBlock, len(b.PartialExit))
+	}
+
+	if uint64(len(b.Executions)) > netParams.MaxExecutionsPerBlock {
+		return fmt.Errorf("block has too many executions (max: %d, got: %d)", netParams.MaxExecutionsPerBlock, len(b.Executions))
 	}
 
 	for _, d := range b.Deposits {
@@ -1072,6 +1081,10 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		if err := s.ApplyProposerSlashing(ps); err != nil {
 			return err
 		}
+	}
+
+	for _, _ = range b.Executions {
+		// TODO here we execute the contract calls to the evm and apply to the state
 	}
 
 	for i := range s.NextRANDAO {

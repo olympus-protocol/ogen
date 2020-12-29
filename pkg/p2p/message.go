@@ -53,6 +53,8 @@ const (
 	MsgProofsCmd = "proofs"
 	// MsgPartialExitsCmd subtract coins from a contract
 	MsgPartialExitsCmd = "partialexit"
+	// MsgExecution executes a bytecode that modifies the state
+	MsgExecutionCmd = "execute"
 )
 
 // Message interface for all the messages
@@ -116,6 +118,9 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgProofs{}
 	case MsgPartialExitsCmd:
 		msg = &MsgPartialExits{}
+	case MsgExecutionCmd:
+		msg = &MsgExecution{}
+
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}

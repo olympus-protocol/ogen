@@ -239,7 +239,7 @@ func (p *ProposerSlashing) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (p *ProposerSlashing) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 1176 {
+	if size != 1240 {
 		return ssz.ErrSize
 	}
 
@@ -247,7 +247,7 @@ func (p *ProposerSlashing) UnmarshalSSZ(buf []byte) error {
 	if p.BlockHeader1 == nil {
 		p.BlockHeader1 = new(BlockHeader)
 	}
-	if err = p.BlockHeader1.UnmarshalSSZ(buf[0:468]); err != nil {
+	if err = p.BlockHeader1.UnmarshalSSZ(buf[0:500]); err != nil {
 		return err
 	}
 
@@ -255,25 +255,25 @@ func (p *ProposerSlashing) UnmarshalSSZ(buf []byte) error {
 	if p.BlockHeader2 == nil {
 		p.BlockHeader2 = new(BlockHeader)
 	}
-	if err = p.BlockHeader2.UnmarshalSSZ(buf[468:936]); err != nil {
+	if err = p.BlockHeader2.UnmarshalSSZ(buf[500:1000]); err != nil {
 		return err
 	}
 
 	// Field (2) 'Signature1'
-	copy(p.Signature1[:], buf[936:1032])
+	copy(p.Signature1[:], buf[1000:1096])
 
 	// Field (3) 'Signature2'
-	copy(p.Signature2[:], buf[1032:1128])
+	copy(p.Signature2[:], buf[1096:1192])
 
 	// Field (4) 'ValidatorPublicKey'
-	copy(p.ValidatorPublicKey[:], buf[1128:1176])
+	copy(p.ValidatorPublicKey[:], buf[1192:1240])
 
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the ProposerSlashing object
 func (p *ProposerSlashing) SizeSSZ() (size int) {
-	size = 1176
+	size = 1240
 	return
 }
 

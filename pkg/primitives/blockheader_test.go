@@ -33,11 +33,14 @@ func TestBlockHeader(t *testing.T) {
 		ProposerSlashingMerkleRoot: [32]byte{1, 2, 3},
 		GovernanceVotesMerkleRoot:  [32]byte{1, 2, 3},
 		PrevBlockHash:              [32]byte{1, 2, 3},
-		Timestamp:                  500,
-		Slot:                       14,
-		StateRoot:                  [32]byte{1, 2, 3},
-		FeeAddress:                 [20]byte{1, 2, 3},
+		PartialExitMerkleRoot:      [32]byte{1, 2, 3},
+		CoinProofsMerkleRoot:       [32]byte{1, 2, 3},
+		ExecutionsMerkleRoot:       [32]byte{1, 2, 3},
+		Timestamp:  500,
+		Slot:       14,
+		StateRoot:  [32]byte{1, 2, 3},
+		FeeAddress: [20]byte{1, 2, 3},
 	}
 
-	assert.Equal(t, "d3f5389e43b628260ad8faa45a3f28d90f5d067884989161c0a0c9bdf5e6f80b", d.Hash().String())
+	assert.Equal(t, "a564c7876a7d6bf529846ca2e871746c3b149eedd697bf89e6b0cf20f36261a5", d.Hash().String())
 }
