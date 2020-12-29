@@ -22,8 +22,8 @@ RUN cd /opt && curl https://storage.googleapis.com/golang/${GO} -o ${GO} && \
     ln -s /opt/go/bin/go /usr/bin/ && \
     export GOPATH=/root/go
 
-COPY ./clang_cross.sh /build/clang_cross.sh
-COPY ./osxcross.sh /build/osxcross.sh
+COPY ./scripts/builder/clang_cross.sh /build/clang_cross.sh
+COPY ./scripts/builder/osxcross.sh /build/osxcross.sh
 
 RUN ./clang_cross.sh
 RUN ./osxcross.sh
