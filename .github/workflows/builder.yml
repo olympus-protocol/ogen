@@ -26,8 +26,8 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
-          file: ./scripts/builder/Dockerfile
+          context: ./scripts/builder/
+          file: ./Dockerfile
           push: true
           tags: |
             ghcr.io/olympus-protocol/ogen-builder:latest
