@@ -5,7 +5,7 @@ set -eu
 OSXCROSS_REPO=tpoechtrager/osxcross
 OSXCROSS_SHA1=c2ad5e8
 OSX_SDK=10.15
-OSX_SDK_SUM=b6ba29a1219593dee432563c493b1c0db2c9788b99bfa7fdf329ef37e02e11b7
+OSX_SDK_SUM=2408d07df7f324d3beea818585a6d990ba99587c218a3969f924dfcc4de93b62
 
 # darwin
 mkdir -p /usr/x86_64-apple-darwin/osxcross
@@ -13,8 +13,8 @@ mkdir -p /tmp/osxcross && cd "/tmp/osxcross"
 curl -sLo osxcross.tar.gz "https://codeload.github.com/${OSXCROSS_REPO}/tar.gz/${OSXCROSS_SHA1}"
 tar --strip=1 -xzf osxcross.tar.gz
 rm -f osxcross.tar.gz
-curl -sLo tarballs/${OSX_SDK}.tar.xz "https://github.com/phracker/MacOSX-SDKs/releases/download/${OSX_SDK}/MacOSX${OSX_SDK}.sdk.tar.xz"
-echo "${OSX_SDK_SUM}"  "tarballs/${OSX_SDK}.tar.xz" | sha256sum -c -
+curl -sLo tarballs/MacOSX${OSX_SDK}.sdk.tar.xz "https://github.com/phracker/MacOSX-SDKs/releases/download/${OSX_SDK}/MacOSX${OSX_SDK}.sdk.tar.xz"
+echo "${OSX_SDK_SUM}"  "tarballs/MacOSX${OSX_SDK}.sdk.tar.xz" | sha256sum -c -
 yes "" | SDK_VERSION=10.15 OSX_VERSION_MIN=10.15 OCDEBUG=1 ./build.sh
 mv target/* /usr/x86_64-apple-darwin/osxcross/
 mv tools /usr/x86_64-apple-darwin/osxcross/
