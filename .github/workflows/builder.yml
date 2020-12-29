@@ -1,11 +1,9 @@
 name: Publish Builder Image
 
-on:
-  push:
-    branches: master
+on: [push]
 
 jobs:
-  multi-registries:
+  publish:
     runs-on: ubuntu-latest
     steps:
       -
@@ -28,7 +26,7 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: ./scripts/builder/
           file: ./Dockerfile
           push: true
           tags: |
