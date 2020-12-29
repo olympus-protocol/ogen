@@ -4,4 +4,12 @@ WORKDIR /build
 
 RUN git clone https://github.com/olympus-protocol/ogen
 
-RUN cd ogen && ./scripts/build.sh
+WORKDIR /build/ogen
+
+RUN go get -u github.com/gobuffalo/packr/packr
+
+RUN go build cmd/ogen/ogen.go
+
+RUN ./ogen --dashboard
+
+
