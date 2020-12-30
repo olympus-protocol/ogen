@@ -3,7 +3,7 @@ name: Build Docker Images
 on: [push]
 
 jobs:
-  publish:
+  docker-images:
     runs-on: ubuntu-latest
     steps:
       -
@@ -28,6 +28,29 @@ jobs:
         with:
           context: .
           file: ./scripts/full-node/Dockerfile
+          public: true  
           push: true
           tags: |
             ghcr.io/olympus-protocol/ogen-full-node:latest
+            
+      -
+        name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./scripts/validator/Dockerfile
+          public: true  
+          push: true
+          tags: |
+            ghcr.io/olympus-protocol/ogen-validator:latest 
+            
+      -
+        name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./scripts/indexer/Dockerfile
+          public: true  
+          push: true
+          tags: |
+            ghcr.io/olympus-protocol/ogen-indexer:latest 
