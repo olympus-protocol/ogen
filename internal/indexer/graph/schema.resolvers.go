@@ -7,12 +7,14 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"gorm.io/gorm"
+
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
 	"github.com/olympus-protocol/ogen/internal/indexer/graph/generated"
 	"github.com/olympus-protocol/ogen/internal/indexer/graph/model"
 )
 
-func (r *Resolver) Account(ctx context.Context, account string) (*model.Account, error) {
+func (r *queryResolver) Account(ctx context.Context, account string) (*model.Account, error) {
 	var acc db.Account
 	res := r.DB.DB.Find(&acc, account)
 	if res.Error != nil {
@@ -281,7 +283,46 @@ func (r *queryResolver) Tip(ctx context.Context) (*model.Tip, error) {
 	}, nil
 }
 
+func (r *subscriptionResolver) Account(ctx context.Context, account string) (<-chan *model.Account, error) {
+	accChannel := make(chan *model.Account)
+
+	go func() {
+		err := r.DB.DB.Callback().Create().After("gorm:create").Register("account_create_register", func(d *gorm.DB) {
+			var acc db.Account
+			res := d.Scan(&acc)
+			if res.Error != nil {
+				return
+			}
+			if acc.Account == account {
+				accChannel <- acc.ToGQL()
+			}
+		})
+		if err != nil {
+			return
+		}
+		err = r.DB.DB.Callback().Update().After("gorm:update").Register("account_update_register", func(d *gorm.DB) {
+			var acc db.Account
+			res := d.Scan(&acc)
+			if res.Error != nil {
+				return
+			}
+			if acc.Account == account {
+				accChannel <- acc.ToGQL()
+			}
+		})
+		if err != nil {
+			return
+		}
+	}()
+
+	return accChannel, nil
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }

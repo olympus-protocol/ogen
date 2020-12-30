@@ -74,7 +74,7 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 		return false
 	}
 	ps, err := bls12381.NewG2().HashToCurve(msg[:], dst)
-	if err !=  nil {
+	if err != nil {
 		return false
 	}
 

@@ -156,3 +156,7 @@ type Query {
   tip: Tip
 }
 
+type Subscription {
+  account(account: String!): Account!
+}
+
