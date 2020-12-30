@@ -496,7 +496,7 @@ check:
 	}
 
 	if numOurs == 0 {
-		p.log.Info("there are no validators to vote/propose, retrying in 1 seconds")
+		p.log.Info("there are no validators to vote/propose, retrying in 10 seconds")
 		time.Sleep(time.Second * 10)
 		goto check
 	}
