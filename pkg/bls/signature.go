@@ -70,7 +70,11 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 	if size == 0 {
 		return false
 	}
-	ps, _ := bls12381.NewG2().HashToCurve(msg[:], dst)
+	ps, err := bls12381.NewG2().HashToCurve(msg[:], dst)
+	if err !=  nil {
+		return false
+	}
+
 	engine.AddPairInv(&bls12381.G1One, s.s)
 	for _, pub := range pubKeys {
 		engine.AddPair(pub.p, ps)
