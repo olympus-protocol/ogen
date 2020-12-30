@@ -168,7 +168,7 @@ func buildOptions(ip net.IP, priKey crypto.PrivKey, ps peerstore.Peerstore) []li
 			return addrs
 		}),
 		libp2p.Ping(false),
-		libp2p.EnableAutoRelay(),
+		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
 	}
 
 	return options
