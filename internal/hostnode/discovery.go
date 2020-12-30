@@ -83,14 +83,22 @@ func NewDiscover(host HostNode) (*discover, error) {
 		lastConnect: make(map[peer.ID]time.Time),
 	}
 
-	var initialNodes []peer.AddrInfo
 	peersIDs := dp.host.GetHost().Peerstore().Peers()
-	var peerstorePeers []peer.AddrInfo
-	for _, id := range peersIDs {
-		peerstorePeers = append(peerstorePeers, dp.host.GetHost().Peerstore().PeerInfo(id))
+	peerstorePeers := make([]peer.AddrInfo, len(peersIDs))
+
+	for i := range peersIDs {
+		peerstorePeers[i] = dp.host.GetHost().Peerstore().PeerInfo(peersIDs[i])
 	}
+
+	var initialNodes []peer.AddrInfo
 	initialNodes = append(initialNodes, dp.getRelayers()...)
-	initialNodes = append(initialNodes, peerstorePeers...)
+
+	if len(peerstorePeers) < 8 {
+		initialNodes = append(initialNodes, peerstorePeers...)
+	} else {
+		initialNodes = append(initialNodes, peerstorePeers[0:7]...)
+	}
+
 	for _, addr := range initialNodes {
 		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
 			m, err := addr.MarshalJSON()
@@ -100,17 +108,6 @@ func NewDiscover(host HostNode) (*discover, error) {
 			BadPeersCache.Set(addr.ID.String(), m, int64(len(m)))
 			dp.host.GetHost().Peerstore().ClearAddrs(addr.ID)
 			dp.log.Infof("unable to connect to peer %s", addr.ID)
-		}
-		var peerstorePeers []peer.AddrInfo
-		for _, id := range peersIDs {
-			peerstorePeers = append(peerstorePeers, dp.host.GetHost().Peerstore().PeerInfo(id))
-		}
-		initialNodes = append(initialNodes, dp.getRelayers()...)
-		initialNodes = append(initialNodes, peerstorePeers...)
-		for _, addr := range initialNodes {
-			if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
-				dp.log.Infof("unable to connect to peer %s", addr.ID)
-			}
 		}
 	}
 
