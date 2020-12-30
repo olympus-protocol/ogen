@@ -23,34 +23,31 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
       -
-        name: Build and push
+        name: Build Full Node Image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./scripts/full-node/Dockerfile
-          public: true  
           push: true
           tags: |
             ghcr.io/olympus-protocol/ogen-full-node:latest
             
       -
-        name: Build and push
+        name: Build Validator Image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./scripts/validator/Dockerfile
-          public: true  
           push: true
           tags: |
             ghcr.io/olympus-protocol/ogen-validator:latest 
             
       -
-        name: Build and push
+        name: Build Indexer Image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./scripts/indexer/Dockerfile
-          public: true  
           push: true
           tags: |
             ghcr.io/olympus-protocol/ogen-indexer:latest 
