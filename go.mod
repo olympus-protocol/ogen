@@ -20,15 +20,16 @@ require (
 	github.com/ipfs/go-ds-leveldb v0.4.2
 	github.com/kilic/bls12-381 v0.0.0-20201226121925-69dacb279461
 	github.com/libp2p/go-libp2p v0.13.0
-	github.com/libp2p/go-libp2p-circuit v0.4.0
 	github.com/libp2p/go-libp2p-connmgr v0.2.4
 	github.com/libp2p/go-libp2p-core v0.8.0
 	github.com/libp2p/go-libp2p-discovery v0.5.0
 	github.com/libp2p/go-libp2p-kad-dht v0.11.1
+	github.com/libp2p/go-libp2p-noise v0.1.1
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-pubsub v0.4.0
 	github.com/magiconair/properties v1.8.4
 	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0

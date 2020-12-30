@@ -6,8 +6,6 @@ import (
 	"crypto/rand"
 	dsleveldb "github.com/ipfs/go-ds-leveldb"
 	"github.com/libp2p/go-libp2p"
-	circuit "github.com/libp2p/go-libp2p-circuit"
-	"github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
@@ -97,14 +95,11 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		return nil, err
 	}
 
-	connman := connmgr.NewConnManager(2, 64, time.Second*60)
+	ip := ipAddr()
+	opts := buildOptions(ip, priv, ps)
 	h, err := libp2p.New(
 		ctx,
-		libp2p.ListenAddrs([]ma.Multiaddr{listenAddress}...),
-		libp2p.Identity(priv),
-		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
-		libp2p.Peerstore(ps),
-		libp2p.ConnectionManager(connman),
+		opts...,
 	)
 	if err != nil {
 		return nil, err
