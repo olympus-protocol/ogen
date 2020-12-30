@@ -10,6 +10,10 @@ RUN go get -u github.com/gobuffalo/packr/packr
 
 RUN go build cmd/ogen/ogen.go
 
-RUN ./ogen --dashboard
+EXPOSE 8080 8081 24126
+
+ENTRYPOINT ["./scripts/full-node/run.sh"]
+
+
 
 

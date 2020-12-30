@@ -10,6 +10,8 @@ require (
 	github.com/fatih/color v1.10.0
 	github.com/ferranbt/fastssz v0.0.0-20201210095258-318e164fe1dd
 	github.com/gin-gonic/gin v1.6.3
+	github.com/gobuffalo/envy v1.9.0 // indirect
+	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
@@ -27,6 +29,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.4.0
 	github.com/magiconair/properties v1.8.4
 	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.1.1
@@ -37,6 +40,8 @@ require (
 	github.com/wealdtech/go-bytesutil v1.1.1
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
