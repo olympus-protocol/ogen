@@ -16,7 +16,7 @@ User=root
 LimitNOFILE=1024
 Restart=on-failure
 RestartSec=10
-ExecStart=/usr/local/bin/ogen --logfile --dashboard
+ExecStart=/usr/local/bin/ogen --logfile --dashboard --network testnet
 WorkingDirectory=/root/.config/ogen
 PermissionsStartOnly=true
 
