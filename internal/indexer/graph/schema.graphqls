@@ -133,16 +133,26 @@ type Slot {
   proposed: Boolean!
 }
 
-type Query {
-  accounts: [Account!]
-  block_headers: [BlockHeader!]
-  blocks: [Block!]
-  deposits: [Deposit!]
-  epoches: [Epoch!]
-  exits: [Exit!]
-  slots: [Slot!]
-  txes: [Tx!]
+type Tip {
+  slot: Slot!
+  epoch: Epoch!
+  block: Block!
   validators: [Validator!]
-  votes: [Vote!]
+}
+
+type Query {
+  account(account: String!): Account!
+  account_validators(account: String!): [Validator!]
+  account_coin_proofs(account: String!): [CoinProofs!]
+  account_txs(account: String!): [Tx!]
+  validators: [Validator!]
+  validator(pubkey: String!): Validator!
+  slot(slot: Int!): Slot!
+  epoch(epoch: Int!): Epoch!
+  tx(hash: String!): Tx!
+  block_by_slot(slot: Int!): Block!
+  block_by_hash(hash: String!): Block!
+  block_by_height(height: Int!): Block!
+  tip: Tip
 }
 

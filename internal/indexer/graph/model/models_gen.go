@@ -95,6 +95,13 @@ type Slot struct {
 	Proposed      bool   `json:"proposed"`
 }
 
+type Tip struct {
+	Slot       *Slot        `json:"slot"`
+	Epoch      *Epoch       `json:"epoch"`
+	Block      *Block       `json:"block"`
+	Validators []*Validator `json:"validators"`
+}
+
 type Tx struct {
 	BlockHash         string `json:"block_hash"`
 	Hash              string `json:"hash"`

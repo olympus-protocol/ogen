@@ -123,7 +123,15 @@ func (a *Account) ToGQL() *model.Account {
 type CoinProofs struct {
 	Hash          []byte `gorm:"primarykey"`
 	Transaction   []byte
-	RedeemAccount []byte
+	RedeemAccount string
+}
+
+func (c *CoinProofs) ToGQL() *model.CoinProofs {
+	return &model.CoinProofs{
+		Hash:          hex.EncodeToString(c.Hash),
+		Transaction:   hex.EncodeToString(c.Transaction),
+		RedeemAccount: c.RedeemAccount,
+	}
 }
 
 type Deposit struct {
