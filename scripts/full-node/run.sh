@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./ogen --dashboard
+./ogen --dashboard --rpc_proxy

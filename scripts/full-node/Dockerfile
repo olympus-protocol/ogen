@@ -2,6 +2,8 @@ FROM golang:1.16beta1-buster
 
 WORKDIR /build
 
+# TODO fix open ports needed for connections (inbound & outbound)
+
 RUN git clone https://github.com/olympus-protocol/ogen
 
 WORKDIR /build/ogen
