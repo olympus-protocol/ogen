@@ -8,7 +8,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
-	"github.com/gorilla/websocket"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -267,12 +266,8 @@ func (i *Indexer) Start() error {
 			DB: i.db,
 		}}))
 
-		srv.AddTransport(&transport.Websocket{
-			Upgrader: websocket.Upgrader{
-				CheckOrigin: func(r *http.Request) bool {
-					return true
-				},
-			},
+		srv.AddTransport(transport.Websocket{
+			KeepAlivePingInterval: 10 * time.Second,
 		})
 
 		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
