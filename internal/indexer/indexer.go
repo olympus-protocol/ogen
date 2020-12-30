@@ -268,7 +268,11 @@ func (i *Indexer) Start() error {
 		}}))
 
 		srv.AddTransport(&transport.Websocket{
-			Upgrader: websocket.Upgrader{},
+			Upgrader: websocket.Upgrader{
+				CheckOrigin: func(r *http.Request) bool {
+					return true
+				},
+			},
 		})
 
 		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
