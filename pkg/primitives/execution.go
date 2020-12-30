@@ -12,6 +12,8 @@ type Execution struct {
 	To         [20]byte
 	Input      []byte `ssz-max:"32768"`
 	Signature  [96]byte
+	Gas        uint64
+	GasLimit   uint64
 }
 
 // Marshal encodes the block.

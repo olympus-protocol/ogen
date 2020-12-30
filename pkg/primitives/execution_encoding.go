@@ -13,7 +13,7 @@ func (e *Execution) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the Execution object to a target array
 func (e *Execution) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(168)
+	offset := int(184)
 
 	// Field (0) 'FromPubKey'
 	dst = append(dst, e.FromPubKey[:]...)
@@ -27,6 +27,12 @@ func (e *Execution) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (3) 'Signature'
 	dst = append(dst, e.Signature[:]...)
+
+	// Field (4) 'Gas'
+	dst = ssz.MarshalUint64(dst, e.Gas)
+
+	// Field (5) 'GasLimit'
+	dst = ssz.MarshalUint64(dst, e.GasLimit)
 
 	// Field (2) 'Input'
 	if len(e.Input) > 32768 {
@@ -42,7 +48,7 @@ func (e *Execution) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (e *Execution) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 168 {
+	if size < 184 {
 		return ssz.ErrSize
 	}
 
@@ -63,6 +69,12 @@ func (e *Execution) UnmarshalSSZ(buf []byte) error {
 	// Field (3) 'Signature'
 	copy(e.Signature[:], buf[72:168])
 
+	// Field (4) 'Gas'
+	e.Gas = ssz.UnmarshallUint64(buf[168:176])
+
+	// Field (5) 'GasLimit'
+	e.GasLimit = ssz.UnmarshallUint64(buf[176:184])
+
 	// Field (2) 'Input'
 	{
 		buf = tail[o2:]
@@ -79,7 +91,7 @@ func (e *Execution) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the Execution object
 func (e *Execution) SizeSSZ() (size int) {
-	size = 168
+	size = 184
 
 	// Field (2) 'Input'
 	size += len(e.Input)
@@ -111,6 +123,12 @@ func (e *Execution) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (3) 'Signature'
 	hh.PutBytes(e.Signature[:])
+
+	// Field (4) 'Gas'
+	hh.PutUint64(e.Gas)
+
+	// Field (5) 'GasLimit'
+	hh.PutUint64(e.GasLimit)
 
 	hh.Merkleize(indx)
 	return
