@@ -48,12 +48,6 @@ func Initialize(c *params.ChainParams) {
 	Prefix = c.AccountPrefixes
 }
 
-var engine *bls12381.Engine
-
-func init() {
-	engine = bls12381.NewEngine()
-}
-
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
 func SecretKeyFromBytes(privKey []byte) (*SecretKey, error) {
 	if len(privKey) != 32 {

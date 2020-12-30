@@ -19,10 +19,11 @@ type Signature struct {
 // In ETH2.0 specification:
 // def Verify(PK: BLSPubkey, message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
+	e := bls12381.NewEngine()
 	ps, _ := bls12381.NewG2().HashToCurve(msg, dst)
-	engine.AddPairInv(&bls12381.G1One, s.s)
-	engine.AddPair(pubKey.p, ps)
-	return engine.Result().IsOne()
+	e.AddPairInv(&bls12381.G1One, s.s)
+	e.AddPair(pubKey.p, ps)
+	return e.Result().IsOne()
 }
 
 // AggregateVerify verifies each public key against its respective message.
@@ -39,6 +40,7 @@ func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
 // In ETH2.0 specification:
 // def AggregateVerify(pairs: Sequence[PK: BLSPubkey, message: Bytes], signature: BLSSignature) -> boo
 func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool {
+	e := bls12381.NewEngine()
 	size := len(pubKeys)
 	if size == 0 {
 		return false
@@ -46,13 +48,13 @@ func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool 
 	if size != len(msgs) {
 		return false
 	}
-	engine.AddPairInv(&bls12381.G1One, s.s)
+	e.AddPairInv(&bls12381.G1One, s.s)
 	for i := 0; i < size; i++ {
 		g2 := bls12381.NewG2()
 		ps, _ := g2.HashToCurve(msgs[i][:], dst)
-		engine.AddPair(pubKeys[i].p, ps)
+		e.AddPair(pubKeys[i].p, ps)
 	}
-	return engine.Result().IsOne()
+	return e.Result().IsOne()
 }
 
 // FastAggregateVerify verifies all the provided public keys with their aggregated signature.
@@ -66,6 +68,7 @@ func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool 
 // In ETH2.0 specification:
 // def FastAggregateVerify(PKs: Sequence[BLSPubkey], message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool {
+	e := bls12381.NewEngine()
 	size := len(pubKeys)
 	if size == 0 {
 		return false
@@ -75,11 +78,11 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 		return false
 	}
 
-	engine.AddPairInv(&bls12381.G1One, s.s)
+	e.AddPairInv(&bls12381.G1One, s.s)
 	for _, pub := range pubKeys {
-		engine.AddPair(pub.p, ps)
+		e.AddPair(pub.p, ps)
 	}
-	return engine.Result().IsOne()
+	return e.Result().IsOne()
 }
 
 // Marshal a signature into a LittleEndian byte slice.
