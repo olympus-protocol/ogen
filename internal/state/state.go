@@ -413,7 +413,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 
 	cs := primitives.CoinsState{
 		Balances: map[[20]byte]uint64{
-			premineAddrArr: 400000 * p.UnitsPerCoin,
+			premineAddrArr: 1000000 * p.UnitsPerCoin,
 		},
 		Nonces: make(map[[20]byte]uint64),
 	}
