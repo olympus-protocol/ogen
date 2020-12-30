@@ -5,7 +5,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-chi/chi"
+	"github.com/gorilla/websocket"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -20,6 +23,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/olympus-protocol/ogen/pkg/rpcclient"
+	"github.com/rs/cors"
 
 	"io"
 	"net/http"
@@ -251,18 +255,30 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 
 func (i *Indexer) Start() error {
 	go func() {
+		router := chi.NewRouter()
+
+		router.Use(cors.New(cors.Options{
+			AllowedOrigins:   []string{"*"},
+			AllowCredentials: true,
+			Debug:            true,
+		}).Handler)
 
 		srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 			DB: i.db,
 		}}))
 
-		http.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
-		http.Handle("/query", srv)
+		srv.AddTransport(&transport.Websocket{
+			Upgrader: websocket.Upgrader{},
+		})
 
-		err := http.ListenAndServe(":8080", nil)
+		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
+		router.Handle("/query", srv)
+
+		err := http.ListenAndServe(":8080", router)
 		if err != nil {
-			i.log.Fatal(err)
+			panic(err)
 		}
+
 	}()
 
 	err := i.initialSync()
