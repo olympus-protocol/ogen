@@ -23,5 +23,5 @@ func TestExecution(t *testing.T) {
 
 	e := new(primitives.Execution)
 
-	assert.Equal(t, "7b45c2fff17cadc579cc85339a74b3be4525a961b07c32cd72a901f5f3d269cf", e.SignatureMessage().String())
+	assert.Equal(t, "0fee62d9e6dd5d7c3251c1d84e5e1251ae869d1535a99bdfe622b5ad79c607b1", e.SignatureMessage().String())
 }
