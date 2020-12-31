@@ -165,6 +165,7 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 			network:      config.GlobalFlags.NetworkName,
 			rpcwallet:    config.GlobalFlags.RPCWallet,
 			rpcproxy:     config.GlobalFlags.RPCProxy,
+			rpcproxyaddr: config.GlobalFlags.RPCProxyAddr,
 			rpcproxyport: config.GlobalFlags.RPCProxyPort,
 			rpcport:      config.GlobalFlags.RPCPort,
 		},
