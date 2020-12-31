@@ -277,6 +277,11 @@ func (i *Indexer) Start() error {
 			},
 		})
 
+		srv.AddTransport(transport.Options{})
+		srv.AddTransport(transport.GET{})
+		srv.AddTransport(transport.POST{})
+		srv.AddTransport(transport.MultipartForm{})
+
 		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
 		router.Handle("/query", srv)
 
