@@ -7,8 +7,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
 	"github.com/olympus-protocol/ogen/internal/indexer/graph/generated"
@@ -366,7 +364,8 @@ func (r *subscriptionResolver) Tip(ctx context.Context) (<-chan *model.Tip, erro
 
 		return
 	}()
-	panic(fmt.Errorf("not implemented"))
+
+	return tipChan, nil
 }
 
 // Query returns generated.QueryResolver implementation.
