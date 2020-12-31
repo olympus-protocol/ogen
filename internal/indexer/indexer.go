@@ -265,8 +265,10 @@ func (i *Indexer) Start() error {
 			DB: i.db,
 		}}))
 
+		srv.AddTransport(transport.Options{})
 		srv.AddTransport(transport.GET{})
 		srv.AddTransport(transport.POST{})
+		srv.AddTransport(transport.MultipartForm{})
 		srv.AddTransport(transport.Websocket{
 			KeepAlivePingInterval: 10 * time.Second,
 			Upgrader: websocket.Upgrader{
