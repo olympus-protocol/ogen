@@ -3,14 +3,12 @@ package chainrpc
 import (
 	"context"
 	"crypto/tls"
-	"github.com/go-chi/chi"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/rs/cors"
 	"net"
 	"net/http"
 	"path"
@@ -119,16 +117,8 @@ func (s *rpcServer) Start() error {
 		s.registerServicesProxy(ctx)
 
 		go func() {
-			c := cors.New(cors.Options{
-				AllowedOrigins: []string{"*"},
-				AllowedMethods: []string{http.MethodGet, http.MethodPost},
-			})
-			r := chi.NewRouter()
-			r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-				s.http.ServeHTTP(w, r)
-			})
-			handler := c.Handler(r)
-			err := http.ListenAndServe("localhost:"+s.config.rpcproxyport, handler)
+
+			err := http.ListenAndServe("localhost:"+s.config.rpcproxyport, s.http)
 			if err != nil {
 				s.log.Fatal(err)
 			}
