@@ -172,6 +172,7 @@ type ComplexityRoot struct {
 		FromPublicKeyHash func(childComplexity int) int
 		Hash              func(childComplexity int) int
 		Nonce             func(childComplexity int) int
+		Timestamp         func(childComplexity int) int
 		ToAddress         func(childComplexity int) int
 	}
 
@@ -913,6 +914,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Tx.Nonce(childComplexity), true
 
+	case "Tx.timestamp":
+		if e.complexity.Tx.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.Tx.Timestamp(childComplexity), true
+
 	case "Tx.to_address":
 		if e.complexity.Tx.ToAddress == nil {
 			break
@@ -1187,6 +1195,7 @@ type Tx {
   amount: Int!
   nonce: Int!
   fee: Int!
+  timestamp: Int!
 }
 
 type Validator {
@@ -4760,6 +4769,41 @@ func (ec *executionContext) _Tx_fee(ctx context.Context, field graphql.Collected
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Tx_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Tx) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Tx",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timestamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Validator_balance(ctx context.Context, field graphql.CollectedField, obj *model.Validator) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7306,6 +7350,11 @@ func (ec *executionContext) _Tx(ctx context.Context, sel ast.SelectionSet, obj *
 			}
 		case "fee":
 			out.Values[i] = ec._Tx_fee(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "timestamp":
+			out.Values[i] = ec._Tx_timestamp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

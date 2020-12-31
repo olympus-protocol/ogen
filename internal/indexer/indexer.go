@@ -183,6 +183,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 				Amount:            b.Txs[j].Amount,
 				Nonce:             b.Txs[j].Nonce,
 				Fee:               b.Txs[j].Fee,
+				Timestamp:         b.Header.Timestamp,
 			}
 		}
 		dbBlock.Txs = dbTxs

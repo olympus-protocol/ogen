@@ -243,6 +243,7 @@ type Tx struct {
 	Amount            uint64
 	Nonce             uint64
 	Fee               uint64
+	Timestamp         uint64
 }
 
 func (t *Tx) ToGQL() *model.Tx {
@@ -255,6 +256,7 @@ func (t *Tx) ToGQL() *model.Tx {
 		Amount:            int(t.Amount),
 		Nonce:             int(t.Nonce),
 		Fee:               int(t.Fee),
+		Timestamp:         int(t.Timestamp),
 	}
 }
 

@@ -72,6 +72,7 @@ type Tx {
   amount: Int!
   nonce: Int!
   fee: Int!
+  timestamp: Int!
 }
 
 type Validator {

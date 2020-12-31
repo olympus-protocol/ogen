@@ -111,6 +111,7 @@ type Tx struct {
 	Amount            int    `json:"amount"`
 	Nonce             int    `json:"nonce"`
 	Fee               int    `json:"fee"`
+	Timestamp         int    `json:"timestamp"`
 }
 
 type Validator struct {

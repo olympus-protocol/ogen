@@ -7,12 +7,12 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 
+	"github.com/google/uuid"
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
 	"github.com/olympus-protocol/ogen/internal/indexer/graph/generated"
 	"github.com/olympus-protocol/ogen/internal/indexer/graph/model"
+	"gorm.io/gorm"
 )
 
 func (r *queryResolver) Account(ctx context.Context, account string) (*model.Account, error) {
