@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
@@ -263,7 +264,7 @@ func (i *Indexer) Start() error {
 			Debug:            false,
 		}).Handler)
 
-		srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+		srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 			DB: i.db,
 		}}))
 
@@ -281,6 +282,7 @@ func (i *Indexer) Start() error {
 		srv.AddTransport(transport.GET{})
 		srv.AddTransport(transport.POST{})
 		srv.AddTransport(transport.MultipartForm{})
+		srv.Use(extension.Introspection{})
 
 		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
 		router.Handle("/query", srv)
