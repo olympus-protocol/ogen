@@ -181,6 +181,17 @@ func (d *Database) AddBlock(b *Block) error {
 	return nil
 }
 
+func (d *Database) AddHeader(h *BlockHeader) error {
+	res := d.DB.Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(h)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
 func (d *Database) GetRawBlock(hash chainhash.Hash) (*primitives.Block, uint64, error) {
 	var block Block
 	res := d.DB.Find(&Block{}, &Block{Hash: hash[:]}).Scan(&block)
@@ -203,6 +214,11 @@ func (d *Database) Close() {
 func (d *Database) Migrate() error {
 
 	err := d.DB.AutoMigrate(&Block{})
+	if err != nil {
+		return err
+	}
+
+	err = d.DB.AutoMigrate(&BlockHeader{})
 	if err != nil {
 		return err
 	}

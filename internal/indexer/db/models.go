@@ -7,28 +7,28 @@ import (
 )
 
 type Block struct {
-	Hash     []byte `gorm:"primaryKey"`
-	Height   uint64
-	Slot     uint64
-	Header   BlockHeader `gorm:"foreignKey:Hash"`
-	Txs      []Tx
-	Deposits []Deposit
-	Votes    []Vote
-	Exits    []Exit
-	RawBlock []byte
+	Hash      []byte `gorm:"primaryKey"`
+	Height    uint64
+	Slot      uint64
+	Txs       []Tx
+	Deposits  []Deposit
+	Votes     []Vote
+	Exits     []Exit
+	RawBlock  []byte
+	Timestamp uint64
 }
 
 func (b *Block) ToGQL() *model.Block {
 	return &model.Block{
-		Hash:     hex.EncodeToString(b.Hash),
-		Height:   int(b.Height),
-		Slot:     int(b.Slot),
-		Header:   b.Header.ToGQL(),
-		Txs:      b.TxsGQL(),
-		Deposits: b.DepositsGQL(),
-		Votes:    b.VotesGQL(),
-		Exits:    b.ExitsGQL(),
-		RawBlock: hex.EncodeToString(b.RawBlock),
+		Hash:      hex.EncodeToString(b.Hash),
+		Height:    int(b.Height),
+		Slot:      int(b.Slot),
+		Timestamp: int(b.Timestamp),
+		Txs:       b.TxsGQL(),
+		Deposits:  b.DepositsGQL(),
+		Votes:     b.VotesGQL(),
+		Exits:     b.ExitsGQL(),
+		RawBlock:  hex.EncodeToString(b.RawBlock),
 	}
 }
 

@@ -6,7 +6,7 @@ type Block {
   hash: String!
   height: Int!
   slot: Int!
-  header:   BlockHeader
+  timestamp: Int!
   txs:      [Tx!]
   deposits: [Deposit!]
   votes:    [Vote!]

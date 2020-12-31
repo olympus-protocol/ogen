@@ -9,15 +9,15 @@ type Account struct {
 }
 
 type Block struct {
-	Hash     string       `json:"hash"`
-	Height   int          `json:"height"`
-	Slot     int          `json:"slot"`
-	Header   *BlockHeader `json:"header"`
-	Txs      []*Tx        `json:"txs"`
-	Deposits []*Deposit   `json:"deposits"`
-	Votes    []*Vote      `json:"votes"`
-	Exits    []*Exit      `json:"exits"`
-	RawBlock string       `json:"rawBlock"`
+	Hash      string     `json:"hash"`
+	Height    int        `json:"height"`
+	Slot      int        `json:"slot"`
+	Timestamp int        `json:"timestamp"`
+	Txs       []*Tx      `json:"txs"`
+	Deposits  []*Deposit `json:"deposits"`
+	Votes     []*Vote    `json:"votes"`
+	Exits     []*Exit    `json:"exits"`
+	RawBlock  string     `json:"rawBlock"`
 }
 
 type BlockHeader struct {

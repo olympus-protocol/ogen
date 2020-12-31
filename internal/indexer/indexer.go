@@ -139,29 +139,11 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	nonce := make([]byte, 8)
 	binary.LittleEndian.PutUint64(nonce, b.Header.Nonce)
 	dbBlock := &db.Block{
-		Hash:   row.Hash[:],
-		Height: row.Height,
-		Slot:   row.Slot,
-		Header: db.BlockHeader{
-			Hash:                       row.Hash[:],
-			Version:                    b.Header.Version,
-			Nonce:                      nonce,
-			TxMerkleRoot:               b.Header.TxMerkleRoot[:],
-			TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot[:],
-			VoteMerkleRoot:             b.Header.VoteMerkleRoot[:],
-			DepositMerkleRoot:          b.Header.DepositMerkleRoot[:],
-			ExitMerkleRoot:             b.Header.ExitMerkleRoot[:],
-			VoteSlashingMerkleRoot:     b.Header.VoteSlashingMerkleRoot[:],
-			RandaoSlashingMerkleRoot:   b.Header.RANDAOSlashingMerkleRoot[:],
-			ProposerSlashingMerkleRoot: b.Header.ProposerSlashingMerkleRoot[:],
-			GovernanceVotesMerkleRoot:  b.Header.GovernanceVotesMerkleRoot[:],
-			PreviousBlockHash:          b.Header.PrevBlockHash[:],
-			Timestamp:                  time.Unix(int64(b.Header.Timestamp), 0),
-			Slot:                       b.Header.Slot,
-			StateRoot:                  b.Header.StateRoot[:],
-			FeeAddress:                 b.Header.FeeAddress[:],
-		},
-		RawBlock: rawBlock,
+		Hash:      row.Hash[:],
+		Height:    row.Height,
+		Slot:      row.Slot,
+		Timestamp: b.Header.Timestamp,
+		RawBlock:  rawBlock,
 	}
 
 	if len(b.Txs) > 0 {
@@ -248,6 +230,31 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	}
 
 	err = i.db.AddBlock(dbBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	dbHeader := &db.BlockHeader{
+		Hash:                       row.Hash[:],
+		Version:                    b.Header.Version,
+		Nonce:                      nonce,
+		TxMerkleRoot:               b.Header.TxMerkleRoot[:],
+		TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot[:],
+		VoteMerkleRoot:             b.Header.VoteMerkleRoot[:],
+		DepositMerkleRoot:          b.Header.DepositMerkleRoot[:],
+		ExitMerkleRoot:             b.Header.ExitMerkleRoot[:],
+		VoteSlashingMerkleRoot:     b.Header.VoteSlashingMerkleRoot[:],
+		RandaoSlashingMerkleRoot:   b.Header.RANDAOSlashingMerkleRoot[:],
+		ProposerSlashingMerkleRoot: b.Header.ProposerSlashingMerkleRoot[:],
+		GovernanceVotesMerkleRoot:  b.Header.GovernanceVotesMerkleRoot[:],
+		PreviousBlockHash:          b.Header.PrevBlockHash[:],
+		Timestamp:                  time.Unix(int64(b.Header.Timestamp), 0),
+		Slot:                       b.Header.Slot,
+		StateRoot:                  b.Header.StateRoot[:],
+		FeeAddress:                 b.Header.FeeAddress[:],
+	}
+
+	err = i.db.AddHeader(dbHeader)
 	if err != nil {
 		return nil, err
 	}

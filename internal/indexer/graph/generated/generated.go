@@ -51,15 +51,15 @@ type ComplexityRoot struct {
 	}
 
 	Block struct {
-		Deposits func(childComplexity int) int
-		Exits    func(childComplexity int) int
-		Hash     func(childComplexity int) int
-		Header   func(childComplexity int) int
-		Height   func(childComplexity int) int
-		RawBlock func(childComplexity int) int
-		Slot     func(childComplexity int) int
-		Txs      func(childComplexity int) int
-		Votes    func(childComplexity int) int
+		Deposits  func(childComplexity int) int
+		Exits     func(childComplexity int) int
+		Hash      func(childComplexity int) int
+		Height    func(childComplexity int) int
+		RawBlock  func(childComplexity int) int
+		Slot      func(childComplexity int) int
+		Timestamp func(childComplexity int) int
+		Txs       func(childComplexity int) int
+		Votes     func(childComplexity int) int
 	}
 
 	BlockHeader struct {
@@ -282,13 +282,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Block.Hash(childComplexity), true
 
-	case "Block.header":
-		if e.complexity.Block.Header == nil {
-			break
-		}
-
-		return e.complexity.Block.Header(childComplexity), true
-
 	case "Block.height":
 		if e.complexity.Block.Height == nil {
 			break
@@ -309,6 +302,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Block.Slot(childComplexity), true
+
+	case "Block.timestamp":
+		if e.complexity.Block.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.Block.Timestamp(childComplexity), true
 
 	case "Block.txs":
 		if e.complexity.Block.Txs == nil {
@@ -1138,7 +1138,7 @@ type Block {
   hash: String!
   height: Int!
   slot: Int!
-  header:   BlockHeader
+  timestamp: Int!
   txs:      [Tx!]
   deposits: [Deposit!]
   votes:    [Vote!]
@@ -1745,7 +1745,7 @@ func (ec *executionContext) _Block_slot(ctx context.Context, field graphql.Colle
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Block_header(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+func (ec *executionContext) _Block_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1763,18 +1763,21 @@ func (ec *executionContext) _Block_header(ctx context.Context, field graphql.Col
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Header, nil
+		return obj.Timestamp, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.BlockHeader)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalOBlockHeader2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockHeader(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Block_txs(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
@@ -6650,8 +6653,11 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "header":
-			out.Values[i] = ec._Block_header(ctx, field, obj)
+		case "timestamp":
+			out.Values[i] = ec._Block_timestamp(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "txs":
 			out.Values[i] = ec._Block_txs(ctx, field, obj)
 		case "deposits":
@@ -8253,13 +8259,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalOBlockHeader2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐBlockHeader(ctx context.Context, sel ast.SelectionSet, v *model.BlockHeader) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._BlockHeader(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
