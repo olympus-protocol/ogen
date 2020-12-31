@@ -30,9 +30,16 @@ The complete documentation can be found here: <https://doc.oly.tech>
 ### Run a full node
 > Using this configuration can be used as a validator, but the keystore is not correctly stored on a persistent storage.
 
+#### Pull the image
 ```
 docker pull ghcr.io/olympus-protocol/ogen-full-node:latest
 ```
+#### Run as a background service
+```
+docker run -p 80:8080 -p 81:8081 -d ghcr.io/olympus-protocol/ogen-full-node:latest
+```
+
+Now you will have a full-node instance running on the background with a dashboard exposed on port 80 and the REST API exposed on 81
 
 ### Run a full node with indexer
 > Using this configuration will create a database storage inside the docker container, it is not persistent.
