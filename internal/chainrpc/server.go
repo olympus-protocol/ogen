@@ -118,7 +118,14 @@ func (s *rpcServer) Start() error {
 
 		go func() {
 
-			err := http.ListenAndServe("localhost:"+s.config.rpcproxyport, s.http)
+			var addr string
+			if s.config.rpcproxyaddr == "" {
+				addr = "localhost"
+			} else {
+				addr = s.config.rpcproxyaddr
+			}
+
+			err := http.ListenAndServe(addr+":"+s.config.rpcproxyport, s.http)
 			if err != nil {
 				s.log.Fatal(err)
 			}
