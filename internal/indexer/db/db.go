@@ -25,7 +25,11 @@ type Database struct {
 	canClose  *sync.WaitGroup
 	netParams *params.ChainParams
 
-	accountBalanceNotifiers map[string]map[uuid.UUID]*AccountBalanceNotify
+	accountBalancesNotifiersLock sync.Mutex
+	accountBalanceNotifiers      map[string]map[uuid.UUID]*AccountBalanceNotify
+
+	tipNotifiersLock sync.Mutex
+	tipNotifiers     map[uuid.UUID]*TipNotify
 }
 
 func (d *Database) SetFinalized(e uint64) error {
@@ -91,12 +95,14 @@ func (d *Database) AddAccounts(a []Account) error {
 		return res.Error
 	}
 
+	d.accountBalancesNotifiersLock.Lock()
 	for _, acc := range a {
 		notifiers := d.accountBalanceNotifiers[acc.Account]
 		for _, notifier := range notifiers {
 			notifier.Notify()
 		}
 	}
+	d.accountBalancesNotifiersLock.Unlock()
 
 	return nil
 }
@@ -165,6 +171,13 @@ func (d *Database) AddBlock(b *Block) error {
 	if res.Error != nil {
 		return res.Error
 	}
+
+	d.tipNotifiersLock.Lock()
+	for _, n := range d.tipNotifiers {
+		n.Notify()
+	}
+	d.tipNotifiersLock.Unlock()
+
 	return nil
 }
 
@@ -243,6 +256,9 @@ func (d *Database) Migrate() error {
 }
 
 func (d *Database) AddAccountBalanceNotifier(account string, u uuid.UUID, n *AccountBalanceNotify) {
+	d.accountBalancesNotifiersLock.Lock()
+	defer d.accountBalancesNotifiersLock.Unlock()
+
 	m, ok := d.accountBalanceNotifiers[account]
 	if !ok {
 		d.accountBalanceNotifiers[account] = make(map[uuid.UUID]*AccountBalanceNotify)
@@ -255,11 +271,34 @@ func (d *Database) AddAccountBalanceNotifier(account string, u uuid.UUID, n *Acc
 }
 
 func (d *Database) RemoveAccountBalanceNotifier(account string, u uuid.UUID) {
+	d.accountBalancesNotifiersLock.Lock()
+	defer d.accountBalancesNotifiersLock.Unlock()
+
 	m, ok := d.accountBalanceNotifiers[account]
 	if !ok {
 		return
 	}
 	delete(m, u)
+	return
+}
+
+func (d *Database) AddTipNotifier(u uuid.UUID, n *TipNotify) {
+	d.tipNotifiersLock.Lock()
+	defer d.tipNotifiersLock.Unlock()
+
+	_, ok := d.tipNotifiers[u]
+	if ok {
+		return
+	}
+	d.tipNotifiers[u] = n
+	return
+}
+
+func (d *Database) RemoveTipNotifier(u uuid.UUID) {
+	d.tipNotifiersLock.Lock()
+	defer d.tipNotifiersLock.Unlock()
+
+	delete(d.tipNotifiers, u)
 	return
 }
 
@@ -278,6 +317,7 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams
 		netParams: netParams,
 
 		accountBalanceNotifiers: make(map[string]map[uuid.UUID]*AccountBalanceNotify),
+		tipNotifiers:            make(map[uuid.UUID]*TipNotify),
 	}
 
 	dbclient.log.Info("Database connection established")

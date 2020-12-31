@@ -261,11 +261,11 @@ func (i *Indexer) Start() error {
 			AllowCredentials: true,
 		})
 
-
 		srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 			DB: i.db,
 		}}))
 
+		srv.AddTransport(transport.GET{})
 		srv.AddTransport(transport.POST{})
 		srv.AddTransport(transport.Websocket{
 			KeepAlivePingInterval: 10 * time.Second,

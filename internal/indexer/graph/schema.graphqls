@@ -154,10 +154,11 @@ type Query {
   block_by_slot(slot: Int!): Block!
   block_by_hash(hash: String!): Block!
   block_by_height(height: Int!): Block!
-  tip: Tip
+  tip: Tip!
 }
 
 type Subscription {
   account(account: String!): Account!
+  tip: Tip!
 }
 

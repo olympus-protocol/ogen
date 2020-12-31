@@ -155,6 +155,7 @@ type ComplexityRoot struct {
 
 	Subscription struct {
 		Account func(childComplexity int, account string) int
+		Tip     func(childComplexity int) int
 	}
 
 	Tip struct {
@@ -221,6 +222,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	Account(ctx context.Context, account string) (<-chan *model.Account, error)
+	Tip(ctx context.Context) (<-chan *model.Tip, error)
 }
 
 type executableSchema struct {
@@ -837,6 +839,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.Account(childComplexity, args["account"].(string)), true
 
+	case "Subscription.tip":
+		if e.complexity.Subscription.Tip == nil {
+			break
+		}
+
+		return e.complexity.Subscription.Tip(childComplexity), true
+
 	case "Tip.block":
 		if e.complexity.Tip.Block == nil {
 			break
@@ -1277,11 +1286,12 @@ type Query {
   block_by_slot(slot: Int!): Block!
   block_by_hash(hash: String!): Block!
   block_by_height(height: Int!): Block!
-  tip: Tip
+  tip: Tip!
 }
 
 type Subscription {
   account(account: String!): Account!
+  tip: Tip!
 }
 
 `, BuiltIn: false},
@@ -4082,11 +4092,14 @@ func (ec *executionContext) _Query_tip(ctx context.Context, field graphql.Collec
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Tip)
 	fc.Result = res
-	return ec.marshalOTip2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTip(ctx, field.Selections, res)
+	return ec.marshalNTip2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTip(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4347,6 +4360,51 @@ func (ec *executionContext) _Subscription_account(ctx context.Context, field gra
 			graphql.MarshalString(field.Alias).MarshalGQL(w)
 			w.Write([]byte{':'})
 			ec.marshalNAccount2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐAccount(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
+}
+
+func (ec *executionContext) _Subscription_tip(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().Tip(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *model.Tip)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNTip2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTip(ctx, field.Selections, res).MarshalGQL(w)
 			w.Write([]byte{'}'})
 		})
 	}
@@ -7184,6 +7242,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_tip(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -7258,6 +7319,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "account":
 		return ec._Subscription_account(ctx, fields[0])
+	case "tip":
+		return ec._Subscription_tip(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -7901,6 +7964,20 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) marshalNTip2githubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTip(ctx context.Context, sel ast.SelectionSet, v model.Tip) graphql.Marshaler {
+	return ec._Tip(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTip2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTip(ctx context.Context, sel ast.SelectionSet, v *model.Tip) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Tip(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNTx2githubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTx(ctx context.Context, sel ast.SelectionSet, v model.Tx) graphql.Marshaler {
 	return ec._Tx(ctx, sel, &v)
 }
@@ -8358,13 +8435,6 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
-}
-
-func (ec *executionContext) marshalOTip2ᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTip(ctx context.Context, sel ast.SelectionSet, v *model.Tip) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Tip(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOTx2ᚕᚖgithubᚗcomᚋolympusᚑprotocolᚋogenᚋinternalᚋindexerᚋgraphᚋmodelᚐTxᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Tx) graphql.Marshaler {

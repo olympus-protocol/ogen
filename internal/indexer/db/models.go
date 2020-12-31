@@ -346,3 +346,54 @@ func (a *AccountBalanceNotify) Notify() {
 func NewAccountBalanceNotify(account string, channel chan *model.Account, db *Database) *AccountBalanceNotify {
 	return &AccountBalanceNotify{db: db, notify: channel, account: account}
 }
+
+type TipNotify struct {
+	db     *Database
+	notify chan *model.Tip
+}
+
+func (t *TipNotify) Notify() {
+	var data []*Validator
+
+	t.db.DB.Find(&data)
+
+	validators := make([]*model.Validator, len(data))
+
+	for i := range validators {
+		validators[i] = data[i].ToGQL()
+	}
+
+	var slot Slot
+	res := t.db.DB.Select(&Slot{}, "max(slot)").Scan(&slot)
+
+	if res.Error != nil {
+		return
+	}
+
+	var epoch Epoch
+	res = t.db.DB.Select(&Epoch{}, "max(epoch)").Scan(&epoch)
+
+	if res.Error != nil {
+		return
+	}
+
+	var block Block
+	res = t.db.DB.Select(&Block{}, "max(height)").Scan(&block)
+
+	if res.Error != nil {
+		return
+	}
+
+	t.notify <- &model.Tip{
+		Slot:       slot.ToGQL(),
+		Epoch:      epoch.ToGQL(),
+		Block:      block.ToGQL(),
+		Validators: validators,
+	}
+
+	return
+}
+
+func NewTipNotify(channel chan *model.Tip, db *Database) *TipNotify {
+	return &TipNotify{db: db, notify: channel}
+}

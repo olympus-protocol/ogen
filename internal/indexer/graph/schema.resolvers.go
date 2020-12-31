@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
@@ -251,21 +252,21 @@ func (r *queryResolver) Tip(ctx context.Context) (*model.Tip, error) {
 	var slot db.Slot
 	res := r.DB.DB.Select(&db.Slot{}, "max(slot)").Scan(&slot)
 
-	if res.Error != nil || res.RowsAffected == -1 {
+	if res.Error != nil {
 		return nil, errors.New("error trying to load latest slot")
 	}
 
 	var epoch db.Epoch
 	res = r.DB.DB.Select(&db.Epoch{}, "max(epoch)").Scan(&epoch)
 
-	if res.Error != nil || res.RowsAffected == -1 {
+	if res.Error != nil {
 		return nil, errors.New("error trying to load latest epoch")
 	}
 
 	var block db.Block
 	res = r.DB.DB.Select(&db.Block{}, "max(height)").Scan(&block)
 
-	if res.Error != nil || res.RowsAffected == -1 {
+	if res.Error != nil {
 		return nil, errors.New("error trying to load latest block")
 	}
 
@@ -309,6 +310,63 @@ func (r *subscriptionResolver) Account(ctx context.Context, account string) (<-c
 	}()
 
 	return accChannel, nil
+}
+
+func (r *subscriptionResolver) Tip(ctx context.Context) (<-chan *model.Tip, error) {
+	tipChan := make(chan *model.Tip)
+
+	go func() {
+		u := uuid.New()
+
+		tipNotify := db.NewTipNotify(tipChan, r.DB)
+
+		var data []*db.Validator
+
+		r.DB.DB.Find(&data)
+
+		validators := make([]*model.Validator, len(data))
+
+		for i := range validators {
+			validators[i] = data[i].ToGQL()
+		}
+
+		var slot db.Slot
+		res := r.DB.DB.Select(&db.Slot{}, "max(slot)").Scan(&slot)
+
+		if res.Error != nil {
+			return
+		}
+
+		var epoch db.Epoch
+		res = r.DB.DB.Select(&db.Epoch{}, "max(epoch)").Scan(&epoch)
+
+		if res.Error != nil {
+			return
+		}
+
+		var block db.Block
+		res = r.DB.DB.Select(&db.Block{}, "max(height)").Scan(&block)
+
+		if res.Error != nil {
+			return
+		}
+
+		tipChan <- &model.Tip{
+			Slot:       slot.ToGQL(),
+			Epoch:      epoch.ToGQL(),
+			Block:      block.ToGQL(),
+			Validators: validators,
+		}
+
+		r.DB.AddTipNotifier(u, tipNotify)
+
+		<-ctx.Done()
+
+		r.DB.RemoveTipNotifier(u)
+
+		return
+	}()
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Query returns generated.QueryResolver implementation.
