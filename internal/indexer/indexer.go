@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -265,10 +264,6 @@ func (i *Indexer) Start() error {
 		srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 			DB: i.db,
 		}}))
-
-		srv.AddTransport(transport.Websocket{
-			KeepAlivePingInterval: 10 * time.Second,
-		})
 
 		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
 		router.Handle("/query", srv)
