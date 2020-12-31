@@ -262,7 +262,7 @@ func (i *Indexer) Start() error {
 		})
 
 
-		srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+		srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 			DB: i.db,
 		}}))
 
@@ -275,6 +275,7 @@ func (i *Indexer) Start() error {
 				},
 			},
 		})
+
 		srv.Use(extension.Introspection{})
 
 		http.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
