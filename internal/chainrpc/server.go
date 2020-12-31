@@ -119,18 +119,12 @@ func (s *rpcServer) Start() error {
 		s.registerServicesProxy(ctx)
 
 		go func() {
-			var addr string
-			if s.config.rpcproxyaddr != "" {
-				addr = s.config.rpcproxyaddr
-			} else {
-				addr = "localhost"
-			}
 			c := cors.New(cors.Options{
 				AllowedOrigins: []string{"*"},
 				AllowedMethods: []string{http.MethodGet, http.MethodPost},
 			})
 			handler := c.Handler(s.http)
-			err := http.ListenAndServe(addr+":"+s.config.rpcproxyport, handler)
+			err := http.ListenAndServe(s.config.rpcproxyaddr+":"+s.config.rpcproxyport, handler)
 			if err != nil {
 				s.log.Fatal(err)
 			}
