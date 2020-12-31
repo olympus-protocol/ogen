@@ -3,21 +3,21 @@ package chainrpc
 import (
 	"context"
 	"crypto/tls"
+	"github.com/go-chi/chi"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
+	"github.com/rs/cors"
 	"net"
 	"net/http"
 	"path"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
-
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/wallet"
 	"github.com/olympus-protocol/ogen/pkg/logger"
-	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -123,7 +123,11 @@ func (s *rpcServer) Start() error {
 				AllowedOrigins: []string{"*"},
 				AllowedMethods: []string{http.MethodGet, http.MethodPost},
 			})
-			handler := c.Handler(s.http)
+			r := chi.NewRouter()
+			r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+				s.http.ServeHTTP(w, r)
+			})
+			handler := c.Handler(r)
 			err := http.ListenAndServe("localhost:"+s.config.rpcproxyport, handler)
 			if err != nil {
 				s.log.Fatal(err)
