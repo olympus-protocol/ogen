@@ -10,6 +10,7 @@ require (
 	github.com/fatih/color v1.10.0
 	github.com/ferranbt/fastssz v0.0.0-20201210095258-318e164fe1dd
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/gobuffalo/packr v1.30.1

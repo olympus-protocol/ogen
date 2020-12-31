@@ -363,21 +363,41 @@ func (t *TipNotify) Notify() {
 		validators[i] = data[i].ToGQL()
 	}
 
+	var maxSlot int
+	err := t.db.DB.Raw("select max(slot) from slots").Row().Scan(&maxSlot)
+	if err != nil {
+		return
+	}
+
 	var slot Slot
-	err := t.db.DB.Table("slots").Select("max(slot)").Row().Scan(&slot)
+	res := t.db.DB.Where(&Slot{Slot: uint64(maxSlot)}).First(&slot)
+
+	if res.Error != nil {
+		return
+	}
+
+	var maxEpoch int
+	err = t.db.DB.Raw("select max(epoch) from epoches").Row().Scan(&maxEpoch)
 	if err != nil {
 		return
 	}
 
 	var epoch Epoch
-	err = t.db.DB.Table("epochs").Select("max(epoch)").Row().Scan(&epoch)
+	res = t.db.DB.Where(&Epoch{Epoch: uint64(maxEpoch)}).First(&epoch)
+
+	if res.Error != nil {
+		return
+	}
+
+	var maxBlockHeight int
+	err = t.db.DB.Raw("select max(height) from blocks").Row().Scan(&maxBlockHeight)
 	if err != nil {
 		return
 	}
 
 	var block Block
-	err = t.db.DB.Table("blocks").Select("max(height)").Row().Scan(&block)
-	if err != nil {
+	res = t.db.DB.Where(&Block{Height: uint64(maxBlockHeight)}).First(&block)
+	if res.Error != nil {
 		return
 	}
 

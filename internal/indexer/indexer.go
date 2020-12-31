@@ -8,6 +8,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
@@ -256,10 +257,12 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 
 func (i *Indexer) Start() error {
 	go func() {
-		c := cors.New(cors.Options{
+		router := chi.NewRouter()
+
+		router.Use(cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
 			AllowCredentials: true,
-		})
+		}).Handler)
 
 		srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 			DB: i.db,
@@ -275,15 +278,16 @@ func (i *Indexer) Start() error {
 				CheckOrigin: func(r *http.Request) bool {
 					return true
 				},
+				EnableCompression: true,
 			},
 		})
 
 		srv.Use(extension.Introspection{})
 
-		http.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
-		http.Handle("/query", srv)
+		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
+		router.Handle("/query", srv)
 
-		err := http.ListenAndServe(":8080", c.Handler(srv))
+		err := http.ListenAndServe(":8080", router)
 		if err != nil {
 			panic(err)
 		}

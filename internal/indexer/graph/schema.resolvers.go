@@ -247,22 +247,42 @@ func (r *queryResolver) Tip(ctx context.Context) (*model.Tip, error) {
 		return nil, err
 	}
 
+	var maxSlot int
+	err = r.DB.DB.Raw("select max(slot) from slots").Row().Scan(&maxSlot)
+	if err != nil {
+		return nil, err
+	}
+
 	var slot db.Slot
-	err = r.DB.DB.Table("slots").Select("max(slot)").Row().Scan(&slot)
+	res := r.DB.DB.Where(&db.Slot{Slot: uint64(maxSlot)}).First(&slot)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	var maxEpoch int
+	err = r.DB.DB.Raw("select max(epoch) from epoches").Row().Scan(&maxEpoch)
 	if err != nil {
 		return nil, err
 	}
 
 	var epoch db.Epoch
-	err = r.DB.DB.Table("epochs").Select("max(epoch)").Row().Scan(&epoch)
+	res = r.DB.DB.Where(&db.Epoch{Epoch: uint64(maxEpoch)}).First(&epoch)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	var maxBlockHeight int
+	err = r.DB.DB.Raw("select max(height) from blocks").Row().Scan(&maxBlockHeight)
 	if err != nil {
 		return nil, err
 	}
 
 	var block db.Block
-	err = r.DB.DB.Table("blocks").Select("max(height)").Row().Scan(&block)
-	if err != nil {
-		return nil, err
+	res = r.DB.DB.Where(&db.Block{Height: uint64(maxBlockHeight)}).First(&block)
+	if res.Error != nil {
+		return nil, res.Error
 	}
 
 	return &model.Tip{
@@ -311,9 +331,6 @@ func (r *subscriptionResolver) Tip(ctx context.Context) (<-chan *model.Tip, erro
 	tipChan := make(chan *model.Tip)
 
 	go func() {
-		u := uuid.New()
-
-		tipNotify := db.NewTipNotify(tipChan, r.DB)
 
 		var data []*db.Validator
 
@@ -325,30 +342,56 @@ func (r *subscriptionResolver) Tip(ctx context.Context) (<-chan *model.Tip, erro
 			validators[i] = data[i].ToGQL()
 		}
 
+		var maxSlot int
+		err := r.DB.DB.Raw("select max(slot) from slots").Row().Scan(&maxSlot)
+		if err != nil {
+			return
+		}
+
 		var slot db.Slot
-		err := r.DB.DB.Table("slots").Select("max(slot)").Row().Scan(&slot)
+		res := r.DB.DB.Where(&db.Slot{Slot: uint64(maxSlot)}).First(&slot)
+
+		if res.Error != nil {
+			return
+		}
+
+		var maxEpoch int
+		err = r.DB.DB.Raw("select max(epoch) from epoches").Row().Scan(&maxEpoch)
 		if err != nil {
 			return
 		}
 
 		var epoch db.Epoch
-		err = r.DB.DB.Table("epochs").Select("max(epoch)").Row().Scan(&epoch)
+		res = r.DB.DB.Where(&db.Epoch{Epoch: uint64(maxEpoch)}).First(&epoch)
+
+		if res.Error != nil {
+			return
+		}
+
+		var maxBlockHeight int
+		err = r.DB.DB.Raw("select max(height) from blocks").Row().Scan(&maxBlockHeight)
 		if err != nil {
 			return
 		}
 
 		var block db.Block
-		err = r.DB.DB.Table("blocks").Select("max(height)").Row().Scan(&block)
-		if err != nil {
+		res = r.DB.DB.Where(&db.Block{Height: uint64(maxBlockHeight)}).First(&block)
+		if res.Error != nil {
 			return
 		}
 
-		tipChan <- &model.Tip{
+		initialTip := &model.Tip{
 			Slot:       slot.ToGQL(),
 			Epoch:      epoch.ToGQL(),
 			Block:      block.ToGQL(),
 			Validators: validators,
 		}
+
+		tipChan <- initialTip
+
+		tipNotify := db.NewTipNotify(tipChan, r.DB)
+
+		u := uuid.New()
 
 		r.DB.AddTipNotifier(u, tipNotify)
 
