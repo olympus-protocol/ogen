@@ -26,7 +26,6 @@ var (
 	RPCWallet     bool
 	RPCProxy      bool
 	RPCProxyPort  string
-	RPCPRoxyAddr  string
 	Dashboard     bool
 	DashboardPort string
 )
@@ -41,7 +40,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&RPCProxy, "rpc_proxy", false, "Enable http proxy for RPC server.")
 	rootCmd.Flags().StringVar(&RPCProxyPort, "rpc_proxy_port", "8081", "Port for the http proxy.")
 	rootCmd.Flags().StringVar(&RPCPort, "rpc_port", "24127", "RPC server port.")
-	rootCmd.Flags().StringVar(&RPCPRoxyAddr, "rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
+
 	rootCmd.Flags().BoolVar(&RPCWallet, "rpc_wallet", false, "Enable wallet access through RPC.")
 
 	rootCmd.Flags().StringVar(&DashboardPort, "dashboard_port", "8080", "Port to expose node dashboard.")
@@ -111,7 +110,6 @@ func initConfig() {
 		Port:          Port,
 		RPCProxy:      RPCProxy,
 		RPCProxyPort:  RPCProxyPort,
-		RPCProxyAddr:  RPCPRoxyAddr,
 		RPCPort:       RPCPort,
 		RPCWallet:     RPCWallet,
 		Debug:         Debug,

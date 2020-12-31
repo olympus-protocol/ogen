@@ -20,7 +20,6 @@ type Flags struct {
 	Port          string
 	RPCProxy      bool
 	RPCProxyPort  string
-	RPCProxyAddr  string
 	RPCPort       string
 	RPCWallet     bool
 	RPCAuthToken  string
@@ -90,7 +89,6 @@ func SetTestFlags() {
 		Port:         "",
 		RPCProxy:     false,
 		RPCProxyPort: "",
-		RPCProxyAddr: "",
 		RPCPort:      "",
 		RPCWallet:    false,
 		RPCAuthToken: "",
