@@ -1,4 +1,4 @@
-FROM golang:1.16beta1
+FROM golang:1.16beta1-buster
 
 WORKDIR /build
 
