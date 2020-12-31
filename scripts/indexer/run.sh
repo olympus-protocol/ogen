@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./ogen --dashboard --rpc_proxy & ./ogen indexer testnet --dbconn="postgresql://localhost:5432/ogen-indexer"
+./ogen --network testnet --dashboard & ./ogen indexer testnet --dbconn="postgresql://localhost:5432/ogen-indexer"

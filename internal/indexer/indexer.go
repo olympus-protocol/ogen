@@ -294,7 +294,7 @@ func (i *Indexer) Start() error {
 		router.Handle("/", playground.Handler("Ogen Indexer GraphQl", "/query"))
 		router.Handle("/query", srv)
 
-		err := http.ListenAndServe(":8080", router)
+		err := http.ListenAndServe(":8082", router)
 		if err != nil {
 			panic(err)
 		}
