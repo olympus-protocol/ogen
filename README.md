@@ -27,30 +27,34 @@ The complete documentation can be found here: <https://doc.oly.tech>
 
 ## Using Docker
 
-### Run a full node
-> Using this configuration can be used as a validator, but the keystore is not correctly stored on a persistent storage.
+### Full node with shared storage
+> This configuration is the best to use as a validator
 
 #### Pull the image
 ```
 docker pull ghcr.io/olympus-protocol/ogen-full-node:latest
 ```
-#### Run as a background service
+
+#### Run the container
+> Make sure you replace the LOCAL_HOST_FOLDER on the string to the host folder you want to store your files
+```
+docker run -p 80:8080 -p 81:8081 -d -v LOCAL_HOST_FOLDER:/root/.config/ogen ghcr.io/olympus-protocol/ogen-full-node:latest
+```
+
+Now you will have a full-node instance running on the background with a dashboard exposed on port 80 and the REST API exposed on 81 and the full-node files are stored on your host on LOCAL_HOST_FOLDER 
+
+### Full node without shared storage
+> This configuration is the best to run a simple full node without having a backup of the keystore. 
+
+#### Pull the image
+```
+docker pull ghcr.io/olympus-protocol/ogen-full-node:latest
+```
+#### Run the container
 ```
 docker run -p 80:8080 -p 81:8081 -d ghcr.io/olympus-protocol/ogen-full-node:latest
 ```
 
-Now you will have a full-node instance running on the background with a dashboard exposed on port 80 and the REST API exposed on 81
+Now you will have a full-node instance running on the background with a dashboard exposed on port 80, and the REST API exposed on 81
 
 ### Run a full node with indexer
-> Using this configuration will create a database storage inside the docker container, it is not persistent.
-
-```
-docker pull ghcr.io/olympus-protocol/ogen-indexer:latest
-```
-
-### Run a full node with validator
-> Using this configuration will start a full node with a shared volume to store the keystore on a persistent storage.
-
-```
-docker pull ghcr.io/olympus-protocol/ogen-validator:latest
-```
