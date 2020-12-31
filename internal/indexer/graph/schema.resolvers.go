@@ -248,24 +248,21 @@ func (r *queryResolver) Tip(ctx context.Context) (*model.Tip, error) {
 	}
 
 	var slot db.Slot
-	res := r.DB.DB.Select(&db.Slot{}, "max(slot)").Scan(&slot)
-
-	if res.Error != nil {
-		return nil, errors.New("error trying to load latest slot")
+	err = r.DB.DB.Table("slots").Select("max(slot)").Row().Scan(&slot)
+	if err != nil {
+		return nil, err
 	}
 
 	var epoch db.Epoch
-	res = r.DB.DB.Select(&db.Epoch{}, "max(epoch)").Scan(&epoch)
-
-	if res.Error != nil {
-		return nil, errors.New("error trying to load latest epoch")
+	err = r.DB.DB.Table("epochs").Select("max(epoch)").Row().Scan(&epoch)
+	if err != nil {
+		return nil, err
 	}
 
 	var block db.Block
-	res = r.DB.DB.Select(&db.Block{}, "max(height)").Scan(&block)
-
-	if res.Error != nil {
-		return nil, errors.New("error trying to load latest block")
+	err = r.DB.DB.Table("blocks").Select("max(height)").Row().Scan(&block)
+	if err != nil {
+		return nil, err
 	}
 
 	return &model.Tip{
@@ -329,23 +326,20 @@ func (r *subscriptionResolver) Tip(ctx context.Context) (<-chan *model.Tip, erro
 		}
 
 		var slot db.Slot
-		res := r.DB.DB.Select(&db.Slot{}, "max(slot)").Scan(&slot)
-
-		if res.Error != nil {
+		err := r.DB.DB.Table("slots").Select("max(slot)").Row().Scan(&slot)
+		if err != nil {
 			return
 		}
 
 		var epoch db.Epoch
-		res = r.DB.DB.Select(&db.Epoch{}, "max(epoch)").Scan(&epoch)
-
-		if res.Error != nil {
+		err = r.DB.DB.Table("epochs").Select("max(epoch)").Row().Scan(&epoch)
+		if err != nil {
 			return
 		}
 
 		var block db.Block
-		res = r.DB.DB.Select(&db.Block{}, "max(height)").Scan(&block)
-
-		if res.Error != nil {
+		err = r.DB.DB.Table("blocks").Select("max(height)").Row().Scan(&block)
+		if err != nil {
 			return
 		}
 

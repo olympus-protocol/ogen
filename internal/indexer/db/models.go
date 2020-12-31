@@ -364,23 +364,20 @@ func (t *TipNotify) Notify() {
 	}
 
 	var slot Slot
-	res := t.db.DB.Select(&Slot{}, "max(slot)").Scan(&slot)
-
-	if res.Error != nil {
+	err := t.db.DB.Table("slots").Select("max(slot)").Row().Scan(&slot)
+	if err != nil {
 		return
 	}
 
 	var epoch Epoch
-	res = t.db.DB.Select(&Epoch{}, "max(epoch)").Scan(&epoch)
-
-	if res.Error != nil {
+	err = t.db.DB.Table("epochs").Select("max(epoch)").Row().Scan(&epoch)
+	if err != nil {
 		return
 	}
 
 	var block Block
-	res = t.db.DB.Select(&Block{}, "max(height)").Scan(&block)
-
-	if res.Error != nil {
+	err = t.db.DB.Table("blocks").Select("max(height)").Row().Scan(&block)
+	if err != nil {
 		return
 	}
 
