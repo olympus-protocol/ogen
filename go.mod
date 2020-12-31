@@ -10,12 +10,14 @@ require (
 	github.com/fatih/color v1.10.0
 	github.com/ferranbt/fastssz v0.0.0-20201210095258-318e164fe1dd
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
 	github.com/google/gofuzz v1.2.0
+	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
 	github.com/ipfs/go-ds-leveldb v0.4.2
 	github.com/kilic/bls12-381 v0.0.0-20201226121925-69dacb279461

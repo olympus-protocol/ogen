@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"github.com/olympus-protocol/ogen/internal/indexer/db"
@@ -16,16 +17,16 @@ import (
 
 func (r *queryResolver) Account(ctx context.Context, account string) (*model.Account, error) {
 	var acc db.Account
-	res := r.DB.DB.Find(&acc, account)
+	res := r.DB.DB.Where(&db.Account{Account: account}).First(&acc)
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return &model.Account{
+				Account: account,
+				Balance: 0,
+				Nonce:   0,
+			}, nil
+		}
 		return nil, res.Error
-	}
-	if res.RowsAffected == -1 {
-		return &model.Account{
-			Account: account,
-			Balance: 0,
-			Nonce:   0,
-		}, nil
 	}
 
 	return acc.ToGQL(), nil
@@ -132,11 +133,10 @@ func (r *queryResolver) Validator(ctx context.Context, pubkey string) (*model.Va
 	res := r.DB.DB.Where(&db.Validator{PubKey: pub}).First(&validator)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no validator found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no validator found")
 	}
 
 	return validator.ToGQL(), nil
@@ -148,11 +148,10 @@ func (r *queryResolver) Slot(ctx context.Context, slot int) (*model.Slot, error)
 	res := r.DB.DB.Where(&db.Slot{Slot: uint64(slot)}).First(&s)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no slot found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no slot found")
 	}
 
 	return s.ToGQL(), nil
@@ -164,11 +163,10 @@ func (r *queryResolver) Epoch(ctx context.Context, epoch int) (*model.Epoch, err
 	res := r.DB.DB.Where(&db.Epoch{Epoch: uint64(epoch)}).First(&e)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no epoch found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no epoch found")
 	}
 
 	return e.ToGQL(), nil
@@ -185,11 +183,10 @@ func (r *queryResolver) Tx(ctx context.Context, hash string) (*model.Tx, error) 
 	res := r.DB.DB.Where(&db.Tx{Hash: h}).First(&tx)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no tx found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no tx found")
 	}
 
 	return tx.ToGQL(), nil
@@ -201,11 +198,10 @@ func (r *queryResolver) BlockBySlot(ctx context.Context, slot int) (*model.Block
 	res := r.DB.DB.Where(&db.Block{Slot: uint64(slot)}).First(&block)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no block found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no block found")
 	}
 
 	return block.ToGQL(), nil
@@ -222,11 +218,10 @@ func (r *queryResolver) BlockByHash(ctx context.Context, hash string) (*model.Bl
 	res := r.DB.DB.Where(&db.Block{Hash: h}).First(&block)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no block found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no block found")
 	}
 
 	return block.ToGQL(), nil
@@ -238,11 +233,10 @@ func (r *queryResolver) BlockByHeight(ctx context.Context, height int) (*model.B
 	res := r.DB.DB.Where(&db.Block{Height: uint64(height)}).First(&block)
 
 	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, errors.New("no block found")
+		}
 		return nil, res.Error
-	}
-
-	if res.RowsAffected == -1 {
-		return nil, errors.New("no block found")
 	}
 
 	return block.ToGQL(), nil
@@ -287,32 +281,31 @@ func (r *subscriptionResolver) Account(ctx context.Context, account string) (<-c
 	accChannel := make(chan *model.Account)
 
 	go func() {
-		err := r.DB.DB.Callback().Create().After("gorm:create").Register("account_create_register", func(d *gorm.DB) {
-			var acc db.Account
-			res := d.Scan(&acc)
-			if res.Error != nil {
-				return
+		var initAccData db.Account
+		res := r.DB.DB.Where(&db.Account{Account: account}).First(&initAccData)
+
+		if res.Error != nil {
+
+			if res.Error == gorm.ErrRecordNotFound {
+
+				accChannel <- &model.Account{
+					Account: account,
+					Balance: 0,
+					Nonce:   0,
+				}
+
 			}
-			if acc.Account == account {
-				accChannel <- acc.ToGQL()
-			}
-		})
-		if err != nil {
-			return
+
+		} else {
+			accChannel <- initAccData.ToGQL()
 		}
-		err = r.DB.DB.Callback().Update().After("gorm:update").Register("account_update_register", func(d *gorm.DB) {
-			var acc db.Account
-			res := d.Scan(&acc)
-			if res.Error != nil {
-				return
-			}
-			if acc.Account == account {
-				accChannel <- acc.ToGQL()
-			}
-		})
-		if err != nil {
-			return
-		}
+		u := uuid.New()
+		accNotify := db.NewAccountBalanceNotify(account, accChannel, r.DB)
+
+		r.DB.AddAccountBalanceNotifier(account, u, accNotify)
+		<-ctx.Done()
+		r.DB.RemoveAccountBalanceNotifier(account, u)
+		return
 	}()
 
 	return accChannel, nil

@@ -324,3 +324,23 @@ type State struct {
 	LastBlock       []byte
 	LastBlockHeight uint64
 }
+
+type AccountBalanceNotify struct {
+	account string
+	db      *Database
+	notify  chan *model.Account
+}
+
+func (a *AccountBalanceNotify) Notify() {
+	var initAccData Account
+	res := a.db.DB.Where(&Account{Account: a.account}).First(&initAccData)
+	if res.Error != nil {
+		return
+	}
+
+	a.notify <- initAccData.ToGQL()
+}
+
+func NewAccountBalanceNotify(account string, channel chan *model.Account, db *Database) *AccountBalanceNotify {
+	return &AccountBalanceNotify{db: db, notify: channel, account: account}
+}

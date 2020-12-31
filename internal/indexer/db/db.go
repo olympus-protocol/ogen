@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -23,6 +24,8 @@ type Database struct {
 
 	canClose  *sync.WaitGroup
 	netParams *params.ChainParams
+
+	accountBalanceNotifiers map[string]map[uuid.UUID]*AccountBalanceNotify
 }
 
 func (d *Database) SetFinalized(e uint64) error {
@@ -77,15 +80,22 @@ func (d *Database) MarkSlotProposed(s *Slot) error {
 	return nil
 }
 
-func (d *Database) AddAccounts(a *[]Account) error {
+func (d *Database) AddAccounts(a []Account) error {
 
 	res := d.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "account"}},
 		UpdateAll: true,
-	}).Create(a)
+	}).Create(&a)
 
 	if res.Error != nil {
 		return res.Error
+	}
+
+	for _, acc := range a {
+		notifiers := d.accountBalanceNotifiers[acc.Account]
+		for _, notifier := range notifiers {
+			notifier.Notify()
+		}
 	}
 
 	return nil
@@ -232,6 +242,27 @@ func (d *Database) Migrate() error {
 	return nil
 }
 
+func (d *Database) AddAccountBalanceNotifier(account string, u uuid.UUID, n *AccountBalanceNotify) {
+	m, ok := d.accountBalanceNotifiers[account]
+	if !ok {
+		d.accountBalanceNotifiers[account] = make(map[uuid.UUID]*AccountBalanceNotify)
+		d.accountBalanceNotifiers[account][u] = n
+		return
+	}
+
+	m[u] = n
+	return
+}
+
+func (d *Database) RemoveAccountBalanceNotifier(account string, u uuid.UUID) {
+	m, ok := d.accountBalanceNotifiers[account]
+	if !ok {
+		return
+	}
+	delete(m, u)
+	return
+}
+
 // NewDB creates a db client
 func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams *params.ChainParams) *Database {
 
@@ -245,6 +276,8 @@ func NewDB(dbConnString string, log logger.Logger, wg *sync.WaitGroup, netParams
 		DB:        gdb,
 		canClose:  wg,
 		netParams: netParams,
+
+		accountBalanceNotifiers: make(map[string]map[uuid.UUID]*AccountBalanceNotify),
 	}
 
 	dbclient.log.Info("Database connection established")
