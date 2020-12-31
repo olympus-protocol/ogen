@@ -130,7 +130,7 @@ func (s *rpcServer) Start() error {
 				AllowedMethods: []string{http.MethodGet, http.MethodPost},
 			})
 			handler := c.Handler(s.http)
-			err := http.ListenAndServeTLS(addr+":"+s.config.rpcproxyport, path.Join(config.GlobalFlags.DataPath, "cert", "cert.pem"), path.Join(config.GlobalFlags.DataPath, "cert", "cert_key.pem"), handler)
+			err := http.ListenAndServe(addr+":"+s.config.rpcproxyport, handler)
 			if err != nil {
 				s.log.Fatal(err)
 			}

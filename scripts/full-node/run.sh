@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./ogen --dashboard --rpc_proxy
+./ogen --network testnet --dashboard --rpc_proxy
