@@ -166,7 +166,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		return nil
 	}
 
-	if time.Now().Add(time.Second * 2).Before(blockTime) {
+	if time.Now().Add(time.Millisecond * 1500).Before(blockTime) {
 		return fmt.Errorf("block %d processed at %s, but should wait until %s", block.Header.Slot, time.Now(), blockTime)
 	}
 

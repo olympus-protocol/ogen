@@ -164,6 +164,7 @@ func (sp *synchronizer) initialBlockDownload() {
 
 	sp.askForBlocks(peerSelected.ID)
 
+	return
 }
 
 // askForBlocks will ask a peer for blocks.
@@ -180,11 +181,14 @@ func (sp *synchronizer) askForBlocks(id peer.ID) {
 
 	if err != nil {
 		sp.log.Error("unable to send block request msg")
+		return
 	}
 
 	sp.blockStallTimer = time.NewTimer(time.Second * 5)
 
 	go sp.waitForBlocksTimer()
+
+	return
 }
 
 func (sp *synchronizer) waitForBlocksTimer() {
@@ -220,12 +224,15 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 				}
 				fin, _ := sp.chain.State().GetFinalizedHead()
 				if p.FinalizedHeight >= fin.Height {
-					sp.initialBlockDownload()
+					go sp.initialBlockDownload()
+					return nil
 				}
 				return nil
 			}
 			return nil
 		}
+		sp.log.Error(err)
+		return nil
 	}
 
 	if sp.sync {

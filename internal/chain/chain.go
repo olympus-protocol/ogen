@@ -41,7 +41,6 @@ func (c *Chain) SetTip(row *chainindex.BlockRow) {
 		}
 	}
 
-	// TODO check
 	for row != nil && c.chain[row.Height] != row {
 		c.chain[row.Height] = row
 		row = row.Parent

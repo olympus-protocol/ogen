@@ -36,7 +36,6 @@ func TestGovernance_Copy(t *testing.T) {
 	assert.Equal(t, g2.CommunityVotes[keyCom].ReplacementCandidates, [][20]byte{{1, 2, 3}})
 }
 
-// Is not possible to test against equal states because of slice ordering. TODO find a solution
 func Test_GovernanceSerialize(t *testing.T) {
 	v := testdata.FuzzGovernanceState()
 

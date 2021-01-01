@@ -15,17 +15,11 @@ Ogen is the main implementation of the Olympus protocol.
 ./scripts/build.sh
 ```
 
-## Installing
-
-```bash
-bash <(wget --no-cache -qO- https://raw.githubusercontent.com/olympus-protocol/ogen/master/scripts/install.sh)
-```
-
 ## Documentation
 
 The complete documentation can be found here: <https://doc.oly.tech>
 
-## Using Docker
+## Run with Docker
 
 ### Full node with shared storage
 > This configuration is the best to use as a validator

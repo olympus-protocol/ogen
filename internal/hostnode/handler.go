@@ -109,16 +109,15 @@ func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 		p.log.Tracef("processing message %s from peer %s", cmd, id)
 
 		p.messageHandlersLock.Lock()
+		defer p.messageHandlersLock.Unlock()
 
 		if handler, found := p.messageHandler[cmd]; found {
-			p.messageHandlersLock.Unlock()
 			err := handler(id, message)
 			if err != nil {
 				return err
 			}
-		} else {
-			p.messageHandlersLock.Unlock()
 		}
+
 		return nil
 	})
 	if err != nil {

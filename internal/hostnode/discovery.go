@@ -83,15 +83,23 @@ func NewDiscover(host HostNode) (*discover, error) {
 		lastConnect: make(map[peer.ID]time.Time),
 	}
 
-	peersIDs := dp.host.GetHost().Peerstore().Peers()
+	go dp.initialConnect()
+	go dp.advertise()
+	go dp.findPeers()
+
+	return dp, nil
+}
+
+func (d *discover) initialConnect() {
+	peersIDs := d.host.GetHost().Peerstore().Peers()
 	peerstorePeers := make([]peer.AddrInfo, len(peersIDs))
 
 	for i := range peersIDs {
-		peerstorePeers[i] = dp.host.GetHost().Peerstore().PeerInfo(peersIDs[i])
+		peerstorePeers[i] = d.host.GetHost().Peerstore().PeerInfo(peersIDs[i])
 	}
 
 	var initialNodes []peer.AddrInfo
-	initialNodes = append(initialNodes, dp.getRelayers()...)
+	initialNodes = append(initialNodes, d.getRelayers()...)
 
 	if len(peerstorePeers) < 8 {
 		initialNodes = append(initialNodes, peerstorePeers...)
@@ -100,21 +108,16 @@ func NewDiscover(host HostNode) (*discover, error) {
 	}
 
 	for _, addr := range initialNodes {
-		if err := dp.host.GetHost().Connect(dp.ctx, addr); err != nil {
+		if err := d.host.GetHost().Connect(d.ctx, addr); err != nil {
 			m, err := addr.MarshalJSON()
 			if err != nil {
 				continue
 			}
 			BadPeersCache.Set(addr.ID.String(), m, int64(len(m)))
-			dp.host.GetHost().Peerstore().ClearAddrs(addr.ID)
-			dp.log.Infof("unable to connect to peer %s", addr.ID)
+			d.host.GetHost().Peerstore().ClearAddrs(addr.ID)
+			d.log.Infof("unable to connect to peer %s", addr.ID)
 		}
 	}
-
-	go dp.advertise()
-	go dp.findPeers()
-
-	return dp, nil
 }
 
 func (d *discover) handleNewPeer(pi peer.AddrInfo) {
@@ -150,7 +153,6 @@ func (d *discover) findPeers() {
 					time.Sleep(time.Second * 5)
 					break peerLoop
 				}
-
 				d.handleNewPeer(pi)
 			case <-d.ctx.Done():
 				return

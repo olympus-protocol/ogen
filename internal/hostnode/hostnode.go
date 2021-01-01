@@ -145,6 +145,9 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	}
 	node.handler = handler
 
+	go node.listenTopics()
+	go node.listenerWatcher()
+
 	synchronizer, err := NewSyncronizer(node, blockchain)
 	if err != nil {
 		return nil, err
@@ -156,9 +159,6 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		return nil, err
 	}
 	node.discover = discovery
-
-	go node.listenTopics()
-	go node.listenerWatcher()
 
 	return node, nil
 }
