@@ -8,8 +8,9 @@ RUN apt update && apt -y install postgresql
 
 USER postgres
 
-RUN service postgresql start && \
-    psql --command "create database indexer;"
+RUN /etc/init.d/postgresql start &&\
+    psql --command "CREATE USER indexer WITH SUPERUSER PASSWORD 'indexer';" &&\
+    createdb -O indexer indexer
 
 USER root
 

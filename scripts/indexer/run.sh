@@ -1,3 +1,5 @@
 #!/bin/bash
 
-./ogen --network testnet --dashboard & ./ogen indexer testnet --dbconn="postgresql://postgres@localhost:5432/indexer"
+service postgresql start
+
+./ogen --network testnet --dashboard & ./ogen indexer testnet --dbconn="postgresql://indexer:indexer@127.0.0.1/indexer"
