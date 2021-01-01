@@ -9,6 +9,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
+	"github.com/rs/cors"
 	"net"
 	"net/http"
 	"path"
@@ -117,15 +118,18 @@ func (s *rpcServer) Start() error {
 		s.registerServicesProxy(ctx)
 
 		go func() {
-
+			c := cors.New(cors.Options{
+				AllowedOrigins: []string{"*"},
+				AllowedMethods: []string{http.MethodGet, http.MethodPost},
+			})
 			var addr string
 			if s.config.rpcproxyaddr == "" {
 				addr = "localhost"
 			} else {
 				addr = s.config.rpcproxyaddr
 			}
-
-			err := http.ListenAndServe(addr+":"+s.config.rpcproxyport, s.http)
+			handler := c.Handler(s.http)
+			err := http.ListenAndServeTLS(addr+":"+s.config.rpcproxyport, path.Join(config.GlobalFlags.DataPath, "cert", "cert.pem"), path.Join(config.GlobalFlags.DataPath, "cert", "cert_key.pem"), handler)
 			if err != nil {
 				s.log.Fatal(err)
 			}
