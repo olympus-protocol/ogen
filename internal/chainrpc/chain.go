@@ -130,30 +130,36 @@ func (s *chainServer) Sync(in *proto.Hash, stream proto.Chain_SyncServer) error 
 	if err != nil {
 		return errors.New("unable to decode hash from string")
 	}
+
 	currBlockRow, ok := s.chain.State().GetRowByHash(hash)
 	if !ok {
 		return errors.New("block starting point doesnt exist")
 	}
+
 	blockRow, ok = s.chain.State().Chain().Next(currBlockRow)
 	if !ok {
 		return errors.New("there is no next blockrow")
 	}
+
 	for {
 		rawBlock, err := s.chain.GetRawBlock(blockRow.Hash)
 		if err != nil {
 			return errors.New("unable get raw block")
 		}
-		response := &proto.RawData{
+
+		err = stream.Send(&proto.RawData{
 			Data: hex.EncodeToString(rawBlock),
-		}
-		err = stream.Send(response)
+		})
+
 		if err != nil {
 			return err
 		}
+
 		blockRow, ok = s.chain.State().Chain().Next(blockRow)
-		if blockRow == nil || !ok {
+		if !ok {
 			break
 		}
+
 	}
 	return nil
 }

@@ -286,12 +286,16 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 		return nil
 	}
 
+	blockRow, ok := sp.chain.State().Chain().Next(firstCommon)
+	if !ok {
+		sp.log.Errorf("unable to next block from common point for peer %s", id)
+	}
 
 	for {
 
-		block, err := sp.chain.GetBlock(firstCommon.Hash)
+		block, err := sp.chain.GetBlock(blockRow.Hash)
 		if err != nil {
-			return err
+			return errors.New("unable get raw block")
 		}
 
 		err = sp.host.SendMessage(id, &p2p.MsgBlock{
@@ -302,8 +306,7 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 			return err
 		}
 
-		var ok bool
-		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
+		blockRow, ok = sp.chain.State().Chain().Next(blockRow)
 		if !ok {
 			break
 		}
