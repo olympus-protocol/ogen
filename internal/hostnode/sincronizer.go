@@ -210,7 +210,7 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 				}
 				fin, _ := sp.chain.State().GetFinalizedHead()
 				if p.FinalizedHeight >= fin.Height {
-					sp.askForBlocks(id)
+					sp.initialBlockDownload()
 				}
 				return nil
 			}
@@ -285,6 +285,8 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 		sp.log.Errorf("unable to find common point for peer %s", id)
 		return nil
 	}
+
+
 	for {
 
 		block, err := sp.chain.GetBlock(firstCommon.Hash)
@@ -303,20 +305,6 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 		var ok bool
 		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
 		if !ok {
-
-			block, err := sp.chain.GetBlock(firstCommon.Hash)
-			if err != nil {
-				return err
-			}
-
-			err = sp.host.SendMessage(id, &p2p.MsgBlock{
-				Data: block,
-			})
-
-			if err != nil {
-				return err
-			}
-
 			break
 		}
 
