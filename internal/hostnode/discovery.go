@@ -163,15 +163,15 @@ func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
-const connectionTimeout = 3 * time.Second
-const connectionCooldown = 30 * time.Second
+const connectionTimeout = 1500 * time.Millisecond
+const connectionWait = 10 * time.Second
 
 // Connect connects to a peer.
 func (d *discover) Connect(pi peer.AddrInfo) error {
 	d.lastConnectLock.Lock()
 	defer d.lastConnectLock.Unlock()
 	lastConnect, found := d.lastConnect[pi.ID]
-	if !found || time.Since(lastConnect) > connectionCooldown {
+	if !found || time.Since(lastConnect) > connectionWait {
 		d.lastConnect[pi.ID] = time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), connectionTimeout)
 		defer cancel()
