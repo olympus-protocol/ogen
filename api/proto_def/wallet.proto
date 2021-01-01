@@ -62,29 +62,16 @@
         };
     }
 
-    /** 
-        Method: DumpWallet 
-        Input: message Empty
-        Response: message KeyPair
-        Description: Returns the wallet private key on wif format.
-    */
-
-    rpc DumpWallet(Empty) returns (KeyPair) {
-        option (google.api.http) = {
-            get: "/wallet/dump"
-        };
-    }
-
     /**
       Method: DumpWallet
       Input: message Empty
-      Response: message KeyPair
+      Response: message DumpHDWalletInfo
       Description: Returns the wallet private key on wif format.
     */
 
-    rpc DumpHDWallet(Empty) returns (DumpHDWalletInfo) {
+    rpc DumpWallet(Empty) returns (DumpWalletInfo) {
       option (google.api.http) = {
-        get: "/wallet/dumphd"
+        get: "/wallet/dumpwallet"
       };
     }
 
@@ -125,6 +112,19 @@
         option (google.api.http) = {
             get: "/wallet/validators"
         };
+    }
+
+    /**
+      Method: GetValidatorsCount
+      Input: message Empty
+      Response: message ValidatorsRegistry
+      Description: Returns current wallet validators count.
+    */
+
+    rpc GetValidatorsCount(Empty) returns (ValidatorsInfo) {
+      option (google.api.http) = {
+        get: "/wallet/validatorscount"
+      };
     }
 
     /** 
@@ -236,6 +236,6 @@ message ImportWalletData {
     string password = 3;
 }
 
-message DumpHDWalletInfo {
+message DumpWalletInfo {
     string mnemonic = 1;
 }

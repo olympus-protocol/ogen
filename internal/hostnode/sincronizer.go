@@ -54,8 +54,8 @@ type synchronizer struct {
 	peersTrack     map[peer.ID]*peerInfo
 	peersTrackLock sync.Mutex
 
-	sync     bool
-	withPeer peer.ID
+	sync            bool
+	withPeer        peer.ID
 	blockStallTimer *time.Timer
 
 	lastFinalizedEpoch uint64
@@ -188,7 +188,7 @@ func (sp *synchronizer) askForBlocks(id peer.ID) {
 }
 
 func (sp *synchronizer) waitForBlocksTimer() {
-	<- sp.blockStallTimer.C
+	<-sp.blockStallTimer.C
 	sp.sync = false
 	sp.withPeer = ""
 	sp.log.Info("sync finished")

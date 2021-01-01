@@ -21,11 +21,11 @@ type WalletClient interface {
 	CreateWallet(ctx context.Context, in *WalletReference, opts ...grpc.CallOption) (*NewWalletInfo, error)
 	OpenWallet(ctx context.Context, in *WalletReference, opts ...grpc.CallOption) (*Success, error)
 	ImportWallet(ctx context.Context, in *ImportWalletData, opts ...grpc.CallOption) (*KeyPair, error)
-	DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyPair, error)
-	DumpHDWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*DumpHDWalletInfo, error)
+	DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*DumpWalletInfo, error)
 	CloseWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Success, error)
 	GetBalance(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Balance, error)
 	GetValidators(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ValidatorsRegistry, error)
+	GetValidatorsCount(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ValidatorsInfo, error)
 	GetAccount(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyPair, error)
 	SendTransaction(ctx context.Context, in *SendTransactionInfo, opts ...grpc.CallOption) (*Hash, error)
 	StartValidator(ctx context.Context, in *KeyPair, opts ...grpc.CallOption) (*Success, error)
@@ -78,18 +78,9 @@ func (c *walletClient) ImportWallet(ctx context.Context, in *ImportWalletData, o
 	return out, nil
 }
 
-func (c *walletClient) DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyPair, error) {
-	out := new(KeyPair)
+func (c *walletClient) DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*DumpWalletInfo, error) {
+	out := new(DumpWalletInfo)
 	err := c.cc.Invoke(ctx, "/Wallet/DumpWallet", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *walletClient) DumpHDWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*DumpHDWalletInfo, error) {
-	out := new(DumpHDWalletInfo)
-	err := c.cc.Invoke(ctx, "/Wallet/DumpHDWallet", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +108,15 @@ func (c *walletClient) GetBalance(ctx context.Context, in *Empty, opts ...grpc.C
 func (c *walletClient) GetValidators(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ValidatorsRegistry, error) {
 	out := new(ValidatorsRegistry)
 	err := c.cc.Invoke(ctx, "/Wallet/GetValidators", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *walletClient) GetValidatorsCount(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ValidatorsInfo, error) {
+	out := new(ValidatorsInfo)
+	err := c.cc.Invoke(ctx, "/Wallet/GetValidatorsCount", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -185,11 +185,11 @@ type WalletServer interface {
 	CreateWallet(context.Context, *WalletReference) (*NewWalletInfo, error)
 	OpenWallet(context.Context, *WalletReference) (*Success, error)
 	ImportWallet(context.Context, *ImportWalletData) (*KeyPair, error)
-	DumpWallet(context.Context, *Empty) (*KeyPair, error)
-	DumpHDWallet(context.Context, *Empty) (*DumpHDWalletInfo, error)
+	DumpWallet(context.Context, *Empty) (*DumpWalletInfo, error)
 	CloseWallet(context.Context, *Empty) (*Success, error)
 	GetBalance(context.Context, *Empty) (*Balance, error)
 	GetValidators(context.Context, *Empty) (*ValidatorsRegistry, error)
+	GetValidatorsCount(context.Context, *Empty) (*ValidatorsInfo, error)
 	GetAccount(context.Context, *Empty) (*KeyPair, error)
 	SendTransaction(context.Context, *SendTransactionInfo) (*Hash, error)
 	StartValidator(context.Context, *KeyPair) (*Success, error)
@@ -215,11 +215,8 @@ func (UnimplementedWalletServer) OpenWallet(context.Context, *WalletReference) (
 func (UnimplementedWalletServer) ImportWallet(context.Context, *ImportWalletData) (*KeyPair, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ImportWallet not implemented")
 }
-func (UnimplementedWalletServer) DumpWallet(context.Context, *Empty) (*KeyPair, error) {
+func (UnimplementedWalletServer) DumpWallet(context.Context, *Empty) (*DumpWalletInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DumpWallet not implemented")
-}
-func (UnimplementedWalletServer) DumpHDWallet(context.Context, *Empty) (*DumpHDWalletInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DumpHDWallet not implemented")
 }
 func (UnimplementedWalletServer) CloseWallet(context.Context, *Empty) (*Success, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CloseWallet not implemented")
@@ -229,6 +226,9 @@ func (UnimplementedWalletServer) GetBalance(context.Context, *Empty) (*Balance, 
 }
 func (UnimplementedWalletServer) GetValidators(context.Context, *Empty) (*ValidatorsRegistry, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidators not implemented")
+}
+func (UnimplementedWalletServer) GetValidatorsCount(context.Context, *Empty) (*ValidatorsInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorsCount not implemented")
 }
 func (UnimplementedWalletServer) GetAccount(context.Context, *Empty) (*KeyPair, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccount not implemented")
@@ -351,24 +351,6 @@ func _Wallet_DumpWallet_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Wallet_DumpHDWallet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(WalletServer).DumpHDWallet(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Wallet/DumpHDWallet",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WalletServer).DumpHDWallet(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Wallet_CloseWallet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
@@ -419,6 +401,24 @@ func _Wallet_GetValidators_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(WalletServer).GetValidators(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Wallet_GetValidatorsCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServer).GetValidatorsCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Wallet/GetValidatorsCount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServer).GetValidatorsCount(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -556,10 +556,6 @@ var _Wallet_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Wallet_DumpWallet_Handler,
 		},
 		{
-			MethodName: "DumpHDWallet",
-			Handler:    _Wallet_DumpHDWallet_Handler,
-		},
-		{
 			MethodName: "CloseWallet",
 			Handler:    _Wallet_CloseWallet_Handler,
 		},
@@ -570,6 +566,10 @@ var _Wallet_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetValidators",
 			Handler:    _Wallet_GetValidators_Handler,
+		},
+		{
+			MethodName: "GetValidatorsCount",
+			Handler:    _Wallet_GetValidatorsCount_Handler,
 		},
 		{
 			MethodName: "GetAccount",

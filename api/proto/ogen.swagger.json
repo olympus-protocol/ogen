@@ -984,36 +984,14 @@
         ]
       }
     },
-    "/wallet/dump": {
+    "/wallet/dumpwallet": {
       "get": {
         "operationId": "Wallet_DumpWallet",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/KeyPair"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "Wallet"
-        ]
-      }
-    },
-    "/wallet/dumphd": {
-      "get": {
-        "operationId": "Wallet_DumpHDWallet",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/DumpHDWalletInfo"
+              "$ref": "#/definitions/DumpWalletInfo"
             }
           },
           "default": {
@@ -1303,6 +1281,28 @@
           "Wallet"
         ]
       }
+    },
+    "/wallet/validatorscount": {
+      "get": {
+        "operationId": "Wallet_GetValidatorsCount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ValidatorsInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Wallet"
+        ]
+      }
     }
   },
   "definitions": {
@@ -1494,7 +1494,7 @@
         }
       }
     },
-    "DumpHDWalletInfo": {
+    "DumpWalletInfo": {
       "type": "object",
       "properties": {
         "mnemonic": {

@@ -129,23 +129,6 @@ func (c *Client) DumpWallet() (string, error) {
 	return string(b), nil
 }
 
-func (c *Client) DumpHDInfo() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	res, err := c.wallet.DumpHDWallet(ctx, &proto.Empty{})
-	if err != nil {
-		return "", err
-	}
-
-	b, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
-}
-
 func (c *Client) GetBalance() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -168,6 +151,23 @@ func (c *Client) GetValidators() (string, error) {
 	defer cancel()
 
 	res, err := c.wallet.GetValidators(ctx, &proto.Empty{})
+	if err != nil {
+		return "", err
+	}
+
+	b, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
+}
+
+func (c *Client) GetValidatorsCount() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := c.wallet.GetValidatorsCount(ctx, &proto.Empty{})
 	if err != nil {
 		return "", err
 	}

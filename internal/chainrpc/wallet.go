@@ -106,18 +106,7 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	return &proto.KeyPair{Public: acc}, nil
 }
 
-func (s *walletServer) DumpWallet(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
-	defer ctx.Done()
-
-	priv, err := s.wallet.GetSecret()
-	if err != nil {
-		return nil, err
-	}
-
-	return &proto.KeyPair{Private: priv.ToWIF()}, nil
-}
-
-func (s *walletServer) DumpHDWallet(ctx context.Context, _ *proto.Empty) (*proto.DumpHDWalletInfo, error) {
+func (s *walletServer) DumpWallet(ctx context.Context, _ *proto.Empty) (*proto.DumpWalletInfo, error) {
 	defer ctx.Done()
 
 	mnemonic, err := s.wallet.GetMnemonic()
@@ -125,7 +114,7 @@ func (s *walletServer) DumpHDWallet(ctx context.Context, _ *proto.Empty) (*proto
 		return nil, err
 	}
 
-	return &proto.DumpHDWalletInfo{Mnemonic: mnemonic}, nil
+	return &proto.DumpWalletInfo{Mnemonic: mnemonic}, nil
 }
 
 func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.Balance, error) {
@@ -168,6 +157,19 @@ func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*prot
 	}
 
 	return s.getValidators(acc), nil
+}
+
+func (s *walletServer) GetValidatorsCount(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsInfo, error) {
+	defer ctx.Done()
+
+	acc, err := s.wallet.GetAccountRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	validators := s.getValidators(acc)
+
+	return validators.Info, nil
 }
 
 func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {

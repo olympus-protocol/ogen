@@ -43,10 +43,10 @@ var walletCmd = []prompt.Suggest{
 	{Text: "createwallet", Description: "Creates a new wallet and returns the public account"},
 	{Text: "closewallet", Description: "Closes current open wallet"},
 	{Text: "importwallet", Description: "Creates a new wallet based on the wif string private key"},
-	{Text: "dumpwallet", Description: "Exports the private key on wif format of the open wallet"},
-	{Text: "dumphdinfo", Description: "Exports the mnemonic string of a wallet"},
+	{Text: "dumpwallet", Description: "Exports the mnemonic string of a wallet"},
 	{Text: "getbalance", Description: "Get the current open wallet balance"},
 	{Text: "getvalidators", Description: "Get validator list for open wallet"},
+	{Text: "getvalidatorscount", Description: "Get validator numbers for current wallet"},
 	{Text: "getaccount", Description: "Returns the public account of the open wallet"},
 	{Text: "sendtransaction", Description: "Sends a transaction using the current open wallet"},
 	{Text: "startvalidator", Description: "Starts a validator using the current open wallet as the deposit holder"},
@@ -201,12 +201,12 @@ func (c *CLI) executor(str string) {
 		out, err = c.rpcClient.ImportWallet(args[1:])
 	case "dumpwallet":
 		out, err = c.rpcClient.DumpWallet()
-	case "dumphdinfo":
-		out, err = c.rpcClient.DumpHDInfo()
 	case "getbalance":
 		out, err = c.rpcClient.GetBalance()
 	case "getvalidators":
 		out, err = c.rpcClient.GetValidators()
+	case "getvalidatorscount":
+		out, err = c.rpcClient.GetValidatorsCount()
 	case "getaccount":
 		out, err = c.rpcClient.GetAccount()
 	case "sendtransaction":
