@@ -172,6 +172,7 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 		log: log,
 		chainServer: &chainServer{
 			chain: chain,
+			host:  hostnode,
 		},
 		validatorsServer: &validatorsServer{
 			netParams: netParams,

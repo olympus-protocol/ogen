@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"reflect"
 
@@ -18,6 +19,7 @@ import (
 
 type chainServer struct {
 	chain chain.Blockchain
+	host  hostnode.HostNode
 	proto.UnimplementedChainServer
 }
 
@@ -41,6 +43,7 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 			Exited:      validators.Exited,
 			Starting:    validators.Starting,
 		},
+		Synced:        !s.host.Syncing(),
 		JustifiedHead: &proto.Head{Height: justified.Height, Slot: justified.Slot, Hash: hex.EncodeToString(justified.Hash[:])},
 		FinalizedHead: &proto.Head{Height: finalized.Height, Slot: finalized.Slot, Hash: hex.EncodeToString(finalized.Hash[:])},
 	}, nil

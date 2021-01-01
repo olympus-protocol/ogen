@@ -116,6 +116,7 @@ message ChainInfo {
     ValidatorsInfo validators = 3;
     Head justified_head = 4;
     Head finalized_head = 5;
+    bool synced = 6;
 }
 
 message AccountInfo {

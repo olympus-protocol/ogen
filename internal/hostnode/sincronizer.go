@@ -287,9 +287,8 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 	}
 
 	for {
-		ch := sp.chain.State().Chain()
 		var ok bool
-		firstCommon, ok = ch.Next(firstCommon)
+		firstCommon, ok = sp.chain.State().Chain().Next(firstCommon)
 		if !ok {
 			break
 		}
@@ -308,10 +307,12 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 		}
 
 	}
+
 	err := sp.host.SendMessage(id, &p2p.MsgSyncEnd{})
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

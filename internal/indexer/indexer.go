@@ -328,8 +328,18 @@ func (i *Indexer) initialSync() error {
 	}
 
 	i.log.Infof("Starting initial sync")
+
 initSync:
 	time.Sleep(5 * time.Second)
+	status, err := i.client.Chain().GetChainInfo(context.Background(), &proto.Empty{})
+	if err != nil {
+		i.log.Warn("Unable to connect to RPC server. Trying again...")
+		goto initSync
+	}
+	if !status.Synced {
+		i.log.Warn("Chain not synced. Waiting to finish sync...")
+		goto initSync
+	}
 	syncClient, err := i.client.Chain().Sync(context.Background(), &proto.Hash{Hash: askBlock.String()})
 	if err != nil {
 		i.log.Warn("Unable to connect to RPC server. Trying again...")
