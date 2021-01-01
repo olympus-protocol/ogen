@@ -103,6 +103,7 @@ type CoinsMempool interface {
 	RemoveByBlock(b *primitives.Block)
 	Get(maxTransactions uint64, s state.State, feeRedeemAccount [20]byte) ([]*primitives.Tx, state.State)
 	GetWithoutApply() []*primitives.Tx
+	GetMempoolNonce(pkh [20]byte) (uint64, error)
 	AddMulti(item *primitives.TxMulti) error
 	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
 	Notify(n CoinsNotifee)
@@ -128,6 +129,9 @@ type coinsMempool struct {
 
 	notifeesLock sync.Mutex
 	notifees     map[CoinsNotifee]struct{}
+
+	latestNonce map[[20]byte]uint64
+	lockStats   sync.Mutex
 }
 
 // AddMulti adds an item to the coins mempool.
@@ -176,6 +180,13 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 		return err
 	}
 
+	cm.lockStats.Lock()
+	defer cm.lockStats.Unlock()
+
+	if latestNonce, ok := cm.latestNonce[fpkh]; ok && item.Nonce < latestNonce {
+		return errors.New("invalid nonce")
+	}
+
 	// Check the state for a nonce lower than the used in transaction
 	if stateNonce, ok := cs.Nonces[fpkh]; ok && item.Nonce < stateNonce || !ok && item.Nonce != 1 {
 		return errors.New("invalid nonce")
@@ -193,6 +204,7 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 		if err := mpi.add(item, cs.Balances[fpkh]); err != nil {
 			return err
 		}
+		cm.latestNonce[fpkh] = item.Nonce
 	}
 
 	cm.notifeesLock.Lock()
@@ -209,8 +221,12 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 	cm.lockSingle.Lock()
 	cm.lockMulti.Lock()
+	cm.lockStats.Lock()
+
 	defer cm.lockSingle.Unlock()
 	defer cm.lockMulti.Unlock()
+	defer cm.lockStats.Unlock()
+
 	for _, tx := range b.Txs {
 		fpkh, err := tx.FromPubkeyHash()
 		if err != nil {
@@ -223,6 +239,9 @@ func (cm *coinsMempool) RemoveByBlock(b *primitives.Block) {
 		mempoolItem.removeBefore(tx.Nonce)
 		if mempoolItem.balanceSpent == 0 {
 			delete(cm.mempool, fpkh)
+		}
+		if tx.Nonce == cm.latestNonce[fpkh] {
+			delete(cm.latestNonce, fpkh)
 		}
 	}
 }
@@ -339,6 +358,17 @@ func (cm *coinsMempool) Unnotify(n CoinsNotifee) {
 	delete(cm.notifees, n)
 }
 
+// GetMempoolNonce returns the latest nonce tracked by an account in mempool.
+func (cm *coinsMempool) GetMempoolNonce(pkh [20]byte) (uint64, error) {
+	cm.lockStats.Lock()
+	defer cm.lockStats.Unlock()
+	nonce, ok := cm.latestNonce[pkh]
+	if !ok {
+		return 0, ErrorAccountNotOnMempool
+	}
+	return nonce, nil
+}
+
 // NewCoinsMempool constructs a new coins mempool.
 func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMempool, error) {
 	ctx := config.GlobalParams.Context
@@ -353,6 +383,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		host:         hostNode,
 		netParams:    netParams,
 		log:          log,
+		latestNonce:  make(map[[20]byte]uint64),
 
 		notifees: make(map[CoinsNotifee]struct{}),
 	}

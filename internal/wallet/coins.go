@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -57,7 +58,15 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		return nil, err
 	}
 
-	latestNonce := w.chain.State().TipState().GetCoinsState().Nonces[acc]
+	var latestNonce uint64
+	latestNonce, err = w.coinsmempool.GetMempoolNonce(acc)
+	if err != nil {
+		if err == mempool.ErrorAccountNotOnMempool {
+			latestNonce = w.chain.State().TipState().GetCoinsState().Nonces[acc]
+		} else {
+			return nil, err
+		}
+	}
 
 	var p [48]byte
 	copy(p[:], pub.Marshal())
