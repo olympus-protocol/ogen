@@ -56,11 +56,12 @@ type synchronizer struct {
 
 	sync     bool
 	withPeer peer.ID
+	blockStallTimer *time.Timer
 
 	lastFinalizedEpoch uint64
 }
 
-// NewSyncronizerl constructs a new sync protocol with a given host and chain.
+// NewSyncronizer constructs a new sync protocol with a given host and chain.
 func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error) {
 
 	sp := &synchronizer{
@@ -85,10 +86,6 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 	}
 
 	if err := host.RegisterHandler(p2p.MsgBlockCmd, sp.handleBlockMsg); err != nil {
-		return nil, err
-	}
-
-	if err := host.RegisterHandler(p2p.MsgSyncEndCmd, sp.handleSyncEndMsg); err != nil {
 		return nil, err
 	}
 
@@ -184,6 +181,18 @@ func (sp *synchronizer) askForBlocks(id peer.ID) {
 	if err != nil {
 		sp.log.Error("unable to send block request msg")
 	}
+
+	sp.blockStallTimer = time.NewTimer(time.Second * 5)
+
+	go sp.waitForBlocksTimer()
+}
+
+func (sp *synchronizer) waitForBlocksTimer() {
+	<- sp.blockStallTimer.C
+	sp.sync = false
+	sp.withPeer = ""
+	sp.log.Info("sync finished")
+	return
 }
 
 func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
@@ -193,6 +202,7 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 	}
 
 	if sp.sync && sp.withPeer != id {
+		sp.log.Info("received block during sync, waiting to finish...")
 		return nil
 	}
 	err := sp.processBlock(block.Data)
@@ -216,6 +226,10 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 			}
 			return nil
 		}
+	}
+
+	if sp.sync {
+		sp.blockStallTimer.Reset(time.Second * 3)
 	}
 
 	return nil
@@ -252,22 +266,6 @@ func (sp *synchronizer) handleFinalizationMsg(id peer.ID, msg p2p.Message) error
 		FinalizedHash:   fin.FinalizedHash,
 	}
 
-	return nil
-}
-
-func (sp *synchronizer) handleSyncEndMsg(id peer.ID, msg p2p.Message) error {
-	_, ok := msg.(*p2p.MsgSyncEnd)
-	if !ok {
-		return errors.New("non syncend msg")
-	}
-	sp.log.Info("syncing finished")
-	if !sp.sync {
-		return nil
-	}
-	if sp.withPeer == id {
-		sp.sync = false
-		sp.withPeer = ""
-	}
 	return nil
 }
 
@@ -311,11 +309,6 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 			break
 		}
 
-	}
-
-	err := sp.host.SendMessage(id, &p2p.MsgSyncEnd{})
-	if err != nil {
-		return err
 	}
 
 	return nil

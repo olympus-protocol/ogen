@@ -45,8 +45,6 @@ const (
 	MsgVersionCmd = "version"
 	// MsgGetBlocksCmd ask a node for blocks
 	MsgGetBlocksCmd = "getblocks"
-	// MsgSyncEnd announce the syncing node the stream finished
-	MsgSyncEndCmd = "syncend"
 	// MsgFinalizationCmd announce a peer to reached state finalization
 	MsgFinalizationCmd = "finalized"
 	// MsgProofsCmd is coin redeem
@@ -110,8 +108,6 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgValidatorStart{}
 	case MsgGovernanceCmd:
 		msg = &MsgGovernance{}
-	case MsgSyncEndCmd:
-		msg = &MsgSyncEnd{}
 	case MsgFinalizationCmd:
 		msg = &MsgFinalization{}
 	case MsgProofsCmd:
