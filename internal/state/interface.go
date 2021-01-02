@@ -30,6 +30,9 @@ type State interface {
 	IsVoteValid(v *primitives.MultiValidatorVote) error
 	IsPartialExitValid(p *primitives.PartialExit) error
 
+	// Checkers Multi
+	AreDepositsValid(deposits []*primitives.Deposit) error
+
 	// Validators
 	ActivateValidator(index uint64) error
 	InitiateValidatorExit(index uint64) error
@@ -48,6 +51,10 @@ type State interface {
 	ApplyPartialExit(p *primitives.PartialExit) error
 	NextVoteEpoch(newState uint64)
 	SetSlot(slot uint64)
+
+	// Appliers Multi
+	ApplyMultiTransactionSingle(txs []*primitives.Tx, blockWithdrawalAddress [20]byte) error
+	ApplyMultiDeposit(deposits []*primitives.Deposit) error
 
 	// Utils
 	Copy() State

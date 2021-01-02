@@ -42,7 +42,6 @@ func main() {
 
 }
 
-
 type Client struct {
 	wallet proto.WalletClient
 }
@@ -58,7 +57,7 @@ func client(addr string) *Client {
 	}
 
 	client := &Client{
-		wallet:     proto.NewWalletClient(conn),
+		wallet: proto.NewWalletClient(conn),
 	}
 
 	return client

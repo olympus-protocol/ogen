@@ -136,22 +136,33 @@ func SignatureFromBytes(sig []byte) (*Signature, error) {
 
 // NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() *Signature {
-	p, _ := bls12381.NewG2().HashToCurve([]byte{'m', 'o', 'c', 'k'}, dst)
-
+	p, err := bls12381.NewG2().HashToCurve([]byte{'m', 'o', 'c', 'k'}, dst)
+	if err != nil {
+		return nil
+	}
 	return &Signature{s: p}
 }
 
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.
 func AggregateSignatures(sigs []*Signature) *Signature {
+
 	if len(sigs) == 0 {
-		return nil
+		return &Signature{}
 	}
+
+	if len(sigs) == 1 {
+		return sigs[0]
+	}
+
 	g2 := bls12381.NewG2()
-	sig := &bls12381.PointG2{}
-	for i := 0; i < len(sigs); i++ {
-		g2.Add(sig, sig, sigs[i].s)
+
+	aggregated := &bls12381.PointG2{}
+
+	for _, agSig := range sigs {
+		g2.Add(aggregated, aggregated, agSig.s)
 	}
-	return &Signature{s: sig}
+
+	return &Signature{s: aggregated}
 }
 
 /*// VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.

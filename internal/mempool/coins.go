@@ -125,8 +125,8 @@ type coinsMempool struct {
 	mempoolMulti map[[20]byte]*coinMempoolItemMulti
 	lockMulti    sync.Mutex
 
-	latestNonce map[[20]byte]uint64
-	latestNonceLock   sync.Mutex
+	latestNonce     map[[20]byte]uint64
+	latestNonceLock sync.Mutex
 }
 
 // AddMulti adds an item to the coins mempool.
@@ -367,7 +367,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		netParams:    netParams,
 		log:          log,
 		latestNonce:  make(map[[20]byte]uint64),
-		}
+	}
 
 	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {
 		return nil, err

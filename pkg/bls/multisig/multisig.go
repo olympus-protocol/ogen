@@ -174,7 +174,9 @@ func (m *Multisig) Verify(msg []byte) bool {
 	if len(m.Signatures) < int(m.PublicKey.NumNeeded) {
 		return false
 	}
+
 	var sigs []*bls.Signature
+
 	for _, sigBytes := range m.Signatures {
 		sig, err := bls.SignatureFromBytes(sigBytes[:])
 		if err != nil {
@@ -182,9 +184,12 @@ func (m *Multisig) Verify(msg []byte) bool {
 		}
 		sigs = append(sigs, sig)
 	}
+
 	aggSig := bls.AggregateSignatures(sigs)
+
 	activePubs := make([][48]byte, 0)
 	activePubsKeys := make([]*bls.PublicKey, 0)
+
 	for i := range m.PublicKey.PublicKeys {
 		if m.KeysSigned.Get(uint(i)) {
 			activePubs = append(activePubs, m.PublicKey.PublicKeys[i])

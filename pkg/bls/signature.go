@@ -19,9 +19,16 @@ type Signature struct {
 // In ETH2.0 specification:
 // def Verify(PK: BLSPubkey, message: Bytes, signature: BLSSignature) -> bool
 func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
+
 	e := bls12381.NewEngine()
-	ps, _ := bls12381.NewG2().HashToCurve(msg, dst)
+
 	e.AddPairInv(&bls12381.G1One, s.s)
+
+	ps, err := bls12381.NewG2().HashToCurve(msg, dst)
+	if err != nil {
+		return false
+	}
+
 	e.AddPair(pubKey.p, ps)
 	return e.Result().IsOne()
 }
@@ -40,20 +47,32 @@ func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
 // In ETH2.0 specification:
 // def AggregateVerify(pairs: Sequence[PK: BLSPubkey, message: Bytes], signature: BLSSignature) -> boo
 func (s *Signature) AggregateVerify(pubKeys []*PublicKey, msgs [][32]byte) bool {
+
 	e := bls12381.NewEngine()
+
 	size := len(pubKeys)
 	if size == 0 {
 		return false
 	}
+
 	if size != len(msgs) {
 		return false
 	}
+
 	e.AddPairInv(&bls12381.G1One, s.s)
+
 	for i := 0; i < size; i++ {
+
 		g2 := bls12381.NewG2()
-		ps, _ := g2.HashToCurve(msgs[i][:], dst)
+
+		ps, err := g2.HashToCurve(msgs[i][:], dst)
+		if err != nil {
+			return false
+		}
+
 		e.AddPair(pubKeys[i].p, ps)
 	}
+
 	return e.Result().IsOne()
 }
 
@@ -73,6 +92,7 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 	if size == 0 {
 		return false
 	}
+
 	ps, err := bls12381.NewG2().HashToCurve(msg[:], dst)
 	if err != nil {
 		return false
