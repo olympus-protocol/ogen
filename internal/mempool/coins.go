@@ -106,8 +106,6 @@ type CoinsMempool interface {
 	GetMempoolNonce(pkh [20]byte) (uint64, error)
 	AddMulti(item *primitives.TxMulti) error
 	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
-	Notify(n CoinsNotifee)
-	Unnotify(n CoinsNotifee)
 }
 
 var _ CoinsMempool = &coinsMempool{}
@@ -126,9 +124,6 @@ type coinsMempool struct {
 
 	mempoolMulti map[[20]byte]*coinMempoolItemMulti
 	lockMulti    sync.Mutex
-
-	notifeesLock sync.Mutex
-	notifees     map[CoinsNotifee]struct{}
 
 	latestNonce map[[20]byte]uint64
 	latestNonceLock   sync.Mutex
@@ -201,17 +196,15 @@ func (cm *coinsMempool) Add(item *primitives.Tx) error {
 	if !ok {
 		cm.mempool[fpkh] = newCoinMempoolItem()
 		mpi = cm.mempool[fpkh]
-	}
-	if err := mpi.add(item, cs.Balances[fpkh]); err != nil {
-		return err
-	}
-	cm.latestNonce[fpkh] = item.Nonce
-
-	cm.notifeesLock.Lock()
-	defer cm.notifeesLock.Unlock()
-
-	for n := range cm.notifees {
-		n.NotifyTx(item)
+		if err := mpi.add(item, cs.Balances[fpkh]); err != nil {
+			return err
+		}
+		cm.latestNonce[fpkh] = item.Nonce
+	} else {
+		if err := mpi.add(item, cs.Balances[fpkh]); err != nil {
+			return err
+		}
+		cm.latestNonce[fpkh] = item.Nonce
 	}
 
 	return nil
@@ -346,26 +339,16 @@ func (cm *coinsMempool) handleTxMulti(id peer.ID, msg p2p.Message) error {
 	return nil
 }
 
-func (cm *coinsMempool) Notify(n CoinsNotifee) {
-	cm.notifeesLock.Lock()
-	defer cm.notifeesLock.Unlock()
-	cm.notifees[n] = struct{}{}
-}
-
-func (cm *coinsMempool) Unnotify(n CoinsNotifee) {
-	cm.notifeesLock.Lock()
-	defer cm.notifeesLock.Unlock()
-	delete(cm.notifees, n)
-}
-
 // GetMempoolNonce returns the latest nonce tracked by an account in mempool.
 func (cm *coinsMempool) GetMempoolNonce(pkh [20]byte) (uint64, error) {
 	cm.latestNonceLock.Lock()
 	defer cm.latestNonceLock.Unlock()
+
 	nonce, ok := cm.latestNonce[pkh]
 	if !ok {
 		return 0, ErrorAccountNotOnMempool
 	}
+
 	return nonce, nil
 }
 
@@ -384,9 +367,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		netParams:    netParams,
 		log:          log,
 		latestNonce:  make(map[[20]byte]uint64),
-
-		notifees: make(map[CoinsNotifee]struct{}),
-	}
+		}
 
 	if err := cm.host.RegisterTopicHandler(p2p.MsgTxCmd, cm.handleTx); err != nil {
 		return nil, err

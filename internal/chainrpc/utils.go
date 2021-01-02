@@ -237,69 +237,6 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 	return blockParse, nil
 }
 
-func (s *utilsServer) SyncMempool(_ *proto.Empty, stream proto.Utils_SyncMempoolServer) error {
-	_, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-	txs := s.coinsMempool.GetWithoutApply()
-	for _, tx := range txs {
-		protoTx := &proto.Tx{
-			Hash:          tx.Hash().String(),
-			To:            hex.EncodeToString(tx.To[:]),
-			FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
-			Amount:        tx.Amount,
-			Nonce:         tx.Nonce,
-			Fee:           tx.Fee,
-			Signature:     hex.EncodeToString(tx.Signature[:]),
-		}
-		err := stream.Send(protoTx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *utilsServer) SubscribeMempool(_ *proto.Empty, stream proto.Utils_SubscribeMempoolServer) error {
-	txn := newCoinsNotifee()
-	s.coinsMempool.Notify(txn)
-	for {
-		select {
-		case tx := <-txn.tx:
-			protoTx := &proto.Tx{
-				Hash:          tx.Hash().String(),
-				To:            hex.EncodeToString(tx.To[:]),
-				FromPublicKey: hex.EncodeToString(tx.FromPublicKey[:]),
-				Amount:        tx.Amount,
-				Nonce:         tx.Nonce,
-				Fee:           tx.Fee,
-				Signature:     hex.EncodeToString(tx.Signature[:]),
-			}
-			err := stream.Send(protoTx)
-			if err != nil {
-				return err
-			}
-		case <-stream.Context().Done():
-			return nil
-		}
-	}
-
-}
-
-type coinNotifee struct {
-	tx chan *primitives.Tx
-}
-
-func (c *coinNotifee) NotifyTx(tx *primitives.Tx) {
-	c.tx <- tx
-}
-
-func newCoinsNotifee() *coinNotifee {
-	bn := &coinNotifee{
-		tx: make(chan *primitives.Tx),
-	}
-	return bn
-}
-
 func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemProof) (*proto.Success, error) {
 	defer ctx.Done()
 	proofBytes, err := hex.DecodeString(data.Proof)

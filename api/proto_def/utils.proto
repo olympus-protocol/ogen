@@ -84,30 +84,6 @@ service Utils {
     }
 
     /**
-        Method: SyncMempool
-        Input: Empty
-        Response: Tx
-        Description: Returns a stream of transactions on the mempool to sync it.
-    */
-    rpc SyncMempool(Empty) returns (stream Tx) {
-        option (google.api.http) = {
-            get: "/utils/syncmempool"
-        };
-    }
-
-    /**
-        Method: SubscribeMempool
-        Input: Empty
-        Response: Tx
-        Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
-    */
-    rpc SubscribeMempool(Empty) returns (stream Tx) {
-        option (google.api.http) = {
-            get: "/utils/subscribemempool"
-        };
-    }
-
-    /**
     Method: SubmitRedeemProof
     Input: RedeemProof
     Response: Tx

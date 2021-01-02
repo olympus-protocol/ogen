@@ -54,18 +54,6 @@ type UtilsClient interface {
 	//Description: Returns current internal status of consensus participation.
 	GetParticipationStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ParticipationInfo, error)
 	//*
-	//Method: SyncMempool
-	//Input: Empty
-	//Response: Tx
-	//Description: Returns a stream of transactions on the mempool to sync it.
-	SyncMempool(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Utils_SyncMempoolClient, error)
-	//*
-	//Method: SubscribeMempool
-	//Input: Empty
-	//Response: Tx
-	//Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
-	SubscribeMempool(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Utils_SubscribeMempoolClient, error)
-	//*
 	//Method: SubmitRedeemProof
 	//Input: RedeemProof
 	//Response: Tx
@@ -135,70 +123,6 @@ func (c *utilsClient) GetParticipationStatus(ctx context.Context, in *Empty, opt
 	return out, nil
 }
 
-func (c *utilsClient) SyncMempool(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Utils_SyncMempoolClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Utils_serviceDesc.Streams[0], "/Utils/SyncMempool", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &utilsSyncMempoolClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Utils_SyncMempoolClient interface {
-	Recv() (*Tx, error)
-	grpc.ClientStream
-}
-
-type utilsSyncMempoolClient struct {
-	grpc.ClientStream
-}
-
-func (x *utilsSyncMempoolClient) Recv() (*Tx, error) {
-	m := new(Tx)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *utilsClient) SubscribeMempool(ctx context.Context, in *Empty, opts ...grpc.CallOption) (Utils_SubscribeMempoolClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Utils_serviceDesc.Streams[1], "/Utils/SubscribeMempool", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &utilsSubscribeMempoolClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Utils_SubscribeMempoolClient interface {
-	Recv() (*Tx, error)
-	grpc.ClientStream
-}
-
-type utilsSubscribeMempoolClient struct {
-	grpc.ClientStream
-}
-
-func (x *utilsSubscribeMempoolClient) Recv() (*Tx, error) {
-	m := new(Tx)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *utilsClient) SubmitRedeemProof(ctx context.Context, in *RedeemProof, opts ...grpc.CallOption) (*Success, error) {
 	out := new(Success)
 	err := c.cc.Invoke(ctx, "/Utils/SubmitRedeemProof", in, out, opts...)
@@ -249,18 +173,6 @@ type UtilsServer interface {
 	//Description: Returns current internal status of consensus participation.
 	GetParticipationStatus(context.Context, *Empty) (*ParticipationInfo, error)
 	//*
-	//Method: SyncMempool
-	//Input: Empty
-	//Response: Tx
-	//Description: Returns a stream of transactions on the mempool to sync it.
-	SyncMempool(*Empty, Utils_SyncMempoolServer) error
-	//*
-	//Method: SubscribeMempool
-	//Input: Empty
-	//Response: Tx
-	//Description: Returns a stream of transactions. Relaying a transaction when arrives the mempool.
-	SubscribeMempool(*Empty, Utils_SubscribeMempoolServer) error
-	//*
 	//Method: SubmitRedeemProof
 	//Input: RedeemProof
 	//Response: Tx
@@ -290,12 +202,6 @@ func (UnimplementedUtilsServer) DecodeRawBlock(context.Context, *RawData) (*Bloc
 }
 func (UnimplementedUtilsServer) GetParticipationStatus(context.Context, *Empty) (*ParticipationInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetParticipationStatus not implemented")
-}
-func (UnimplementedUtilsServer) SyncMempool(*Empty, Utils_SyncMempoolServer) error {
-	return status.Errorf(codes.Unimplemented, "method SyncMempool not implemented")
-}
-func (UnimplementedUtilsServer) SubscribeMempool(*Empty, Utils_SubscribeMempoolServer) error {
-	return status.Errorf(codes.Unimplemented, "method SubscribeMempool not implemented")
 }
 func (UnimplementedUtilsServer) SubmitRedeemProof(context.Context, *RedeemProof) (*Success, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitRedeemProof not implemented")
@@ -421,48 +327,6 @@ func _Utils_GetParticipationStatus_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Utils_SyncMempool_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(UtilsServer).SyncMempool(m, &utilsSyncMempoolServer{stream})
-}
-
-type Utils_SyncMempoolServer interface {
-	Send(*Tx) error
-	grpc.ServerStream
-}
-
-type utilsSyncMempoolServer struct {
-	grpc.ServerStream
-}
-
-func (x *utilsSyncMempoolServer) Send(m *Tx) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _Utils_SubscribeMempool_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(UtilsServer).SubscribeMempool(m, &utilsSubscribeMempoolServer{stream})
-}
-
-type Utils_SubscribeMempoolServer interface {
-	Send(*Tx) error
-	grpc.ServerStream
-}
-
-type utilsSubscribeMempoolServer struct {
-	grpc.ServerStream
-}
-
-func (x *utilsSubscribeMempoolServer) Send(m *Tx) error {
-	return x.ServerStream.SendMsg(m)
-}
-
 func _Utils_SubmitRedeemProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RedeemProof)
 	if err := dec(in); err != nil {
@@ -514,17 +378,6 @@ var _Utils_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Utils_SubmitRedeemProof_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "SyncMempool",
-			Handler:       _Utils_SyncMempool_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "SubscribeMempool",
-			Handler:       _Utils_SubscribeMempool_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "utils.proto",
 }

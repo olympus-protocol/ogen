@@ -60,6 +60,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	var latestNonce uint64
 	latestNonce, err = w.coinsmempool.GetMempoolNonce(acc)
+	fmt.Println(latestNonce, err)
 	if err != nil {
 		if err == mempool.ErrorAccountNotOnMempool {
 			latestNonce = w.chain.State().TipState().GetCoinsState().Nonces[acc]
