@@ -3,7 +3,6 @@ package burnproof
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
@@ -13,13 +12,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
-
-var merkleRootHash [32]byte
-
-func init() {
-	hashBytes, _ := hex.DecodeString("0be71bd3e3ec9046901b21f066407f8413c73dc3145d6a515d0fa03b28e0140f") //  PolisBlockchain "height": 742048
-	copy(merkleRootHash[:], hashBytes)
-}
 
 type CoinsProofSerializable struct {
 	MerkleIndex   uint64
@@ -274,7 +266,7 @@ func verifyPkhMatchesAddress(script []byte, address []byte) error {
 }
 
 // VerifyBurn verifies a burn proof.
-func VerifyBurn(proofBytes []byte, address []byte) error {
+func VerifyBurn(proofBytes []byte, address []byte, merkleRoot chainhash.Hash) error {
 	var proofs []*CoinsProof
 
 	buf := bytes.NewBuffer(proofBytes)
@@ -293,7 +285,7 @@ func VerifyBurn(proofBytes []byte, address []byte) error {
 	}
 
 	for _, c := range proofs {
-		err := VerifyBurnProof(c, address)
+		err := VerifyBurnProof(c, address, merkleRoot)
 		if err != nil {
 			return err
 		}
@@ -303,8 +295,8 @@ func VerifyBurn(proofBytes []byte, address []byte) error {
 }
 
 // VerifyBurnProof verifies a single burn proof.
-func VerifyBurnProof(p *CoinsProof, address []byte) error {
-	if err := verifyMerkleRoot(merkleRootHash, p); err != nil {
+func VerifyBurnProof(p *CoinsProof, address []byte, merkleRoot chainhash.Hash) error {
+	if err := verifyMerkleRoot(merkleRoot, p); err != nil {
 		return err
 	}
 

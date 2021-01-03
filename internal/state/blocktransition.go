@@ -323,12 +323,14 @@ func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAdd
 
 // IsCoinProofValid checks if an coin proof is valid.
 func (s *state) IsCoinProofValid(p *burnproof.CoinsProofSerializable) error {
+	netPrams := config.GlobalParams.NetParams
+
 	proof, err := p.ToCoinProof()
 	if err != nil {
 		return err
 	}
 
-	err = burnproof.VerifyBurnProof(proof, p.RedeemAccount[:])
+	err = burnproof.VerifyBurnProof(proof, p.RedeemAccount[:], netPrams.ProofsMerkleRoot)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package params
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
@@ -23,6 +24,13 @@ func ProtocolID(net string) protocol.ID {
 	return protocol.ID("/ogen/" + net)
 }
 
+var merkleRootHashTestNet [32]byte
+
+func init() {
+	hashBytes, _ := hex.DecodeString("ef801c6398f121afafca8cf7b5a121e26d42d9b05f6711efe0a7687b670fcc7f") //  PolisBlockchain "height": 750711
+	copy(merkleRootHashTestNet[:], hashBytes)
+}
+
 // AccountPrefixes are prefixes used for account bech32 encoding.
 type AccountPrefixes struct {
 	Public   string
@@ -39,6 +47,7 @@ type ChainParams struct {
 	AccountPrefixes              AccountPrefixes
 	NetMagic                     uint32
 	GovernanceBudgetQuotient     uint64
+	ProofsMerkleRoot             chainhash.Hash
 	EpochLength                  uint64
 	EjectionBalance              uint64
 	MaxBalanceChurnQuotient      uint64
@@ -159,6 +168,7 @@ var TestNet = ChainParams{
 	},
 	GovernanceBudgetQuotient:     5,        // 20%
 	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
+	ProofsMerkleRoot:             merkleRootHashTestNet,
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
 	EjectionBalance:              95,

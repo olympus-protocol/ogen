@@ -2,11 +2,19 @@ package burnproof_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
 )
+
+var merkleRootHashTestNet [32]byte
+
+func init() {
+	hashBytes, _ := hex.DecodeString("0be71bd3e3ec9046901b21f066407f8413c73dc3145d6a515d0fa03b28e0140f") //  PolisBlockchain "height": 750711
+	copy(merkleRootHashTestNet[:], hashBytes)
+}
 
 var proofBytes, _ = ioutil.ReadFile("./test_proofdata.dat")
 
@@ -28,7 +36,7 @@ func TestCoinProofDecode(t *testing.T) {
 func TestBurnVerify(t *testing.T) {
 	acc := []byte("12345")
 
-	err := burnproof.VerifyBurn(proofBytes, acc)
+	err := burnproof.VerifyBurn(proofBytes, acc, merkleRootHashTestNet)
 	assert.NoError(t, err)
 }
 
@@ -65,7 +73,7 @@ func TestBurnProofsToSerializable(t *testing.T) {
 		assert.NoError(t, err)
 
 		amount += uint64(toCoinProof.Transaction.TxOut[0].Value)
-		err = burnproof.VerifyBurn(proofBytes, acc)
+		err = burnproof.VerifyBurn(proofBytes, acc, merkleRootHashTestNet)
 		assert.NoError(t, err)
 
 		assert.Equal(t, proof, toCoinProof)
