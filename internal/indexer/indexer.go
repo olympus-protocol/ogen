@@ -52,7 +52,9 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	tip, _ := i.index.Get(b.Header.PrevBlockHash)
 	v := chain.NewChainView(tip)
 
-	_, err := i.state.ProcessSlots(b.Header.Slot, &v)
+	currSlot := b.Header.Slot
+
+	comitte, err := i.state.GetVoteCommittee(currSlot)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +62,29 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	hash := b.Header.Hash()
 
 	dbSlot := db.Slot{
+		Slot:          currSlot,
+		BlockHash:     hash[:],
+		ProposerIndex: 0,
+		Proposed:      true,
+		ExpectedVotes: uint64(len(comitte)),
+	}
+	err = i.db.AddSlot(&dbSlot)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = i.state.ProcessSlots(b.Header.Slot, &v)
+	if err != nil {
+		return nil, err
+	}
+
+
+	dbSlot = db.Slot{
 		Slot:      b.Header.Slot,
 		BlockHash: hash[:],
 		Proposed:  true,
 	}
+
 	err = i.db.MarkSlotProposed(&dbSlot)
 	if err != nil {
 		return nil, err
@@ -83,32 +104,20 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 			return nil, err
 		}
 
-		currSlot := b.Header.Slot
-		proposers := i.state.GetProposerQueue()
+		slots := make([]uint64, 5)
 
-		slots := make([]db.Slot, 5)
 		for j := 0; j <= 4; j++ {
 			currSlot++
-			dbSlot := db.Slot{
-				Slot:          currSlot,
-				BlockHash:     nil,
-				ProposerIndex: proposers[j],
-				Proposed:      false,
-			}
-			slots[j] = dbSlot
-			err = i.db.AddSlot(&dbSlot)
-			if err != nil {
-				return nil, err
-			}
+			slots[j] = currSlot
 		}
 
 		epoch := &db.Epoch{
 			Epoch:                   i.state.GetEpochIndex(),
-			Slot1:                   slots[0].Slot,
-			Slot2:                   slots[1].Slot,
-			Slot3:                   slots[2].Slot,
-			Slot4:                   slots[3].Slot,
-			Slot5:                   slots[4].Slot,
+			Slot1:                   slots[0],
+			Slot2:                   slots[1],
+			Slot3:                   slots[2],
+			Slot4:                   slots[3],
+			Slot5:                   slots[4],
 			ParticipationPercentage: nil,
 			Finalized:               false,
 			Justified:               false,
