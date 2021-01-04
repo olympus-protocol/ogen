@@ -121,6 +121,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 		for j := 0; j <= 4; j++ {
 			currSlot++
 			dbSlot := db.Slot{
+				Epoch: i.state.GetEpochIndex(),
 				Slot:          currSlot,
 				BlockHash:     nil,
 				ProposerIndex: proposers[j],

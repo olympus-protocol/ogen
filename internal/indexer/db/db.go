@@ -82,7 +82,9 @@ func (d *Database) AddSlotVoteInclusions(s uint64, votes int) error {
 	if res.Error != nil {
 		return res.Error
 	}
+
 	slot.VotesIncluded += uint64(votes)
+
 	res = d.DB.Save(slot)
 	if res.Error != nil {
 		return res.Error
