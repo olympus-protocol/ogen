@@ -66,6 +66,20 @@ func (d *Database) AddSlot(s *Slot) error {
 	return nil
 }
 
+func (d *Database) AddSlotVoteInclusions(s uint64, votes int) error {
+	var slot Slot
+	res := d.DB.Where(&Slot{Slot: s}).First(&slot)
+	if res.Error != nil {
+		return res.Error
+	}
+	slot.VotesIncluded += uint64(votes)
+	res = d.DB.Save(slot)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
 func (d *Database) MarkSlotProposed(s *Slot) error {
 	res := d.DB.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "slot"}},

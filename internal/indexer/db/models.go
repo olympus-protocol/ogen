@@ -219,10 +219,13 @@ type PartialExit struct {
 }
 
 type Slot struct {
+	Epoch         uint64
 	Slot          uint64 `gorm:"primaryKey"`
 	BlockHash     []byte
 	ProposerIndex uint64
 	Proposed      bool
+	ExpectedVotes uint64
+	VotesIncluded uint64
 }
 
 func (s *Slot) ToGQL() *model.Slot {
