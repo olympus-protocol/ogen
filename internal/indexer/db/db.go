@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -58,6 +59,15 @@ func (d *Database) AddEpoch(e *Epoch) error {
 	return nil
 }
 
+func (d *Database) GetLastSlot() (uint64, error) {
+	var max int
+	err := d.DB.Raw("select max(slot) from slots").Row().Scan(&max)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(max), nil
+}
+
 func (d *Database) AddSlot(s *Slot) error {
 	res := d.DB.Create(s)
 	if res.Error != nil {
@@ -78,6 +88,24 @@ func (d *Database) AddSlotVoteInclusions(s uint64, votes int) error {
 		return res.Error
 	}
 	return nil
+}
+
+func (d *Database) GetEpochParticipation(e int) (string, error) {
+	var epoch Epoch
+	res := d.DB.Where(&Epoch{Epoch: uint64(e)}).First(&epoch)
+	if res.Error != nil {
+		return "", res.Error
+	}
+	var slots []Slot
+	res = d.DB.Where(&Slot{Epoch: uint64(e)}).Find(&slots)
+	if res.Error != nil {
+		return "", res.Error
+	}
+	votedValidators := uint64(0)
+	for _, s := range slots {
+		votedValidators += s.VotesIncluded
+	}
+	return fmt.Sprintf("%.2f", float64(votedValidators)/float64(epoch.ExpectedVotes)*100), nil
 }
 
 func (d *Database) MarkSlotProposed(s *Slot) error {

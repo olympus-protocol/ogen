@@ -121,7 +121,8 @@ type Epoch {
   slot_3: Int!
   slot_4: Int!
   slot_5: Int!
-  participation_percentage: String!
+  expected_votes: Int!
+  participation: String!
   finalized: Boolean!
   justified: Boolean!
   randao: String!

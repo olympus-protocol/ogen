@@ -61,16 +61,17 @@ type DepositData struct {
 }
 
 type Epoch struct {
-	Epoch                   int    `json:"epoch"`
-	Slot1                   int    `json:"slot_1"`
-	Slot2                   int    `json:"slot_2"`
-	Slot3                   int    `json:"slot_3"`
-	Slot4                   int    `json:"slot_4"`
-	Slot5                   int    `json:"slot_5"`
-	ParticipationPercentage string `json:"participation_percentage"`
-	Finalized               bool   `json:"finalized"`
-	Justified               bool   `json:"justified"`
-	Randao                  string `json:"randao"`
+	Epoch         int    `json:"epoch"`
+	Slot1         int    `json:"slot_1"`
+	Slot2         int    `json:"slot_2"`
+	Slot3         int    `json:"slot_3"`
+	Slot4         int    `json:"slot_4"`
+	Slot5         int    `json:"slot_5"`
+	ExpectedVotes int    `json:"expected_votes"`
+	Participation string `json:"participation"`
+	Finalized     bool   `json:"finalized"`
+	Justified     bool   `json:"justified"`
+	Randao        string `json:"randao"`
 }
 
 type Exit struct {

@@ -169,7 +169,16 @@ func (r *queryResolver) Epoch(ctx context.Context, epoch int) (*model.Epoch, err
 		return nil, res.Error
 	}
 
-	return e.ToGQL(), nil
+	epochGQL := e.ToGQL()
+
+	participation, err := r.DB.GetEpochParticipation(epochGQL.Epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	epochGQL.Participation = participation
+
+	return epochGQL, nil
 }
 
 func (r *queryResolver) Tx(ctx context.Context, hash string) (*model.Tx, error) {
@@ -286,9 +295,18 @@ func (r *queryResolver) Tip(ctx context.Context) (*model.Tip, error) {
 		return nil, res.Error
 	}
 
+	epochGQL := epoch.ToGQL()
+
+	participation, err := r.DB.GetEpochParticipation(epochGQL.Epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	epochGQL.Participation = participation
+
 	return &model.Tip{
 		Slot:       slot.ToGQL(),
-		Epoch:      epoch.ToGQL(),
+		Epoch:      epochGQL,
 		Block:      block.ToGQL(),
 		Validators: validators,
 	}, nil
@@ -381,9 +399,18 @@ func (r *subscriptionResolver) Tip(ctx context.Context) (<-chan *model.Tip, erro
 			return
 		}
 
+		epochGQL := epoch.ToGQL()
+
+		participation, err := r.DB.GetEpochParticipation(epochGQL.Epoch)
+		if err != nil {
+			return
+		}
+
+		epochGQL.Participation = participation
+
 		initialTip := &model.Tip{
 			Slot:       slot.ToGQL(),
-			Epoch:      epoch.ToGQL(),
+			Epoch:      epochGQL,
 			Block:      block.ToGQL(),
 			Validators: validators,
 		}

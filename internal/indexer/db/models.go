@@ -167,30 +167,30 @@ func (d *DepositData) ToGQL() *model.DepositData {
 }
 
 type Epoch struct {
-	Epoch                   uint64 `gorm:"primaryKey"`
-	Slot1                   uint64
-	Slot2                   uint64
-	Slot3                   uint64
-	Slot4                   uint64
-	Slot5                   uint64
-	ParticipationPercentage []byte
-	Finalized               bool
-	Justified               bool
-	Randao                  []byte
+	Epoch         uint64 `gorm:"primaryKey"`
+	Slot1         uint64
+	Slot2         uint64
+	Slot3         uint64
+	Slot4         uint64
+	Slot5         uint64
+	ExpectedVotes uint64
+	Finalized     bool
+	Justified     bool
+	Randao        []byte
 }
 
 func (e *Epoch) ToGQL() *model.Epoch {
 	return &model.Epoch{
-		Epoch:                   int(e.Epoch),
-		Slot1:                   int(e.Slot1),
-		Slot2:                   int(e.Slot2),
-		Slot3:                   int(e.Slot3),
-		Slot4:                   int(e.Slot4),
-		Slot5:                   int(e.Slot5),
-		ParticipationPercentage: hex.EncodeToString(e.ParticipationPercentage),
-		Finalized:               e.Finalized,
-		Justified:               e.Justified,
-		Randao:                  hex.EncodeToString(e.Randao),
+		Epoch:         int(e.Epoch),
+		Slot1:         int(e.Slot1),
+		Slot2:         int(e.Slot2),
+		Slot3:         int(e.Slot3),
+		Slot4:         int(e.Slot4),
+		Slot5:         int(e.Slot5),
+		ExpectedVotes: int(e.ExpectedVotes),
+		Finalized:     e.Finalized,
+		Justified:     e.Justified,
+		Randao:        hex.EncodeToString(e.Randao),
 	}
 }
 
@@ -224,7 +224,6 @@ type Slot struct {
 	BlockHash     []byte
 	ProposerIndex uint64
 	Proposed      bool
-	ExpectedVotes uint64
 	VotesIncluded uint64
 }
 
@@ -404,9 +403,18 @@ func (t *TipNotify) Notify() {
 		return
 	}
 
+	epochGQL := epoch.ToGQL()
+
+	participation, err := t.db.GetEpochParticipation(epochGQL.Epoch)
+	if err != nil {
+		return
+	}
+
+	epochGQL.Participation = participation
+
 	t.notify <- &model.Tip{
 		Slot:       slot.ToGQL(),
-		Epoch:      epoch.ToGQL(),
+		Epoch:      epochGQL,
 		Block:      block.ToGQL(),
 		Validators: validators,
 	}

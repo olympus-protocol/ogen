@@ -49,12 +49,39 @@ type Indexer struct {
 func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error) {
 	i.log.Infof("Processing block at slot %d", b.Header.Slot)
 
+	// First we fill the gaps in slots
+	// Since the database is empty and error is not critical, we ignore all errors and fill only when we
+	// are absolutely sure there is no error
+	maxDbSlot, err := i.db.GetLastSlot()
+	if err == nil {
+		if b.Header.Slot > maxDbSlot {
+			// If the gap is greater than 2 fill it
+			gap := b.Header.Slot - maxDbSlot
+			if gap >= 2 {
+				i.log.Infof("Gap found between %d and %d slots", b.Header.Slot, maxDbSlot)
+				for j := uint64(1); j <= gap; j++ {
+					dbSlot := &db.Slot{
+						Epoch:         i.state.GetEpochIndex(),
+						Slot:          maxDbSlot + j,
+						BlockHash:     nil,
+						ProposerIndex: 0,
+						Proposed:      false,
+						VotesIncluded: 0,
+					}
+
+					err = i.db.AddSlot(dbSlot)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+	}
+
 	tip, _ := i.index.Get(b.Header.PrevBlockHash)
 	v := chain.NewChainView(tip)
 
-	currSlot := b.Header.Slot
-
-	comitte, err := i.state.GetVoteCommittee(currSlot)
+	_, err = i.state.ProcessSlots(b.Header.Slot, &v)
 	if err != nil {
 		return nil, err
 	}
@@ -62,24 +89,6 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	hash := b.Header.Hash()
 
 	dbSlot := db.Slot{
-		Slot:          currSlot,
-		BlockHash:     hash[:],
-		ProposerIndex: 0,
-		Proposed:      true,
-		ExpectedVotes: uint64(len(comitte)),
-	}
-	err = i.db.AddSlot(&dbSlot)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = i.state.ProcessSlots(b.Header.Slot, &v)
-	if err != nil {
-		return nil, err
-	}
-
-
-	dbSlot = db.Slot{
 		Slot:      b.Header.Slot,
 		BlockHash: hash[:],
 		Proposed:  true,
@@ -104,24 +113,38 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 			return nil, err
 		}
 
-		slots := make([]uint64, 5)
+		slots := make([]db.Slot, 5)
+
+		currSlot := b.Header.Slot
+		proposers := i.state.GetProposerQueue()
 
 		for j := 0; j <= 4; j++ {
 			currSlot++
-			slots[j] = currSlot
+			dbSlot := db.Slot{
+				Slot:          currSlot,
+				BlockHash:     nil,
+				ProposerIndex: proposers[j],
+				Proposed:      false,
+			}
+			slots[j] = dbSlot
+			err = i.db.AddSlot(&dbSlot)
+			if err != nil {
+				return nil, err
+			}
+			slots[j] = dbSlot
 		}
 
 		epoch := &db.Epoch{
-			Epoch:                   i.state.GetEpochIndex(),
-			Slot1:                   slots[0],
-			Slot2:                   slots[1],
-			Slot3:                   slots[2],
-			Slot4:                   slots[3],
-			Slot5:                   slots[4],
-			ParticipationPercentage: nil,
-			Finalized:               false,
-			Justified:               false,
-			Randao:                  serState.NextRANDAO[:],
+			Epoch:         i.state.GetEpochIndex(),
+			Slot1:         slots[0].Slot,
+			Slot2:         slots[1].Slot,
+			Slot3:         slots[2].Slot,
+			Slot4:         slots[3].Slot,
+			Slot5:         slots[4].Slot,
+			ExpectedVotes: uint64(i.state.GetValidators().Active),
+			Finalized:     false,
+			Justified:     false,
+			Randao:        serState.NextRANDAO[:],
 		}
 
 		err = i.db.AddEpoch(epoch)
@@ -201,22 +224,31 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 
 	if len(b.Votes) > 0 {
 		dbVotes := make([]db.Vote, len(b.Votes))
-		for i := range b.Votes {
+		for j := range b.Votes {
+			vote := b.Votes[j]
+
+			voteParticipation := len(vote.ParticipationBitfield.BitIndices())
+
+			err = i.db.AddSlotVoteInclusions(vote.Data.Slot, voteParticipation)
+			if err != nil {
+				return nil, err
+			}
+
 			nonce := make([]byte, 8)
-			binary.LittleEndian.PutUint64(nonce, b.Votes[i].Data.Nonce)
-			hash := b.Votes[i].Data.Hash()
-			dbVotes[i] = db.Vote{
+			binary.LittleEndian.PutUint64(nonce, b.Votes[j].Data.Nonce)
+			hash := vote.Data.Hash()
+			dbVotes[j] = db.Vote{
 				Hash:                  hash[:],
 				BlockHash:             row.Hash[:],
-				ParticipationBitfield: b.Votes[i].ParticipationBitfield,
+				ParticipationBitfield: vote.ParticipationBitfield,
 				Data: db.VoteData{
 					Hash:            hash[:],
-					Slot:            b.Votes[i].Data.Slot,
-					FromEpoch:       b.Votes[i].Data.FromEpoch,
-					FromHash:        b.Votes[i].Data.FromHash[:],
-					ToEpoch:         b.Votes[i].Data.ToEpoch,
-					ToHash:          b.Votes[i].Data.ToHash[:],
-					BeaconBlockHash: b.Votes[i].Data.BeaconBlockHash[:],
+					Slot:            vote.Data.Slot,
+					FromEpoch:       vote.Data.FromEpoch,
+					FromHash:        vote.Data.FromHash[:],
+					ToEpoch:         vote.Data.ToEpoch,
+					ToHash:          vote.Data.ToHash[:],
+					BeaconBlockHash: vote.Data.BeaconBlockHash[:],
 					Nonce:           nonce,
 				},
 			}

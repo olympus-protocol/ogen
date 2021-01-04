@@ -103,16 +103,17 @@ type ComplexityRoot struct {
 	}
 
 	Epoch struct {
-		Epoch                   func(childComplexity int) int
-		Finalized               func(childComplexity int) int
-		Justified               func(childComplexity int) int
-		ParticipationPercentage func(childComplexity int) int
-		Randao                  func(childComplexity int) int
-		Slot1                   func(childComplexity int) int
-		Slot2                   func(childComplexity int) int
-		Slot3                   func(childComplexity int) int
-		Slot4                   func(childComplexity int) int
-		Slot5                   func(childComplexity int) int
+		Epoch         func(childComplexity int) int
+		ExpectedVotes func(childComplexity int) int
+		Finalized     func(childComplexity int) int
+		Justified     func(childComplexity int) int
+		Participation func(childComplexity int) int
+		Randao        func(childComplexity int) int
+		Slot1         func(childComplexity int) int
+		Slot2         func(childComplexity int) int
+		Slot3         func(childComplexity int) int
+		Slot4         func(childComplexity int) int
+		Slot5         func(childComplexity int) int
 	}
 
 	Exit struct {
@@ -527,6 +528,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Epoch.Epoch(childComplexity), true
 
+	case "Epoch.expected_votes":
+		if e.complexity.Epoch.ExpectedVotes == nil {
+			break
+		}
+
+		return e.complexity.Epoch.ExpectedVotes(childComplexity), true
+
 	case "Epoch.finalized":
 		if e.complexity.Epoch.Finalized == nil {
 			break
@@ -541,12 +549,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Epoch.Justified(childComplexity), true
 
-	case "Epoch.participation_percentage":
-		if e.complexity.Epoch.ParticipationPercentage == nil {
+	case "Epoch.participation":
+		if e.complexity.Epoch.Participation == nil {
 			break
 		}
 
-		return e.complexity.Epoch.ParticipationPercentage(childComplexity), true
+		return e.complexity.Epoch.Participation(childComplexity), true
 
 	case "Epoch.randao":
 		if e.complexity.Epoch.Randao == nil {
@@ -1253,7 +1261,8 @@ type Epoch {
   slot_3: Int!
   slot_4: Int!
   slot_5: Int!
-  participation_percentage: String!
+  expected_votes: Int!
+  participation: String!
   finalized: Boolean!
   justified: Boolean!
   randao: String!
@@ -3130,7 +3139,7 @@ func (ec *executionContext) _Epoch_slot_5(ctx context.Context, field graphql.Col
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Epoch_participation_percentage(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+func (ec *executionContext) _Epoch_expected_votes(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3148,7 +3157,42 @@ func (ec *executionContext) _Epoch_participation_percentage(ctx context.Context,
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ParticipationPercentage, nil
+		return obj.ExpectedVotes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Epoch_participation(ctx context.Context, field graphql.CollectedField, obj *model.Epoch) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Epoch",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Participation, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6948,8 +6992,13 @@ func (ec *executionContext) _Epoch(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "participation_percentage":
-			out.Values[i] = ec._Epoch_participation_percentage(ctx, field, obj)
+		case "expected_votes":
+			out.Values[i] = ec._Epoch_expected_votes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "participation":
+			out.Values[i] = ec._Epoch_participation(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
