@@ -230,6 +230,7 @@ type Slot struct {
 func (s *Slot) ToGQL() *model.Slot {
 	return &model.Slot{
 		Slot:          int(s.Slot),
+		Epoch:         int(s.Epoch),
 		BlockHash:     hex.EncodeToString(s.BlockHash),
 		ProposerIndex: int(s.ProposerIndex),
 		Proposed:      s.Proposed,

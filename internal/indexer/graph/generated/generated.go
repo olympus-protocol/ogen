@@ -149,6 +149,7 @@ type ComplexityRoot struct {
 
 	Slot struct {
 		BlockHash     func(childComplexity int) int
+		Epoch         func(childComplexity int) int
 		Proposed      func(childComplexity int) int
 		ProposerIndex func(childComplexity int) int
 		Slot          func(childComplexity int) int
@@ -814,6 +815,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Slot.BlockHash(childComplexity), true
 
+	case "Slot.epoch":
+		if e.complexity.Slot.Epoch == nil {
+			break
+		}
+
+		return e.complexity.Slot.Epoch(childComplexity), true
+
 	case "Slot.proposed":
 		if e.complexity.Slot.Proposed == nil {
 			break
@@ -1270,6 +1278,7 @@ type Epoch {
 
 type Slot {
   slot: Int!
+  epoch: Int!
   block_hash: String!
   proposer_index: Int!
   proposed: Boolean!
@@ -4239,6 +4248,41 @@ func (ec *executionContext) _Slot_slot(ctx context.Context, field graphql.Collec
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Slot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Slot_epoch(ctx context.Context, field graphql.CollectedField, obj *model.Slot) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Slot",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Epoch, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7330,6 +7374,11 @@ func (ec *executionContext) _Slot(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = graphql.MarshalString("Slot")
 		case "slot":
 			out.Values[i] = ec._Slot_slot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "epoch":
+			out.Values[i] = ec._Slot_epoch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

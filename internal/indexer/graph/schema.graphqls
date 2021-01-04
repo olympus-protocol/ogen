@@ -130,6 +130,7 @@ type Epoch {
 
 type Slot {
   slot: Int!
+  epoch: Int!
   block_hash: String!
   proposer_index: Int!
   proposed: Boolean!

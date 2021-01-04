@@ -91,6 +91,7 @@ type PartialExit struct {
 
 type Slot struct {
 	Slot          int    `json:"slot"`
+	Epoch         int    `json:"epoch"`
 	BlockHash     string `json:"block_hash"`
 	ProposerIndex int    `json:"proposer_index"`
 	Proposed      bool   `json:"proposed"`
