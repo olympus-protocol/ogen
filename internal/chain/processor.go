@@ -288,7 +288,7 @@ func (ch *blockchain) ProcessBlock(block *primitives.Block) error {
 		voted += len(v.ParticipationBitfield.BitIndices())
 	}
 
-	comittee, err := newState.GetVoteCommittee(block.Header.Slot)
+	comittee, err := newState.GetVoteCommittee(block.Header.Slot - 1)
 	if err == nil {
 		percentage := fmt.Sprintf("%.2f", float64(voted)/float64(len(comittee))*100)
 		ch.log.Infof("network participation with %d votes participating %d validators expected %d percentage %s%%", len(block.Votes), voted, len(comittee), percentage)
