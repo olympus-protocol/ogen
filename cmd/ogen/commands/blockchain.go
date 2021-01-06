@@ -210,6 +210,10 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = db.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
