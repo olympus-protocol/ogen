@@ -3,7 +3,7 @@ package hdwallet_test
 import (
 	"github.com/olympus-protocol/ogen/pkg/bip39"
 	"github.com/olympus-protocol/ogen/pkg/hdwallet"
-	testdata "github.com/olympus-protocol/ogen/test"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -35,5 +35,5 @@ func TestCreateHDWalletDeterministic(t *testing.T) {
 	key, err := hdwallet.CreateHDWallet(seed, "m/1/1")
 	assert.NoError(t, err)
 
-	assert.Equal(t, priv, key.ToWIF(&testdata.TestParams.AccountPrefixes))
+	assert.Equal(t, priv, key.ToWIF(&params.MainNet.AccountPrefixes))
 }
