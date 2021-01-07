@@ -1,5 +1,5 @@
 package herumi_test
-
+/*
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -78,3 +78,4 @@ func TestSerialize(t *testing.T) {
 	_, err = impl.SecretKeyFromBytes(b)
 	assert.NoError(t, err)
 }
+*/
