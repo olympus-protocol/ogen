@@ -6,6 +6,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"math/rand"
 	"sync"
@@ -29,7 +30,7 @@ const MaxMessagePropagationTime = 60 * time.Second
 // LastActionManager is an interface for lastActionManager
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
-	StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool
+	StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) common.Signature) bool
 	ShouldRun(val [48]byte) bool
 	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
 	RegisterAction(by [48]byte, nonce uint64)
@@ -118,7 +119,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) *bls.Signature) bool {
+func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) common.Signature) bool {
 	l.lastActionsLock.Lock()
 	defer l.lastActionsLock.Unlock()
 

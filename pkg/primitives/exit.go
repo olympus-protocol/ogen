@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -16,17 +17,17 @@ type Exit struct {
 }
 
 // GetWithdrawPubKey returns the withdraw bls public key
-func (e *Exit) GetWithdrawPubKey() (*bls.PublicKey, error) {
+func (e *Exit) GetWithdrawPubKey() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(e.WithdrawPubkey[:])
 }
 
 // GetValidatorPubKey returns the validator bls public key
-func (e *Exit) GetValidatorPubKey() (*bls.PublicKey, error) {
+func (e *Exit) GetValidatorPubKey() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(e.ValidatorPubkey[:])
 }
 
 // GetSignature returns the exit bls signature.
-func (e *Exit) GetSignature() (*bls.Signature, error) {
+func (e *Exit) GetSignature() (common.Signature, error) {
 	return bls.SignatureFromBytes(e.Signature[:])
 }
 

@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -65,7 +65,7 @@ type State interface {
 
 	// Getters
 	GetVoteCommittee(slot uint64) ([]uint64, error)
-	GetProposerPublicKey(b *primitives.Block) (*bls.PublicKey, error)
+	GetProposerPublicKey(b *primitives.Block) (common.PublicKey, error)
 	GetRecentBlockHash(slotToGet uint64) chainhash.Hash
 	GetTotalBalances() uint64
 	GetEffectiveBalance(index uint64) uint64

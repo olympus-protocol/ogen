@@ -1,7 +1,7 @@
 package primitives_test
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
@@ -83,7 +83,7 @@ func TestGovernanceVote(t *testing.T) {
 		VoteEpoch: 10,
 	}
 
-	mp := multisig.NewMultipub([]*bls.PublicKey{}, 5)
+	mp := multisig.NewMultipub([]common.PublicKey{}, 5)
 	ms := multisig.NewMultisig(mp)
 
 	g.Multisig = ms

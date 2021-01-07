@@ -4,6 +4,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -332,8 +333,8 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 		d := new(primitives.GovernanceVote)
 		f.Fuzz(d)
 
-		secretKeys := make([]*bls.SecretKey, 10)
-		publicKeys := make([]*bls.PublicKey, 10)
+		secretKeys := make([]common.SecretKey, 10)
+		publicKeys := make([]common.PublicKey, 10)
 
 		for i := range secretKeys {
 			secretKeys[i], _ = bls.RandKey()
@@ -440,8 +441,8 @@ func FuzzTxMulti(n int) []*primitives.TxMulti {
 		d := new(primitives.TxMulti)
 		f.Fuzz(d)
 
-		secretKeys := make([]*bls.SecretKey, 10)
-		publicKeys := make([]*bls.PublicKey, 10)
+		secretKeys := make([]common.SecretKey, 10)
+		publicKeys := make([]common.PublicKey, 10)
 
 		for i := range secretKeys {
 			secretKeys[i], _ = bls.RandKey()

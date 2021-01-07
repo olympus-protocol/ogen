@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -256,7 +257,7 @@ func (s *walletServer) StartValidatorBulk(ctx context.Context, keys *proto.KeyPa
 	defer ctx.Done()
 
 	keysStr := keys.Keys
-	blsKeys := make([]*bls.SecretKey, len(keysStr))
+	blsKeys := make([]common.SecretKey, len(keysStr))
 
 	for i := range blsKeys {
 		privKeyDecode, err := hex.DecodeString(keysStr[i])
@@ -329,7 +330,7 @@ func (s *walletServer) ExitValidatorBulk(ctx context.Context, keys *proto.KeyPai
 	defer ctx.Done()
 
 	keysStr := keys.Keys
-	blsKeys := make([]*bls.PublicKey, len(keysStr))
+	blsKeys := make([]common.PublicKey, len(keysStr))
 
 	for i := range blsKeys {
 		pubKeyBytes, err := hex.DecodeString(keysStr[i])

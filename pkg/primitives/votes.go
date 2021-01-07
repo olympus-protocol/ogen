@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -159,7 +160,7 @@ type MultiValidatorVote struct {
 }
 
 // Signature returns the signature on BLS type
-func (m *MultiValidatorVote) Signature() (*bls.Signature, error) {
+func (m *MultiValidatorVote) Signature() (common.Signature, error) {
 	return bls.SignatureFromBytes(m.Sig[:])
 }
 

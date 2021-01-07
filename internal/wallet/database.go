@@ -3,7 +3,7 @@ package wallet
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bip39"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/hdwallet"
 	"reflect"
 
@@ -48,7 +48,7 @@ func (w *wallet) initialize(passhash chainhash.Hash, mnemonic string) error {
 	})
 }
 
-func (w *wallet) getSecret(password string) (key *bls.SecretKey, err error) {
+func (w *wallet) getSecret(password string) (key common.SecretKey, err error) {
 	err = w.db.View(func(tx *bbolt.Tx) error {
 
 		infobkt := tx.Bucket(walletInfoBucket)
