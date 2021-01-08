@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/bip39"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/hdwallet"
 	"os"
 	"path"
@@ -15,7 +16,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/mempool"
-	"github.com/olympus-protocol/ogen/pkg/bls"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -32,15 +32,15 @@ type Wallet interface {
 	HasWallet(name string) bool
 	GetAvailableWallets() (map[string]string, error)
 	GetAccount() (string, error)
-	GetSecret() (*bls.SecretKey, error)
+	GetSecret() (common.SecretKey, error)
 	GetMnemonic() (string, error)
-	GetPublic() (*bls.PublicKey, error)
+	GetPublic() (common.PublicKey, error)
 	GetAccountRaw() ([20]byte, error)
 	GetBalance() (*Balance, error)
-	StartValidatorBulk(k []*bls.SecretKey) (bool, error)
-	ExitValidatorBulk(k []*bls.PublicKey) (bool, error)
-	StartValidator(validatorPrivBytes *bls.SecretKey) (bool, error)
-	ExitValidator(validatorPubKey *bls.PublicKey) (bool, error)
+	StartValidatorBulk(k []common.SecretKey) (bool, error)
+	ExitValidatorBulk(k []common.PublicKey) (bool, error)
+	StartValidator(validatorPrivBytes common.SecretKey) (bool, error)
+	ExitValidator(validatorPubKey common.PublicKey) (bool, error)
 	SendToAddress(to string, amount uint64) (*chainhash.Hash, error)
 }
 
@@ -64,8 +64,8 @@ type wallet struct {
 	db         *bbolt.DB
 	name       string
 	open       bool
-	priv       *bls.SecretKey
-	pub        *bls.PublicKey
+	priv       common.SecretKey
+	pub        common.PublicKey
 	accountRaw [20]byte
 	account    string
 }
@@ -132,7 +132,7 @@ func (w *wallet) NewWallet(name string, mnemonic string, password string) error 
 	w.priv = secret
 	w.open = true
 	w.pub = secret.PublicKey()
-	w.account = w.pub.ToAccount()
+	w.account = w.pub.ToAccount(&w.netParams.AccountPrefixes)
 	w.accountRaw, err = w.pub.Hash()
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (w *wallet) OpenWallet(name string, password string) error {
 	}
 	w.priv = secret
 	w.pub = secret.PublicKey()
-	w.account = w.pub.ToAccount()
+	w.account = w.pub.ToAccount(&w.netParams.AccountPrefixes)
 	w.accountRaw, err = w.pub.Hash()
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func (w *wallet) GetAccount() (string, error) {
 }
 
 // GetSecret returns the secret key of the current wallet.
-func (w *wallet) GetSecret() (*bls.SecretKey, error) {
+func (w *wallet) GetSecret() (common.SecretKey, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}
@@ -239,7 +239,7 @@ func (w *wallet) GetMnemonic() (string, error) {
 }
 
 // GetPublic returns the public key of the current wallet.
-func (w *wallet) GetPublic() (*bls.PublicKey, error) {
+func (w *wallet) GetPublic() (common.PublicKey, error) {
 	if !w.open {
 		return nil, errorNotOpen
 	}

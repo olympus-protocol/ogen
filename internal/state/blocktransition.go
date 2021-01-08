@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -198,9 +199,9 @@ func (s *state) ApplyMultiTransactionSingle(txs []*primitives.Tx, blockWithdrawa
 
 	txsAmount := len(txs)
 
-	txsSigs := make([]*bls.Signature, txsAmount)
+	txsSigs := make([]common.Signature, txsAmount)
 	txsMsgs := make([][32]byte, txsAmount)
-	txsPubs := make([]*bls.PublicKey, txsAmount)
+	txsPubs := make([]common.PublicKey, txsAmount)
 
 	for i, tx := range txs {
 		pkh, err := tx.FromPubkeyHash()
@@ -443,7 +444,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, erro
 		return nil, fmt.Errorf("vote-slashing: votes do not violate slashing rule")
 	}
 
-	common := make([]uint64, 0)
+	c := make([]uint64, 0)
 	voteCommittee1 := make(map[uint64]struct{})
 
 	validators1, err := s.GetVoteCommittee(vs.Vote1.Data.Slot)
@@ -456,8 +457,8 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, erro
 		return nil, err
 	}
 
-	aggPubs1 := make([]*bls.PublicKey, 0)
-	aggPubs2 := make([]*bls.PublicKey, 0)
+	aggPubs1 := make([]common.PublicKey, 0)
+	aggPubs2 := make([]common.PublicKey, 0)
 
 	for i, idx := range validators1 {
 
@@ -480,7 +481,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, erro
 		}
 
 		if _, ok := voteCommittee1[idx]; ok {
-			common = append(common, idx)
+			c = append(c, idx)
 		}
 
 		pub, err := bls.PublicKeyFromBytes(s.ValidatorRegistry[idx].PubKey[:])
@@ -498,7 +499,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, erro
 		return nil, fmt.Errorf("vote-slashing: vote 1 does not validate")
 	}
 
-	if len(common) == 0 {
+	if len(c) == 0 {
 		return nil, fmt.Errorf("vote-slashing: votes do not contain any common validators")
 	}
 
@@ -510,7 +511,7 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, erro
 		return nil, fmt.Errorf("vote-slashing: vote 2 does not validate")
 	}
 
-	return common, nil
+	return c, nil
 }
 
 // ApplyVoteSlashing applies a vote slashing to the state.
@@ -729,12 +730,12 @@ func (s *state) AreDepositsValid(deposits []*primitives.Deposit) error {
 
 	num := len(deposits)
 
-	sigs := make([]*bls.Signature, num)
-	pubs := make([]*bls.PublicKey, num)
+	sigs := make([]common.Signature, num)
+	pubs := make([]common.PublicKey, num)
 	msgs := make([][32]byte, num)
 
-	pSigs := make([]*bls.Signature, num)
-	pPubs := make([]*bls.PublicKey, num)
+	pSigs := make([]common.Signature, num)
+	pPubs := make([]common.PublicKey, num)
 	pMsgs := make([][32]byte, num)
 
 	balances := make(map[[20]byte]uint64)
@@ -979,7 +980,7 @@ func (s *state) IsVoteValid(v *primitives.MultiValidatorVote) error {
 		return ErrorTargetEpoch
 	}
 
-	aggPubs := make([]*bls.PublicKey, 0)
+	aggPubs := make([]common.PublicKey, 0)
 	validators, err := s.GetVoteCommittee(v.Data.Slot)
 	if err != nil {
 		return err
@@ -1057,7 +1058,7 @@ func (s *state) ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint
 }
 
 // GetProposerPublicKey gets the public key for the proposer of a block.
-func (s *state) GetProposerPublicKey(b *primitives.Block) (*bls.PublicKey, error) {
+func (s *state) GetProposerPublicKey(b *primitives.Block) (common.PublicKey, error) {
 	netParams := config.GlobalParams.NetParams
 
 	slotIndex := (b.Header.Slot + netParams.EpochLength - 1) % netParams.EpochLength

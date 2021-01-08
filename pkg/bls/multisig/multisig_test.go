@@ -2,6 +2,7 @@ package multisig_test
 
 import (
 	"encoding/hex"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -11,12 +12,12 @@ import (
 )
 
 func init() {
-	bls.Initialize(&testdata.TestParams)
+	bls.Initialize(&testdata.TestParams, "blst")
 }
 
 func TestCorrectnessMultisig(t *testing.T) {
-	secretKeys := make([]*bls.SecretKey, 20)
-	publicKeys := make([]*bls.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, 20)
+	publicKeys := make([]common.PublicKey, 20)
 	var err error
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()
@@ -61,8 +62,8 @@ func TestCorrectnessMultisig(t *testing.T) {
 }
 
 func TestMultisigSerializeSign(t *testing.T) {
-	secretKeys := make([]*bls.SecretKey, 20)
-	publicKeys := make([]*bls.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, 20)
+	publicKeys := make([]common.PublicKey, 20)
 
 	var err error
 
@@ -93,8 +94,8 @@ func TestMultisigSerializeSign(t *testing.T) {
 }
 
 func TestMultipubCopy(t *testing.T) {
-	secretKeys := make([]*bls.SecretKey, 20)
-	publicKeys := make([]*bls.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, 20)
+	publicKeys := make([]common.PublicKey, 20)
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
@@ -112,8 +113,8 @@ func TestMultipubCopy(t *testing.T) {
 }
 
 func TestMultisigCopy(t *testing.T) {
-	secretKeys := make([]*bls.SecretKey, 20)
-	publicKeys := make([]*bls.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, 20)
+	publicKeys := make([]common.PublicKey, 20)
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
@@ -141,7 +142,7 @@ func TestMultisigCopy(t *testing.T) {
 }
 
 func TestMultipubHashing(t *testing.T) {
-	var pubs []*bls.PublicKey
+	var pubs []common.PublicKey
 
 	pub1, err := hex.DecodeString("97d2b427a0914f325aa1502064fc724c71400a035c264a20595f4e234fd68a6494a342e7a631a97d63ffcd795763cfe8")
 	assert.NoError(t, err)

@@ -12,12 +12,14 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"github.com/olympus-protocol/ogen/pkg/params"
 
 	"github.com/olympus-protocol/ogen/api/proto"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
 type utilsServer struct {
+	netParams      *params.ChainParams
 	keystore       keystore.Keystore
 	host           hostnode.HostNode
 	coinsMempool   mempool.CoinsMempool
@@ -34,7 +36,7 @@ func (s *utilsServer) GenKeyPair(ctx context.Context, _ *proto.Empty) (*proto.Ke
 		return nil, err
 	}
 
-	return &proto.KeyPair{Private: k.ToWIF(), Public: k.PublicKey().ToAccount()}, nil
+	return &proto.KeyPair{Private: k.ToWIF(&s.netParams.AccountPrefixes), Public: k.PublicKey().ToAccount(&s.netParams.AccountPrefixes)}, nil
 }
 
 func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {

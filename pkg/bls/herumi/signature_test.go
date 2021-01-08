@@ -1,83 +1,85 @@
-package bls_test
+package herumi_test
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"errors"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
+
+	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 )
 
 func TestSignVerify(t *testing.T) {
-	priv, err := bls.RandKey()
-	assert.NoError(t, err)
-
+	priv, err := impl.RandKey()
+	require.NoError(t, err)
 	pub := priv.PublicKey()
 	msg := []byte("hello")
 	sig := priv.Sign(msg)
 	assert.Equal(t, true, sig.Verify(pub, msg))
 }
 
-/*func TestAggregateVerify(t *testing.T) {
-	pubkeys := make([]*bls.PublicKey, 0, 100)
-	sigs := make([]*bls.Signature, 0, 100)
+func TestAggregateVerify(t *testing.T) {
+	pubkeys := make([]common.PublicKey, 0, 100)
+	sigs := make([]common.Signature, 0, 100)
 	var msgs [][32]byte
 	for i := 0; i < 100; i++ {
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
-		priv, err := bls.RandKey()
-		assert.NoError(t, err)
-
+		priv, err := impl.RandKey()
+		require.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
 		sigs = append(sigs, sig)
 		msgs = append(msgs, msg)
 	}
-	aggSig := bls.Aggregate(sigs)
+	aggSig := impl.Aggregate(sigs)
 	assert.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs))
-}*/
+}
 
 func TestFastAggregateVerify(t *testing.T) {
-	pubkeys := make([]*bls.PublicKey, 0, 100)
-	sigs := make([]*bls.Signature, 0, 100)
+	pubkeys := make([]common.PublicKey, 0, 100)
+	sigs := make([]common.Signature, 0, 100)
 	msg := [32]byte{'h', 'e', 'l', 'l', 'o'}
 	for i := 0; i < 100; i++ {
-		priv, err := bls.RandKey()
-		assert.NoError(t, err)
+		priv, err := impl.RandKey()
+		require.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
 		sigs = append(sigs, sig)
 	}
-	aggSig := bls.AggregateSignatures(sigs)
+	aggSig := impl.AggregateSignatures(sigs)
 	assert.Equal(t, true, aggSig.FastAggregateVerify(pubkeys, msg))
 }
 
-/*func TestMultipleSignatureVerification(t *testing.T) {
-	pubkeys := make([]*bls.PublicKey, 0, 100)
-	sigs := make([]*bls.Signature, 0, 100)
+func TestMultipleSignatureVerification(t *testing.T) {
+	pubkeys := make([]common.PublicKey, 0, 100)
+	sigs := make([][]byte, 0, 100)
 	var msgs [][32]byte
 	for i := 0; i < 100; i++ {
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
-		priv, err := bls.RandKey()
-		assert.NoError(t, err)
+		priv, err := impl.RandKey()
+		require.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
-		sigs = append(sigs, sig)
+		sigs = append(sigs, sig.Marshal())
 		msgs = append(msgs, msg)
 	}
-	verify, err := bls.VerifyMultipleSignatures(sigs, msgs, pubkeys)
+	verify, err := impl.VerifyMultipleSignatures(sigs, msgs, pubkeys)
 	assert.NoError(t, err)
 	assert.Equal(t, true, verify, "Signature did not verify")
-}*/
+}
 
-/*func TestMultipleSignatureVerification_FailsCorrectly(t *testing.T) {
-	pubkeys := make([]*bls.PublicKey, 0, 100)
-	sigs := make([]*bls.Signature, 0, 100)
+func TestMultipleSignatureVerification_FailsCorrectly(t *testing.T) {
+	pubkeys := make([]common.PublicKey, 0, 100)
+	sigs := make([]common.Signature, 0, 100)
 	var msgs [][32]byte
 	for i := 0; i < 100; i++ {
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
-		priv, err := bls.RandKey()
-		assert.NoError(t, err)
+		priv, err := impl.RandKey()
+		require.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
@@ -90,9 +92,9 @@ func TestFastAggregateVerify(t *testing.T) {
 	secondLastSig := sigs[len(sigs)-2]
 	// Convert to bls object
 	rawSig := new(bls12.Sign)
-	assert.NoError(t, rawSig.Deserialize(secondLastSig.Marshal()))
+	require.NoError(t, rawSig.Deserialize(secondLastSig.Marshal()))
 	rawSig2 := new(bls12.Sign)
-	assert.NoError(t, rawSig2.Deserialize(lastSig.Marshal()))
+	require.NoError(t, rawSig2.Deserialize(lastSig.Marshal()))
 	// set random field prime value
 	fprime := new(bls12.Fp)
 	fprime.SetInt64(100)
@@ -106,7 +108,7 @@ func TestFastAggregateVerify(t *testing.T) {
 	fp2.D = [2]bls12.Fp{*fprime, *fprime2}
 
 	g2Point := new(bls12.G2)
-	assert.NoError(t, bls12.MapToG2(g2Point, fp2))
+	require.NoError(t, bls12.MapToG2(g2Point, fp2))
 	// We now add/subtract the respective g2 points by a fixed
 	// value. This would cause singluar verification to fail but
 	// not aggregate verification.
@@ -115,30 +117,35 @@ func TestFastAggregateVerify(t *testing.T) {
 	bls12.G2Add(firstG2, firstG2, g2Point)
 	bls12.G2Sub(secondG2, secondG2, g2Point)
 
-	lastSig, err := bls.SignatureFromBytes(rawSig.Serialize())
-	assert.NoError(t, err)
-	secondLastSig, err = bls.SignatureFromBytes(rawSig2.Serialize())
-	assert.NoError(t, err)
+	lastSig, err := impl.SignatureFromBytes(rawSig.Serialize())
+	require.NoError(t, err)
+	secondLastSig, err = impl.SignatureFromBytes(rawSig2.Serialize())
+	require.NoError(t, err)
 	sigs[len(sigs)-1] = lastSig
 	sigs[len(sigs)-2] = secondLastSig
 
 	// This method is expected to pass, as it would not
 	// be able to detect bad signatures
-	aggSig := bls.AggregateSignatures(sigs)
+	aggSig := impl.AggregateSignatures(sigs)
 	if !aggSig.AggregateVerify(pubkeys, msgs) {
 		t.Error("Signature did not verify")
 	}
+
+	rawSigs := make([][]byte, len(sigs))
+	for i := range rawSigs {
+		rawSigs[i] = sigs[i].Marshal()
+	}
 	// This method would be expected to fail.
-	verify, err := bls.VerifyMultipleSignatures(sigs, msgs, pubkeys)
+	verify, err := impl.VerifyMultipleSignatures(rawSigs, msgs, pubkeys)
 	assert.NoError(t, err)
 	assert.Equal(t, false, verify, "Signature verified when it was not supposed to")
-}*/
+}
 
 func TestFastAggregateVerify_ReturnsFalseOnEmptyPubKeyList(t *testing.T) {
-	var pubkeys []*bls.PublicKey
+	var pubkeys []common.PublicKey
 	msg := [32]byte{'h', 'e', 'l', 'l', 'o'}
 
-	aggSig := bls.NewAggregateSignature()
+	aggSig := impl.NewAggregateSignature()
 	if aggSig.FastAggregateVerify(pubkeys, msg) != false {
 		t.Error("Expected FastAggregateVerify to return false with empty input " +
 			"of public keys.")
@@ -153,27 +160,27 @@ func TestSignatureFromBytes(t *testing.T) {
 	}{
 		{
 			name: "Nil",
-			err:  bls.ErrorSigSize,
+			err:  errors.New("signature must be 96 bytes"),
 		},
 		{
 			name:  "Empty",
 			input: []byte{},
-			err:   bls.ErrorSigSize,
+			err:   errors.New("signature must be 96 bytes"),
 		},
 		{
 			name:  "Short",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSigSize,
+			err:   errors.New("signature must be 96 bytes"),
 		},
 		{
 			name:  "Long",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSigSize,
+			err:   errors.New("signature must be 96 bytes"),
 		},
 		{
 			name:  "Bad",
 			input: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			err:   bls.ErrorSigUnmarshal,
+			err:   errors.New("could not unmarshal bytes into signature: err blsSignatureDeserialize 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		},
 		{
 			name:  "Good",
@@ -183,13 +190,24 @@ func TestSignatureFromBytes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, err := bls.SignatureFromBytes(test.input)
+			res, err := impl.SignatureFromBytes(test.input)
 			if test.err != nil {
-				assert.Equal(t, test.err, err)
+				assert.EqualError(t, err, test.err.Error())
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, test.input, res.Marshal())
 			}
 		})
 	}
+}
+
+func TestCopy(t *testing.T) {
+	priv, err := impl.RandKey()
+	require.NoError(t, err)
+
+	msg := []byte("hello")
+	sig := priv.Sign(msg)
+	sigB := sig.Copy()
+
+	assert.Equal(t, sig, sigB)
 }

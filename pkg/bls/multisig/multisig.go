@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 
 	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -35,7 +36,7 @@ func (m *Multipub) Unmarshal(b []byte) error {
 }
 
 // NewMultipub constructs a new multi-pubkey.
-func NewMultipub(pubs []*bls.PublicKey, numNeeded uint64) *Multipub {
+func NewMultipub(pubs []common.PublicKey, numNeeded uint64) *Multipub {
 	var pubsB [][48]byte
 	for _, p := range pubs {
 		var pub [48]byte
@@ -137,7 +138,7 @@ func (m *Multisig) GetPublicKey() (*Multipub, error) {
 }
 
 // Sign signs a multisig through a secret key.
-func (m *Multisig) Sign(secKey *bls.SecretKey, msg []byte) error {
+func (m *Multisig) Sign(secKey common.SecretKey, msg []byte) error {
 	pub := secKey.PublicKey()
 
 	idx := -1
@@ -175,7 +176,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 		return false
 	}
 
-	var sigs []*bls.Signature
+	var sigs []common.Signature
 
 	for _, sigBytes := range m.Signatures {
 		sig, err := bls.SignatureFromBytes(sigBytes[:])
@@ -188,7 +189,7 @@ func (m *Multisig) Verify(msg []byte) bool {
 	aggSig := bls.AggregateSignatures(sigs)
 
 	activePubs := make([][48]byte, 0)
-	activePubsKeys := make([]*bls.PublicKey, 0)
+	activePubsKeys := make([]common.PublicKey, 0)
 
 	for i := range m.PublicKey.PublicKeys {
 		if m.KeysSigned.Get(uint(i)) {

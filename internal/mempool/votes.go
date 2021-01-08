@@ -12,6 +12,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -173,15 +174,15 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 				return
 			}
 
-			var common []uint64
+			var sigs []uint64
 
 			for i, idx := range voteCommittee {
 				if v.ParticipationBitfield.Get(uint(i)) && vote.ParticipationBitfield.Get(uint(i)) {
-					common = append(common, idx)
+					sigs = append(sigs, idx)
 				}
 			}
 
-			if len(common) != 0 {
+			if len(sigs) != 0 {
 				// If the vote overlaps, that means a validator submitted the same vote multiple times.
 				for _, n := range m.notifees {
 					n.NotifyIllegalVotes(&primitives.VoteSlashing{
@@ -210,7 +211,7 @@ func (m *voteMempool) Add(vote *primitives.MultiValidatorVote) {
 				return
 			}
 
-			newVoteSig := bls.AggregateSignatures([]*bls.Signature{sig1, sig2})
+			newVoteSig := bls.AggregateSignatures([]common.Signature{sig1, sig2})
 
 			var voteSig [96]byte
 			copy(voteSig[:], newVoteSig.Marshal())
@@ -304,7 +305,7 @@ func (m *voteMempool) Remove(b *primitives.Block) {
 
 				newBitfield := bitfield.NewBitlist(poolVote.ParticipationBitfield.Len())
 
-				var sigs []*bls.Signature
+				var sigs []common.Signature
 				for _, missingVote := range votesToAggregate {
 					sig, err := missingVote.Signature()
 					if err != nil {

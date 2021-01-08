@@ -37,25 +37,25 @@ func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 		return "", err
 	}
 
+	netName := args[0]
+	var netParams *params.ChainParams
+	switch netName {
+	case "testnet":
+		netParams = &params.TestNet
+	case "devnet":
+		netParams = &params.DevNet
+	case "mainnet":
+		netParams = &params.MainNet
+	default:
+		return "", errors.New("no params for " + netName)
+	}
+
 	if !raw {
 		if len(args) < 1 {
 			return "", errors.New("Usage: genkeypair <network>")
 		}
 
-		netName := args[0]
-		var netParams *params.ChainParams
-		switch netName {
-		case "testnet":
-			netParams = &params.TestNet
-		case "devnet":
-			netParams = &params.DevNet
-		case "mainnet":
-			netParams = &params.MainNet
-		default:
-			return "", errors.New("no params for " + netName)
-		}
-
-		bls.Initialize(netParams)
+		bls.Initialize(netParams, "blst")
 	}
 
 	var res *bls.KeyPair
@@ -66,8 +66,8 @@ func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 		}
 	} else {
 		res = &bls.KeyPair{
-			Public:  blsKeyPair.PublicKey().ToAccount(),
-			Private: blsKeyPair.ToWIF(),
+			Public:  blsKeyPair.PublicKey().ToAccount(&netParams.AccountPrefixes),
+			Private: blsKeyPair.ToWIF(&netParams.AccountPrefixes),
 		}
 	}
 

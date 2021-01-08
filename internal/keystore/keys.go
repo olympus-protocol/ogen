@@ -2,11 +2,12 @@ package keystore
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"go.etcd.io/bbolt"
 )
 
 // GetValidatorKey returns the private key from the specified public key or false if doesn't exists.
-func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
+func (k *keystore) GetValidatorKey(pubkey [48]byte) (common.SecretKey, bool) {
 
 	if !k.open {
 		return nil, false
@@ -35,13 +36,13 @@ func (k *keystore) GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool) {
 }
 
 // GetValidatorKeys returns all keys on keystore.
-func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
+func (k *keystore) GetValidatorKeys() ([]common.SecretKey, error) {
 
 	if !k.open {
 		return nil, ErrorNoOpen
 	}
 
-	var keys []*bls.SecretKey
+	var keys []common.SecretKey
 
 	err := k.db.View(func(tx *bbolt.Tx) error {
 
@@ -71,12 +72,12 @@ func (k *keystore) GetValidatorKeys() ([]*bls.SecretKey, error) {
 }
 
 // GenerateNewValidatorKey generates new validator keys and adds it to the map and database.
-func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error) {
+func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]common.SecretKey, error) {
 	if !k.open {
 		return nil, ErrorNoOpen
 	}
 
-	keys := make([]*bls.SecretKey, amount)
+	keys := make([]common.SecretKey, amount)
 
 	for i := range keys {
 		// Generate a new key
@@ -103,7 +104,7 @@ func (k *keystore) AddKey(priv []byte) error {
 	return k.addKey(s)
 }
 
-func (k *keystore) addKey(priv *bls.SecretKey) error {
+func (k *keystore) addKey(priv common.SecretKey) error {
 
 	if !k.open {
 		return ErrorNoOpen

@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"sync"
 	"time"
@@ -401,7 +402,7 @@ func (p *proposer) VoteForBlocks() {
 
 			dataHash := data.Hash()
 
-			var signatures []*bls.Signature
+			var signatures []common.Signature
 
 			bitlistVotes := bitfield.NewBitlist(uint64(len(validators)))
 
@@ -412,7 +413,7 @@ func (p *proposer) VoteForBlocks() {
 				if !found {
 					continue
 				}
-				//signFunc := func(message *primitives.ValidatorHelloMessage) *bls.Signature {
+				//signFunc := func(message *primitives.ValidatorHelloMessage) common.Signature {
 				//	msg := message.SignatureMessage()
 				//	return key.Sign(msg)
 				//}

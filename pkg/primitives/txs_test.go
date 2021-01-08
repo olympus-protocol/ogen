@@ -3,6 +3,7 @@ package primitives_test
 import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
@@ -62,8 +63,8 @@ func TestTxMulti(t *testing.T) {
 		assert.NoError(t, c.VerifySig())
 	}
 
-	secretKeys := make([]*bls.SecretKey, 5)
-	publicKeys := make([]*bls.PublicKey, 5)
+	secretKeys := make([]common.SecretKey, 5)
+	publicKeys := make([]common.PublicKey, 5)
 
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()

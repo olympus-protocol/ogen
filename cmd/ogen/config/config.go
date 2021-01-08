@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -77,7 +78,7 @@ func SetTestParams() {
 	GlobalParams = &Params{
 		Logger:     logger.New(os.Stdin),
 		NetParams:  &testdata.TestParams,
-		InitParams: testInitParams(),
+		InitParams: testInitParams(&testdata.TestParams),
 		Context:    context.Background(),
 	}
 }
@@ -99,11 +100,11 @@ func SetTestFlags() {
 	}
 }
 
-func testInitParams() *initialization.InitializationParameters {
-	var validatorsKeys []*bls.SecretKey
+func testInitParams(netParams *params.ChainParams) *initialization.InitializationParameters {
+	var validatorsKeys []common.SecretKey
 	var validators []*primitives.Validator
 
-	addr := testdata.PremineAddr.PublicKey().ToAccount()
+	addr := testdata.PremineAddr.PublicKey().ToAccount(&netParams.AccountPrefixes)
 
 	addrHash, _ := testdata.PremineAddr.PublicKey().Hash()
 	for i := 0; i < 100; i++ {

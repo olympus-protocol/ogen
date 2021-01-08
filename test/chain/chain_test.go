@@ -37,7 +37,7 @@ const NumValidators = 10
 var folders = make([]string, NumNodes)
 var loggers = make([]logger.Logger, NumNodes)
 
-var validatorsKeys = make(map[int][]*bls.SecretKey)
+var validatorsKeys = make(map[int][]common.SecretKey)
 var initParams initialization.InitializationParameters
 
 var keystores = make([]keystore.Keystore, NumNodes)

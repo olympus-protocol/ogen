@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -35,12 +36,12 @@ type RANDAOSlashing struct {
 }
 
 // GetValidatorPubkey returns the validator bls public key.
-func (r *RANDAOSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+func (r *RANDAOSlashing) GetValidatorPubkey() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(r.ValidatorPubkey[:])
 }
 
 // GetRandaoReveal returns the bls signature of the randao reveal.
-func (r *RANDAOSlashing) GetRandaoReveal() (*bls.Signature, error) {
+func (r *RANDAOSlashing) GetRandaoReveal() (common.Signature, error) {
 	return bls.SignatureFromBytes(r.RandaoReveal[:])
 }
 
@@ -70,17 +71,17 @@ type ProposerSlashing struct {
 }
 
 // GetValidatorPubkey returns the slashing bls validator public key.
-func (p *ProposerSlashing) GetValidatorPubkey() (*bls.PublicKey, error) {
+func (p *ProposerSlashing) GetValidatorPubkey() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(p.ValidatorPublicKey[:])
 }
 
 // GetSignature1 returns the slashing first bls validator signature.
-func (p *ProposerSlashing) GetSignature1() (*bls.Signature, error) {
+func (p *ProposerSlashing) GetSignature1() (common.Signature, error) {
 	return bls.SignatureFromBytes(p.Signature1[:])
 }
 
 // GetSignature2 returns the slashing second bls validator signature.
-func (p *ProposerSlashing) GetSignature2() (*bls.Signature, error) {
+func (p *ProposerSlashing) GetSignature2() (common.Signature, error) {
 	return bls.SignatureFromBytes(p.Signature2[:])
 }
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-export VERSION=0.1.0
 
 echo "Downloading annotations"
 mkdir -p api/proto_def/google/api

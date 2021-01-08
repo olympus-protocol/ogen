@@ -3,7 +3,7 @@ package keystore
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"go.etcd.io/bbolt"
 	"path"
 )
@@ -32,9 +32,9 @@ type Keystore interface {
 	CreateKeystore() error
 	OpenKeystore() error
 	Close() error
-	GetValidatorKey(pubkey [48]byte) (*bls.SecretKey, bool)
-	GetValidatorKeys() ([]*bls.SecretKey, error)
-	GenerateNewValidatorKey(amount uint64) ([]*bls.SecretKey, error)
+	GetValidatorKey(pubkey [48]byte) (common.SecretKey, bool)
+	GetValidatorKeys() ([]common.SecretKey, error)
+	GenerateNewValidatorKey(amount uint64) ([]common.SecretKey, error)
 	HasKeysToParticipate() bool
 	AddKey(priv []byte) error
 }

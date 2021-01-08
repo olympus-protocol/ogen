@@ -36,7 +36,7 @@ var genParamsCmd = &cobra.Command{
 			netParams = &params.MainNet
 		}
 
-		bls.Initialize(netParams)
+		bls.Initialize(netParams, "blst")
 
 		entropy, err := bip39.NewEntropy(256)
 		if err != nil {
@@ -82,7 +82,7 @@ var genParamsCmd = &cobra.Command{
 
 		initParams := initialization.NetworkInitialParams{
 			Validators:     validators,
-			PremineAddress: premine.PublicKey().ToAccount(),
+			PremineAddress: premine.PublicKey().ToAccount(&netParams.AccountPrefixes),
 			GenesisTime:    genesistime,
 		}
 

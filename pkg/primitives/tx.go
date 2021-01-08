@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"errors"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -61,12 +62,12 @@ func (t Tx) SignatureMessage() chainhash.Hash {
 }
 
 // GetSignature returns the bls signature of the transaction.
-func (t Tx) GetSignature() (*bls.Signature, error) {
+func (t Tx) GetSignature() (common.Signature, error) {
 	return bls.SignatureFromBytes(t.Signature[:])
 }
 
 // GetPublic returns the bls public key of the transaction.
-func (t Tx) GetPublic() (*bls.PublicKey, error) {
+func (t Tx) GetPublic() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(t.FromPublicKey[:])
 }
 

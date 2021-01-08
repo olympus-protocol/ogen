@@ -1,13 +1,13 @@
 package wallet
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-func (w *wallet) StartValidatorBulk(valSecKeys []*bls.SecretKey) (bool, error) {
+func (w *wallet) StartValidatorBulk(valSecKeys []common.SecretKey) (bool, error) {
 	if !w.open {
 		return false, errorNotOpen
 	}
@@ -46,7 +46,7 @@ func (w *wallet) StartValidatorBulk(valSecKeys []*bls.SecretKey) (bool, error) {
 }
 
 // StartValidator signs a validator deposit with the current open wallet private key.
-func (w *wallet) StartValidator(valPrivBytes *bls.SecretKey) (bool, error) {
+func (w *wallet) StartValidator(valPrivBytes common.SecretKey) (bool, error) {
 
 	if !w.open {
 		return false, errorNotOpen
@@ -77,7 +77,7 @@ func (w *wallet) StartValidator(valPrivBytes *bls.SecretKey) (bool, error) {
 	return true, nil
 }
 
-func (w *wallet) createDeposit(priv *bls.SecretKey, addr [20]byte, validatorPriv *bls.SecretKey) (*primitives.Deposit, error) {
+func (w *wallet) createDeposit(priv common.SecretKey, addr [20]byte, validatorPriv common.SecretKey) (*primitives.Deposit, error) {
 	pub := priv.PublicKey()
 
 	validatorPub := validatorPriv.PublicKey()
@@ -118,7 +118,7 @@ func (w *wallet) createDeposit(priv *bls.SecretKey, addr [20]byte, validatorPriv
 }
 
 // ExitValidatorBulk submits an exit transaction for a certain validator with the current wallet private key.
-func (w *wallet) ExitValidatorBulk(valPubKeys []*bls.PublicKey) (bool, error) {
+func (w *wallet) ExitValidatorBulk(valPubKeys []common.PublicKey) (bool, error) {
 
 	if !w.open {
 		return false, errorNotOpen
@@ -153,7 +153,7 @@ func (w *wallet) ExitValidatorBulk(valPubKeys []*bls.PublicKey) (bool, error) {
 }
 
 // ExitValidator submits an exit transaction for a certain validator with the current wallet private key.
-func (w *wallet) ExitValidator(valPubKey *bls.PublicKey) (bool, error) {
+func (w *wallet) ExitValidator(valPubKey common.PublicKey) (bool, error) {
 
 	if !w.open {
 		return false, errorNotOpen
@@ -182,7 +182,7 @@ func (w *wallet) ExitValidator(valPubKey *bls.PublicKey) (bool, error) {
 	return true, nil
 }
 
-func (w *wallet) createExit(priv *bls.SecretKey, valPubKey *bls.PublicKey) (*primitives.Exit, error) {
+func (w *wallet) createExit(priv common.SecretKey, valPubKey common.PublicKey) (*primitives.Exit, error) {
 	pub := priv.PublicKey()
 
 	msgHash := chainhash.HashH(valPubKey.Marshal())

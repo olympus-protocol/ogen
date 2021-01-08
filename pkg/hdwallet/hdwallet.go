@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/wealdtech/go-bytesutil"
 	"golang.org/x/crypto/hkdf"
@@ -24,7 +25,7 @@ var (
 )
 
 // CreateHDWallet will create a single secret key from a seed and a path
-func CreateHDWallet(seed []byte, path string) (*bls.SecretKey, error) {
+func CreateHDWallet(seed []byte, path string) (common.SecretKey, error) {
 	key, err := PrivateKeyFromSeedAndPath(seed, path)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func CreateHDWallet(seed []byte, path string) (*bls.SecretKey, error) {
 
 // PrivateKeyFromSeedAndPath generates a private key given a seed and a path.
 // Follows ERC-2334.
-func PrivateKeyFromSeedAndPath(seed []byte, path string) (*bls.SecretKey, error) {
+func PrivateKeyFromSeedAndPath(seed []byte, path string) (common.SecretKey, error) {
 	if path == "" {
 		return nil, errors.New("no path")
 	}

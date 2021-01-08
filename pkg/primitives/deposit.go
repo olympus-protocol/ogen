@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
@@ -31,12 +32,12 @@ func (d *Deposit) Unmarshal(b []byte) error {
 }
 
 // GetPublicKey returns the bls public key of the deposit.
-func (d *Deposit) GetPublicKey() (*bls.PublicKey, error) {
+func (d *Deposit) GetPublicKey() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(d.PublicKey[:])
 }
 
 // GetSignature returns the bls signature of the deposit.
-func (d *Deposit) GetSignature() (*bls.Signature, error) {
+func (d *Deposit) GetSignature() (common.Signature, error) {
 	return bls.SignatureFromBytes(d.Signature[:])
 }
 
@@ -72,11 +73,11 @@ func (d *DepositData) Unmarshal(b []byte) error {
 }
 
 // GetPublicKey returns the bls public key of the deposit data.
-func (d *DepositData) GetPublicKey() (*bls.PublicKey, error) {
+func (d *DepositData) GetPublicKey() (common.PublicKey, error) {
 	return bls.PublicKeyFromBytes(d.PublicKey[:])
 }
 
 // GetSignature returns the bls signature of the deposit data.
-func (d *DepositData) GetSignature() (*bls.Signature, error) {
+func (d *DepositData) GetSignature() (common.Signature, error) {
 	return bls.SignatureFromBytes(d.ProofOfPossession[:])
 }

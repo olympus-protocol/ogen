@@ -26,7 +26,6 @@ var (
 )
 
 type Database interface {
-	Commit() error
 	Close() error
 	GetBlock(hash chainhash.Hash) (*primitives.Block, error)
 	GetRawBlock(hash chainhash.Hash) ([]byte, error)
@@ -55,8 +54,6 @@ type levelDB struct {
 	db *leveldb.DB
 
 	canClose sync.WaitGroup
-
-	cache    *Cache
 }
 
 // NewLevelDB returns a database instance for storing blocks.
@@ -71,55 +68,24 @@ func NewLevelDB() (Database, error) {
 		Filter:                 filter.NewBloomFilter(10),
 		DisableSeeksCompaction: true,
 	}
+
 	db, err := leveldb.OpenFile(datapath+"/chain", opts)
 	if err != nil {
 		return nil, err
 	}
-	blockdb := &levelDB{
-		db:    db,
-		cache: NewCacheDB(),
-		log:   log,
-	}
 
-	go blockdb.committer()
+	blockdb := &levelDB{
+		db:  db,
+		log: log,
+	}
 
 	return blockdb, nil
-}
-
-func (db *levelDB) committer() {
-	for {
-		time.Sleep(time.Second * 5)
-		if db.cache.Count() > 5000 {
-			err := db.Commit()
-			if err != nil {
-				db.log.Error(err)
-			}
-		}
-	}
-}
-
-// Commit grabs all information on the cache and stores on disk
-func (db *levelDB) Commit() error {
-	m := db.cache.Flush()
-	batch := leveldb.MakeBatch(len(m))
-	for k, v := range m {
-		batch.Put(k[:], v)
-	}
-	err := db.db.Write(batch, nil)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Close closes the database.
 func (db *levelDB) Close() error {
 	db.canClose.Wait()
-	err := db.Commit()
-	if err != nil {
-		return err
-	}
-	err = db.db.Close()
+	err := db.db.Close()
 	if err != nil {
 		return err
 	}
@@ -128,12 +94,7 @@ func (db *levelDB) Close() error {
 
 // GetBlock gets a block from the database.
 func (db *levelDB) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
-	b, err := db.cache.GetBlock(hash)
-	if err == nil {
-		return b, nil
-	}
-
-	blockBytes, err := db.get(hash)
+	blockBytes, err := db.get(hash[:])
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +106,7 @@ func (db *levelDB) GetBlock(hash chainhash.Hash) (*primitives.Block, error) {
 
 // GetRawBlock gets a block serialized from the database.
 func (db *levelDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
-	b, err := db.cache.GetRawBlock(hash)
-	if err == nil {
-		return b, nil
-	}
-
-	blockBytes, err := db.get(hash)
+	blockBytes, err := db.get(hash[:])
 	if err != nil {
 		return nil, err
 	}
@@ -160,47 +116,43 @@ func (db *levelDB) GetRawBlock(hash chainhash.Hash) ([]byte, error) {
 
 // AddRawBlock adds a raw block to the database.
 func (db *levelDB) AddRawBlock(block *primitives.Block) error {
-	return db.cache.AddRawBlock(block)
+	blockHash := block.Hash()
+	blockBytes, err := block.Marshal()
+	if err != nil {
+		return err
+	}
+	return db.set(blockHash[:], blockBytes)
 }
 
 // SetTip sets the current best tip of the blockchain.
 func (db *levelDB) SetTip(c chainhash.Hash) error {
-	return db.cache.SetTip(c)
+	return db.set(tipKey, c[:])
 }
 
 // GetTip gets the current best tip of the blockchain.
 func (db *levelDB) GetTip() (chainhash.Hash, error) {
-	t, err := db.cache.GetTip()
-	if err == nil {
-		return t, nil
-	}
-
-	var k [32]byte
-	copy(k[:], tipKey)
-	return db.getHash(k)
+	return db.getHash(tipKey)
 }
 
 // SetFinalizedState sets the finalized state of the blockchain.
 func (db *levelDB) SetFinalizedState(s state.State) error {
-	return db.cache.SetFinalizedState(s)
+	b, err := s.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return db.set(finStateKey, b)
 }
 
 // GetFinalizedState gets the finalized state of the blockchain.
 func (db *levelDB) GetFinalizedState() (state.State, error) {
-	s, err := db.cache.GetFinalizedState()
-	if err == nil {
-		return s, nil
-	}
 
-	var k [32]byte
-	copy(k[:], finStateKey)
-
-	stateBytes, err := db.get(k)
+	stateBytes, err := db.get(finStateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	s = state.NewEmptyState()
+	s := state.NewEmptyState()
 
 	err = s.Unmarshal(stateBytes)
 
@@ -209,25 +161,23 @@ func (db *levelDB) GetFinalizedState() (state.State, error) {
 
 // SetJustifiedState sets the justified state of the blockchain.
 func (db *levelDB) SetJustifiedState(s state.State) error {
-	return db.cache.SetJustifiedState(s)
+	b, err := s.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return db.set(jusStateKey, b)
 }
 
 // GetJustifiedState gets the justified state of the blockchain.
 func (db *levelDB) GetJustifiedState() (state.State, error) {
-	s, err := db.cache.GetJustifiedState()
-	if err == nil {
-		return s, nil
-	}
 
-	var k [32]byte
-	copy(k[:], jusStateKey)
-
-	stateBytes, err := db.get(k)
+	stateBytes, err := db.get(jusStateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	s = state.NewEmptyState()
+	s := state.NewEmptyState()
 
 	err = s.Unmarshal(stateBytes)
 
@@ -236,27 +186,25 @@ func (db *levelDB) GetJustifiedState() (state.State, error) {
 
 // SetBlockRow sets a block row on disk to store the block index.
 func (db *levelDB) SetBlockRow(disk *primitives.BlockNodeDisk) error {
-	return db.cache.SetBlockRow(disk)
+	key := append(blockRowPrefix, disk.Hash[:]...)
+	b, err := disk.Marshal()
+	if err != nil {
+		return err
+	}
+	return db.set(key, b)
 }
 
 // GetBlockRow gets the block row on disk.
 func (db *levelDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, error) {
-	r, err := db.cache.GetBlockRow(c)
-	if err == nil {
-		return r, nil
-	}
 
 	key := append(blockRowPrefix, c[:]...)
 
-	var k [32]byte
-	copy(k[:], key)
-
-	b, err := db.get(k)
+	b, err := db.get(key)
 	if err != nil {
 		return nil, err
 	}
 
-	r = new(primitives.BlockNodeDisk)
+	r := new(primitives.BlockNodeDisk)
 
 	err = r.Unmarshal(b)
 
@@ -265,65 +213,47 @@ func (db *levelDB) GetBlockRow(c chainhash.Hash) (*primitives.BlockNodeDisk, err
 
 // SetJustifiedHead sets the latest justified head.
 func (db *levelDB) SetJustifiedHead(c chainhash.Hash) error {
-	return db.cache.SetJustifiedHead(c)
+	return db.set(jusHeadKey, c[:])
 }
 
 // GetJustifiedHead gets the latest justified head.
 func (db *levelDB) GetJustifiedHead() (chainhash.Hash, error) {
-	h, err := db.cache.GetJustifiedHead()
-	if err == nil {
-		return h, nil
-	}
-
-	var k [32]byte
-	copy(k[:], jusHeadKey)
-
-	return db.getHash(k)
+	return db.getHash(jusHeadKey)
 }
 
 // SetFinalizedHead sets the finalized head of the blockchain.
 func (db *levelDB) SetFinalizedHead(c chainhash.Hash) error {
-	return db.cache.SetFinalizedHead(c)
+	return db.set(finHeadKey, c[:])
 }
 
 // GetFinalizedHead gets the finalized head of the blockchain.
 func (db *levelDB) GetFinalizedHead() (chainhash.Hash, error) {
-	h, err := db.cache.GetFinalizedHead()
-	if err == nil {
-		return h, nil
-	}
-
-	var k [32]byte
-	copy(k[:], finHeadKey)
-
-	return db.getHash(k)
+	return db.getHash(finHeadKey)
 }
 
 // SetGenesisTime sets the genesis time of the blockchain.
 func (db *levelDB) SetGenesisTime(t time.Time) error {
-	return db.cache.SetGenesisTime(t)
+	bs, err := t.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	return db.set(genTimeKey, bs)
 }
 
 // GetGenesisTime gets the genesis time of the blockchain.
 func (db *levelDB) GetGenesisTime() (time.Time, error) {
-	t, err := db.cache.GetGenesisTime()
-	if err == nil {
-		return t, nil
-	}
 
-	var k [32]byte
-	copy(k[:], genTimeKey)
-
-	bs, err := db.get(k)
+	bs, err := db.get(genTimeKey)
 	if err != nil {
 		return time.Time{}, err
 	}
 
+	var t time.Time
 	err = t.UnmarshalBinary(bs)
 	return t, err
 }
 
-func (db *levelDB) get(key [32]byte) ([]byte, error) {
+func (db *levelDB) get(key []byte) ([]byte, error) {
 
 	db.canClose.Add(1)
 	defer db.canClose.Done()
@@ -336,7 +266,7 @@ func (db *levelDB) get(key [32]byte) ([]byte, error) {
 	return out, nil
 }
 
-func (db *levelDB) getHash(key [32]byte) (chainhash.Hash, error) {
+func (db *levelDB) getHash(key []byte) (chainhash.Hash, error) {
 
 	db.canClose.Add(1)
 	defer db.canClose.Done()
@@ -349,4 +279,17 @@ func (db *levelDB) getHash(key [32]byte) (chainhash.Hash, error) {
 	copy(out[:], b)
 
 	return out, nil
+}
+
+func (db *levelDB) set(k []byte, v []byte) error {
+
+	db.canClose.Add(1)
+	defer db.canClose.Done()
+
+	err := db.db.Put(k, v, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
