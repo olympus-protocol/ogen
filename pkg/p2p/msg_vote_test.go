@@ -9,7 +9,7 @@ import (
 
 func TestMsgVote(t *testing.T) {
 	v := new(p2p.MsgVote)
-	v.Data = testdata.FuzzMultiValidatorVote(1, true, true)[0]
+	v.Data = testdata.FuzzMultiValidatorVote(1)[0]
 
 	ser, err := v.Marshal()
 	assert.NoError(t, err)

@@ -30,7 +30,7 @@ func (w *wallet) StartValidatorBulk(valSecKeys []common.SecretKey) (bool, error)
 		}
 		deposits[i] = deposit
 
-		if err := w.actionsmempool.AddDeposit(deposit); err != nil {
+		if err := w.pool.AddDeposit(deposit); err != nil {
 			return false, err
 		}
 	}
@@ -63,7 +63,7 @@ func (w *wallet) StartValidator(valPrivBytes common.SecretKey) (bool, error) {
 
 	deposit, err := w.createDeposit(priv, addr, valPrivBytes)
 
-	if err := w.actionsmempool.AddDeposit(deposit); err != nil {
+	if err := w.pool.AddDeposit(deposit); err != nil {
 		return false, err
 	}
 
@@ -138,7 +138,7 @@ func (w *wallet) ExitValidatorBulk(valPubKeys []common.PublicKey) (bool, error) 
 		}
 		exits[i] = exit
 
-		if err := w.actionsmempool.AddExit(exit); err != nil {
+		if err := w.pool.AddExit(exit); err != nil {
 			return false, err
 		}
 	}
@@ -169,7 +169,7 @@ func (w *wallet) ExitValidator(valPubKey common.PublicKey) (bool, error) {
 		return false, err
 	}
 
-	if err := w.actionsmempool.AddExit(exit); err != nil {
+	if err := w.pool.AddExit(exit); err != nil {
 		return false, err
 	}
 

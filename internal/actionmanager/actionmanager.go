@@ -1,27 +1,6 @@
 package actionmanager
 
-import (
-	"context"
-	"errors"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/internal/state"
-	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
-	"math/rand"
-	"sync"
-	"time"
-
-	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/chainindex"
-	"github.com/olympus-protocol/ogen/pkg/params"
-	"github.com/olympus-protocol/ogen/pkg/primitives"
-
-	"github.com/olympus-protocol/ogen/internal/hostnode"
-	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/logger"
-)
-
+/*
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
 // take to propagate across the network. We wait double this before allowing a
 // validator to start.
@@ -119,7 +98,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *lastActionManager) StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) common.Signature) bool {
+func (l *lastActionManager) StartValidators(valPub [][48]byte, sign func(*primitives.ValidatorHelloMessage) common.Signature) bool {
 	l.lastActionsLock.Lock()
 	defer l.lastActionsLock.Unlock()
 
@@ -186,4 +165,4 @@ func (l *lastActionManager) RegisterAction(by [48]byte, nonce uint64) {
 
 func (l *lastActionManager) GetNonce() uint64 {
 	return l.nonce
-}
+}*/

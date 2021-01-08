@@ -1116,35 +1116,44 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 	}
 
 	voteMerkleRoot := b.VotesMerkleRoot()
-	transactionMerkleRoot := b.TransactionMerkleRoot()
-	transactionMultiMerkleRoot := b.TransactionMultiMerkleRoot()
 	depositMerkleRoot := b.DepositMerkleRoot()
 	exitMerkleRoot := b.ExitMerkleRoot()
+	partialExitsMerkleRoot := b.PartialExitsMerkleRoot()
+	coinProofsMerkleRoot := b.CoinProofsMerkleRoot()
+	executionsMerkleRoot := b.ExecutionsMerkleRoot()
+	txsMerkleRoot := b.TxsMerkleRoot()
 	voteSlashingMerkleRoot := b.VoteSlashingRoot()
 	proposerSlashingMerkleRoot := b.ProposerSlashingsRoot()
 	randaoSlashingMerkleRoot := b.RANDAOSlashingsRoot()
 	governanceVoteMerkleRoot := b.GovernanceVoteMerkleRoot()
-	coinProofsMerkleRoot := b.CoinProofsMerkleRoot()
-	partialExitsMerkleRoot := b.PartialExitsMerkleRoot()
-	executionsMerkleRoot := b.ExecutionsMerkleRoot()
+	multiSignatureTxsMerkleRoot := b.MultiSignatureTxsMerkleRoot()
 
-	if !bytes.Equal(transactionMerkleRoot[:], b.Header.TxMerkleRoot[:]) {
-		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(transactionMerkleRoot[:]), hex.EncodeToString(b.Header.TxMerkleRoot[:]))
+	if !bytes.Equal(depositMerkleRoot[:], b.Header.DepositMerkleRoot[:]) {
+		return fmt.Errorf("expected deposit merkle root to be %s but got %s", hex.EncodeToString(depositMerkleRoot[:]), hex.EncodeToString(b.Header.DepositMerkleRoot[:]))
 	}
 
-	if !bytes.Equal(transactionMultiMerkleRoot[:], b.Header.TxMultiMerkleRoot[:]) {
-		return fmt.Errorf("expected transaction multi merkle root to be %s but got %s", hex.EncodeToString(transactionMultiMerkleRoot[:]), hex.EncodeToString(b.Header.TxMultiMerkleRoot[:]))
+	if !bytes.Equal(exitMerkleRoot[:], b.Header.ExitMerkleRoot[:]) {
+		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(exitMerkleRoot[:]), hex.EncodeToString(b.Header.ExitMerkleRoot[:]))
 	}
 
 	if !bytes.Equal(voteMerkleRoot[:], b.Header.VoteMerkleRoot[:]) {
 		return fmt.Errorf("expected vote merkle root to be %s but got %s", hex.EncodeToString(voteMerkleRoot[:]), hex.EncodeToString(b.Header.VoteMerkleRoot[:]))
 	}
 
-	if !bytes.Equal(depositMerkleRoot[:], b.Header.DepositMerkleRoot[:]) {
-		return fmt.Errorf("expected deposit merkle root to be %s but got %s", hex.EncodeToString(depositMerkleRoot[:]), hex.EncodeToString(b.Header.DepositMerkleRoot[:]))
+	if !bytes.Equal(partialExitsMerkleRoot[:], b.Header.PartialExitMerkleRoot[:]) {
+		return fmt.Errorf("expected partial exits merkle root to be %s but got %s", hex.EncodeToString(partialExitsMerkleRoot[:]), hex.EncodeToString(b.Header.PartialExitMerkleRoot[:]))
 	}
-	if !bytes.Equal(exitMerkleRoot[:], b.Header.ExitMerkleRoot[:]) {
-		return fmt.Errorf("expected exit merkle root to be %s but got %s", hex.EncodeToString(exitMerkleRoot[:]), hex.EncodeToString(b.Header.ExitMerkleRoot[:]))
+
+	if !bytes.Equal(coinProofsMerkleRoot[:], b.Header.CoinProofsMerkleRoot[:]) {
+		return fmt.Errorf("expected coin proofs merkle root to be %s but got %s", hex.EncodeToString(coinProofsMerkleRoot[:]), hex.EncodeToString(b.Header.CoinProofsMerkleRoot[:]))
+	}
+
+	if !bytes.Equal(executionsMerkleRoot[:], b.Header.ExecutionsMerkleRoot[:]) {
+		return fmt.Errorf("expected executions merkle root to be %s but got %s", hex.EncodeToString(executionsMerkleRoot[:]), hex.EncodeToString(b.Header.ExecutionsMerkleRoot[:]))
+	}
+
+	if !bytes.Equal(txsMerkleRoot[:], b.Header.TxsMerkleRoot[:]) {
+		return fmt.Errorf("expected transaction merkle root to be %s but got %s", hex.EncodeToString(txsMerkleRoot[:]), hex.EncodeToString(b.Header.TxsMerkleRoot[:]))
 	}
 
 	if !bytes.Equal(voteSlashingMerkleRoot[:], b.Header.VoteSlashingMerkleRoot[:]) {
@@ -1163,16 +1172,8 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("expected governance votes merkle root to be %s but got %s", hex.EncodeToString(governanceVoteMerkleRoot[:]), hex.EncodeToString(b.Header.GovernanceVotesMerkleRoot[:]))
 	}
 
-	if !bytes.Equal(coinProofsMerkleRoot[:], b.Header.CoinProofsMerkleRoot[:]) {
-		return fmt.Errorf("expected coin proofs merkle root to be %s but got %s", hex.EncodeToString(coinProofsMerkleRoot[:]), hex.EncodeToString(b.Header.CoinProofsMerkleRoot[:]))
-	}
-
-	if !bytes.Equal(partialExitsMerkleRoot[:], b.Header.PartialExitMerkleRoot[:]) {
-		return fmt.Errorf("expected partial exits merkle root to be %s but got %s", hex.EncodeToString(partialExitsMerkleRoot[:]), hex.EncodeToString(b.Header.PartialExitMerkleRoot[:]))
-	}
-
-	if !bytes.Equal(executionsMerkleRoot[:], b.Header.ExecutionsMerkleRoot[:]) {
-		return fmt.Errorf("expected executions merkle root to be %s but got %s", hex.EncodeToString(executionsMerkleRoot[:]), hex.EncodeToString(b.Header.ExecutionsMerkleRoot[:]))
+	if !bytes.Equal(multiSignatureTxsMerkleRoot[:], b.Header.MultiSignatureTxsMerkleRoot[:]) {
+		return fmt.Errorf("expected transaction multi merkle root to be %s but got %s", hex.EncodeToString(multiSignatureTxsMerkleRoot[:]), hex.EncodeToString(b.Header.MultiSignatureTxsMerkleRoot[:]))
 	}
 
 	if uint64(len(b.Votes)) > primitives.MaxVotesPerBlock {

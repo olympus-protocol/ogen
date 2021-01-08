@@ -1339,27 +1339,6 @@
           "type": "string",
           "format": "uint64"
         },
-        "txMerkleRoot": {
-          "type": "string"
-        },
-        "voteMerkleRoot": {
-          "type": "string"
-        },
-        "depositMerkleRoot": {
-          "type": "string"
-        },
-        "exitMerkleRoot": {
-          "type": "string"
-        },
-        "voteSlashingMerkleRoot": {
-          "type": "string"
-        },
-        "randaoSlashingMerkleRoot": {
-          "type": "string"
-        },
-        "proposerSlashingMerkleRoot": {
-          "type": "string"
-        },
         "prevBlockHash": {
           "type": "string"
         },
@@ -1375,6 +1354,39 @@
           "type": "string"
         },
         "feeAddress": {
+          "type": "string"
+        },
+        "votesMerkleRoot": {
+          "type": "string"
+        },
+        "depositsMerkleRoot": {
+          "type": "string"
+        },
+        "exitsMerkleRoot": {
+          "type": "string"
+        },
+        "partialExitsMerkleRoot": {
+          "type": "string"
+        },
+        "coinProofsMerkleRoot": {
+          "type": "string"
+        },
+        "executionsMerkleRoot": {
+          "type": "string"
+        },
+        "txsMerkleRoot": {
+          "type": "string"
+        },
+        "voteSlashingsMerkleRoot": {
+          "type": "string"
+        },
+        "randaoSlashingsMerkleRoot": {
+          "type": "string"
+        },
+        "proposerSlashingsMerkleRoot": {
+          "type": "string"
+        },
+        "multiSignatureTxsMerkleRoot": {
           "type": "string"
         }
       }

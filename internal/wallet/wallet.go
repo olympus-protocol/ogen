@@ -54,8 +54,7 @@ type wallet struct {
 	chain     chain.Blockchain
 	host      hostnode.HostNode
 
-	coinsmempool   mempool.CoinsMempool
-	actionsmempool mempool.ActionMempool
+	pool mempool.Pool
 
 	directory string
 	ctx       context.Context
@@ -71,21 +70,20 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, mempool mempool.CoinsMempool, actionMempool mempool.ActionMempool) (Wallet, error) {
+func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, pool mempool.Pool) (Wallet, error) {
 	netParams := config.GlobalParams.NetParams
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 
 	wall := &wallet{
-		log:            log,
-		directory:      config.GlobalFlags.DataPath,
-		netParams:      netParams,
-		open:           false,
-		chain:          ch,
-		host:           hostnode,
-		coinsmempool:   mempool,
-		ctx:            ctx,
-		actionsmempool: actionMempool,
+		log:       log,
+		directory: config.GlobalFlags.DataPath,
+		netParams: netParams,
+		open:      false,
+		chain:     ch,
+		host:      hostnode,
+		pool:      pool,
+		ctx:       ctx,
 	}
 	return wall, nil
 }

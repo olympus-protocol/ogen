@@ -168,7 +168,7 @@ func createMsgExits(t *testing.T) {
 func createMsgVote(t *testing.T) {
 	v := new(p2p.MsgVote)
 	buf := bytes.NewBuffer([]byte{})
-	v.Data = testdata.FuzzMultiValidatorVote(1, true, true)[0]
+	v.Data = testdata.FuzzMultiValidatorVote(1)[0]
 	err := p2p.WriteMessage(buf, v, 1)
 	assert.NoError(t, err)
 

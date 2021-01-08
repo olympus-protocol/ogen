@@ -68,18 +68,22 @@ message Tx {
 message BlockHeader {
     uint64  version = 1;
     uint64  nonce = 2;
-    string  tx_merkle_root = 3;
-    string  vote_merkle_root = 4;
-    string  deposit_merkle_root = 5;
-    string  exit_merkle_root = 6;
-    string  vote_slashing_merkle_root = 7;
-    string  randao_slashing_merkle_root = 8;
-    string  proposer_slashing_merkle_root = 9;
-    string  prev_block_hash = 10;
-    uint64  timestamp = 11;
-    uint64  slot = 12;
-    string  state_root = 13;
-    string  fee_address = 14;
+    string  prev_block_hash = 3;
+    uint64  timestamp = 4;
+    uint64  slot = 5;
+    string  state_root = 6;
+    string  fee_address = 7;
+    string  votes_merkle_root = 8;
+    string  deposits_merkle_root = 9;
+    string  exits_merkle_root = 10;
+    string  partial_exits_merkle_root = 11;
+    string  coin_proofs_merkle_root = 12;
+    string  executions_merkle_root = 13;
+    string  txs_merkle_root = 14;
+    string  vote_slashings_merkle_root = 15;
+    string  randao_slashings_merkle_root = 16;
+    string  proposer_slashings_merkle_root = 17;
+    string  multi_signature_txs_merkle_root = 18;
 }
 
 message Block {

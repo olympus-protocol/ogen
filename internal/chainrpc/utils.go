@@ -19,12 +19,11 @@ import (
 )
 
 type utilsServer struct {
-	netParams      *params.ChainParams
-	keystore       keystore.Keystore
-	host           hostnode.HostNode
-	coinsMempool   mempool.CoinsMempool
-	actionsMempool mempool.ActionMempool
-	chain          chain.Blockchain
+	netParams *params.ChainParams
+	keystore  keystore.Keystore
+	host      hostnode.HostNode
+	pool      mempool.Pool
+	chain     chain.Blockchain
 	proto.UnimplementedUtilsServer
 }
 
@@ -70,7 +69,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		msg := &p2p.MsgTx{Data: tx}
 
-		err = s.coinsMempool.Add(tx)
+		err = s.pool.Add(tx)
 
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
@@ -92,7 +91,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
-		err = s.actionsMempool.AddDeposit(deposit)
+		err = s.pool.AddDeposit(deposit)
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
@@ -115,7 +114,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
 
-		err = s.actionsMempool.AddExit(exit)
+		err = s.pool.AddExit(exit)
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
 		}
@@ -138,7 +137,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		}
 
 		for _, d := range deposits.Data {
-			err = s.actionsMempool.AddDeposit(d)
+			err = s.pool.AddDeposit(d)
 			if err != nil {
 				return &proto.Success{Success: false, Error: err.Error()}, nil
 			}
@@ -160,7 +159,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 		}
 
 		for _, d := range exits.Data {
-			err = s.actionsMempool.AddExit(d)
+			err = s.pool.AddExit(d)
 			if err != nil {
 				return &proto.Success{Success: false, Error: err.Error()}, nil
 			}
@@ -217,20 +216,24 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 	blockParse := &proto.Block{
 		Hash: block.Hash().String(),
 		Header: &proto.BlockHeader{
-			Version:                    block.Header.Version,
-			Nonce:                      block.Header.Nonce,
-			TxMerkleRoot:               hex.EncodeToString(block.Header.TxMerkleRoot[:]),
-			VoteMerkleRoot:             hex.EncodeToString(block.Header.VoteMerkleRoot[:]),
-			DepositMerkleRoot:          hex.EncodeToString(block.Header.DepositMerkleRoot[:]),
-			ExitMerkleRoot:             hex.EncodeToString(block.Header.ExitMerkleRoot[:]),
-			VoteSlashingMerkleRoot:     hex.EncodeToString(block.Header.VoteSlashingMerkleRoot[:]),
-			RandaoSlashingMerkleRoot:   hex.EncodeToString(block.Header.RANDAOSlashingMerkleRoot[:]),
-			ProposerSlashingMerkleRoot: hex.EncodeToString(block.Header.ProposerSlashingMerkleRoot[:]),
-			PrevBlockHash:              hex.EncodeToString(block.Header.PrevBlockHash[:]),
-			Timestamp:                  block.Header.Timestamp,
-			Slot:                       block.Header.Slot,
-			StateRoot:                  hex.EncodeToString(block.Header.StateRoot[:]),
-			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
+			Version:                     block.Header.Version,
+			Nonce:                       block.Header.Nonce,
+			PrevBlockHash:               hex.EncodeToString(block.Header.PrevBlockHash[:]),
+			Timestamp:                   block.Header.Timestamp,
+			Slot:                        block.Header.Slot,
+			StateRoot:                   hex.EncodeToString(block.Header.StateRoot[:]),
+			FeeAddress:                  hex.EncodeToString(block.Header.FeeAddress[:]),
+			VotesMerkleRoot:             hex.EncodeToString(block.Header.VoteMerkleRoot[:]),
+			DepositsMerkleRoot:          hex.EncodeToString(block.Header.DepositMerkleRoot[:]),
+			ExitsMerkleRoot:             hex.EncodeToString(block.Header.ExitMerkleRoot[:]),
+			PartialExitsMerkleRoot:      hex.EncodeToString(block.Header.PartialExitMerkleRoot[:]),
+			CoinProofsMerkleRoot:        hex.EncodeToString(block.Header.CoinProofsMerkleRoot[:]),
+			ExecutionsMerkleRoot:        hex.EncodeToString(block.Header.ExecutionsMerkleRoot[:]),
+			TxsMerkleRoot:               hex.EncodeToString(block.Header.TxsMerkleRoot[:]),
+			VoteSlashingsMerkleRoot:     hex.EncodeToString(block.Header.VoteSlashingMerkleRoot[:]),
+			RandaoSlashingsMerkleRoot:   hex.EncodeToString(block.Header.RANDAOSlashingMerkleRoot[:]),
+			ProposerSlashingsMerkleRoot: hex.EncodeToString(block.Header.ProposerSlashingMerkleRoot[:]),
+			MultiSignatureTxsMerkleRoot: hex.EncodeToString(block.Header.MultiSignatureTxsMerkleRoot[:]),
 		},
 		Txs:             block.GetTxs(),
 		Signature:       hex.EncodeToString(block.Signature[:]),
@@ -284,7 +287,7 @@ func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemP
 		serializableProofs[i] = pser
 
 		// Add to a mempool and broadcast
-		err = s.actionsMempool.AddProof(pser)
+		err = s.pool.AddProof(pser)
 		if err != nil {
 			return &proto.Success{Error: err.Error()}, nil
 		}
