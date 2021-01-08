@@ -11,7 +11,7 @@ import (
 func TestDisallowZeroSecretKeys(t *testing.T) {
 	bls.Initialize(&testdata.TestParams, "herumi")
 	_, err := bls.SecretKeyFromBytes(common.ZeroSecretKey[:])
-	require.Equal(t, common.ErrZeroKey, err)
+	require.Equal(t, common.ErrSecretUnmarshal, err)
 
 	bls.Initialize(&testdata.TestParams, "blst")
 	// Blst does a zero check on the key during deserialization.
