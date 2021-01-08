@@ -1,4 +1,4 @@
-name: Build and Test
+name: Unit Test
 on: [push]
 jobs:
   
@@ -19,19 +19,7 @@ jobs:
     - name: Run Test
       run: |
         go test -coverprofile=coverage.txt -covermode=atomic ./...
-        bash <(curl -s https://codecov.io/bash)
-
-    - name: Build Ogen
-      uses: crazy-max/ghaction-xgo@v1
-      with:
-        xgo_version: latest
-        go_version: 1.15.x
-        dest: build
-        pkg: cmd/ogen
-        prefix: ogen
-        targets: windowsa/amd64,darwin/amd64,linux/arm64,linux/amd64
-        race: false
-        buildmode: default      
+        bash <(curl -s https://codecov.io/bash)  
             
         
                                       
