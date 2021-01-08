@@ -22,15 +22,15 @@ const MaxPartialExitsPerBlock = 32
 const PartialExitsSize = (48 * 2) + 96 + 8 // 200 bytes
 
 // CoinProofs
-const MaxCoinProofsPerBlock = 128
+const MaxCoinProofsPerBlock = 64
 const MaxCoinProofSize = 8 + 25 + 192 + 44 + (32 * 64) // 2317 bytes
 
 // Execution
-const MaxExecutionsPerBlock = 256
+const MaxExecutionsPerBlock = 128
 const MaxExecutionSize = 48 + 20 + (32768 + 4) + 96 + 8 + 8 // 32952 bytes
 
 // Tx
-const MaxTxsPerBlock = 30000
+const MaxTxsPerBlock = 20000
 const TxSize = 20 + 48 + (8 * 3) + 96 // 188 bytes
 
 // ProposerSlashing
@@ -58,7 +58,7 @@ const MaxSignaturesOnMultisig = 15
 const MaxMultisigSize = MaxMultipubSize + (96 * 15) + 15 // 2187 bytes
 
 // MultiSignatureTx
-const MaxMultiSignatureTxsOnBlock = 128
+const MaxMultiSignatureTxsOnBlock = 8
 const MaxMultiSignatureTxSize = MaxMultisigSize + 20 + (8 * 3) // 2231
 
 // ValidatorHelloMessage

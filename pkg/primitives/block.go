@@ -30,14 +30,14 @@ type Block struct {
 	Deposits          []*Deposit                          `ssz-max:"32"`    // MaxDepositsPerBlock 					32 * 308 		= 9856 bytes
 	Exits             []*Exit                             `ssz-max:"32"`    // MaxExitsPerBlock     				32 * 192 		= 6144 bytes
 	PartialExit       []*PartialExit                      `ssz-max:"32"`    // MaxPartialExitsPerBlock            	32 * 200		= 6400 bytes
-	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`   // MaxCoinProofsPerBlock 				128 * 2317   	= 296576 bytes
-	Executions        []*Execution                        `ssz-max:"256"`   // MaxExecutionsPerBlock				256 * 32952     = 8435712 bytes
-	Txs               []*Tx                               `ssz-max:"30000"` // MaxTxsPerBlock						30000 * 188  	= 5640000 bytes
+	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"64"`    // MaxCoinProofsPerBlock 				64 * 2317   	= 148288 bytes
+	Executions        []*Execution                        `ssz-max:"128"`   // MaxExecutionsPerBlock				128 * 32952     = 4217856 bytes
+	Txs               []*Tx                               `ssz-max:"20000"` // MaxTxsPerBlock						20000 * 188  	= 3760000 bytes
 	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`     // MaxProposerSlashingsPerBlock 		2 * 1240 		= 2480 bytes
 	VoteSlashings     []*VoteSlashing                     `ssz-max:"5"`     // MaxVoteSlashingsPerBlock				10 * 12948 		= 129480 bytes
 	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`    // MaxRANDAOSlashingsPerBlock  			20 * 152 		= 3040 bytes
 	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`   // MaxGovernanceVotesPerBlock			128 * 264		= 33792 bytes
-	MultiSignatureTxs []*MultiSignatureTx                 `ssz-max:"128"`   // MaxMultiSignatureTxsOnBlock			128 * 2231      = 285568 bytes
+	MultiSignatureTxs []*MultiSignatureTx                 `ssz-max:"8"`     // MaxMultiSignatureTxsOnBlock			8 * 2231      	= 17848 bytes
 }
 
 // Marshal encodes the block.

@@ -148,7 +148,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (7) 'CoinProofs'
-	if len(b.CoinProofs) > 128 {
+	if len(b.CoinProofs) > 64 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -166,7 +166,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (8) 'Executions'
-	if len(b.Executions) > 256 {
+	if len(b.Executions) > 128 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -184,7 +184,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (9) 'Txs'
-	if len(b.Txs) > 30000 {
+	if len(b.Txs) > 20000 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -253,7 +253,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (14) 'MultiSignatureTxs'
-	if len(b.MultiSignatureTxs) > 128 {
+	if len(b.MultiSignatureTxs) > 8 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -437,7 +437,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (7) 'CoinProofs'
 	{
 		buf = tail[o7:o8]
-		num, err := ssz.DecodeDynamicLength(buf, 128)
+		num, err := ssz.DecodeDynamicLength(buf, 64)
 		if err != nil {
 			return err
 		}
@@ -459,7 +459,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (8) 'Executions'
 	{
 		buf = tail[o8:o9]
-		num, err := ssz.DecodeDynamicLength(buf, 256)
+		num, err := ssz.DecodeDynamicLength(buf, 128)
 		if err != nil {
 			return err
 		}
@@ -481,7 +481,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (9) 'Txs'
 	{
 		buf = tail[o9:o10]
-		num, err := ssz.DivideInt2(len(buf), 188, 30000)
+		num, err := ssz.DivideInt2(len(buf), 188, 20000)
 		if err != nil {
 			return err
 		}
@@ -579,7 +579,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (14) 'MultiSignatureTxs'
 	{
 		buf = tail[o14:]
-		num, err := ssz.DecodeDynamicLength(buf, 128)
+		num, err := ssz.DecodeDynamicLength(buf, 8)
 		if err != nil {
 			return err
 		}
@@ -749,7 +749,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.CoinProofs))
-		if num > 128 {
+		if num > 64 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -758,14 +758,14 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 128)
+		hh.MerkleizeWithMixin(subIndx, num, 64)
 	}
 
 	// Field (8) 'Executions'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Executions))
-		if num > 256 {
+		if num > 128 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -774,14 +774,14 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 256)
+		hh.MerkleizeWithMixin(subIndx, num, 128)
 	}
 
 	// Field (9) 'Txs'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Txs))
-		if num > 30000 {
+		if num > 20000 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -790,7 +790,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 30000)
+		hh.MerkleizeWithMixin(subIndx, num, 20000)
 	}
 
 	// Field (10) 'ProposerSlashings'
@@ -861,7 +861,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.MultiSignatureTxs))
-		if num > 128 {
+		if num > 8 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -870,7 +870,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 128)
+		hh.MerkleizeWithMixin(subIndx, num, 8)
 	}
 
 	hh.Merkleize(indx)
