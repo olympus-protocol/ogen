@@ -20,6 +20,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
+	github.com/herumi/bls-eth-go-binary v0.0.0-20210102080045-a126987eca2b
 	github.com/ipfs/go-ds-leveldb v0.4.2
 	github.com/libp2p/go-libp2p v0.13.0
 	github.com/libp2p/go-libp2p-circuit v0.4.0

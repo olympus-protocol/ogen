@@ -1,5 +1,5 @@
 package herumi_test
-/*
+
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/bls/herumi"
@@ -79,4 +79,3 @@ func BenchmarkSecretKey_Marshal(b *testing.B) {
 		_ = err
 	}
 }
-*/
