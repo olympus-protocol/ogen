@@ -30,7 +30,7 @@ const MaxExecutionsPerBlock = 128
 const MaxExecutionSize = 48 + 20 + (32768 + 4) + 96 + 8 + 8 // 32952 bytes
 
 // Tx
-const MaxTxsPerBlock = 20000
+const MaxTxsPerBlock = 30000
 const TxSize = 20 + 48 + (8 * 3) + 96 // 188 bytes
 
 // ProposerSlashing

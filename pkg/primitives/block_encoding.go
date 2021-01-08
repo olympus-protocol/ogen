@@ -184,7 +184,7 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (9) 'Txs'
-	if len(b.Txs) > 20000 {
+	if len(b.Txs) > 30000 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -481,7 +481,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 	// Field (9) 'Txs'
 	{
 		buf = tail[o9:o10]
-		num, err := ssz.DivideInt2(len(buf), 188, 20000)
+		num, err := ssz.DivideInt2(len(buf), 188, 30000)
 		if err != nil {
 			return err
 		}
@@ -781,7 +781,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(b.Txs))
-		if num > 20000 {
+		if num > 30000 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -790,7 +790,7 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 20000)
+		hh.MerkleizeWithMixin(subIndx, num, 30000)
 	}
 
 	// Field (10) 'ProposerSlashings'
