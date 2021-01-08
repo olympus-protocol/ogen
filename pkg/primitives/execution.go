@@ -8,12 +8,22 @@ import (
 
 // Execution is a block in the blockchain.
 type Execution struct {
+
+	// FromPubKey is the public account of the user that wants to execute the input
 	FromPubKey [48]byte
-	To         [20]byte
-	Input      []byte `ssz-max:"32768"`
-	Signature  [96]byte
-	Gas        uint64
-	GasLimit   uint64
+
+	// To is the account of the contract on which the input is executed.
+	To [20]byte
+
+	// Input is the compiled bytecode of the code to be executed.
+
+	Input []byte `ssz-max:"32768"` // Maximum bytecode size is 32Kb
+
+	// Signature is the signature of the user that executes the bytecode
+	Signature [96]byte
+
+	Gas      uint64
+	GasLimit uint64
 }
 
 // Marshal encodes the block.

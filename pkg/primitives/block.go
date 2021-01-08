@@ -7,25 +7,37 @@ import (
 )
 
 // MaxBlockSize defines the maximum bytes on a block object.
-const MaxBlockSize = 1024 * 1024 * 2.5 // 2.5 MB
+const MaxBlockSize = BlockHeaderSize + 96 + 96 +
+	(MaxMultiValidatorVoteSize * MaxVotesPerBlock) +
+	(DepositSize * MaxDepositsPerBlock) +
+	(ExitSize * MaxExitsPerBlock) +
+	(PartialExitsSize * MaxPartialExitsPerBlock) +
+	(MaxCoinProofSize * MaxCoinProofsPerBlock) +
+	(MaxExecutionSize * MaxExecutionsPerBlock) +
+	(TxSize * MaxTxsPerBlock) +
+	(ProposerSlashingSize * MaxProposerSlashingsPerBlock) +
+	(MaxVotesSlashingSize * MaxVoteSlashingsPerBlock) +
+	(RANDAOSlashingSize * MaxRANDAOSlashingsPerBlock)
 
 // Block is a block in the blockchain.
 type Block struct {
-	Header            *BlockHeader                        // 																	= 372 bytes
-	Votes             []*MultiValidatorVote               `ssz-max:"32"`   // MaxVotesPerBlock 					32 * 6474 		= 207168 bytes
-	Txs               []*Tx                               `ssz-max:"5000"` // MaxTxsPerBlock					204 * 5000  	= 1020000 bytes
-	TxsMulti          []*TxMulti                          `ssz-max:"128"`  // MaxTxsMultiPerBlock
-	Deposits          []*Deposit                          `ssz-max:"128"`  // MaxDepositsPerBlock 				308 * 128 		= 39424 bytes
-	Exits             []*Exit                             `ssz-max:"128"`  // MaxExitsPerBlock     				192 * 128 		= 24576 bytes
-	PartialExit       []*PartialExit                      `ssz-max:"128"`  // MaxPartialExitsPerBlock           300 * 128		=
-	VoteSlashings     []*VoteSlashing                     `ssz-max:"10"`   // MaxVoteSlashingPerBlock			666 * 10 		= 6660 bytes
-	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`   // MaxRANDAOSlashingPerBlock   		152 * 20 		= 3040 bytes
-	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`    // MaxProposerSlashingPerBlock 		984 * 2 		= 1968 bytes
-	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`  // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
-	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`  // MaxCoinProofsPerBlock 			2297 * 128   	= 294016 bytes
-	Executions        []*Execution                        `ssz-max:"256"`  // MaxExecutionsPerBlock
-	Signature         [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
-	RandaoSignature   [96]byte                            `ssz-size:"96"`  // 													= 96 bytes
+	Header            *BlockHeader                        // 																		= 500 bytes
+	Signature         [96]byte                            // 																		= 96 bytes
+	RandaoSignature   [96]byte                            // 																		= 96
+	Votes             []*MultiValidatorVote               `ssz-max:"16"`    // MaxVotesPerBlock 					16 * 6474 		= 103584 bytes
+	Deposits          []*Deposit                          `ssz-max:"32"`    // MaxDepositsPerBlock 					32 * 308 		= 9856 bytes
+	Exits             []*Exit                             `ssz-max:"32"`    // MaxExitsPerBlock     				32 * 192 		= 6144 bytes
+	PartialExit       []*PartialExit                      `ssz-max:"32"`    // MaxPartialExitsPerBlock            	32 * 200		= 6400 bytes
+	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"128"`   // MaxCoinProofsPerBlock 				128 * 2317   	= 296576 bytes
+	Executions        []*Execution                        `ssz-max:"256"`   // MaxExecutionsPerBlock				256 * 32952     = 8435712 bytes
+	Txs               []*Tx                               `ssz-max:"30000"` // MaxTxsPerBlock						30000 * 188  	= 5640000 bytes
+	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`     // MaxProposerSlashingsPerBlock 		2 * 1240 		= 2480 bytes
+	VoteSlashings     []*VoteSlashing                     `ssz-max:"5"`     // MaxVoteSlashingsPerBlock				10 * 12948 		= 129480 bytes
+	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`    // MaxRANDAOSlashingsPerBlock  			20 * 152 		= 3040 bytes
+
+	GovernanceVotes []*GovernanceVote `ssz-max:"128"` // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
+
+	TxsMulti []*MultiSignatureTx `ssz-max:"128"` // MaxTxsMultiPerBlock
 }
 
 // Marshal encodes the block.
@@ -132,7 +144,7 @@ func (b *Block) TransactionMultiMerkleRoot() chainhash.Hash {
 	return merkleRootTxsMulti(b.TxsMulti)
 }
 
-func merkleRootTxsMulti(txs []*TxMulti) chainhash.Hash {
+func merkleRootTxsMulti(txs []*MultiSignatureTx) chainhash.Hash {
 	if len(txs) == 0 {
 		return chainhash.Hash{}
 	}

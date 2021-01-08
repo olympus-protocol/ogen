@@ -6,8 +6,11 @@ import (
 
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
-	Version                    uint64
-	Nonce                      uint64
+	Version   uint64
+	Nonce     uint64
+	Timestamp uint64
+	Slot      uint64
+
 	TxMerkleRoot               [32]byte
 	TxMultiMerkleRoot          [32]byte
 	VoteMerkleRoot             [32]byte
@@ -21,10 +24,9 @@ type BlockHeader struct {
 	CoinProofsMerkleRoot       [32]byte
 	ExecutionsMerkleRoot       [32]byte
 	PrevBlockHash              [32]byte
-	Timestamp                  uint64
-	Slot                       uint64
 	StateRoot                  [32]byte
-	FeeAddress                 [20]byte
+
+	FeeAddress [20]byte
 }
 
 // Marshal encodes the data.

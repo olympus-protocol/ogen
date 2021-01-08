@@ -6,20 +6,20 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
-// MarshalSSZ ssz marshals the MsgTxMulti object
-func (m *MsgTxMulti) MarshalSSZ() ([]byte, error) {
+// MarshalSSZ ssz marshals the MsgMultiSignatureTx object
+func (m *MsgMultiSignatureTx) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(m)
 }
 
-// MarshalSSZTo ssz marshals the MsgTxMulti object to a target array
-func (m *MsgTxMulti) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+// MarshalSSZTo ssz marshals the MsgMultiSignatureTx object to a target array
+func (m *MsgMultiSignatureTx) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(4)
 
 	// Offset (0) 'Data'
 	dst = ssz.WriteOffset(dst, offset)
 	if m.Data == nil {
-		m.Data = new(primitives.TxMulti)
+		m.Data = new(primitives.MultiSignatureTx)
 	}
 	offset += m.Data.SizeSSZ()
 
@@ -31,8 +31,8 @@ func (m *MsgTxMulti) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	return
 }
 
-// UnmarshalSSZ ssz unmarshals the MsgTxMulti object
-func (m *MsgTxMulti) UnmarshalSSZ(buf []byte) error {
+// UnmarshalSSZ ssz unmarshals the MsgMultiSignatureTx object
+func (m *MsgMultiSignatureTx) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 4 {
@@ -51,7 +51,7 @@ func (m *MsgTxMulti) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o0:]
 		if m.Data == nil {
-			m.Data = new(primitives.TxMulti)
+			m.Data = new(primitives.MultiSignatureTx)
 		}
 		if err = m.Data.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -60,26 +60,26 @@ func (m *MsgTxMulti) UnmarshalSSZ(buf []byte) error {
 	return err
 }
 
-// SizeSSZ returns the ssz encoded size in bytes for the MsgTxMulti object
-func (m *MsgTxMulti) SizeSSZ() (size int) {
+// SizeSSZ returns the ssz encoded size in bytes for the MsgMultiSignatureTx object
+func (m *MsgMultiSignatureTx) SizeSSZ() (size int) {
 	size = 4
 
 	// Field (0) 'Data'
 	if m.Data == nil {
-		m.Data = new(primitives.TxMulti)
+		m.Data = new(primitives.MultiSignatureTx)
 	}
 	size += m.Data.SizeSSZ()
 
 	return
 }
 
-// HashTreeRoot ssz hashes the MsgTxMulti object
-func (m *MsgTxMulti) HashTreeRoot() ([32]byte, error) {
+// HashTreeRoot ssz hashes the MsgMultiSignatureTx object
+func (m *MsgMultiSignatureTx) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(m)
 }
 
-// HashTreeRootWith ssz hashes the MsgTxMulti object with a hasher
-func (m *MsgTxMulti) HashTreeRootWith(hh *ssz.Hasher) (err error) {
+// HashTreeRootWith ssz hashes the MsgMultiSignatureTx object with a hasher
+func (m *MsgMultiSignatureTx) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Data'

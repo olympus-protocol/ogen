@@ -15,6 +15,8 @@ func TestDeposit(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
+		assert.Equal(t, primitives.DepositSize, len(ser))
+
 		desc := new(primitives.Deposit)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)
@@ -74,6 +76,8 @@ func TestDepositData(t *testing.T) {
 	d := testdata.FuzzDepositData()
 	ser, err := d.Marshal()
 	assert.NoError(t, err)
+
+	assert.Equal(t, primitives.DepositDataSize, len(ser))
 
 	desc := new(primitives.DepositData)
 	err = desc.Unmarshal(ser)

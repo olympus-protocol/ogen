@@ -156,7 +156,8 @@ type MultiValidatorVote struct {
 	// Sig is the aggregated signature for all validators voting for the VoteData.
 	Sig [96]byte
 	// ParticipationBitfield is a bitlist that marks the index of the validators voting.
-	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6258"`
+	// Maximum amount of votes inside a bitlist is 6250
+	ParticipationBitfield bitfield.Bitlist `ssz:"bitlist" ssz-max:"6250"`
 }
 
 // Signature returns the signature on BLS type

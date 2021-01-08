@@ -7,15 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-const (
-	// MaxReplacementsVoteSize is the maximum amount of bytes a ReplacementVotes can have
-	MaxReplacementsVoteSize = 52
-	// MaxGovernanceVoteSize is the maximum amount of bytes a GovernanceVote can have
-	MaxGovernanceVoteSize = 116 + multisig.MaxMultisigSize
-	// MaxCommunityVoteDataSize is the maximum amount of bytes a CommunityVoteData can have
-	MaxCommunityVoteDataSize = 104
-)
-
 // CommunityVoteDataInfo contains information about a community vote.
 type CommunityVoteDataInfo struct {
 	Hash [32]byte `ssz-size:"32"`

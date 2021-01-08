@@ -12,13 +12,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-const (
-	// MaxMultipubSize is the maximum amount of bytes a Multipub key can contain. 32 public keys.
-	MaxMultipubSize = (32 * 48) + 8
-	// MaxMultisigSize is the maximum amount of bytes a Multisig can contain. 32 public keys and 32 signatures.
-	MaxMultisigSize = MaxMultipubSize + (96 * 32) + 5 + 8
-)
-
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
 	PublicKeys [][48]byte `ssz-max:"32"`

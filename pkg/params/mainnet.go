@@ -1,36 +1,29 @@
-package testdata
+package params
 
-import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/params"
-)
-
-var PremineAddr, _ = bls.RandKey()
-
-// TestParams network parameters for test chains.
-var TestParams = params.ChainParams{
-	Name:           "testnet",
-	DefaultP2PPort: "25126",
-	NetMagic:       111999,
-	AccountPrefixes: params.AccountPrefixes{
-		Public:   "itpub",
-		Private:  "itprv",
-		Multisig: "itmul",
-		Contract: "itctr",
+// MainNet are chain parameters used for the main network.
+var MainNet = ChainParams{
+	Name:           "mainnet",
+	DefaultP2PPort: "24126",
+	NetMagic:       333999,
+	AccountPrefixes: AccountPrefixes{
+		Public:   "olpub",
+		Private:  "olprv",
+		Multisig: "olmul",
+		Contract: "olctr",
 	},
 	GovernanceBudgetQuotient:     5,        // 20%
 	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
-	EjectionBalance:              95,
-	MaxBalanceChurnQuotient:      32,
+	EjectionBalance:              95, // POLIS
+	MaxBalanceChurnQuotient:      8,
 	LatestBlockRootsLength:       64,
 	MinAttestationInclusionDelay: 1,
 	DepositAmount:                100,
 	UnitsPerCoin:                 100000000,
 	InactivityPenaltyQuotient:    17179869184,
-	SlotDuration:                 6,
-	WhistleblowerRewardQuotient:  2,
+	SlotDuration:                 30,
+	WhistleblowerRewardQuotient:  2, // Validator loses half their deposit
 	GovernancePercentages: []uint8{
 		30, // tech
 		10, // community
@@ -47,5 +40,8 @@ var TestParams = params.ChainParams{
 		{},
 		{},
 		{},
+	},
+	RendevouzStrings: map[int]string{
+		0: "do_not_go_gentle_into_that_good_night",
 	},
 }

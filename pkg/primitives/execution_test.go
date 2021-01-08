@@ -13,6 +13,8 @@ func TestExecution(t *testing.T) {
 		ser, err := e.Marshal()
 		assert.NoError(t, err)
 
+		assert.LessOrEqual(t, len(ser), primitives.MaxExecutionSize)
+
 		desc := new(primitives.Execution)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)

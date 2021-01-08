@@ -13,6 +13,8 @@ func TestBlockHeader(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
+		assert.Equal(t, primitives.BlockHeaderSize, len(ser))
+
 		desc := new(primitives.BlockHeader)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)

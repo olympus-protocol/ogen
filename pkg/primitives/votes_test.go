@@ -11,9 +11,12 @@ import (
 
 func TestVoteData(t *testing.T) {
 	v := testdata.FuzzVoteData(10)
+
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
+
+		assert.Equal(t, primitives.VoteDataSize, len(ser))
 
 		desc := new(primitives.VoteData)
 
@@ -177,7 +180,7 @@ func TestAcceptedVoteInfo(t *testing.T) {
 }
 
 func TestMultiValidatorVote(t *testing.T) {
-	// Test correct AcceptedVoteInfo
+	// Test correct MultiValidatorVote
 	correct := testdata.FuzzMultiValidatorVote(10, true, true)
 
 	for _, c := range correct {

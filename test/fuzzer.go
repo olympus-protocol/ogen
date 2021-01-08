@@ -45,7 +45,7 @@ func FuzzAcceptedVoteInfo(n int, correct bool, complete bool) []*primitives.Acce
 		i := new(primitives.AcceptedVoteInfo)
 		f := fuzz.New().NilChance(0)
 		f.Fuzz(i)
-		i.ParticipationBitfield = bitfield.NewBitlist(6242)
+		i.ParticipationBitfield = bitfield.NewBitlist(6250)
 		if !correct {
 			i.ParticipationBitfield = bitfield.NewBitlist(50000)
 		}
@@ -66,7 +66,7 @@ func FuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.Mu
 	for i := 0; i < n; i++ {
 		d := new(primitives.MultiValidatorVote)
 		f.Fuzz(&d)
-		d.ParticipationBitfield = bitfield.NewBitlist(6242)
+		d.ParticipationBitfield = bitfield.NewBitlist(6250)
 		var sig [96]byte
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		d.Sig = sig
@@ -434,11 +434,11 @@ func FuzzTx(n int) []*primitives.Tx {
 }
 
 // FuzzTx returns a slice of n Tx
-func FuzzTxMulti(n int) []*primitives.TxMulti {
+func FuzzTxMulti(n int) []*primitives.MultiSignatureTx {
 	f := fuzz.New().NilChance(0)
-	var v []*primitives.TxMulti
+	var v []*primitives.MultiSignatureTx
 	for i := 0; i < n; i++ {
-		d := new(primitives.TxMulti)
+		d := new(primitives.MultiSignatureTx)
 		f.Fuzz(d)
 
 		secretKeys := make([]common.SecretKey, 10)
@@ -481,8 +481,7 @@ func FuzzExecutions(n int) []*primitives.Execution {
 	f := fuzz.New().NilChance(0)
 	var v []*primitives.Execution
 	for i := 0; i < n; i++ {
-		f.MaxDepth(32768)
-		var input []byte
+		var input [32768]byte
 		f.Fuzz(&input)
 		var to [20]byte
 		f.Fuzz(&to)
@@ -491,7 +490,7 @@ func FuzzExecutions(n int) []*primitives.Execution {
 		copy(pub[:], k.PublicKey().Marshal())
 		d := &primitives.Execution{
 			FromPubKey: pub,
-			Input:      input,
+			Input:      input[:],
 			To:         to,
 		}
 		msg := d.SignatureMessage()
