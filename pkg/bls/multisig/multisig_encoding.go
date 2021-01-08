@@ -23,7 +23,7 @@ func (m *Multipub) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.MarshalUint64(dst, m.NumNeeded)
 
 	// Field (0) 'PublicKeys'
-	if len(m.PublicKeys) > 32 {
+	if len(m.PublicKeys) > 15 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -56,7 +56,7 @@ func (m *Multipub) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'PublicKeys'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DivideInt2(len(buf), 48, 32)
+		num, err := ssz.DivideInt2(len(buf), 48, 15)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (m *Multipub) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (0) 'PublicKeys'
 	{
-		if len(m.PublicKeys) > 32 {
+		if len(m.PublicKeys) > 15 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -98,7 +98,7 @@ func (m *Multipub) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 			hh.Append(i[:])
 		}
 		numItems := uint64(len(m.PublicKeys))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(32, numItems, 32))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(15, numItems, 32))
 	}
 
 	// Field (1) 'NumNeeded'
@@ -139,7 +139,7 @@ func (m *Multisig) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (1) 'Signatures'
-	if len(m.Signatures) > 32 {
+	if len(m.Signatures) > 15 {
 		err = ssz.ErrListTooBig
 		return
 	}
@@ -148,7 +148,7 @@ func (m *Multisig) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (2) 'KeysSigned'
-	if len(m.KeysSigned) > 32 {
+	if len(m.KeysSigned) > 15 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -197,7 +197,7 @@ func (m *Multisig) UnmarshalSSZ(buf []byte) error {
 	// Field (1) 'Signatures'
 	{
 		buf = tail[o1:o2]
-		num, err := ssz.DivideInt2(len(buf), 96, 32)
+		num, err := ssz.DivideInt2(len(buf), 96, 15)
 		if err != nil {
 			return err
 		}
@@ -210,7 +210,7 @@ func (m *Multisig) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'KeysSigned'
 	{
 		buf = tail[o2:]
-		if err = ssz.ValidateBitlist(buf, 32); err != nil {
+		if err = ssz.ValidateBitlist(buf, 15); err != nil {
 			return err
 		}
 		if cap(m.KeysSigned) == 0 {
@@ -256,7 +256,7 @@ func (m *Multisig) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 	// Field (1) 'Signatures'
 	{
-		if len(m.Signatures) > 32 {
+		if len(m.Signatures) > 15 {
 			err = ssz.ErrListTooBig
 			return
 		}
@@ -265,7 +265,7 @@ func (m *Multisig) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 			hh.Append(i[:])
 		}
 		numItems := uint64(len(m.Signatures))
-		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(32, numItems, 32))
+		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(15, numItems, 32))
 	}
 
 	// Field (2) 'KeysSigned'
@@ -273,7 +273,7 @@ func (m *Multisig) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		err = ssz.ErrEmptyBitlist
 		return
 	}
-	hh.PutBitlist(m.KeysSigned, 32)
+	hh.PutBitlist(m.KeysSigned, 15)
 
 	hh.Merkleize(indx)
 	return

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
@@ -64,6 +65,9 @@ func TestBurnProofsToSerializable(t *testing.T) {
 
 		ser, err := serProof.Marshal()
 		assert.NoError(t, err)
+
+		assert.LessOrEqual(t, len(ser), primitives.MaxCoinProofSize)
+
 		var newSerProof burnproof.CoinsProofSerializable
 
 		err = newSerProof.Unmarshal(ser)

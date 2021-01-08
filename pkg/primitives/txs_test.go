@@ -3,8 +3,6 @@ package primitives_test
 import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +14,8 @@ func TestTx(t *testing.T) {
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
+
+		assert.Equal(t, primitives.TxSize, len(ser))
 
 		desc := new(primitives.Tx)
 		err = desc.Unmarshal(ser)
@@ -46,45 +46,4 @@ func TestTx(t *testing.T) {
 	assert.Equal(t, pubHash, fromPubKey)
 
 	assert.Equal(t, "9b6b8988800352ae1198cca98ebaaf56f0ba9ff834ed183f4aa8a49596e8e56a", tx.Hash().String())
-}
-
-func TestTxMulti(t *testing.T) {
-	v := testdata.FuzzTxMulti(10)
-	for _, c := range v {
-		ser, err := c.Marshal()
-		assert.NoError(t, err)
-
-		desc := new(primitives.TxMulti)
-		err = desc.Unmarshal(ser)
-		assert.NoError(t, err)
-
-		assert.Equal(t, c, desc)
-
-		assert.NoError(t, c.VerifySig())
-	}
-
-	secretKeys := make([]common.SecretKey, 5)
-	publicKeys := make([]common.PublicKey, 5)
-
-	for i := range secretKeys {
-		secretKeys[i], _ = bls.RandKey()
-		publicKeys[i] = secretKeys[i].PublicKey()
-	}
-
-	mp := multisig.NewMultipub(publicKeys, 2)
-	ms := multisig.NewMultisig(mp)
-
-	tx := primitives.TxMulti{
-		To:        [20]byte{1, 2, 3, 4, 5},
-		Amount:    10000,
-		Nonce:     5,
-		Fee:       5000,
-		Signature: ms,
-	}
-	hashExp, err := mp.Hash()
-	assert.NoError(t, err)
-	hash, err := tx.FromPubkeyHash()
-	assert.NoError(t, err)
-
-	assert.Equal(t, hashExp, hash)
 }

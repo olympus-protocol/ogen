@@ -1,8 +1,8 @@
 package primitives_test
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
+	"encoding/hex"
+	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
@@ -66,6 +66,8 @@ func TestGovernanceVote(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
+		assert.LessOrEqual(t, len(ser), primitives.MaxGovernanceVoteSize)
+
 		desc := new(primitives.GovernanceVote)
 
 		err = desc.Unmarshal(ser)
@@ -76,17 +78,26 @@ func TestGovernanceVote(t *testing.T) {
 		assert.True(t, c.Valid())
 	}
 
+	rawKey, err := hex.DecodeString("2f00e92c4fd8b0afb02f502a982971cfed1ef3efc92dea16a99a911c6bf1ce88")
+	assert.NoError(t, err)
+
+	k, err := bls.SecretKeyFromBytes(rawKey)
+	assert.NoError(t, err)
+
 	g := &primitives.GovernanceVote{
 		Type:      10,
-		Data:      [100]byte{1, 2, 3, 4, 5, 6},
-		Multisig:  nil,
+		Data:      []byte{1, 2, 3, 4, 5, 6},
 		VoteEpoch: 10,
+		Signature: [96]byte{},
+		PublicKey: [48]byte{},
 	}
 
-	mp := multisig.NewMultipub([]common.PublicKey{}, 5)
-	ms := multisig.NewMultisig(mp)
+	msg := g.SignatureHash()
+	sig := k.Sign(msg[:])
+	pub := k.PublicKey()
 
-	g.Multisig = ms
+	copy(g.Signature[:], sig.Marshal())
+	copy(g.PublicKey[:], pub.Marshal())
 
 	cp := g.Copy()
 
@@ -99,5 +110,5 @@ func TestGovernanceVote(t *testing.T) {
 	g.Data[1] = 5
 	assert.Equal(t, uint8(2), cp.Data[1])
 
-	assert.Equal(t, "6a6b542c69fafa325891b922ef155ed067bfd7007be5a97d60bbfe1afd2d69e2", g.Hash().String())
+	assert.Equal(t, "166caeb545b78480be8b55542f2807bccf5938639963f3ef90a4cc0d73199b77", g.Hash().String())
 }

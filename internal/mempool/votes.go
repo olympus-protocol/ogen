@@ -251,7 +251,7 @@ func (m *voteMempool) Get(slot uint64, s state.State, proposerIndex uint64) ([]*
 				m.poolLock.Unlock()
 				continue
 			}
-			if uint64(len(votes)) < m.netParams.MaxVotesPerBlock {
+			if uint64(len(votes)) < primitives.MaxVotesPerBlock {
 				votes = append(votes, vote)
 			}
 		}

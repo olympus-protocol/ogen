@@ -16,6 +16,8 @@ func TestVoteSlashing(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
+		assert.LessOrEqual(t, len(ser), primitives.MaxVotesSlashingSize)
+
 		desc := new(primitives.VoteSlashing)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)
@@ -88,6 +90,8 @@ func TestRANDAOSlashing(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
+		assert.Equal(t, primitives.RANDAOSlashingSize, len(ser))
+
 		desc := new(primitives.RANDAOSlashing)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)
@@ -130,6 +134,8 @@ func TestProposerSlashing(t *testing.T) {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
 
+		assert.Equal(t, primitives.ProposerSlashingSize, len(ser))
+
 		desc := new(primitives.ProposerSlashing)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)
@@ -160,7 +166,7 @@ func TestProposerSlashing(t *testing.T) {
 		BlockHeader1: &primitives.BlockHeader{
 			Version:                    0,
 			Nonce:                      0,
-			TxMerkleRoot:               [32]byte{},
+			TxsMerkleRoot:              [32]byte{},
 			VoteMerkleRoot:             [32]byte{},
 			DepositMerkleRoot:          [32]byte{},
 			ExitMerkleRoot:             [32]byte{},
@@ -177,7 +183,7 @@ func TestProposerSlashing(t *testing.T) {
 		BlockHeader2: &primitives.BlockHeader{
 			Version:                    0,
 			Nonce:                      0,
-			TxMerkleRoot:               [32]byte{},
+			TxsMerkleRoot:              [32]byte{},
 			VoteMerkleRoot:             [32]byte{},
 			DepositMerkleRoot:          [32]byte{},
 			ExitMerkleRoot:             [32]byte{},

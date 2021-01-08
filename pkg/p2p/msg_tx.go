@@ -26,5 +26,5 @@ func (m *MsgTx) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgTx message.
 func (m *MsgTx) MaxPayloadLength() uint64 {
-	return primitives.MaxTransactionSize
+	return primitives.TxSize
 }

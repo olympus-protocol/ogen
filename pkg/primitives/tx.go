@@ -13,11 +13,6 @@ var (
 	ErrorInvalidSignature = errors.New("invalid tx signature")
 )
 
-const (
-	// MaxTransactionSize is the maximum size of the transaction information with a single transfer payload
-	MaxTransactionSize = 188
-)
-
 // Tx represents a transaction on the blockchain.
 type Tx struct {
 	To            [20]byte

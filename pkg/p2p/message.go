@@ -39,8 +39,8 @@ const (
 	MsgExitsCmd = "exits"
 	// MsgGovernanceCmd is a exit element
 	MsgGovernanceCmd = "governance_vote"
-	// MsgTxMultiCmd is a exit element
-	MsgTxMultiCmd = "tx_multi"
+	// MsgMultiSignatureTx is a exit element
+	MsgMultiSignatureTxCmd = "multi_sig_tx"
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
 	// MsgGetBlocksCmd ask a node for blocks
@@ -92,8 +92,8 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgBlock{}
 	case MsgTxCmd:
 		msg = &MsgTx{}
-	case MsgTxMultiCmd:
-		msg = &MsgTxMulti{}
+	case MsgMultiSignatureTxCmd:
+		msg = &MsgMultiSignatureTx{}
 	case MsgDepositCmd:
 		msg = &MsgDeposit{}
 	case MsgDepositsCmd:

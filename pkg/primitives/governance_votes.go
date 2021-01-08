@@ -2,18 +2,9 @@ package primitives
 
 import (
 	"encoding/binary"
-	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
-
+	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-)
-
-const (
-	// MaxReplacementsVoteSize is the maximum amount of bytes a ReplacementVotes can have
-	MaxReplacementsVoteSize = 52
-	// MaxGovernanceVoteSize is the maximum amount of bytes a GovernanceVote can have
-	MaxGovernanceVoteSize = 116 + multisig.MaxMultisigSize
-	// MaxCommunityVoteDataSize is the maximum amount of bytes a CommunityVoteData can have
-	MaxCommunityVoteDataSize = 104
 )
 
 // CommunityVoteDataInfo contains information about a community vote.
@@ -91,9 +82,10 @@ const (
 // GovernanceVote is a vote for governance.
 type GovernanceVote struct {
 	Type      uint64
-	Data      [100]byte
-	Multisig  *multisig.Multisig
+	Data      []byte `ssz-max:"100"`
 	VoteEpoch uint64
+	PublicKey [48]byte
+	Signature [96]byte
 }
 
 // Marshal encodes the data.
@@ -109,7 +101,15 @@ func (g *GovernanceVote) Unmarshal(b []byte) error {
 // Valid returns a boolean that checks for validity of the vote
 func (g *GovernanceVote) Valid() bool {
 	sigHash := g.SignatureHash()
-	return g.Multisig.Verify(sigHash[:])
+	pub, err := g.GetPublicKey()
+	if err != nil {
+		return false
+	}
+	sig, err := g.GetSignature()
+	if err != nil {
+		return false
+	}
+	return sig.Verify(pub, sigHash[:])
 }
 
 // SignatureHash gets the signed part of the hash.
@@ -119,6 +119,16 @@ func (g *GovernanceVote) SignatureHash() chainhash.Hash {
 	binary.LittleEndian.PutUint64(buf[8:16], g.VoteEpoch)
 	copy(buf[16:], g.Data[:])
 	return chainhash.HashH(buf)
+}
+
+// GetPublicKey returns the public key of the governance vote.
+func (g *GovernanceVote) GetPublicKey() (common.PublicKey, error) {
+	return bls.PublicKeyFromBytes(g.PublicKey[:])
+}
+
+// GetSignature returns the signature of the governance vote.
+func (g *GovernanceVote) GetSignature() (common.Signature, error) {
+	return bls.SignatureFromBytes(g.Signature[:])
 }
 
 // Hash calculates the hash of the governance vote.
@@ -132,11 +142,12 @@ func (g *GovernanceVote) Copy() *GovernanceVote {
 	newGv := &GovernanceVote{
 		Type:      g.Type,
 		VoteEpoch: g.VoteEpoch,
-		Data:      [100]byte{},
+		Data:      make([]byte, len(g.Data)),
+		PublicKey: [48]byte{},
+		Signature: [96]byte{},
 	}
 	copy(newGv.Data[:], g.Data[:])
-	if g.Multisig != nil {
-		newGv.Multisig = g.Multisig.Copy()
-	}
+	copy(newGv.Signature[:], g.Signature[:])
+	copy(newGv.PublicKey[:], g.PublicKey[:])
 	return newGv
 }

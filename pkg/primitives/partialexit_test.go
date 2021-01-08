@@ -15,6 +15,8 @@ func TestPartialExit(t *testing.T) {
 		ser, err := e.Marshal()
 		assert.NoError(t, err)
 
+		assert.Equal(t, primitives.PartialExitsSize, len(ser))
+
 		desc := new(primitives.PartialExit)
 		err = desc.Unmarshal(ser)
 		assert.NoError(t, err)

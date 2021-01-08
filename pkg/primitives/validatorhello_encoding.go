@@ -13,18 +13,27 @@ func (v *ValidatorHelloMessage) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the ValidatorHelloMessage object to a target array
 func (v *ValidatorHelloMessage) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
+	offset := int(116)
 
-	// Field (0) 'PublicKey'
-	dst = append(dst, v.PublicKey[:]...)
-
-	// Field (1) 'Timestamp'
+	// Field (0) 'Timestamp'
 	dst = ssz.MarshalUint64(dst, v.Timestamp)
 
-	// Field (2) 'Nonce'
+	// Field (1) 'Nonce'
 	dst = ssz.MarshalUint64(dst, v.Nonce)
 
-	// Field (3) 'Signature'
+	// Field (2) 'Signature'
 	dst = append(dst, v.Signature[:]...)
+
+	// Offset (3) 'Validators'
+	dst = ssz.WriteOffset(dst, offset)
+	offset += len(v.Validators)
+
+	// Field (3) 'Validators'
+	if len(v.Validators) > 1024 {
+		err = ssz.ErrBytesLength
+		return
+	}
+	dst = append(dst, v.Validators...)
 
 	return
 }
@@ -33,28 +42,48 @@ func (v *ValidatorHelloMessage) MarshalSSZTo(buf []byte) (dst []byte, err error)
 func (v *ValidatorHelloMessage) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 160 {
+	if size < 116 {
 		return ssz.ErrSize
 	}
 
-	// Field (0) 'PublicKey'
-	copy(v.PublicKey[:], buf[0:48])
+	tail := buf
+	var o3 uint64
 
-	// Field (1) 'Timestamp'
-	v.Timestamp = ssz.UnmarshallUint64(buf[48:56])
+	// Field (0) 'Timestamp'
+	v.Timestamp = ssz.UnmarshallUint64(buf[0:8])
 
-	// Field (2) 'Nonce'
-	v.Nonce = ssz.UnmarshallUint64(buf[56:64])
+	// Field (1) 'Nonce'
+	v.Nonce = ssz.UnmarshallUint64(buf[8:16])
 
-	// Field (3) 'Signature'
-	copy(v.Signature[:], buf[64:160])
+	// Field (2) 'Signature'
+	copy(v.Signature[:], buf[16:112])
 
+	// Offset (3) 'Validators'
+	if o3 = ssz.ReadOffset(buf[112:116]); o3 > size {
+		return ssz.ErrOffset
+	}
+
+	// Field (3) 'Validators'
+	{
+		buf = tail[o3:]
+		if err = ssz.ValidateBitlist(buf, 1024); err != nil {
+			return err
+		}
+		if cap(v.Validators) == 0 {
+			v.Validators = make([]byte, 0, len(buf))
+		}
+		v.Validators = append(v.Validators, buf...)
+	}
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the ValidatorHelloMessage object
 func (v *ValidatorHelloMessage) SizeSSZ() (size int) {
-	size = 160
+	size = 116
+
+	// Field (3) 'Validators'
+	size += len(v.Validators)
+
 	return
 }
 
@@ -67,17 +96,21 @@ func (v *ValidatorHelloMessage) HashTreeRoot() ([32]byte, error) {
 func (v *ValidatorHelloMessage) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
-	// Field (0) 'PublicKey'
-	hh.PutBytes(v.PublicKey[:])
-
-	// Field (1) 'Timestamp'
+	// Field (0) 'Timestamp'
 	hh.PutUint64(v.Timestamp)
 
-	// Field (2) 'Nonce'
+	// Field (1) 'Nonce'
 	hh.PutUint64(v.Nonce)
 
-	// Field (3) 'Signature'
+	// Field (2) 'Signature'
 	hh.PutBytes(v.Signature[:])
+
+	// Field (3) 'Validators'
+	if len(v.Validators) == 0 {
+		err = ssz.ErrEmptyBitlist
+		return
+	}
+	hh.PutBitlist(v.Validators, 1024)
 
 	hh.Merkleize(indx)
 	return

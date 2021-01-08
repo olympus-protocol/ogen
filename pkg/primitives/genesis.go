@@ -12,7 +12,6 @@ func GetGenesisBlock() Block {
 		Header: &BlockHeader{
 			Version:                    0,
 			Nonce:                      0,
-			TxMerkleRoot:               chainhash.Hash{},
 			VoteMerkleRoot:             chainhash.Hash{},
 			DepositMerkleRoot:          chainhash.Hash{},
 			ExitMerkleRoot:             chainhash.Hash{},

@@ -6,25 +6,25 @@ import (
 
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
-	Version                    uint64
-	Nonce                      uint64
-	TxMerkleRoot               [32]byte
-	TxMultiMerkleRoot          [32]byte
-	VoteMerkleRoot             [32]byte
-	DepositMerkleRoot          [32]byte
-	ExitMerkleRoot             [32]byte
-	PartialExitMerkleRoot      [32]byte
-	VoteSlashingMerkleRoot     [32]byte
-	RANDAOSlashingMerkleRoot   [32]byte
-	ProposerSlashingMerkleRoot [32]byte
-	GovernanceVotesMerkleRoot  [32]byte
-	CoinProofsMerkleRoot       [32]byte
-	ExecutionsMerkleRoot       [32]byte
-	PrevBlockHash              [32]byte
-	Timestamp                  uint64
-	Slot                       uint64
-	StateRoot                  [32]byte
-	FeeAddress                 [20]byte
+	Version                     uint64
+	Nonce                       uint64
+	Timestamp                   uint64
+	Slot                        uint64
+	PrevBlockHash               [32]byte
+	StateRoot                   [32]byte
+	FeeAddress                  [20]byte
+	VoteMerkleRoot              [32]byte
+	DepositMerkleRoot           [32]byte
+	ExitMerkleRoot              [32]byte
+	PartialExitMerkleRoot       [32]byte
+	CoinProofsMerkleRoot        [32]byte
+	ExecutionsMerkleRoot        [32]byte
+	TxsMerkleRoot               [32]byte
+	ProposerSlashingMerkleRoot  [32]byte
+	VoteSlashingMerkleRoot      [32]byte
+	RANDAOSlashingMerkleRoot    [32]byte
+	GovernanceVotesMerkleRoot   [32]byte
+	MultiSignatureTxsMerkleRoot [32]byte
 }
 
 // Marshal encodes the data.

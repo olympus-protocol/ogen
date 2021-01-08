@@ -14,11 +14,16 @@ func (m *MsgValidatorStart) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the MsgValidatorStart object to a target array
 func (m *MsgValidatorStart) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
+	offset := int(4)
 
-	// Field (0) 'Data'
+	// Offset (0) 'Data'
+	dst = ssz.WriteOffset(dst, offset)
 	if m.Data == nil {
 		m.Data = new(primitives.ValidatorHelloMessage)
 	}
+	offset += m.Data.SizeSSZ()
+
+	// Field (0) 'Data'
 	if dst, err = m.Data.MarshalSSZTo(dst); err != nil {
 		return
 	}
@@ -30,24 +35,41 @@ func (m *MsgValidatorStart) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (m *MsgValidatorStart) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size != 160 {
+	if size < 4 {
 		return ssz.ErrSize
 	}
 
-	// Field (0) 'Data'
-	if m.Data == nil {
-		m.Data = new(primitives.ValidatorHelloMessage)
-	}
-	if err = m.Data.UnmarshalSSZ(buf[0:160]); err != nil {
-		return err
+	tail := buf
+	var o0 uint64
+
+	// Offset (0) 'Data'
+	if o0 = ssz.ReadOffset(buf[0:4]); o0 > size {
+		return ssz.ErrOffset
 	}
 
+	// Field (0) 'Data'
+	{
+		buf = tail[o0:]
+		if m.Data == nil {
+			m.Data = new(primitives.ValidatorHelloMessage)
+		}
+		if err = m.Data.UnmarshalSSZ(buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the MsgValidatorStart object
 func (m *MsgValidatorStart) SizeSSZ() (size int) {
-	size = 160
+	size = 4
+
+	// Field (0) 'Data'
+	if m.Data == nil {
+		m.Data = new(primitives.ValidatorHelloMessage)
+	}
+	size += m.Data.SizeSSZ()
+
 	return
 }
 

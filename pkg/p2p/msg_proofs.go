@@ -1,6 +1,9 @@
 package p2p
 
-import "github.com/olympus-protocol/ogen/pkg/burnproof"
+import (
+	"github.com/olympus-protocol/ogen/pkg/burnproof"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
+)
 
 // MsgProofs is the struct that contains the node information during the version handshake.
 type MsgProofs struct {
@@ -24,5 +27,5 @@ func (m *MsgProofs) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgVersion message.
 func (m *MsgProofs) MaxPayloadLength() uint64 {
-	return 2297 * 2048
+	return primitives.MaxCoinProofSize
 }

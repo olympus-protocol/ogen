@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
 	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -16,19 +17,21 @@ func init() {
 }
 
 func TestCorrectnessMultisig(t *testing.T) {
-	secretKeys := make([]common.SecretKey, 20)
-	publicKeys := make([]common.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, primitives.MaxPublicKeysOnMultipub)
+	publicKeys := make([]common.PublicKey, primitives.MaxPublicKeysOnMultipub)
 	var err error
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
-	// create 10-of-20 multipub
-	multiPub := multisig.NewMultipub(publicKeys, 10)
+	// create 15-of-15 multipub
+	multiPub := multisig.NewMultipub(publicKeys, 15)
 
 	ser, err := multiPub.Marshal()
 	assert.NoError(t, err)
+
+	assert.LessOrEqual(t, len(ser), primitives.MaxMultipubSize)
 
 	desc := new(multisig.Multipub)
 
@@ -39,17 +42,15 @@ func TestCorrectnessMultisig(t *testing.T) {
 
 	msg := []byte("hello there!")
 
-	for i := 0; i < 9; i++ {
+	for i := 0; i < 10; i++ {
 		assert.NoError(t, ms.Sign(secretKeys[i], msg))
 	}
 
 	assert.False(t, ms.Verify(msg))
 
-	assert.NoError(t, ms.Sign(secretKeys[9], msg))
+	assert.NoError(t, ms.Sign(secretKeys[10], msg))
 
-	assert.True(t, ms.Verify(msg))
-
-	for i := 10; i < 20; i++ {
+	for i := 10; i < 15; i++ {
 		assert.NoError(t, ms.Sign(secretKeys[i], msg))
 	}
 
@@ -62,8 +63,8 @@ func TestCorrectnessMultisig(t *testing.T) {
 }
 
 func TestMultisigSerializeSign(t *testing.T) {
-	secretKeys := make([]common.SecretKey, 20)
-	publicKeys := make([]common.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, primitives.MaxPublicKeysOnMultipub)
+	publicKeys := make([]common.PublicKey, primitives.MaxPublicKeysOnMultipub)
 
 	var err error
 
@@ -72,19 +73,21 @@ func TestMultisigSerializeSign(t *testing.T) {
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
-	// create 10-of-20 multipub
-	multiPub := multisig.NewMultipub(publicKeys, 10)
+	// create 10-of-15 multipub
+	multiPub := multisig.NewMultipub(publicKeys, 15)
 	ms := multisig.NewMultisig(multiPub)
 
 	msg := []byte("hello there!")
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 15; i++ {
 		assert.NoError(t, ms.Sign(secretKeys[i], msg))
 	}
 
 	multiBytes, err := ms.Marshal()
 
 	assert.NoError(t, err)
+
+	assert.LessOrEqual(t, len(multiBytes), primitives.MaxMultisigSize)
 
 	newMulti := new(multisig.Multisig)
 
@@ -94,27 +97,27 @@ func TestMultisigSerializeSign(t *testing.T) {
 }
 
 func TestMultipubCopy(t *testing.T) {
-	secretKeys := make([]common.SecretKey, 20)
-	publicKeys := make([]common.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, primitives.MaxPublicKeysOnMultipub)
+	publicKeys := make([]common.PublicKey, primitives.MaxPublicKeysOnMultipub)
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
 	}
 
-	mp := multisig.NewMultipub(publicKeys, 10)
+	mp := multisig.NewMultipub(publicKeys, 15)
 
 	cp := mp.Copy()
 
 	mp.NumNeeded = 1
-	assert.Equal(t, uint64(10), cp.NumNeeded)
+	assert.Equal(t, uint64(15), cp.NumNeeded)
 
 	mp.PublicKeys = nil
-	assert.Equal(t, 20, len(cp.PublicKeys))
+	assert.Equal(t, 15, len(cp.PublicKeys))
 }
 
 func TestMultisigCopy(t *testing.T) {
-	secretKeys := make([]common.SecretKey, 20)
-	publicKeys := make([]common.PublicKey, 20)
+	secretKeys := make([]common.SecretKey, primitives.MaxPublicKeysOnMultipub)
+	publicKeys := make([]common.PublicKey, primitives.MaxPublicKeysOnMultipub)
 	for i := range secretKeys {
 		secretKeys[i], _ = bls.RandKey()
 		publicKeys[i] = secretKeys[i].PublicKey()
@@ -131,8 +134,8 @@ func TestMultisigCopy(t *testing.T) {
 
 	cp := ms.Copy()
 
-	ms.KeysSigned.Set(11)
-	assert.False(t, cp.KeysSigned.Get(11))
+	ms.KeysSigned.Set(14)
+	assert.False(t, cp.KeysSigned.Get(14))
 
 	ms.Signatures = nil
 	assert.Equal(t, 10, len(cp.Signatures))
