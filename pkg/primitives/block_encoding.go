@@ -89,11 +89,11 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		offset += b.GovernanceVotes[ii].SizeSSZ()
 	}
 
-	// Offset (14) 'TxsMulti'
+	// Offset (14) 'MultiSignatureTxs'
 	dst = ssz.WriteOffset(dst, offset)
-	for ii := 0; ii < len(b.TxsMulti); ii++ {
+	for ii := 0; ii < len(b.MultiSignatureTxs); ii++ {
 		offset += 4
-		offset += b.TxsMulti[ii].SizeSSZ()
+		offset += b.MultiSignatureTxs[ii].SizeSSZ()
 	}
 
 	// Field (3) 'Votes'
@@ -252,20 +252,20 @@ func (b *Block) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 
-	// Field (14) 'TxsMulti'
-	if len(b.TxsMulti) > 128 {
+	// Field (14) 'MultiSignatureTxs'
+	if len(b.MultiSignatureTxs) > 128 {
 		err = ssz.ErrListTooBig
 		return
 	}
 	{
-		offset = 4 * len(b.TxsMulti)
-		for ii := 0; ii < len(b.TxsMulti); ii++ {
+		offset = 4 * len(b.MultiSignatureTxs)
+		for ii := 0; ii < len(b.MultiSignatureTxs); ii++ {
 			dst = ssz.WriteOffset(dst, offset)
-			offset += b.TxsMulti[ii].SizeSSZ()
+			offset += b.MultiSignatureTxs[ii].SizeSSZ()
 		}
 	}
-	for ii := 0; ii < len(b.TxsMulti); ii++ {
-		if dst, err = b.TxsMulti[ii].MarshalSSZTo(dst); err != nil {
+	for ii := 0; ii < len(b.MultiSignatureTxs); ii++ {
+		if dst, err = b.MultiSignatureTxs[ii].MarshalSSZTo(dst); err != nil {
 			return
 		}
 	}
@@ -353,7 +353,7 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 		return ssz.ErrOffset
 	}
 
-	// Offset (14) 'TxsMulti'
+	// Offset (14) 'MultiSignatureTxs'
 	if o14 = ssz.ReadOffset(buf[736:740]); o14 > size || o13 > o14 {
 		return ssz.ErrOffset
 	}
@@ -576,19 +576,19 @@ func (b *Block) UnmarshalSSZ(buf []byte) error {
 		}
 	}
 
-	// Field (14) 'TxsMulti'
+	// Field (14) 'MultiSignatureTxs'
 	{
 		buf = tail[o14:]
 		num, err := ssz.DecodeDynamicLength(buf, 128)
 		if err != nil {
 			return err
 		}
-		b.TxsMulti = make([]*MultiSignatureTx, num)
+		b.MultiSignatureTxs = make([]*MultiSignatureTx, num)
 		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
-			if b.TxsMulti[indx] == nil {
-				b.TxsMulti[indx] = new(MultiSignatureTx)
+			if b.MultiSignatureTxs[indx] == nil {
+				b.MultiSignatureTxs[indx] = new(MultiSignatureTx)
 			}
-			if err = b.TxsMulti[indx].UnmarshalSSZ(buf); err != nil {
+			if err = b.MultiSignatureTxs[indx].UnmarshalSSZ(buf); err != nil {
 				return err
 			}
 			return nil
@@ -652,10 +652,10 @@ func (b *Block) SizeSSZ() (size int) {
 		size += b.GovernanceVotes[ii].SizeSSZ()
 	}
 
-	// Field (14) 'TxsMulti'
-	for ii := 0; ii < len(b.TxsMulti); ii++ {
+	// Field (14) 'MultiSignatureTxs'
+	for ii := 0; ii < len(b.MultiSignatureTxs); ii++ {
 		size += 4
-		size += b.TxsMulti[ii].SizeSSZ()
+		size += b.MultiSignatureTxs[ii].SizeSSZ()
 	}
 
 	return
@@ -857,16 +857,16 @@ func (b *Block) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, num, 128)
 	}
 
-	// Field (14) 'TxsMulti'
+	// Field (14) 'MultiSignatureTxs'
 	{
 		subIndx := hh.Index()
-		num := uint64(len(b.TxsMulti))
+		num := uint64(len(b.MultiSignatureTxs))
 		if num > 128 {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
 		for i := uint64(0); i < num; i++ {
-			if err = b.TxsMulti[i].HashTreeRootWith(hh); err != nil {
+			if err = b.MultiSignatureTxs[i].HashTreeRootWith(hh); err != nil {
 				return
 			}
 		}

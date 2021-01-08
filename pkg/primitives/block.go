@@ -17,14 +17,16 @@ const MaxBlockSize = BlockHeaderSize + 96 + 96 +
 	(TxSize * MaxTxsPerBlock) +
 	(ProposerSlashingSize * MaxProposerSlashingsPerBlock) +
 	(MaxVotesSlashingSize * MaxVoteSlashingsPerBlock) +
-	(RANDAOSlashingSize * MaxRANDAOSlashingsPerBlock)
+	(RANDAOSlashingSize * MaxRANDAOSlashingsPerBlock) +
+	(MaxGovernanceVoteSize * MaxGovernanceVotesPerBlock) +
+	(MaxMultiSignatureTxSize * MaxMultiSignatureTxsOnBlock)
 
 // Block is a block in the blockchain.
 type Block struct {
 	Header            *BlockHeader                        // 																		= 500 bytes
 	Signature         [96]byte                            // 																		= 96 bytes
 	RandaoSignature   [96]byte                            // 																		= 96
-	Votes             []*MultiValidatorVote               `ssz-max:"16"`    // MaxVotesPerBlock 					16 * 6474 		= 103584 bytes
+	Votes             []*MultiValidatorVote               `ssz-max:"16"`    // MaxVotesPerBlock 					16 * 6479 		= 103664 bytes
 	Deposits          []*Deposit                          `ssz-max:"32"`    // MaxDepositsPerBlock 					32 * 308 		= 9856 bytes
 	Exits             []*Exit                             `ssz-max:"32"`    // MaxExitsPerBlock     				32 * 192 		= 6144 bytes
 	PartialExit       []*PartialExit                      `ssz-max:"32"`    // MaxPartialExitsPerBlock            	32 * 200		= 6400 bytes
@@ -34,10 +36,8 @@ type Block struct {
 	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`     // MaxProposerSlashingsPerBlock 		2 * 1240 		= 2480 bytes
 	VoteSlashings     []*VoteSlashing                     `ssz-max:"5"`     // MaxVoteSlashingsPerBlock				10 * 12948 		= 129480 bytes
 	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`    // MaxRANDAOSlashingsPerBlock  			20 * 152 		= 3040 bytes
-
-	GovernanceVotes []*GovernanceVote `ssz-max:"128"` // MaxGovernanceVotesPerBlock		260 * 128		= 33280 bytes
-
-	TxsMulti []*MultiSignatureTx `ssz-max:"128"` // MaxTxsMultiPerBlock
+	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`   // MaxGovernanceVotesPerBlock			128 * 264		= 33792 bytes
+	MultiSignatureTxs []*MultiSignatureTx                 `ssz-max:"128"`   // MaxMultiSignatureTxsOnBlock			128 * 2231      = 285568 bytes
 }
 
 // Marshal encodes the block.
@@ -120,8 +120,8 @@ func merkleRootDeposits(deposits []*Deposit) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
-// TransactionMerkleRoot calculates the merkle root of the Txs in the block.
-func (b *Block) TransactionMerkleRoot() chainhash.Hash {
+// TxsMerkleRoot calculates the merkle root of the Txs in the block.
+func (b *Block) TxsMerkleRoot() chainhash.Hash {
 	return merkleRootTxs(b.Txs)
 }
 
@@ -139,12 +139,12 @@ func merkleRootTxs(txs []*Tx) chainhash.Hash {
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }
 
-// TransactionMultiMerkleRoot calculates the merkle root of the TxsMulti in the block.
-func (b *Block) TransactionMultiMerkleRoot() chainhash.Hash {
-	return merkleRootTxsMulti(b.TxsMulti)
+// MultiSignatureTxsMerkleRoot calculates the merkle root of the TxsMulti in the block.
+func (b *Block) MultiSignatureTxsMerkleRoot() chainhash.Hash {
+	return merkleRootMultiSignaturesTxs(b.MultiSignatureTxs)
 }
 
-func merkleRootTxsMulti(txs []*MultiSignatureTx) chainhash.Hash {
+func merkleRootMultiSignaturesTxs(txs []*MultiSignatureTx) chainhash.Hash {
 	if len(txs) == 0 {
 		return chainhash.Hash{}
 	}
@@ -152,8 +152,8 @@ func merkleRootTxsMulti(txs []*MultiSignatureTx) chainhash.Hash {
 		return txs[0].Hash()
 	}
 	mid := len(txs) / 2
-	h1 := merkleRootTxsMulti(txs[:mid])
-	h2 := merkleRootTxsMulti(txs[mid:])
+	h1 := merkleRootMultiSignaturesTxs(txs[:mid])
+	h2 := merkleRootMultiSignaturesTxs(txs[mid:])
 
 	return chainhash.HashH(append(h1[:], h2[:]...))
 }

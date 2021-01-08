@@ -26,5 +26,5 @@ func (m *MsgMultiSignatureTx) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgTxMulti message.
 func (m *MsgMultiSignatureTx) MaxPayloadLength() uint64 {
-	return 4673
+	return primitives.MaxMultiSignatureTxSize
 }

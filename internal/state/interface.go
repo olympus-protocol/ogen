@@ -42,7 +42,7 @@ type State interface {
 	// Appliers
 	ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
-	ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error
+	ApplyMultiSignatureTx(tx *primitives.MultiSignatureTx, blockWithdrawalAddress [20]byte) error
 	ApplyCoinProof(p *burnproof.CoinsProofSerializable) error
 	ApplyProposerSlashing(ps *primitives.ProposerSlashing) error
 	ApplyVoteSlashing(vs *primitives.VoteSlashing) error

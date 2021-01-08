@@ -60,22 +60,16 @@ func FuzzAcceptedVoteInfo(n int, correct bool, complete bool) []*primitives.Acce
 // FuzzMultiValidatorVote creates a slice of MultiValidatorVote
 // If correct is true will return correctly serializable structs
 // If complete is true will return information with no nil pointers.
-func FuzzMultiValidatorVote(n int, correct bool, complete bool) []*primitives.MultiValidatorVote {
+func FuzzMultiValidatorVote(n int) []*primitives.MultiValidatorVote {
 	var v []*primitives.MultiValidatorVote
 	f := fuzz.New().NilChance(0)
 	for i := 0; i < n; i++ {
 		d := new(primitives.MultiValidatorVote)
 		f.Fuzz(&d)
-		d.ParticipationBitfield = bitfield.NewBitlist(6250)
+		d.ParticipationBitfield = bitfield.NewBitlist(50000)
 		var sig [96]byte
 		copy(sig[:], bls.NewAggregateSignature().Marshal())
 		d.Sig = sig
-		if !correct {
-			d.ParticipationBitfield = bitfield.NewBitlist(50064)
-		}
-		if !complete {
-			d.Data = nil
-		}
 		v = append(v, d)
 	}
 	return v
@@ -100,8 +94,8 @@ func FuzzVoteSlashing(n int, correct bool, complete bool) []*primitives.VoteSlas
 	var v []*primitives.VoteSlashing
 	for i := 0; i < n; i++ {
 		d := &primitives.VoteSlashing{
-			Vote1: FuzzMultiValidatorVote(1, correct, complete)[0],
-			Vote2: FuzzMultiValidatorVote(1, correct, complete)[0],
+			Vote1: FuzzMultiValidatorVote(1)[0],
+			Vote2: FuzzMultiValidatorVote(1)[0],
 		}
 		v = append(v, d)
 	}
@@ -232,18 +226,17 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 	for i := 0; i < n; i++ {
 		b := &primitives.Block{
 			Header:            FuzzBlockHeader(1)[0],
-			Votes:             FuzzMultiValidatorVote(5, true, true),
-			Txs:               FuzzTx(2),
-			TxsMulti:          FuzzTxMulti(2),
+			Votes:             FuzzMultiValidatorVote(5),
 			Deposits:          FuzzDeposit(5, true),
 			Exits:             FuzzExits(5),
 			PartialExit:       FuzzPartialExits(5),
-			VoteSlashings:     FuzzVoteSlashing(2, true, true),
-			RANDAOSlashings:   FuzzRANDAOSlashing(2),
-			ProposerSlashings: FuzzProposerSlashing(2, true),
-			GovernanceVotes:   FuzzGovernanceVote(5),
 			CoinProofs:        FuzzCoinProofs(10),
 			Executions:        FuzzExecutions(10),
+			Txs:               FuzzTx(2),
+			ProposerSlashings: FuzzProposerSlashing(2, true),
+			VoteSlashings:     FuzzVoteSlashing(2, true, true),
+			RANDAOSlashings:   FuzzRANDAOSlashing(2),
+			GovernanceVotes:   FuzzGovernanceVote(5),
 		}
 
 		var sig [96]byte
@@ -252,7 +245,7 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 		b.Signature = sig
 		b.RandaoSignature = sig
 		if !correct {
-			b.Votes = FuzzMultiValidatorVote(50, true, true)
+			b.Votes = FuzzMultiValidatorVote(50)
 		}
 		if !complete {
 			b.Header = nil
@@ -264,20 +257,19 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 
 // FuzzValidatorHello returns a slice of ValidatorHelloMessage
 func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
-	f := fuzz.New().NilChance(0)
 	var v []*primitives.ValidatorHelloMessage
 	for i := 0; i < n; i++ {
-		d := new(primitives.ValidatorHelloMessage)
-		f.Fuzz(d)
-		var sig [96]byte
-		var pub [48]byte
-		k, _ := bls.RandKey()
-		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], k.PublicKey().Marshal())
-		d.Signature = sig
-		d.PublicKey = pub
+		d := &primitives.ValidatorHelloMessage{
+			Timestamp:  100,
+			Nonce:      100,
+			Validators: bitfield.NewBitlist(1024),
+		}
+		sig := bls.NewAggregateSignature()
+		copy(d.Signature[:], sig.Marshal())
+
 		v = append(v, d)
 	}
+
 	return v
 }
 
@@ -333,26 +325,20 @@ func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
 		d := new(primitives.GovernanceVote)
 		f.Fuzz(d)
 
-		secretKeys := make([]common.SecretKey, 10)
-		publicKeys := make([]common.PublicKey, 10)
+		var data [100]byte
+		f.Fuzz(&data)
 
-		for i := range secretKeys {
-			secretKeys[i], _ = bls.RandKey()
-			publicKeys[i] = secretKeys[i].PublicKey()
-		}
+		d.Data = data[:]
 
-		mp := multisig.NewMultipub(publicKeys, 5)
-		ms := multisig.NewMultisig(mp)
+		k, _ := bls.RandKey()
+		msg := d.SignatureHash()
 
-		for i := 0; i < 5; i++ {
-			msg := d.SignatureHash()
-			err := ms.Sign(secretKeys[i], msg[:])
-			if err != nil {
-				panic(err)
-			}
-		}
+		sig := k.Sign(msg[:])
+		pub := k.PublicKey()
 
-		d.Multisig = ms
+		copy(d.Signature[:], sig.Marshal())
+		copy(d.PublicKey[:], pub.Marshal())
+
 		v = append(v, d)
 	}
 	return v

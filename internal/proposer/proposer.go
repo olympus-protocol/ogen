@@ -194,7 +194,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				depositTxs, blockState, err := p.actionsMempool.GetDeposits(int(p.netParams.MaxDepositsPerBlock), blockState)
+				depositTxs, blockState, err := p.actionsMempool.GetDeposits(int(primitives.MaxDepositsPerBlock), blockState)
 				if err != nil {
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Second * 2)
@@ -202,7 +202,7 @@ func (p *proposer) ProposeBlocks() {
 					continue
 				}
 
-				coinTxs, blockState := p.coinsMempool.Get(p.netParams.MaxTxsPerBlock, blockState, proposerValidator.PayeeAddress)
+				coinTxs, blockState := p.coinsMempool.Get(primitives.MaxTxsPerBlock, blockState, proposerValidator.PayeeAddress)
 
 				coinTxMulti := p.coinsMempool.GetMulti(p.netParams.MaxTxsMultiPerBlock, blockState)
 

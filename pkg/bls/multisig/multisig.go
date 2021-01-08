@@ -14,7 +14,7 @@ import (
 
 // Multipub represents multiple public keys that can be signed by some subset numNeeded.
 type Multipub struct {
-	PublicKeys [][48]byte `ssz-max:"32"`
+	PublicKeys [][48]byte `ssz-max:"15"`
 	NumNeeded  uint64
 }
 
@@ -102,8 +102,8 @@ func (m *Multipub) ToBech32() (string, error) {
 // Multisig represents an m-of-n multisig.
 type Multisig struct {
 	PublicKey  *Multipub
-	Signatures [][96]byte       `ssz-max:"32"`
-	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"32"`
+	Signatures [][96]byte       `ssz-max:"15"`
+	KeysSigned bitfield.Bitlist `ssz:"bitlist" ssz-max:"15"`
 }
 
 // Marshal encodes the data.

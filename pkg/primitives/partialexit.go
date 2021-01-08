@@ -6,9 +6,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 )
 
-// MaxPartialExitSize is the maximum amount of bytes an exit can contain.
-const MaxPartialExitSize = 200
-
 // PartialExit claims a partial amount of a validator balance without removing it from the validator registry.
 type PartialExit struct {
 	ValidatorPubkey [48]byte

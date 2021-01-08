@@ -166,7 +166,7 @@ func TestProposerSlashing(t *testing.T) {
 		BlockHeader1: &primitives.BlockHeader{
 			Version:                    0,
 			Nonce:                      0,
-			TxMerkleRoot:               [32]byte{},
+			TxsMerkleRoot:              [32]byte{},
 			VoteMerkleRoot:             [32]byte{},
 			DepositMerkleRoot:          [32]byte{},
 			ExitMerkleRoot:             [32]byte{},
@@ -183,7 +183,7 @@ func TestProposerSlashing(t *testing.T) {
 		BlockHeader2: &primitives.BlockHeader{
 			Version:                    0,
 			Nonce:                      0,
-			TxMerkleRoot:               [32]byte{},
+			TxsMerkleRoot:              [32]byte{},
 			VoteMerkleRoot:             [32]byte{},
 			DepositMerkleRoot:          [32]byte{},
 			ExitMerkleRoot:             [32]byte{},

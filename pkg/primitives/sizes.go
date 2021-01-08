@@ -6,7 +6,7 @@ const BlockHeaderSize = 32 + 20 + (14 * 32) // 500 bytes
 // Vote
 const MaxVotesPerBlock = 16
 const VoteDataSize = 32 * 4                                // 128 bytes
-const MaxMultiValidatorVoteSize = VoteDataSize + 96 + 6250 // 6474 bytes
+const MaxMultiValidatorVoteSize = VoteDataSize + 96 + 6255 // 6479 bytes
 
 // Deposits
 const MaxDepositsPerBlock = 32
@@ -44,3 +44,22 @@ const MaxVotesSlashingSize = MaxMultiValidatorVoteSize * 2 // 12948 bytes
 // RANDAOSlashing
 const MaxRANDAOSlashingsPerBlock = 20
 const RANDAOSlashingSize = 96 + 48 + 8 // 152 bytes
+
+// GovernanceVote
+const MaxGovernanceVotesPerBlock = 128
+const MaxGovernanceVoteSize = 8 + 8 + 96 + 48 + 100 + 4 // 264 bytes
+
+// Multipub
+const MaxPublicKeysOnMultipub = 15
+const MaxMultipubSize = 8 + (48 * 15) + 4 // 732
+
+// Multisig
+const MaxSignaturesOnMultisig = 15
+const MaxMultisigSize = MaxMultipubSize + (96 * 15) + 15 // 2187 bytes
+
+// MultiSignatureTx
+const MaxMultiSignatureTxsOnBlock = 128
+const MaxMultiSignatureTxSize = MaxMultisigSize + 20 + (8 * 3) // 2231
+
+// ValidatorHelloMessage
+const MaxValidatorHelloMessageSize = 128 + 16 + 96 + 5

@@ -26,5 +26,5 @@ func (m *MsgPartialExits) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgExits message.
 func (m *MsgPartialExits) MaxPayloadLength() uint64 {
-	return 200 * 1024
+	return primitives.PartialExitsSize
 }

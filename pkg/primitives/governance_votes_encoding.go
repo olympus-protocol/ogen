@@ -3,7 +3,6 @@ package primitives
 
 import (
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
 )
 
 // MarshalSSZ ssz marshals the CommunityVoteDataInfo object
@@ -262,28 +261,30 @@ func (g *GovernanceVote) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the GovernanceVote object to a target array
 func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(120)
+	offset := int(164)
 
 	// Field (0) 'Type'
 	dst = ssz.MarshalUint64(dst, g.Type)
 
-	// Field (1) 'Data'
-	dst = append(dst, g.Data[:]...)
-
-	// Offset (2) 'Multisig'
+	// Offset (1) 'Data'
 	dst = ssz.WriteOffset(dst, offset)
-	if g.Multisig == nil {
-		g.Multisig = new(multisig.Multisig)
-	}
-	offset += g.Multisig.SizeSSZ()
+	offset += len(g.Data)
 
-	// Field (3) 'VoteEpoch'
+	// Field (2) 'VoteEpoch'
 	dst = ssz.MarshalUint64(dst, g.VoteEpoch)
 
-	// Field (2) 'Multisig'
-	if dst, err = g.Multisig.MarshalSSZTo(dst); err != nil {
+	// Field (3) 'PublicKey'
+	dst = append(dst, g.PublicKey[:]...)
+
+	// Field (4) 'Signature'
+	dst = append(dst, g.Signature[:]...)
+
+	// Field (1) 'Data'
+	if len(g.Data) > 100 {
+		err = ssz.ErrBytesLength
 		return
 	}
+	dst = append(dst, g.Data...)
 
 	return
 }
@@ -292,49 +293,50 @@ func (g *GovernanceVote) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (g *GovernanceVote) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 120 {
+	if size < 164 {
 		return ssz.ErrSize
 	}
 
 	tail := buf
-	var o2 uint64
+	var o1 uint64
 
 	// Field (0) 'Type'
 	g.Type = ssz.UnmarshallUint64(buf[0:8])
 
-	// Field (1) 'Data'
-	copy(g.Data[:], buf[8:108])
-
-	// Offset (2) 'Multisig'
-	if o2 = ssz.ReadOffset(buf[108:112]); o2 > size {
+	// Offset (1) 'Data'
+	if o1 = ssz.ReadOffset(buf[8:12]); o1 > size {
 		return ssz.ErrOffset
 	}
 
-	// Field (3) 'VoteEpoch'
-	g.VoteEpoch = ssz.UnmarshallUint64(buf[112:120])
+	// Field (2) 'VoteEpoch'
+	g.VoteEpoch = ssz.UnmarshallUint64(buf[12:20])
 
-	// Field (2) 'Multisig'
+	// Field (3) 'PublicKey'
+	copy(g.PublicKey[:], buf[20:68])
+
+	// Field (4) 'Signature'
+	copy(g.Signature[:], buf[68:164])
+
+	// Field (1) 'Data'
 	{
-		buf = tail[o2:]
-		if g.Multisig == nil {
-			g.Multisig = new(multisig.Multisig)
+		buf = tail[o1:]
+		if len(buf) > 100 {
+			return ssz.ErrBytesLength
 		}
-		if err = g.Multisig.UnmarshalSSZ(buf); err != nil {
-			return err
+		if cap(g.Data) == 0 {
+			g.Data = make([]byte, 0, len(buf))
 		}
+		g.Data = append(g.Data, buf...)
 	}
 	return err
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the GovernanceVote object
 func (g *GovernanceVote) SizeSSZ() (size int) {
-	size = 120
+	size = 164
 
-	// Field (2) 'Multisig'
-	if g.Multisig == nil {
-		g.Multisig = new(multisig.Multisig)
-	}
-	size += g.Multisig.SizeSSZ()
+	// Field (1) 'Data'
+	size += len(g.Data)
 
 	return
 }
@@ -352,15 +354,20 @@ func (g *GovernanceVote) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutUint64(g.Type)
 
 	// Field (1) 'Data'
-	hh.PutBytes(g.Data[:])
-
-	// Field (2) 'Multisig'
-	if err = g.Multisig.HashTreeRootWith(hh); err != nil {
+	if len(g.Data) > 100 {
+		err = ssz.ErrBytesLength
 		return
 	}
+	hh.PutBytes(g.Data)
 
-	// Field (3) 'VoteEpoch'
+	// Field (2) 'VoteEpoch'
 	hh.PutUint64(g.VoteEpoch)
+
+	// Field (3) 'PublicKey'
+	hh.PutBytes(g.PublicKey[:])
+
+	// Field (4) 'Signature'
+	hh.PutBytes(g.Signature[:])
 
 	hh.Merkleize(indx)
 	return

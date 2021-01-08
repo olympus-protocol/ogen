@@ -26,5 +26,5 @@ func (m *MsgVote) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgVote message.
 func (m *MsgVote) MaxPayloadLength() uint64 {
-	return 6474
+	return primitives.MaxMultiValidatorVoteSize
 }

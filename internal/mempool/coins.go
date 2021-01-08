@@ -27,11 +27,11 @@ var (
 )
 
 type coinMempoolItemMulti struct {
-	transactions map[uint64]*primitives.TxMulti
+	transactions map[uint64]*primitives.MultiSignatureTx
 	balanceSpent uint64
 }
 
-func (cmi *coinMempoolItemMulti) add(item *primitives.TxMulti, maxAmount uint64) error {
+func (cmi *coinMempoolItemMulti) add(item *primitives.MultiSignatureTx, maxAmount uint64) error {
 	txNonce := item.Nonce
 	txAmount := item.Amount
 	txFee := item.Fee
@@ -53,7 +53,7 @@ func (cmi *coinMempoolItemMulti) add(item *primitives.TxMulti, maxAmount uint64)
 
 func newCoinMempoolItemMulti() *coinMempoolItemMulti {
 	return &coinMempoolItemMulti{
-		transactions: make(map[uint64]*primitives.TxMulti),
+		transactions: make(map[uint64]*primitives.MultiSignatureTx),
 	}
 }
 
@@ -104,8 +104,8 @@ type CoinsMempool interface {
 	Get(maxTransactions uint64, s state.State, feeRedeemAccount [20]byte) ([]*primitives.Tx, state.State)
 	GetWithoutApply() []*primitives.Tx
 	GetMempoolNonce(pkh [20]byte) (uint64, error)
-	AddMulti(item *primitives.TxMulti) error
-	GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti
+	AddMulti(item *primitives.MultiSignatureTx) error
+	GetMulti(maxTransactions uint64, s state.State) []*primitives.MultiSignatureTx
 }
 
 var _ CoinsMempool = &coinsMempool{}
@@ -130,7 +130,7 @@ type coinsMempool struct {
 }
 
 // AddMulti adds an item to the coins mempool.
-func (cm *coinsMempool) AddMulti(item *primitives.TxMulti) error {
+func (cm *coinsMempool) AddMulti(item *primitives.MultiSignatureTx) error {
 	cm.lockMulti.Lock()
 	defer cm.lockMulti.Unlock()
 
@@ -279,15 +279,15 @@ func (cm *coinsMempool) GetWithoutApply() []*primitives.Tx {
 }
 
 // Get gets transactions to be included in a block. Mutates state.
-func (cm *coinsMempool) GetMulti(maxTransactions uint64, s state.State) []*primitives.TxMulti {
+func (cm *coinsMempool) GetMulti(maxTransactions uint64, s state.State) []*primitives.MultiSignatureTx {
 	cm.lockMulti.Lock()
 	defer cm.lockMulti.Unlock()
-	allTransactions := make([]*primitives.TxMulti, 0, maxTransactions)
+	allTransactions := make([]*primitives.MultiSignatureTx, 0, maxTransactions)
 
 outer:
 	for _, addr := range cm.mempoolMulti {
 		for _, tx := range addr.transactions {
-			if err := s.ApplyTransactionMulti(tx, [20]byte{}); err != nil {
+			if err := s.ApplyMultiSignatureTx(tx, [20]byte{}); err != nil {
 				continue
 			}
 			allTransactions = append(allTransactions, tx)
@@ -325,7 +325,7 @@ func (cm *coinsMempool) handleTxMulti(id peer.ID, msg p2p.Message) error {
 		return nil
 	}
 
-	data, ok := msg.(*p2p.MsgTxMulti)
+	data, ok := msg.(*p2p.MsgMultiSignatureTx)
 	if !ok {
 		return errors.New("wrong message on txmulti topic")
 	}
@@ -373,7 +373,7 @@ func NewCoinsMempool(ch chain.Blockchain, hostNode hostnode.HostNode) (CoinsMemp
 		return nil, err
 	}
 
-	if err := cm.host.RegisterTopicHandler(p2p.MsgTxMultiCmd, cm.handleTxMulti); err != nil {
+	if err := cm.host.RegisterTopicHandler(p2p.MsgMultiSignatureTxCmd, cm.handleTxMulti); err != nil {
 		return nil, err
 	}
 

@@ -181,50 +181,19 @@ func TestAcceptedVoteInfo(t *testing.T) {
 
 func TestMultiValidatorVote(t *testing.T) {
 	// Test correct MultiValidatorVote
-	correct := testdata.FuzzMultiValidatorVote(10, true, true)
+	correct := testdata.FuzzMultiValidatorVote(10)
 
 	for _, c := range correct {
 		data, err := c.Marshal()
 		assert.NoError(t, err)
+
+		assert.LessOrEqual(t, len(data), primitives.MaxMultiValidatorVoteSize)
 
 		n := new(primitives.MultiValidatorVote)
 		err = n.Unmarshal(data)
 		assert.NoError(t, err)
 
 		assert.Equal(t, c, n)
-	}
-
-	// Test wrong sized data
-	incorrect := testdata.FuzzMultiValidatorVote(10, false, true)
-
-	for _, c := range incorrect {
-		_, err := c.Marshal()
-		assert.NotNil(t, err)
-	}
-
-	// Test marshal/unmarshal not panic accessing a nil pointer
-	// Should create all data to null values
-	nildata := testdata.FuzzMultiValidatorVote(10, true, false)
-
-	for _, c := range nildata {
-		assert.NotPanics(t, func() {
-			data, err := c.Marshal()
-			assert.NoError(t, err)
-
-			n := new(primitives.MultiValidatorVote)
-			err = n.Unmarshal(data)
-			assert.NoError(t, err)
-
-			assert.Equal(t, c, n)
-
-			assert.Equal(t, uint64(0), n.Data.Slot)
-			assert.Equal(t, uint64(0), n.Data.Nonce)
-			assert.Equal(t, uint64(0), n.Data.FromEpoch)
-			assert.Equal(t, uint64(0), n.Data.ToEpoch)
-			assert.Equal(t, [32]byte{}, n.Data.BeaconBlockHash)
-			assert.Equal(t, [32]byte{}, n.Data.FromHash)
-			assert.Equal(t, [32]byte{}, n.Data.ToHash)
-		})
 	}
 
 	d := &primitives.MultiValidatorVote{
@@ -237,7 +206,7 @@ func TestMultiValidatorVote(t *testing.T) {
 			BeaconBlockHash: [32]byte{1, 2, 3},
 			Nonce:           5,
 		},
-		ParticipationBitfield: bitfield.NewBitlist(6242),
+		ParticipationBitfield: bitfield.NewBitlist(50000),
 	}
 	var sig [96]byte
 	copy(sig[:], bls.NewAggregateSignature().Marshal())

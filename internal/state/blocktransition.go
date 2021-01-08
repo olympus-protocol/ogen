@@ -16,141 +16,141 @@ import (
 
 // IsGovernanceVoteValid checks if a governance vote is valid.
 func (s *state) IsGovernanceVoteValid(vote *primitives.GovernanceVote) error {
-	netParams := config.GlobalParams.NetParams
-
-	if vote.VoteEpoch != s.VoteEpoch {
-		return fmt.Errorf("vote not valid with vote epoch: %d (expected: %d)", vote.VoteEpoch, s.VoteEpoch)
-	}
-	switch vote.Type {
-	case primitives.EnterVotingPeriod:
-		// must be during active period
-		// must have >100 POLIS
-		// must have not already voted
-		// must be signed by the public key
-		if s.VotingState != GovernanceStateActive {
-			return fmt.Errorf("cannot vote for community vote during community vote period")
+	//netParams := config.GlobalParams.NetParams
+	/*
+		if vote.VoteEpoch != s.VoteEpoch {
+			return fmt.Errorf("vote not valid with vote epoch: %d (expected: %d)", vote.VoteEpoch, s.VoteEpoch)
 		}
-		// TODO check multisig as single signatures
-		pub, err := vote.Multisig.GetPublicKey()
-		if err != nil {
-			return err
-		}
-		pkh, err := pub.Hash()
-		if err != nil {
-			return err
-		}
-		if s.CoinsState.Balances[pkh] < netParams.MinVotingBalance*netParams.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %d", netParams.MinVotingBalance, s.CoinsState.Balances[pkh]/netParams.UnitsPerCoin)
-		}
-		if !vote.Valid() {
-			return fmt.Errorf("vote signature did not validate")
-		}
-	case primitives.VoteFor:
-		// must be during voting period
-		// must have >100 POLIS
-		// must have not already voted
-		// must be signed by the public key
-		if s.VotingState != GovernanceStateVoting {
-			return fmt.Errorf("cannot vote for community vote during community vote period")
-		}
-		if len(vote.Data) != len(netParams.GovernancePercentages)*20 {
-			return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(netParams.GovernancePercentages)*32, len(vote.Data))
-		}
-		// TODO check multisig as single signatures
-		pub, err := vote.Multisig.GetPublicKey()
-		if err != nil {
-			return err
-		}
-		pkh, err := pub.Hash()
-		if err != nil {
-			return err
-		}
-		if s.CoinsState.Balances[pkh] < netParams.MinVotingBalance*netParams.UnitsPerCoin {
-			return fmt.Errorf("minimum balance is %d, but got %d", netParams.MinVotingBalance, s.CoinsState.Balances[pkh]/netParams.UnitsPerCoin)
-		}
-		if _, ok := s.Governance.ReplaceVotes[pkh]; ok {
-			return fmt.Errorf("found existing vote for same public key hash")
-		}
-		if !vote.Valid() {
-			return fmt.Errorf("vote signature did not validate")
-		}
-	case primitives.UpdateManagersInstantly:
-		// must be during active period
-		// must be signed by all managers
-		if s.VotingState != GovernanceStateActive {
-			return fmt.Errorf("cannot vote for community vote during community vote period")
-		}
-		if len(vote.Data) != len(netParams.GovernancePercentages)*20 {
-			return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(netParams.GovernancePercentages)*32)
-		}
-		pub, err := vote.Multisig.GetPublicKey()
-		if err != nil {
-			return err
-		}
-		if pub.NumNeeded != 5 {
-			return fmt.Errorf("expected 5 signatures needed")
-		}
-		for i := range pub.PublicKeys {
-			pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i][:])
+		switch vote.Type {
+		case primitives.EnterVotingPeriod:
+			// must be during active period
+			// must have >100 POLIS
+			// must have not already voted
+			// must be signed by the public key
+			if s.VotingState != GovernanceStateActive {
+				return fmt.Errorf("cannot vote for community vote during community vote period")
+			}
+			// TODO check multisig as single signatures
+			pub, err := vote.Multisig.GetPublicKey()
 			if err != nil {
 				return err
 			}
-			ih, err := pub.Hash()
+			pkh, err := pub.Hash()
 			if err != nil {
 				return err
 			}
-			if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
-				return fmt.Errorf("expected public keys to match managers")
+			if s.CoinsState.Balances[pkh] < netParams.MinVotingBalance*netParams.UnitsPerCoin {
+				return fmt.Errorf("minimum balance is %d, but got %d", netParams.MinVotingBalance, s.CoinsState.Balances[pkh]/netParams.UnitsPerCoin)
 			}
-		}
-
-		if !vote.Valid() {
-			return fmt.Errorf("vote signature is not valid")
-		}
-	case primitives.UpdateManagersVote:
-		// must be during active period
-		// must be signed by 3/5 managers
-		if len(vote.Data) != (len(s.CurrentManagers)+7)/8 {
-			return fmt.Errorf("expected UpdateManagersVote vote to have no data")
-		}
-		if s.VotingState != GovernanceStateActive {
-			return fmt.Errorf("cannot vote for community vote during community vote period")
-		}
-		// must include multisig signed by 5/5 managers
-		pub, err := vote.Multisig.GetPublicKey()
-		if err != nil {
-			return err
-		}
-		if pub.NumNeeded >= 3 {
-			return fmt.Errorf("expected 3 signatures needed")
-		}
-		for i := range pub.PublicKeys {
-			pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i][:])
+			if !vote.Valid() {
+				return fmt.Errorf("vote signature did not validate")
+			}
+		case primitives.VoteFor:
+			// must be during voting period
+			// must have >100 POLIS
+			// must have not already voted
+			// must be signed by the public key
+			if s.VotingState != GovernanceStateVoting {
+				return fmt.Errorf("cannot vote for community vote during community vote period")
+			}
+			if len(vote.Data) != len(netParams.GovernancePercentages)*20 {
+				return fmt.Errorf("expected VoteFor vote to have %d bytes of data got %d", len(netParams.GovernancePercentages)*32, len(vote.Data))
+			}
+			// TODO check multisig as single signatures
+			pub, err := vote.Multisig.GetPublicKey()
 			if err != nil {
 				return err
 			}
-			ih, err := pub.Hash()
+			pkh, err := pub.Hash()
 			if err != nil {
 				return err
 			}
-			if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
-				return fmt.Errorf("expected public keys to match managers")
+			if s.CoinsState.Balances[pkh] < netParams.MinVotingBalance*netParams.UnitsPerCoin {
+				return fmt.Errorf("minimum balance is %d, but got %d", netParams.MinVotingBalance, s.CoinsState.Balances[pkh]/netParams.UnitsPerCoin)
 			}
-		}
+			if _, ok := s.Governance.ReplaceVotes[pkh]; ok {
+				return fmt.Errorf("found existing vote for same public key hash")
+			}
+			if !vote.Valid() {
+				return fmt.Errorf("vote signature did not validate")
+			}
+		case primitives.UpdateManagersInstantly:
+			// must be during active period
+			// must be signed by all managers
+			if s.VotingState != GovernanceStateActive {
+				return fmt.Errorf("cannot vote for community vote during community vote period")
+			}
+			if len(vote.Data) != len(netParams.GovernancePercentages)*20 {
+				return fmt.Errorf("expected UpdateManagersInstantly vote to have %d bytes data but got %d", len(vote.Data), len(netParams.GovernancePercentages)*32)
+			}
+			pub, err := vote.Multisig.GetPublicKey()
+			if err != nil {
+				return err
+			}
+			if pub.NumNeeded != 5 {
+				return fmt.Errorf("expected 5 signatures needed")
+			}
+			for i := range pub.PublicKeys {
+				pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i][:])
+				if err != nil {
+					return err
+				}
+				ih, err := pub.Hash()
+				if err != nil {
+					return err
+				}
+				if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
+					return fmt.Errorf("expected public keys to match managers")
+				}
+			}
 
-		if !vote.Valid() {
-			return fmt.Errorf("vote signature is not valid")
-		}
-	default:
-		return fmt.Errorf("unknown vote type")
-	}
+			if !vote.Valid() {
+				return fmt.Errorf("vote signature is not valid")
+			}
+		case primitives.UpdateManagersVote:
+			// must be during active period
+			// must be signed by 3/5 managers
+			if len(vote.Data) != (len(s.CurrentManagers)+7)/8 {
+				return fmt.Errorf("expected UpdateManagersVote vote to have no data")
+			}
+			if s.VotingState != GovernanceStateActive {
+				return fmt.Errorf("cannot vote for community vote during community vote period")
+			}
+			// must include multisig signed by 5/5 managers
+			pub, err := vote.Multisig.GetPublicKey()
+			if err != nil {
+				return err
+			}
+			if pub.NumNeeded >= 3 {
+				return fmt.Errorf("expected 3 signatures needed")
+			}
+			for i := range pub.PublicKeys {
+				pub, err := bls.PublicKeyFromBytes(pub.PublicKeys[i][:])
+				if err != nil {
+					return err
+				}
+				ih, err := pub.Hash()
+				if err != nil {
+					return err
+				}
+				if !bytes.Equal(ih[:], s.CurrentManagers[i][:]) {
+					return fmt.Errorf("expected public keys to match managers")
+				}
+			}
 
-	return nil
+			if !vote.Valid() {
+				return fmt.Errorf("vote signature is not valid")
+			}
+		default:
+			return fmt.Errorf("unknown vote type")
+		}*/
+
+	return errors.New("governance Votes are not active yet")
 }
 
 // ProcessGovernanceVote processes governance votes.
 func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote) error {
-	if err := s.IsGovernanceVoteValid(vote); err != nil {
+	/*if err := s.IsGovernanceVoteValid(vote); err != nil {
 		return err
 	}
 	pub, err := vote.Multisig.GetPublicKey()
@@ -186,9 +186,9 @@ func (s *state) ProcessGovernanceVote(vote *primitives.GovernanceVote) error {
 		s.NextVoteEpoch(GovernanceStateVoting)
 	default:
 		return fmt.Errorf("unknown vote type")
-	}
+	}*/
 
-	return nil
+	return errors.New("governance votes are not active yet")
 }
 
 // ApplyMultiTransactionSingle applies multiple single Tx to the state
@@ -289,8 +289,8 @@ func (s *state) ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress
 	return nil
 }
 
-// ApplyTransactionMulti applies a multisig transaction to the coin state.
-func (s *state) ApplyTransactionMulti(tx *primitives.TxMulti, blockWithdrawalAddress [20]byte) error {
+// ApplyMultiSignatureTx applies a multi signature transaction to the coin state.
+func (s *state) ApplyMultiSignatureTx(tx *primitives.MultiSignatureTx, blockWithdrawalAddress [20]byte) error {
 	netParams := config.GlobalParams.NetParams
 
 	u := s.GetCoinsState()
@@ -1175,72 +1175,48 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		return fmt.Errorf("expected executions merkle root to be %s but got %s", hex.EncodeToString(executionsMerkleRoot[:]), hex.EncodeToString(b.Header.ExecutionsMerkleRoot[:]))
 	}
 
-	if uint64(len(b.Votes)) > netParams.MaxVotesPerBlock {
-		return fmt.Errorf("block has too many votes (max: %d, got: %d)", netParams.MaxVotesPerBlock, len(b.Votes))
+	if uint64(len(b.Votes)) > primitives.MaxVotesPerBlock {
+		return fmt.Errorf("block has too many votes (max: %d, got: %d)", primitives.MaxVotesPerBlock, len(b.Votes))
 	}
 
-	if uint64(len(b.Txs)) > netParams.MaxTxsPerBlock {
-		return fmt.Errorf("block has too many txs (max: %d, got: %d)", netParams.MaxTxsPerBlock, len(b.Txs))
+	if uint64(len(b.Deposits)) > primitives.MaxDepositsPerBlock {
+		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", primitives.MaxDepositsPerBlock, len(b.Deposits))
 	}
 
-	if uint64(len(b.Deposits)) > netParams.MaxDepositsPerBlock {
-		return fmt.Errorf("block has too many deposits (max: %d, got: %d)", netParams.MaxDepositsPerBlock, len(b.Deposits))
+	if uint64(len(b.Exits)) > primitives.MaxExitsPerBlock {
+		return fmt.Errorf("block has too many exits (max: %d, got: %d)", primitives.MaxExitsPerBlock, len(b.Exits))
 	}
 
-	if uint64(len(b.Exits)) > netParams.MaxExitsPerBlock {
-		return fmt.Errorf("block has too many exits (max: %d, got: %d)", netParams.MaxExitsPerBlock, len(b.Exits))
+	if uint64(len(b.PartialExit)) > primitives.MaxPartialExitsPerBlock {
+		return fmt.Errorf("block has too many partial exits (max: %d, got: %d)", primitives.MaxPartialExitsPerBlock, len(b.PartialExit))
 	}
 
-	if uint64(len(b.RANDAOSlashings)) > netParams.MaxRANDAOSlashingsPerBlock {
-		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", netParams.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
+	if uint64(len(b.CoinProofs)) > primitives.MaxCoinProofsPerBlock {
+		return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", primitives.MaxCoinProofsPerBlock, len(b.CoinProofs))
 	}
 
-	if uint64(len(b.VoteSlashings)) > netParams.MaxVoteSlashingsPerBlock {
-		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", netParams.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
+	if uint64(len(b.Executions)) > primitives.MaxExecutionsPerBlock {
+		return fmt.Errorf("block has too many executions (max: %d, got: %d)", primitives.MaxExecutionsPerBlock, len(b.Executions))
 	}
 
-	if uint64(len(b.ProposerSlashings)) > netParams.MaxProposerSlashingsPerBlock {
-		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", netParams.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
+	if uint64(len(b.Txs)) > primitives.MaxTxsPerBlock {
+		return fmt.Errorf("block has too many txs (max: %d, got: %d)", primitives.MaxTxsPerBlock, len(b.Txs))
 	}
 
-	if uint64(len(b.CoinProofs)) > netParams.MaxCoinProofsPerBlock {
-		return fmt.Errorf("block has too many migration proofs (max: %d, got: %d)", netParams.MaxCoinProofsPerBlock, len(b.CoinProofs))
+	if uint64(len(b.ProposerSlashings)) > primitives.MaxProposerSlashingsPerBlock {
+		return fmt.Errorf("block has too many proposer slashings (max: %d, got: %d)", primitives.MaxProposerSlashingsPerBlock, len(b.ProposerSlashings))
 	}
 
-	if uint64(len(b.PartialExit)) > netParams.MaxPartialExitsPerBlock {
-		return fmt.Errorf("block has too many partial exits (max: %d, got: %d)", netParams.MaxPartialExitsPerBlock, len(b.PartialExit))
+	if uint64(len(b.VoteSlashings)) > primitives.MaxVoteSlashingsPerBlock {
+		return fmt.Errorf("block has too many vote slashings (max: %d, got: %d)", primitives.MaxVoteSlashingsPerBlock, len(b.VoteSlashings))
 	}
 
-	if uint64(len(b.Executions)) > netParams.MaxExecutionsPerBlock {
-		return fmt.Errorf("block has too many executions (max: %d, got: %d)", netParams.MaxExecutionsPerBlock, len(b.Executions))
-	}
-
-	if len(b.Deposits) > 0 {
-		if err := s.ApplyMultiDeposit(b.Deposits); err != nil {
-			return err
-		}
+	if uint64(len(b.RANDAOSlashings)) > primitives.MaxRANDAOSlashingsPerBlock {
+		return fmt.Errorf("block has too many RANDAO slashings (max: %d, got: %d)", primitives.MaxRANDAOSlashingsPerBlock, len(b.RANDAOSlashings))
 	}
 
 	if len(b.Txs) > 0 {
 		if err := s.ApplyMultiTransactionSingle(b.Txs, b.Header.FeeAddress); err != nil {
-			return err
-		}
-	}
-
-	for _, vote := range b.GovernanceVotes {
-		if err := s.ProcessGovernanceVote(vote); err != nil {
-			return err
-		}
-	}
-
-	for _, p := range b.CoinProofs {
-		if err := s.ApplyCoinProof(p); err != nil {
-			return err
-		}
-	}
-
-	for _, p := range b.PartialExit {
-		if err := s.ApplyPartialExit(p); err != nil {
 			return err
 		}
 	}
@@ -1255,20 +1231,30 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		}
 	}
 
+	if len(b.Deposits) > 0 {
+		if err := s.ApplyMultiDeposit(b.Deposits); err != nil {
+			return err
+		}
+	}
+
 	for _, e := range b.Exits {
 		if err := s.ApplyExit(e); err != nil {
 			return err
 		}
 	}
 
-	for _, rs := range b.RANDAOSlashings {
-		if err := s.ApplyRANDAOSlashing(rs); err != nil {
+	for _, p := range b.PartialExit {
+		if err := s.ApplyPartialExit(p); err != nil {
 			return err
 		}
 	}
 
-	for _, vs := range b.VoteSlashings {
-		if err := s.ApplyVoteSlashing(vs); err != nil {
+	for _, _ = range b.Executions {
+		// TODO here we execute the contract calls to the evm and apply to the state
+	}
+
+	for _, p := range b.CoinProofs {
+		if err := s.ApplyCoinProof(p); err != nil {
 			return err
 		}
 	}
@@ -1279,8 +1265,22 @@ func (s *state) ProcessBlock(b *primitives.Block) error {
 		}
 	}
 
-	for _, _ = range b.Executions {
-		// TODO here we execute the contract calls to the evm and apply to the state
+	for _, vs := range b.VoteSlashings {
+		if err := s.ApplyVoteSlashing(vs); err != nil {
+			return err
+		}
+	}
+
+	for _, rs := range b.RANDAOSlashings {
+		if err := s.ApplyRANDAOSlashing(rs); err != nil {
+			return err
+		}
+	}
+
+	for _, vote := range b.GovernanceVotes {
+		if err := s.ProcessGovernanceVote(vote); err != nil {
+			return err
+		}
 	}
 
 	for i := range s.NextRANDAO {
