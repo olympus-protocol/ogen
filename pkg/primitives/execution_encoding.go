@@ -35,7 +35,7 @@ func (e *Execution) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.MarshalUint64(dst, e.GasLimit)
 
 	// Field (2) 'Input'
-	if len(e.Input) > 32768 {
+	if len(e.Input) > 7168 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -78,7 +78,7 @@ func (e *Execution) UnmarshalSSZ(buf []byte) error {
 	// Field (2) 'Input'
 	{
 		buf = tail[o2:]
-		if len(buf) > 32768 {
+		if len(buf) > 7168 {
 			return ssz.ErrBytesLength
 		}
 		if cap(e.Input) == 0 {
@@ -115,7 +115,7 @@ func (e *Execution) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	hh.PutBytes(e.To[:])
 
 	// Field (2) 'Input'
-	if len(e.Input) > 32768 {
+	if len(e.Input) > 7168 {
 		err = ssz.ErrBytesLength
 		return
 	}

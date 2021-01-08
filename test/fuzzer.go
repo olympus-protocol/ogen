@@ -467,7 +467,7 @@ func FuzzExecutions(n int) []*primitives.Execution {
 	f := fuzz.New().NilChance(0)
 	var v []*primitives.Execution
 	for i := 0; i < n; i++ {
-		var input [32768]byte
+		var input [7168]byte
 		f.Fuzz(&input)
 		var to [20]byte
 		f.Fuzz(&to)

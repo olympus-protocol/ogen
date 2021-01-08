@@ -31,7 +31,7 @@ type Block struct {
 	Exits             []*Exit                             `ssz-max:"32"`    // MaxExitsPerBlock     				32 * 192 		= 6144 bytes
 	PartialExit       []*PartialExit                      `ssz-max:"32"`    // MaxPartialExitsPerBlock            	32 * 200		= 6400 bytes
 	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"64"`    // MaxCoinProofsPerBlock 				64 * 2317   	= 148288 bytes
-	Executions        []*Execution                        `ssz-max:"128"`   // MaxExecutionsPerBlock				128 * 32952     = 4217856 bytes
+	Executions        []*Execution                        `ssz-max:"128"`   // MaxExecutionsPerBlock				128 * 7168      = 917504 bytes
 	Txs               []*Tx                               `ssz-max:"30000"` // MaxTxsPerBlock						30000 * 188  	= 5640000 bytes
 	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`     // MaxProposerSlashingsPerBlock 		2 * 1240 		= 2480 bytes
 	VoteSlashings     []*VoteSlashing                     `ssz-max:"5"`     // MaxVoteSlashingsPerBlock				10 * 12948 		= 129480 bytes

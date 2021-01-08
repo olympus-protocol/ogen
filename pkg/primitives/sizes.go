@@ -27,7 +27,7 @@ const MaxCoinProofSize = 8 + 25 + 192 + 44 + (32 * 64) // 2317 bytes
 
 // Execution
 const MaxExecutionsPerBlock = 128
-const MaxExecutionSize = 48 + 20 + (32768 + 4) + 96 + 8 + 8 // 32952 bytes
+const MaxExecutionSize = 48 + 20 + (7168 + 4) + 96 + 8 + 8 // 32952 bytes
 
 // Tx
 const MaxTxsPerBlock = 30000

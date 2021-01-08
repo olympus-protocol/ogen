@@ -17,7 +17,7 @@ type Execution struct {
 
 	// Input is the compiled bytecode of the code to be executed.
 
-	Input []byte `ssz-max:"32768"` // Maximum bytecode size is 32Kb
+	Input []byte `ssz-max:"7168"` // Maximum bytecode size is 7Kb
 
 	// Signature is the signature of the user that executes the bytecode
 	Signature [96]byte
