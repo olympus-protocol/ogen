@@ -6,8 +6,6 @@ RUN git clone https://github.com/olympus-protocol/ogen
 
 WORKDIR /build/ogen
 
-RUN go get -u github.com/gobuffalo/packr/packr
-
 RUN go build cmd/ogen/ogen.go
 
 ENTRYPOINT ["./scripts/full-node/run.sh"]
