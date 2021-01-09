@@ -183,21 +183,21 @@ func (p *proposer) ProposeBlocks() {
 
 				deposits, blockState := p.pool.GetDeposits(blockState)
 
-				exits := p.pool.GetExits(blockState)
+				exits, blockState := p.pool.GetExits(blockState)
 
-				partialExits := p.pool.GetPartialExits(blockState)
+				partialExits, blockState := p.pool.GetPartialExits(blockState)
 
-				coinProofs := p.pool.GetCoinProofs(blockState)
+				coinProofs, blockState := p.pool.GetCoinProofs(blockState)
 
 				txs, blockState := p.pool.GetTxs(blockState, proposerValidator.PayeeAddress)
 
-				voteSlashings := p.pool.GetVoteSlashings(blockState)
+				voteSlashings, blockState := p.pool.GetVoteSlashings(blockState)
 
-				proposerSlashings := p.pool.GetProposerSlashings(blockState)
+				proposerSlashings, blockState := p.pool.GetProposerSlashings(blockState)
 
-				randaoSlashings := p.pool.GetRANDAOSlashings(blockState)
+				randaoSlashings, blockState := p.pool.GetRANDAOSlashings(blockState)
 
-				governanceVotes := p.pool.GetGovernanceVotes(blockState)
+				governanceVotes, blockState := p.pool.GetGovernanceVotes(blockState)
 
 				coinTxMulti, blockState := p.pool.GetMultiSignatureTxs(blockState, proposerValidator.PayeeAddress)
 
