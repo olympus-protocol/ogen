@@ -1136,5 +1136,6 @@ func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmana
 		randaoSlashings:   []*primitives.RANDAOSlashing{},
 		governanceVotes:   make(map[chainhash.Hash]*primitives.GovernanceVote),
 		coinProofs:        make(map[chainhash.Hash]*burnproof.CoinsProofSerializable),
+		latestNonce:       make(map[[20]byte]uint64),
 	}
 }
