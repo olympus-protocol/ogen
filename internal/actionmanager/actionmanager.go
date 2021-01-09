@@ -94,6 +94,11 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 }
 
 func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) error {
+
+	if l.host.Syncing() {
+		return nil
+	}
+
 	if id == l.host.GetHost().ID() {
 		return nil
 	}
@@ -111,14 +116,18 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	validators := data.Data.Validators.BitIndices()
 	pubs := make([]common.PublicKey, len(validators))
 
-	for i, validatorIdx := range validators {
-		pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
-		if err != nil {
-			return err
-		}
-		pubs[i] = pub
-	}
+	lastIdx := validators[len(validators)-1]
 
+	if len(validators) > lastIdx {
+		for i, validatorIdx := range validators {
+			pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
+			if err != nil {
+				return err
+			}
+			pubs[i] = pub
+		}
+	}
+	
 	if !sig.FastAggregateVerify(pubs, data.Data.SignatureMessage()) {
 		return err
 	}
