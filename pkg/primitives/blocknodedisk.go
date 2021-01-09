@@ -4,11 +4,11 @@ import "github.com/golang/snappy"
 
 // BlockNodeDisk is a block node stored on disk.
 type BlockNodeDisk struct {
-	Height    uint64
-	Slot      uint64
-	Children  [][32]byte `ssz-max:"64"`
-	Hash      [32]byte   `ssz-size:"32"`
-	Parent    [32]byte   `ssz-size:"32"`
+	Height   uint64
+	Slot     uint64
+	Children [][32]byte `ssz-max:"64"`
+	Hash     [32]byte   `ssz-size:"32"`
+	Parent   [32]byte   `ssz-size:"32"`
 }
 
 // Marshal encodes de data

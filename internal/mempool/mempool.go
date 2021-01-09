@@ -2,9 +2,11 @@ package mempool
 
 import (
 	"context"
+	"errors"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
@@ -13,12 +15,16 @@ import (
 	"sync"
 )
 
+var (
+	ErrorAccountNotOnMempool = errors.New("account not on pool")
+)
+
 type Pool interface {
 	Load()
 	Start()
 	Stop()
 
-	AddVote(d *primitives.MultiValidatorVote) error
+	AddVote(d *primitives.MultiValidatorVote, s state.State) error
 	AddDeposit(d *primitives.Deposit) error
 	AddExit(d *primitives.Exit) error
 	AddPartialExit(d *primitives.PartialExit) error
@@ -28,7 +34,22 @@ type Pool interface {
 	AddProposerSlashing(d *primitives.ProposerSlashing) error
 	AddRANDAOSlashing(d *primitives.RANDAOSlashing) error
 	AddGovernanceVote(d *primitives.GovernanceVote) error
-	AddCoinProof(d *burnproof.CoinsProof) error
+	AddCoinProof(d *burnproof.CoinsProofSerializable) error
+
+	GetAccountNonce(account [20]byte) (uint64, error)
+	GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote
+	GetDeposits(s state.State) ([]*primitives.Deposit, state.State)
+	GetExits(s state.State) []*primitives.Exit
+	GetPartialExits(s state.State) []*primitives.PartialExit
+	GetCoinProofs(s state.State) []*burnproof.CoinsProofSerializable
+	GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State)
+	GetVoteSlashings(s state.State) []*primitives.VoteSlashing
+	GetProposerSlashings(s state.State) []*primitives.ProposerSlashing
+	GetRANDAOSlashings(s state.State) []*primitives.RANDAOSlashing
+	GetGovernanceVotes(s state.State) []*primitives.GovernanceVote
+	GetMultiSignatureTxs(s state.State, feeReceiver [20]byte) ([]*primitives.MultiSignatureTx, state.State)
+
+	RemoveByBlock(b *primitives.Block)
 }
 
 type pool struct {
@@ -77,7 +98,7 @@ type pool struct {
 	coinProofs     map[chainhash.Hash]*burnproof.CoinsProofSerializable
 }
 
-func (p *pool) AddVote(d *primitives.MultiValidatorVote) error {
+func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 	panic("implement me")
 }
 
@@ -117,7 +138,59 @@ func (p *pool) AddGovernanceVote(d *primitives.GovernanceVote) error {
 	panic("implement me")
 }
 
-func (p *pool) AddCoinProof(d *burnproof.CoinsProof) error {
+func (p *pool) AddCoinProof(d *burnproof.CoinsProofSerializable) error {
+	panic("implement me")
+}
+
+func (p *pool) GetAccountNonce(account [20]byte) (uint64, error) {
+	panic("implement me")
+}
+
+func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote {
+	panic("implement me")
+}
+
+func (p *pool) GetDeposits(s state.State) ([]*primitives.Deposit, state.State) {
+	panic("implement me")
+}
+
+func (p *pool) GetExits(s state.State) []*primitives.Exit {
+	panic("implement me")
+}
+
+func (p *pool) GetPartialExits(s state.State) []*primitives.PartialExit {
+	panic("implement me")
+}
+
+func (p *pool) GetCoinProofs(s state.State) []*burnproof.CoinsProofSerializable {
+	panic("implement me")
+}
+
+func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State) {
+	panic("implement me")
+}
+
+func (p *pool) GetVoteSlashings(s state.State) []*primitives.VoteSlashing {
+	panic("implement me")
+}
+
+func (p *pool) GetProposerSlashings(s state.State) []*primitives.ProposerSlashing {
+	panic("implement me")
+}
+
+func (p *pool) GetRANDAOSlashings(s state.State) []*primitives.RANDAOSlashing {
+	panic("implement me")
+}
+
+func (p *pool) GetGovernanceVotes(s state.State) []*primitives.GovernanceVote {
+	panic("implement me")
+}
+
+func (p *pool) GetMultiSignatureTxs(s state.State, feeReceiver [20]byte) ([]*primitives.MultiSignatureTx, state.State) {
+	panic("implement me")
+}
+
+func (p *pool) RemoveByBlock(b *primitives.Block) {
 	panic("implement me")
 }
 

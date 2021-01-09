@@ -63,22 +63,26 @@ type ComplexityRoot struct {
 	}
 
 	BlockHeader struct {
-		DepositMerkleRoot          func(childComplexity int) int
-		ExitMerkleRoot             func(childComplexity int) int
-		FeeAddress                 func(childComplexity int) int
-		GovernanceVotesMerkleRoot  func(childComplexity int) int
-		Hash                       func(childComplexity int) int
-		Nonce                      func(childComplexity int) int
-		PreviousBlockHash          func(childComplexity int) int
-		ProposerSlashingMerkleRoot func(childComplexity int) int
-		RandaoSlashingMerkleRoot   func(childComplexity int) int
-		Slot                       func(childComplexity int) int
-		Timestamp                  func(childComplexity int) int
-		TxMerkleRoot               func(childComplexity int) int
-		TxMultiMerkleRoot          func(childComplexity int) int
-		Version                    func(childComplexity int) int
-		VoteMerkleRoot             func(childComplexity int) int
-		VoteSlashingMerkleRoot     func(childComplexity int) int
+		CoinProofsMerkleRoot        func(childComplexity int) int
+		DepositsMerkleRoot          func(childComplexity int) int
+		ExecutionsMerkleRoot        func(childComplexity int) int
+		ExitsMerkleRoot             func(childComplexity int) int
+		FeeAddress                  func(childComplexity int) int
+		GovernanceVotesMerkleRoot   func(childComplexity int) int
+		Hash                        func(childComplexity int) int
+		MultiSignatureTxsMerkleRoot func(childComplexity int) int
+		Nonce                       func(childComplexity int) int
+		PartialExitsMerkleRoot      func(childComplexity int) int
+		PreviousBlockHash           func(childComplexity int) int
+		ProposerSlashingMerkleRoot  func(childComplexity int) int
+		RandaoSlashingMerkleRoot    func(childComplexity int) int
+		Slot                        func(childComplexity int) int
+		Timestamp                   func(childComplexity int) int
+		TxsMerkleRoot               func(childComplexity int) int
+		Version                     func(childComplexity int) int
+		VoteMerkleRoot              func(childComplexity int) int
+		VoteSlashingMerkleRoot      func(childComplexity int) int
+		VotesMerkleRoot             func(childComplexity int) int
 	}
 
 	CoinProofs struct {
@@ -325,19 +329,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Block.Votes(childComplexity), true
 
-	case "BlockHeader.deposit_merkle_root":
-		if e.complexity.BlockHeader.DepositMerkleRoot == nil {
+	case "BlockHeader.coin_proofs_merkle_root":
+		if e.complexity.BlockHeader.CoinProofsMerkleRoot == nil {
 			break
 		}
 
-		return e.complexity.BlockHeader.DepositMerkleRoot(childComplexity), true
+		return e.complexity.BlockHeader.CoinProofsMerkleRoot(childComplexity), true
 
-	case "BlockHeader.exit_merkle_root":
-		if e.complexity.BlockHeader.ExitMerkleRoot == nil {
+	case "BlockHeader.deposits_merkle_root":
+		if e.complexity.BlockHeader.DepositsMerkleRoot == nil {
 			break
 		}
 
-		return e.complexity.BlockHeader.ExitMerkleRoot(childComplexity), true
+		return e.complexity.BlockHeader.DepositsMerkleRoot(childComplexity), true
+
+	case "BlockHeader.executions_merkle_root":
+		if e.complexity.BlockHeader.ExecutionsMerkleRoot == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.ExecutionsMerkleRoot(childComplexity), true
+
+	case "BlockHeader.exits_merkle_root":
+		if e.complexity.BlockHeader.ExitsMerkleRoot == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.ExitsMerkleRoot(childComplexity), true
 
 	case "BlockHeader.fee_address":
 		if e.complexity.BlockHeader.FeeAddress == nil {
@@ -360,12 +378,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.BlockHeader.Hash(childComplexity), true
 
+	case "BlockHeader.multi_signature_txs_merkle_root":
+		if e.complexity.BlockHeader.MultiSignatureTxsMerkleRoot == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.MultiSignatureTxsMerkleRoot(childComplexity), true
+
 	case "BlockHeader.nonce":
 		if e.complexity.BlockHeader.Nonce == nil {
 			break
 		}
 
 		return e.complexity.BlockHeader.Nonce(childComplexity), true
+
+	case "BlockHeader.partial_exits_merkle_root":
+		if e.complexity.BlockHeader.PartialExitsMerkleRoot == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.PartialExitsMerkleRoot(childComplexity), true
 
 	case "BlockHeader.previous_block_hash":
 		if e.complexity.BlockHeader.PreviousBlockHash == nil {
@@ -402,19 +434,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.BlockHeader.Timestamp(childComplexity), true
 
-	case "BlockHeader.tx_merkle_root":
-		if e.complexity.BlockHeader.TxMerkleRoot == nil {
+	case "BlockHeader.txs_merkle_root":
+		if e.complexity.BlockHeader.TxsMerkleRoot == nil {
 			break
 		}
 
-		return e.complexity.BlockHeader.TxMerkleRoot(childComplexity), true
-
-	case "BlockHeader.tx_multi_merkle_root":
-		if e.complexity.BlockHeader.TxMultiMerkleRoot == nil {
-			break
-		}
-
-		return e.complexity.BlockHeader.TxMultiMerkleRoot(childComplexity), true
+		return e.complexity.BlockHeader.TxsMerkleRoot(childComplexity), true
 
 	case "BlockHeader.version":
 		if e.complexity.BlockHeader.Version == nil {
@@ -436,6 +461,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.BlockHeader.VoteSlashingMerkleRoot(childComplexity), true
+
+	case "BlockHeader.votes_merkle_root":
+		if e.complexity.BlockHeader.VotesMerkleRoot == nil {
+			break
+		}
+
+		return e.complexity.BlockHeader.VotesMerkleRoot(childComplexity), true
 
 	case "CoinProofs.hash":
 		if e.complexity.CoinProofs.Hash == nil {
@@ -1158,19 +1190,23 @@ type BlockHeader {
   hash: String!
   version: Int!
   nonce: String!
-  tx_merkle_root: String!
-  tx_multi_merkle_root: String!
+  timestamp: String!
+  slot: Int!
+  fee_address: String!
+  previous_block_hash: String!
+  votes_merkle_root: String!
+  deposits_merkle_root: String!
+  exits_merkle_root: String!
+  partial_exits_merkle_root: String!
+  coin_proofs_merkle_root: String!
+  executions_merkle_root: String!
+  txs_merkle_root: String!
   vote_merkle_root: String!
-  deposit_merkle_root: String!
-  exit_merkle_root: String!
   vote_slashing_merkle_root: String!
   randao_slashing_merkle_root: String!
   proposer_slashing_merkle_root: String!
   governance_votes_merkle_root: String!
-  previous_block_hash: String!
-  timestamp: String!
-  slot: Int!
-  fee_address: String!
+  multi_signature_txs_merkle_root: String!
 }
 
 type Deposit {
@@ -2057,7 +2093,7 @@ func (ec *executionContext) _BlockHeader_nonce(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_tx_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2075,7 +2111,7 @@ func (ec *executionContext) _BlockHeader_tx_merkle_root(ctx context.Context, fie
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TxMerkleRoot, nil
+		return obj.Timestamp, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2092,7 +2128,7 @@ func (ec *executionContext) _BlockHeader_tx_merkle_root(ctx context.Context, fie
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_tx_multi_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_slot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2110,7 +2146,322 @@ func (ec *executionContext) _BlockHeader_tx_multi_merkle_root(ctx context.Contex
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TxMultiMerkleRoot, nil
+		return obj.Slot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_fee_address(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FeeAddress, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_previous_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PreviousBlockHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_votes_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.VotesMerkleRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_deposits_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DepositsMerkleRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_exits_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExitsMerkleRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_partial_exits_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PartialExitsMerkleRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_coin_proofs_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CoinProofsMerkleRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_executions_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExecutionsMerkleRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BlockHeader_txs_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BlockHeader",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TxsMerkleRoot, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2146,76 +2497,6 @@ func (ec *executionContext) _BlockHeader_vote_merkle_root(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.VoteMerkleRoot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _BlockHeader_deposit_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "BlockHeader",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DepositMerkleRoot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _BlockHeader_exit_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "BlockHeader",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ExitMerkleRoot, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2372,7 +2653,7 @@ func (ec *executionContext) _BlockHeader_governance_votes_merkle_root(ctx contex
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _BlockHeader_previous_block_hash(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
+func (ec *executionContext) _BlockHeader_multi_signature_txs_merkle_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2390,112 +2671,7 @@ func (ec *executionContext) _BlockHeader_previous_block_hash(ctx context.Context
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.PreviousBlockHash, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _BlockHeader_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "BlockHeader",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Timestamp, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _BlockHeader_slot(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "BlockHeader",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Slot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _BlockHeader_fee_address(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "BlockHeader",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FeeAddress, nil
+		return obj.MultiSignatureTxsMerkleRoot, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6752,28 +6928,63 @@ func (ec *executionContext) _BlockHeader(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "tx_merkle_root":
-			out.Values[i] = ec._BlockHeader_tx_merkle_root(ctx, field, obj)
+		case "timestamp":
+			out.Values[i] = ec._BlockHeader_timestamp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "tx_multi_merkle_root":
-			out.Values[i] = ec._BlockHeader_tx_multi_merkle_root(ctx, field, obj)
+		case "slot":
+			out.Values[i] = ec._BlockHeader_slot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "fee_address":
+			out.Values[i] = ec._BlockHeader_fee_address(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "previous_block_hash":
+			out.Values[i] = ec._BlockHeader_previous_block_hash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "votes_merkle_root":
+			out.Values[i] = ec._BlockHeader_votes_merkle_root(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deposits_merkle_root":
+			out.Values[i] = ec._BlockHeader_deposits_merkle_root(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "exits_merkle_root":
+			out.Values[i] = ec._BlockHeader_exits_merkle_root(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "partial_exits_merkle_root":
+			out.Values[i] = ec._BlockHeader_partial_exits_merkle_root(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "coin_proofs_merkle_root":
+			out.Values[i] = ec._BlockHeader_coin_proofs_merkle_root(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "executions_merkle_root":
+			out.Values[i] = ec._BlockHeader_executions_merkle_root(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "txs_merkle_root":
+			out.Values[i] = ec._BlockHeader_txs_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "vote_merkle_root":
 			out.Values[i] = ec._BlockHeader_vote_merkle_root(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "deposit_merkle_root":
-			out.Values[i] = ec._BlockHeader_deposit_merkle_root(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "exit_merkle_root":
-			out.Values[i] = ec._BlockHeader_exit_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6797,23 +7008,8 @@ func (ec *executionContext) _BlockHeader(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "previous_block_hash":
-			out.Values[i] = ec._BlockHeader_previous_block_hash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "timestamp":
-			out.Values[i] = ec._BlockHeader_timestamp(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "slot":
-			out.Values[i] = ec._BlockHeader_slot(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "fee_address":
-			out.Values[i] = ec._BlockHeader_fee_address(ctx, field, obj)
+		case "multi_signature_txs_merkle_root":
+			out.Values[i] = ec._BlockHeader_multi_signature_txs_merkle_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

@@ -1383,6 +1383,9 @@
         "proposerSlashingsMerkleRoot": {
           "type": "string"
         },
+        "governanceVotesMerkleRoot": {
+          "type": "string"
+        },
         "multiSignatureTxsMerkleRoot": {
           "type": "string"
         }

@@ -82,7 +82,8 @@ message BlockHeader {
     string  vote_slashings_merkle_root = 14;
     string  randao_slashings_merkle_root = 15;
     string  proposer_slashings_merkle_root = 16;
-    string  multi_signature_txs_merkle_root = 17;
+    string governance_votes_merkle_root = 17;
+    string  multi_signature_txs_merkle_root = 18;
 }
 
 message Block {

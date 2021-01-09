@@ -69,7 +69,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 
 		msg := &p2p.MsgTx{Data: tx}
 
-		err = s.pool.Add(tx)
+		err = s.pool.AddTx(tx)
 
 		if err != nil {
 			return &proto.Success{Success: false, Error: err.Error()}, nil
@@ -286,7 +286,7 @@ func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemP
 		serializableProofs[i] = pser
 
 		// Add to a mempool and broadcast
-		err = s.pool.AddProof(pser)
+		err = s.pool.AddCoinProof(pser)
 		if err != nil {
 			return &proto.Success{Error: err.Error()}, nil
 		}

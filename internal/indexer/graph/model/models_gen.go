@@ -21,22 +21,26 @@ type Block struct {
 }
 
 type BlockHeader struct {
-	Hash                       string `json:"hash"`
-	Version                    int    `json:"version"`
-	Nonce                      string `json:"nonce"`
-	TxMerkleRoot               string `json:"tx_merkle_root"`
-	TxMultiMerkleRoot          string `json:"tx_multi_merkle_root"`
-	VoteMerkleRoot             string `json:"vote_merkle_root"`
-	DepositMerkleRoot          string `json:"deposit_merkle_root"`
-	ExitMerkleRoot             string `json:"exit_merkle_root"`
-	VoteSlashingMerkleRoot     string `json:"vote_slashing_merkle_root"`
-	RandaoSlashingMerkleRoot   string `json:"randao_slashing_merkle_root"`
-	ProposerSlashingMerkleRoot string `json:"proposer_slashing_merkle_root"`
-	GovernanceVotesMerkleRoot  string `json:"governance_votes_merkle_root"`
-	PreviousBlockHash          string `json:"previous_block_hash"`
-	Timestamp                  string `json:"timestamp"`
-	Slot                       int    `json:"slot"`
-	FeeAddress                 string `json:"fee_address"`
+	Hash                        string `json:"hash"`
+	Version                     int    `json:"version"`
+	Nonce                       string `json:"nonce"`
+	Timestamp                   string `json:"timestamp"`
+	Slot                        int    `json:"slot"`
+	FeeAddress                  string `json:"fee_address"`
+	PreviousBlockHash           string `json:"previous_block_hash"`
+	VotesMerkleRoot             string `json:"votes_merkle_root"`
+	DepositsMerkleRoot          string `json:"deposits_merkle_root"`
+	ExitsMerkleRoot             string `json:"exits_merkle_root"`
+	PartialExitsMerkleRoot      string `json:"partial_exits_merkle_root"`
+	CoinProofsMerkleRoot        string `json:"coin_proofs_merkle_root"`
+	ExecutionsMerkleRoot        string `json:"executions_merkle_root"`
+	TxsMerkleRoot               string `json:"txs_merkle_root"`
+	VoteMerkleRoot              string `json:"vote_merkle_root"`
+	VoteSlashingMerkleRoot      string `json:"vote_slashing_merkle_root"`
+	RandaoSlashingMerkleRoot    string `json:"randao_slashing_merkle_root"`
+	ProposerSlashingMerkleRoot  string `json:"proposer_slashing_merkle_root"`
+	GovernanceVotesMerkleRoot   string `json:"governance_votes_merkle_root"`
+	MultiSignatureTxsMerkleRoot string `json:"multi_signature_txs_merkle_root"`
 }
 
 type CoinProofs struct {
