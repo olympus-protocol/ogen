@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
@@ -118,12 +119,12 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	//lam, err := actionmanager.NewLastActionManager(hn, ch)
-	//if err != nil {
-	//	return nil, err
-	//}
+	lam, err := actionmanager.NewLastActionManager(hn, ch)
+	if err != nil {
+		return nil, err
+	}
 
-	pool := mempool.NewPool(ch, hn)
+	pool := mempool.NewPool(ch, hn, lam)
 
 	w, err := wallet.NewWallet(ch, hn, pool)
 	if err != nil {
@@ -132,7 +133,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 
 	ks := keystore.NewKeystore()
 
-	prop, err := proposer.NewProposer(ch, hn, pool, ks)
+	prop, err := proposer.NewProposer(ch, hn, pool, ks, lam)
 	if err != nil {
 		return nil, err
 	}

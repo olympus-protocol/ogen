@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -58,26 +59,26 @@ type proposer struct {
 	pool mempool.Pool
 	host hostnode.HostNode
 
-	//lastActionManager actionmanager.LastActionManager
+	lastActionManager actionmanager.LastActionManager
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, pool mempool.Pool, ks keystore.Keystore) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	prop := &proposer{
-		log:        config.GlobalParams.Logger,
-		netParams:  config.GlobalParams.NetParams,
-		keystore:   ks,
-		chain:      chain,
-		mineActive: true,
-		context:    ctx,
-		stop:       cancel,
-		pool:       pool,
-		host:       hostnode,
-		//lastActionManager: manager,
-		voting:    false,
-		proposing: false,
+		log:               config.GlobalParams.Logger,
+		netParams:         config.GlobalParams.NetParams,
+		keystore:          ks,
+		chain:             chain,
+		mineActive:        true,
+		context:           ctx,
+		stop:              cancel,
+		pool:              pool,
+		host:              hostnode,
+		lastActionManager: manager,
+		voting:            false,
+		proposing:         false,
 	}
 
 	err := prop.keystore.OpenKeystore()
@@ -172,10 +173,10 @@ func (p *proposer) ProposeBlocks() {
 
 			if k, found := p.keystore.GetValidatorKey(proposerValidator.PubKey); found {
 
-				//if !p.lastActionManager.ShouldRun(proposer.PubKey) {
-				//	blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
-				//	continue
-				//}
+				if !p.lastActionManager.ShouldRun(proposerValidator.PubKey) {
+					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					continue
+				}
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
@@ -202,7 +203,7 @@ func (p *proposer) ProposeBlocks() {
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
-						Nonce:         0, //p.lastActionManager.GetNonce(),
+						Nonce:         p.lastActionManager.GetNonce(),
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
@@ -333,7 +334,7 @@ func (p *proposer) VoteForBlocks() {
 				ToEpoch:         toEpoch,
 				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.netParams.EpochLength - 1),
 				BeaconBlockHash: beaconBlock.Hash,
-				Nonce:           0, //p.lastActionManager.GetNonce(),
+				Nonce:           p.lastActionManager.GetNonce(),
 			}
 
 			dataHash := data.Hash()
@@ -343,20 +344,26 @@ func (p *proposer) VoteForBlocks() {
 			bitlistVotes := bitfield.NewBitlist(uint64(len(validators)))
 
 			validatorRegistry := voteState.GetValidatorRegistry()
+
+			validatorsActionMap := make(map[common.PublicKey]common.SecretKey)
+
 			for i, index := range validators {
 				votingValidator := validatorRegistry[index]
 				key, found := p.keystore.GetValidatorKey(votingValidator.PubKey)
 				if !found {
 					continue
 				}
-				//signFunc := func(message *primitives.ValidatorHelloMessage) common.Signature {
-				//	msg := message.SignatureMessage()
-				//	return key.Sign(msg)
-				//}
-				//if p.lastActionManager.StartValidator(votingValidator.PubKey, signFunc) {
 				signatures = append(signatures, key.Sign(dataHash[:]))
 				bitlistVotes.Set(uint(i))
-				//}
+				validatorsActionMap[key.PublicKey()] = key
+			}
+
+			err = p.lastActionManager.StartValidators(validatorsActionMap)
+			if err != nil {
+				p.log.Error(err)
+				voteTimer = time.NewTimer(time.Second * 2)
+				p.voteLock.Unlock()
+				continue
 			}
 
 			if len(signatures) > 0 {
