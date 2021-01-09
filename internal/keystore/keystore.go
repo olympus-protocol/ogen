@@ -3,13 +3,11 @@ package keystore
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"go.etcd.io/bbolt"
 	"path"
 )
 
 var (
-
 	// ErrorNotInitialized is returned when a bucket is not properly initialized
 	ErrorNotInitialized = errors.New("the keystore is not initialized")
 
@@ -25,24 +23,28 @@ var (
 
 var (
 	// keysBucket is the bucket key for the keystore keys
-	keysBucket = []byte("keys")
+	keysBucket     = []byte("keys")
+	mnemonicBucket = []byte("mnemonic")
+	mnemonicKey    = []byte("mnemonic-key")
 )
 
 type Keystore interface {
 	CreateKeystore() error
 	OpenKeystore() error
 	Close() error
-	GetValidatorKey(pubkey [48]byte) (common.SecretKey, bool)
-	GetValidatorKeys() ([]common.SecretKey, error)
-	GenerateNewValidatorKey(amount uint64) ([]common.SecretKey, error)
+	GetValidatorKey(pubkey [48]byte) (*Key, bool)
+	GetValidatorKeys() ([]*Key, error)
+	GenerateNewValidatorKey(amount uint64) ([]*Key, error)
 	HasKeysToParticipate() bool
-	AddKey(priv []byte) error
+	AddKey(k *Key) error
 }
 
 // keystore is a wrapper for the keystore database
 type keystore struct {
 	// db is a reference to the bbolt database
 	db *bbolt.DB
+	// mnemonic is the mnemonic key used to derive keys
+	mnemonic string
 	// datadir is the folder where the database is located
 	datapath string
 	// open prevents accessing the database when is closed
@@ -123,11 +125,21 @@ func (k *keystore) load(db *bbolt.DB) error {
 		}
 		return nil
 	})
+	var mnemonicBytes []byte
+	err = db.View(func(tx *bbolt.Tx) error {
+		mnemonic := tx.Bucket(mnemonicBucket)
+		if mnemonic == nil {
+			return ErrorNotInitialized
+		}
+		mnemonicBytes = mnemonic.Get(mnemonicKey)
+		return nil
+	})
 	if err != nil {
 		return err
 	}
 	k.db = db
 	k.open = true
+	k.mnemonic = string(mnemonicBytes)
 	return nil
 }
 

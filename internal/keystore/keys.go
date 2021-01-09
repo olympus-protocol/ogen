@@ -1,13 +1,74 @@
 package keystore
 
 import (
+	"bytes"
+	"encoding/binary"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"go.etcd.io/bbolt"
 )
 
+type Key struct {
+	Secret common.SecretKey
+	Enable bool
+	Path   int64
+}
+
+func (k *Key) Marshal() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+
+	var sec [32]byte
+	copy(sec[:], k.Secret.Marshal())
+
+	err := binary.Write(buf, binary.LittleEndian, sec)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(buf, binary.LittleEndian, k.Enable)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(buf, binary.LittleEndian, k.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (k *Key) Unmarshal(b []byte) error {
+	buf := bytes.NewBuffer(b)
+
+	var sec [32]byte
+	err := binary.Read(buf, binary.LittleEndian, &sec)
+	if err != nil {
+		return err
+	}
+
+	blsSec, err := bls.SecretKeyFromBytes(sec[:])
+	if err != nil {
+		return err
+	}
+
+	k.Secret = blsSec
+
+	err = binary.Read(buf, binary.LittleEndian, &k.Enable)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(buf, binary.LittleEndian, &k.Path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetValidatorKey returns the private key from the specified public key or false if doesn't exists.
-func (k *keystore) GetValidatorKey(pubkey [48]byte) (common.SecretKey, bool) {
+func (k *keystore) GetValidatorKey(pubkey [48]byte) (*Key, bool) {
 
 	if !k.open {
 		return nil, false
@@ -27,30 +88,31 @@ func (k *keystore) GetValidatorKey(pubkey [48]byte) (common.SecretKey, bool) {
 		return nil, false
 	}
 
-	blsKey, err := bls.SecretKeyFromBytes(key)
+	keystoreKey := new(Key)
+	err = keystoreKey.Unmarshal(key)
 	if err != nil {
 		return nil, false
 	}
 
-	return blsKey, true
+	return keystoreKey, true
 }
 
 // GetValidatorKeys returns all keys on keystore.
-func (k *keystore) GetValidatorKeys() ([]common.SecretKey, error) {
+func (k *keystore) GetValidatorKeys() ([]*Key, error) {
 
 	if !k.open {
 		return nil, ErrorNoOpen
 	}
 
-	var keys []common.SecretKey
+	var keys []*Key
 
 	err := k.db.View(func(tx *bbolt.Tx) error {
 
 		bkt := tx.Bucket(keysBucket)
 
 		err := bkt.ForEach(func(keypub, keyprv []byte) error {
-
-			key, err := bls.SecretKeyFromBytes(keyprv)
+			key := new(Key)
+			err := key.Unmarshal(keyprv)
 			if err != nil {
 				return err
 			}
@@ -72,21 +134,26 @@ func (k *keystore) GetValidatorKeys() ([]common.SecretKey, error) {
 }
 
 // GenerateNewValidatorKey generates new validator keys and adds it to the map and database.
-func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]common.SecretKey, error) {
+func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*Key, error) {
 	if !k.open {
 		return nil, ErrorNoOpen
 	}
 
-	keys := make([]common.SecretKey, amount)
+	keys := make([]*Key, amount)
 
 	for i := range keys {
 		// Generate a new key
-		key, err := bls.RandKey()
+		sec, err := bls.RandKey()
 		if err != nil {
 			return nil, err
 		}
 
-		err = k.addKey(key)
+		key := &Key{
+			Secret: sec,
+			Enable: true,
+		}
+
+		err = k.AddKey(key)
 		if err != nil {
 			return nil, err
 		}
@@ -96,25 +163,18 @@ func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]common.SecretKey, e
 	return keys, nil
 }
 
-func (k *keystore) AddKey(priv []byte) error {
-	s, err := bls.SecretKeyFromBytes(priv)
-	if err != nil {
-		return err
-	}
-	return k.addKey(s)
-}
-
-func (k *keystore) addKey(priv common.SecretKey) error {
-
+func (k *keystore) AddKey(key *Key) error {
 	if !k.open {
 		return ErrorNoOpen
 	}
 
 	return k.db.Update(func(tx *bbolt.Tx) error {
 
+		pub := key.Secret.PublicKey()
+
 		bkt := tx.Bucket(keysBucket)
 
-		err := bkt.Put(priv.PublicKey().Marshal(), priv.Marshal())
+		err := bkt.Put(pub.Marshal(), key.Secret.Marshal())
 		if err != nil {
 			return err
 		}
