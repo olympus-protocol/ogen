@@ -183,7 +183,7 @@ func (c *CLI) executor(str string) {
 		out, err = c.rpcClient.AddPeer(args[1:])
 
 	// Keystore methods
-	case "genvalidatorkey":
+	case "generatekeys":
 		out, err = c.rpcClient.GenerateKeys(args[1:])
 	case "getmnemonic":
 		out, err = c.rpcClient.GetMnemonic(args[1:])
