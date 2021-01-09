@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/99designs/gqlgen v0.13.0
+	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/dgraph-io/ristretto v0.0.3

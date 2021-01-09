@@ -175,6 +175,7 @@ func (p *proposer) ProposeBlocks() {
 
 				if !p.lastActionManager.ShouldRun(proposerValidator.PubKey) {
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
+					p.log.Info("proposing disable, another node is already proposing for this key")
 					continue
 				}
 
@@ -360,19 +361,23 @@ func (p *proposer) VoteForBlocks() {
 					continue
 				}
 				if key.Enable {
-					signatures = append(signatures, key.Secret.Sign(dataHash[:]))
-					bitlistVotes.Set(uint(i))
-					validatorsActionMap[key.Secret.PublicKey()] = key.Secret
+					if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
+						signatures = append(signatures, key.Secret.Sign(dataHash[:]))
+						bitlistVotes.Set(uint(i))
+						validatorsActionMap[key.Secret.PublicKey()] = key.Secret
+					}
 				}
 
 			}
 
-			err = p.lastActionManager.StartValidators(validatorsActionMap)
-			if err != nil {
-				p.log.Error(err)
-				voteTimer = time.NewTimer(time.Second * 2)
-				p.voteLock.Unlock()
-				continue
+			if len(validatorsActionMap) > 0 {
+				err = p.lastActionManager.StartValidators(validatorsActionMap)
+				if err != nil {
+					p.log.Error(err)
+					voteTimer = time.NewTimer(time.Second * 2)
+					p.voteLock.Unlock()
+					continue
+				}
 			}
 
 			if len(signatures) > 0 {

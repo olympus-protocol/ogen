@@ -3,6 +3,7 @@ package actionmanager
 import (
 	"context"
 	"errors"
+	"github.com/VictoriaMetrics/fastcache"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -17,7 +18,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -52,8 +52,7 @@ type lastActionManager struct {
 
 	// lastActions are the last recorded actions by a validator with a certain
 	// salted private key hash.
-	lastActions     map[[48]byte]time.Time
-	lastActionsLock sync.Mutex
+	lastActions *fastcache.Cache
 
 	netParams *params.ChainParams
 }
@@ -79,7 +78,7 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 		host:        node,
 		ch:          ch,
 		ctx:         ctx,
-		lastActions: make(map[[48]byte]time.Time),
+		lastActions: fastcache.New(128 * 1024 * 1024),
 		log:         log,
 		nonce:       rand.Uint64(),
 		netParams:   netParams,
@@ -138,10 +137,8 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	return nil
 }
 
-// StartValidator requests a validator to be started and returns whether it should be started.
+// StartValidators requests a validator to be started and returns whether it should be started.
 func (l *lastActionManager) StartValidators(validators map[common.PublicKey]common.SecretKey) error {
-	l.lastActionsLock.Lock()
-	defer l.lastActionsLock.Unlock()
 
 	safeRunValidators := make(map[[48]byte]common.SecretKey)
 	for public, secret := range validators {
@@ -166,6 +163,7 @@ func (l *lastActionManager) StartValidators(validators map[common.PublicKey]comm
 	validatorHello := new(primitives.ValidatorHelloMessage)
 	validatorHello.Nonce = l.nonce
 	validatorHello.Timestamp = uint64(time.Now().Unix())
+	validatorHello.Validators = bitlist
 
 	var sigs []common.Signature
 	msg := validatorHello.SignatureMessage()
@@ -187,19 +185,17 @@ func (l *lastActionManager) StartValidators(validators map[common.PublicKey]comm
 }
 
 func (l *lastActionManager) ShouldRun(val [48]byte) bool {
-	l.lastActionsLock.Lock()
-	defer l.lastActionsLock.Unlock()
-
-	return l.shouldRun(val)
-}
-
-func (l *lastActionManager) shouldRun(pubSer [48]byte) bool {
-	// no actions observed
-	if _, ok := l.lastActions[pubSer]; !ok {
+	var lastActionBytes []byte
+	lastActionBytes, ok := l.lastActions.HasGet(lastActionBytes, val[:])
+	if !ok {
 		return true
 	}
 
-	lastAction := l.lastActions[pubSer]
+	var lastAction time.Time
+	err := lastAction.UnmarshalBinary(lastActionBytes)
+	if err != nil {
+		return true
+	}
 
 	// last action was long enough ago we can start
 	if time.Since(lastAction) > MaxMessagePropagationTime*2 {
@@ -211,14 +207,13 @@ func (l *lastActionManager) shouldRun(pubSer [48]byte) bool {
 
 // RegisterActionAt registers an action by a validator at a certain time.
 func (l *lastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce uint64) {
-	l.lastActionsLock.Lock()
-	defer l.lastActionsLock.Unlock()
-
 	if nonce == l.nonce {
 		return
 	}
+	timeBytes, _ := at.MarshalBinary()
+	l.lastActions.Set(by[:], timeBytes)
 
-	l.lastActions[by] = at
+	return
 }
 
 // RegisterAction registers an action by a validator.
