@@ -1,6 +1,26 @@
 package actionmanager
 
-/*
+import (
+	"context"
+	"errors"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/chain"
+	"github.com/olympus-protocol/ogen/internal/chainindex"
+	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/bitfield"
+	"github.com/olympus-protocol/ogen/pkg/bls"
+	"github.com/olympus-protocol/ogen/pkg/bls/common"
+	"github.com/olympus-protocol/ogen/pkg/logger"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"github.com/olympus-protocol/ogen/pkg/params"
+	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"math/rand"
+	"sync"
+	"time"
+)
+
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
 // take to propagate across the network. We wait double this before allowing a
 // validator to start.
@@ -9,7 +29,7 @@ const MaxMessagePropagationTime = 60 * time.Second
 // LastActionManager is an interface for lastActionManager
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
-	StartValidator(valPub [48]byte, sign func(*primitives.ValidatorHelloMessage) common.Signature) bool
+	StartValidators(validators map[common.PublicKey]common.SecretKey) error
 	ShouldRun(val [48]byte) bool
 	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
 	RegisterAction(by [48]byte, nonce uint64)
@@ -25,6 +45,7 @@ type lastActionManager struct {
 	log logger.Logger
 
 	host hostnode.HostNode
+	ch   chain.Blockchain
 	ctx  context.Context
 
 	nonce uint64
@@ -56,6 +77,7 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 
 	l := &lastActionManager{
 		host:        node,
+		ch:          ch,
 		ctx:         ctx,
 		lastActions: make(map[[48]byte]time.Time),
 		log:         log,
@@ -81,46 +103,87 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	if !ok {
 		return errors.New("wrong message on start validator topic")
 	}
+
 	sig, err := bls.SignatureFromBytes(data.Data.Signature[:])
 	if err != nil {
 		return err
 	}
 
-	pub, err := bls.PublicKeyFromBytes(data.Data.PublicKey[:])
-	if err != nil {
+	validators := data.Data.Validators.BitIndices()
+	pubs := make([]common.PublicKey, len(validators))
+
+	for i, validatorIdx := range validators {
+		if !data.Data.Validators.Get(uint(i)) {
+			continue
+		}
+		pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
+		if err != nil {
+			return err
+		}
+		pubs[i] = pub
+	}
+
+	if !sig.FastAggregateVerify(pubs, data.Data.SignatureMessage()) {
 		return err
 	}
-	if !sig.Verify(pub, data.Data.SignatureMessage()) {
-		return err
+
+	for _, valPub := range pubs {
+		var pub [48]byte
+		copy(pub[:], valPub.Marshal())
+		if ok := l.ShouldRun(pub); ok {
+			l.RegisterActionAt(pub, time.Unix(int64(data.Data.Timestamp), 0), data.Data.Nonce)
+		}
 	}
 
 	return nil
 }
 
 // StartValidator requests a validator to be started and returns whether it should be started.
-func (l *lastActionManager) StartValidators(valPub [][48]byte, sign func(*primitives.ValidatorHelloMessage) common.Signature) bool {
+func (l *lastActionManager) StartValidators(validators map[common.PublicKey]common.SecretKey) error {
 	l.lastActionsLock.Lock()
 	defer l.lastActionsLock.Unlock()
 
-	if !l.ShouldRun(valPub) {
-		return false
+	safeRunValidators := make(map[[48]byte]common.SecretKey)
+	for public, secret := range validators {
+		var pub [48]byte
+		copy(pub[:], public.Marshal())
+		if l.ShouldRun(pub) {
+			safeRunValidators[pub] = secret
+		}
+	}
+
+	registry := l.ch.State().TipState().GetValidatorRegistry()
+
+	bitlist := bitfield.NewBitlist(uint64(len(registry)))
+
+	for i, val := range registry {
+		_, ok := safeRunValidators[val.PubKey]
+		if ok {
+			bitlist.Set(uint(i))
+		}
 	}
 
 	validatorHello := new(primitives.ValidatorHelloMessage)
-	validatorHello.PublicKey = valPub
+	validatorHello.Nonce = l.nonce
 	validatorHello.Timestamp = uint64(time.Now().Unix())
 
-	signature := sign(validatorHello)
+	var sigs []common.Signature
+	msg := validatorHello.SignatureMessage()
+	for _, k := range safeRunValidators {
+		sigs = append(sigs, k.Sign(msg[:]))
+	}
+
+	signature := bls.AggregateSignatures(sigs)
 	var sig [96]byte
 	copy(sig[:], signature.Marshal())
 	validatorHello.Signature = sig
 
-	msg := &p2p.MsgValidatorStart{Data: validatorHello}
-	err := l.host.Broadcast(msg)
+	helloMsg := &p2p.MsgValidatorStart{Data: validatorHello}
+	err := l.host.Broadcast(helloMsg)
 	if err != nil {
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 func (l *lastActionManager) ShouldRun(val [48]byte) bool {
@@ -165,4 +228,4 @@ func (l *lastActionManager) RegisterAction(by [48]byte, nonce uint64) {
 
 func (l *lastActionManager) GetNonce() uint64 {
 	return l.nonce
-}*/
+}

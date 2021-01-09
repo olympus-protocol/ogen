@@ -61,4 +61,4 @@ const MaxMultiSignatureTxsOnBlock = 8
 const MaxMultiSignatureTxSize = MaxMultisigSize + 20 + (8 * 3) // 2231
 
 // ValidatorHelloMessage
-const MaxValidatorHelloMessageSize = 128 + 16 + 96 + 5
+const MaxValidatorHelloMessageSize = 31250 + 16 + 96 + 5

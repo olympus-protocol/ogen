@@ -29,7 +29,7 @@ func (v *ValidatorHelloMessage) MarshalSSZTo(buf []byte) (dst []byte, err error)
 	offset += len(v.Validators)
 
 	// Field (3) 'Validators'
-	if len(v.Validators) > 1024 {
+	if len(v.Validators) > 250000 {
 		err = ssz.ErrBytesLength
 		return
 	}
@@ -66,7 +66,7 @@ func (v *ValidatorHelloMessage) UnmarshalSSZ(buf []byte) error {
 	// Field (3) 'Validators'
 	{
 		buf = tail[o3:]
-		if err = ssz.ValidateBitlist(buf, 1024); err != nil {
+		if err = ssz.ValidateBitlist(buf, 250000); err != nil {
 			return err
 		}
 		if cap(v.Validators) == 0 {
@@ -110,7 +110,7 @@ func (v *ValidatorHelloMessage) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		err = ssz.ErrEmptyBitlist
 		return
 	}
-	hh.PutBitlist(v.Validators, 1024)
+	hh.PutBitlist(v.Validators, 250000)
 
 	hh.Merkleize(indx)
 	return
