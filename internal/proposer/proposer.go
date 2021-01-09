@@ -104,7 +104,7 @@ func (p *proposer) Proposing() bool {
 
 // NewTip implements the BlockchainNotifee interface.
 func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt) {
-	p.pool.RemoveByBlock(block)
+	p.pool.RemoveByBlock(block, newState)
 }
 
 func (p *proposer) GetCurrentSlot() uint64 {
@@ -183,23 +183,21 @@ func (p *proposer) ProposeBlocks() {
 
 				deposits, blockState := p.pool.GetDeposits(blockState)
 
-				exits := p.pool.GetExits(blockState)
+				exits, blockState := p.pool.GetExits(blockState)
 
-				partialExits := p.pool.GetPartialExits(blockState)
+				partialExits, blockState := p.pool.GetPartialExits(blockState)
 
-				coinProofs := p.pool.GetCoinProofs(blockState)
+				coinProofs, blockState := p.pool.GetCoinProofs(blockState)
 
 				txs, blockState := p.pool.GetTxs(blockState, proposerValidator.PayeeAddress)
 
-				voteSlashings := p.pool.GetVoteSlashings(blockState)
+				voteSlashings, blockState := p.pool.GetVoteSlashings(blockState)
 
-				proposerSlashings := p.pool.GetProposerSlashings(blockState)
+				proposerSlashings, blockState := p.pool.GetProposerSlashings(blockState)
 
-				randaoSlashings := p.pool.GetRANDAOSlashings(blockState)
+				randaoSlashings, blockState := p.pool.GetRANDAOSlashings(blockState)
 
-				governanceVotes := p.pool.GetGovernanceVotes(blockState)
-
-				coinTxMulti, blockState := p.pool.GetMultiSignatureTxs(blockState, proposerValidator.PayeeAddress)
+				governanceVotes, blockState := p.pool.GetGovernanceVotes(blockState)
 
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
@@ -220,7 +218,6 @@ func (p *proposer) ProposeBlocks() {
 					ProposerSlashings: proposerSlashings,
 					RANDAOSlashings:   randaoSlashings,
 					GovernanceVotes:   governanceVotes,
-					MultiSignatureTxs: coinTxMulti,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()

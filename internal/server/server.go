@@ -64,9 +64,12 @@ func (s *server) Start() {
 		}
 	}()
 
-	s.pool.Start()
+	err := s.pool.Start()
+	if err != nil {
+		s.log.Fatal("unable to start pool instance")
+	}
 
-	err := s.ch.Start()
+	err = s.ch.Start()
 	if err != nil {
 		s.log.Fatal("unable to start chain instance")
 	}
