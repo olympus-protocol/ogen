@@ -12,7 +12,7 @@ var MainNet = ChainParams{
 		Contract: "olctr",
 	},
 	GovernanceBudgetQuotient:     5,        // 20%
-	BaseRewardPerBlock:           26 * 1e7, // 2.6 POLIS
+	BaseRewardPerBlock:           18 * 1e7, // 1.8 POLIS
 	IncluderRewardQuotient:       8,
 	EpochLength:                  5,
 	EjectionBalance:              95, // POLIS

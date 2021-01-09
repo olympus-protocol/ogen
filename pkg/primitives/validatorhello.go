@@ -11,7 +11,7 @@ type ValidatorHelloMessage struct {
 	Timestamp  uint64
 	Nonce      uint64
 	Signature  [96]byte
-	Validators bitfield.Bitlist `ssz:"bitlist" ssz-max:"1024"`
+	Validators bitfield.Bitlist `ssz:"bitlist" ssz-max:"250000"`
 }
 
 // SignatureMessage gets the signed portion of the message.

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -61,9 +62,9 @@ type pool struct {
 	log       logger.Logger
 	ctx       context.Context
 
-	chain chain.Blockchain
-	host  hostnode.HostNode
-	//lastActionManager actionmanager.LastActionManager
+	chain             chain.Blockchain
+	host              hostnode.HostNode
+	lastActionManager actionmanager.LastActionManager
 
 	votesLock sync.Mutex
 	votes     map[chainhash.Hash]*primitives.MultiValidatorVote
@@ -123,12 +124,18 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		return err
 	}
 
+	committee, err := currentState.GetVoteCommittee(d.Data.Slot)
+	if err != nil {
+		p.log.Error(err)
+		return err
+	}
+
 	// Register voting action for validators included on the vote
-	//for i, c := range committee {
-	//if vote.ParticipationBitfield.Get(uint(i)) {
-	//m.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, vote.Data.Nonce)
-	//}
-	//}
+	for i, c := range committee {
+		if d.ParticipationBitfield.Get(uint(i)) {
+			p.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, d.Data.Nonce)
+		}
+	}
 
 	// Slashing check
 	// This check iterates over all the votes on the pool.
@@ -1097,7 +1104,7 @@ func (p *pool) Start() error {
 	if err := p.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, p.handleGovernance); err != nil {
 		return nil
 	}
-	
+
 	return nil
 }
 
@@ -1106,14 +1113,14 @@ func (p *pool) Stop() {
 	p.Store()
 }
 
-func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode) Pool {
+func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) Pool {
 	return &pool{
-		netParams: config.GlobalParams.NetParams,
-		log:       config.GlobalParams.Logger,
-		ctx:       config.GlobalParams.Context,
-		chain:     ch,
-		host:      hostnode,
-		//lastActionManager: manager,
+		netParams:         config.GlobalParams.NetParams,
+		log:               config.GlobalParams.Logger,
+		ctx:               config.GlobalParams.Context,
+		chain:             ch,
+		host:              hostnode,
+		lastActionManager: manager,
 
 		votes:             make(map[chainhash.Hash]*primitives.MultiValidatorVote),
 		intidivualVotes:   make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
