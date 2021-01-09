@@ -226,18 +226,18 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 	for i := 0; i < n; i++ {
 		b := &primitives.Block{
 			Header:            FuzzBlockHeader(1)[0],
-			Votes:             FuzzMultiValidatorVote(16),
-			Deposits:          FuzzDeposit(32, true),
-			Exits:             FuzzExits(32),
-			PartialExit:       FuzzPartialExits(32),
-			CoinProofs:        FuzzCoinProofs(64),
-			Executions:        FuzzExecutions(128),
-			Txs:               FuzzTx(200),
+			Votes:             FuzzMultiValidatorVote(4),
+			Deposits:          FuzzDeposit(10, true),
+			Exits:             FuzzExits(10),
+			PartialExit:       FuzzPartialExits(10),
+			CoinProofs:        FuzzCoinProofs(5),
+			Executions:        FuzzExecutions(5),
+			Txs:               FuzzTx(10),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
 			VoteSlashings:     FuzzVoteSlashing(5),
-			RANDAOSlashings:   FuzzRANDAOSlashing(20),
-			GovernanceVotes:   FuzzGovernanceVote(128),
-			MultiSignatureTxs: FuzzMultiSignatureTx(8),
+			RANDAOSlashings:   FuzzRANDAOSlashing(2),
+			GovernanceVotes:   FuzzGovernanceVote(5),
+			MultiSignatureTxs: FuzzMultiSignatureTx(2),
 		}
 
 		var sig [96]byte
