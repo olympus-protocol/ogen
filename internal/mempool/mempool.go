@@ -83,9 +83,6 @@ type pool struct {
 	txsLock sync.Mutex
 	txs     map[[20]byte]*txItem
 
-	multiSignatureTxsLock sync.Mutex
-	multiSignatureTx      map[[20]byte]*primitives.MultiSignatureTx
-
 	latestNonceLock sync.Mutex
 	latestNonce     map[[20]byte]uint64
 
@@ -1061,11 +1058,6 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 
 var _ Pool = &pool{}
 
-// Load fills up the pool from disk
-func (p *pool) Load() {
-
-}
-
 // Start initializes the pool listeners
 func (p *pool) Start() error {
 	p.Load()
@@ -1115,30 +1107,7 @@ func (p *pool) Start() error {
 
 // Stop closes listeners and save to disk
 func (p *pool) Stop() {
-	p.votesLock.Lock()
-	p.intidivualVotesLock.Lock()
-	p.depositsLock.Lock()
-	p.exitsLock.Lock()
-	p.partialExitsLock.Lock()
-	p.txsLock.Lock()
-	p.multiSignatureTxsLock.Lock()
-	p.voteSlashingLock.Lock()
-	p.proposerSlashingLock.Lock()
-	p.randaoSlashingLock.Lock()
-	p.governanceVoteLock.Lock()
-	p.coinProofsLock.Lock()
-	defer p.votesLock.Unlock()
-	defer p.intidivualVotesLock.Unlock()
-	defer p.depositsLock.Unlock()
-	defer p.exitsLock.Unlock()
-	defer p.partialExitsLock.Unlock()
-	defer p.txsLock.Unlock()
-	defer p.multiSignatureTxsLock.Unlock()
-	defer p.voteSlashingLock.Unlock()
-	defer p.proposerSlashingLock.Unlock()
-	defer p.randaoSlashingLock.Unlock()
-	defer p.governanceVoteLock.Unlock()
-	defer p.coinProofsLock.Unlock()
+	p.Store()
 }
 
 func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode) Pool {
