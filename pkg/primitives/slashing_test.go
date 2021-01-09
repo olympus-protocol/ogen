@@ -11,7 +11,7 @@ import (
 )
 
 func TestVoteSlashing(t *testing.T) {
-	v := testdata.FuzzVoteSlashing(10, true, true)
+	v := testdata.FuzzVoteSlashing(10)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -23,32 +23,6 @@ func TestVoteSlashing(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, c, desc)
-	}
-
-	incorrect := testdata.FuzzVoteSlashing(10, false, true)
-
-	for _, c := range incorrect {
-		_, err := c.Marshal()
-		assert.NotNil(t, err)
-	}
-
-	nildata := testdata.FuzzVoteSlashing(10, true, false)
-
-	for _, c := range nildata {
-		assert.NotPanics(t, func() {
-			data, err := c.Marshal()
-			assert.NoError(t, err)
-
-			n := new(primitives.VoteSlashing)
-			err = n.Unmarshal(data)
-			assert.NoError(t, err)
-
-			assert.Equal(t, c, n)
-
-			assert.Equal(t, uint64(0), n.Vote1.Data.Slot)
-			assert.Equal(t, uint64(0), n.Vote2.Data.Slot)
-
-		})
 	}
 
 	d := primitives.VoteSlashing{

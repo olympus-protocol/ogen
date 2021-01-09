@@ -21,6 +21,6 @@ func TestMsgValidatorStart(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgValidatorStartCmd, v.Command())
-	assert.Equal(t, uint64(245), v.MaxPayloadLength())
+	assert.Equal(t, uint64(249), v.MaxPayloadLength())
 
 }

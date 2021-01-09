@@ -26,5 +26,5 @@ func (m *MsgGovernance) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgGovernance message.
 func (m *MsgGovernance) MaxPayloadLength() uint64 {
-	return primitives.MaxGovernanceVoteSize
+	return primitives.MaxGovernanceVoteSize + 4
 }

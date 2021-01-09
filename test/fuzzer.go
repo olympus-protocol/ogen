@@ -90,7 +90,7 @@ func FuzzValidator(n int) []*primitives.Validator {
 // FuzzVoteSlashing creates a slice of VoteSlashing
 // If correct is true will return correctly serializable structs
 // If complete is true will return information with no nil pointers.
-func FuzzVoteSlashing(n int, correct bool, complete bool) []*primitives.VoteSlashing {
+func FuzzVoteSlashing(n int) []*primitives.VoteSlashing {
 	var v []*primitives.VoteSlashing
 	for i := 0; i < n; i++ {
 		d := &primitives.VoteSlashing{
@@ -234,7 +234,7 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 			Executions:        FuzzExecutions(128),
 			Txs:               FuzzTx(200),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
-			VoteSlashings:     FuzzVoteSlashing(5, true, true),
+			VoteSlashings:     FuzzVoteSlashing(5),
 			RANDAOSlashings:   FuzzRANDAOSlashing(20),
 			GovernanceVotes:   FuzzGovernanceVote(128),
 			MultiSignatureTxs: FuzzMultiSignatureTx(8),
