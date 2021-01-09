@@ -114,31 +114,34 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	}
 
 	validators := data.Data.Validators.BitIndices()
-	pubs := make([]common.PublicKey, len(validators))
 
 	lastIdx := validators[len(validators)-1]
 
 	if len(validators) > lastIdx {
-		for i, validatorIdx := range validators {
+		var pubs []common.PublicKey
+
+		for _, validatorIdx := range validators {
 			pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
 			if err != nil {
 				return err
 			}
-			pubs[i] = pub
+			pubs = append(pubs, pub)
 		}
-	}
-	
-	if !sig.FastAggregateVerify(pubs, data.Data.SignatureMessage()) {
-		return err
+
+		if !sig.FastAggregateVerify(pubs, data.Data.SignatureMessage()) {
+			return err
+		}
+
+		for _, valPub := range pubs {
+			var pub [48]byte
+			copy(pub[:], valPub.Marshal())
+			if ok := l.ShouldRun(pub); ok {
+				l.RegisterActionAt(pub, time.Unix(int64(data.Data.Timestamp), 0), data.Data.Nonce)
+			}
+		}
+
 	}
 
-	for _, valPub := range pubs {
-		var pub [48]byte
-		copy(pub[:], valPub.Marshal())
-		if ok := l.ShouldRun(pub); ok {
-			l.RegisterActionAt(pub, time.Unix(int64(data.Data.Timestamp), 0), data.Data.Nonce)
-		}
-	}
 
 	return nil
 }
