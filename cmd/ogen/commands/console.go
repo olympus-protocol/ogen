@@ -37,7 +37,11 @@ var utilsCmd = []prompt.Suggest{
 }
 
 var keystoreCmd = []prompt.Suggest{
-	{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
+	{Text: "generatekeys", Description: "Create a new validator key and store the private key on the keychain"},
+	{Text: "getmnemonic", Description: "Get the menmonic key of the keystore"},
+	{Text: "getkey", Description: "Get the keystore information of a specific key"},
+	{Text: "getkeys", Description: "Get all the keys on the keystore"},
+	{Text: "togglekey", Description: "Enable/disable a specific keystore key"},
 }
 
 var walletCmd = []prompt.Suggest{
@@ -178,6 +182,18 @@ func (c *CLI) executor(str string) {
 	case "addpeer":
 		out, err = c.rpcClient.AddPeer(args[1:])
 
+	// Keystore methods
+	case "genvalidatorkey":
+		out, err = c.rpcClient.GenerateKeys(args[1:])
+	case "getmnemonic":
+		out, err = c.rpcClient.GetMnemonic(args[1:])
+	case "getkeystorekey":
+		out, err = c.rpcClient.GetKey(args[1:])
+	case "getkeystorekeys":
+		out, err = c.rpcClient.GetKeys(args[1:])
+	case "togglekey":
+		out, err = c.rpcClient.ToggleKeys(args[1:])
+
 	// Utils methods
 	case "submitrawdata":
 		out, err = c.rpcClient.SubmitRawData(args[1:])
@@ -185,8 +201,6 @@ func (c *CLI) executor(str string) {
 		out, err = c.rpcClient.GenKeyPair(args[1:], false)
 	case "genrawkeypair":
 		out, err = c.rpcClient.GenKeyPair(args[1:], true)
-	case "genvalidatorkey":
-		out, err = c.rpcClient.GenValidatorKey(args[1:])
 	case "decoderawtransaction":
 		out, err = c.rpcClient.DecodeRawTransaction(args[1:])
 	case "decoderawblock":
