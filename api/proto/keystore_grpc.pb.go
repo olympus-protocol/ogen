@@ -22,7 +22,7 @@ type KeystoreClient interface {
 	//Input: message GenValidatorKeys
 	//Response: message KeyPairs
 	//Description: Returns private keys generated for validators start.
-	GenerateKeys(ctx context.Context, in *Number, opts ...grpc.CallOption) (*KeystoreKeys, error)
+	GenerateKeys(ctx context.Context, in *Number, opts ...grpc.CallOption) (*Keys, error)
 	//*
 	//Method: GetMnemonic
 	//Input: message Empty
@@ -57,8 +57,8 @@ func NewKeystoreClient(cc grpc.ClientConnInterface) KeystoreClient {
 	return &keystoreClient{cc}
 }
 
-func (c *keystoreClient) GenerateKeys(ctx context.Context, in *Number, opts ...grpc.CallOption) (*KeystoreKeys, error) {
-	out := new(KeystoreKeys)
+func (c *keystoreClient) GenerateKeys(ctx context.Context, in *Number, opts ...grpc.CallOption) (*Keys, error) {
+	out := new(Keys)
 	err := c.cc.Invoke(ctx, "/Keystore/GenerateKeys", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ type KeystoreServer interface {
 	//Input: message GenValidatorKeys
 	//Response: message KeyPairs
 	//Description: Returns private keys generated for validators start.
-	GenerateKeys(context.Context, *Number) (*KeystoreKeys, error)
+	GenerateKeys(context.Context, *Number) (*Keys, error)
 	//*
 	//Method: GetMnemonic
 	//Input: message Empty
@@ -143,7 +143,7 @@ type KeystoreServer interface {
 type UnimplementedKeystoreServer struct {
 }
 
-func (UnimplementedKeystoreServer) GenerateKeys(context.Context, *Number) (*KeystoreKeys, error) {
+func (UnimplementedKeystoreServer) GenerateKeys(context.Context, *Number) (*Keys, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateKeys not implemented")
 }
 func (UnimplementedKeystoreServer) GetMnemonic(context.Context, *Empty) (*Mnemonic, error) {

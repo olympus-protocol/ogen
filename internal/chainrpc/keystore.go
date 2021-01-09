@@ -15,22 +15,18 @@ type keystoreServer struct {
 	proto.UnimplementedKeystoreServer
 }
 
-func (k *keystoreServer) GenerateKeys(_ context.Context, in *proto.Number) (*proto.KeystoreKeys, error) {
+func (k *keystoreServer) GenerateKeys(_ context.Context, in *proto.Number) (*proto.Keys, error) {
 	keys, err := k.keystore.GenerateNewValidatorKey(in.Number)
 	if err != nil {
 		return nil, err
 	}
 
-	protoKeys := make([]*proto.KeystoreKey, len(keys))
+	protoKeys := make([]string, len(keys))
 	for i := range keys {
-		protoKeys[i] = &proto.KeystoreKey{
-			Key:     hex.EncodeToString(keys[i].Secret.Marshal()),
-			Enabled: keys[i].Enable,
-			Path:    keys[i].Path,
-		}
+		protoKeys[i] = hex.EncodeToString(keys[i].Secret.Marshal())
 	}
 
-	return &proto.KeystoreKeys{Keys: protoKeys}, nil
+	return &proto.Keys{Keys: protoKeys}, nil
 }
 
 func (k *keystoreServer) GetMnemonic(context.Context, *proto.Empty) (*proto.Mnemonic, error) {

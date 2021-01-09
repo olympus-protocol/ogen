@@ -493,7 +493,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/KeystoreKeys"
+              "$ref": "#/definitions/Keys"
             }
           },
           "default": {
@@ -1639,6 +1639,17 @@
       }
     },
     "KeyPairs": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Keys": {
       "type": "object",
       "properties": {
         "keys": {
