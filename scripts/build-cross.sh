@@ -3,9 +3,9 @@
 export OGEN_VERSION=0.2.0-alpha.3
 export FOLDER_NAME=ogen-$OGEN_VERSION
 
-go get src.techknowlogick.com/xgo
+go get github.com/karalabe/xgo
 
-xgo -pkg cmd/ogen --targets=windows-6.0/amd64,darwin-10.15/amd64,linux/arm64,linux/amd64 -out ogen-$OGEN_VERSION .
+xgo -pkg cmd/ogen --targets=windows-6.0/amd64,darwin-10.15/amd64,linux/arm64,linux/amd64 -out ogen-$OGEN_VERSION github.com/olympus-protocol/ogen
 
 mkdir ./$FOLDER_NAME
 mv ogen-$OGEN_VERSION-windows-6.0-amd64.exe ./$FOLDER_NAME/ogen.exe
