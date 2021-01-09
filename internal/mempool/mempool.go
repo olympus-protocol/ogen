@@ -1097,11 +1097,7 @@ func (p *pool) Start() error {
 	if err := p.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, p.handleGovernance); err != nil {
 		return nil
 	}
-
-	if err := p.host.RegisterTopicHandler(p2p.MsgMultiSignatureTxCmd, p.handleMultiSignatureTx); err != nil {
-		return nil
-	}
-
+	
 	return nil
 }
 

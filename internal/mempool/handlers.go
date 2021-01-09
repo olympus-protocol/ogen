@@ -203,22 +203,3 @@ func (p *pool) handleGovernance(id peer.ID, msg p2p.Message) error {
 
 	return nil
 }
-
-func (p *pool) handleMultiSignatureTx(id peer.ID, msg p2p.Message) error {
-	if id == p.host.GetHost().ID() {
-		return nil
-	}
-
-	data, ok := msg.(*p2p.MsgMultiSignatureTx)
-	if !ok {
-		return errors.New("wrong message on txmulti topic")
-	}
-
-	err := p.AddMultiSignatureTx(data.Data)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
