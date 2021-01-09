@@ -299,11 +299,12 @@ func (p *pool) AddDeposit(d *primitives.Deposit) error {
 	p.depositsLock.Lock()
 	defer p.depositsLock.Unlock()
 
-	for _, d := range p.deposits {
-		if bytes.Equal(d.Data.PublicKey[:], d.Data.PublicKey[:]) {
+	for _, pd := range p.deposits {
+		if bytes.Equal(pd.Data.PublicKey[:], d.Data.PublicKey[:]) {
 			return nil
 		}
 	}
+
 	_, ok := p.deposits[d.Hash()]
 	if !ok {
 		p.deposits[d.Hash()] = d
