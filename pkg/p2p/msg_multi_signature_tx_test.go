@@ -9,7 +9,7 @@ import (
 
 func TestMsgTxMulti(t *testing.T) {
 	v := new(p2p.MsgMultiSignatureTx)
-	v.Data = testdata.FuzzTxMulti(1)[0]
+	v.Data = testdata.FuzzMultiSignatureTx(1)[0]
 
 	ser, err := v.Marshal()
 	assert.NoError(t, err)
@@ -21,6 +21,6 @@ func TestMsgTxMulti(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgMultiSignatureTxCmd, v.Command())
-	assert.Equal(t, uint64(4673), v.MaxPayloadLength())
+	assert.Equal(t, uint64(2231), v.MaxPayloadLength())
 
 }

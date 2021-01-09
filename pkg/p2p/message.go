@@ -164,6 +164,7 @@ func ReadMessage(r io.Reader, net uint32) (Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(header.Length, msg.MaxPayloadLength())
 	if header.Length > msg.MaxPayloadLength() {
 		return nil, ErrorSizeExceed
 	}

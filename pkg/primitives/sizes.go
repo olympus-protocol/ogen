@@ -1,7 +1,7 @@
 package primitives
 
 // BlockHeader
-const BlockHeaderSize = 32 + 20 + (14 * 32) // 500 bytes
+const BlockHeaderSize = 20 + (14 * 32) // 468 bytes
 
 // Vote
 const MaxVotesPerBlock = 16

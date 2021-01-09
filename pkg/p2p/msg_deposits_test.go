@@ -21,6 +21,6 @@ func TestMsgDeposits(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgDepositsCmd, v.Command())
-	assert.Equal(t, uint64(315396), v.MaxPayloadLength())
+	assert.Equal(t, uint64(308*1024), v.MaxPayloadLength())
 
 }

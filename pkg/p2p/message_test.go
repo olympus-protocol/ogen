@@ -196,7 +196,7 @@ func createMsgTx(t *testing.T) {
 func createMsgTxMulti(t *testing.T) {
 	v := new(p2p.MsgMultiSignatureTx)
 	buf := bytes.NewBuffer([]byte{})
-	v.Data = testdata.FuzzTxMulti(1)[0]
+	v.Data = testdata.FuzzMultiSignatureTx(1)[0]
 	err := p2p.WriteMessage(buf, v, 1)
 	assert.NoError(t, err)
 

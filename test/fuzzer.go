@@ -226,17 +226,18 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 	for i := 0; i < n; i++ {
 		b := &primitives.Block{
 			Header:            FuzzBlockHeader(1)[0],
-			Votes:             FuzzMultiValidatorVote(5),
-			Deposits:          FuzzDeposit(5, true),
-			Exits:             FuzzExits(5),
-			PartialExit:       FuzzPartialExits(5),
-			CoinProofs:        FuzzCoinProofs(10),
-			Executions:        FuzzExecutions(10),
-			Txs:               FuzzTx(2),
+			Votes:             FuzzMultiValidatorVote(16),
+			Deposits:          FuzzDeposit(32, true),
+			Exits:             FuzzExits(32),
+			PartialExit:       FuzzPartialExits(32),
+			CoinProofs:        FuzzCoinProofs(64),
+			Executions:        FuzzExecutions(128),
+			Txs:               FuzzTx(200),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
-			VoteSlashings:     FuzzVoteSlashing(2, true, true),
-			RANDAOSlashings:   FuzzRANDAOSlashing(2),
-			GovernanceVotes:   FuzzGovernanceVote(5),
+			VoteSlashings:     FuzzVoteSlashing(5, true, true),
+			RANDAOSlashings:   FuzzRANDAOSlashing(20),
+			GovernanceVotes:   FuzzGovernanceVote(128),
+			MultiSignatureTxs: FuzzMultiSignatureTx(8),
 		}
 
 		var sig [96]byte
@@ -419,8 +420,8 @@ func FuzzTx(n int) []*primitives.Tx {
 	return v
 }
 
-// FuzzTx returns a slice of n Tx
-func FuzzTxMulti(n int) []*primitives.MultiSignatureTx {
+// FuzzMultiSignatureTx returns a slice of MultiSignatureTx
+func FuzzMultiSignatureTx(n int) []*primitives.MultiSignatureTx {
 	f := fuzz.New().NilChance(0)
 	var v []*primitives.MultiSignatureTx
 	for i := 0; i < n; i++ {

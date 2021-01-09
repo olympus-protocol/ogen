@@ -21,6 +21,6 @@ func TestMsgExecution(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgExecutionCmd, v.Command())
-	assert.Equal(t, uint64(32940), v.MaxPayloadLength())
+	assert.Equal(t, uint64(7352), v.MaxPayloadLength())
 
 }

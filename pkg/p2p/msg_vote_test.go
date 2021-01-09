@@ -21,6 +21,6 @@ func TestMsgVote(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgVoteCmd, v.Command())
-	assert.Equal(t, uint64(6474), v.MaxPayloadLength())
+	assert.Equal(t, uint64(6479), v.MaxPayloadLength())
 
 }

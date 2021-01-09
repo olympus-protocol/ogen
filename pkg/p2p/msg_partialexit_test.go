@@ -21,6 +21,6 @@ func TestMsgPartialExit(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgPartialExitsCmd, v.Command())
-	assert.Equal(t, uint64(204800), v.MaxPayloadLength())
+	assert.Equal(t, uint64(200), v.MaxPayloadLength())
 
 }
