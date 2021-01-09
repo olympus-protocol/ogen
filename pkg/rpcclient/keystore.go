@@ -69,7 +69,7 @@ func (c *Client) GetKey(args []string) (out string, err error) {
 		return "", errors.New("Usage: getkeystorekey <public_key>")
 	}
 
-	in := &proto.PublicKey{Key: args[1]}
+	in := &proto.PublicKey{Key: args[0]}
 
 	res, err := c.keystore.GetKey(ctx, in)
 	if err != nil {
@@ -113,12 +113,12 @@ func (c *Client) ToggleKeys(args []string) (out string, err error) {
 		return "", errors.New("Usage: togglekey <public_key> <true/false>")
 	}
 
-	enabled, err := strconv.ParseBool(args[2])
+	enabled, err := strconv.ParseBool(args[1])
 	if err != nil {
 		return "", err
 	}
 
-	in := &proto.ToggleKeyMsg{PublicKey: args[1], Enabled: enabled}
+	in := &proto.ToggleKeyMsg{PublicKey: args[0], Enabled: enabled}
 
 	res, err := c.keystore.ToggleKey(ctx, in)
 	if err != nil {
