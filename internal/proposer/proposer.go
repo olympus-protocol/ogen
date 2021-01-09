@@ -131,7 +131,13 @@ func (p *proposer) getNextVoteTime(nextSlot uint64) time.Time {
 }
 
 // ProposerSlashingConditionViolated implements chain notifee.
-func (p *proposer) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
+func (p *proposer) ProposerSlashingConditionViolated(d *primitives.ProposerSlashing) {
+	p.log.Warn("WARNING: Proposer slashing condition detected.")
+	err := p.pool.AddProposerSlashing(d)
+	if err != nil {
+		p.log.Error(err)
+	}
+}
 
 func (p *proposer) ProposeBlocks() {
 	defer func() {

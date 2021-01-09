@@ -407,6 +407,8 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 }
 
 func (p *pool) AddVoteSlashing(d *primitives.VoteSlashing) error {
+	p.log.Warn("WARNING: Vote slashing condition detected.")
+
 	slot1 := d.Vote1.Data.Slot
 	slot2 := d.Vote2.Data.Slot
 
