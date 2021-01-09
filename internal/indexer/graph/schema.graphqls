@@ -18,20 +18,23 @@ type BlockHeader {
   hash: String!
   version: Int!
   nonce: String!
-  tx_merkle_root: String!
-  tx_multi_merkle_root: String!
+  timestamp: String!
+  slot: Int!
+  fee_address: String!
+  previous_block_hash: String!
+  votes_merkle_root: String!
+  deposits_merkle_root: String!
+  exits_merkle_root: String!
+  partial_exits_merkle_root: String!
+  coin_proofs_merkle_root: String!
+  executions_merkle_root: String!
+  txs_merkle_root: String!
   vote_merkle_root: String!
-  deposit_merkle_root: String!
-  exit_merkle_root: String!
   vote_slashing_merkle_root: String!
   randao_slashing_merkle_root: String!
   proposer_slashing_merkle_root: String!
   governance_votes_merkle_root: String!
-  previous_block_hash: String!
-  timestamp: String!
-  slot: Int!
-  state_root: String!
-  fee_address: String!
+  multi_signature_txs_merkle_root: String!
 }
 
 type Deposit {

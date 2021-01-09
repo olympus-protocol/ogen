@@ -22,7 +22,6 @@ func GetGenesisBlock() Block {
 			PrevBlockHash:              chainhash.Hash{},
 			Timestamp:                  uint64(time.Unix(0x0, 0).Unix()),
 			Slot:                       0,
-			StateRoot:                  chainhash.Hash{},
 			FeeAddress:                 [20]byte{},
 		},
 		Txs: []*Tx{},

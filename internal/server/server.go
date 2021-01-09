@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
@@ -35,6 +34,7 @@ type server struct {
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
 	wallet    wallet.Wallet
+	pool      mempool.Pool
 }
 
 var _ Server = &server{}
@@ -63,6 +63,9 @@ func (s *server) Start() {
 			s.log.Fatal("unable to start rpc server")
 		}
 	}()
+
+	s.pool.Start()
+
 	err := s.ch.Start()
 	if err != nil {
 		s.log.Fatal("unable to start chain instance")
@@ -86,6 +89,7 @@ func (s *server) Start() {
 func (s *server) Stop() error {
 	s.ch.Stop()
 	s.rpc.Stop()
+	s.pool.Stop()
 	return nil
 }
 
@@ -111,41 +115,26 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	lam, err := actionmanager.NewLastActionManager(hn, ch)
-	if err != nil {
-		return nil, err
-	}
+	//lam, err := actionmanager.NewLastActionManager(hn, ch)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	cpool, err := mempool.NewCoinsMempool(ch, hn)
-	if err != nil {
-		return nil, err
-	}
+	pool := mempool.NewPool(ch, hn)
 
-	vpool, err := mempool.NewVoteMempool(ch, hn, lam)
-	if err != nil {
-		return nil, err
-	}
-
-	apool, err := mempool.NewActionMempool(ch, hn)
-	if err != nil {
-		return nil, err
-	}
-
-	vpool.Notify(apool)
-
-	w, err := wallet.NewWallet(ch, hn, cpool, apool)
+	w, err := wallet.NewWallet(ch, hn, pool)
 	if err != nil {
 		return nil, err
 	}
 
 	ks := keystore.NewKeystore()
 
-	prop, err := proposer.NewProposer(ch, hn, vpool, cpool, apool, lam, ks)
+	prop, err := proposer.NewProposer(ch, hn, pool, ks)
 	if err != nil {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, cpool, apool)
+	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, pool)
 	if err != nil {
 		return nil, err
 	}
@@ -158,6 +147,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 		rpc:    rpc,
 		prop:   prop,
 		wallet: w,
+		pool:   pool,
 	}
 
 	if config.GlobalFlags.Dashboard {

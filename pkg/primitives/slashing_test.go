@@ -11,7 +11,7 @@ import (
 )
 
 func TestVoteSlashing(t *testing.T) {
-	v := testdata.FuzzVoteSlashing(10, true, true)
+	v := testdata.FuzzVoteSlashing(10)
 	for _, c := range v {
 		ser, err := c.Marshal()
 		assert.NoError(t, err)
@@ -23,32 +23,6 @@ func TestVoteSlashing(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, c, desc)
-	}
-
-	incorrect := testdata.FuzzVoteSlashing(10, false, true)
-
-	for _, c := range incorrect {
-		_, err := c.Marshal()
-		assert.NotNil(t, err)
-	}
-
-	nildata := testdata.FuzzVoteSlashing(10, true, false)
-
-	for _, c := range nildata {
-		assert.NotPanics(t, func() {
-			data, err := c.Marshal()
-			assert.NoError(t, err)
-
-			n := new(primitives.VoteSlashing)
-			err = n.Unmarshal(data)
-			assert.NoError(t, err)
-
-			assert.Equal(t, c, n)
-
-			assert.Equal(t, uint64(0), n.Vote1.Data.Slot)
-			assert.Equal(t, uint64(0), n.Vote2.Data.Slot)
-
-		})
 	}
 
 	d := primitives.VoteSlashing{
@@ -177,7 +151,6 @@ func TestProposerSlashing(t *testing.T) {
 			PrevBlockHash:              [32]byte{},
 			Timestamp:                  0,
 			Slot:                       0,
-			StateRoot:                  [32]byte{},
 			FeeAddress:                 [20]byte{},
 		},
 		BlockHeader2: &primitives.BlockHeader{
@@ -194,12 +167,11 @@ func TestProposerSlashing(t *testing.T) {
 			PrevBlockHash:              [32]byte{},
 			Timestamp:                  0,
 			Slot:                       0,
-			StateRoot:                  [32]byte{},
 			FeeAddress:                 [20]byte{},
 		},
 	}
 
-	assert.Equal(t, "be35dae855452c2ddbc5fb9264fd7325e2d0fa3392fdf5ef30ac94b9439e7532", d.Hash().String())
+	assert.Equal(t, "d0be9e4963d7b27d1e138c17b2c1726169bfd5d450dc9c06df167a9c8b535ade", d.Hash().String())
 
 	sigDecode, _ := hex.DecodeString("ae09507041b2ccb9e3b3f9cda71ffae3dc8b2c83f331ebdc98cc4269c56bd4db05706bf317c8877608bc751b36d9af380c5fea6bc804d2080940b3910acc8f222fc4b59166630d8a3b31eba539325c2c60aaaa0408e986241cb462fad8652bdc")
 	sigBls, _ := bls.SignatureFromBytes(sigDecode)

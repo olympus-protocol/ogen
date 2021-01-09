@@ -65,44 +65,48 @@ func (b *Block) ExitsGQL() []*model.Exit {
 }
 
 type BlockHeader struct {
-	Hash                       []byte `gorm:"primaryKey"`
-	Version                    uint64
-	Nonce                      []byte
-	TxMerkleRoot               []byte
-	TxMultiMerkleRoot          []byte
-	VoteMerkleRoot             []byte
-	DepositMerkleRoot          []byte
-	ExitMerkleRoot             []byte
-	VoteSlashingMerkleRoot     []byte
-	RandaoSlashingMerkleRoot   []byte
-	ProposerSlashingMerkleRoot []byte
-	GovernanceVotesMerkleRoot  []byte
-	PreviousBlockHash          []byte
-	Timestamp                  time.Time
-	Slot                       uint64
-	StateRoot                  []byte
-	FeeAddress                 []byte
+	Hash                        []byte `gorm:"primaryKey"`
+	Version                     uint64
+	Nonce                       []byte
+	Timestamp                   time.Time
+	Slot                        uint64
+	FeeAddress                  []byte
+	PreviousBlockHash           []byte
+	VotesMerkleRoot             []byte
+	DeposistMerkleRoot          []byte
+	ExitsMerkleRoot             []byte
+	PartialExitsMerkleRoot      []byte
+	CoinProofsMerkleRoot        []byte
+	ExecutionsMerkleRoot        []byte
+	TxsMerkleRoot               []byte
+	VoteSlashingMerkleRoot      []byte
+	RandaoSlashingMerkleRoot    []byte
+	ProposerSlashingMerkleRoot  []byte
+	GovernanceVotesMerkleRoot   []byte
+	MultiSignatureTxsMerkleRoot []byte
 }
 
 func (b *BlockHeader) ToGQL() *model.BlockHeader {
 	return &model.BlockHeader{
-		Hash:                       hex.EncodeToString(b.Hash),
-		Version:                    int(b.Version),
-		Nonce:                      hex.EncodeToString(b.Nonce),
-		TxMerkleRoot:               hex.EncodeToString(b.TxMerkleRoot),
-		TxMultiMerkleRoot:          hex.EncodeToString(b.TxMultiMerkleRoot),
-		VoteMerkleRoot:             hex.EncodeToString(b.VoteMerkleRoot),
-		DepositMerkleRoot:          hex.EncodeToString(b.DepositMerkleRoot),
-		ExitMerkleRoot:             hex.EncodeToString(b.ExitMerkleRoot),
-		VoteSlashingMerkleRoot:     hex.EncodeToString(b.VoteSlashingMerkleRoot),
-		RandaoSlashingMerkleRoot:   hex.EncodeToString(b.RandaoSlashingMerkleRoot),
-		ProposerSlashingMerkleRoot: hex.EncodeToString(b.ProposerSlashingMerkleRoot),
-		GovernanceVotesMerkleRoot:  hex.EncodeToString(b.GovernanceVotesMerkleRoot),
-		PreviousBlockHash:          hex.EncodeToString(b.PreviousBlockHash),
-		Timestamp:                  b.Timestamp.String(),
-		Slot:                       int(b.Slot),
-		StateRoot:                  hex.EncodeToString(b.StateRoot),
-		FeeAddress:                 hex.EncodeToString(b.FeeAddress),
+		Hash:                        hex.EncodeToString(b.Hash),
+		Version:                     int(b.Version),
+		Nonce:                       hex.EncodeToString(b.Nonce),
+		Timestamp:                   b.Timestamp.String(),
+		Slot:                        int(b.Slot),
+		FeeAddress:                  hex.EncodeToString(b.FeeAddress),
+		PreviousBlockHash:           hex.EncodeToString(b.PreviousBlockHash),
+		VotesMerkleRoot:             hex.EncodeToString(b.VotesMerkleRoot),
+		DepositsMerkleRoot:          hex.EncodeToString(b.DeposistMerkleRoot),
+		ExitsMerkleRoot:             hex.EncodeToString(b.ExitsMerkleRoot),
+		PartialExitsMerkleRoot:      hex.EncodeToString(b.PartialExitsMerkleRoot),
+		CoinProofsMerkleRoot:        hex.EncodeToString(b.CoinProofsMerkleRoot),
+		ExecutionsMerkleRoot:        hex.EncodeToString(b.ExecutionsMerkleRoot),
+		TxsMerkleRoot:               hex.EncodeToString(b.TxsMerkleRoot),
+		VoteSlashingMerkleRoot:      hex.EncodeToString(b.VoteSlashingMerkleRoot),
+		RandaoSlashingMerkleRoot:    hex.EncodeToString(b.RandaoSlashingMerkleRoot),
+		ProposerSlashingMerkleRoot:  hex.EncodeToString(b.ProposerSlashingMerkleRoot),
+		GovernanceVotesMerkleRoot:   hex.EncodeToString(b.GovernanceVotesMerkleRoot),
+		MultiSignatureTxsMerkleRoot: hex.EncodeToString(b.MultiSignatureTxsMerkleRoot),
 	}
 }
 

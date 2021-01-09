@@ -59,7 +59,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	}
 
 	var latestNonce uint64
-	latestNonce, err = w.coinsmempool.GetMempoolNonce(acc)
+	latestNonce, err = w.pool.GetAccountNonce(acc)
 	fmt.Println(latestNonce, err)
 	if err != nil {
 		if err == mempool.ErrorAccountNotOnMempool {
@@ -86,7 +86,7 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	copy(s[:], sig.Marshal())
 	tx.Signature = s
 
-	if err := w.coinsmempool.Add(tx); err != nil {
+	if err := w.pool.AddTx(tx); err != nil {
 		return nil, err
 	}
 

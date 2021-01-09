@@ -277,23 +277,25 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	}
 
 	dbHeader := &db.BlockHeader{
-		Hash:                       row.Hash[:],
-		Version:                    b.Header.Version,
-		Nonce:                      nonce,
-		TxMerkleRoot:               b.Header.TxMerkleRoot[:],
-		TxMultiMerkleRoot:          b.Header.TxMultiMerkleRoot[:],
-		VoteMerkleRoot:             b.Header.VoteMerkleRoot[:],
-		DepositMerkleRoot:          b.Header.DepositMerkleRoot[:],
-		ExitMerkleRoot:             b.Header.ExitMerkleRoot[:],
-		VoteSlashingMerkleRoot:     b.Header.VoteSlashingMerkleRoot[:],
-		RandaoSlashingMerkleRoot:   b.Header.RANDAOSlashingMerkleRoot[:],
-		ProposerSlashingMerkleRoot: b.Header.ProposerSlashingMerkleRoot[:],
-		GovernanceVotesMerkleRoot:  b.Header.GovernanceVotesMerkleRoot[:],
-		PreviousBlockHash:          b.Header.PrevBlockHash[:],
-		Timestamp:                  time.Unix(int64(b.Header.Timestamp), 0),
-		Slot:                       b.Header.Slot,
-		StateRoot:                  b.Header.StateRoot[:],
-		FeeAddress:                 b.Header.FeeAddress[:],
+		Hash:                        row.Hash[:],
+		Version:                     b.Header.Version,
+		Nonce:                       nonce,
+		Timestamp:                   time.Unix(int64(b.Header.Timestamp), 0),
+		Slot:                        b.Header.Slot,
+		FeeAddress:                  b.Header.FeeAddress[:],
+		PreviousBlockHash:           b.Header.PrevBlockHash[:],
+		VotesMerkleRoot:             b.Header.VoteMerkleRoot[:],
+		DeposistMerkleRoot:          b.Header.DepositMerkleRoot[:],
+		ExitsMerkleRoot:             b.Header.ExitMerkleRoot[:],
+		PartialExitsMerkleRoot:      b.Header.PartialExitMerkleRoot[:],
+		CoinProofsMerkleRoot:        b.Header.CoinProofsMerkleRoot[:],
+		ExecutionsMerkleRoot:        b.Header.ExecutionsMerkleRoot[:],
+		TxsMerkleRoot:               b.Header.TxsMerkleRoot[:],
+		VoteSlashingMerkleRoot:      b.Header.VoteSlashingMerkleRoot[:],
+		RandaoSlashingMerkleRoot:    b.Header.RANDAOSlashingMerkleRoot[:],
+		ProposerSlashingMerkleRoot:  b.Header.ProposerSlashingMerkleRoot[:],
+		GovernanceVotesMerkleRoot:   b.Header.GovernanceVotesMerkleRoot[:],
+		MultiSignatureTxsMerkleRoot: b.Header.MultiSignatureTxsMerkleRoot[:],
 	}
 
 	err = i.db.AddHeader(dbHeader)
@@ -625,16 +627,14 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 	}
 
 	initBlockRow := &chainindex.BlockRow{
-		StateRoot: lastBlock.Header.StateRoot,
-		Height:    lastBlockHeight,
-		Slot:      lastBlock.Header.Slot,
-		Hash:      lastBlock.Header.Hash(),
+		Height: lastBlockHeight,
+		Slot:   lastBlock.Header.Slot,
+		Hash:   lastBlock.Header.Hash(),
 		Parent: &chainindex.BlockRow{
-			StateRoot: prevLastBlock.Header.StateRoot,
-			Height:    prevLastBlockHeight,
-			Slot:      prevLastBlock.Header.Slot,
-			Hash:      prevLastBlock.Header.Hash(),
-			Parent:    nil,
+			Height: prevLastBlockHeight,
+			Slot:   prevLastBlock.Header.Slot,
+			Hash:   prevLastBlock.Header.Hash(),
+			Parent: nil,
 		},
 	}
 

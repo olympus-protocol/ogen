@@ -216,7 +216,7 @@ func WriteMessage(w io.Writer, msg Message, net uint32) error {
 
 func writeHeader(msg Message, net uint32, length uint64, checksum [4]byte) ([]byte, error) {
 
-	cmd := [40]byte{}
+	var cmd [40]byte
 	copy(cmd[:], msg.Command())
 
 	header := MessageHeader{

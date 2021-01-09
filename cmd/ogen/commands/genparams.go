@@ -30,8 +30,6 @@ var genParamsCmd = &cobra.Command{
 		switch network {
 		case "testnet":
 			netParams = &params.TestNet
-		case "devnet":
-			netParams = &params.DevNet
 		default:
 			netParams = &params.MainNet
 		}

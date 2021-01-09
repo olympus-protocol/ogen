@@ -10,11 +10,10 @@ import (
 
 // BlockRow represents a single row in the block chainindex.
 type BlockRow struct {
-	StateRoot chainhash.Hash
-	Height    uint64
-	Slot      uint64
-	Hash      chainhash.Hash
-	Parent    *BlockRow
+	Height uint64
+	Slot   uint64
+	Hash   chainhash.Hash
+	Parent *BlockRow
 
 	children     []*BlockRow
 	childrenLock sync.Mutex
@@ -90,12 +89,11 @@ func (i *BlockIndex) LoadBlockNode(row *primitives.BlockNodeDisk) (*BlockRow, er
 	}
 
 	newNode := &BlockRow{
-		Hash:      row.Hash,
-		Height:    row.Height,
-		Slot:      row.Slot,
-		StateRoot: row.StateRoot,
-		Parent:    parent,
-		children:  make([]*BlockRow, 0),
+		Hash:     row.Hash,
+		Height:   row.Height,
+		Slot:     row.Slot,
+		Parent:   parent,
+		children: make([]*BlockRow, 0),
 	}
 
 	i.index[row.Hash] = newNode
@@ -139,12 +137,11 @@ func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
 	}
 
 	row := &BlockRow{
-		StateRoot: block.Header.StateRoot,
-		Height:    prev.Height + 1,
-		Parent:    prev,
-		Hash:      block.Header.Hash(),
-		Slot:      block.Header.Slot,
-		children:  make([]*BlockRow, 0),
+		Height:   prev.Height + 1,
+		Parent:   prev,
+		Hash:     block.Header.Hash(),
+		Slot:     block.Header.Slot,
+		children: make([]*BlockRow, 0),
 	}
 
 	prev.AddChild(row)
@@ -198,11 +195,10 @@ func (br *BlockRow) ToBlockNodeDisk() *primitives.BlockNodeDisk {
 	}
 
 	return &primitives.BlockNodeDisk{
-		StateRoot: br.StateRoot,
-		Height:    br.Height,
-		Slot:      br.Slot,
-		Children:  children,
-		Hash:      br.Hash,
-		Parent:    parent,
+		Height:   br.Height,
+		Slot:     br.Slot,
+		Children: children,
+		Hash:     br.Hash,
+		Parent:   parent,
 	}
 }
