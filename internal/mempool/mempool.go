@@ -8,6 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/hostnode"
 	"github.com/olympus-protocol/ogen/internal/state"
+	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
@@ -16,6 +17,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
+	"sort"
 	"sync"
 )
 
@@ -33,7 +35,6 @@ type Pool interface {
 	AddExit(d *primitives.Exit) error
 	AddPartialExit(d *primitives.PartialExit) error
 	AddTx(d *primitives.Tx) error
-	AddMultiSignatureTx(d *primitives.MultiSignatureTx) error
 	AddVoteSlashing(d *primitives.VoteSlashing) error
 	AddProposerSlashing(d *primitives.ProposerSlashing) error
 	AddRANDAOSlashing(d *primitives.RANDAOSlashing) error
@@ -51,9 +52,8 @@ type Pool interface {
 	GetProposerSlashings(s state.State) ([]*primitives.ProposerSlashing, state.State)
 	GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, state.State)
 	GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, state.State)
-	GetMultiSignatureTxs(s state.State, feeReceiver [20]byte) ([]*primitives.MultiSignatureTx, state.State)
 
-	RemoveByBlock(b *primitives.Block)
+	RemoveByBlock(b *primitives.Block, s state.State)
 }
 
 type pool struct {
@@ -81,10 +81,10 @@ type pool struct {
 	partialExits     map[chainhash.Hash]*primitives.PartialExit
 
 	txsLock sync.Mutex
-	txs     map[chainhash.Hash]*primitives.Tx
+	txs     map[[20]byte]*txItem
 
 	multiSignatureTxsLock sync.Mutex
-	multiSignatureTx      map[chainhash.Hash]*primitives.MultiSignatureTx
+	multiSignatureTx      map[[20]byte]*primitives.MultiSignatureTx
 
 	latestNonceLock sync.Mutex
 	latestNonce     map[[20]byte]uint64
@@ -356,11 +356,49 @@ func (p *pool) AddPartialExit(d *primitives.PartialExit) error {
 }
 
 func (p *pool) AddTx(d *primitives.Tx) error {
-	panic("implement me")
-}
+	p.txsLock.Lock()
+	defer p.txsLock.Unlock()
 
-func (p *pool) AddMultiSignatureTx(d *primitives.MultiSignatureTx) error {
-	panic("implement me")
+	cs := p.chain.State().TipState().GetCoinsState()
+
+	fpkh, err := d.FromPubkeyHash()
+	if err != nil {
+		return err
+	}
+
+	p.latestNonceLock.Lock()
+	defer p.latestNonceLock.Unlock()
+
+	if latestNonce, ok := p.latestNonce[fpkh]; ok && d.Nonce < latestNonce {
+		return errors.New("invalid nonce")
+	}
+
+	// Check the state for a nonce lower than the used in transaction
+	if stateNonce, ok := cs.Nonces[fpkh]; ok && d.Nonce < stateNonce || !ok && d.Nonce != 1 {
+		return errors.New("invalid nonce")
+	}
+
+	if d.Fee < 5000 {
+		return errors.New("transaction doesn't include enough fee")
+	}
+
+	mpi, ok := p.txs[fpkh]
+
+	if !ok {
+		p.txs[fpkh] = newCoinMempoolItem()
+		mpi = p.txs[fpkh]
+		if err := mpi.add(d, cs.Balances[fpkh]); err != nil {
+			return err
+		}
+		p.latestNonce[fpkh] = d.Nonce
+	} else {
+		if err := mpi.add(d, cs.Balances[fpkh]); err != nil {
+			return err
+		}
+		p.latestNonce[fpkh] = d.Nonce
+	}
+
+	return nil
 }
 
 func (p *pool) AddVoteSlashing(d *primitives.VoteSlashing) error {
@@ -616,7 +654,32 @@ func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable
 }
 
 func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State) {
-	panic("implement me")
+	p.txsLock.Lock()
+	defer p.txsLock.Unlock()
+
+	allTransactions := make([]*primitives.Tx, 0, primitives.MaxTxsPerBlock)
+
+	for _, addr := range p.txs {
+		nonces := make([]int, 0, len(addr.transactions))
+		for k := range addr.transactions {
+			nonces = append(nonces, int(k))
+		}
+
+		sort.Ints(nonces)
+
+		for _, nonce := range nonces {
+			tx := addr.transactions[uint64(nonce)]
+			if err := s.ApplyTransactionSingle(tx, feeReceiver); err != nil {
+				continue
+			}
+			if len(allTransactions) < primitives.MaxTxsPerBlock {
+				allTransactions = append(allTransactions, tx)
+			}
+		}
+
+	}
+
+	return allTransactions, s
 }
 
 func (p *pool) GetVoteSlashings(s state.State) ([]*primitives.VoteSlashing, state.State) {
@@ -711,12 +774,289 @@ func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, 
 	return votes, s
 }
 
-func (p *pool) GetMultiSignatureTxs(s state.State, feeReceiver [20]byte) ([]*primitives.MultiSignatureTx, state.State) {
-	panic("implement me")
-}
+func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
+	netParams := config.GlobalParams.NetParams
+	p.votesLock.Lock()
+	p.intidivualVotesLock.Lock()
 
-func (p *pool) RemoveByBlock(b *primitives.Block) {
-	panic("implement me")
+	for _, v := range p.votes {
+		voteHash := v.Data.Hash()
+		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
+			delete(p.votes, voteHash)
+			delete(p.intidivualVotes, voteHash)
+		}
+	}
+
+	// Check for votes on the block and remove them
+	for _, blockVote := range b.Votes {
+		voteHash := blockVote.Data.Hash()
+
+		// If the vote is on pool and included on the block, remove it.
+		poolVote, ok := p.votes[voteHash]
+		if ok {
+			delete(p.votes, voteHash)
+
+			// If the mempool vote participation is greater than votes included on block we check the poolIndividuals
+			// if there are more votes on the poolIndividuals that were not included on the block, we aggregate them and
+			// add a new vote to the mempool.
+			// including the missing votes.
+			if len(poolVote.ParticipationBitfield.BitIndices()) > len(blockVote.ParticipationBitfield.BitIndices()) {
+				p.log.Debug("incomplete vote submission detected aggregating and constructing missing vote")
+				individuals := p.intidivualVotes[voteHash]
+				// First we extract the included vote for the individuals slice
+				var votesToAggregate []*primitives.MultiValidatorVote
+				for _, iv := range individuals {
+					intersect := iv.ParticipationBitfield.Intersect(blockVote.ParticipationBitfield)
+					if len(intersect) == 0 {
+						votesToAggregate = append(votesToAggregate, iv)
+					}
+				}
+				p.log.Debugf("found %d individual votes not included", len(votesToAggregate))
+
+				newBitfield := bitfield.NewBitlist(poolVote.ParticipationBitfield.Len())
+
+				var sigs []common.Signature
+				for _, missingVote := range votesToAggregate {
+					sig, err := missingVote.Signature()
+					if err != nil {
+						return
+					}
+					sigs = append(sigs, sig)
+
+					for _, idx := range missingVote.ParticipationBitfield.BitIndices() {
+						newBitfield.Set(uint(idx))
+					}
+				}
+
+				aggSig := bls.AggregateSignatures(sigs)
+				var voteSig [96]byte
+				copy(voteSig[:], aggSig.Marshal())
+
+				newVote := &primitives.MultiValidatorVote{
+					Data:                  poolVote.Data,
+					ParticipationBitfield: newBitfield,
+					Sig:                   voteSig,
+				}
+
+				p.votes[voteHash] = newVote
+			}
+		}
+	}
+
+	p.log.Debugf("tracking %d aggregated votes and %d individual votes in vote mempool", len(p.votes), len(p.intidivualVotes))
+
+	p.votesLock.Unlock()
+	p.intidivualVotesLock.Unlock()
+
+	p.depositsLock.Lock()
+	newDeposits := make(map[chainhash.Hash]*primitives.Deposit)
+
+	for k, d1 := range p.deposits {
+		for _, d2 := range b.Deposits {
+			if bytes.Equal(d1.Data.PublicKey[:], d2.Data.PublicKey[:]) {
+				continue
+			}
+		}
+
+		if s.IsDepositValid(d1) != nil {
+			continue
+		}
+
+		newDeposits[k] = d1
+	}
+	p.deposits = newDeposits
+	p.depositsLock.Unlock()
+
+	p.exitsLock.Lock()
+	newExits := make(map[chainhash.Hash]*primitives.Exit)
+
+	for k, e1 := range p.exits {
+		for _, e2 := range b.Exits {
+			if bytes.Equal(e1.ValidatorPubkey[:], e2.ValidatorPubkey[:]) {
+				continue
+			}
+		}
+
+		if s.IsExitValid(e1) != nil {
+			continue
+		}
+
+		newExits[k] = e1
+	}
+	p.exits = newExits
+	p.exitsLock.Unlock()
+
+	p.proposerSlashingLock.Lock()
+	newProposerSlashings := make([]*primitives.ProposerSlashing, 0, len(p.proposerSlashings))
+	for _, ps := range p.proposerSlashings {
+		psHash := ps.Hash()
+		if b.Header.Slot >= ps.BlockHeader2.Slot+p.netParams.EpochLength-1 {
+			continue
+		}
+
+		if b.Header.Slot >= ps.BlockHeader1.Slot+p.netParams.EpochLength-1 {
+			continue
+		}
+
+		for _, blockSlashing := range b.ProposerSlashings {
+			blockSlashingHash := blockSlashing.Hash()
+
+			if blockSlashingHash.IsEqual(&psHash) {
+				continue
+			}
+		}
+
+		if _, err := s.IsProposerSlashingValid(ps); err != nil {
+			continue
+		}
+
+		newProposerSlashings = append(newProposerSlashings, ps)
+	}
+	p.proposerSlashings = newProposerSlashings
+	p.proposerSlashingLock.Unlock()
+
+	p.voteSlashingLock.Lock()
+	newVoteSlashings := make([]*primitives.VoteSlashing, 0, len(p.voteSlashings))
+	for _, vs := range p.voteSlashings {
+		vsHash := vs.Hash()
+		if b.Header.Slot >= vs.Vote1.Data.LastSlotValid(p.netParams) {
+			continue
+		}
+
+		if b.Header.Slot >= vs.Vote2.Data.LastSlotValid(p.netParams) {
+			continue
+		}
+
+		for _, voteSlashing := range b.VoteSlashings {
+			voteSlashingHash := voteSlashing.Hash()
+
+			if voteSlashingHash.IsEqual(&vsHash) {
+				continue
+			}
+		}
+
+		if _, err := s.IsVoteSlashingValid(vs); err != nil {
+			continue
+		}
+
+		newVoteSlashings = append(newVoteSlashings, vs)
+	}
+	p.voteSlashings = newVoteSlashings
+	p.voteSlashingLock.Unlock()
+
+	p.randaoSlashingLock.Lock()
+	newRANDAOSlashings := make([]*primitives.RANDAOSlashing, 0, len(p.randaoSlashings))
+	for _, rs := range p.randaoSlashings {
+		rsHash := rs.Hash()
+
+		for _, blockSlashing := range b.VoteSlashings {
+			blockSlashingHash := blockSlashing.Hash()
+
+			if blockSlashingHash.IsEqual(&rsHash) {
+				continue
+			}
+		}
+
+		if _, err := s.IsRANDAOSlashingValid(rs); err != nil {
+			continue
+		}
+
+		newRANDAOSlashings = append(newRANDAOSlashings, rs)
+	}
+	p.randaoSlashings = newRANDAOSlashings
+	p.randaoSlashingLock.Unlock()
+
+	p.governanceVoteLock.Lock()
+	newGovernanceVotes := make(map[chainhash.Hash]*primitives.GovernanceVote)
+	for k, gv := range p.governanceVotes {
+		gvHash := gv.Hash()
+
+		for _, blockSlashing := range b.VoteSlashings {
+			blockSlashingHash := blockSlashing.Hash()
+
+			if blockSlashingHash.IsEqual(&gvHash) {
+				continue
+			}
+		}
+
+		if err := s.IsGovernanceVoteValid(gv); err != nil {
+			continue
+		}
+
+		newGovernanceVotes[k] = gv
+	}
+	p.governanceVotes = newGovernanceVotes
+	p.governanceVoteLock.Unlock()
+
+	p.coinProofsLock.Lock()
+	newProofsPool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
+
+	for k, proof := range p.coinProofs {
+		proofHash := proof.Hash()
+
+		for _, proof := range b.CoinProofs {
+			blockProofHash := proof.Hash()
+
+			if blockProofHash.IsEqual(&proofHash) {
+				continue
+			}
+		}
+
+		if err := s.IsCoinProofValid(proof); err != nil {
+			continue
+		}
+
+		newProofsPool[k] = proof
+	}
+	p.coinProofs = newProofsPool
+	p.coinProofsLock.Unlock()
+
+	p.partialExitsLock.Lock()
+	newPartialExitsPool := make(map[chainhash.Hash]*primitives.PartialExit)
+
+	for k, exit := range p.partialExits {
+		hash := exit.Hash()
+
+		for _, e := range b.PartialExit {
+			blockProofHash := e.Hash()
+
+			if blockProofHash.IsEqual(&hash) {
+				continue
+			}
+		}
+
+		if err := s.IsPartialExitValid(exit); err != nil {
+			continue
+		}
+
+		newPartialExitsPool[k] = exit
+	}
+	p.partialExits = newPartialExitsPool
+	p.partialExitsLock.Unlock()
+
+	p.txsLock.Lock()
+
+	for _, tx := range b.Txs {
+		fpkh, err := tx.FromPubkeyHash()
+		if err != nil {
+			continue
+		}
+
+		it, found := p.txs[fpkh]
+		if !found {
+			continue
+		}
+		it.removeBefore(tx.Nonce)
+		if it.balanceSpent == 0 {
+			delete(p.txs, fpkh)
+		}
+		if tx.Nonce == p.latestNonce[fpkh] {
+			delete(p.latestNonce, fpkh)
+		}
+	}
+
+	p.txsLock.Unlock()
+
 }
 
 var _ Pool = &pool{}
@@ -815,8 +1155,7 @@ func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode) Pool {
 		deposits:          make(map[chainhash.Hash]*primitives.Deposit),
 		exits:             make(map[chainhash.Hash]*primitives.Exit),
 		partialExits:      make(map[chainhash.Hash]*primitives.PartialExit),
-		txs:               make(map[chainhash.Hash]*primitives.Tx),
-		multiSignatureTx:  make(map[chainhash.Hash]*primitives.MultiSignatureTx),
+		txs:               make(map[[20]byte]*txItem),
 		voteSlashings:     []*primitives.VoteSlashing{},
 		proposerSlashings: []*primitives.ProposerSlashing{},
 		randaoSlashings:   []*primitives.RANDAOSlashing{},

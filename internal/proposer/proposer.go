@@ -104,7 +104,7 @@ func (p *proposer) Proposing() bool {
 
 // NewTip implements the BlockchainNotifee interface.
 func (p *proposer) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, _ []*primitives.EpochReceipt) {
-	p.pool.RemoveByBlock(block)
+	p.pool.RemoveByBlock(block, newState)
 }
 
 func (p *proposer) GetCurrentSlot() uint64 {
@@ -199,8 +199,6 @@ func (p *proposer) ProposeBlocks() {
 
 				governanceVotes, blockState := p.pool.GetGovernanceVotes(blockState)
 
-				coinTxMulti, blockState := p.pool.GetMultiSignatureTxs(blockState, proposerValidator.PayeeAddress)
-
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
@@ -220,7 +218,6 @@ func (p *proposer) ProposeBlocks() {
 					ProposerSlashings: proposerSlashings,
 					RANDAOSlashings:   randaoSlashings,
 					GovernanceVotes:   governanceVotes,
-					MultiSignatureTxs: coinTxMulti,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
