@@ -14,14 +14,11 @@ type networkServer struct {
 	proto.UnimplementedNetworkServer
 }
 
-func (s *networkServer) GetNetworkInfo(ctx context.Context, _ *proto.Empty) (*proto.NetworkInfo, error) {
-	defer ctx.Done()
-
+func (s *networkServer) GetNetworkInfo(_ context.Context, _ *proto.Empty) (*proto.NetworkInfo, error) {
 	return &proto.NetworkInfo{Peers: int32(len(s.host.GetHost().Network().Peers())), ID: s.host.GetHost().ID().String()}, nil
 }
 
-func (s *networkServer) GetPeersInfo(ctx context.Context, _ *proto.Empty) (*proto.Peers, error) {
-	defer ctx.Done()
+func (s *networkServer) GetPeersInfo(_ context.Context, _ *proto.Empty) (*proto.Peers, error) {
 
 	peersID := s.host.GetHost().Network().Peers()
 	peersInfo := make([]*proto.Peer, len(peersID))

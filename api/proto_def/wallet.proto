@@ -69,7 +69,7 @@
       Description: Returns the wallet private key on wif format.
     */
 
-    rpc DumpWallet(Empty) returns (DumpWalletInfo) {
+    rpc DumpWallet(Empty) returns (Mnemonic) {
       option (google.api.http) = {
         get: "/wallet/dumpwallet"
       };
@@ -234,8 +234,4 @@ message ImportWalletData {
     string name = 1;
     string mnemonic = 2;
     string password = 3;
-}
-
-message DumpWalletInfo {
-    string mnemonic = 1;
 }

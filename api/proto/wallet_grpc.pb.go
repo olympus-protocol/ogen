@@ -21,7 +21,7 @@ type WalletClient interface {
 	CreateWallet(ctx context.Context, in *WalletReference, opts ...grpc.CallOption) (*NewWalletInfo, error)
 	OpenWallet(ctx context.Context, in *WalletReference, opts ...grpc.CallOption) (*Success, error)
 	ImportWallet(ctx context.Context, in *ImportWalletData, opts ...grpc.CallOption) (*KeyPair, error)
-	DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*DumpWalletInfo, error)
+	DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Mnemonic, error)
 	CloseWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Success, error)
 	GetBalance(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Balance, error)
 	GetValidators(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ValidatorsRegistry, error)
@@ -78,8 +78,8 @@ func (c *walletClient) ImportWallet(ctx context.Context, in *ImportWalletData, o
 	return out, nil
 }
 
-func (c *walletClient) DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*DumpWalletInfo, error) {
-	out := new(DumpWalletInfo)
+func (c *walletClient) DumpWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Mnemonic, error) {
+	out := new(Mnemonic)
 	err := c.cc.Invoke(ctx, "/Wallet/DumpWallet", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ type WalletServer interface {
 	CreateWallet(context.Context, *WalletReference) (*NewWalletInfo, error)
 	OpenWallet(context.Context, *WalletReference) (*Success, error)
 	ImportWallet(context.Context, *ImportWalletData) (*KeyPair, error)
-	DumpWallet(context.Context, *Empty) (*DumpWalletInfo, error)
+	DumpWallet(context.Context, *Empty) (*Mnemonic, error)
 	CloseWallet(context.Context, *Empty) (*Success, error)
 	GetBalance(context.Context, *Empty) (*Balance, error)
 	GetValidators(context.Context, *Empty) (*ValidatorsRegistry, error)
@@ -215,7 +215,7 @@ func (UnimplementedWalletServer) OpenWallet(context.Context, *WalletReference) (
 func (UnimplementedWalletServer) ImportWallet(context.Context, *ImportWalletData) (*KeyPair, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ImportWallet not implemented")
 }
-func (UnimplementedWalletServer) DumpWallet(context.Context, *Empty) (*DumpWalletInfo, error) {
+func (UnimplementedWalletServer) DumpWallet(context.Context, *Empty) (*Mnemonic, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DumpWallet not implemented")
 }
 func (UnimplementedWalletServer) CloseWallet(context.Context, *Empty) (*Success, error) {

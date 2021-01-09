@@ -20,7 +20,7 @@ type validatorsServer struct {
 	proto.UnimplementedValidatorsServer
 }
 
-func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*proto.ValidatorsRegistry, error) {
+func (s *validatorsServer) GetValidatorsList(_ context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
 	validators := s.chain.State().TipState().GetValidators()
 	parsedValidators := make([]*proto.ValidatorRegistry, len(validators.Validators))
 	for i, v := range validators.Validators {
@@ -42,7 +42,7 @@ func (s *validatorsServer) GetValidatorsList(context.Context, *proto.Empty) (*pr
 	}}, nil
 }
 
-func (s *validatorsServer) GetAccountValidators(ctx context.Context, acc *proto.Account) (*proto.ValidatorsRegistry, error) {
+func (s *validatorsServer) GetAccountValidators(_ context.Context, acc *proto.Account) (*proto.ValidatorsRegistry, error) {
 	var account []byte
 	_, account, err := bech32.Decode(acc.Account)
 	if err != nil {

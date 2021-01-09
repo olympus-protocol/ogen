@@ -24,6 +24,7 @@ type Flags struct {
 	RPCProxyAddr  string
 	RPCPort       string
 	RPCWallet     bool
+	RPCKeystore   bool
 	RPCAuthToken  string
 	Debug         bool
 	LogFile       bool

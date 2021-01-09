@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/olympus-protocol/ogen/pkg/params"
-	"strconv"
 	"time"
 
 	"github.com/olympus-protocol/ogen/api/proto"
@@ -69,31 +68,6 @@ func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 		}
 	}
 
-	b, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-func (c *Client) GenValidatorKey(args []string) (out string, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	amount := 0
-	if len(args) < 1 {
-		return "", errors.New("Usage: genvalidatorkey <keys>")
-	}
-	amount, err = strconv.Atoi(args[0])
-	if err != nil {
-		return out, err
-	}
-	req := &proto.GenValidatorKeys{
-		Keys: uint64(amount),
-	}
-	res, err := c.utils.GenValidatorKey(ctx, req)
-	if err != nil {
-		return "", err
-	}
 	b, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return "", err

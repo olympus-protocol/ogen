@@ -23,8 +23,7 @@ type chainServer struct {
 	proto.UnimplementedChainServer
 }
 
-func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
-	defer ctx.Done()
+func (s *chainServer) GetChainInfo(_ context.Context, _ *proto.Empty) (*proto.ChainInfo, error) {
 
 	st := s.chain.State()
 	tip := st.Tip()
@@ -49,9 +48,7 @@ func (s *chainServer) GetChainInfo(ctx context.Context, _ *proto.Empty) (*proto.
 	}, nil
 }
 
-func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
-	defer ctx.Done()
-
+func (s *chainServer) GetRawBlock(_ context.Context, in *proto.Hash) (*proto.Block, error) {
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
@@ -65,9 +62,7 @@ func (s *chainServer) GetRawBlock(ctx context.Context, in *proto.Hash) (*proto.B
 	return &proto.Block{RawBlock: hex.EncodeToString(block)}, nil
 }
 
-func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Block, error) {
-	defer ctx.Done()
-
+func (s *chainServer) GetBlock(_ context.Context, in *proto.Hash) (*proto.Block, error) {
 	hash, err := chainhash.NewHashFromStr(in.Hash)
 	if err != nil {
 		return nil, err
@@ -108,9 +103,7 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 	return blockParse, nil
 }
 
-func (s *chainServer) GetBlockHash(ctx context.Context, in *proto.Number) (*proto.Hash, error) {
-	defer ctx.Done()
-
+func (s *chainServer) GetBlockHash(_ context.Context, in *proto.Number) (*proto.Hash, error) {
 	blockRow, exists := s.chain.State().Chain().GetNodeByHeight(in.Number)
 	if !exists {
 		return nil, errors.New("block not found")
@@ -194,7 +187,7 @@ func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
 	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
 	select {
 	case bn.blocks <- toSend:
@@ -202,7 +195,7 @@ func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block
 	}
 }
 
-func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {}
+func (bn *blockNotifee) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_SubscribeBlocksServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)
@@ -226,8 +219,7 @@ func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_Subscri
 	}
 }
 
-func (s *chainServer) GetAccountInfo(ctx context.Context, data *proto.Account) (*proto.AccountInfo, error) {
-	defer ctx.Done()
+func (s *chainServer) GetAccountInfo(_ context.Context, data *proto.Account) (*proto.AccountInfo, error) {
 
 	var account [20]byte
 	_, decoded, err := bech32.Decode(data.Account)

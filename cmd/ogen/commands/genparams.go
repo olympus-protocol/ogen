@@ -70,10 +70,10 @@ var genParamsCmd = &cobra.Command{
 		validators := make([]initialization.Validators, amount)
 		for i, key := range validatorsKeys {
 			v := initialization.Validators{
-				PublicKey: hex.EncodeToString(key.PublicKey().Marshal()),
+				PublicKey: hex.EncodeToString(key.Secret.PublicKey().Marshal()),
 			}
 			if network != "mainnet" {
-				v.PrivateKey = hex.EncodeToString(key.Marshal())
+				v.PrivateKey = hex.EncodeToString(key.Secret.Marshal())
 			}
 			validators[i] = v
 		}

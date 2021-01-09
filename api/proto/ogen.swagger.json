@@ -485,6 +485,149 @@
         ]
       }
     },
+    "/keystore/generatekeys": {
+      "post": {
+        "summary": "*\nMethod: GenerateKeys\nInput: message GenValidatorKeys\nResponse: message KeyPairs\nDescription: Returns private keys generated for validators start.",
+        "operationId": "Keystore_GenerateKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeystoreKeys"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Number"
+            }
+          }
+        ],
+        "tags": [
+          "Keystore"
+        ]
+      }
+    },
+    "/keystore/getkey/{key}": {
+      "get": {
+        "summary": "*\nMethod: GetKey\nInput: message PublicKey\nResponse: message KeystoreKey\nDescription: Returns the keystore information for a specific key.",
+        "operationId": "Keystore_GetKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeystoreKey"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Keystore"
+        ]
+      }
+    },
+    "/keystore/getkeys": {
+      "get": {
+        "summary": "*\nMethod: GetKeys\nInput: message Empty\nResponse: message KeystoreKeys\nDescription: Returns all the keystore keys.",
+        "operationId": "Keystore_GetKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeystoreKeys"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Keystore"
+        ]
+      }
+    },
+    "/keystore/mnemonic": {
+      "get": {
+        "summary": "*\nMethod: GetMnemonic\nInput: message Empty\nResponse: message Mnemonic\nDescription: Returns the mnemonic key of the keystore.",
+        "operationId": "Keystore_GetMnemonic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Mnemonic"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Keystore"
+        ]
+      }
+    },
+    "/keystore/togglekey": {
+      "post": {
+        "summary": "*\nMethod: ToggleKey\nInput: message ToggleKey\nResponse: message KeystoreKey\nDescription: Enables/Disable a keystore key.",
+        "operationId": "Keystore_ToggleKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/KeystoreKey"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ToggleKeyMsg"
+            }
+          }
+        ],
+        "tags": [
+          "Keystore"
+        ]
+      }
+    },
     "/network/addpeer/{host}": {
       "get": {
         "operationId": "Network_AddPeer",
@@ -634,62 +777,6 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/KeyPair"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "Utils"
-        ]
-      }
-    },
-    "/utils/genvalidatorkey": {
-      "post": {
-        "summary": "* \nMethod: GenValidatorKey \nInput: message GenValidatorKeys\nResponse: message KeyPairs\nDescription: Returns private keys generated for validators start.",
-        "operationId": "Utils_GenValidatorKey",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/KeyPairs"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/GenValidatorKeys"
-            }
-          }
-        ],
-        "tags": [
-          "Utils"
-        ]
-      }
-    },
-    "/utils/getparticipationinfo": {
-      "get": {
-        "summary": "*\nMethod: GetParticipationStatus\nInput: Empty\nResponse: ParticipationInfo\nDescription: Returns current internal status of consensus participation.",
-        "operationId": "Utils_GetParticipationStatus",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ParticipationInfo"
             }
           },
           "default": {
@@ -927,7 +1014,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/DumpWalletInfo"
+              "$ref": "#/definitions/Mnemonic"
             }
           },
           "default": {
@@ -1442,14 +1529,6 @@
         }
       }
     },
-    "DumpWalletInfo": {
-      "type": "object",
-      "properties": {
-        "mnemonic": {
-          "type": "string"
-        }
-      }
-    },
     "EpochInfo": {
       "type": "object",
       "properties": {
@@ -1465,15 +1544,6 @@
           "items": {
             "$ref": "#/definitions/SlotInfo"
           }
-        }
-      }
-    },
-    "GenValidatorKeys": {
-      "type": "object",
-      "properties": {
-        "keys": {
-          "type": "string",
-          "format": "uint64"
         }
       }
     },
@@ -1579,6 +1649,40 @@
         }
       }
     },
+    "KeystoreKey": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "KeystoreKeys": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeystoreKey"
+          }
+        }
+      }
+    },
+    "Mnemonic": {
+      "type": "object",
+      "properties": {
+        "mnemonic": {
+          "type": "string"
+        }
+      }
+    },
     "NetworkInfo": {
       "type": "object",
       "properties": {
@@ -1605,24 +1709,10 @@
         }
       }
     },
-    "ParticipationInfo": {
+    "Number": {
       "type": "object",
       "properties": {
-        "voting": {
-          "type": "boolean"
-        },
-        "proposing": {
-          "type": "boolean"
-        },
-        "totalValidators": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "ownedValidators": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "votingValidators": {
+        "number": {
           "type": "string",
           "format": "uint64"
         }
@@ -1741,6 +1831,17 @@
         },
         "data": {
           "type": "string"
+        }
+      }
+    },
+    "ToggleKeyMsg": {
+      "type": "object",
+      "properties": {
+        "publicKey": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
         }
       }
     },

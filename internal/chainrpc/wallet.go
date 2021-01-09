@@ -21,8 +21,7 @@ type walletServer struct {
 	proto.UnimplementedWalletServer
 }
 
-func (s *walletServer) ListWallets(ctx context.Context, _ *proto.Empty) (*proto.Wallets, error) {
-	defer ctx.Done()
+func (s *walletServer) ListWallets(_ context.Context, _ *proto.Empty) (*proto.Wallets, error) {
 
 	files, err := s.wallet.GetAvailableWallets()
 	if err != nil {
@@ -37,8 +36,7 @@ func (s *walletServer) ListWallets(ctx context.Context, _ *proto.Empty) (*proto.
 
 	return &proto.Wallets{Wallets: walletFiles}, nil
 }
-func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletReference) (*proto.NewWalletInfo, error) {
-	defer ctx.Done()
+func (s *walletServer) CreateWallet(_ context.Context, ref *proto.WalletReference) (*proto.NewWalletInfo, error) {
 
 	err := s.wallet.NewWallet(ref.Name, "", ref.Password)
 	if err != nil {
@@ -58,8 +56,7 @@ func (s *walletServer) CreateWallet(ctx context.Context, ref *proto.WalletRefere
 	return &proto.NewWalletInfo{Name: ref.Name, Account: pubKey, Mnemonic: mnemonic}, nil
 }
 
-func (s *walletServer) OpenWallet(ctx context.Context, ref *proto.WalletReference) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *walletServer) OpenWallet(_ context.Context, ref *proto.WalletReference) (*proto.Success, error) {
 
 	ok := s.wallet.HasWallet(ref.Name)
 	if !ok {
@@ -75,8 +72,7 @@ func (s *walletServer) OpenWallet(ctx context.Context, ref *proto.WalletReferenc
 	return &proto.Success{Success: true}, nil
 }
 
-func (s *walletServer) CloseWallet(ctx context.Context, _ *proto.Empty) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *walletServer) CloseWallet(_ context.Context, _ *proto.Empty) (*proto.Success, error) {
 
 	err := s.wallet.CloseWallet()
 	if err != nil {
@@ -86,8 +82,7 @@ func (s *walletServer) CloseWallet(ctx context.Context, _ *proto.Empty) (*proto.
 	return &proto.Success{Success: true}, nil
 }
 
-func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletData) (*proto.KeyPair, error) {
-	defer ctx.Done()
+func (s *walletServer) ImportWallet(_ context.Context, in *proto.ImportWalletData) (*proto.KeyPair, error) {
 
 	name := in.Name
 	if name == "" {
@@ -107,19 +102,17 @@ func (s *walletServer) ImportWallet(ctx context.Context, in *proto.ImportWalletD
 	return &proto.KeyPair{Public: acc}, nil
 }
 
-func (s *walletServer) DumpWallet(ctx context.Context, _ *proto.Empty) (*proto.DumpWalletInfo, error) {
-	defer ctx.Done()
+func (s *walletServer) DumpWallet(_ context.Context, _ *proto.Empty) (*proto.Mnemonic, error) {
 
 	mnemonic, err := s.wallet.GetMnemonic()
 	if err != nil {
 		return nil, err
 	}
 
-	return &proto.DumpWalletInfo{Mnemonic: mnemonic}, nil
+	return &proto.Mnemonic{Mnemonic: mnemonic}, nil
 }
 
-func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.Balance, error) {
-	defer ctx.Done()
+func (s *walletServer) GetBalance(_ context.Context, _ *proto.Empty) (*proto.Balance, error) {
 
 	acc, err := s.wallet.GetAccountRaw()
 	if err != nil {
@@ -149,8 +142,7 @@ func (s *walletServer) GetBalance(ctx context.Context, _ *proto.Empty) (*proto.B
 		nil
 }
 
-func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
-	defer ctx.Done()
+func (s *walletServer) GetValidators(_ context.Context, _ *proto.Empty) (*proto.ValidatorsRegistry, error) {
 
 	acc, err := s.wallet.GetAccountRaw()
 	if err != nil {
@@ -160,8 +152,7 @@ func (s *walletServer) GetValidators(ctx context.Context, _ *proto.Empty) (*prot
 	return s.getValidators(acc), nil
 }
 
-func (s *walletServer) GetValidatorsCount(ctx context.Context, _ *proto.Empty) (*proto.ValidatorsInfo, error) {
-	defer ctx.Done()
+func (s *walletServer) GetValidatorsCount(_ context.Context, _ *proto.Empty) (*proto.ValidatorsInfo, error) {
 
 	acc, err := s.wallet.GetAccountRaw()
 	if err != nil {
@@ -195,9 +186,7 @@ func (s *walletServer) getValidators(acc [20]byte) *proto.ValidatorsRegistry {
 	}}
 }
 
-func (s *walletServer) GetAccount(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
-	defer ctx.Done()
-
+func (s *walletServer) GetAccount(_ context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
 	account, err := s.wallet.GetAccount()
 	if err != nil {
 		return nil, err
@@ -206,9 +195,7 @@ func (s *walletServer) GetAccount(ctx context.Context, _ *proto.Empty) (*proto.K
 	return &proto.KeyPair{Public: account}, nil
 }
 
-func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTransactionInfo) (*proto.Hash, error) {
-	defer ctx.Done()
-
+func (s *walletServer) SendTransaction(_ context.Context, send *proto.SendTransactionInfo) (*proto.Hash, error) {
 	amount, err := decimal.NewFromString(send.Amount)
 	if err != nil {
 		return nil, err
@@ -222,8 +209,7 @@ func (s *walletServer) SendTransaction(ctx context.Context, send *proto.SendTran
 
 	return &proto.Hash{Hash: hash.String()}, nil
 }
-func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *walletServer) StartValidator(_ context.Context, key *proto.KeyPair) (*proto.Success, error) {
 
 	privKeyBytes, err := hex.DecodeString(key.Private)
 	if err != nil {
@@ -253,8 +239,7 @@ func (s *walletServer) StartValidator(ctx context.Context, key *proto.KeyPair) (
 	}, nil
 }
 
-func (s *walletServer) StartValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *walletServer) StartValidatorBulk(_ context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
 
 	keysStr := keys.Keys
 	blsKeys := make([]common.SecretKey, len(keysStr))
@@ -292,8 +277,7 @@ func (s *walletServer) StartValidatorBulk(ctx context.Context, keys *proto.KeyPa
 	}, nil
 }
 
-func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *walletServer) ExitValidator(_ context.Context, key *proto.KeyPair) (*proto.Success, error) {
 
 	pubKeyBytes, err := hex.DecodeString(key.Public)
 	if err != nil {
@@ -326,8 +310,7 @@ func (s *walletServer) ExitValidator(ctx context.Context, key *proto.KeyPair) (*
 	}, nil
 }
 
-func (s *walletServer) ExitValidatorBulk(ctx context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *walletServer) ExitValidatorBulk(_ context.Context, keys *proto.KeyPairs) (*proto.Success, error) {
 
 	keysStr := keys.Keys
 	blsKeys := make([]common.PublicKey, len(keysStr))

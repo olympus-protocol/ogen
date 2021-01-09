@@ -26,6 +26,7 @@ type Config struct {
 	datapath     string
 	network      string
 	rpcwallet    bool
+	rpckeystore  bool
 	rpcproxy     bool
 	rpcproxyport string
 	rpcproxyaddr string
@@ -51,6 +52,7 @@ type rpcServer struct {
 	utilsServer      *utilsServer
 	networkServer    *networkServer
 	walletServer     *walletServer
+	keystoreService  *keystoreServer
 }
 
 func (s *rpcServer) registerServices() {
@@ -60,6 +62,9 @@ func (s *rpcServer) registerServices() {
 	proto.RegisterNetworkServer(s.rpc, s.networkServer)
 	if s.config.rpcwallet {
 		proto.RegisterWalletServer(s.rpc, s.walletServer)
+	}
+	if s.config.rpckeystore {
+		proto.RegisterKeystoreServer(s.rpc, s.keystoreService)
 	}
 }
 
@@ -91,6 +96,12 @@ func (s *rpcServer) registerServicesProxy(ctx context.Context) {
 	}
 	if s.config.rpcwallet {
 		err = proto.RegisterWalletHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
+		if err != nil {
+			s.log.Fatal(err)
+		}
+	}
+	if s.config.rpckeystore {
+		err = proto.RegisterKeystoreHandlerFromEndpoint(ctx, s.http, "127.0.0.1:24127", opts)
 		if err != nil {
 			s.log.Fatal(err)
 		}
@@ -168,6 +179,7 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 			datapath:     config.GlobalFlags.DataPath,
 			network:      config.GlobalFlags.NetworkName,
 			rpcwallet:    config.GlobalFlags.RPCWallet,
+			rpckeystore:  config.GlobalFlags.RPCKeystore,
 			rpcproxy:     config.GlobalFlags.RPCProxy,
 			rpcproxyaddr: config.GlobalFlags.RPCProxyAddr,
 			rpcproxyport: config.GlobalFlags.RPCProxyPort,
@@ -187,7 +199,6 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 		},
 		utilsServer: &utilsServer{
 			netParams: netParams,
-			keystore:  ks,
 			host:      hostnode,
 			pool:      pool,
 			chain:     chain,
@@ -196,6 +207,10 @@ func NewRPCServer(chain chain.Blockchain, hostnode hostnode.HostNode, wallet wal
 			wallet:    wallet,
 			chain:     chain,
 			netParams: netParams,
+		},
+		keystoreService: &keystoreServer{
+			netParams: netParams,
+			keystore:  ks,
 		},
 	}, nil
 }

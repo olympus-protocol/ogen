@@ -27,8 +27,7 @@ type utilsServer struct {
 	proto.UnimplementedUtilsServer
 }
 
-func (s *utilsServer) GenKeyPair(ctx context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
-	defer ctx.Done()
+func (s *utilsServer) GenKeyPair(_ context.Context, _ *proto.Empty) (*proto.KeyPair, error) {
 
 	k, err := bls.RandKey()
 	if err != nil {
@@ -38,22 +37,7 @@ func (s *utilsServer) GenKeyPair(ctx context.Context, _ *proto.Empty) (*proto.Ke
 	return &proto.KeyPair{Private: k.ToWIF(&s.netParams.AccountPrefixes), Public: k.PublicKey().ToAccount(&s.netParams.AccountPrefixes)}, nil
 }
 
-func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
-	defer ctx.Done()
-
-	key, err := s.keystore.GenerateNewValidatorKey(in.Keys)
-	if err != nil {
-		return nil, err
-	}
-	keys := make([]string, in.Keys)
-	for i := range keys {
-		keys[i] = hex.EncodeToString(key[i].Marshal())
-	}
-	return &proto.KeyPairs{Keys: keys}, nil
-}
-
-func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *utilsServer) SubmitRawData(_ context.Context, data *proto.RawData) (*proto.Success, error) {
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
 		return nil, err
@@ -177,8 +161,7 @@ func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*
 	}
 }
 
-func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawData) (*proto.Tx, error) {
-	defer ctx.Done()
+func (s *utilsServer) DecodeRawTransaction(_ context.Context, data *proto.RawData) (*proto.Tx, error) {
 
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
@@ -201,8 +184,7 @@ func (s *utilsServer) DecodeRawTransaction(ctx context.Context, data *proto.RawD
 	return txParse, nil
 }
 
-func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (*proto.Block, error) {
-	defer ctx.Done()
+func (s *utilsServer) DecodeRawBlock(_ context.Context, data *proto.RawData) (*proto.Block, error) {
 
 	dataBytes, err := hex.DecodeString(data.Data)
 	if err != nil {
@@ -241,8 +223,7 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 	return blockParse, nil
 }
 
-func (s *utilsServer) SubmitRedeemProof(ctx context.Context, data *proto.RedeemProof) (*proto.Success, error) {
-	defer ctx.Done()
+func (s *utilsServer) SubmitRedeemProof(_ context.Context, data *proto.RedeemProof) (*proto.Success, error) {
 	proofBytes, err := hex.DecodeString(data.Proof)
 	if err != nil {
 		return nil, err
