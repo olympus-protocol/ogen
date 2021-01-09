@@ -19,7 +19,7 @@ var (
 // Load fills up the pool from disk
 func (p *pool) Load() {
 	datapath := config.GlobalFlags.DataPath
-	db, _ := bbolt.Open(datapath+"/mempool", 0700, nil)
+	db, _ := bbolt.Open(datapath+"/mempool.db", 0700, nil)
 	defer func() {
 		_ = db.Close()
 	}()
