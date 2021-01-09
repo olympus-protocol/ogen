@@ -20,19 +20,6 @@ service Utils {
     }
 
     /** 
-        Method: GenValidatorKey 
-        Input: message GenValidatorKeys
-        Response: message KeyPairs
-        Description: Returns private keys generated for validators start.
-    */
-    rpc GenValidatorKey(GenValidatorKeys) returns (KeyPairs) {
-        option (google.api.http) = {
-            post: "/utils/genvalidatorkey"
-            body: "*"
-        };
-    }
-
-    /** 
         Method: SubmitRawData 
         Input: message RawData
         Response: message Success
@@ -72,18 +59,6 @@ service Utils {
     }
 
     /**
-        Method: GetParticipationStatus
-        Input: Empty
-        Response: ParticipationInfo
-        Description: Returns current internal status of consensus participation.
-     */
-    rpc GetParticipationStatus(Empty) returns (ParticipationInfo) {
-        option (google.api.http) = {
-            get: "/utils/getparticipationinfo"
-        };
-    }
-
-    /**
     Method: SubmitRedeemProof
     Input: RedeemProof
     Response: Tx
@@ -97,9 +72,6 @@ service Utils {
     }
 }
 
-message GenValidatorKeys {
-    uint64 keys = 1;
-}
 
 message ParticipationInfo {
     bool voting = 1;

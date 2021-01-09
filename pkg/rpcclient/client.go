@@ -21,6 +21,7 @@ type Client struct {
 	utils      proto.UtilsClient
 	network    proto.NetworkClient
 	wallet     proto.WalletClient
+	keystore   proto.KeystoreClient
 }
 
 func (c *Client) Chain() proto.ChainClient {
@@ -76,6 +77,7 @@ func NewRPCClient(addr string, insecure bool) *Client {
 		utils:      proto.NewUtilsClient(conn),
 		network:    proto.NewNetworkClient(conn),
 		wallet:     proto.NewWalletClient(conn),
+		keystore:   proto.NewKeystoreClient(conn),
 	}
 	return client
 }

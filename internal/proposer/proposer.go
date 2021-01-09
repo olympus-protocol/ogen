@@ -236,8 +236,14 @@ func (p *proposer) ProposeBlocks() {
 				blockHash := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))
 
-				blockSig := k.Sign(blockHash[:])
-				randaoSig := k.Sign(randaoHash[:])
+				if !k.Enable {
+					blockTimer = time.NewTimer(time.Second * 2)
+					p.proposerLock.Unlock()
+					continue
+				}
+
+				blockSig := k.Secret.Sign(blockHash[:])
+				randaoSig := k.Secret.Sign(randaoHash[:])
 				var s, rs [96]byte
 				copy(s[:], blockSig.Marshal())
 				copy(rs[:], randaoSig.Marshal())
@@ -353,9 +359,12 @@ func (p *proposer) VoteForBlocks() {
 				if !found {
 					continue
 				}
-				signatures = append(signatures, key.Sign(dataHash[:]))
-				bitlistVotes.Set(uint(i))
-				validatorsActionMap[key.PublicKey()] = key
+				if key.Enable {
+					signatures = append(signatures, key.Secret.Sign(dataHash[:]))
+					bitlistVotes.Set(uint(i))
+					validatorsActionMap[key.Secret.PublicKey()] = key.Secret
+				}
+
 			}
 
 			err = p.lastActionManager.StartValidators(validatorsActionMap)

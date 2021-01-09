@@ -650,8 +650,8 @@
     },
     "/utils/genvalidatorkey": {
       "post": {
-        "summary": "* \nMethod: GenValidatorKey \nInput: message GenValidatorKeys\nResponse: message KeyPairs\nDescription: Returns private keys generated for validators start.",
-        "operationId": "Utils_GenValidatorKey",
+        "summary": "*\nMethod: GenValidatorKey\nInput: message GenValidatorKeys\nResponse: message KeyPairs\nDescription: Returns private keys generated for validators start.",
+        "operationId": "Keystore_GenValidatorKey",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -677,30 +677,7 @@
           }
         ],
         "tags": [
-          "Utils"
-        ]
-      }
-    },
-    "/utils/getparticipationinfo": {
-      "get": {
-        "summary": "*\nMethod: GetParticipationStatus\nInput: Empty\nResponse: ParticipationInfo\nDescription: Returns current internal status of consensus participation.",
-        "operationId": "Utils_GetParticipationStatus",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ParticipationInfo"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "Utils"
+          "Keystore"
         ]
       }
     },
@@ -1602,29 +1579,6 @@
         },
         "mnemonic": {
           "type": "string"
-        }
-      }
-    },
-    "ParticipationInfo": {
-      "type": "object",
-      "properties": {
-        "voting": {
-          "type": "boolean"
-        },
-        "proposing": {
-          "type": "boolean"
-        },
-        "totalValidators": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "ownedValidators": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "votingValidators": {
-          "type": "string",
-          "format": "uint64"
         }
       }
     },

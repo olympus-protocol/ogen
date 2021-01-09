@@ -38,20 +38,6 @@ func (s *utilsServer) GenKeyPair(ctx context.Context, _ *proto.Empty) (*proto.Ke
 	return &proto.KeyPair{Private: k.ToWIF(&s.netParams.AccountPrefixes), Public: k.PublicKey().ToAccount(&s.netParams.AccountPrefixes)}, nil
 }
 
-func (s *utilsServer) GenValidatorKey(ctx context.Context, in *proto.GenValidatorKeys) (*proto.KeyPairs, error) {
-	defer ctx.Done()
-
-	key, err := s.keystore.GenerateNewValidatorKey(in.Keys)
-	if err != nil {
-		return nil, err
-	}
-	keys := make([]string, in.Keys)
-	for i := range keys {
-		keys[i] = hex.EncodeToString(key[i].Marshal())
-	}
-	return &proto.KeyPairs{Keys: keys}, nil
-}
-
 func (s *utilsServer) SubmitRawData(ctx context.Context, data *proto.RawData) (*proto.Success, error) {
 	defer ctx.Done()
 	dataBytes, err := hex.DecodeString(data.Data)

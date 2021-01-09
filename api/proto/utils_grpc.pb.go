@@ -24,12 +24,6 @@ type UtilsClient interface {
 	//Description: Generates a new bls bech32 encoded key pair.
 	GenKeyPair(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyPair, error)
 	//*
-	//Method: GenValidatorKey
-	//Input: message GenValidatorKeys
-	//Response: message KeyPairs
-	//Description: Returns private keys generated for validators start.
-	GenValidatorKey(ctx context.Context, in *GenValidatorKeys, opts ...grpc.CallOption) (*KeyPairs, error)
-	//*
 	//Method: SubmitRawData
 	//Input: message RawData
 	//Response: message Success
@@ -47,12 +41,6 @@ type UtilsClient interface {
 	//Response: message Block
 	//Description: Returns a raw block on human readable format.
 	DecodeRawBlock(ctx context.Context, in *RawData, opts ...grpc.CallOption) (*Block, error)
-	//*
-	//Method: GetParticipationStatus
-	//Input: Empty
-	//Response: ParticipationInfo
-	//Description: Returns current internal status of consensus participation.
-	GetParticipationStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ParticipationInfo, error)
 	//*
 	//Method: SubmitRedeemProof
 	//Input: RedeemProof
@@ -72,15 +60,6 @@ func NewUtilsClient(cc grpc.ClientConnInterface) UtilsClient {
 func (c *utilsClient) GenKeyPair(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*KeyPair, error) {
 	out := new(KeyPair)
 	err := c.cc.Invoke(ctx, "/Utils/GenKeyPair", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *utilsClient) GenValidatorKey(ctx context.Context, in *GenValidatorKeys, opts ...grpc.CallOption) (*KeyPairs, error) {
-	out := new(KeyPairs)
-	err := c.cc.Invoke(ctx, "/Utils/GenValidatorKey", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,15 +93,6 @@ func (c *utilsClient) DecodeRawBlock(ctx context.Context, in *RawData, opts ...g
 	return out, nil
 }
 
-func (c *utilsClient) GetParticipationStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ParticipationInfo, error) {
-	out := new(ParticipationInfo)
-	err := c.cc.Invoke(ctx, "/Utils/GetParticipationStatus", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *utilsClient) SubmitRedeemProof(ctx context.Context, in *RedeemProof, opts ...grpc.CallOption) (*Success, error) {
 	out := new(Success)
 	err := c.cc.Invoke(ctx, "/Utils/SubmitRedeemProof", in, out, opts...)
@@ -143,12 +113,6 @@ type UtilsServer interface {
 	//Description: Generates a new bls bech32 encoded key pair.
 	GenKeyPair(context.Context, *Empty) (*KeyPair, error)
 	//*
-	//Method: GenValidatorKey
-	//Input: message GenValidatorKeys
-	//Response: message KeyPairs
-	//Description: Returns private keys generated for validators start.
-	GenValidatorKey(context.Context, *GenValidatorKeys) (*KeyPairs, error)
-	//*
 	//Method: SubmitRawData
 	//Input: message RawData
 	//Response: message Success
@@ -167,12 +131,6 @@ type UtilsServer interface {
 	//Description: Returns a raw block on human readable format.
 	DecodeRawBlock(context.Context, *RawData) (*Block, error)
 	//*
-	//Method: GetParticipationStatus
-	//Input: Empty
-	//Response: ParticipationInfo
-	//Description: Returns current internal status of consensus participation.
-	GetParticipationStatus(context.Context, *Empty) (*ParticipationInfo, error)
-	//*
 	//Method: SubmitRedeemProof
 	//Input: RedeemProof
 	//Response: Tx
@@ -188,9 +146,6 @@ type UnimplementedUtilsServer struct {
 func (UnimplementedUtilsServer) GenKeyPair(context.Context, *Empty) (*KeyPair, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenKeyPair not implemented")
 }
-func (UnimplementedUtilsServer) GenValidatorKey(context.Context, *GenValidatorKeys) (*KeyPairs, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenValidatorKey not implemented")
-}
 func (UnimplementedUtilsServer) SubmitRawData(context.Context, *RawData) (*Success, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitRawData not implemented")
 }
@@ -199,9 +154,6 @@ func (UnimplementedUtilsServer) DecodeRawTransaction(context.Context, *RawData) 
 }
 func (UnimplementedUtilsServer) DecodeRawBlock(context.Context, *RawData) (*Block, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DecodeRawBlock not implemented")
-}
-func (UnimplementedUtilsServer) GetParticipationStatus(context.Context, *Empty) (*ParticipationInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetParticipationStatus not implemented")
 }
 func (UnimplementedUtilsServer) SubmitRedeemProof(context.Context, *RedeemProof) (*Success, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitRedeemProof not implemented")
@@ -233,24 +185,6 @@ func _Utils_GenKeyPair_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UtilsServer).GenKeyPair(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Utils_GenValidatorKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenValidatorKeys)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UtilsServer).GenValidatorKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Utils/GenValidatorKey",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UtilsServer).GenValidatorKey(ctx, req.(*GenValidatorKeys))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -309,24 +243,6 @@ func _Utils_DecodeRawBlock_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Utils_GetParticipationStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UtilsServer).GetParticipationStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Utils/GetParticipationStatus",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UtilsServer).GetParticipationStatus(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Utils_SubmitRedeemProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RedeemProof)
 	if err := dec(in); err != nil {
@@ -354,10 +270,6 @@ var _Utils_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Utils_GenKeyPair_Handler,
 		},
 		{
-			MethodName: "GenValidatorKey",
-			Handler:    _Utils_GenValidatorKey_Handler,
-		},
-		{
 			MethodName: "SubmitRawData",
 			Handler:    _Utils_SubmitRawData_Handler,
 		},
@@ -368,10 +280,6 @@ var _Utils_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DecodeRawBlock",
 			Handler:    _Utils_DecodeRawBlock_Handler,
-		},
-		{
-			MethodName: "GetParticipationStatus",
-			Handler:    _Utils_GetParticipationStatus_Handler,
 		},
 		{
 			MethodName: "SubmitRedeemProof",

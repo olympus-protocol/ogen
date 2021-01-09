@@ -194,7 +194,7 @@ func newBlockNotifee(ctx context.Context, chain chain.Blockchain) blockNotifee {
 	return bn
 }
 
-func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
+func (bn *blockNotifee) NewTip(_ *chainindex.BlockRow, block *primitives.Block, newState state.State, receipts []*primitives.EpochReceipt) {
 	toSend := blockAndReceipts{block: block, receipts: receipts, state: newState}
 	select {
 	case bn.blocks <- toSend:
@@ -202,7 +202,7 @@ func (bn *blockNotifee) NewTip(row *chainindex.BlockRow, block *primitives.Block
 	}
 }
 
-func (bn *blockNotifee) ProposerSlashingConditionViolated(slashing *primitives.ProposerSlashing) {}
+func (bn *blockNotifee) ProposerSlashingConditionViolated(_ *primitives.ProposerSlashing) {}
 
 func (s *chainServer) SubscribeBlocks(_ *proto.Empty, stream proto.Chain_SubscribeBlocksServer) error {
 	bn := newBlockNotifee(stream.Context(), s.chain)

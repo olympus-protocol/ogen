@@ -32,9 +32,12 @@ var utilsCmd = []prompt.Suggest{
 	{Text: "submitrawdata", Description: "Broadcasts a serialized transaction to the network"},
 	{Text: "genkeypair", Description: "Get a key pair on bech32 encoded format"},
 	{Text: "genrawkeypair", Description: "Get a key pair on bls serialized format"},
-	{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
 	{Text: "decoderawtransaction", Description: "Returns a serialized transaction on human readable format"},
 	{Text: "decoderawblock", Description: "Returns a serialized block on human readable format"},
+}
+
+var keystoreCmd = []prompt.Suggest{
+	{Text: "genvalidatorkey", Description: "Create a new validator key and store the private key on the keychain"},
 }
 
 var walletCmd = []prompt.Suggest{
@@ -60,6 +63,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 	commands = append(commands, netCmd...)
 	commands = append(commands, utilsCmd...)
 	commands = append(commands, walletCmd...)
+	commands = append(commands, keystoreCmd...)
 	return prompt.FilterHasPrefix(commands, d.GetWordBeforeCursor(), true)
 }
 

@@ -90,7 +90,7 @@ func (c *Client) GenValidatorKey(args []string) (out string, err error) {
 	req := &proto.GenValidatorKeys{
 		Keys: uint64(amount),
 	}
-	res, err := c.utils.GenValidatorKey(ctx, req)
+	res, err := c.keystore.GenValidatorKey(ctx, req)
 	if err != nil {
 		return "", err
 	}
