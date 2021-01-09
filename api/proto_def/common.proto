@@ -122,3 +122,7 @@ message Head {
     uint64 slot = 2;
     string hash = 3;
 }
+
+message Mnemonic {
+    string mnemonic = 1;
+}
