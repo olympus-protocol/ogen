@@ -112,9 +112,6 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 	pubs := make([]common.PublicKey, len(validators))
 
 	for i, validatorIdx := range validators {
-		if !data.Data.Validators.Get(uint(i)) {
-			continue
-		}
 		pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
 		if err != nil {
 			return err
