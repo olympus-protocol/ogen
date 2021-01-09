@@ -73,7 +73,6 @@ type ComplexityRoot struct {
 		ProposerSlashingMerkleRoot func(childComplexity int) int
 		RandaoSlashingMerkleRoot   func(childComplexity int) int
 		Slot                       func(childComplexity int) int
-		StateRoot                  func(childComplexity int) int
 		Timestamp                  func(childComplexity int) int
 		TxMerkleRoot               func(childComplexity int) int
 		TxMultiMerkleRoot          func(childComplexity int) int
@@ -395,13 +394,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.BlockHeader.Slot(childComplexity), true
-
-	case "BlockHeader.state_root":
-		if e.complexity.BlockHeader.StateRoot == nil {
-			break
-		}
-
-		return e.complexity.BlockHeader.StateRoot(childComplexity), true
 
 	case "BlockHeader.timestamp":
 		if e.complexity.BlockHeader.Timestamp == nil {
@@ -1178,7 +1170,6 @@ type BlockHeader {
   previous_block_hash: String!
   timestamp: String!
   slot: Int!
-  state_root: String!
   fee_address: String!
 }
 
@@ -2484,41 +2475,6 @@ func (ec *executionContext) _BlockHeader_slot(ctx context.Context, field graphql
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _BlockHeader_state_root(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "BlockHeader",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.StateRoot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _BlockHeader_fee_address(ctx context.Context, field graphql.CollectedField, obj *model.BlockHeader) (ret graphql.Marshaler) {
@@ -6853,11 +6809,6 @@ func (ec *executionContext) _BlockHeader(ctx context.Context, sel ast.SelectionS
 			}
 		case "slot":
 			out.Values[i] = ec._BlockHeader_slot(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "state_root":
-			out.Values[i] = ec._BlockHeader_state_root(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

@@ -13,28 +13,25 @@ func (b *BlockNodeDisk) MarshalSSZ() ([]byte, error) {
 // MarshalSSZTo ssz marshals the BlockNodeDisk object to a target array
 func (b *BlockNodeDisk) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
-	offset := int(116)
+	offset := int(84)
 
-	// Field (0) 'StateRoot'
-	dst = append(dst, b.StateRoot[:]...)
-
-	// Field (1) 'Height'
+	// Field (0) 'Height'
 	dst = ssz.MarshalUint64(dst, b.Height)
 
-	// Field (2) 'Slot'
+	// Field (1) 'Slot'
 	dst = ssz.MarshalUint64(dst, b.Slot)
 
-	// Offset (3) 'Children'
+	// Offset (2) 'Children'
 	dst = ssz.WriteOffset(dst, offset)
 	offset += len(b.Children) * 32
 
-	// Field (4) 'Hash'
+	// Field (3) 'Hash'
 	dst = append(dst, b.Hash[:]...)
 
-	// Field (5) 'Parent'
+	// Field (4) 'Parent'
 	dst = append(dst, b.Parent[:]...)
 
-	// Field (3) 'Children'
+	// Field (2) 'Children'
 	if len(b.Children) > 64 {
 		err = ssz.ErrListTooBig
 		return
@@ -50,36 +47,33 @@ func (b *BlockNodeDisk) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 func (b *BlockNodeDisk) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
-	if size < 116 {
+	if size < 84 {
 		return ssz.ErrSize
 	}
 
 	tail := buf
-	var o3 uint64
+	var o2 uint64
 
-	// Field (0) 'StateRoot'
-	copy(b.StateRoot[:], buf[0:32])
+	// Field (0) 'Height'
+	b.Height = ssz.UnmarshallUint64(buf[0:8])
 
-	// Field (1) 'Height'
-	b.Height = ssz.UnmarshallUint64(buf[32:40])
+	// Field (1) 'Slot'
+	b.Slot = ssz.UnmarshallUint64(buf[8:16])
 
-	// Field (2) 'Slot'
-	b.Slot = ssz.UnmarshallUint64(buf[40:48])
-
-	// Offset (3) 'Children'
-	if o3 = ssz.ReadOffset(buf[48:52]); o3 > size {
+	// Offset (2) 'Children'
+	if o2 = ssz.ReadOffset(buf[16:20]); o2 > size {
 		return ssz.ErrOffset
 	}
 
-	// Field (4) 'Hash'
-	copy(b.Hash[:], buf[52:84])
+	// Field (3) 'Hash'
+	copy(b.Hash[:], buf[20:52])
 
-	// Field (5) 'Parent'
-	copy(b.Parent[:], buf[84:116])
+	// Field (4) 'Parent'
+	copy(b.Parent[:], buf[52:84])
 
-	// Field (3) 'Children'
+	// Field (2) 'Children'
 	{
-		buf = tail[o3:]
+		buf = tail[o2:]
 		num, err := ssz.DivideInt2(len(buf), 32, 64)
 		if err != nil {
 			return err
@@ -94,9 +88,9 @@ func (b *BlockNodeDisk) UnmarshalSSZ(buf []byte) error {
 
 // SizeSSZ returns the ssz encoded size in bytes for the BlockNodeDisk object
 func (b *BlockNodeDisk) SizeSSZ() (size int) {
-	size = 116
+	size = 84
 
-	// Field (3) 'Children'
+	// Field (2) 'Children'
 	size += len(b.Children) * 32
 
 	return
@@ -111,16 +105,13 @@ func (b *BlockNodeDisk) HashTreeRoot() ([32]byte, error) {
 func (b *BlockNodeDisk) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
-	// Field (0) 'StateRoot'
-	hh.PutBytes(b.StateRoot[:])
-
-	// Field (1) 'Height'
+	// Field (0) 'Height'
 	hh.PutUint64(b.Height)
 
-	// Field (2) 'Slot'
+	// Field (1) 'Slot'
 	hh.PutUint64(b.Slot)
 
-	// Field (3) 'Children'
+	// Field (2) 'Children'
 	{
 		if len(b.Children) > 64 {
 			err = ssz.ErrListTooBig
@@ -134,10 +125,10 @@ func (b *BlockNodeDisk) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(64, numItems, 32))
 	}
 
-	// Field (4) 'Hash'
+	// Field (3) 'Hash'
 	hh.PutBytes(b.Hash[:])
 
-	// Field (5) 'Parent'
+	// Field (4) 'Parent'
 	hh.PutBytes(b.Parent[:])
 
 	hh.Merkleize(indx)

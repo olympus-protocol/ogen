@@ -1350,9 +1350,6 @@
           "type": "string",
           "format": "uint64"
         },
-        "stateRoot": {
-          "type": "string"
-        },
         "feeAddress": {
           "type": "string"
         },

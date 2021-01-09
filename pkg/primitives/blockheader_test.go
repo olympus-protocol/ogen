@@ -28,7 +28,6 @@ func TestBlockHeader(t *testing.T) {
 		PrevBlockHash:               [32]byte{1, 2, 3},
 		Timestamp:                   500,
 		Slot:                        14,
-		StateRoot:                   [32]byte{1, 2, 3},
 		FeeAddress:                  [20]byte{1, 2, 3},
 		VoteMerkleRoot:              [32]byte{1, 2, 3},
 		DepositMerkleRoot:           [32]byte{1, 2, 3},

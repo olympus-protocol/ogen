@@ -11,7 +11,6 @@ type BlockHeader struct {
 	Timestamp                   uint64
 	Slot                        uint64
 	PrevBlockHash               [32]byte
-	StateRoot                   [32]byte
 	FeeAddress                  [20]byte
 	VoteMerkleRoot              [32]byte
 	DepositMerkleRoot           [32]byte

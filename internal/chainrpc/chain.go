@@ -93,7 +93,6 @@ func (s *chainServer) GetBlock(ctx context.Context, in *proto.Hash) (*proto.Bloc
 			PrevBlockHash:              hex.EncodeToString(block.Header.PrevBlockHash[:]),
 			Timestamp:                  block.Header.Timestamp,
 			Slot:                       block.Header.Slot,
-			StateRoot:                  hex.EncodeToString(block.Header.StateRoot[:]),
 			FeeAddress:                 hex.EncodeToString(block.Header.FeeAddress[:]),
 		},
 		Txs:             block.GetTxs(),

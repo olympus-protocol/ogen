@@ -43,9 +43,4 @@ func (c *View) Tip() (chainhash.Hash, error) {
 	return c.tip.Hash, nil
 }
 
-// GetLastStateRoot gets the state root of the tip.
-func (c *View) GetLastStateRoot() (chainhash.Hash, error) {
-	return c.tip.StateRoot, nil
-}
-
 var _ state.BlockView = (*View)(nil)

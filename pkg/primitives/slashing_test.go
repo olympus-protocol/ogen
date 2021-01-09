@@ -177,7 +177,6 @@ func TestProposerSlashing(t *testing.T) {
 			PrevBlockHash:              [32]byte{},
 			Timestamp:                  0,
 			Slot:                       0,
-			StateRoot:                  [32]byte{},
 			FeeAddress:                 [20]byte{},
 		},
 		BlockHeader2: &primitives.BlockHeader{
@@ -194,7 +193,6 @@ func TestProposerSlashing(t *testing.T) {
 			PrevBlockHash:              [32]byte{},
 			Timestamp:                  0,
 			Slot:                       0,
-			StateRoot:                  [32]byte{},
 			FeeAddress:                 [20]byte{},
 		},
 	}

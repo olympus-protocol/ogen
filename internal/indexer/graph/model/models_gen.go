@@ -36,7 +36,6 @@ type BlockHeader struct {
 	PreviousBlockHash          string `json:"previous_block_hash"`
 	Timestamp                  string `json:"timestamp"`
 	Slot                       int    `json:"slot"`
-	StateRoot                  string `json:"state_root"`
 	FeeAddress                 string `json:"fee_address"`
 }
 

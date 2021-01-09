@@ -68,6 +68,9 @@ type BlockHeader struct {
 	Hash                       []byte `gorm:"primaryKey"`
 	Version                    uint64
 	Nonce                      []byte
+	Timestamp                  time.Time
+	Slot                       uint64
+	FeeAddress                 []byte
 	TxMerkleRoot               []byte
 	TxMultiMerkleRoot          []byte
 	VoteMerkleRoot             []byte
@@ -78,10 +81,6 @@ type BlockHeader struct {
 	ProposerSlashingMerkleRoot []byte
 	GovernanceVotesMerkleRoot  []byte
 	PreviousBlockHash          []byte
-	Timestamp                  time.Time
-	Slot                       uint64
-	StateRoot                  []byte
-	FeeAddress                 []byte
 }
 
 func (b *BlockHeader) ToGQL() *model.BlockHeader {
@@ -101,7 +100,6 @@ func (b *BlockHeader) ToGQL() *model.BlockHeader {
 		PreviousBlockHash:          hex.EncodeToString(b.PreviousBlockHash),
 		Timestamp:                  b.Timestamp.String(),
 		Slot:                       int(b.Slot),
-		StateRoot:                  hex.EncodeToString(b.StateRoot),
 		FeeAddress:                 hex.EncodeToString(b.FeeAddress),
 	}
 }

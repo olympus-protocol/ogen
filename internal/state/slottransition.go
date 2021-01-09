@@ -26,7 +26,6 @@ type BlockView interface {
 	GetHashBySlot(slot uint64) (chainhash.Hash, error)
 	Tip() (chainhash.Hash, error)
 	SetTipSlot(slot uint64)
-	GetLastStateRoot() (chainhash.Hash, error)
 }
 
 // ProcessSlots runs slot and epoch transitions until the state matches the requested

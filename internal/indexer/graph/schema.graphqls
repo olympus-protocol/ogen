@@ -30,7 +30,6 @@ type BlockHeader {
   previous_block_hash: String!
   timestamp: String!
   slot: Int!
-  state_root: String!
   fee_address: String!
 }
 

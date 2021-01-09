@@ -221,7 +221,6 @@ func (s *utilsServer) DecodeRawBlock(ctx context.Context, data *proto.RawData) (
 			PrevBlockHash:               hex.EncodeToString(block.Header.PrevBlockHash[:]),
 			Timestamp:                   block.Header.Timestamp,
 			Slot:                        block.Header.Slot,
-			StateRoot:                   hex.EncodeToString(block.Header.StateRoot[:]),
 			FeeAddress:                  hex.EncodeToString(block.Header.FeeAddress[:]),
 			VotesMerkleRoot:             hex.EncodeToString(block.Header.VoteMerkleRoot[:]),
 			DepositsMerkleRoot:          hex.EncodeToString(block.Header.DepositMerkleRoot[:]),

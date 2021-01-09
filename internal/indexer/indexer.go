@@ -292,7 +292,6 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 		PreviousBlockHash:          b.Header.PrevBlockHash[:],
 		Timestamp:                  time.Unix(int64(b.Header.Timestamp), 0),
 		Slot:                       b.Header.Slot,
-		StateRoot:                  b.Header.StateRoot[:],
 		FeeAddress:                 b.Header.FeeAddress[:],
 	}
 
@@ -625,16 +624,14 @@ func NewIndexer(dbConnString, rpcEndpoint string, netParams *params.ChainParams)
 	}
 
 	initBlockRow := &chainindex.BlockRow{
-		StateRoot: lastBlock.Header.StateRoot,
-		Height:    lastBlockHeight,
-		Slot:      lastBlock.Header.Slot,
-		Hash:      lastBlock.Header.Hash(),
+		Height: lastBlockHeight,
+		Slot:   lastBlock.Header.Slot,
+		Hash:   lastBlock.Header.Hash(),
 		Parent: &chainindex.BlockRow{
-			StateRoot: prevLastBlock.Header.StateRoot,
-			Height:    prevLastBlockHeight,
-			Slot:      prevLastBlock.Header.Slot,
-			Hash:      prevLastBlock.Header.Hash(),
-			Parent:    nil,
+			Height: prevLastBlockHeight,
+			Slot:   prevLastBlock.Header.Slot,
+			Hash:   prevLastBlock.Header.Hash(),
+			Parent: nil,
 		},
 	}
 

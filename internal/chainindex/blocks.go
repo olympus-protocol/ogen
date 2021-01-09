@@ -10,7 +10,6 @@ import (
 
 // BlockRow represents a single row in the block chainindex.
 type BlockRow struct {
-	StateRoot chainhash.Hash
 	Height    uint64
 	Slot      uint64
 	Hash      chainhash.Hash
@@ -93,7 +92,6 @@ func (i *BlockIndex) LoadBlockNode(row *primitives.BlockNodeDisk) (*BlockRow, er
 		Hash:      row.Hash,
 		Height:    row.Height,
 		Slot:      row.Slot,
-		StateRoot: row.StateRoot,
 		Parent:    parent,
 		children:  make([]*BlockRow, 0),
 	}
@@ -139,7 +137,6 @@ func (i *BlockIndex) Add(block *primitives.Block) (*BlockRow, error) {
 	}
 
 	row := &BlockRow{
-		StateRoot: block.Header.StateRoot,
 		Height:    prev.Height + 1,
 		Parent:    prev,
 		Hash:      block.Header.Hash(),
@@ -198,7 +195,6 @@ func (br *BlockRow) ToBlockNodeDisk() *primitives.BlockNodeDisk {
 	}
 
 	return &primitives.BlockNodeDisk{
-		StateRoot: br.StateRoot,
 		Height:    br.Height,
 		Slot:      br.Slot,
 		Children:  children,
