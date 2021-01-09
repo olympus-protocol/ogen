@@ -34,8 +34,6 @@ type NetworkInitialParams struct {
 // LoadParams returns the initialization params required for the network specified.
 func LoadParams(network string) (NetworkInitialParams, error) {
 	switch network {
-	case "devnet":
-		return DevNet, nil
 	case "testnet":
 		return TestNet, nil
 	}
