@@ -39,8 +39,8 @@ var utilsCmd = []prompt.Suggest{
 var keystoreCmd = []prompt.Suggest{
 	{Text: "generatekeys", Description: "Create a new validator key and store the private key on the keychain"},
 	{Text: "getmnemonic", Description: "Get the menmonic key of the keystore"},
-	{Text: "getkey", Description: "Get the keystore information of a specific key"},
-	{Text: "getkeys", Description: "Get all the keys on the keystore"},
+	{Text: "getkeystorekey", Description: "Get the keystore information of a specific key"},
+	{Text: "getkeystorekeys", Description: "Get all the keys on the keystore"},
 	{Text: "togglekey", Description: "Enable/disable a specific keystore key"},
 }
 
