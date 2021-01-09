@@ -3,9 +3,12 @@ package keystore
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/olympus-protocol/ogen/pkg/bip39"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
+	"github.com/olympus-protocol/ogen/pkg/hdwallet"
 	"go.etcd.io/bbolt"
+	"strconv"
 )
 
 type Key struct {
@@ -67,6 +70,15 @@ func (k *Key) Unmarshal(b []byte) error {
 	return nil
 }
 
+// HasKeysToParticipate returns true if the keystore has keys to participate
+func (k *keystore) HasKeysToParticipate() bool {
+	keys, err := k.GetValidatorKeys()
+	if err != nil {
+		return false
+	}
+	return len(keys) > 0
+}
+
 // GetValidatorKey returns the private key from the specified public key or false if doesn't exists.
 func (k *keystore) GetValidatorKey(pubkey [48]byte) (*Key, bool) {
 
@@ -110,9 +122,9 @@ func (k *keystore) GetValidatorKeys() ([]*Key, error) {
 
 		bkt := tx.Bucket(keysBucket)
 
-		err := bkt.ForEach(func(keypub, keyprv []byte) error {
+		err := bkt.ForEach(func(k, v []byte) error {
 			key := new(Key)
-			err := key.Unmarshal(keyprv)
+			err := key.Unmarshal(v)
 			if err != nil {
 				return err
 			}
@@ -139,11 +151,21 @@ func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*Key, error) {
 		return nil, ErrorNoOpen
 	}
 
+	lastPath := k.GetLastPath()
+	newPath := lastPath + int(amount)
+	err := k.SetLastPath(newPath)
+	if err != nil {
+		return nil, err
+	}
 	keys := make([]*Key, amount)
 
+	seed := bip39.NewSeed(k.GetMnemonic(), "")
 	for i := range keys {
+		aggPath := i + 1
 		// Generate a new key
-		sec, err := bls.RandKey()
+		path := "m/12381/1997/0/" + strconv.Itoa(lastPath+aggPath)
+
+		sec, err := hdwallet.CreateHDWallet(seed, path)
 		if err != nil {
 			return nil, err
 		}
@@ -151,6 +173,7 @@ func (k *keystore) GenerateNewValidatorKey(amount uint64) ([]*Key, error) {
 		key := &Key{
 			Secret: sec,
 			Enable: true,
+			Path:   int64(lastPath + aggPath),
 		}
 
 		err = k.AddKey(key)
@@ -174,11 +197,47 @@ func (k *keystore) AddKey(key *Key) error {
 
 		bkt := tx.Bucket(keysBucket)
 
-		err := bkt.Put(pub.Marshal(), key.Secret.Marshal())
+		kr, err := key.Marshal()
+		if err != nil {
+			return err
+		}
+
+		err = bkt.Put(pub.Marshal(), kr)
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
+}
+
+// ToggleKey toggles the keystore key as enabled/disabled
+func (k *keystore) ToggleKey(pub [48]byte, value bool) error {
+	err := k.db.Update(func(tx *bbolt.Tx) error {
+		keysBkt := tx.Bucket(keysBucket)
+		k := keysBkt.Get(pub[:])
+		if k == nil {
+			return ErrorKeyNotOnKeystore
+		}
+		key := new(Key)
+		err := key.Unmarshal(k)
+		if err != nil {
+			return err
+		}
+		key.Enable = value
+
+		rawK, err := key.Marshal()
+		if err != nil {
+			return err
+		}
+		err = keysBkt.Put(pub[:], rawK)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
