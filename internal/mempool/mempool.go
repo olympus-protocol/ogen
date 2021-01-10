@@ -30,6 +30,7 @@ var (
 
 type Pool interface {
 	Start() error
+	Close()
 
 	AddVote(d *primitives.MultiValidatorVote, s state.State) error
 	AddDeposit(d *primitives.Deposit) error
@@ -68,12 +69,10 @@ type pool struct {
 
 	pool *fastcache.Cache
 
-	votesLock sync.Mutex
-	votes     map[chainhash.Hash]*primitives.MultiValidatorVote
+	singleVotes     map[[32]byte][]*primitives.MultiValidatorVote
+	singleVotesLock sync.Mutex
 
-	intidivualVotes     map[chainhash.Hash][]*primitives.MultiValidatorVote
-	intidivualVotesLock sync.Mutex
-
+	votesKeys           sync.Map
 	depositKeys         sync.Map
 	exitKeys            sync.Map
 	partialExitKeys     sync.Map
@@ -95,13 +94,8 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		return err
 	}
 
-	p.votesLock.Lock()
-	p.intidivualVotesLock.Lock()
-	defer p.votesLock.Unlock()
-	defer p.intidivualVotesLock.Unlock()
-
 	voteData := d.Data
-	voteHash := voteData.Hash()
+	voteHash := d.Data.Hash()
 
 	firstSlotAllowedToInclude := d.Data.Slot + p.netParams.MinAttestationInclusionDelay
 
@@ -128,16 +122,22 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 	// This check iterates over all the votes on the pool.
 	// Checks if the new vote data matches any pool vote data hash.
 	// If that check fails, we should check for validators submitting twice different votes.
-	for h, v := range p.votes {
-
-		// If the vote data hash matches, it means is voting for same block.
-		if voteHash.IsEqual(&h) {
-			continue
+	p.votesKeys.Range(func(key, value interface{}) bool {
+		hash := key.(chainhash.Hash)
+		cKey := appendKey(hash[:], PoolTypeVote)
+		raw := p.pool.Get(nil, cKey)
+		v := new(primitives.MultiValidatorVote)
+		err := v.Unmarshal(raw)
+		if err != nil {
+			return true
 		}
-
+		if voteHash.IsEqual(&hash) {
+			return true
+		}
 		if currentState.GetSlot() >= v.Data.LastSlotValid(p.netParams) {
-			delete(p.votes, voteHash)
-			continue
+			p.votesKeys.Delete(key)
+			p.pool.Del(cKey)
+			return true
 		}
 
 		var votingValidators = make(map[uint64]struct{})
@@ -146,13 +146,12 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		vote1Committee, err := currentState.GetVoteCommittee(v.Data.Slot)
 		if err != nil {
 			p.log.Error(err)
-			return err
+			return true
 		}
-
 		vote2Committee, err := currentState.GetVoteCommittee(d.Data.Slot)
 		if err != nil {
 			p.log.Error(err)
-			return err
+			return true
 		}
 
 		for i, idx := range vote1Committee {
@@ -190,12 +189,13 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 				}
 				err = p.AddVoteSlashing(vs)
 				if err != nil {
-					return err
+					return true
 				}
-				return nil
+				return true
 			}
 		}
-	}
+		return true
+	})
 
 	// Check if vote is already on pool.
 	// If a vote with same vote data is found we should check the signatures.
@@ -203,8 +203,14 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 	// If the signatures don't match, we should aggregate both signatures and merge the bitlists.
 	// IMPORTANT: 	We should never allow a vote that conflicts a previous vote to be added to the pool.
 	// 				That should be checked against all votes on pool comparing bitlists.
-	v, ok := p.votes[voteHash]
+	key := appendKey(voteHash[:], PoolTypeVote)
+	vRaw, ok := p.pool.HasGet(nil, key)
 	if ok {
+		v := new(primitives.MultiValidatorVote)
+		err = v.Unmarshal(vRaw)
+		if err != nil {
+			return err
+		}
 		p.log.Debugf("received vote with same vote data aggregating %d votes...", len(d.ParticipationBitfield.BitIndices()))
 		if !bytes.Equal(v.Sig[:], d.Sig[:]) {
 
@@ -264,13 +270,27 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 				Sig:                   voteSig,
 			}
 
-			p.votes[voteHash] = newVote
-			p.intidivualVotes[voteHash] = append(p.intidivualVotes[voteHash], d)
+			raw, err := newVote.Marshal()
+			if err != nil {
+				return err
+			}
+			p.pool.Set(key, raw)
+			p.votesKeys.Store(voteHash, struct{}{})
+			p.singleVotesLock.Lock()
+			p.singleVotes[voteHash] = append(p.singleVotes[voteHash], d)
+			p.singleVotesLock.Unlock()
 		}
 	} else {
 		p.log.Debugf("adding vote to the mempool with %d votes", len(d.ParticipationBitfield.BitIndices()))
-		p.votes[voteHash] = d
-		p.intidivualVotes[voteHash] = []*primitives.MultiValidatorVote{d}
+		raw, err := d.Marshal()
+		if err != nil {
+			return err
+		}
+		p.pool.Set(key, raw)
+		p.votesKeys.Store(voteHash, struct{}{})
+		p.singleVotesLock.Lock()
+		p.singleVotes[voteHash] = []*primitives.MultiValidatorVote{d}
+		p.singleVotesLock.Unlock()
 	}
 
 	return nil
@@ -522,26 +542,45 @@ func (p *pool) GetAccountNonce(pkh [20]byte) (uint64, error) {
 }
 
 func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote {
-	p.votesLock.Lock()
-	defer p.votesLock.Unlock()
 
-	votes := make([]*primitives.MultiValidatorVote, 0)
+	var keys [][32]byte
+	p.depositKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([32]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxVotesPerBlock {
+			return false
+		}
+		return true
+	})
 
-	for _, vote := range p.votes {
+	var votes []*primitives.MultiValidatorVote
 
-		if slotToPropose >= vote.Data.FirstSlotValid(p.netParams) && slotToPropose <= vote.Data.LastSlotValid(p.netParams) {
-			err := s.ProcessVote(vote, index)
+	for i := range keys {
+
+		key := appendKey(keys[i][:], PoolTypeVote)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(primitives.MultiValidatorVote)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.depositKeys.Delete(keys[i])
+			continue
+		}
+
+		if slotToPropose >= d.Data.FirstSlotValid(p.netParams) && slotToPropose <= d.Data.LastSlotValid(p.netParams) {
+			err = s.ProcessVote(d, index)
 			if err != nil {
 				p.log.Error(err)
-				voteHash := vote.Data.Hash()
-				delete(p.votes, voteHash)
+				p.pool.Del(key)
+				p.depositKeys.Delete(keys[i])
 				continue
-			}
-			if uint64(len(votes)) < primitives.MaxVotesPerBlock {
-				votes = append(votes, vote)
 			}
 		}
 
+		votes = append(votes, d)
 	}
 
 	return votes
@@ -559,8 +598,8 @@ func (p *pool) GetDeposits(s state.State) ([]*primitives.Deposit, state.State) {
 		return true
 	})
 
-	deposits := make([]*primitives.Deposit, len(keys))
-	for i := range deposits {
+	var deposits []*primitives.Deposit
+	for i := range keys {
 
 		key := appendKey(keys[i][:], PoolTypeDeposit)
 
@@ -575,7 +614,13 @@ func (p *pool) GetDeposits(s state.State) ([]*primitives.Deposit, state.State) {
 			continue
 		}
 
-		deposits[i] = d
+		if err := s.ApplyDeposit(d); err != nil {
+			p.pool.Del(key)
+			p.depositKeys.Delete(keys[i])
+			continue
+		}
+
+		deposits = append(deposits, d)
 	}
 
 	return deposits, s
@@ -593,8 +638,9 @@ func (p *pool) GetExits(s state.State) ([]*primitives.Exit, state.State) {
 		return true
 	})
 
-	exits := make([]*primitives.Exit, len(keys))
-	for i := range exits {
+	var exits []*primitives.Exit
+	for i := range keys {
+
 		key := appendKey(keys[i][:], PoolTypeExit)
 
 		raw := p.pool.Get(nil, key)
@@ -608,7 +654,13 @@ func (p *pool) GetExits(s state.State) ([]*primitives.Exit, state.State) {
 			continue
 		}
 
-		exits[i] = d
+		if err := s.ApplyExit(d); err != nil {
+			p.pool.Del(key)
+			p.exitKeys.Delete(keys[i])
+			continue
+		}
+
+		exits = append(exits, d)
 	}
 
 	return exits, s
@@ -626,8 +678,9 @@ func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.
 		return true
 	})
 
-	pexits := make([]*primitives.PartialExit, len(keys))
-	for i := range pexits {
+	var pexits []*primitives.PartialExit
+	for i := range keys {
+
 		key := appendKey(keys[i][:], PoolTypePartialExit)
 
 		raw := p.pool.Get(nil, key)
@@ -641,7 +694,13 @@ func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.
 			continue
 		}
 
-		pexits[i] = d
+		if err := s.ApplyPartialExit(d); err != nil {
+			p.pool.Del(key)
+			p.partialExitKeys.Delete(keys[i])
+			continue
+		}
+
+		pexits = append(pexits, d)
 	}
 
 	return pexits, s
@@ -659,8 +718,9 @@ func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable
 		return true
 	})
 
-	coinProofs := make([]*burnproof.CoinsProofSerializable, len(keys))
-	for i := range coinProofs {
+	var coinProofs []*burnproof.CoinsProofSerializable
+	for i := range keys {
+
 		key := appendKey(keys[i][:], PoolTypeCoinProof)
 
 		raw := p.pool.Get(nil, key)
@@ -674,7 +734,13 @@ func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable
 			continue
 		}
 
-		coinProofs[i] = d
+		if err := s.ApplyCoinProof(d); err != nil {
+			p.pool.Del(key)
+			p.coinProofsKeys.Delete(keys[i])
+			continue
+		}
+
+		coinProofs = append(coinProofs, d)
 	}
 
 	return coinProofs, s
@@ -788,8 +854,9 @@ func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, 
 		return true
 	})
 
-	governanceVotes := make([]*primitives.GovernanceVote, len(keys))
-	for i := range governanceVotes {
+	var governanceVotes []*primitives.GovernanceVote
+	for i := range keys {
+
 		key := appendKey(keys[i][:], PoolTypeGovernanceVote)
 
 		raw := p.pool.Get(nil, key)
@@ -803,41 +870,48 @@ func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, 
 			continue
 		}
 
-		governanceVotes[i] = d
+		if err := s.ProcessGovernanceVote(d); err != nil {
+			p.pool.Del(key)
+			p.governanceVotesKeys.Delete(keys[i])
+			continue
+		}
+
+		governanceVotes = append(governanceVotes, d)
 	}
 
 	return governanceVotes, s
 }
 
 func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
-	netParams := config.GlobalParams.NetParams
-	p.votesLock.Lock()
-	p.intidivualVotesLock.Lock()
-
-	for _, v := range p.votes {
-		voteHash := v.Data.Hash()
-		if b.Header.Slot >= v.Data.LastSlotValid(netParams) {
-			delete(p.votes, voteHash)
-			delete(p.intidivualVotes, voteHash)
-		}
-	}
 
 	// Check for votes on the block and remove them
+	p.singleVotesLock.Lock()
+	defer p.singleVotesLock.Unlock()
 	for _, blockVote := range b.Votes {
-		voteHash := blockVote.Data.Hash()
+		hash := blockVote.Data.Hash()
+		key := appendKey(hash[:], PoolTypeVote)
 
 		// If the vote is on pool and included on the block, remove it.
-		poolVote, ok := p.votes[voteHash]
+		rawVote, ok := p.pool.HasGet(nil, key)
 		if ok {
-			delete(p.votes, voteHash)
 
+			p.pool.Del(key)
+			p.votesKeys.Delete(hash)
+			poolVote := new(primitives.MultiValidatorVote)
+			err := poolVote.Unmarshal(rawVote)
+			if err != nil {
+				continue
+			}
 			// If the mempool vote participation is greater than votes included on block we check the poolIndividuals
 			// if there are more votes on the poolIndividuals that were not included on the block, we aggregate them and
 			// add a new vote to the mempool.
 			// including the missing votes.
 			if len(poolVote.ParticipationBitfield.BitIndices()) > len(blockVote.ParticipationBitfield.BitIndices()) {
 				p.log.Debug("incomplete vote submission detected aggregating and constructing missing vote")
-				individuals := p.intidivualVotes[voteHash]
+
+				individuals := p.singleVotes[hash]
+				delete(p.singleVotes, hash)
+
 				// First we extract the included vote for the individuals slice
 				var votesToAggregate []*primitives.MultiValidatorVote
 				for _, iv := range individuals {
@@ -873,15 +947,17 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 					Sig:                   voteSig,
 				}
 
-				p.votes[voteHash] = newVote
+				raw, err := newVote.Marshal()
+				if err != nil {
+					continue
+				}
+				p.pool.Set(key, raw)
+				p.votesKeys.Store(hash, struct{}{})
+			} else {
+				delete(p.singleVotes, hash)
 			}
 		}
 	}
-
-	p.log.Debugf("tracking %d aggregated votes and %d individual votes in vote mempool", len(p.votes), len(p.intidivualVotes))
-
-	p.votesLock.Unlock()
-	p.intidivualVotesLock.Unlock()
 
 	for _, d := range b.Deposits {
 		key := appendKey(d.Data.PublicKey[:], PoolTypeDeposit)
@@ -1021,6 +1097,11 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 
 var _ Pool = &pool{}
 
+func (p *pool) Close() {
+	datapath := config.GlobalFlags.DataPath
+	_ = p.pool.SaveToFile(datapath + "/mempool")
+}
+
 // Start initializes the pool listeners
 func (p *pool) Start() error {
 
@@ -1064,6 +1145,14 @@ func (p *pool) Start() error {
 }
 
 func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) Pool {
+	datapath := config.GlobalFlags.DataPath
+
+	var cache *fastcache.Cache
+	var err error
+	cache, err = fastcache.LoadFromFile(datapath + "/mempool")
+	if err != nil {
+		cache = fastcache.New(300 * 1024 * 1024)
+	}
 	return &pool{
 		netParams:         config.GlobalParams.NetParams,
 		log:               config.GlobalParams.Logger,
@@ -1072,12 +1161,10 @@ func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmana
 		host:              hostnode,
 		lastActionManager: manager,
 
-		pool: fastcache.New(300 * 1024 * 1024),
+		pool: cache,
 
-		votes:           make(map[chainhash.Hash]*primitives.MultiValidatorVote),
-		intidivualVotes: make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
-		txs:             make(map[[20]byte]*txItem),
-
+		txs: make(map[[20]byte]*txItem),
+		singleVotes: make(map[[32]byte][]*primitives.MultiValidatorVote),
 		voteSlashings:     []*primitives.VoteSlashing{},
 		proposerSlashings: []*primitives.ProposerSlashing{},
 		randaoSlashings:   []*primitives.RANDAOSlashing{},

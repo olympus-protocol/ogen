@@ -15,6 +15,7 @@ const (
 	PoolTypeLatestNonce
 	PoolTypeGovernanceVote
 	PoolTypeCoinProof
+	PoolTypeVote
 )
 
 func appendKey(k []byte, t PoolType) []byte {
@@ -42,6 +43,10 @@ func appendKey(k []byte, t PoolType) []byte {
 		return key
 	case PoolTypeCoinProof:
 		key = append(key, []byte("coin_proof-")...)
+		key = append(key, k...)
+		return key
+	case PoolTypeVote:
+		key = append(key, []byte("vote-")...)
 		key = append(key, k...)
 		return key
 	default:
