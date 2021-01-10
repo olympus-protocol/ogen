@@ -15,6 +15,7 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
+	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -120,7 +121,7 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 	// Checks if the new vote data matches any pool vote data hash.
 	// If that check fails, we should check for validators submitting twice different votes.
 	p.votesKeys.Range(func(key, value interface{}) bool {
-		hash := key.([32]byte)
+		hash := key.(chainhash.Hash)
 		cKey := appendKey(hash[:], PoolTypeVote)
 		raw := p.pool.Get(nil, cKey)
 		v := new(primitives.MultiValidatorVote)
@@ -535,9 +536,9 @@ func (p *pool) GetAccountNonce(pkh [20]byte) (uint64, error) {
 
 func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote {
 
-	var keys [][32]byte
+	var keys []chainhash.Hash
 	p.votesKeys.Range(func(key, value interface{}) bool {
-		pubKey := key.([32]byte)
+		pubKey := key.(chainhash.Hash)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxVotesPerBlock {
 			return false
@@ -700,9 +701,9 @@ func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.
 
 func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable, state.State) {
 
-	var keys [][32]byte
+	var keys []chainhash.Hash
 	p.coinProofsKeys.Range(func(key, value interface{}) bool {
-		pubKey := key.([32]byte)
+		pubKey := key.(chainhash.Hash)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxCoinProofsPerBlock {
 			return false
@@ -853,9 +854,9 @@ func (p *pool) GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, 
 
 func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, state.State) {
 
-	var keys [][32]byte
+	var keys []chainhash.Hash
 	p.governanceVotesKeys.Range(func(key, value interface{}) bool {
-		pubKey := key.([32]byte)
+		pubKey := key.(chainhash.Hash)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxGovernanceVotesPerBlock {
 			return false
