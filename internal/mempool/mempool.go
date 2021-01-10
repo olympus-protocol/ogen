@@ -375,12 +375,12 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 	defer p.latestNonceLock.Unlock()
 
 	if latestNonce, ok := p.latestNonce[fpkh]; ok && d.Nonce < latestNonce {
-		return errors.New("invalid nonce")
+		return errors.New("invalid nonce against pool map")
 	}
 
 	// Check the state for a nonce lower than the used in transaction
 	if stateNonce, ok := cs.Nonces[fpkh]; ok && d.Nonce < stateNonce || !ok && d.Nonce != 1 {
-		return errors.New("invalid nonce")
+		return errors.New("invalid nonce against state")
 	}
 
 	if d.Fee < 5000 {

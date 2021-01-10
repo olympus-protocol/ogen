@@ -7,7 +7,6 @@ import (
 	"github.com/olympus-protocol/ogen/api/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"time"
 )
 
 var sender = "tlpub1a5v7eu8x3ecmj05pf08edzt9k3x89eu4ugacsr"
@@ -29,10 +28,9 @@ func main() {
 	}
 
 	for {
-		time.Sleep(100 * time.Millisecond)
 		hash, err := rpcClient.wallet.SendTransaction(context.Background(), &proto.SendTransactionInfo{
 			Account: receiver,
-			Amount:  "0.1",
+			Amount:  "0.01",
 		})
 		if err != nil {
 			panic(err)
