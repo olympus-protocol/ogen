@@ -29,7 +29,7 @@ func main() {
 	}
 
 	for {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 10)
 		hash, err := rpcClient.wallet.SendTransaction(context.Background(), &proto.SendTransactionInfo{
 			Account: receiver,
 			Amount:  "0.01",

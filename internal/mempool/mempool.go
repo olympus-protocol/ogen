@@ -537,7 +537,7 @@ func (p *pool) GetAccountNonce(pkh [20]byte) (uint64, error) {
 func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote {
 
 	var keys [][32]byte
-	p.depositKeys.Range(func(key, value interface{}) bool {
+	p.votesKeys.Range(func(key, value interface{}) bool {
 		pubKey := key.([32]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxVotesPerBlock {
@@ -571,9 +571,9 @@ func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*pr
 				p.depositKeys.Delete(keys[i])
 				continue
 			}
+			votes = append(votes, d)
 		}
 
-		votes = append(votes, d)
 	}
 
 	return votes
@@ -782,7 +782,7 @@ func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, st
 			return nil, s
 		}
 	}
-	
+
 	return txs, s
 }
 
