@@ -15,7 +15,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/burnproof"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -121,7 +120,7 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 	// Checks if the new vote data matches any pool vote data hash.
 	// If that check fails, we should check for validators submitting twice different votes.
 	p.votesKeys.Range(func(key, value interface{}) bool {
-		hash := key.(chainhash.Hash)
+		hash := key.([32]byte)
 		cKey := appendKey(hash[:], PoolTypeVote)
 		raw := p.pool.Get(nil, cKey)
 		v := new(primitives.MultiValidatorVote)
@@ -129,7 +128,7 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		if err != nil {
 			return true
 		}
-		if voteHash.IsEqual(&hash) {
+		if bytes.Equal(voteHash[:], hash[:]) {
 			return true
 		}
 		if currentState.GetSlot() >= v.Data.LastSlotValid(p.netParams) {
