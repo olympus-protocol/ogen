@@ -288,12 +288,12 @@ func (p *pool) AddDeposit(d *primitives.Deposit) error {
 		return err
 	}
 
-	key := appendKey(d.PublicKey[:], PoolTypeDeposit)
+	key := appendKey(d.Data.PublicKey[:], PoolTypeDeposit)
 
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.depositKeys.Store(d.PublicKey, struct{}{})
+		p.depositKeys.Store(d.Data.PublicKey, struct{}{})
 	}
 
 	return nil
@@ -471,18 +471,18 @@ func (p *pool) AddGovernanceVote(d *primitives.GovernanceVote) error {
 		return err
 	}
 
-	voteHash := d.Hash()
+	hash := d.Hash()
 
 	raw, err := d.Marshal()
 	if err != nil {
 		return err
 	}
 
-	key := appendKey(voteHash[:], PoolTypeGovernanceVote)
+	key := appendKey(hash[:], PoolTypeGovernanceVote)
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.governanceVotesKeys.Store(voteHash, struct{}{})
+		p.governanceVotesKeys.Store(hash, struct{}{})
 	}
 
 	return nil
@@ -884,9 +884,9 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 	p.intidivualVotesLock.Unlock()
 
 	for _, d := range b.Deposits {
-		key := appendKey(d.PublicKey[:], PoolTypeDeposit)
+		key := appendKey(d.Data.PublicKey[:], PoolTypeDeposit)
 		p.pool.Del(key)
-		p.depositKeys.Delete(d.PublicKey)
+		p.depositKeys.Delete(d.Data.PublicKey)
 	}
 
 	for _, e := range b.Exits {
