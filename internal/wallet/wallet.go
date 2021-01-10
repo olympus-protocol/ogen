@@ -67,6 +67,7 @@ type wallet struct {
 	pub        common.PublicKey
 	accountRaw [20]byte
 	account    string
+	lastNonce uint64
 }
 
 // NewWallet creates a new wallet.
@@ -156,6 +157,7 @@ func (w *wallet) OpenWallet(name string, password string) error {
 		w.name = ""
 		return err
 	}
+	s := w.chain.State().TipState()
 	w.priv = secret
 	w.pub = secret.PublicKey()
 	w.account = w.pub.ToAccount(&w.netParams.AccountPrefixes)
@@ -163,6 +165,9 @@ func (w *wallet) OpenWallet(name string, password string) error {
 	if err != nil {
 		return err
 	}
+
+	w.lastNonce = s.GetCoinsState().Nonces[w.accountRaw]
+
 	w.open = true
 	return nil
 }

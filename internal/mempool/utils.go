@@ -10,7 +10,6 @@ const (
 	PoolTypeDeposit PoolType = iota
 	PoolTypeExit
 	PoolTypePartialExit
-	PoolTypeLatestNonce
 	PoolTypeGovernanceVote
 	PoolTypeCoinProof
 	PoolTypeVote
@@ -30,10 +29,6 @@ func appendKey(k []byte, t PoolType) []byte {
 		return key
 	case PoolTypePartialExit:
 		key = append(key, []byte("partial_exit-")...)
-		key = append(key, k...)
-		return key
-	case PoolTypeLatestNonce:
-		key = append(key, []byte("latest_nonce-")...)
 		key = append(key, k...)
 		return key
 	case PoolTypeGovernanceVote:

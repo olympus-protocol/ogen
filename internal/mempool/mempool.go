@@ -3,7 +3,6 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
@@ -24,10 +23,6 @@ import (
 	"sync"
 )
 
-var (
-	ErrorAccountNotOnMempool = errors.New("account not on pool")
-)
-
 type Pool interface {
 	Start() error
 	Close()
@@ -43,7 +38,6 @@ type Pool interface {
 	AddGovernanceVote(d *primitives.GovernanceVote) error
 	AddCoinProof(d *burnproof.CoinsProofSerializable) error
 
-	GetAccountNonce(account [20]byte) (uint64, error)
 	GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote
 	GetDeposits(s state.State) ([]*primitives.Deposit, state.State)
 	GetExits(s state.State) ([]*primitives.Exit, state.State)
@@ -372,13 +366,6 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 		return err
 	}
 
-	if lnb, ok := p.pool.HasGet(nil, appendKey(fpkh[:], PoolTypeLatestNonce)); ok {
-		latestNonce := binary.LittleEndian.Uint64(lnb)
-		if d.Nonce < latestNonce {
-			return errors.New("invalid nonce against pool map")
-		}
-	}
-
 	// Check the state for a nonce lower than the used in transaction
 	if stateNonce, ok := cs.Nonces[fpkh]; ok && d.Nonce < stateNonce || !ok && d.Nonce != 1 {
 		return errors.New("invalid nonce against state")
@@ -398,7 +385,6 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 		}
 		p.pool.Set(key, raw)
 		p.txKeys.Store(txKey, struct{}{})
-		p.pool.Set(appendKey(fpkh[:], PoolTypeLatestNonce), nonceToBytes(d.Nonce))
 	}
 
 	return nil
@@ -521,17 +507,6 @@ func (p *pool) AddCoinProof(d *burnproof.CoinsProofSerializable) error {
 		p.coinProofsKeys.Store(hash, struct{}{})
 	}
 	return nil
-}
-
-func (p *pool) GetAccountNonce(pkh [20]byte) (uint64, error) {
-	nB, ok := p.pool.HasGet(nil, appendKey(pkh[:], PoolTypeLatestNonce))
-	if !ok {
-		return 0, ErrorAccountNotOnMempool
-	}
-
-	nonce := binary.LittleEndian.Uint64(nB)
-
-	return nonce, nil
 }
 
 func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote {
@@ -1104,13 +1079,6 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 			p.txKeys.Delete(txKey)
 		}
 
-		nKey := appendKey(fpkh[:], PoolTypeLatestNonce)
-		if lnb, ok := p.pool.HasGet(nil, nKey); ok {
-			nonce := binary.LittleEndian.Uint64(lnb)
-			if tx.Nonce == nonce {
-				p.pool.Del(nKey)
-			}
-		}
 	}
 
 }
