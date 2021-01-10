@@ -72,15 +72,13 @@ type pool struct {
 	singleVotes     map[[32]byte][]*primitives.MultiValidatorVote
 	singleVotesLock sync.Mutex
 
+	txKeys              sync.Map
 	votesKeys           sync.Map
 	depositKeys         sync.Map
 	exitKeys            sync.Map
 	partialExitKeys     sync.Map
 	governanceVotesKeys sync.Map
 	coinProofsKeys      sync.Map
-
-	txsLock sync.Mutex
-	txs     map[[20]byte]*txItem
 
 	voteSlashings []*primitives.VoteSlashing
 
@@ -366,8 +364,6 @@ func (p *pool) AddPartialExit(d *primitives.PartialExit) error {
 }
 
 func (p *pool) AddTx(d *primitives.Tx) error {
-	p.txsLock.Lock()
-	defer p.txsLock.Unlock()
 
 	cs := p.chain.State().TipState().GetCoinsState()
 
@@ -392,19 +388,16 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 		return errors.New("transaction doesn't include enough fee")
 	}
 
-	mpi, ok := p.txs[fpkh]
-
+	txKey := appendKeyWithNonce(fpkh, d.Nonce)
+	key := appendKey(txKey[:], PoolTypeTx)
+	ok := p.pool.Has(key)
 	if !ok {
-		p.txs[fpkh] = newCoinMempoolItem()
-		mpi = p.txs[fpkh]
-		if err := mpi.add(d, cs.Balances[fpkh]); err != nil {
+		raw, err := d.Marshal()
+		if err != nil {
 			return err
 		}
-		p.pool.Set(appendKey(fpkh[:], PoolTypeLatestNonce), nonceToBytes(d.Nonce))
-	} else {
-		if err := mpi.add(d, cs.Balances[fpkh]); err != nil {
-			return err
-		}
+		p.pool.Set(key, raw)
+		p.txKeys.Store(txKey, struct{}{})
 		p.pool.Set(appendKey(fpkh[:], PoolTypeLatestNonce), nonceToBytes(d.Nonce))
 	}
 
@@ -748,32 +741,47 @@ func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable
 }
 
 func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State) {
-	p.txsLock.Lock()
-	defer p.txsLock.Unlock()
 
-	allTransactions := make([]*primitives.Tx, 0, primitives.MaxTxsPerBlock)
+	var keys [][28]byte
+	p.txKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([28]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxTxsPerBlock {
+			return false
+		}
+		return true
+	})
 
-	for _, addr := range p.txs {
-		nonces := make([]int, 0, len(addr.transactions))
-		for k := range addr.transactions {
-			nonces = append(nonces, int(k))
+	var txs []*primitives.Tx
+	for i := range keys {
+
+		key := appendKey(keys[i][:], PoolTypeTx)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(primitives.Tx)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.txKeys.Delete(keys[i])
+			continue
 		}
 
-		sort.Ints(nonces)
-
-		for _, nonce := range nonces {
-			tx := addr.transactions[uint64(nonce)]
-			if err := s.ApplyTransactionSingle(tx, feeReceiver); err != nil {
-				continue
-			}
-			if len(allTransactions) < primitives.MaxTxsPerBlock {
-				allTransactions = append(allTransactions, tx)
-			}
-		}
-
+		txs = append(txs, d)
 	}
 
-	return allTransactions, s
+	sort.Slice(txs, func(i, j int) bool {
+		return txs[i].Nonce < txs[j].Nonce
+	})
+
+	err := s.ApplyMultiTransactionSingle(txs, feeReceiver)
+	if err != nil {
+		p.log.Error(err)
+		return nil, s
+	}
+
+	return txs, s
 }
 
 func (p *pool) GetVoteSlashings(s state.State) ([]*primitives.VoteSlashing, state.State) {
@@ -961,35 +969,49 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 
 	for _, d := range b.Deposits {
 		key := appendKey(d.Data.PublicKey[:], PoolTypeDeposit)
-		p.pool.Del(key)
-		p.depositKeys.Delete(d.Data.PublicKey)
+		ok := p.pool.Has(key)
+		if ok {
+			p.pool.Del(key)
+			p.depositKeys.Delete(d.Data.PublicKey)
+		}
 	}
 
 	for _, e := range b.Exits {
 		key := appendKey(e.ValidatorPubkey[:], PoolTypeExit)
-		p.pool.Del(key)
-		p.exitKeys.Delete(e.ValidatorPubkey)
+		ok := p.pool.Has(key)
+		if ok {
+			p.pool.Del(key)
+			p.exitKeys.Delete(e.ValidatorPubkey)
+		}
 	}
 
 	for _, pe := range b.PartialExit {
 		key := appendKey(pe.ValidatorPubkey[:], PoolTypePartialExit)
-		p.pool.Del(key)
-		p.partialExitKeys.Delete(pe.ValidatorPubkey)
+		ok := p.pool.Has(key)
+		if ok {
+			p.pool.Del(key)
+			p.partialExitKeys.Delete(pe.ValidatorPubkey)
+		}
 	}
 
 	for _, gv := range b.GovernanceVotes {
 		hash := gv.Hash()
 		key := appendKey(hash[:], PoolTypeGovernanceVote)
-		p.pool.Del(key)
-		p.governanceVotesKeys.Delete(hash)
+		ok := p.pool.Has(key)
+		if ok {
+			p.pool.Del(key)
+			p.governanceVotesKeys.Delete(hash)
+		}
 	}
 
 	for _, c := range b.CoinProofs {
 		hash := c.Hash()
-
 		key := appendKey(hash[:], PoolTypeCoinProof)
-		p.pool.Del(key)
-		p.coinProofsKeys.Delete(hash)
+		ok := p.pool.Has(key)
+		if ok {
+			p.pool.Del(key)
+			p.coinProofsKeys.Delete(hash)
+		}
 	}
 
 	newProposerSlashings := make([]*primitives.ProposerSlashing, 0, len(p.proposerSlashings))
@@ -1066,32 +1088,28 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 	}
 	p.randaoSlashings = newRANDAOSlashings
 
-	p.txsLock.Lock()
-
 	for _, tx := range b.Txs {
 		fpkh, err := tx.FromPubkeyHash()
 		if err != nil {
 			continue
 		}
 
-		it, found := p.txs[fpkh]
-		if !found {
-			continue
+		txKey := appendKeyWithNonce(fpkh, tx.Nonce)
+		key := appendKey(txKey[:], PoolTypeTx)
+		ok := p.pool.Has(key)
+		if ok {
+			p.pool.Del(key)
+			p.txKeys.Delete(txKey)
 		}
-		it.removeBefore(tx.Nonce)
-		if it.balanceSpent == 0 {
-			delete(p.txs, fpkh)
-		}
-		key := appendKey(fpkh[:], PoolTypeLatestNonce)
-		if lnb, ok := p.pool.HasGet(nil, key); ok {
+
+		nKey := appendKey(fpkh[:], PoolTypeLatestNonce)
+		if lnb, ok := p.pool.HasGet(nil, nKey); ok {
 			nonce := binary.LittleEndian.Uint64(lnb)
 			if tx.Nonce == nonce {
-				p.pool.Del(key)
+				p.pool.Del(nKey)
 			}
 		}
 	}
-
-	p.txsLock.Unlock()
 
 }
 
@@ -1163,8 +1181,7 @@ func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmana
 
 		pool: cache,
 
-		txs: make(map[[20]byte]*txItem),
-		singleVotes: make(map[[32]byte][]*primitives.MultiValidatorVote),
+		singleVotes:       make(map[[32]byte][]*primitives.MultiValidatorVote),
 		voteSlashings:     []*primitives.VoteSlashing{},
 		proposerSlashings: []*primitives.ProposerSlashing{},
 		randaoSlashings:   []*primitives.RANDAOSlashing{},
