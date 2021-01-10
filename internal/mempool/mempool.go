@@ -775,12 +775,14 @@ func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, st
 		return txs[i].Nonce < txs[j].Nonce
 	})
 
-	err := s.ApplyMultiTransactionSingle(txs, feeReceiver)
-	if err != nil {
-		p.log.Error(err)
-		return nil, s
+	if len(txs) > 0 {
+		err := s.ApplyMultiTransactionSingle(txs, feeReceiver)
+		if err != nil {
+			p.log.Error(err)
+			return nil, s
+		}
 	}
-
+	
 	return txs, s
 }
 
