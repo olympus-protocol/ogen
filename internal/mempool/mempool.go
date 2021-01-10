@@ -27,9 +27,7 @@ var (
 )
 
 type Pool interface {
-	Load()
 	Start() error
-	Stop()
 
 	AddVote(d *primitives.MultiValidatorVote, s state.State) error
 	AddDeposit(d *primitives.Deposit) error
@@ -1070,7 +1068,6 @@ var _ Pool = &pool{}
 
 // Start initializes the pool listeners
 func (p *pool) Start() error {
-	p.Load()
 
 	if err := p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleVote); err != nil {
 		return err
@@ -1109,11 +1106,6 @@ func (p *pool) Start() error {
 	}
 
 	return nil
-}
-
-// Stop closes listeners and save to disk
-func (p *pool) Stop() {
-	p.Store()
 }
 
 func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) Pool {

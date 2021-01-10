@@ -93,7 +93,6 @@ func (s *server) Start() {
 func (s *server) Stop() error {
 	s.ch.Stop()
 	s.rpc.Stop()
-	s.pool.Stop()
 	return nil
 }
 
