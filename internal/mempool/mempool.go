@@ -293,7 +293,7 @@ func (p *pool) AddDeposit(d *primitives.Deposit) error {
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.depositKeys.Store(d.PublicKey[:], struct{}{})
+		p.depositKeys.Store(d.PublicKey, struct{}{})
 	}
 
 	return nil
@@ -316,7 +316,7 @@ func (p *pool) AddExit(d *primitives.Exit) error {
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.exitKeys.Store(d.ValidatorPubkey[:], struct{}{})
+		p.exitKeys.Store(d.ValidatorPubkey, struct{}{})
 	}
 
 	return nil
@@ -339,7 +339,7 @@ func (p *pool) AddPartialExit(d *primitives.PartialExit) error {
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.partialExitKeys.Store(d.ValidatorPubkey[:], struct{}{})
+		p.partialExitKeys.Store(d.ValidatorPubkey, struct{}{})
 	}
 
 	return nil
@@ -482,7 +482,7 @@ func (p *pool) AddGovernanceVote(d *primitives.GovernanceVote) error {
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.governanceVotesKeys.Store(key, struct{}{})
+		p.governanceVotesKeys.Store(voteHash, struct{}{})
 	}
 
 	return nil
@@ -505,7 +505,7 @@ func (p *pool) AddCoinProof(d *burnproof.CoinsProofSerializable) error {
 	ok := p.pool.Has(key)
 	if !ok {
 		p.pool.Set(key, raw)
-		p.coinProofsKeys.Store(key, struct{}{})
+		p.coinProofsKeys.Store(hash, struct{}{})
 	}
 	return nil
 }
@@ -571,7 +571,7 @@ func (p *pool) GetDeposits(s state.State) ([]*primitives.Deposit, state.State) {
 		err := d.Unmarshal(raw)
 		if err != nil {
 			p.pool.Del(key)
-			p.depositKeys.Delete(keys[i][:])
+			p.depositKeys.Delete(keys[i])
 			continue
 		}
 
@@ -604,7 +604,7 @@ func (p *pool) GetExits(s state.State) ([]*primitives.Exit, state.State) {
 		err := d.Unmarshal(raw)
 		if err != nil {
 			p.pool.Del(key)
-			p.exitKeys.Delete(keys[i][:])
+			p.exitKeys.Delete(keys[i])
 			continue
 		}
 
@@ -637,7 +637,7 @@ func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.
 		err := d.Unmarshal(raw)
 		if err != nil {
 			p.pool.Del(key)
-			p.partialExitKeys.Delete(keys[i][:])
+			p.partialExitKeys.Delete(keys[i])
 			continue
 		}
 
@@ -670,7 +670,7 @@ func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable
 		err := d.Unmarshal(raw)
 		if err != nil {
 			p.pool.Del(key)
-			p.coinProofsKeys.Delete(keys[i][:])
+			p.coinProofsKeys.Delete(keys[i])
 			continue
 		}
 
@@ -779,7 +779,7 @@ func (p *pool) GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, 
 func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, state.State) {
 
 	var keys [][32]byte
-	p.coinProofsKeys.Range(func(key, value interface{}) bool {
+	p.governanceVotesKeys.Range(func(key, value interface{}) bool {
 		pubKey := key.([32]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxGovernanceVotesPerBlock {
@@ -799,7 +799,7 @@ func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, 
 		err := d.Unmarshal(raw)
 		if err != nil {
 			p.pool.Del(key)
-			p.governanceVotesKeys.Delete(keys[i][:])
+			p.governanceVotesKeys.Delete(keys[i])
 			continue
 		}
 
@@ -886,26 +886,26 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 	for _, d := range b.Deposits {
 		key := appendKey(d.PublicKey[:], PoolTypeDeposit)
 		p.pool.Del(key)
-		p.depositKeys.Delete(d.PublicKey[:])
+		p.depositKeys.Delete(d.PublicKey)
 	}
 
 	for _, e := range b.Exits {
 		key := appendKey(e.ValidatorPubkey[:], PoolTypeExit)
 		p.pool.Del(key)
-		p.exitKeys.Delete(e.ValidatorPubkey[:])
+		p.exitKeys.Delete(e.ValidatorPubkey)
 	}
 
 	for _, pe := range b.PartialExit {
 		key := appendKey(pe.ValidatorPubkey[:], PoolTypePartialExit)
 		p.pool.Del(key)
-		p.partialExitKeys.Delete(pe.ValidatorPubkey[:])
+		p.partialExitKeys.Delete(pe.ValidatorPubkey)
 	}
 
 	for _, gv := range b.GovernanceVotes {
 		hash := gv.Hash()
 		key := appendKey(hash[:], PoolTypeGovernanceVote)
 		p.pool.Del(key)
-		p.partialExitKeys.Delete(hash[:])
+		p.governanceVotesKeys.Delete(hash)
 	}
 
 	for _, c := range b.CoinProofs {
@@ -913,7 +913,7 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 
 		key := appendKey(hash[:], PoolTypeCoinProof)
 		p.pool.Del(key)
-		p.partialExitKeys.Delete(hash[:])
+		p.coinProofsKeys.Delete(hash)
 	}
 
 	newProposerSlashings := make([]*primitives.ProposerSlashing, 0, len(p.proposerSlashings))
