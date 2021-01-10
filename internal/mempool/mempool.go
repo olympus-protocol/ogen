@@ -554,7 +554,7 @@ func (p *pool) GetDeposits(s state.State) ([]*primitives.Deposit, state.State) {
 		pubKey := key.([48]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxDepositsPerBlock {
-			return true
+			return false
 		}
 		return true
 	})
@@ -588,7 +588,7 @@ func (p *pool) GetExits(s state.State) ([]*primitives.Exit, state.State) {
 		pubKey := key.([48]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxExitsPerBlock {
-			return true
+			return false
 		}
 		return true
 	})
@@ -621,7 +621,7 @@ func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.
 		pubKey := key.([48]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxPartialExitsPerBlock {
-			return true
+			return false
 		}
 		return true
 	})
@@ -654,7 +654,7 @@ func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable
 		pubKey := key.([32]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxCoinProofsPerBlock {
-			return true
+			return false
 		}
 		return true
 	})
@@ -783,7 +783,7 @@ func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, 
 		pubKey := key.([32]byte)
 		keys = append(keys, pubKey)
 		if len(keys) >= primitives.MaxGovernanceVotesPerBlock {
-			return true
+			return false
 		}
 		return true
 	})
