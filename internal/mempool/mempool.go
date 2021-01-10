@@ -3,7 +3,9 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
+	"github.com/VictoriaMetrics/fastcache"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -64,41 +66,28 @@ type pool struct {
 	host              hostnode.HostNode
 	lastActionManager actionmanager.LastActionManager
 
+	pool *fastcache.Cache
+
 	votesLock sync.Mutex
 	votes     map[chainhash.Hash]*primitives.MultiValidatorVote
 
 	intidivualVotes     map[chainhash.Hash][]*primitives.MultiValidatorVote
 	intidivualVotesLock sync.Mutex
 
-	depositsLock sync.Mutex
-	deposits     map[chainhash.Hash]*primitives.Deposit
-
-	exitsLock sync.Mutex
-	exits     map[chainhash.Hash]*primitives.Exit
-
-	partialExitsLock sync.Mutex
-	partialExits     map[chainhash.Hash]*primitives.PartialExit
+	depositKeys         sync.Map
+	exitKeys            sync.Map
+	partialExitKeys     sync.Map
+	governanceVotesKeys sync.Map
+	coinProofsKeys      sync.Map
 
 	txsLock sync.Mutex
 	txs     map[[20]byte]*txItem
 
-	latestNonceLock sync.Mutex
-	latestNonce     map[[20]byte]uint64
+	voteSlashings []*primitives.VoteSlashing
 
-	voteSlashingLock sync.Mutex
-	voteSlashings    []*primitives.VoteSlashing
+	proposerSlashings []*primitives.ProposerSlashing
 
-	proposerSlashingLock sync.Mutex
-	proposerSlashings    []*primitives.ProposerSlashing
-
-	randaoSlashingLock sync.Mutex
-	randaoSlashings    []*primitives.RANDAOSlashing
-
-	governanceVoteLock sync.Mutex
-	governanceVotes    map[chainhash.Hash]*primitives.GovernanceVote
-
-	coinProofsLock sync.Mutex
-	coinProofs     map[chainhash.Hash]*burnproof.CoinsProofSerializable
+	randaoSlashings []*primitives.RANDAOSlashing
 }
 
 func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
@@ -294,18 +283,17 @@ func (p *pool) AddDeposit(d *primitives.Deposit) error {
 		return err
 	}
 
-	p.depositsLock.Lock()
-	defer p.depositsLock.Unlock()
-
-	for _, pd := range p.deposits {
-		if bytes.Equal(pd.Data.PublicKey[:], d.Data.PublicKey[:]) {
-			return nil
-		}
+	raw, err := d.Marshal()
+	if err != nil {
+		return err
 	}
 
-	_, ok := p.deposits[d.Hash()]
+	key := appendKey(d.PublicKey[:], PoolTypeDeposit)
+
+	ok := p.pool.Has(key)
 	if !ok {
-		p.deposits[d.Hash()] = d
+		p.pool.Set(key, raw)
+		p.depositKeys.Store(d.PublicKey[:], struct{}{})
 	}
 
 	return nil
@@ -318,18 +306,17 @@ func (p *pool) AddExit(d *primitives.Exit) error {
 		return err
 	}
 
-	p.exitsLock.Lock()
-	defer p.exitsLock.Unlock()
-
-	for _, e := range p.exits {
-		if bytes.Equal(e.ValidatorPubkey[:], d.ValidatorPubkey[:]) {
-			return nil
-		}
+	raw, err := d.Marshal()
+	if err != nil {
+		return err
 	}
 
-	_, ok := p.exits[d.Hash()]
+	key := appendKey(d.ValidatorPubkey[:], PoolTypeExit)
+
+	ok := p.pool.Has(key)
 	if !ok {
-		p.exits[d.Hash()] = d
+		p.pool.Set(key, raw)
+		p.exitKeys.Store(d.ValidatorPubkey[:], struct{}{})
 	}
 
 	return nil
@@ -342,17 +329,17 @@ func (p *pool) AddPartialExit(d *primitives.PartialExit) error {
 		return err
 	}
 
-	p.partialExitsLock.Lock()
-	defer p.partialExitsLock.Unlock()
-
-	for _, pe := range p.partialExits {
-		if bytes.Equal(pe.ValidatorPubkey[:], d.ValidatorPubkey[:]) {
-			return nil
-		}
+	raw, err := d.Marshal()
+	if err != nil {
+		return err
 	}
-	_, ok := p.partialExits[d.Hash()]
+
+	key := appendKey(d.ValidatorPubkey[:], PoolTypePartialExit)
+
+	ok := p.pool.Has(key)
 	if !ok {
-		p.partialExits[d.Hash()] = d
+		p.pool.Set(key, raw)
+		p.partialExitKeys.Store(d.ValidatorPubkey[:], struct{}{})
 	}
 
 	return nil
@@ -369,11 +356,11 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 		return err
 	}
 
-	p.latestNonceLock.Lock()
-	defer p.latestNonceLock.Unlock()
-
-	if latestNonce, ok := p.latestNonce[fpkh]; ok && d.Nonce < latestNonce {
-		return errors.New("invalid nonce against pool map")
+	if lnb, ok := p.pool.HasGet(nil, appendKey(fpkh[:], PoolTypeLatestNonce)); ok {
+		latestNonce := binary.LittleEndian.Uint64(lnb)
+		if d.Nonce < latestNonce {
+			return errors.New("invalid nonce against pool map")
+		}
 	}
 
 	// Check the state for a nonce lower than the used in transaction
@@ -393,12 +380,12 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 		if err := mpi.add(d, cs.Balances[fpkh]); err != nil {
 			return err
 		}
-		p.latestNonce[fpkh] = d.Nonce
+		p.pool.Set(appendKey(fpkh[:], PoolTypeLatestNonce), nonceToBytes(d.Nonce))
 	} else {
 		if err := mpi.add(d, cs.Balances[fpkh]); err != nil {
 			return err
 		}
-		p.latestNonce[fpkh] = d.Nonce
+		p.pool.Set(appendKey(fpkh[:], PoolTypeLatestNonce), nonceToBytes(d.Nonce))
 	}
 
 	return nil
@@ -425,9 +412,6 @@ func (p *pool) AddVoteSlashing(d *primitives.VoteSlashing) error {
 		p.log.Error(err)
 		return err
 	}
-
-	p.voteSlashingLock.Lock()
-	defer p.voteSlashingLock.Unlock()
 
 	sh := d.Hash()
 	for _, d := range p.voteSlashings {
@@ -462,9 +446,6 @@ func (p *pool) AddProposerSlashing(d *primitives.ProposerSlashing) error {
 		return nil
 	}
 
-	p.proposerSlashingLock.Lock()
-	defer p.proposerSlashingLock.Unlock()
-
 	sh := d.Hash()
 	for _, d := range p.proposerSlashings {
 		dh := d.Hash()
@@ -490,20 +471,18 @@ func (p *pool) AddGovernanceVote(d *primitives.GovernanceVote) error {
 		return err
 	}
 
-	p.governanceVoteLock.Lock()
-	defer p.governanceVoteLock.Unlock()
-
 	voteHash := d.Hash()
 
-	for _, v := range p.governanceVotes {
-		vh := v.Hash()
-		if vh.IsEqual(&voteHash) {
-			return nil
-		}
+	raw, err := d.Marshal()
+	if err != nil {
+		return err
 	}
-	_, ok := p.governanceVotes[d.Hash()]
+
+	key := appendKey(voteHash[:], PoolTypeGovernanceVote)
+	ok := p.pool.Has(key)
 	if !ok {
-		p.governanceVotes[d.Hash()] = d
+		p.pool.Set(key, raw)
+		p.governanceVotesKeys.Store(key, struct{}{})
 	}
 
 	return nil
@@ -516,25 +495,28 @@ func (p *pool) AddCoinProof(d *burnproof.CoinsProofSerializable) error {
 		return err
 	}
 
-	p.coinProofsLock.Lock()
-	defer p.coinProofsLock.Unlock()
-
-	_, ok := p.coinProofs[d.Hash()]
-	if !ok {
-		p.coinProofs[d.Hash()] = d
+	hash := d.Hash()
+	raw, err := d.Marshal()
+	if err != nil {
+		return err
 	}
 
+	key := appendKey(hash[:], PoolTypeCoinProof)
+	ok := p.pool.Has(key)
+	if !ok {
+		p.pool.Set(key, raw)
+		p.coinProofsKeys.Store(key, struct{}{})
+	}
 	return nil
 }
 
 func (p *pool) GetAccountNonce(pkh [20]byte) (uint64, error) {
-	p.latestNonceLock.Lock()
-	defer p.latestNonceLock.Unlock()
-
-	nonce, ok := p.latestNonce[pkh]
+	nB, ok := p.pool.HasGet(nil, appendKey(pkh[:], PoolTypeLatestNonce))
 	if !ok {
 		return 0, ErrorAccountNotOnMempool
 	}
+
+	nonce := binary.LittleEndian.Uint64(nB)
 
 	return nonce, nil
 }
@@ -566,96 +548,137 @@ func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*pr
 }
 
 func (p *pool) GetDeposits(s state.State) ([]*primitives.Deposit, state.State) {
-	p.depositsLock.Lock()
-	defer p.depositsLock.Unlock()
-	deposits := make([]*primitives.Deposit, 0, primitives.MaxDepositsPerBlock)
-	newMempool := make(map[chainhash.Hash]*primitives.Deposit)
 
-	for k, d := range p.deposits {
-		if err := s.ApplyDeposit(d); err != nil {
+	var keys [][48]byte
+	p.depositKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([48]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxDepositsPerBlock {
+			return true
+		}
+		return true
+	})
+
+	deposits := make([]*primitives.Deposit, len(keys))
+	for i := range deposits {
+
+		key := appendKey(keys[i][:], PoolTypeDeposit)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(primitives.Deposit)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.depositKeys.Delete(keys[i][:])
 			continue
 		}
-		// if there is no error, it can be part of the new mempool
-		newMempool[k] = d
 
-		if len(deposits) < primitives.MaxDepositsPerBlock {
-			deposits = append(deposits, d)
-		}
+		deposits[i] = d
 	}
-
-	p.deposits = newMempool
 
 	return deposits, s
 }
 
 func (p *pool) GetExits(s state.State) ([]*primitives.Exit, state.State) {
-	p.exitsLock.Lock()
-	defer p.exitsLock.Unlock()
-	exits := make([]*primitives.Exit, 0, primitives.MaxExitsPerBlock)
-	newMempool := make(map[chainhash.Hash]*primitives.Exit)
 
-	for k, e := range p.exits {
-		if err := s.ApplyExit(e); err != nil {
+	var keys [][48]byte
+	p.exitKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([48]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxExitsPerBlock {
+			return true
+		}
+		return true
+	})
+
+	exits := make([]*primitives.Exit, len(keys))
+	for i := range exits {
+		key := appendKey(keys[i][:], PoolTypeExit)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(primitives.Exit)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.exitKeys.Delete(keys[i][:])
 			continue
 		}
-		// if there is no error, it can be part of the new mempool
-		newMempool[k] = e
 
-		if len(exits) < primitives.MaxExitsPerBlock {
-			exits = append(exits, e)
-		}
+		exits[i] = d
 	}
-
-	p.exits = newMempool
 
 	return exits, s
 }
 
 func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.State) {
-	p.partialExitsLock.Lock()
-	defer p.partialExitsLock.Unlock()
-	pexits := make([]*primitives.PartialExit, 0, primitives.MaxPartialExitsPerBlock)
 
-	newMempool := make(map[chainhash.Hash]*primitives.PartialExit)
+	var keys [][48]byte
+	p.partialExitKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([48]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxPartialExitsPerBlock {
+			return true
+		}
+		return true
+	})
 
-	for k, p := range p.partialExits {
-		if err := s.ApplyPartialExit(p); err != nil {
+	pexits := make([]*primitives.PartialExit, len(keys))
+	for i := range pexits {
+		key := appendKey(keys[i][:], PoolTypePartialExit)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(primitives.PartialExit)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.partialExitKeys.Delete(keys[i][:])
 			continue
 		}
-		// if there is no error, it can be part of the new mempool
-		newMempool[k] = p
 
-		if len(pexits) < primitives.MaxPartialExitsPerBlock {
-			pexits = append(pexits, p)
-		}
+		pexits[i] = d
 	}
-
-	p.partialExits = newMempool
 
 	return pexits, s
 }
 
 func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable, state.State) {
-	p.coinProofsLock.Lock()
-	defer p.coinProofsLock.Unlock()
-	proofs := make([]*burnproof.CoinsProofSerializable, 0, primitives.MaxCoinProofsPerBlock)
-	newMempool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
 
-	for k, p := range p.coinProofs {
-		if err := s.ApplyCoinProof(p); err != nil {
+	var keys [][32]byte
+	p.coinProofsKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([32]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxCoinProofsPerBlock {
+			return true
+		}
+		return true
+	})
+
+	coinProofs := make([]*burnproof.CoinsProofSerializable, len(keys))
+	for i := range coinProofs {
+		key := appendKey(keys[i][:], PoolTypeCoinProof)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(burnproof.CoinsProofSerializable)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.coinProofsKeys.Delete(keys[i][:])
 			continue
 		}
-		// if there is no error, it can be part of the new mempool
-		newMempool[k] = p
 
-		if len(proofs) < primitives.MaxCoinProofsPerBlock {
-			proofs = append(proofs, p)
-		}
+		coinProofs[i] = d
 	}
 
-	p.coinProofs = newMempool
+	return coinProofs, s
 
-	return proofs, s
 }
 
 func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State) {
@@ -688,8 +711,7 @@ func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, st
 }
 
 func (p *pool) GetVoteSlashings(s state.State) ([]*primitives.VoteSlashing, state.State) {
-	p.voteSlashingLock.Lock()
-	defer p.voteSlashingLock.Unlock()
+
 	slashings := make([]*primitives.VoteSlashing, 0, primitives.MaxVoteSlashingsPerBlock)
 	newMempool := make([]*primitives.VoteSlashing, 0, len(p.voteSlashings))
 
@@ -711,8 +733,7 @@ func (p *pool) GetVoteSlashings(s state.State) ([]*primitives.VoteSlashing, stat
 }
 
 func (p *pool) GetProposerSlashings(s state.State) ([]*primitives.ProposerSlashing, state.State) {
-	p.proposerSlashingLock.Lock()
-	defer p.proposerSlashingLock.Unlock()
+
 	slashings := make([]*primitives.ProposerSlashing, 0, primitives.MaxProposerSlashingsPerBlock)
 	newMempool := make([]*primitives.ProposerSlashing, 0, len(p.proposerSlashings))
 
@@ -734,8 +755,7 @@ func (p *pool) GetProposerSlashings(s state.State) ([]*primitives.ProposerSlashi
 }
 
 func (p *pool) GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, state.State) {
-	p.randaoSlashingLock.Lock()
-	defer p.randaoSlashingLock.Unlock()
+
 	slashings := make([]*primitives.RANDAOSlashing, 0, primitives.MaxRANDAOSlashingsPerBlock)
 	newMempool := make([]*primitives.RANDAOSlashing, 0, len(p.randaoSlashings))
 
@@ -757,26 +777,36 @@ func (p *pool) GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, 
 }
 
 func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, state.State) {
-	p.governanceVoteLock.Lock()
-	defer p.governanceVoteLock.Unlock()
-	votes := make([]*primitives.GovernanceVote, 0, primitives.MaxGovernanceVotesPerBlock)
-	newMempool := make(map[chainhash.Hash]*primitives.GovernanceVote)
 
-	for k, gv := range p.governanceVotes {
-		if err := s.ProcessGovernanceVote(gv); err != nil {
+	var keys [][32]byte
+	p.coinProofsKeys.Range(func(key, value interface{}) bool {
+		pubKey := key.([32]byte)
+		keys = append(keys, pubKey)
+		if len(keys) >= primitives.MaxGovernanceVotesPerBlock {
+			return true
+		}
+		return true
+	})
+
+	governanceVotes := make([]*primitives.GovernanceVote, len(keys))
+	for i := range governanceVotes {
+		key := appendKey(keys[i][:], PoolTypeGovernanceVote)
+
+		raw := p.pool.Get(nil, key)
+
+		d := new(primitives.GovernanceVote)
+
+		err := d.Unmarshal(raw)
+		if err != nil {
+			p.pool.Del(key)
+			p.governanceVotesKeys.Delete(keys[i][:])
 			continue
 		}
-		// if there is no error, it can be part of the new mempool
-		newMempool[k] = gv
 
-		if len(votes) < primitives.MaxGovernanceVotesPerBlock {
-			votes = append(votes, gv)
-		}
+		governanceVotes[i] = d
 	}
 
-	p.governanceVotes = newMempool
-
-	return votes, s
+	return governanceVotes, s
 }
 
 func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
@@ -853,45 +883,39 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 	p.votesLock.Unlock()
 	p.intidivualVotesLock.Unlock()
 
-	p.depositsLock.Lock()
-	newDeposits := make(map[chainhash.Hash]*primitives.Deposit)
-
-	for k, d1 := range p.deposits {
-		for _, d2 := range b.Deposits {
-			if bytes.Equal(d1.Data.PublicKey[:], d2.Data.PublicKey[:]) {
-				continue
-			}
-		}
-
-		if s.IsDepositValid(d1) != nil {
-			continue
-		}
-
-		newDeposits[k] = d1
+	for _, d := range b.Deposits {
+		key := appendKey(d.PublicKey[:], PoolTypeDeposit)
+		p.pool.Del(key)
+		p.depositKeys.Delete(d.PublicKey[:])
 	}
-	p.deposits = newDeposits
-	p.depositsLock.Unlock()
 
-	p.exitsLock.Lock()
-	newExits := make(map[chainhash.Hash]*primitives.Exit)
-
-	for k, e1 := range p.exits {
-		for _, e2 := range b.Exits {
-			if bytes.Equal(e1.ValidatorPubkey[:], e2.ValidatorPubkey[:]) {
-				continue
-			}
-		}
-
-		if s.IsExitValid(e1) != nil {
-			continue
-		}
-
-		newExits[k] = e1
+	for _, e := range b.Exits {
+		key := appendKey(e.ValidatorPubkey[:], PoolTypeExit)
+		p.pool.Del(key)
+		p.exitKeys.Delete(e.ValidatorPubkey[:])
 	}
-	p.exits = newExits
-	p.exitsLock.Unlock()
 
-	p.proposerSlashingLock.Lock()
+	for _, pe := range b.PartialExit {
+		key := appendKey(pe.ValidatorPubkey[:], PoolTypePartialExit)
+		p.pool.Del(key)
+		p.partialExitKeys.Delete(pe.ValidatorPubkey[:])
+	}
+
+	for _, gv := range b.GovernanceVotes {
+		hash := gv.Hash()
+		key := appendKey(hash[:], PoolTypeGovernanceVote)
+		p.pool.Del(key)
+		p.partialExitKeys.Delete(hash[:])
+	}
+
+	for _, c := range b.CoinProofs {
+		hash := c.Hash()
+
+		key := appendKey(hash[:], PoolTypeCoinProof)
+		p.pool.Del(key)
+		p.partialExitKeys.Delete(hash[:])
+	}
+
 	newProposerSlashings := make([]*primitives.ProposerSlashing, 0, len(p.proposerSlashings))
 	for _, ps := range p.proposerSlashings {
 		psHash := ps.Hash()
@@ -918,9 +942,7 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 		newProposerSlashings = append(newProposerSlashings, ps)
 	}
 	p.proposerSlashings = newProposerSlashings
-	p.proposerSlashingLock.Unlock()
 
-	p.voteSlashingLock.Lock()
 	newVoteSlashings := make([]*primitives.VoteSlashing, 0, len(p.voteSlashings))
 	for _, vs := range p.voteSlashings {
 		vsHash := vs.Hash()
@@ -947,9 +969,7 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 		newVoteSlashings = append(newVoteSlashings, vs)
 	}
 	p.voteSlashings = newVoteSlashings
-	p.voteSlashingLock.Unlock()
 
-	p.randaoSlashingLock.Lock()
 	newRANDAOSlashings := make([]*primitives.RANDAOSlashing, 0, len(p.randaoSlashings))
 	for _, rs := range p.randaoSlashings {
 		rsHash := rs.Hash()
@@ -969,75 +989,6 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 		newRANDAOSlashings = append(newRANDAOSlashings, rs)
 	}
 	p.randaoSlashings = newRANDAOSlashings
-	p.randaoSlashingLock.Unlock()
-
-	p.governanceVoteLock.Lock()
-	newGovernanceVotes := make(map[chainhash.Hash]*primitives.GovernanceVote)
-	for k, gv := range p.governanceVotes {
-		gvHash := gv.Hash()
-
-		for _, blockSlashing := range b.VoteSlashings {
-			blockSlashingHash := blockSlashing.Hash()
-
-			if blockSlashingHash.IsEqual(&gvHash) {
-				continue
-			}
-		}
-
-		if err := s.IsGovernanceVoteValid(gv); err != nil {
-			continue
-		}
-
-		newGovernanceVotes[k] = gv
-	}
-	p.governanceVotes = newGovernanceVotes
-	p.governanceVoteLock.Unlock()
-
-	p.coinProofsLock.Lock()
-	newProofsPool := make(map[chainhash.Hash]*burnproof.CoinsProofSerializable)
-
-	for k, proof := range p.coinProofs {
-		proofHash := proof.Hash()
-
-		for _, proof := range b.CoinProofs {
-			blockProofHash := proof.Hash()
-
-			if blockProofHash.IsEqual(&proofHash) {
-				continue
-			}
-		}
-
-		if err := s.IsCoinProofValid(proof); err != nil {
-			continue
-		}
-
-		newProofsPool[k] = proof
-	}
-	p.coinProofs = newProofsPool
-	p.coinProofsLock.Unlock()
-
-	p.partialExitsLock.Lock()
-	newPartialExitsPool := make(map[chainhash.Hash]*primitives.PartialExit)
-
-	for k, exit := range p.partialExits {
-		hash := exit.Hash()
-
-		for _, e := range b.PartialExit {
-			blockProofHash := e.Hash()
-
-			if blockProofHash.IsEqual(&hash) {
-				continue
-			}
-		}
-
-		if err := s.IsPartialExitValid(exit); err != nil {
-			continue
-		}
-
-		newPartialExitsPool[k] = exit
-	}
-	p.partialExits = newPartialExitsPool
-	p.partialExitsLock.Unlock()
 
 	p.txsLock.Lock()
 
@@ -1055,8 +1006,12 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 		if it.balanceSpent == 0 {
 			delete(p.txs, fpkh)
 		}
-		if tx.Nonce == p.latestNonce[fpkh] {
-			delete(p.latestNonce, fpkh)
+		key := appendKey(fpkh[:], PoolTypeLatestNonce)
+		if lnb, ok := p.pool.HasGet(nil, key); ok {
+			nonce := binary.LittleEndian.Uint64(lnb)
+			if tx.Nonce == nonce {
+				p.pool.Del(key)
+			}
 		}
 	}
 
@@ -1117,17 +1072,14 @@ func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmana
 		host:              hostnode,
 		lastActionManager: manager,
 
-		votes:             make(map[chainhash.Hash]*primitives.MultiValidatorVote),
-		intidivualVotes:   make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
-		deposits:          make(map[chainhash.Hash]*primitives.Deposit),
-		exits:             make(map[chainhash.Hash]*primitives.Exit),
-		partialExits:      make(map[chainhash.Hash]*primitives.PartialExit),
-		txs:               make(map[[20]byte]*txItem),
+		pool: fastcache.New(300 * 1024 * 1024),
+
+		votes:           make(map[chainhash.Hash]*primitives.MultiValidatorVote),
+		intidivualVotes: make(map[chainhash.Hash][]*primitives.MultiValidatorVote),
+		txs:             make(map[[20]byte]*txItem),
+
 		voteSlashings:     []*primitives.VoteSlashing{},
 		proposerSlashings: []*primitives.ProposerSlashing{},
 		randaoSlashings:   []*primitives.RANDAOSlashing{},
-		governanceVotes:   make(map[chainhash.Hash]*primitives.GovernanceVote),
-		coinProofs:        make(map[chainhash.Hash]*burnproof.CoinsProofSerializable),
-		latestNonce:       make(map[[20]byte]uint64),
 	}
 }

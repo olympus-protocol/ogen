@@ -142,7 +142,6 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 
 	}
 
-
 	return nil
 }
 
