@@ -41,9 +41,6 @@ type discover struct {
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.Mutex
 
-	peerAttemptsLock sync.Mutex
-	peerAttempts     map[peer.ID]uint64
-
 	ID        peer.ID
 	dht       *dht.IpfsDHT
 	discovery *discovery.RoutingDiscovery
@@ -76,7 +73,6 @@ func NewDiscover(host HostNode) (*discover, error) {
 		netParams:    netParams,
 		ID:           host.GetHost().ID(),
 		lastConnect:  make(map[peer.ID]time.Time),
-		peerAttempts: make(map[peer.ID]uint64),
 	}
 
 	go dp.initialConnect()
@@ -105,18 +101,14 @@ func (d *discover) initialConnect() {
 		initialNodes = append(initialNodes, peerstorePeers[0:7]...)
 	}
 
-	d.peerAttemptsLock.Lock()
 	for _, addr := range initialNodes {
 		if addr.ID == d.ID {
 			continue
 		}
-		d.peerAttempts[addr.ID] = 0
 		if err := d.Connect(addr); err != nil {
-			d.peerAttempts[addr.ID] += 1
 			d.host.GetHost().Peerstore().ClearAddrs(addr.ID)
 			d.log.Infof("unable to connect to peer %s error: %s", addr.ID, err.Error())
 		}
-		delete(d.peerAttempts, addr.ID)
 	}
 }
 
@@ -133,26 +125,11 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 		return
 	}
 
-	d.peerAttemptsLock.Lock()
 	err = d.Connect(pi)
 	if err != nil {
-		attempts, ok := d.peerAttempts[pi.ID]
-		if !ok {
-			d.peerAttempts[pi.ID] = 1
-		}
-		if attempts >= 5 {
-			d.host.StatsService().SetPeerBan(pi.ID, unreachablePeerTimePenalization)
-			d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
-			d.log.Infof("unable to connect to peer %s error: %s", pi.ID.String(), err.Error())
-			delete(d.peerAttempts, pi.ID)
-		} else {
-			d.peerAttempts[pi.ID] += 1
-		}
-
+		d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
+		d.log.Infof("unable to connect to peer %s error: %s", pi.ID.String(), err.Error())
 	}
-	delete(d.peerAttempts, pi.ID)
-	d.peerAttemptsLock.Unlock()
-
 }
 
 func (d *discover) findPeers() {
@@ -181,8 +158,8 @@ func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
-const connectionTimeout = 5 * time.Second
-const connectionWait = 10 * time.Second
+const connectionTimeout = 1500 * time.Millisecond
+const connectionWait = 60 * time.Second
 
 func (d *discover) handleStream(s network.Stream) {
 	d.log.Infof("handling messages from relayer %s for protocol %s", s.Conn().RemotePeer(), s.Protocol())
