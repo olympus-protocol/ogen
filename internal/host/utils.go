@@ -1,6 +1,7 @@
-package hostnode
+package host
 
 import (
+	"crypto/rand"
 	"fmt"
 	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
@@ -13,8 +14,11 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
+	"path"
 	"sort"
 	"time"
 )
@@ -173,4 +177,38 @@ func buildOptions(ip net.IP, priKey crypto.PrivKey, ps peerstore.Peerstore) []li
 	}
 
 	return options
+}
+
+func (h *host) loadPrivateKey() (crypto.PrivKey, error) {
+	keyBytes, err := ioutil.ReadFile(path.Join(h.datapath, "node_key.dat"))
+	if err != nil {
+		return h.createPrivateKey()
+	}
+
+	key, err := crypto.UnmarshalPrivateKey(keyBytes)
+	if err != nil {
+		return h.createPrivateKey()
+	}
+	return key, nil
+}
+
+func (h *host) createPrivateKey() (crypto.PrivKey, error) {
+	_ = os.RemoveAll(path.Join(h.datapath, "node_key.dat"))
+
+	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	keyBytes, err := crypto.MarshalPrivateKey(priv)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ioutil.WriteFile(path.Join(h.datapath, "node_key.dat"), keyBytes, 0700)
+	if err != nil {
+		return nil, err
+	}
+
+	return priv, nil
 }

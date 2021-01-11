@@ -8,7 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -44,7 +44,7 @@ var _ LastActionManager = &lastActionManager{}
 type lastActionManager struct {
 	log logger.Logger
 
-	host hostnode.HostNode
+	host host.Host
 	ch   chain.Blockchain
 	ctx  context.Context
 
@@ -69,7 +69,7 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActionManager, error) {
+func NewLastActionManager(node host.Host, ch chain.Blockchain) (LastActionManager, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams

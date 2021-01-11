@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -21,7 +21,7 @@ import (
 type utilsServer struct {
 	netParams *params.ChainParams
 	keystore  keystore.Keystore
-	host      hostnode.HostNode
+	host      host.Host
 	pool      mempool.Pool
 	chain     chain.Blockchain
 	proto.UnimplementedUtilsServer

@@ -8,7 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -58,7 +58,7 @@ type pool struct {
 	ctx       context.Context
 
 	chain             chain.Blockchain
-	host              hostnode.HostNode
+	host              host.Host
 	lastActionManager actionmanager.LastActionManager
 
 	pool *fastcache.Cache
@@ -1132,7 +1132,7 @@ func (p *pool) Start() error {
 	return nil
 }
 
-func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) Pool {
+func NewPool(ch chain.Blockchain, hostnode host.Host, manager actionmanager.LastActionManager) Pool {
 	datapath := config.GlobalFlags.DataPath
 
 	var cache *fastcache.Cache

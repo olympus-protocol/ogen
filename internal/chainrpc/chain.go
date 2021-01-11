@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"reflect"
 
@@ -19,7 +19,7 @@ import (
 
 type chainServer struct {
 	chain chain.Blockchain
-	host  hostnode.HostNode
+	host  host.Host
 	proto.UnimplementedChainServer
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/internal/dashboard"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/proposer"
@@ -17,7 +17,7 @@ import (
 )
 
 type Server interface {
-	HostNode() hostnode.HostNode
+	HostNode() host.Host
 	Proposer() proposer.Proposer
 	Chain() chain.Blockchain
 	Start()
@@ -30,7 +30,7 @@ type server struct {
 	log logger.Logger
 
 	ch        chain.Blockchain
-	hn        hostnode.HostNode
+	hn        host.Host
 	rpc       chainrpc.RPCServer
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
@@ -40,7 +40,7 @@ type server struct {
 
 var _ Server = &server{}
 
-func (s *server) HostNode() hostnode.HostNode {
+func (s *server) HostNode() host.Host {
 	return s.hn
 }
 
@@ -115,7 +115,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	hn, err := hostnode.NewHostNode(ch)
+	hn, err := host.NewHostNode(ch)
 	if err != nil {
 		return nil, err
 	}

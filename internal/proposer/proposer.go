@@ -15,7 +15,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -57,13 +57,13 @@ type proposer struct {
 	proposing bool
 
 	pool mempool.Pool
-	host hostnode.HostNode
+	host host.Host
 
 	lastActionManager actionmanager.LastActionManager
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, hostnode host.Host, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	prop := &proposer{

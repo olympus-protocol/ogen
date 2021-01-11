@@ -7,7 +7,7 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"html/template"
@@ -17,7 +17,7 @@ import (
 type Dashboard struct {
 	ctx      context.Context
 	r        *gin.Engine
-	host     hostnode.HostNode
+	host     host.Host
 	chain    chain.Blockchain
 	proposer proposer.Proposer
 }
@@ -149,7 +149,7 @@ func (d *Dashboard) loadTemplate() error {
 	return nil
 }
 
-func NewDashboard(h hostnode.HostNode, ch chain.Blockchain, prop proposer.Proposer) (*Dashboard, error) {
+func NewDashboard(h host.Host, ch chain.Blockchain, prop proposer.Proposer) (*Dashboard, error) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())

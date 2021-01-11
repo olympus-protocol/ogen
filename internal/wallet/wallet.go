@@ -14,7 +14,7 @@ import (
 	"go.etcd.io/bbolt"
 
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -52,7 +52,7 @@ type wallet struct {
 	netParams *params.ChainParams
 	log       logger.Logger
 	chain     chain.Blockchain
-	host      hostnode.HostNode
+	host      host.Host
 
 	pool mempool.Pool
 
@@ -71,7 +71,7 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ch chain.Blockchain, hostnode hostnode.HostNode, pool mempool.Pool) (Wallet, error) {
+func NewWallet(ch chain.Blockchain, hostnode host.Host, pool mempool.Pool) (Wallet, error) {
 	netParams := config.GlobalParams.NetParams
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
