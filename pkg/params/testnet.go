@@ -46,8 +46,7 @@ var TestNet = ChainParams{
 		0: "do_not_go_gentle_into_that_good_night",
 	},
 	Relayers: map[string]string{
-		"test": "/ip4/192.168.100.130/tcp/25000/p2p/12D3KooWF1gEAsF82gjxC13wPky3g8vRSEsR1MtfjSLKo13aiLnU",
-		//cronos-1-ipv4": "/ip4/128.199.244.76/tcp/25000/p2p/12D3KooWDvTjRxiQ4ysMd4GUv4EKbhtXix33QU4ANNFsMtah7AH1",
-		//"cronos-2-ipv4": "/ip4/128.199.244.102/tcp/25000/p2p/12D3KooWDAVSoS442h7fSFkoGRD6BJUXnijtcnoq7oyRoT9cVu9v",
+		"cronos-1-ipv4": "/ip4/128.199.244.76/tcp/25000/p2p/12D3KooWDvTjRxiQ4ysMd4GUv4EKbhtXix33QU4ANNFsMtah7AH1",
+		"cronos-2-ipv4": "/ip4/128.199.244.102/tcp/25000/p2p/12D3KooWDAVSoS442h7fSFkoGRD6BJUXnijtcnoq7oyRoT9cVu9v",
 	},
 }
