@@ -71,7 +71,7 @@ type wallet struct {
 }
 
 // NewWallet creates a new wallet.
-func NewWallet(ch chain.Blockchain, hostnode host.Host, pool mempool.Pool) (Wallet, error) {
+func NewWallet(ch chain.Blockchain, h host.Host, pool mempool.Pool) (Wallet, error) {
 	netParams := config.GlobalParams.NetParams
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
@@ -82,7 +82,7 @@ func NewWallet(ch chain.Blockchain, hostnode host.Host, pool mempool.Pool) (Wall
 		netParams: netParams,
 		open:      false,
 		chain:     ch,
-		host:      hostnode,
+		host:      h,
 		pool:      pool,
 		ctx:       ctx,
 	}

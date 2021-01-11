@@ -42,13 +42,13 @@ var _ Proposer = &proposer{}
 
 // proposer manages mining for the blockchain.
 type proposer struct {
-	log        logger.Logger
-	netParams  *params.ChainParams
-	chain      chain.Blockchain
-	keystore   keystore.Keystore
-	mineActive bool
-	context    context.Context
-	stop       context.CancelFunc
+	log       logger.Logger
+	netParams *params.ChainParams
+	chain     chain.Blockchain
+	keystore  keystore.Keystore
+
+	context context.Context
+	stop    context.CancelFunc
 
 	proposerLock sync.Mutex
 	voteLock     sync.Mutex
@@ -63,7 +63,7 @@ type proposer struct {
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(chain chain.Blockchain, hostnode host.Host, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	prop := &proposer{
@@ -71,11 +71,10 @@ func NewProposer(chain chain.Blockchain, hostnode host.Host, pool mempool.Pool, 
 		netParams:         config.GlobalParams.NetParams,
 		keystore:          ks,
 		chain:             chain,
-		mineActive:        true,
 		context:           ctx,
 		stop:              cancel,
 		pool:              pool,
-		host:              hostnode,
+		host:              h,
 		lastActionManager: manager,
 		voting:            false,
 		proposing:         false,

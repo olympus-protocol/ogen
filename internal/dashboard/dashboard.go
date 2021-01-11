@@ -31,17 +31,13 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 	tip := d.chain.State().Tip()
 	justified, _ := d.chain.State().GetJustifiedHead()
 	finalized, _ := d.chain.State().GetFinalizedHead()
-	peers := d.host.GetPeerInfos()
+	peers := d.host.GetPeersInfo()
 	peersAhead := 0
 	peersBehind := 0
 	peersEqual := 0
 
 	var peersData []PeerData
-	for _, pid := range peers {
-		p, ok := d.host.StatsService().GetPeerStats(pid.ID)
-		if !ok {
-			continue
-		}
+	for _, p := range peers {
 		if p.ChainStats.TipSlot > justified.Slot {
 			peersAhead += 1
 		}

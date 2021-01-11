@@ -159,7 +159,7 @@ func (s *rpcServer) Start() error {
 }
 
 // NewRPCServer Returns an RPC server instance
-func NewRPCServer(chain chain.Blockchain, hostnode host.Host, wallet wallet.Wallet, ks keystore.Keystore, pool mempool.Pool) (RPCServer, error) {
+func NewRPCServer(chain chain.Blockchain, h host.Host, wallet wallet.Wallet, ks keystore.Keystore, pool mempool.Pool) (RPCServer, error) {
 	datapath := config.GlobalFlags.DataPath
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -188,18 +188,18 @@ func NewRPCServer(chain chain.Blockchain, hostnode host.Host, wallet wallet.Wall
 		log: log,
 		chainServer: &chainServer{
 			chain: chain,
-			host:  hostnode,
+			host:  h,
 		},
 		validatorsServer: &validatorsServer{
 			netParams: netParams,
 			chain:     chain,
 		},
 		networkServer: &networkServer{
-			host: hostnode,
+			host: h,
 		},
 		utilsServer: &utilsServer{
 			netParams: netParams,
-			host:      hostnode,
+			host:      h,
 			pool:      pool,
 			chain:     chain,
 		},

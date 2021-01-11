@@ -44,6 +44,8 @@ type Host interface {
 	RegisterHandler(messageName string, handler MessageHandler)
 
 	Broadcast(msg p2p.Message) error
+
+	Stop()
 }
 
 type host struct {
@@ -179,6 +181,10 @@ func (h *host) Broadcast(msg p2p.Message) error {
 		return err
 	}
 	return h.topic.Publish(h.ctx, buf.Bytes())
+}
+
+func (h *host) Stop() {
+	h.stats.Close()
 }
 
 func (h *host) listenTopics() {

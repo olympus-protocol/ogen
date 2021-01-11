@@ -17,7 +17,7 @@ import (
 )
 
 type Server interface {
-	HostNode() host.Host
+	Host() host.Host
 	Proposer() proposer.Proposer
 	Chain() chain.Blockchain
 	Start()
@@ -30,7 +30,7 @@ type server struct {
 	log logger.Logger
 
 	ch        chain.Blockchain
-	hn        host.Host
+	h         host.Host
 	rpc       chainrpc.RPCServer
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
@@ -40,8 +40,8 @@ type server struct {
 
 var _ Server = &server{}
 
-func (s *server) HostNode() host.Host {
-	return s.hn
+func (s *server) Host() host.Host {
+	return s.h
 }
 
 func (s *server) Proposer() proposer.Proposer {
@@ -65,12 +65,9 @@ func (s *server) Start() {
 		}
 	}()
 
-	err := s.pool.Start()
-	if err != nil {
-		s.log.Fatal("unable to start pool instance")
-	}
+	s.pool.Start()
 
-	err = s.ch.Start()
+	err := s.ch.Start()
 	if err != nil {
 		s.log.Fatal("unable to start chain instance")
 	}
@@ -94,7 +91,7 @@ func (s *server) Stop() error {
 	s.ch.Stop()
 	s.rpc.Stop()
 	s.pool.Close()
-	s.hn.Stop()
+	s.h.Stop()
 	return nil
 }
 
@@ -115,31 +112,31 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	hn, err := host.NewHostNode(ch)
+	h, err := host.NewHostNode(ch)
 	if err != nil {
 		return nil, err
 	}
 
-	lam, err := actionmanager.NewLastActionManager(hn, ch)
+	lam, err := actionmanager.NewLastActionManager(h, ch)
 	if err != nil {
 		return nil, err
 	}
 
-	pool := mempool.NewPool(ch, hn, lam)
+	pool := mempool.NewPool(ch, h, lam)
 
-	w, err := wallet.NewWallet(ch, hn, pool)
+	w, err := wallet.NewWallet(ch, h, pool)
 	if err != nil {
 		return nil, err
 	}
 
 	ks := keystore.NewKeystore()
 
-	prop, err := proposer.NewProposer(ch, hn, pool, ks, lam)
+	prop, err := proposer.NewProposer(ch, h, pool, ks, lam)
 	if err != nil {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(ch, hn, w, ks, pool)
+	rpc, err := chainrpc.NewRPCServer(ch, h, w, ks, pool)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +145,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 		log: log,
 
 		ch:     ch,
-		hn:     hn,
+		h:      h,
 		rpc:    rpc,
 		prop:   prop,
 		wallet: w,
@@ -156,7 +153,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 	}
 
 	if config.GlobalFlags.Dashboard {
-		s.dashboard, err = dashboard.NewDashboard(hn, ch, prop)
+		s.dashboard, err = dashboard.NewDashboard(h, ch, prop)
 		if err != nil {
 			return nil, err
 		}

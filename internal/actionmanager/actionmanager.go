@@ -69,13 +69,13 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(node host.Host, ch chain.Blockchain) (LastActionManager, error) {
+func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
 	l := &lastActionManager{
-		host:        node,
+		host:        h,
 		ch:          ch,
 		ctx:         ctx,
 		lastActions: fastcache.New(128 * 1024 * 1024),

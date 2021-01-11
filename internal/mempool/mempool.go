@@ -1115,7 +1115,7 @@ func (p *pool) Start() {
 
 }
 
-func NewPool(ch chain.Blockchain, hostnode host.Host, manager actionmanager.LastActionManager) Pool {
+func NewPool(ch chain.Blockchain, h host.Host, manager actionmanager.LastActionManager) Pool {
 	datapath := config.GlobalFlags.DataPath
 
 	var cache *fastcache.Cache
@@ -1129,7 +1129,7 @@ func NewPool(ch chain.Blockchain, hostnode host.Host, manager actionmanager.Last
 		log:               config.GlobalParams.Logger,
 		ctx:               config.GlobalParams.Context,
 		chain:             ch,
-		host:              hostnode,
+		host:              h,
 		lastActionManager: manager,
 
 		pool: cache,
