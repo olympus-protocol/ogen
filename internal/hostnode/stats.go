@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	unreachablePeerTimePenalization = time.Minute * 5
-	banPeerTimePenalization         = time.Minute * 60
+	banPeerTimePenalization = time.Minute * 60
 )
 
 type peerChainStats struct {

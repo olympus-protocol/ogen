@@ -157,11 +157,9 @@ func (p *handler) sendMessages(id peer.ID, w io.Writer) {
 }
 
 func (p *handler) handleStream(s network.Stream) {
-	if s != nil {
-		p.sendMessages(s.Conn().RemotePeer(), s)
-		p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
-		go p.receiveMessages(s.Conn().RemotePeer(), s)
-	}
+	p.sendMessages(s.Conn().RemotePeer(), s)
+	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
+	go p.receiveMessages(s.Conn().RemotePeer(), s)
 }
 
 // SendMessage writes a message to a peer.

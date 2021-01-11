@@ -121,13 +121,16 @@ func (node *hostNode) RegisterTopicHandler(message string, handler MessageHandle
 }
 
 func (node *hostNode) HandleStream(s network.Stream) {
-	if s.Protocol() == params.ProtocolID(config.GlobalParams.NetParams.Name) {
-		node.handler.handleStream(s)
-		node.synchronizer.sendVersion(s.Conn().RemotePeer())
+	if s != nil {
+		if s.Protocol() == params.ProtocolID(config.GlobalParams.NetParams.Name) {
+			node.handler.handleStream(s)
+			node.synchronizer.sendVersion(s.Conn().RemotePeer())
+		}
+		if s.Protocol() == params.ProtocolDiscoveryID(config.GlobalParams.NetParams.Name) {
+			node.discover.handleStream(s)
+		}
 	}
-	if s.Protocol() == params.ProtocolDiscoveryID(config.GlobalParams.NetParams.Name) {
-		node.discover.handleStream(s)
-	}
+
 }
 
 func (node *hostNode) SendMessage(id peer.ID, msg p2p.Message) error {

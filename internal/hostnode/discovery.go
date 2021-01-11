@@ -65,14 +65,14 @@ func NewDiscover(host HostNode) (*discover, error) {
 	r := discovery.NewRoutingDiscovery(d)
 
 	dp := &discover{
-		host:         host,
-		ctx:          ctx,
-		log:          log,
-		dht:          d,
-		discovery:    r,
-		netParams:    netParams,
-		ID:           host.GetHost().ID(),
-		lastConnect:  make(map[peer.ID]time.Time),
+		host:        host,
+		ctx:         ctx,
+		log:         log,
+		dht:         d,
+		discovery:   r,
+		netParams:   netParams,
+		ID:          host.GetHost().ID(),
+		lastConnect: make(map[peer.ID]time.Time),
 	}
 
 	go dp.initialConnect()
