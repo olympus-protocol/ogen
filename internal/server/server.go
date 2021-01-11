@@ -94,6 +94,7 @@ func (s *server) Stop() error {
 	s.ch.Stop()
 	s.rpc.Stop()
 	s.pool.Close()
+	s.hn.Stop()
 	return nil
 }
 

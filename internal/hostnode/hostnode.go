@@ -27,6 +27,7 @@ import (
 // HostNode is an interface for hostNode
 type HostNode interface {
 	Syncing() bool
+	Stop()
 	GetHost() host.Host
 	GetNetMagic() uint32
 	DisconnectPeer(p peer.ID) error
@@ -53,114 +54,14 @@ type hostNode struct {
 	netMagic uint32
 	log      logger.Logger
 
-	discover     *discover
-	synchronizer *synchronizer
-	handler      *handler
+	discover      *discover
+	synchronizer  *synchronizer
+	handler       *handler
+	statesSerivce *statsService
 
 	topic     *pubsub.Topic
 	topicSub  *pubsub.Subscription
 	listening bool
-}
-
-// NewHostNode creates a host node
-func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
-	ctx := config.GlobalParams.Context
-	log := config.GlobalParams.Logger
-	netParams := config.GlobalParams.NetParams
-
-	node := &hostNode{
-		ctx:      ctx,
-		log:      log,
-		netMagic: netParams.NetMagic,
-		datapath: config.GlobalFlags.DataPath,
-	}
-
-	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	ps, err := pstoreds.NewPeerstore(node.ctx, ds, pstoreds.DefaultOpts())
-	if err != nil {
-		return nil, err
-	}
-
-	priv, err := node.loadPrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + netParams.DefaultP2PPort)
-	if err != nil {
-		return nil, err
-	}
-
-	ip := ipAddr()
-	opts := buildOptions(ip, priv, ps)
-	h, err := libp2p.New(
-		ctx,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	node.host = h
-
-	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
-		ID:    h.ID(),
-		Addrs: []ma.Multiaddr{listenAddress},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, a := range addrs {
-		log.Infof("binding to address: %s", a)
-	}
-
-	g, err := pubsub.NewGossipSub(node.ctx, node.host)
-	if err != nil {
-		return nil, err
-	}
-
-	node.topic, err = g.Join("pub_channel")
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = node.topic.Relay()
-	if err != nil {
-		return nil, err
-	}
-
-	node.topicSub, err = node.topic.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	handler, err := newHandler(params.ProtocolID(config.GlobalParams.NetParams.Name), node)
-	if err != nil {
-		return nil, err
-	}
-	node.handler = handler
-
-	go node.listenTopics()
-	go node.listenerWatcher()
-
-	synchronizer, err := NewSyncronizer(node, blockchain)
-	if err != nil {
-		return nil, err
-	}
-	node.synchronizer = synchronizer
-
-	discovery, err := NewDiscover(node)
-	if err != nil {
-		return nil, err
-	}
-	node.discover = discovery
-
-	return node, nil
 }
 
 func (node *hostNode) Syncing() bool {
@@ -328,4 +229,110 @@ func (node *hostNode) listenTopics() {
 		}
 		node.handler.topicHandlersLock.Unlock()
 	}
+}
+func (node *hostNode) Stop() {
+	node.statesSerivce.Close()
+}
+
+// NewHostNode creates a host node
+func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
+	ctx := config.GlobalParams.Context
+	log := config.GlobalParams.Logger
+	netParams := config.GlobalParams.NetParams
+	datapath := config.GlobalFlags.DataPath
+
+	node := &hostNode{
+		ctx:           ctx,
+		log:           log,
+		netMagic:      netParams.NetMagic,
+		datapath:      datapath,
+		statesSerivce: NewPeersStatsService(),
+	}
+
+	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	ps, err := pstoreds.NewPeerstore(node.ctx, ds, pstoreds.DefaultOpts())
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err := node.loadPrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	listenAddress, err := ma.NewMultiaddr("/ip4/0.0.0.0/tcp/" + netParams.DefaultP2PPort)
+	if err != nil {
+		return nil, err
+	}
+
+	ip := ipAddr()
+	opts := buildOptions(ip, priv, ps)
+	h, err := libp2p.New(
+		ctx,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	node.host = h
+
+	addrs, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{
+		ID:    h.ID(),
+		Addrs: []ma.Multiaddr{listenAddress},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range addrs {
+		log.Infof("binding to address: %s", a)
+	}
+
+	g, err := pubsub.NewGossipSub(node.ctx, node.host)
+	if err != nil {
+		return nil, err
+	}
+
+	node.topic, err = g.Join("pub_channel")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = node.topic.Relay()
+	if err != nil {
+		return nil, err
+	}
+
+	node.topicSub, err = node.topic.Subscribe()
+	if err != nil {
+		return nil, err
+	}
+
+	handler, err := newHandler(params.ProtocolID(config.GlobalParams.NetParams.Name), node)
+	if err != nil {
+		return nil, err
+	}
+	node.handler = handler
+
+	go node.listenTopics()
+	go node.listenerWatcher()
+
+	synchronizer, err := NewSyncronizer(node, blockchain)
+	if err != nil {
+		return nil, err
+	}
+	node.synchronizer = synchronizer
+
+	discovery, err := NewDiscover(node)
+	if err != nil {
+		return nil, err
+	}
+	node.discover = discovery
+
+	return node, nil
 }

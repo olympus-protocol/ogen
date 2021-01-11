@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/rand"
 	"sync"
@@ -23,16 +22,6 @@ import (
 const MinPeersForSyncStart = 3
 
 type peerInfo struct {
-	ID              peer.ID
-	TipSlot         uint64
-	TipHeight       uint64
-	TipHash         chainhash.Hash
-	JustifiedSlot   uint64
-	JustifiedHeight uint64
-	JustifiedHash   chainhash.Hash
-	FinalizedSlot   uint64
-	FinalizedHeight uint64
-	FinalizedHash   chainhash.Hash
 }
 
 var (
