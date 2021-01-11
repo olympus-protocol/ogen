@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/binary"
 	dsleveldb "github.com/ipfs/go-ds-leveldb"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -34,12 +35,13 @@ type HostNode interface {
 	GetPeerInfos() []peer.AddrInfo
 	GetPeerDirection(id peer.ID) network.Direction
 	GetPeerInfo(id peer.ID) *peer.AddrInfo
-	GetPeersStats() []*peerInfo
 	RegisterHandler(message string, handler MessageHandler) error
 	RegisterTopicHandler(message string, handler MessageHandler) error
 	HandleStream(s network.Stream)
 	SendMessage(id peer.ID, msg p2p.Message) error
 	Broadcast(msg p2p.Message) error
+	StatsService() *statsService
+	VersionMsg() *p2p.MsgVersion
 }
 
 var _ HostNode = &hostNode{}
@@ -53,6 +55,7 @@ type hostNode struct {
 	datapath string
 	netMagic uint32
 	log      logger.Logger
+	chain    chain.Blockchain
 
 	discover      *discover
 	synchronizer  *synchronizer
@@ -132,16 +135,6 @@ func (node *hostNode) Broadcast(msg p2p.Message) error {
 		return err
 	}
 	return node.topic.Publish(node.ctx, buf.Bytes())
-}
-
-func (node *hostNode) GetPeersStats() []*peerInfo {
-	node.synchronizer.peersTrackLock.Lock()
-	var peers []*peerInfo
-	for _, p := range node.synchronizer.peersTrack {
-		peers = append(peers, p)
-	}
-	node.synchronizer.peersTrackLock.Unlock()
-	return peers
 }
 
 func (node *hostNode) loadPrivateKey() (crypto.PrivKey, error) {
@@ -234,6 +227,34 @@ func (node *hostNode) Stop() {
 	node.statesSerivce.Close()
 }
 
+func (node *hostNode) StatsService() *statsService {
+	return node.statesSerivce
+}
+
+func (node *hostNode) VersionMsg() *p2p.MsgVersion {
+
+	justified, _ := node.chain.State().GetJustifiedHead()
+	finalized, _ := node.chain.State().GetFinalizedHead()
+
+	tip := node.chain.State().Chain().Tip()
+
+	buf := make([]byte, 8)
+	rand.Read(buf)
+	msg := &p2p.MsgVersion{
+		Tip:             tip.Height,
+		TipHash:         tip.Hash,
+		Nonce:           binary.LittleEndian.Uint64(buf),
+		Timestamp:       uint64(time.Now().Unix()),
+		JustifiedSlot:   justified.Slot,
+		JustifiedHeight: justified.Height,
+		JustifiedHash:   justified.Hash,
+		FinalizedSlot:   finalized.Slot,
+		FinalizedHeight: finalized.Height,
+		FinalizedHash:   finalized.Hash,
+	}
+	return msg
+}
+
 // NewHostNode creates a host node
 func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	ctx := config.GlobalParams.Context
@@ -242,12 +263,18 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	datapath := config.GlobalFlags.DataPath
 
 	node := &hostNode{
-		ctx:           ctx,
-		log:           log,
-		netMagic:      netParams.NetMagic,
-		datapath:      datapath,
-		statesSerivce: NewPeersStatsService(),
+		ctx:      ctx,
+		log:      log,
+		netMagic: netParams.NetMagic,
+		datapath: datapath,
+		chain:    blockchain,
 	}
+
+	pstats, err := NewPeersStatsService(node)
+	if err != nil {
+		return nil, err
+	}
+	node.statesSerivce = pstats
 
 	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
 	if err != nil {

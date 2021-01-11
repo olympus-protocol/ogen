@@ -100,11 +100,7 @@ func (d *discover) initialConnect() {
 
 	for _, addr := range initialNodes {
 		if err := d.host.GetHost().Connect(d.ctx, addr); err != nil {
-			m, err := addr.MarshalJSON()
-			if err != nil {
-				continue
-			}
-			//d.host.badPeersCache.Set(addr.ID.String(), m, int64(len(m)))
+			d.host.StatsService().SetUnreachablePeer(addr.ID)
 			d.host.GetHost().Peerstore().ClearAddrs(addr.ID)
 			d.log.Infof("unable to connect to peer %s", addr.ID)
 		}
@@ -115,16 +111,12 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
-	if _, ok := d.host.BadPeersCache.Get(pi.ID.String()); ok {
+	if ok, err := d.host.StatsService().IsBanned(pi.ID); ok || err != nil {
 		return
 	}
 	err := d.Connect(pi)
 	if err != nil {
-		m, err := pi.MarshalJSON()
-		if err != nil {
-			return
-		}
-		BadPeersCache.Set(pi.ID.String(), m, int64(len(m)))
+		d.host.StatsService().SetUnreachablePeer(pi.ID)
 		d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
 		d.log.Infof("unable to connect to peer %s", pi.ID.String())
 	}

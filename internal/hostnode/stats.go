@@ -1,13 +1,20 @@
 package hostnode
 
 import (
+	"errors"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/p2p"
+	"math/rand"
 	"sync"
 	"time"
+)
+
+var (
+	unreachablePeerTime = time.Minute * 60
 )
 
 type peerChainStats struct {
@@ -21,6 +28,7 @@ type peerChainStats struct {
 	FinalizedHeight uint64
 	FinalizedHash   chainhash.Hash
 }
+
 type peerStats struct {
 	ID            peer.ID
 	ChainStats    peerChainStats
@@ -33,7 +41,9 @@ type peerStats struct {
 
 type statsService struct {
 	banPeersCache *fastcache.Cache
-	badPeersStats sync.Map
+	peersStats    sync.Map
+	count         int
+	host          HostNode
 }
 
 // IsBanned returns if a known peer is banned for bad behaviour
@@ -61,17 +71,157 @@ func (s *statsService) IsBanned(p peer.ID) (bool, error) {
 	return true, nil
 }
 
+func (s *statsService) GetPeerStats(p peer.ID) (*peerStats, bool) {
+	ps, ok := s.peersStats.Load(p)
+	if !ok {
+		return nil, false
+	}
+	stats, ok := ps.(peerStats)
+	if !ok {
+		return nil, false
+	}
+	return &stats, true
+}
+
+func (s *statsService) SetUnreachablePeer(p peer.ID) {
+	ip, err := p.MarshalBinary()
+	if err != nil {
+		return
+	}
+	t := time.Now().Add(unreachablePeerTime)
+	tb, err := t.MarshalBinary()
+	if err != nil {
+		return
+	}
+	s.banPeersCache.Set(ip, tb)
+}
+
+// FindBestPeer will perform a contextual check for peers and return a random peer ahead if we need to sync.
+func (s *statsService) FindBestPeer() (peer.ID, bool) {
+	verMsg := s.host.VersionMsg()
+
+	var peersAhead []*peerStats
+	var peersBehind []*peerStats
+	var peersEqual []*peerStats
+
+	s.peersStats.Range(func(key, value interface{}) bool {
+		p, ok := value.(peerStats)
+		if !ok {
+			return true
+		}
+		if p.ChainStats.TipHeight > verMsg.FinalizedHeight {
+			peersAhead = append(peersAhead, &p)
+		}
+
+		if p.ChainStats.TipHeight == verMsg.FinalizedHeight {
+			peersEqual = append(peersEqual, &p)
+		}
+
+		if p.ChainStats.TipHeight < verMsg.FinalizedHeight {
+			peersBehind = append(peersBehind, &p)
+		}
+		return true
+	})
+
+	if len(peersAhead) == 0 {
+		return "", false
+	}
+
+	r := rand.Intn(len(peersAhead))
+	peerSelected := peersAhead[r]
+
+	return peerSelected.ID, true
+}
+
+func (s *statsService) TrackCount() int {
+	return s.count
+}
+
+func (s *statsService) Add(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
+	peerStats := peerStats{
+		ID: p,
+		ChainStats: peerChainStats{
+			TipSlot:         ver.TipSlot,
+			TipHeight:       ver.Tip,
+			TipHash:         ver.TipHash,
+			JustifiedSlot:   ver.JustifiedSlot,
+			JustifiedHeight: ver.JustifiedHeight,
+			JustifiedHash:   ver.JustifiedHash,
+			FinalizedSlot:   ver.FinalizedSlot,
+			FinalizedHeight: ver.FinalizedHeight,
+			FinalizedHash:   ver.FinalizedHash,
+		},
+		Direction:     dir,
+		BytesReceived: 0,
+		BytesSent:     0,
+		BadMsgs:       0,
+		Banscore:      0,
+	}
+	s.peersStats.Store(p, peerStats)
+	s.count += 1
+}
+
+func (s *statsService) Remove(p peer.ID) {
+	s.peersStats.Delete(p)
+	s.count -= 1
+}
+
 func (s *statsService) Close() {
 	datapath := config.GlobalFlags.DataPath
 	_ = s.banPeersCache.SaveToFile(datapath + "/badpeers")
 }
 
-func NewPeersStatsService() *statsService {
+func (s *statsService) handleFinalizationMsg(id peer.ID, msg p2p.Message) error {
+
+	fin, ok := msg.(*p2p.MsgFinalization)
+	if !ok {
+		return errors.New("non block msg")
+	}
+
+	if s.host.GetHost().ID() == id {
+		return nil
+	}
+
+	ps, ok := s.peersStats.Load(id)
+	if !ok {
+		return nil
+	}
+
+	peerStats, ok := ps.(peerStats)
+	if !ok {
+		return nil
+	}
+
+	peerStats.ChainStats = peerChainStats{
+		TipSlot:         fin.TipSlot,
+		TipHeight:       fin.Tip,
+		TipHash:         fin.TipHash,
+		JustifiedSlot:   fin.JustifiedSlot,
+		JustifiedHeight: fin.JustifiedHeight,
+		JustifiedHash:   fin.JustifiedHash,
+		FinalizedSlot:   fin.FinalizedSlot,
+		FinalizedHeight: fin.FinalizedHeight,
+		FinalizedHash:   fin.FinalizedHash,
+	}
+
+	s.peersStats.Store(id, peerStats)
+
+	return nil
+}
+
+func NewPeersStatsService(host HostNode) (*statsService, error) {
 	datapath := config.GlobalFlags.DataPath
 
 	cache := fastcache.LoadFromFileOrNew(datapath+"/badpeers", 50*1024*1024)
 
-	return &statsService{
+	ss := &statsService{
 		banPeersCache: cache,
+		count:         0,
+		host:          host,
 	}
+	if err := host.RegisterTopicHandler(p2p.MsgFinalizationCmd, ss.handleFinalizationMsg); err != nil {
+		return nil, err
+	}
+
+	return ss, nil
 }
