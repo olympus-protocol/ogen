@@ -41,6 +41,9 @@ type discover struct {
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.Mutex
 
+	peerAttemptsLock sync.Mutex
+	peerAttempts     map[peer.ID]uint64
+
 	ID        peer.ID
 	dht       *dht.IpfsDHT
 	discovery *discovery.RoutingDiscovery
@@ -65,14 +68,15 @@ func NewDiscover(host HostNode) (*discover, error) {
 	r := discovery.NewRoutingDiscovery(d)
 
 	dp := &discover{
-		host:        host,
-		ctx:         ctx,
-		log:         log,
-		dht:         d,
-		discovery:   r,
-		netParams:   netParams,
-		ID:          host.GetHost().ID(),
-		lastConnect: make(map[peer.ID]time.Time),
+		host:         host,
+		ctx:          ctx,
+		log:          log,
+		dht:          d,
+		discovery:    r,
+		netParams:    netParams,
+		ID:           host.GetHost().ID(),
+		lastConnect:  make(map[peer.ID]time.Time),
+		peerAttempts: make(map[peer.ID]uint64),
 	}
 
 	go dp.initialConnect()
@@ -101,12 +105,15 @@ func (d *discover) initialConnect() {
 		initialNodes = append(initialNodes, peerstorePeers[0:7]...)
 	}
 
+	d.peerAttemptsLock.Lock()
 	for _, addr := range initialNodes {
-		if err := d.host.GetHost().Connect(d.ctx, addr); err != nil {
-			d.host.StatsService().SetPeerBan(addr.ID, unreachablePeerTimePenalization)
+		d.peerAttempts[addr.ID] = 0
+		if err := d.Connect(addr); err != nil {
+			d.peerAttempts[addr.ID] += 1
 			d.host.GetHost().Peerstore().ClearAddrs(addr.ID)
 			d.log.Infof("unable to connect to peer %s", addr.ID)
 		}
+		delete(d.peerAttempts, addr.ID)
 	}
 }
 
@@ -122,12 +129,27 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 		d.log.Error(err)
 		return
 	}
+
+	d.peerAttemptsLock.Lock()
 	err = d.Connect(pi)
 	if err != nil {
-		d.host.StatsService().SetPeerBan(pi.ID, unreachablePeerTimePenalization)
-		d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
-		d.log.Infof("unable to connect to peer %s", pi.ID.String())
+		attempts, ok := d.peerAttempts[pi.ID]
+		if !ok {
+			d.peerAttempts[pi.ID] = 1
+		}
+		if attempts >= 5 {
+			d.host.StatsService().SetPeerBan(pi.ID, unreachablePeerTimePenalization)
+			d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
+			d.log.Infof("unable to connect to peer %s", pi.ID.String())
+			delete(d.peerAttempts, pi.ID)
+		} else {
+			d.peerAttempts[pi.ID] += 1
+		}
+
 	}
+	delete(d.peerAttempts, pi.ID)
+	d.peerAttemptsLock.Unlock()
+
 }
 
 func (d *discover) findPeers() {

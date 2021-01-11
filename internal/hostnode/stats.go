@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	unreachablePeerTimePenalization = time.Second * 30
+	unreachablePeerTimePenalization = time.Minute * 5
 	banPeerTimePenalization         = time.Minute * 60
 )
 
@@ -185,7 +185,7 @@ func (s *statsService) IncreaseWrongMsgCount(p peer.ID) {
 	stats.BadMessages += 1
 	stats.BanScore += 10
 
-	if stats.BanScore >= 150 {
+	if stats.BanScore >= 500 {
 		s.SetPeerBan(p, banPeerTimePenalization)
 		_ = s.host.DisconnectPeer(p)
 	}
