@@ -80,11 +80,9 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 			if err != nil {
 				sp.log.Errorf("could not open stream for connection: %s", err)
 			}
-
 			sp.host.HandleStream(s)
-
-			sp.sendVersion(conn.RemotePeer())
 		},
+
 		DisconnectedF: func(n network.Network, conn network.Conn) {
 			sp.host.StatsService().Remove(conn.RemotePeer())
 			n.Close()
