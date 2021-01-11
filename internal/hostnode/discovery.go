@@ -2,7 +2,6 @@ package hostnode
 
 import (
 	"context"
-	"fmt"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	discovery "github.com/libp2p/go-libp2p-discovery"
@@ -154,7 +153,6 @@ func (d *discover) findPeers() {
 		for {
 			select {
 			case pi, ok := <-peers:
-				fmt.Print(pi, ok)
 				if !ok {
 					time.Sleep(time.Second * 5)
 					break peerLoop
