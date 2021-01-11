@@ -107,11 +107,14 @@ func (d *discover) initialConnect() {
 
 	d.peerAttemptsLock.Lock()
 	for _, addr := range initialNodes {
+		if addr.ID == d.ID {
+			continue
+		}
 		d.peerAttempts[addr.ID] = 0
 		if err := d.Connect(addr); err != nil {
 			d.peerAttempts[addr.ID] += 1
 			d.host.GetHost().Peerstore().ClearAddrs(addr.ID)
-			d.log.Infof("unable to connect to peer %s", addr.ID)
+			d.log.Infof("unable to connect to peer %s error: %s", addr.ID, err.Error())
 		}
 		delete(d.peerAttempts, addr.ID)
 	}
@@ -140,7 +143,7 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 		if attempts >= 5 {
 			d.host.StatsService().SetPeerBan(pi.ID, unreachablePeerTimePenalization)
 			d.host.GetHost().Peerstore().ClearAddrs(pi.ID)
-			d.log.Infof("unable to connect to peer %s", pi.ID.String())
+			d.log.Infof("unable to connect to peer %s error: %s", pi.ID.String(), err.Error())
 			delete(d.peerAttempts, pi.ID)
 		} else {
 			d.peerAttempts[pi.ID] += 1
@@ -178,7 +181,7 @@ func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
-const connectionTimeout = 1500 * time.Millisecond
+const connectionTimeout = 5 * time.Second
 const connectionWait = 10 * time.Second
 
 func (d *discover) handleStream(s network.Stream) {
