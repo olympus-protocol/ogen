@@ -52,8 +52,6 @@ func newHandler(id protocol.ID, host HostNode) (*handler, error) {
 		log:              config.GlobalParams.Logger,
 	}
 
-	host.GetHost().SetStreamHandler(id, ph.handleStream)
-
 	return ph, nil
 }
 

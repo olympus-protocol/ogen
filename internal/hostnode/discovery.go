@@ -52,7 +52,7 @@ func NewDiscover(host HostNode) (*discover, error) {
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeServer), dht.Mode(dht.ModeClient))
+	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeAutoServer))
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +90,9 @@ func (d *discover) initialConnect() {
 		peerstorePeers[i] = d.host.GetHost().Peerstore().PeerInfo(peersIDs[i])
 	}
 
-	dhts := dht.GetDefaultBootstrapPeerAddrInfos()
+	dhts := d.getRelayers()
 	for _, bp := range dhts {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond * 1000)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*2000)
 		err := d.host.GetHost().Connect(ctx, bp)
 		if err != nil {
 			d.log.Errorf("unable to connect to relayer %s", bp.ID.String())
