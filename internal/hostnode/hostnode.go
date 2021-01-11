@@ -271,12 +271,6 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		chain:    blockchain,
 	}
 
-	pstats, err := NewPeersStatsService(node)
-	if err != nil {
-		return nil, err
-	}
-	node.statesSerivce = pstats
-
 	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
 	if err != nil {
 		return nil, err
@@ -361,6 +355,12 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 		return nil, err
 	}
 	node.discover = discovery
+
+	statsService, err := NewPeersStatsService(node)
+	if err != nil {
+		return nil, err
+	}
+	node.statesSerivce = statsService
 
 	return node, nil
 }
