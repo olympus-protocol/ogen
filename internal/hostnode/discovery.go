@@ -2,6 +2,8 @@ package hostnode
 
 import (
 	"context"
+	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -43,6 +45,7 @@ type discover struct {
 	ID        peer.ID
 	dht       *dht.IpfsDHT
 	discovery *discovery.RoutingDiscovery
+	handler   *discoveryHandler
 }
 
 // NewDiscover creates a new discovery service.
@@ -72,11 +75,14 @@ func NewDiscover(host HostNode) (*discover, error) {
 		netParams:   netParams,
 		ID:          host.GetHost().ID(),
 		lastConnect: make(map[peer.ID]time.Time),
+		handler:     NewDiscoveryHandler(params.ProtocolDiscoveryID(netParams.Name)),
 	}
 
 	go dp.initialConnect()
 	go dp.advertise()
 	go dp.findPeers()
+
+	dp.host.GetHost().SetStreamHandler(params.ProtocolDiscoveryID(netParams.Name), dp.handler.handleStream)
 
 	return dp, nil
 }
@@ -163,4 +169,18 @@ func (d *discover) Connect(pi peer.AddrInfo) error {
 		return d.host.GetHost().Connect(ctx, pi)
 	}
 	return nil
+}
+
+func (d *discoveryHandler) handleStream(s network.Stream) {
+
+}
+
+// discoveryHandler handles all discovery messages for new peers.
+type discoveryHandler struct {
+	// ID is the protocol being handled.
+	ID protocol.ID
+}
+
+func NewDiscoveryHandler(pid protocol.ID) *discoveryHandler {
+	return &discoveryHandler{ID: pid}
 }
