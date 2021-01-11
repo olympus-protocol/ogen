@@ -250,14 +250,14 @@ func (sp *synchronizer) handleVersionMsg(id peer.ID, msg p2p.Message) (uint64, e
 	ourVersion := sp.host.VersionMsg()
 	direction := sp.host.GetPeerDirection(id)
 
+	sp.host.StatsService().Add(id, theirVersion, direction)
+
 	if direction == network.DirInbound {
 		if err := sp.host.SendMessage(id, ourVersion); err != nil {
 			return msg.PayloadLength(), err
 		}
 
 	}
-
-	sp.host.StatsService().Add(id, theirVersion, direction)
 
 	return msg.PayloadLength(), nil
 }
