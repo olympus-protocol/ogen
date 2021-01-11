@@ -31,7 +31,7 @@ type peerChainStats struct {
 
 type peerStats struct {
 	ID            peer.ID
-	ChainStats    peerChainStats
+	ChainStats    *peerChainStats
 	Direction     network.Direction
 	BytesReceived uint64
 	BytesSent     uint64
@@ -141,7 +141,7 @@ func (s *stats) Count() int {
 func (s *stats) Add(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
 	peerStats := peerStats{
 		ID: p,
-		ChainStats: peerChainStats{
+		ChainStats: &peerChainStats{
 			TipSlot:         ver.TipSlot,
 			TipHeight:       ver.Tip,
 			TipHash:         ver.TipHash,
@@ -244,7 +244,7 @@ func (s *stats) handleFinalizationMsg(id peer.ID, msg p2p.Message) (uint64, erro
 		return msg.PayloadLength(), nil
 	}
 
-	peerStats.ChainStats = peerChainStats{
+	peerStats.ChainStats = &peerChainStats{
 		TipSlot:         fin.TipSlot,
 		TipHeight:       fin.Tip,
 		TipHash:         fin.TipHash,

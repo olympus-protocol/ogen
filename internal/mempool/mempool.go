@@ -24,7 +24,7 @@ import (
 )
 
 type Pool interface {
-	Start() error
+	Start()
 	Close()
 
 	AddVote(d *primitives.MultiValidatorVote, s state.State) error
@@ -1091,45 +1091,28 @@ func (p *pool) Close() {
 }
 
 // Start initializes the pool listeners
-func (p *pool) Start() error {
+func (p *pool) Start() {
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleVote); err != nil {
-		return err
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleVote)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgDepositCmd, p.handleDeposit); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleDeposit)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgDepositsCmd, p.handleDeposits); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleDeposits)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgExitCmd, p.handleExit); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleExit)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgExitsCmd, p.handleExits); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleExits)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgPartialExitsCmd, p.handlePartialExits); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handlePartialExits)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgProofsCmd, p.handleProofs); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleProofs)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgTxCmd, p.handleTx); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleTx)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, p.handleGovernance); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleGovernance)
 
-	return nil
+	return
+
 }
 
 func NewPool(ch chain.Blockchain, hostnode host.Host, manager actionmanager.LastActionManager) Pool {

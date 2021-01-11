@@ -93,8 +93,8 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 			FinalizedHash:   hex.EncodeToString(finalized.Hash[:]),
 		},
 		NetworkData: NetworkData{
-			ID:             d.host.GetHost().ID().String(),
-			PeersConnected: len(d.host.GetHost().Network().Peers()),
+			ID:             d.host.ID().String(),
+			PeersConnected: d.host.ConnectedPeers(),
 			PeersAhead:     peersAhead,
 			PeersBehind:    peersBehind,
 			PeersEqual:     peersEqual,

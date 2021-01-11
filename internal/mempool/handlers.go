@@ -8,7 +8,7 @@ import (
 
 func (p *pool) handleVote(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 
@@ -47,7 +47,7 @@ func (p *pool) handleVote(id peer.ID, msg p2p.Message) (uint64, error) {
 }
 
 func (p *pool) handleDeposit(id peer.ID, msg p2p.Message) (uint64, error) {
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 	data, ok := msg.(*p2p.MsgDeposit)
@@ -63,7 +63,7 @@ func (p *pool) handleDeposit(id peer.ID, msg p2p.Message) (uint64, error) {
 }
 
 func (p *pool) handleDeposits(id peer.ID, msg p2p.Message) (uint64, error) {
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 	data, ok := msg.(*p2p.MsgDeposits)
@@ -83,7 +83,7 @@ func (p *pool) handleDeposits(id peer.ID, msg p2p.Message) (uint64, error) {
 
 func (p *pool) handleExit(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 
@@ -102,7 +102,7 @@ func (p *pool) handleExit(id peer.ID, msg p2p.Message) (uint64, error) {
 
 func (p *pool) handleExits(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 
@@ -125,7 +125,7 @@ func (p *pool) handleExits(id peer.ID, msg p2p.Message) (uint64, error) {
 
 func (p *pool) handlePartialExits(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 
@@ -146,7 +146,7 @@ func (p *pool) handlePartialExits(id peer.ID, msg p2p.Message) (uint64, error) {
 
 func (p *pool) handleProofs(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 
@@ -166,7 +166,7 @@ func (p *pool) handleProofs(id peer.ID, msg p2p.Message) (uint64, error) {
 }
 
 func (p *pool) handleTx(id peer.ID, msg p2p.Message) (uint64, error) {
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 
@@ -186,7 +186,7 @@ func (p *pool) handleTx(id peer.ID, msg p2p.Message) (uint64, error) {
 
 func (p *pool) handleGovernance(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if id == p.host.GetHost().ID() {
+	if id == p.host.ID() {
 		return 0, nil
 	}
 

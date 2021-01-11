@@ -1582,14 +1582,6 @@
         }
       }
     },
-    "IP": {
-      "type": "object",
-      "properties": {
-        "host": {
-          "type": "string"
-        }
-      }
-    },
     "ImportWalletData": {
       "type": "object",
       "properties": {
@@ -1760,8 +1752,65 @@
         "id": {
           "type": "string"
         },
-        "host": {
-          "$ref": "#/definitions/IP"
+        "direction": {
+          "type": "string"
+        },
+        "bytesReceived": {
+          "type": "string",
+          "format": "int64"
+        },
+        "bytesSent": {
+          "type": "string",
+          "format": "int64"
+        },
+        "badMessages": {
+          "type": "string",
+          "format": "int64"
+        },
+        "banScore": {
+          "type": "string",
+          "format": "int64"
+        },
+        "chainStats": {
+          "$ref": "#/definitions/PeerChainStats"
+        }
+      }
+    },
+    "PeerChainStats": {
+      "type": "object",
+      "properties": {
+        "tipSlot": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tipHeight": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tipHash": {
+          "type": "string"
+        },
+        "justifiedSlot": {
+          "type": "string",
+          "format": "int64"
+        },
+        "justifiedHeight": {
+          "type": "string",
+          "format": "int64"
+        },
+        "justifiedHash": {
+          "type": "string"
+        },
+        "finalizedSlot": {
+          "type": "string",
+          "format": "int64"
+        },
+        "finalizedHeight": {
+          "type": "string",
+          "format": "int64"
+        },
+        "finalizedHash": {
+          "type": "string"
         }
       }
     },

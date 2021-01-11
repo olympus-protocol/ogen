@@ -30,6 +30,10 @@ type MessageHandler func(id peer.ID, msg p2p.Message) (uint64, error)
 type Host interface {
 	ID() peer.ID
 	Version() *p2p.MsgVersion
+	Syncing() bool
+	ConnectedPeers() int
+	GetPeersInfo() []*peerStats
+
 	Notify(n *notify)
 	Unnotify(n *notify)
 
@@ -38,6 +42,8 @@ type Host interface {
 
 	RegisterTopicHandler(messageName string, handler MessageHandler)
 	RegisterHandler(messageName string, handler MessageHandler)
+
+	Broadcast(msg p2p.Message) error
 }
 
 type host struct {
@@ -94,6 +100,25 @@ func (h *host) Version() *p2p.MsgVersion {
 	return msg
 }
 
+func (h *host) Syncing() bool {
+	return false
+}
+
+func (h *host) ConnectedPeers() int {
+	return len(h.host.Network().Peers())
+}
+
+func (h *host) GetPeersInfo() []*peerStats {
+	peers := h.host.Network().Peers()
+	s := make([]*peerStats, len(peers))
+	for i := range s {
+		if stat, ok := h.stats.GetPeerStats(peers[i]); ok {
+			s[i] = stat
+		}
+	}
+	return s
+}
+
 func (h *host) Notify(n *notify) {
 	h.host.Network().Notify(n)
 }
@@ -145,6 +170,15 @@ func (h *host) RegisterHandler(messageName string, handler MessageHandler) {
 		h.messageHandler[messageName] = handler
 	}
 	return
+}
+
+func (h *host) Broadcast(msg p2p.Message) error {
+	buf := bytes.NewBuffer([]byte{})
+	err := p2p.WriteMessage(buf, msg, h.netMagic)
+	if err != nil {
+		return err
+	}
+	return h.topic.Publish(h.ctx, buf.Bytes())
 }
 
 func (h *host) listenTopics() {

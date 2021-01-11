@@ -84,9 +84,7 @@ func NewLastActionManager(node host.Host, ch chain.Blockchain) (LastActionManage
 		netParams:   netParams,
 	}
 
-	if err := l.host.RegisterTopicHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart); err != nil {
-		return nil, err
-	}
+	l.host.RegisterTopicHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart)
 
 	ch.Notify(l)
 
@@ -99,7 +97,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (u
 		return msg.PayloadLength(), nil
 	}
 
-	if id == l.host.GetHost().ID() {
+	if id == l.host.ID() {
 		return 0, nil
 	}
 
