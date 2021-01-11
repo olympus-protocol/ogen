@@ -79,8 +79,6 @@ func NewDiscover(host HostNode) (*discover, error) {
 	go dp.advertise()
 	go dp.findPeers()
 
-	dp.host.GetHost().SetStreamHandler(params.ProtocolDiscoveryID(netParams.Name), dp.handleStream)
-
 	return dp, nil
 }
 
@@ -93,7 +91,7 @@ func (d *discover) initialConnect() {
 	}
 
 	var initialNodes []peer.AddrInfo
-	initialNodes = append(initialNodes, d.getRelayers()...)
+	initialNodes = append(initialNodes, dht.GetDefaultBootstrapPeerAddrInfos()...)
 
 	if len(peerstorePeers) < 8 {
 		initialNodes = append(initialNodes, peerstorePeers...)
@@ -116,6 +114,7 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
+
 	ok, err := d.host.StatsService().IsBanned(pi.ID)
 	if ok {
 		return
@@ -158,7 +157,7 @@ func (d *discover) advertise() {
 	discovery.Advertise(d.ctx, d.discovery, d.netParams.GetRendevouzString())
 }
 
-const connectionTimeout = 1500 * time.Millisecond
+const connectionTimeout = 2000 * time.Millisecond
 const connectionWait = 60 * time.Second
 
 func (d *discover) handleStream(s network.Stream) {

@@ -126,9 +126,6 @@ func (node *hostNode) HandleStream(s network.Stream) {
 			node.handler.handleStream(s)
 			node.synchronizer.sendVersion(s.Conn().RemotePeer())
 		}
-		if s.Protocol() == params.ProtocolDiscoveryID(config.GlobalParams.NetParams.Name) {
-			node.discover.handleStream(s)
-		}
 	}
 
 }

@@ -52,6 +52,7 @@ func (s *statsService) IsBanned(p peer.ID) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	data, ok := s.banPeersCache.HasGet(nil, ip)
 	if !ok {
 		return false, nil
