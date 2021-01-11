@@ -34,3 +34,8 @@ func (m *MsgVersion) Command() string {
 func (m *MsgVersion) MaxPayloadLength() uint64 {
 	return 240
 }
+
+// PayloadLength returns the size of the MsgVersion message.
+func (m *MsgVersion) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

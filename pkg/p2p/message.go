@@ -61,6 +61,7 @@ type Message interface {
 	Unmarshal(b []byte) error
 	Command() string
 	MaxPayloadLength() uint64
+	PayloadLength() uint64
 }
 
 // MessageHeader header of the message

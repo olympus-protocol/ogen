@@ -28,3 +28,8 @@ func (m *MsgTx) Command() string {
 func (m *MsgTx) MaxPayloadLength() uint64 {
 	return primitives.TxSize
 }
+
+// PayloadLength returns the size of the MsgTx message.
+func (m *MsgTx) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

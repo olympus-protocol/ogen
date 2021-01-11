@@ -28,3 +28,8 @@ func (m *MsgPartialExits) Command() string {
 func (m *MsgPartialExits) MaxPayloadLength() uint64 {
 	return primitives.PartialExitsSize
 }
+
+// PayloadLength returns the size of the MsgPartialExits message.
+func (m *MsgPartialExits) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

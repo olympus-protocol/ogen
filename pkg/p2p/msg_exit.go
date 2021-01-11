@@ -28,3 +28,8 @@ func (m *MsgExit) Command() string {
 func (m *MsgExit) MaxPayloadLength() uint64 {
 	return primitives.MaxExitSize
 }
+
+// PayloadLength returns the size of the MsgExit message.
+func (m *MsgExit) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

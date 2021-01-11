@@ -28,3 +28,8 @@ func (m *MsgDeposit) Command() string {
 func (m *MsgDeposit) MaxPayloadLength() uint64 {
 	return primitives.DepositSize
 }
+
+// PayloadLength returns the size of the MsgDeposit message.
+func (m *MsgDeposit) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

@@ -24,3 +24,8 @@ func (m *MsgGetBlocks) Command() string {
 func (m *MsgGetBlocks) MaxPayloadLength() uint64 {
 	return 32
 }
+
+// PayloadLength returns the size of the MsgGetBlocks message.
+func (m *MsgGetBlocks) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

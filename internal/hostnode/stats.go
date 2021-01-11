@@ -13,8 +13,9 @@ import (
 	"time"
 )
 
-var (
-	unreachablePeerTime = time.Minute * 60
+const (
+	unreachablePeerTimePenalization = time.Minute * 20
+	banPeerTimePenalization         = time.Minute * 60
 )
 
 type peerChainStats struct {
@@ -35,8 +36,8 @@ type peerStats struct {
 	Direction     network.Direction
 	BytesReceived uint64
 	BytesSent     uint64
-	BadMsgs       int
-	Banscore      uint64
+	BadMessages   int
+	BanScore      uint64
 }
 
 type statsService struct {
@@ -83,12 +84,12 @@ func (s *statsService) GetPeerStats(p peer.ID) (*peerStats, bool) {
 	return &stats, true
 }
 
-func (s *statsService) SetUnreachablePeer(p peer.ID) {
+func (s *statsService) SetPeerBan(p peer.ID, until time.Duration) {
 	ip, err := p.MarshalBinary()
 	if err != nil {
 		return
 	}
-	t := time.Now().Add(unreachablePeerTime)
+	t := time.Now().Add(until)
 	tb, err := t.MarshalBinary()
 	if err != nil {
 		return
@@ -154,8 +155,8 @@ func (s *statsService) Add(p peer.ID, ver *p2p.MsgVersion, dir network.Direction
 		Direction:     dir,
 		BytesReceived: 0,
 		BytesSent:     0,
-		BadMsgs:       0,
-		Banscore:      0,
+		BadMessages:   0,
+		BanScore:      0,
 	}
 	s.peersStats.Store(p, peerStats)
 	s.count += 1
@@ -171,25 +172,76 @@ func (s *statsService) Close() {
 	_ = s.banPeersCache.SaveToFile(datapath + "/badpeers")
 }
 
-func (s *statsService) handleFinalizationMsg(id peer.ID, msg p2p.Message) error {
+func (s *statsService) IncreaseWrongMsgCount(p peer.ID) {
+	ps, ok := s.peersStats.Load(p)
+	if !ok {
+		return
+	}
+	stats, ok := ps.(peerStats)
+	if !ok {
+		return
+	}
+
+	stats.BadMessages += 1
+	stats.BanScore += 10
+
+	if stats.BanScore >= 150 {
+		s.SetPeerBan(p, banPeerTimePenalization)
+		_ = s.host.DisconnectPeer(p)
+	}
+
+	s.peersStats.Store(p, stats)
+}
+
+func (s *statsService) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
+	ps, ok := s.peersStats.Load(p)
+	if !ok {
+		return
+	}
+	stats, ok := ps.(peerStats)
+	if !ok {
+		return
+	}
+
+	stats.BytesReceived += amount
+
+	s.peersStats.Store(p, stats)
+}
+
+func (s *statsService) IncreasePeerSentBytes(p peer.ID, amount uint64) {
+	ps, ok := s.peersStats.Load(p)
+	if !ok {
+		return
+	}
+	stats, ok := ps.(peerStats)
+	if !ok {
+		return
+	}
+
+	stats.BytesSent += amount
+
+	s.peersStats.Store(p, stats)
+}
+
+func (s *statsService) handleFinalizationMsg(id peer.ID, msg p2p.Message) (uint64, error) {
 
 	fin, ok := msg.(*p2p.MsgFinalization)
 	if !ok {
-		return errors.New("non block msg")
+		return 0, errors.New("non block msg")
 	}
 
 	if s.host.GetHost().ID() == id {
-		return nil
+		return 0, nil
 	}
 
 	ps, ok := s.peersStats.Load(id)
 	if !ok {
-		return nil
+		return msg.PayloadLength(), nil
 	}
 
 	peerStats, ok := ps.(peerStats)
 	if !ok {
-		return nil
+		return msg.PayloadLength(), nil
 	}
 
 	peerStats.ChainStats = peerChainStats{
@@ -206,7 +258,7 @@ func (s *statsService) handleFinalizationMsg(id peer.ID, msg p2p.Message) error 
 
 	s.peersStats.Store(id, peerStats)
 
-	return nil
+	return msg.PayloadLength(), nil
 }
 
 func NewPeersStatsService(host HostNode) (*statsService, error) {

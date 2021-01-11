@@ -216,11 +216,12 @@ func (node *hostNode) listenTopics() {
 		if !found {
 			continue
 		}
-		err = handler(msg.GetFrom(), msgData)
+		size, err := handler(msg.GetFrom(), msgData)
 		if err != nil {
 			node.log.Error(err)
 		}
 		node.handler.topicHandlersLock.Unlock()
+		node.StatsService().IncreasePeerReceivedBytes(msg.GetFrom(), size)
 	}
 }
 func (node *hostNode) Stop() {

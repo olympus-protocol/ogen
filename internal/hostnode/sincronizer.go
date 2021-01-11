@@ -148,52 +148,52 @@ func (sp *synchronizer) waitForBlocksTimer() {
 	return
 }
 
-func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
+func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) (uint64, error) {
 	block, ok := msg.(*p2p.MsgBlock)
 	if !ok {
-		return errors.New("non block msg")
+		return msg.PayloadLength(), errors.New("non block msg")
 	}
 	if sp.sync && sp.withPeer != id {
 		sp.log.Info("received block during sync, waiting to finish...")
-		return nil
+		return msg.PayloadLength(), nil
 	}
 	err := sp.processBlock(block.Data)
 	if err != nil {
 		if err == ErrorBlockAlreadyKnown {
 			sp.log.Error(err)
-			return nil
+			return msg.PayloadLength(), nil
 		}
 		if err == ErrorBlockParentUnknown {
 			if !sp.sync {
 				sp.log.Error(err)
 				stats, ok := sp.host.StatsService().GetPeerStats(id)
 				if !ok {
-					return nil
+					return msg.PayloadLength(), nil
 				}
 				just, _ := sp.chain.State().GetJustifiedHead()
 				if stats.ChainStats.JustifiedSlot >= just.Slot {
 					go sp.initialBlockDownload()
-					return nil
+					return msg.PayloadLength(), nil
 				}
-				return nil
+				return msg.PayloadLength(), nil
 			}
-			return nil
+			return msg.PayloadLength(), nil
 		}
 		sp.log.Error(err)
-		return nil
+		return msg.PayloadLength(), err
 	}
 
 	if sp.sync {
 		sp.blockStallTimer.Reset(time.Second * 3)
 	}
 
-	return nil
+	return msg.PayloadLength(), nil
 }
 
-func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error {
+func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) (uint64, error) {
 	msg, ok := rawMsg.(*p2p.MsgGetBlocks)
 	if !ok {
-		return errors.New("did not receive get blocks message")
+		return 0, errors.New("did not receive get blocks message")
 	}
 
 	sp.log.Debug("received getblocks")
@@ -201,20 +201,23 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 	// Get the announced last block to make sure we have a common point
 	firstCommon, ok := sp.chain.State().Index().Get(msg.LastBlockHash)
 	if !ok {
-		sp.log.Errorf("unable to find common point for peer %s", id)
-		return nil
+		err := fmt.Sprintf("unable to find common point for peer %s", id)
+		sp.log.Error(err)
+		return msg.PayloadLength(), errors.New(err)
 	}
 
 	blockRow, ok := sp.chain.State().Chain().Next(firstCommon)
 	if !ok {
-		sp.log.Errorf("unable to next block from common point for peer %s", id)
+		err := fmt.Sprintf("unable to next block from common point for peer %s", id)
+		sp.log.Error(err)
+		return msg.PayloadLength(), errors.New(err)
 	}
 
 	for {
 
 		block, err := sp.chain.GetBlock(blockRow.Hash)
 		if err != nil {
-			return errors.New("unable get raw block")
+			return msg.PayloadLength(), errors.New("unable get raw block")
 		}
 
 		err = sp.host.SendMessage(id, &p2p.MsgBlock{
@@ -222,7 +225,7 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 		})
 
 		if err != nil {
-			return err
+			return msg.PayloadLength(), err
 		}
 
 		blockRow, ok = sp.chain.State().Chain().Next(blockRow)
@@ -232,13 +235,13 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error
 
 	}
 
-	return nil
+	return msg.PayloadLength(), nil
 }
 
-func (sp *synchronizer) handleVersionMsg(id peer.ID, msg p2p.Message) error {
+func (sp *synchronizer) handleVersionMsg(id peer.ID, msg p2p.Message) (uint64, error) {
 	theirVersion, ok := msg.(*p2p.MsgVersion)
 	if !ok {
-		return fmt.Errorf("did not receive version message")
+		return 0, fmt.Errorf("did not receive version message")
 	}
 
 	sp.log.Infof("received version message from %s", id)
@@ -249,14 +252,14 @@ func (sp *synchronizer) handleVersionMsg(id peer.ID, msg p2p.Message) error {
 
 	if direction == network.DirInbound {
 		if err := sp.host.SendMessage(id, ourVersion); err != nil {
-			return err
+			return msg.PayloadLength(), err
 		}
 
 	}
 
 	sp.host.StatsService().Add(id, theirVersion, direction)
 
-	return nil
+	return msg.PayloadLength(), nil
 }
 
 func (sp *synchronizer) processBlock(block *primitives.Block) error {

@@ -28,3 +28,8 @@ func (m *MsgValidatorStart) Command() string {
 func (m *MsgValidatorStart) MaxPayloadLength() uint64 {
 	return primitives.MaxValidatorHelloMessageSize
 }
+
+// PayloadLength returns the size of the MsgValidatorStart message.
+func (m *MsgValidatorStart) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}
