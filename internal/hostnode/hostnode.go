@@ -359,7 +359,7 @@ func NewHostNode(blockchain chain.Blockchain) (HostNode, error) {
 	}
 	node.synchronizer = synchronizer
 
-	discovery, err := NewDiscover(node)
+	discovery, err := NewDiscover(params.ProtocolDiscoveryID(config.GlobalParams.NetParams.Name), node)
 	if err != nil {
 		return nil, err
 	}

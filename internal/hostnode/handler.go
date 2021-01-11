@@ -20,8 +20,6 @@ type MessageHandler func(id peer.ID, msg p2p.Message) (uint64, error)
 
 // handler handles all of the peers messages.
 type handler struct {
-	// ID is the protocol being handled.
-	ID protocol.ID
 
 	// host is the host to connect to.
 	host HostNode
@@ -43,7 +41,6 @@ type handler struct {
 // newHandler constructs a new handler for a specific protocol ID.
 func newHandler(id protocol.ID, host HostNode) (*handler, error) {
 	ph := &handler{
-		ID:               id,
 		host:             host,
 		topicHandlers:    make(map[string]MessageHandler),
 		messageHandler:   make(map[string]MessageHandler),
@@ -51,6 +48,8 @@ func newHandler(id protocol.ID, host HostNode) (*handler, error) {
 		ctx:              config.GlobalParams.Context,
 		log:              config.GlobalParams.Logger,
 	}
+
+	host.GetHost().SetStreamHandler(id, ph.handleStream)
 
 	return ph, nil
 }
@@ -155,7 +154,7 @@ func (p *handler) sendMessages(id peer.ID, w io.Writer) {
 
 func (p *handler) handleStream(s network.Stream) {
 	p.sendMessages(s.Conn().RemotePeer(), s)
-	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), p.ID)
+	p.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), s.Protocol())
 	go p.receiveMessages(s.Conn().RemotePeer(), s)
 }
 

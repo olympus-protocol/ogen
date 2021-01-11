@@ -2,7 +2,9 @@ package hostnode
 
 import (
 	"context"
+	"fmt"
 	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -47,7 +49,7 @@ type discover struct {
 }
 
 // NewDiscover creates a new discovery service.
-func NewDiscover(host HostNode) (*discover, error) {
+func NewDiscover(id protocol.ID, host HostNode) (*discover, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -74,6 +76,8 @@ func NewDiscover(host HostNode) (*discover, error) {
 		ID:          host.GetHost().ID(),
 		lastConnect: make(map[peer.ID]time.Time),
 	}
+
+	host.GetHost().SetStreamHandler(id, dp.handleStream)
 
 	go dp.initialConnect()
 	go dp.advertise()
@@ -150,6 +154,7 @@ func (d *discover) findPeers() {
 		for {
 			select {
 			case pi, ok := <-peers:
+				fmt.Print(pi, ok)
 				if !ok {
 					time.Sleep(time.Second * 5)
 					break peerLoop
