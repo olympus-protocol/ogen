@@ -270,7 +270,6 @@ func NewPeersStatsService(host HostNode) (*statsService, error) {
 		banPeersCache: cache,
 		count:         0,
 		host:          host,
-		peersStats: make(map[peer.ID]*peerStats),
 	}
 	if err := host.RegisterTopicHandler(p2p.MsgFinalizationCmd, ss.handleFinalizationMsg); err != nil {
 		return nil, err
