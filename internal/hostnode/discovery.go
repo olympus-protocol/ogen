@@ -2,8 +2,6 @@ package hostnode
 
 import (
 	"context"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -48,7 +46,7 @@ type discover struct {
 }
 
 // NewDiscover creates a new discovery service.
-func NewDiscover(id protocol.ID, host HostNode) (*discover, error) {
+func NewDiscover(host HostNode) (*discover, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -75,8 +73,6 @@ func NewDiscover(id protocol.ID, host HostNode) (*discover, error) {
 		ID:          host.GetHost().ID(),
 		lastConnect: make(map[peer.ID]time.Time),
 	}
-
-	host.GetHost().SetStreamHandler(id, dp.handleStream)
 
 	go dp.initialConnect()
 	go dp.advertise()
@@ -171,10 +167,6 @@ func (d *discover) advertise() {
 
 const connectionTimeout = 2000 * time.Millisecond
 const connectionWait = 60 * time.Second
-
-func (d *discover) handleStream(s network.Stream) {
-	d.log.Infof("handling messages from relayer %s for protocol %s", s.Conn().RemotePeer(), s.Protocol())
-}
 
 // Connect connects to a peer.
 func (d *discover) Connect(pi peer.AddrInfo) error {
