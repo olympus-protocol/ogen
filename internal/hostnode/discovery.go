@@ -116,7 +116,6 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	}
 	ok, err := d.host.StatsService().IsBanned(pi.ID)
 	if ok {
-		d.log.Info("trying to connect to banned peer")
 		return
 	}
 	if err != nil {
