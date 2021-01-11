@@ -29,3 +29,8 @@ func (m *MsgProofs) Command() string {
 func (m *MsgProofs) MaxPayloadLength() uint64 {
 	return primitives.MaxCoinProofSize
 }
+
+// PayloadLength returns the size of the MsgProofs message.
+func (m *MsgProofs) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

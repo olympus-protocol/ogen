@@ -32,3 +32,8 @@ func (m *MsgFinalization) Command() string {
 func (m *MsgFinalization) MaxPayloadLength() uint64 {
 	return 144
 }
+
+// PayloadLength returns the size of the MsgFinalization message.
+func (m *MsgFinalization) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

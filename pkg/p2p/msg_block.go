@@ -28,3 +28,8 @@ func (m *MsgBlock) Command() string {
 func (m *MsgBlock) MaxPayloadLength() uint64 {
 	return primitives.MaxBlockSize
 }
+
+// PayloadLength returns the size of the MsgBlock message.
+func (m *MsgBlock) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

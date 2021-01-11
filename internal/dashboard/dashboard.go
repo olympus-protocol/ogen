@@ -31,27 +31,31 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 	tip := d.chain.State().Tip()
 	justified, _ := d.chain.State().GetJustifiedHead()
 	finalized, _ := d.chain.State().GetFinalizedHead()
-	peers := d.host.GetPeersStats()
+	peers := d.host.GetPeerInfos()
 	peersAhead := 0
 	peersBehind := 0
 	peersEqual := 0
 
 	var peersData []PeerData
-	for _, p := range peers {
-		if p.FinalizedHeight > finalized.Height {
+	for _, pid := range peers {
+		p, ok := d.host.StatsService().GetPeerStats(pid.ID)
+		if !ok {
+			continue
+		}
+		if p.ChainStats.TipSlot > justified.Slot {
 			peersAhead += 1
 		}
-		if p.FinalizedHeight == finalized.Height {
+		if p.ChainStats.TipSlot == justified.Slot {
 			peersEqual += 1
 		}
-		if p.FinalizedHeight < finalized.Height {
+		if p.ChainStats.TipSlot < justified.Slot {
 			peersBehind += 1
 		}
 		pData := PeerData{
 			ID:        p.ID.String(),
-			Finalized: p.FinalizedHeight,
-			Justified: p.JustifiedHeight,
-			Tip:       p.TipHeight,
+			Finalized: p.ChainStats.FinalizedHeight,
+			Justified: p.ChainStats.JustifiedHeight,
+			Tip:       p.ChainStats.TipHeight,
 		}
 		peersData = append(peersData, pData)
 	}

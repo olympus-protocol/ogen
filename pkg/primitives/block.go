@@ -26,18 +26,18 @@ type Block struct {
 	Header            *BlockHeader                        // 																		= 500 bytes
 	Signature         [96]byte                            // 																		= 96 bytes
 	RandaoSignature   [96]byte                            // 																		= 96
-	Votes             []*MultiValidatorVote               `ssz-max:"16"`    // MaxVotesPerBlock 					16 * 6479 		= 103664 bytes
-	Deposits          []*Deposit                          `ssz-max:"32"`    // MaxDepositsPerBlock 					32 * 308 		= 9856 bytes
-	Exits             []*Exit                             `ssz-max:"32"`    // MaxExitsPerBlock     				32 * 192 		= 6144 bytes
-	PartialExit       []*PartialExit                      `ssz-max:"32"`    // MaxPartialExitsPerBlock            	32 * 200		= 6400 bytes
-	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"64"`    // MaxCoinProofsPerBlock 				64 * 2317   	= 148288 bytes
-	Executions        []*Execution                        `ssz-max:"128"`   // MaxExecutionsPerBlock				128 * 7168      = 917504 bytes
-	Txs               []*Tx                               `ssz-max:"5000"`  // MaxTxsPerBlock						5000 * 188  	= 940000 bytes
-	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`     // MaxProposerSlashingsPerBlock 		2 * 1240 		= 2480 bytes
-	VoteSlashings     []*VoteSlashing                     `ssz-max:"5"`     // MaxVoteSlashingsPerBlock				10 * 12948 		= 129480 bytes
-	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`    // MaxRANDAOSlashingsPerBlock  			20 * 152 		= 3040 bytes
-	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`   // MaxGovernanceVotesPerBlock			128 * 264		= 33792 bytes
-	MultiSignatureTxs []*MultiSignatureTx                 `ssz-max:"8"`     // MaxMultiSignatureTxsOnBlock			8 * 2231      	= 17848 bytes
+	Votes             []*MultiValidatorVote               `ssz-max:"16"`   // MaxVotesPerBlock 						16 * 6479 		= 103664 bytes
+	Deposits          []*Deposit                          `ssz-max:"32"`   // MaxDepositsPerBlock 					32 * 308 		= 9856 bytes
+	Exits             []*Exit                             `ssz-max:"32"`   // MaxExitsPerBlock     					32 * 192 		= 6144 bytes
+	PartialExit       []*PartialExit                      `ssz-max:"32"`   // MaxPartialExitsPerBlock            	32 * 200		= 6400 bytes
+	CoinProofs        []*burnproof.CoinsProofSerializable `ssz-max:"64"`   // MaxCoinProofsPerBlock 				64 * 2317   	= 148288 bytes
+	Executions        []*Execution                        `ssz-max:"128"`  // MaxExecutionsPerBlock					128 * 7168      = 917504 bytes
+	Txs               []*Tx                               `ssz-max:"5000"` // MaxTxsPerBlock						5000 * 188  	= 940000 bytes
+	ProposerSlashings []*ProposerSlashing                 `ssz-max:"2"`    // MaxProposerSlashingsPerBlock 			2 * 1240 		= 2480 bytes
+	VoteSlashings     []*VoteSlashing                     `ssz-max:"5"`    // MaxVoteSlashingsPerBlock				10 * 12948 		= 129480 bytes
+	RANDAOSlashings   []*RANDAOSlashing                   `ssz-max:"20"`   // MaxRANDAOSlashingsPerBlock  			20 * 152 		= 3040 bytes
+	GovernanceVotes   []*GovernanceVote                   `ssz-max:"128"`  // MaxGovernanceVotesPerBlock			128 * 264		= 33792 bytes
+	MultiSignatureTxs []*MultiSignatureTx                 `ssz-max:"8"`    // MaxMultiSignatureTxsOnBlock			8 * 2231      	= 17848 bytes
 }
 
 // Marshal encodes the block.

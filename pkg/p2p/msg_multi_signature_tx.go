@@ -28,3 +28,8 @@ func (m *MsgMultiSignatureTx) Command() string {
 func (m *MsgMultiSignatureTx) MaxPayloadLength() uint64 {
 	return primitives.MaxMultiSignatureTxSize
 }
+
+// PayloadLength returns the size of the MsgMultiSignatureTx message.
+func (m *MsgMultiSignatureTx) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

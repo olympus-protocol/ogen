@@ -28,3 +28,8 @@ func (m *MsgVote) Command() string {
 func (m *MsgVote) MaxPayloadLength() uint64 {
 	return primitives.MaxMultiValidatorVoteSize + 4
 }
+
+// PayloadLength returns the size of the MsgVote message.
+func (m *MsgVote) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

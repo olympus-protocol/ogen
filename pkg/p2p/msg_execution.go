@@ -31,3 +31,8 @@ func (m *MsgExecution) Command() string {
 func (m *MsgExecution) MaxPayloadLength() uint64 {
 	return primitives.MaxExecutionSize
 }
+
+// PayloadLength returns the size of the MsgExecution message.
+func (m *MsgExecution) PayloadLength() uint64 {
+	return uint64(m.SizeSSZ())
+}

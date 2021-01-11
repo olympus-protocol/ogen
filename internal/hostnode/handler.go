@@ -16,7 +16,7 @@ import (
 )
 
 // MessageHandler is a handler for a specific message.
-type MessageHandler func(id peer.ID, msg p2p.Message) error
+type MessageHandler func(id peer.ID, msg p2p.Message) (uint64, error)
 
 // handler handles all of the peers messages.
 type handler struct {
@@ -82,28 +82,31 @@ func (p *handler) RegisterTopicHandler(messageName string, handler MessageHandle
 }
 
 // processMessages continuously reads from stream and handles any protobuf messages.
-func processMessages(ctx context.Context, net uint32, stream io.Reader, handler func(p2p.Message) error) error {
+func processMessages(ctx context.Context, net uint32, stream io.Reader, handler func(p2p.Message) (uint64, error)) (uint64, error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return 0, nil
 		default:
 			break
 		}
 
 		msg, err := p2p.ReadMessage(stream, net)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
-		if err := handler(msg); err != nil {
-			return err
+		size, err := handler(msg)
+		if err != nil {
+			return 0, err
 		}
+
+		return size, nil
 	}
 }
 
 func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
-	err := processMessages(p.ctx, p.host.GetNetMagic(), r, func(message p2p.Message) error {
+	size, err := processMessages(p.ctx, p.host.GetNetMagic(), r, func(message p2p.Message) (uint64, error) {
 		cmd := message.Command()
 
 		p.log.Tracef("processing message %s from peer %s", cmd, id)
@@ -111,21 +114,27 @@ func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 		p.messageHandlersLock.Lock()
 		defer p.messageHandlersLock.Unlock()
 
-		if handler, found := p.messageHandler[cmd]; found {
-			err := handler(id, message)
-			if err != nil {
-				return err
-			}
+		handler, found := p.messageHandler[cmd]
+		if !found {
+			return 0, nil
 		}
 
-		return nil
+		size, err := handler(id, message)
+		if err != nil {
+			p.host.StatsService().IncreaseWrongMsgCount(id)
+			return 0, err
+		}
+
+		return size, nil
 	})
+
 	if err != nil {
 		if !strings.Contains(err.Error(), "stream reset") {
 			p.log.Errorf("error receiving messages from peer %s: %s", id, err)
 		}
-
 	}
+
+	p.host.StatsService().IncreasePeerReceivedBytes(id, size)
 }
 
 func (p *handler) sendMessages(id peer.ID, w io.Writer) {
@@ -157,11 +166,12 @@ func (p *handler) handleStream(s network.Stream) {
 // SendMessage writes a message to a peer.
 func (p *handler) SendMessage(id peer.ID, msg p2p.Message) error {
 	p.outgoingMessagesLock.Lock()
-	msgsChan, found := p.outgoingMessages[id]
+	msgChan, found := p.outgoingMessages[id]
 	p.outgoingMessagesLock.Unlock()
 	if !found {
 		return fmt.Errorf("not tracking peer %s", id)
 	}
-	msgsChan <- msg
+	msgChan <- msg
+	p.host.StatsService().IncreasePeerSentBytes(id, msg.PayloadLength())
 	return nil
 }
