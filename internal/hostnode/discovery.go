@@ -92,7 +92,7 @@ func (d *discover) initialConnect() {
 
 	dhts := dht.GetDefaultBootstrapPeerAddrInfos()
 	for _, bp := range dhts {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond * 1000)
 		err := d.host.GetHost().Connect(ctx, bp)
 		if err != nil {
 			d.log.Errorf("unable to connect to relayer %s", bp.ID.String())

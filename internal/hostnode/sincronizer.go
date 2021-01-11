@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -75,7 +77,7 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 			}
 
 			// open a stream for the sync protocol:
-			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), dht.ProtocolDHT)
+			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), []protocol.ID{params.ProtocolID(config.GlobalParams.NetParams.Name), dht.ProtocolDHT}...)
 			if err != nil {
 				sp.log.Errorf("could not open stream for connection: %s", err)
 			}
