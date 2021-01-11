@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	unreachablePeerTimePenalization = time.Minute * 20
+	unreachablePeerTimePenalization = time.Second * 30
 	banPeerTimePenalization         = time.Minute * 60
 )
 
@@ -134,7 +134,7 @@ func (s *statsService) FindBestPeer() (peer.ID, bool) {
 	return peerSelected.ID, true
 }
 
-func (s *statsService) TrackCount() int {
+func (s *statsService) Count() int {
 	return s.count
 }
 

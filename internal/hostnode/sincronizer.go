@@ -101,7 +101,7 @@ func (sp *synchronizer) initialBlockDownload() {
 
 	for {
 		time.Sleep(time.Second * 1)
-		if sp.host.StatsService().TrackCount() < MinPeersForSyncStart {
+		if sp.host.StatsService().Count() < MinPeersForSyncStart {
 			continue
 		}
 		break
@@ -109,6 +109,7 @@ func (sp *synchronizer) initialBlockDownload() {
 
 	peerSelected, ok := sp.host.StatsService().FindBestPeer()
 	if !ok {
+		sp.sync = false
 		return
 	}
 
