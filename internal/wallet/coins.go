@@ -52,7 +52,6 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 
 	pub := priv.PublicKey()
 
-
 	var p [48]byte
 	copy(p[:], pub.Marshal())
 
@@ -63,6 +62,8 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 		Nonce:         w.lastNonce + 1,
 		Fee:           5000,
 	}
+
+	w.lastNonce += 1
 
 	sigMsg := tx.SignatureMessage()
 	sig := priv.Sign(sigMsg[:])
@@ -82,8 +83,6 @@ func (w *wallet) SendToAddress(to string, amount uint64) (*chainhash.Hash, error
 	}
 
 	txHash := tx.Hash()
-
-	w.lastNonce += 1
 
 	return &txHash, nil
 }

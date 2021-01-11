@@ -67,7 +67,7 @@ type wallet struct {
 	pub        common.PublicKey
 	accountRaw [20]byte
 	account    string
-	lastNonce uint64
+	lastNonce  uint64
 }
 
 // NewWallet creates a new wallet.
