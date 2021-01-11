@@ -114,10 +114,16 @@ func (d *discover) handleNewPeer(pi peer.AddrInfo) {
 	if pi.ID == d.ID {
 		return
 	}
-	if ok, err := d.host.StatsService().IsBanned(pi.ID); ok || err != nil {
+	ok, err := d.host.StatsService().IsBanned(pi.ID)
+	if ok {
+		d.log.Info("trying to connect to banned peer")
 		return
 	}
-	err := d.Connect(pi)
+	if err != nil {
+		d.log.Error(err)
+		return
+	}
+	err = d.Connect(pi)
 	if err != nil {
 		d.host.StatsService().SetPeerBan(pi.ID, unreachablePeerTimePenalization)
 		d.host.GetHost().Peerstore().ClearAddrs(pi.ID)

@@ -205,21 +205,21 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) (uint
 	if !ok {
 		err := fmt.Sprintf("unable to find common point for peer %s", id)
 		sp.log.Error(err)
-		return msg.PayloadLength(), errors.New(err)
+		return msg.PayloadLength(), nil
 	}
 
 	blockRow, ok := sp.chain.State().Chain().Next(firstCommon)
 	if !ok {
 		err := fmt.Sprintf("unable to next block from common point for peer %s", id)
 		sp.log.Error(err)
-		return msg.PayloadLength(), errors.New(err)
+		return msg.PayloadLength(), nil
 	}
 
 	for {
 
 		block, err := sp.chain.GetBlock(blockRow.Hash)
 		if err != nil {
-			return msg.PayloadLength(), errors.New("unable get raw block")
+			return msg.PayloadLength(), nil
 		}
 
 		err = sp.host.SendMessage(id, &p2p.MsgBlock{
@@ -227,7 +227,7 @@ func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) (uint
 		})
 
 		if err != nil {
-			return msg.PayloadLength(), err
+			return msg.PayloadLength(), nil
 		}
 
 		blockRow, ok = sp.chain.State().Chain().Next(blockRow)

@@ -29,13 +29,13 @@ func (p *pool) handleVote(id peer.ID, msg p2p.Message) (uint64, error) {
 	view, err := p.chain.State().GetSubView(tip.Hash)
 	if err != nil {
 		p.log.Warnf("could not get block view representing current tip: %s", err)
-		return msg.PayloadLength(), err
+		return msg.PayloadLength(), nil
 	}
 
 	currentState, _, err := p.chain.State().GetStateForHashAtSlot(tip.Hash, firstSlotAllowedToInclude, &view)
 	if err != nil {
 		p.log.Warnf("error updating chain to attestation inclusion slot: %s", err)
-		return msg.PayloadLength(), err
+		return msg.PayloadLength(), nil
 	}
 	p.log.Debugf("received vote from %s with %d votes", id, len(data.Data.ParticipationBitfield.BitIndices()))
 	err = p.AddVote(data.Data, currentState)

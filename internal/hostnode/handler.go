@@ -121,7 +121,6 @@ func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 
 		size, err := handler(id, message)
 		if err != nil {
-			p.host.StatsService().IncreaseWrongMsgCount(id)
 			return 0, err
 		}
 
@@ -130,6 +129,7 @@ func (p *handler) receiveMessages(id peer.ID, r io.Reader) {
 
 	if err != nil {
 		if !strings.Contains(err.Error(), "stream reset") {
+			p.host.StatsService().IncreaseWrongMsgCount(id)
 			p.log.Errorf("error receiving messages from peer %s: %s", id, err)
 		}
 	}
