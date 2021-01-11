@@ -52,7 +52,7 @@ func NewDiscover(host HostNode) (*discover, error) {
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
-	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeServer))
+	d, err := dht.New(ctx, host.GetHost(), dht.Mode(dht.ModeServer), dht.Mode(dht.ModeClient))
 	if err != nil {
 		return nil, err
 	}
