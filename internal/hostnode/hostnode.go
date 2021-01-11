@@ -122,13 +122,8 @@ func (node *hostNode) RegisterTopicHandler(message string, handler MessageHandle
 
 func (node *hostNode) HandleStream(s network.Stream) {
 	if s != nil {
-		if s.Protocol() == params.ProtocolID(config.GlobalParams.NetParams.Name) {
-			node.handler.handleStream(s)
-			node.synchronizer.sendVersion(s.Conn().RemotePeer())
-		}
-		if s.Protocol() == params.ProtocolDiscoveryID(config.GlobalParams.NetParams.Name) {
-			node.discover.handleStream(s)
-		}
+		node.handler.handleStream(s)
+		node.synchronizer.sendVersion(s.Conn().RemotePeer())
 	}
 
 }
@@ -249,7 +244,8 @@ func (node *hostNode) VersionMsg() *p2p.MsgVersion {
 	tip := node.chain.State().Chain().Tip()
 
 	buf := make([]byte, 8)
-	rand.Read(buf)
+	_, _ = rand.Read(buf)
+
 	msg := &p2p.MsgVersion{
 		Tip:             tip.Height,
 		TipHash:         tip.Hash,

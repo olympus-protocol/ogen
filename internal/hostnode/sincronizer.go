@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -68,6 +69,19 @@ func NewSyncronizer(host HostNode, chain chain.Blockchain) (*synchronizer, error
 	}
 
 	host.GetHost().Network().Notify(&network.NotifyBundle{
+		ConnectedF: func(n network.Network, conn network.Conn) {
+			if conn.Stat().Direction != network.DirOutbound {
+				return
+			}
+
+			// open a stream for the sync protocol:
+			s, err := sp.host.GetHost().NewStream(sp.ctx, conn.RemotePeer(), params.ProtocolID(config.GlobalParams.NetParams.Name))
+			if err != nil {
+				sp.log.Errorf("could not open stream for connection: %s", err)
+			}
+
+			sp.host.HandleStream(s)
+		},
 		DisconnectedF: func(n network.Network, conn network.Conn) {
 			sp.host.StatsService().Remove(conn.RemotePeer())
 			n.Close()
