@@ -32,7 +32,7 @@ type peerChainStats struct {
 
 type peerStats struct {
 	ID            peer.ID
-	ChainStats    peerChainStats
+	ChainStats    *peerChainStats
 	Direction     network.Direction
 	BytesReceived uint64
 	BytesSent     uint64
@@ -41,10 +41,11 @@ type peerStats struct {
 }
 
 type statsService struct {
-	banPeersCache *fastcache.Cache
-	peersStats    sync.Map
-	count         int
-	host          HostNode
+	banPeersCache  *fastcache.Cache
+	peersStats     map[peer.ID]*peerStats
+	peersStatsLock sync.Mutex
+	count          int
+	host           HostNode
 }
 
 // IsBanned returns if a known peer is banned for bad behaviour
@@ -73,15 +74,13 @@ func (s *statsService) IsBanned(p peer.ID) (bool, error) {
 }
 
 func (s *statsService) GetPeerStats(p peer.ID) (*peerStats, bool) {
-	ps, ok := s.peersStats.Load(p)
+	s.peersStatsLock.Lock()
+	ps, ok := s.peersStats[p]
+	s.peersStatsLock.Unlock()
 	if !ok {
 		return nil, false
 	}
-	stats, ok := ps.(peerStats)
-	if !ok {
-		return nil, false
-	}
-	return &stats, true
+	return ps, true
 }
 
 func (s *statsService) SetPeerBan(p peer.ID, until time.Duration) {
@@ -99,30 +98,28 @@ func (s *statsService) SetPeerBan(p peer.ID, until time.Duration) {
 
 // FindBestPeer will perform a contextual check for peers and return a random peer ahead if we need to sync.
 func (s *statsService) FindBestPeer() (peer.ID, bool) {
+
 	verMsg := s.host.VersionMsg()
 
 	var peersAhead []*peerStats
 	var peersBehind []*peerStats
 	var peersEqual []*peerStats
 
-	s.peersStats.Range(func(key, value interface{}) bool {
-		p, ok := value.(peerStats)
-		if !ok {
-			return true
-		}
+	s.peersStatsLock.Lock()
+	for _, p := range s.peersStats {
 		if p.ChainStats.TipHeight > verMsg.FinalizedHeight {
-			peersAhead = append(peersAhead, &p)
+			peersAhead = append(peersAhead, p)
 		}
 
 		if p.ChainStats.TipHeight == verMsg.FinalizedHeight {
-			peersEqual = append(peersEqual, &p)
+			peersEqual = append(peersEqual, p)
 		}
 
 		if p.ChainStats.TipHeight < verMsg.FinalizedHeight {
-			peersBehind = append(peersBehind, &p)
+			peersBehind = append(peersBehind, p)
 		}
-		return true
-	})
+	}
+	s.peersStatsLock.Unlock()
 
 	if len(peersAhead) == 0 {
 		return "", false
@@ -139,9 +136,9 @@ func (s *statsService) Count() int {
 }
 
 func (s *statsService) Add(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
-	peerStats := peerStats{
+	peerStats := &peerStats{
 		ID: p,
-		ChainStats: peerChainStats{
+		ChainStats: &peerChainStats{
 			TipSlot:         ver.TipSlot,
 			TipHeight:       ver.Tip,
 			TipHash:         ver.TipHash,
@@ -158,12 +155,16 @@ func (s *statsService) Add(p peer.ID, ver *p2p.MsgVersion, dir network.Direction
 		BadMessages:   0,
 		BanScore:      0,
 	}
-	s.peersStats.Store(p, peerStats)
+	s.peersStatsLock.Lock()
+	s.peersStats[p] = peerStats
+	s.peersStatsLock.Unlock()
 	s.count += 1
 }
 
 func (s *statsService) Remove(p peer.ID) {
-	s.peersStats.Delete(p)
+	s.peersStatsLock.Lock()
+	delete(s.peersStats, p)
+	s.peersStatsLock.Unlock()
 	s.count -= 1
 }
 
@@ -173,78 +174,64 @@ func (s *statsService) Close() {
 }
 
 func (s *statsService) IncreaseWrongMsgCount(p peer.ID) {
-	ps, ok := s.peersStats.Load(p)
+	s.peersStatsLock.Lock()
+	_, ok := s.peersStats[p]
 	if !ok {
 		return
 	}
-	stats, ok := ps.(peerStats)
-	if !ok {
-		return
-	}
+	s.peersStats[p].BadMessages += 1
+	s.peersStats[p].BanScore += 10
 
-	stats.BadMessages += 1
-	stats.BanScore += 10
-
-	if stats.BanScore >= 500 {
+	if s.peersStats[p].BanScore >= 500 {
 		s.SetPeerBan(p, banPeerTimePenalization)
 		_ = s.host.DisconnectPeer(p)
 	}
+	s.peersStatsLock.Unlock()
+	return
 
-	s.peersStats.Store(p, stats)
 }
 
 func (s *statsService) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
-	ps, ok := s.peersStats.Load(p)
+	s.peersStatsLock.Lock()
+	_, ok := s.peersStats[p]
 	if !ok {
 		return
 	}
-	stats, ok := ps.(peerStats)
-	if !ok {
-		return
-	}
-
-	stats.BytesReceived += amount
-
-	s.peersStats.Store(p, stats)
+	s.peersStats[p].BytesReceived += amount
+	s.peersStatsLock.Unlock()
+	return
 }
 
 func (s *statsService) IncreasePeerSentBytes(p peer.ID, amount uint64) {
-	ps, ok := s.peersStats.Load(p)
+	s.peersStatsLock.Lock()
+	_, ok := s.peersStats[p]
 	if !ok {
 		return
 	}
-	stats, ok := ps.(peerStats)
-	if !ok {
-		return
-	}
-
-	stats.BytesSent += amount
-
-	s.peersStats.Store(p, stats)
+	s.peersStats[p].BytesSent += amount
+	s.peersStatsLock.Unlock()
+	return
 }
 
 func (s *statsService) handleFinalizationMsg(id peer.ID, msg p2p.Message) (uint64, error) {
 
 	fin, ok := msg.(*p2p.MsgFinalization)
 	if !ok {
-		return 0, errors.New("non block msg")
+		return 0, errors.New("non finalization msg")
 	}
 
 	if s.host.GetHost().ID() == id {
 		return 0, nil
 	}
 
-	ps, ok := s.peersStats.Load(id)
+	s.peersStatsLock.Lock()
+
+	ps, ok := s.peersStats[id]
 	if !ok {
 		return msg.PayloadLength(), nil
 	}
 
-	peerStats, ok := ps.(peerStats)
-	if !ok {
-		return msg.PayloadLength(), nil
-	}
-
-	peerStats.ChainStats = peerChainStats{
+	ps.ChainStats = &peerChainStats{
 		TipSlot:         fin.TipSlot,
 		TipHeight:       fin.Tip,
 		TipHash:         fin.TipHash,
@@ -256,7 +243,9 @@ func (s *statsService) handleFinalizationMsg(id peer.ID, msg p2p.Message) (uint6
 		FinalizedHash:   fin.FinalizedHash,
 	}
 
-	s.peersStats.Store(id, peerStats)
+	s.peersStats[id] = ps
+
+	s.peersStatsLock.Unlock()
 
 	return msg.PayloadLength(), nil
 }
