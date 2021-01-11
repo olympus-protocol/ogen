@@ -18,5 +18,7 @@ var resetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = os.RemoveAll(path.Join(DataPath, "peerstore"))
 		_ = os.RemoveAll(path.Join(DataPath, "chain"))
+		_ = os.RemoveAll(path.Join(DataPath, "mempool"))
+		_ = os.RemoveAll(path.Join(DataPath, "badpeers"))
 	},
 }
