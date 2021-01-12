@@ -275,13 +275,8 @@ func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
 
 func (h *host) listenTopics() {
 	for {
-		ctx := context.Background()
-		msg, err := h.topicSub.Next(ctx)
+		msg, err := h.topicSub.Next(h.ctx)
 		if err != nil {
-			if err != h.ctx.Err() {
-				h.log.Warnf("error getting next message: %s", err)
-				continue
-			}
 			continue
 		}
 
@@ -298,16 +293,19 @@ func (h *host) listenTopics() {
 		}
 
 		cmd := msgData.Command()
+
 		h.topicHandlersLock.Lock()
 		handler, found := h.topicHandlers[cmd]
+		h.topicHandlersLock.Unlock()
 		if !found {
 			continue
 		}
+
 		err = handler(msg.GetFrom(), msgData)
 		if err != nil {
 			h.log.Error(err)
 		}
-		h.topicHandlersLock.Unlock()
+
 	}
 }
 
