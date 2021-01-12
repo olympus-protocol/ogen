@@ -104,7 +104,7 @@ func NewDiscovery(ctx context.Context, h Host, lh libhost.Host) (*discovery, err
 
 	dhts := d.getRelayers()
 
-	dh, err := dht.New(ctx, lh, dht.Mode(dht.ModeAutoServer), dht.ProtocolPrefix(params.ProtocolID(netParams.Name)), dht.BootstrapPeers(dhts...))
+	dh, err := dht.New(ctx, lh, dht.Mode(dht.ModeClient), dht.BootstrapPeers(dhts...))
 	if err != nil {
 		return nil, err
 	}
