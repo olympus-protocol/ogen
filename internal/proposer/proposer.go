@@ -361,18 +361,16 @@ func (p *proposer) VoteForBlocks() {
 
 			for i, index := range validators {
 				votingValidator := validatorRegistry[index]
-				key, found := p.keystore.GetValidatorKey(votingValidator.PubKey)
-				if !found {
-					continue
-				}
-				if key.Enable {
-					if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
-						signatures = append(signatures, key.Secret.Sign(dataHash[:]))
-						bitlistVotes.Set(uint(i))
-						validatorsActionMap[key.Secret.PublicKey()] = key.Secret
+				key, ok := p.keystore.GetValidatorKey(votingValidator.PubKey)
+				if ok {
+					if key.Enable {
+						if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
+							signatures = append(signatures, key.Secret.Sign(dataHash[:]))
+							bitlistVotes.Set(uint(i))
+							validatorsActionMap[key.Secret.PublicKey()] = key.Secret
+						}
 					}
 				}
-
 			}
 
 			if len(validatorsActionMap) > 0 {

@@ -23,10 +23,6 @@ func ProtocolID(net string) protocol.ID {
 	return protocol.ID("/ogen/" + net)
 }
 
-func ProtocolDiscoveryID(net string) protocol.ID {
-	return protocol.ID("/ogen/discovery/" + net)
-}
-
 var merkleRootHashTestNet [32]byte
 
 func init() {

@@ -272,7 +272,6 @@ func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
 	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
-
 func (h *host) listenTopics() {
 	for {
 		msg, err := h.topicSub.Next(h.ctx)

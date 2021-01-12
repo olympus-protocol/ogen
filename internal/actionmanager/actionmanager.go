@@ -30,9 +30,9 @@ const MaxMessagePropagationTime = 60 * time.Second
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
 	StartValidators(validators map[common.PublicKey]common.SecretKey) error
-	ShouldRun(val [48]byte) bool
-	RegisterActionAt(by [48]byte, at time.Time, nonce uint64)
-	RegisterAction(by [48]byte, nonce uint64)
+	ShouldRun(val [48]byte) (bool, error)
+	RegisterActionAt(by [48]byte, at time.Time, nonce uint64) error
+	RegisterAction(by [48]byte, nonce uint64) error
 	GetNonce() uint64
 }
 
@@ -63,7 +63,10 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 	proposerIndex := state.GetProposerQueue()[slotIndex]
 	proposer := state.GetValidatorRegistry()[proposerIndex]
 
-	l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
+	err := l.RegisterActionAt(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
+	if err != nil {
+		l.log.Error(err)
+	}
 }
 
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
@@ -93,15 +96,11 @@ func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, 
 
 func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) error {
 
-	if !l.host.Synced() {
+	if id == l.host.ID() {
 		return nil
 	}
 
 	l.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
-
-	if id == l.host.ID() {
-		return nil
-	}
 
 	data, ok := msg.(*p2p.MsgValidatorStart)
 	if !ok {
@@ -135,8 +134,15 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) er
 		for _, valPub := range pubs {
 			var pub [48]byte
 			copy(pub[:], valPub.Marshal())
-			if ok := l.ShouldRun(pub); ok {
-				l.RegisterActionAt(pub, time.Unix(int64(data.Data.Timestamp), 0), data.Data.Nonce)
+			ok, err := l.ShouldRun(pub)
+			if err != nil {
+				return err
+			}
+			if ok {
+				err := l.RegisterActionAt(pub, time.Unix(int64(data.Data.Timestamp), 0), data.Data.Nonce)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -152,7 +158,12 @@ func (l *lastActionManager) StartValidators(validators map[common.PublicKey]comm
 	for public, secret := range validators {
 		var pub [48]byte
 		copy(pub[:], public.Marshal())
-		if l.ShouldRun(pub) {
+		ok, err := l.ShouldRun(pub)
+		if err != nil {
+			l.log.Error(err)
+			continue
+		}
+		if ok {
 			safeRunValidators[pub] = secret
 		}
 	}
@@ -192,41 +203,49 @@ func (l *lastActionManager) StartValidators(validators map[common.PublicKey]comm
 	return nil
 }
 
-func (l *lastActionManager) ShouldRun(val [48]byte) bool {
+func (l *lastActionManager) ShouldRun(val [48]byte) (bool, error) {
 	var lastActionBytes []byte
 	lastActionBytes, ok := l.lastActions.HasGet(lastActionBytes, val[:])
 	if !ok {
-		return true
+		return true, nil
 	}
 
 	var lastAction time.Time
 	err := lastAction.UnmarshalBinary(lastActionBytes)
 	if err != nil {
-		return true
+		return false, err
 	}
 
 	// last action was long enough ago we can start
 	if time.Since(lastAction) > MaxMessagePropagationTime*2 {
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
 // RegisterActionAt registers an action by a validator at a certain time.
-func (l *lastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce uint64) {
+func (l *lastActionManager) RegisterActionAt(by [48]byte, at time.Time, nonce uint64) error {
 	if nonce == l.nonce {
-		return
+		return nil
 	}
-	timeBytes, _ := at.MarshalBinary()
+	timeBytes, err := at.MarshalBinary()
+	if err != nil {
+		return err
+	}
+
 	l.lastActions.Set(by[:], timeBytes)
 
-	return
+	return nil
 }
 
 // RegisterAction registers an action by a validator.
-func (l *lastActionManager) RegisterAction(by [48]byte, nonce uint64) {
-	l.RegisterActionAt(by, time.Now(), nonce)
+func (l *lastActionManager) RegisterAction(by [48]byte, nonce uint64) error {
+	err := l.RegisterActionAt(by, time.Now(), nonce)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l *lastActionManager) GetNonce() uint64 {
