@@ -79,14 +79,20 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 	l.RegisterAction(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 
 	validators := state.GetValidatorRegistry()
-
-	for _, v := range block.Votes {
-		for idx, val := range validators {
-			if v.ParticipationBitfield.Get(uint(idx)) {
-				l.RegisterAction(val.PubKey, time.Unix(int64(block.Header.Timestamp), 0), v.Data.Nonce)
+	committee, err := state.GetVoteCommittee(block.Header.Slot)
+	if err != nil {
+		l.log.Error(err)
+	} else {
+		for _, v := range block.Votes {
+			for idx, valIdx := range committee {
+				if v.ParticipationBitfield.Get(uint(idx)) {
+					val := validators[valIdx]
+					l.RegisterAction(val.PubKey, time.Unix(int64(block.Header.Timestamp), 0), v.Data.Nonce)
+				}
 			}
 		}
 	}
+
 }
 
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
