@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/state"
@@ -21,7 +20,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"sort"
 	"sync"
-	"time"
 )
 
 type Pool interface {
@@ -58,9 +56,9 @@ type pool struct {
 	log       logger.Logger
 	ctx       context.Context
 
-	chain             chain.Blockchain
-	host              host.Host
-	lastActionManager actionmanager.LastActionManager
+	chain chain.Blockchain
+	host  host.Host
+	//lastActionManager actionmanager.LastActionManager
 
 	pool *fastcache.Cache
 
@@ -98,18 +96,18 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		return err
 	}
 
-	committee, err := currentState.GetVoteCommittee(d.Data.Slot)
+	/*committee, err := currentState.GetVoteCommittee(d.Data.Slot)
 	if err != nil {
 		p.log.Error(err)
 		return err
-	}
+	}*/
 
 	// Register voting action for validators included on the vote
-	for i, c := range committee {
+	/*for i, c := range committee {
 		if d.ParticipationBitfield.Get(uint(i)) {
 			p.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, time.Now(), d.Data.Nonce)
 		}
-	}
+	}*/
 
 	// Slashing check
 	// This check iterates over all the votes on the pool.
@@ -1119,7 +1117,7 @@ func (p *pool) Start() {
 
 }
 
-func NewPool(ch chain.Blockchain, h host.Host, manager actionmanager.LastActionManager) Pool {
+func NewPool(ch chain.Blockchain, h host.Host /*, manager actionmanager.LastActionManager*/) Pool {
 	datapath := config.GlobalFlags.DataPath
 
 	var cache *fastcache.Cache
@@ -1129,12 +1127,12 @@ func NewPool(ch chain.Blockchain, h host.Host, manager actionmanager.LastActionM
 		cache = fastcache.New(300 * 1024 * 1024)
 	}
 	return &pool{
-		netParams:         config.GlobalParams.NetParams,
-		log:               config.GlobalParams.Logger,
-		ctx:               config.GlobalParams.Context,
-		chain:             ch,
-		host:              h,
-		lastActionManager: manager,
+		netParams: config.GlobalParams.NetParams,
+		log:       config.GlobalParams.Logger,
+		ctx:       config.GlobalParams.Context,
+		chain:     ch,
+		host:      h,
+		//lastActionManager: manager,
 
 		pool: cache,
 

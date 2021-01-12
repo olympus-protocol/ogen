@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
-	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -59,25 +58,25 @@ type proposer struct {
 	pool mempool.Pool
 	host host.Host
 
-	lastActionManager actionmanager.LastActionManager
+	//lastActionManager actionmanager.LastActionManager
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keystore.Keystore /*, manager actionmanager.LastActionManager*/) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	prop := &proposer{
-		log:               config.GlobalParams.Logger,
-		netParams:         config.GlobalParams.NetParams,
-		keystore:          ks,
-		chain:             chain,
-		context:           ctx,
-		stop:              cancel,
-		pool:              pool,
-		host:              h,
-		lastActionManager: manager,
-		voting:            false,
-		proposing:         false,
+		log:       config.GlobalParams.Logger,
+		netParams: config.GlobalParams.NetParams,
+		keystore:  ks,
+		chain:     chain,
+		context:   ctx,
+		stop:      cancel,
+		pool:      pool,
+		host:      h,
+		//lastActionManager: manager,
+		voting:    false,
+		proposing: false,
 	}
 
 	err := prop.keystore.OpenKeystore()
@@ -178,12 +177,12 @@ func (p *proposer) ProposeBlocks() {
 
 			if k, found := p.keystore.GetValidatorKey(proposerValidator.PubKey); found {
 
-				ok := p.lastActionManager.ShouldRun(proposerValidator.PubKey)
+				/*ok := p.lastActionManager.ShouldRun(proposerValidator.PubKey)
 				if !ok {
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					p.log.Info("proposing disable, another node is already proposing for this key")
 					continue
-				}
+				}*/
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
@@ -210,7 +209,7 @@ func (p *proposer) ProposeBlocks() {
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
-						Nonce:         p.lastActionManager.GetNonce(),
+						Nonce:         0, /*p.lastActionManager.GetNonce(),*/
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
@@ -347,7 +346,7 @@ func (p *proposer) VoteForBlocks() {
 				ToEpoch:         toEpoch,
 				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.netParams.EpochLength - 1),
 				BeaconBlockHash: beaconBlock.Hash,
-				Nonce:           p.lastActionManager.GetNonce(),
+				Nonce:           0, /*p.lastActionManager.GetNonce(),*/
 			}
 
 			dataHash := data.Hash()
@@ -365,11 +364,11 @@ func (p *proposer) VoteForBlocks() {
 				key, ok := p.keystore.GetValidatorKey(votingValidator.PubKey)
 				if ok {
 					if key.Enable {
-						if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
-							signatures = append(signatures, key.Secret.Sign(dataHash[:]))
-							bitlistVotes.Set(uint(i))
-							validatorsActionMap[key.Secret.PublicKey()] = key.Secret
-						}
+						//if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
+						signatures = append(signatures, key.Secret.Sign(dataHash[:]))
+						bitlistVotes.Set(uint(i))
+						validatorsActionMap[key.Secret.PublicKey()] = key.Secret
+						//}
 					}
 				}
 			}
