@@ -141,6 +141,9 @@ func (l *lastActionManager) ShouldRun(val [48]byte) bool {
 
 // RegisterAction registers an action by a validator at a certain time.
 func (l *lastActionManager) RegisterAction(b [48]byte, at time.Time, nonce uint64) {
+	if !l.ShouldRun(b) {
+		return
+	}
 
 	d := &timeWithNonce{Time: at, Nonce: nonce}
 
