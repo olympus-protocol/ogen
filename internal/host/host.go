@@ -36,6 +36,8 @@ type Host interface {
 	Synced() bool
 	ConnectedPeers() int
 	GetPeersInfo() []*peerStats
+	GetPeerDirection(p peer.ID) network.Direction
+	SendMessage(id peer.ID, msg p2p.Message) error
 
 	Notify(n *notify)
 	Unnotify(n *notify)
@@ -53,6 +55,7 @@ type Host interface {
 
 	SetStreamHandler(pid protocol.ID, s network.StreamHandler)
 
+	AddPeerStats(pid peer.ID, msg *p2p.MsgVersion, dir network.Direction)
 	IncreasePeerReceivedBytes(p peer.ID, amount uint64)
 }
 
@@ -78,8 +81,9 @@ type host struct {
 	outgoingMessages     map[peer.ID]chan p2p.Message
 	outgoingMessagesLock sync.Mutex
 
-	stats     *stats
-	discovery *discovery
+	stats        *stats
+	discovery    *discovery
+	synchronizer *synchronizer
 }
 
 var _ Host = &host{}
@@ -114,7 +118,7 @@ func (h *host) Version() *p2p.MsgVersion {
 }
 
 func (h *host) Synced() bool {
-	return false
+	return h.synchronizer.sync
 }
 
 func (h *host) ConnectedPeers() int {
@@ -130,6 +134,15 @@ func (h *host) GetPeersInfo() []*peerStats {
 		}
 	}
 	return s
+}
+
+func (h *host) GetPeerDirection(p peer.ID) network.Direction {
+	conns := h.host.Network().ConnsToPeer(p)
+
+	if len(conns) != 1 {
+		return network.DirUnknown
+	}
+	return conns[0].Stat().Direction
 }
 
 func (h *host) Notify(n *notify) {
@@ -163,7 +176,7 @@ func (h *host) Connect(pi peer.AddrInfo) error {
 	return nil
 }
 
-func (h *host) HandleConnection(net network.Network, conn network.Conn) {
+func (h *host) HandleConnection(_ network.Network, conn network.Conn) {
 	if conn.Stat().Direction != network.DirOutbound {
 		return
 	}
@@ -174,6 +187,11 @@ func (h *host) HandleConnection(net network.Network, conn network.Conn) {
 	}
 
 	h.handleStream(s)
+
+	err = h.SendMessage(s.Conn().RemotePeer(), h.Version())
+	if err != nil {
+		h.log.Error(err)
+	}
 }
 
 // RegisterTopicHandler registers a handler for a msg type on the pubsub channel.
@@ -252,11 +270,14 @@ func (h *host) listenTopics() {
 	}
 }
 
+func (h *host) AddPeerStats(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
+	h.stats.Add(p, ver, dir)
+}
 func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
 	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
-func NewHostNode(blockchain chain.Blockchain) (Host, error) {
+func NewHostNode(ch chain.Blockchain) (Host, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
@@ -267,7 +288,7 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 		log:              log,
 		netMagic:         netParams.NetMagic,
 		datapath:         datapath,
-		chain:            blockchain,
+		chain:            ch,
 		topicHandlers:    make(map[string]MessageHandler),
 		messageHandler:   make(map[string]MessageHandler),
 		lastConnect:      make(map[peer.ID]time.Time),
@@ -337,6 +358,12 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 		return nil, err
 	}
 	node.stats = s
+
+	sy, err := NewSynchronizer(node, ch)
+	if err != nil {
+		return nil, err
+	}
+	node.synchronizer = sy
 
 	n := NewNotify(node, s)
 

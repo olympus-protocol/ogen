@@ -74,7 +74,7 @@ func (h *host) sendMessages(id peer.ID, w io.Writer) {
 	}()
 }
 
-func (h *host) sendMessage(id peer.ID, msg p2p.Message) error {
+func (h *host) SendMessage(id peer.ID, msg p2p.Message) error {
 	h.outgoingMessagesLock.Lock()
 	msgChan, found := h.outgoingMessages[id]
 	h.outgoingMessagesLock.Unlock()
@@ -90,11 +90,6 @@ func (h *host) handleStream(s network.Stream) {
 	if s != nil {
 		h.sendMessages(s.Conn().RemotePeer(), s)
 		h.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), s.Protocol())
-
 		go h.receiveMessages(s.Conn().RemotePeer(), s)
-		err := h.sendMessage(s.Conn().RemotePeer(), h.Version())
-		if err != nil {
-			h.log.Error(err)
-		}
 	}
 }
