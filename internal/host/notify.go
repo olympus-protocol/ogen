@@ -18,7 +18,9 @@ func (n notify) Connected(net network.Network, conn network.Conn) {
 	n.h.HandleConnection(net, conn)
 }
 
-func (n notify) Disconnected(network network.Network, conn network.Conn) {}
+func (n notify) Disconnected(network network.Network, conn network.Conn) {
+	n.h.RemovePeerStats(conn.RemotePeer())
+}
 
 func (n notify) OpenedStream(network network.Network, stream network.Stream) {}
 

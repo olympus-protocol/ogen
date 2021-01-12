@@ -55,7 +55,11 @@ type Host interface {
 
 	SetStreamHandler(pid protocol.ID, s network.StreamHandler)
 
-	AddPeerStats(pid peer.ID, msg *p2p.MsgVersion, dir network.Direction)
+	TrackedPeers() int
+	FindBestPeer() (peer.ID, bool)
+	GetPeerStats(p peer.ID) (*peerStats, bool)
+	RemovePeerStats(id peer.ID)
+	AddPeerStats(id peer.ID, msg *p2p.MsgVersion, dir network.Direction)
 	IncreasePeerReceivedBytes(p peer.ID, amount uint64)
 }
 
@@ -118,7 +122,7 @@ func (h *host) Version() *p2p.MsgVersion {
 }
 
 func (h *host) Synced() bool {
-	return h.synchronizer.sync
+	return h.synchronizer.synced
 }
 
 func (h *host) ConnectedPeers() int {
@@ -233,6 +237,30 @@ func (h *host) SetStreamHandler(pid protocol.ID, s network.StreamHandler) {
 	h.host.SetStreamHandler(pid, s)
 }
 
+func (h *host) TrackedPeers() int {
+	return h.stats.Count()
+}
+
+func (h *host) FindBestPeer() (peer.ID, bool) {
+	return h.stats.FindBestPeer()
+}
+
+func (h *host) GetPeerStats(p peer.ID) (*peerStats, bool) {
+	return h.stats.GetPeerStats(p)
+}
+
+func (h *host) RemovePeerStats(p peer.ID) {
+	h.stats.Remove(p)
+}
+
+func (h *host) AddPeerStats(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
+	h.stats.Add(p, ver, dir)
+}
+
+func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
+	h.stats.IncreasePeerReceivedBytes(p, amount)
+}
+
 func (h *host) listenTopics() {
 	for {
 		msg, err := h.topicSub.Next(h.ctx)
@@ -268,13 +296,6 @@ func (h *host) listenTopics() {
 			h.log.Error(err)
 		}
 	}
-}
-
-func (h *host) AddPeerStats(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
-	h.stats.Add(p, ver, dir)
-}
-func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
-	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
 func NewHostNode(ch chain.Blockchain) (Host, error) {
