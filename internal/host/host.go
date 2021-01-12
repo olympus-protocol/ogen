@@ -167,10 +167,12 @@ func (h *host) HandleConnection(net network.Network, conn network.Conn) {
 	if conn.Stat().Direction != network.DirOutbound {
 		return
 	}
+
 	s, err := h.host.NewStream(h.ctx, conn.RemotePeer(), params.ProtocolID(config.GlobalParams.NetParams.Name))
 	if err != nil {
 		h.log.Errorf("could not open stream for connection: %s", err)
 	}
+
 	h.handleStream(s)
 }
 

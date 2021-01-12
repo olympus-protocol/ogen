@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// processMessages continuously reads from stream and handles any protobuf messages.
 func processMessages(ctx context.Context, net uint32, stream io.Reader, handler func(p2p.Message) error) error {
 	for {
 		select {
@@ -39,19 +40,15 @@ func (h *host) receiveMessages(id peer.ID, r io.Reader) {
 		h.messageHandlersLock.Lock()
 		defer h.messageHandlersLock.Unlock()
 
-		handler, found := h.messageHandler[cmd]
-		if !found {
-			return nil
-		}
-
-		err := handler(id, message)
-		if err != nil {
-			return err
+		if handler, found := h.messageHandler[cmd]; found {
+			err := handler(id, message)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
-
 	if err != nil {
 		if !strings.Contains(err.Error(), "stream reset") {
 			h.stats.IncreaseWrongMsgCount(id)
@@ -91,12 +88,12 @@ func (h *host) sendMessage(id peer.ID, msg p2p.Message) error {
 
 func (h *host) handleStream(s network.Stream) {
 	if s != nil {
-		h.sendMessages(s.Conn().RemotePeer(), s)
 		h.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), s.Protocol())
 		err := h.sendMessage(s.Conn().RemotePeer(), h.Version())
 		if err != nil {
 			h.log.Error(err)
 		}
 		go h.receiveMessages(s.Conn().RemotePeer(), s)
+		h.sendMessages(s.Conn().RemotePeer(), s)
 	}
 }
