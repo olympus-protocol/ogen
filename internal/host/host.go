@@ -6,8 +6,10 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	dsleveldb "github.com/ipfs/go-ds-leveldb"
-	p2phost "github.com/libp2p/go-libp2p-core/host"
+	libhost "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	"sync"
 	"time"
 
@@ -30,7 +32,7 @@ type MessageHandler func(id peer.ID, msg p2p.Message) (uint64, error)
 type Host interface {
 	ID() peer.ID
 	Version() *p2p.MsgVersion
-	Syncing() bool
+	Synced() bool
 	ConnectedPeers() int
 	GetPeersInfo() []*peerStats
 
@@ -46,10 +48,12 @@ type Host interface {
 	Broadcast(msg p2p.Message) error
 
 	Stop()
+
+	SetStreamHandler(pid protocol.ID, s network.StreamHandler)
 }
 
 type host struct {
-	host     p2phost.Host
+	host     libhost.Host
 	ctx      context.Context
 	datapath string
 	netMagic uint32
@@ -102,7 +106,7 @@ func (h *host) Version() *p2p.MsgVersion {
 	return msg
 }
 
-func (h *host) Syncing() bool {
+func (h *host) Synced() bool {
 	return false
 }
 
@@ -187,6 +191,9 @@ func (h *host) Stop() {
 	h.stats.Close()
 }
 
+func (h *host) SetStreamHandler(pid protocol.ID, s network.StreamHandler) {
+	h.host.SetStreamHandler(pid, s)
+}
 func (h *host) listenTopics() {
 	for {
 		msg, err := h.topicSub.Next(h.ctx)
@@ -232,11 +239,14 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 	datapath := config.GlobalFlags.DataPath
 
 	node := &host{
-		ctx:      ctx,
-		log:      log,
-		netMagic: netParams.NetMagic,
-		datapath: datapath,
-		chain:    blockchain,
+		ctx:            ctx,
+		log:            log,
+		netMagic:       netParams.NetMagic,
+		datapath:       datapath,
+		chain:          blockchain,
+		topicHandlers:  make(map[string]MessageHandler),
+		messageHandler: make(map[string]MessageHandler),
+		lastConnect:    make(map[peer.ID]time.Time),
 	}
 
 	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
@@ -254,8 +264,7 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 		return nil, err
 	}
 
-	ip := ipAddr()
-	opts := buildOptions(ip, priv, ps)
+	opts := buildOptions(priv, ps)
 	h, err := libp2p.New(
 		ctx,
 		opts...,
@@ -291,6 +300,12 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 	}
 
 	go node.listenTopics()
+
+	d, err := NewDiscovery(node.ctx, node, node.host)
+	if err != nil {
+		return nil, err
+	}
+	node.discovery = d
 
 	s, err := NewStatsService(node)
 	if err != nil {

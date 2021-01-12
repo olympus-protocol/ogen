@@ -153,24 +153,40 @@ func multiAddressBuilderWithID(ipAddr, protocol string, port string, id peer.ID)
 	return ma.NewMultiaddr(fmt.Sprintf("/ip6/%s/%s/%s/p2p/%s", ipAddr, protocol, port, id.String()))
 }
 
-func buildOptions(ip net.IP, priKey crypto.PrivKey, ps peerstore.Peerstore) []libp2p.Option {
+func buildOptions(priKey crypto.PrivKey, ps peerstore.Peerstore) []libp2p.Option {
 	netParams := config.GlobalParams.NetParams
-	listen, err := multiAddressBuilder(ip.String(), netParams.DefaultP2PPort)
-	if err != nil {
-		log.Fatalf("Failed to p2p listen: %v", err)
+	var listen []ma.Multiaddr
+	var ips []string
+	ipv4, err := ExternalIPv4()
+	if err == nil {
+		ips = append(ips, ipv4)
 	}
+	ipv6, err := ExternalIPv6()
+	if err == nil {
+		ips = append(ips, ipv6)
+	}
+	if len(ips) == 0 {
+		panic("no ip available to listen")
+	}
+	for _, ip := range ips {
+		addr, err := multiAddressBuilder(ip, netParams.DefaultP2PPort)
+		if err != nil {
+			panic("no ip available to listen")
+		}
+		listen = append(listen, addr)
+	}
+
 	connman := connmgr.NewConnManager(2, 64, time.Second*60)
 
 	options := []libp2p.Option{
 		libp2p.Identity(priKey),
-		libp2p.ListenAddrs(listen),
+		libp2p.ListenAddrs(listen...),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.UserAgent(fmt.Sprintf("ogen/%s", params.Version)),
 		libp2p.ConnectionManager(connman),
 		libp2p.Peerstore(ps),
 		libp2p.AddrsFactory(func(addrs []ma.Multiaddr) []ma.Multiaddr {
-			addrs = append(addrs, listen)
-			return addrs
+			return listen
 		}),
 		libp2p.Ping(false),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),

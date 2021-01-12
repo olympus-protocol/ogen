@@ -152,7 +152,7 @@ func (p *proposer) ProposeBlocks() {
 		case <-blockTimer.C:
 			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
-			if p.host.Syncing() {
+			if !p.host.Synced() {
 				p.proposing = false
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
@@ -300,7 +300,7 @@ func (p *proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 			p.voteLock.Lock()
 			// Check if we're an attester for this slot
-			if p.host.Syncing() {
+			if !p.host.Synced() {
 				p.voting = false
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")

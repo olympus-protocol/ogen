@@ -42,7 +42,7 @@ func (s *chainServer) GetChainInfo(_ context.Context, _ *proto.Empty) (*proto.Ch
 			Exited:      validators.Exited,
 			Starting:    validators.Starting,
 		},
-		Synced:        !s.host.Syncing(),
+		Synced:        s.host.Synced(),
 		JustifiedHead: &proto.Head{Height: justified.Height, Slot: justified.Slot, Hash: hex.EncodeToString(justified.Hash[:])},
 		FinalizedHead: &proto.Head{Height: finalized.Height, Slot: finalized.Slot, Hash: hex.EncodeToString(finalized.Hash[:])},
 	}, nil

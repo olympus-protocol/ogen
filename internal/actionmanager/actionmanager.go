@@ -93,7 +93,7 @@ func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, 
 
 func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (uint64, error) {
 
-	if l.host.Syncing() {
+	if !l.host.Synced() {
 		return msg.PayloadLength(), nil
 	}
 
