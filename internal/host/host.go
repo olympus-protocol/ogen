@@ -71,6 +71,8 @@ type host struct {
 	log      logger.Logger
 	chain    chain.Blockchain
 
+	listening bool
+
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.Mutex
 
@@ -269,9 +271,25 @@ func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
 	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
-func (h *host) listenTopics() {
+func (h *host) listenerWatcher() {
 	for {
-		msg, err := h.topicSub.Next(h.ctx)
+		time.Sleep(time.Second * 5)
+		if h.listening {
+			continue
+		} else {
+			go h.listenTopics()
+		}
+	}
+}
+
+func (h *host) listenTopics() {
+	h.listening = true
+	defer func() {
+		h.listening = false
+	}()
+	for {
+		ctx := context.Background()
+		msg, err := h.topicSub.Next(ctx)
 		if err != nil {
 			if err != h.ctx.Err() {
 				h.log.Warnf("error getting next message: %s", err)

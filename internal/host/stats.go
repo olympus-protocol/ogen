@@ -273,7 +273,7 @@ func NewStatsService(h Host) (*stats, error) {
 	cache := fastcache.LoadFromFileOrNew(datapath+"/badpeers", 50*1024*1024)
 
 	ss := &stats{
-		log: log,
+		log:           log,
 		banPeersCache: cache,
 		count:         0,
 		h:             h,
