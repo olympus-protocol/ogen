@@ -127,7 +127,7 @@ func (l *lastActionManager) ShouldRun(val [48]byte) bool {
 	b := l.lastActions.Get(nil, val[:])
 
 	d := new(timeWithNonce)
-	d.Unmarshal(lastActionBytes)
+	d.Unmarshal(b)
 
 	if d.Nonce == l.nonce {
 		return true
