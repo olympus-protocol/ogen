@@ -71,8 +71,6 @@ type host struct {
 	log      logger.Logger
 	chain    chain.Blockchain
 
-	listening bool
-
 	lastConnect     map[peer.ID]time.Time
 	lastConnectLock sync.Mutex
 
@@ -124,7 +122,7 @@ func (h *host) Version() *p2p.MsgVersion {
 }
 
 func (h *host) Synced() bool {
-	if h.synchronizer.synced && !h.synchronizer.recentSynced {
+	if h.synchronizer.synced /*&& !h.synchronizer.recentSynced*/ {
 		return true
 	}
 	return false
@@ -274,22 +272,8 @@ func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
 	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
-func (h *host) listenerWatcher() {
-	for {
-		time.Sleep(time.Second * 5)
-		if h.listening {
-			continue
-		} else {
-			go h.listenTopics()
-		}
-	}
-}
 
 func (h *host) listenTopics() {
-	h.listening = true
-	defer func() {
-		h.listening = false
-	}()
 	for {
 		ctx := context.Background()
 		msg, err := h.topicSub.Next(ctx)
@@ -319,11 +303,11 @@ func (h *host) listenTopics() {
 		if !found {
 			continue
 		}
-		h.topicHandlersLock.Unlock()
 		err = handler(msg.GetFrom(), msgData)
 		if err != nil {
 			h.log.Error(err)
 		}
+		h.topicHandlersLock.Unlock()
 	}
 }
 
@@ -420,7 +404,6 @@ func NewHostNode(ch chain.Blockchain) (Host, error) {
 	node.SetStreamHandler(params.ProtocolID(netParams.Name), node.handleStream)
 
 	go node.listenTopics()
-	go node.listenerWatcher()
 
 	return node, nil
 }

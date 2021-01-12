@@ -76,8 +76,8 @@ func (h *host) sendMessages(id peer.ID, w io.Writer) {
 
 func (h *host) SendMessage(id peer.ID, msg p2p.Message) error {
 	h.outgoingMessagesLock.Lock()
+	defer h.outgoingMessagesLock.Unlock()
 	msgChan, found := h.outgoingMessages[id]
-	h.outgoingMessagesLock.Unlock()
 	if !found {
 		return fmt.Errorf("not tracking peer %s", id)
 	}
