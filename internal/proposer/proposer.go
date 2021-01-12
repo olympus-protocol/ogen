@@ -178,12 +178,7 @@ func (p *proposer) ProposeBlocks() {
 
 			if k, found := p.keystore.GetValidatorKey(proposerValidator.PubKey); found {
 
-				ok, err := p.lastActionManager.ShouldRun(proposerValidator.PubKey)
-				if err != nil {
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
-					p.log.Error(err)
-					continue
-				}
+				ok := p.lastActionManager.ShouldRun(proposerValidator.PubKey)
 				if !ok {
 					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
 					p.log.Info("proposing disable, another node is already proposing for this key")
@@ -370,12 +365,7 @@ func (p *proposer) VoteForBlocks() {
 				key, ok := p.keystore.GetValidatorKey(votingValidator.PubKey)
 				if ok {
 					if key.Enable {
-						ok, err := p.lastActionManager.ShouldRun(votingValidator.PubKey)
-						if err != nil {
-							p.log.Error(err)
-							continue
-						}
-						if ok {
+						if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
 							signatures = append(signatures, key.Secret.Sign(dataHash[:]))
 							bitlistVotes.Set(uint(i))
 							validatorsActionMap[key.Secret.PublicKey()] = key.Secret

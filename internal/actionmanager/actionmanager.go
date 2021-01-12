@@ -2,6 +2,7 @@ package actionmanager
 
 import (
 	"context"
+	"encoding/binary"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -15,6 +16,26 @@ import (
 	"time"
 )
 
+type timeWithNonce struct {
+	Time  time.Time
+	Nonce uint64
+}
+
+func (t *timeWithNonce) Marshal() []byte {
+	u := t.Time.Unix()
+	buf := make([]byte, 16)
+	binary.LittleEndian.PutUint64(buf[:8], uint64(u))
+	binary.LittleEndian.PutUint64(buf[8:], t.Nonce)
+	return buf
+}
+
+func (t *timeWithNonce) Unmarshal(b []byte) {
+	u := binary.LittleEndian.Uint64(b[:8])
+	t.Time = time.Unix(int64(u), 0)
+	t.Nonce = binary.LittleEndian.Uint64(b[8:])
+	return
+}
+
 // MaxMessagePropagationTime is the maximum time we're expecting a message to
 // take to propagate across the network. We wait double this before allowing a
 // validator to start.
@@ -23,9 +44,9 @@ const MaxMessagePropagationTime = 60 * time.Second
 // LastActionManager is an interface for lastActionManager
 type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
-	ShouldRun(val [48]byte) (bool, error)
+	ShouldRun(val [48]byte) bool
 	GetNonce() uint64
-	RegisterAction(b [48]byte, at time.Time, nonce uint64) error
+	RegisterAction(b [48]byte, at time.Time, nonce uint64)
 }
 
 var _ LastActionManager = &lastActionManager{}
@@ -55,20 +76,14 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 	proposerIndex := state.GetProposerQueue()[slotIndex]
 	proposer := state.GetValidatorRegistry()[proposerIndex]
 
-	err := l.RegisterAction(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
-	if err != nil {
-		l.log.Error(err)
-	}
+	l.RegisterAction(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 
 	validators := state.GetValidatorRegistry()
 
 	for _, v := range block.Votes {
 		for idx, val := range validators {
 			if v.ParticipationBitfield.Get(uint(idx)) {
-				err := l.RegisterAction(val.PubKey, time.Unix(int64(block.Header.Timestamp), 0), v.Data.Nonce)
-				if err != nil {
-					l.log.Error(err)
-				}
+				l.RegisterAction(val.PubKey, time.Unix(int64(block.Header.Timestamp), 0), v.Data.Nonce)
 			}
 		}
 	}
@@ -97,40 +112,33 @@ func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, 
 	return l, nil
 }
 
-func (l *lastActionManager) ShouldRun(val [48]byte) (bool, error) {
-	var lastActionBytes []byte
-	lastActionBytes, ok := l.lastActions.HasGet(lastActionBytes, val[:])
+func (l *lastActionManager) ShouldRun(val [48]byte) bool {
+	lastActionBytes, ok := l.lastActions.HasGet(nil, val[:])
 	if !ok {
-		return true, nil
+		return true
 	}
 
-	var lastAction time.Time
-	err := lastAction.UnmarshalBinary(lastActionBytes)
-	if err != nil {
-		return false, err
+	d := new(timeWithNonce)
+	d.Unmarshal(lastActionBytes)
+
+	if d.Nonce == l.nonce {
+		return true
 	}
 
 	// last action was long enough ago we can start
-	if time.Since(lastAction) > MaxMessagePropagationTime*2 {
-		return true, nil
+	if time.Since(d.Time) > MaxMessagePropagationTime*2 {
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 // RegisterAction registers an action by a validator at a certain time.
-func (l *lastActionManager) RegisterAction(b [48]byte, at time.Time, nonce uint64) error {
-	if nonce == l.nonce {
-		return nil
-	}
-	timeBytes, err := at.MarshalBinary()
-	if err != nil {
-		return err
-	}
+func (l *lastActionManager) RegisterAction(b [48]byte, at time.Time, nonce uint64) {
 
-	l.lastActions.Set(b[:], timeBytes)
+	d := &timeWithNonce{Time: at, Nonce: nonce}
 
-	return nil
+	l.lastActions.Set(b[:], d.Marshal())
 }
 
 func (l *lastActionManager) GetNonce() uint64 {

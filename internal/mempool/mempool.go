@@ -107,10 +107,7 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 	// Register voting action for validators included on the vote
 	for i, c := range committee {
 		if d.ParticipationBitfield.Get(uint(i)) {
-			err = p.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, time.Now(), d.Data.Nonce)
-			if err != nil {
-				p.log.Error(err)
-			}
+			p.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, time.Now(), d.Data.Nonce)
 		}
 	}
 
