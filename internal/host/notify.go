@@ -15,9 +15,6 @@ func (n notify) Listen(_ network.Network, _ multiaddr.Multiaddr) {}
 func (n notify) ListenClose(_ network.Network, _ multiaddr.Multiaddr) {}
 
 func (n notify) Connected(net network.Network, conn network.Conn) {
-	if conn.Stat().Direction != network.DirOutbound {
-		return
-	}
 	n.h.HandleConnection(net, conn)
 }
 
