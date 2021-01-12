@@ -395,8 +395,6 @@ func NewHostNode(ch chain.Blockchain) (Host, error) {
 		return nil, err
 	}
 
-	go node.listenTopics()
-
 	d, err := NewDiscovery(node.ctx, node, node.host)
 	if err != nil {
 		return nil, err
@@ -420,6 +418,9 @@ func NewHostNode(ch chain.Blockchain) (Host, error) {
 	node.Notify(n)
 
 	node.SetStreamHandler(params.ProtocolID(netParams.Name), node.handleStream)
+
+	go node.listenTopics()
+	go node.listenerWatcher()
 
 	return node, nil
 }
