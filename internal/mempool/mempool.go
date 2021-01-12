@@ -922,22 +922,25 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 					}
 				}
 
-				aggSig := bls.AggregateSignatures(sigs)
-				var voteSig [96]byte
-				copy(voteSig[:], aggSig.Marshal())
+				if len(sigs) > 0 {
+					aggSig := bls.AggregateSignatures(sigs)
+					var voteSig [96]byte
+					copy(voteSig[:], aggSig.Marshal())
 
-				newVote := &primitives.MultiValidatorVote{
-					Data:                  poolVote.Data,
-					ParticipationBitfield: newBitfield,
-					Sig:                   voteSig,
+					newVote := &primitives.MultiValidatorVote{
+						Data:                  poolVote.Data,
+						ParticipationBitfield: newBitfield,
+						Sig:                   voteSig,
+					}
+
+					raw, err := newVote.Marshal()
+					if err != nil {
+						continue
+					}
+					p.pool.Set(key, raw)
+					p.votesKeys.Store(hash, struct{}{})
 				}
 
-				raw, err := newVote.Marshal()
-				if err != nil {
-					continue
-				}
-				p.pool.Set(key, raw)
-				p.votesKeys.Store(hash, struct{}{})
 			} else {
 				delete(p.singleVotes, hash)
 			}

@@ -124,7 +124,10 @@ func (h *host) Version() *p2p.MsgVersion {
 }
 
 func (h *host) Synced() bool {
-	return h.synchronizer.synced
+	if h.synchronizer.synced && !h.synchronizer.recentSynced {
+		return true
+	}
+	return false
 }
 
 func (h *host) ConnectedPeers() int {

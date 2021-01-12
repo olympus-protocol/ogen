@@ -32,6 +32,7 @@ type synchronizer struct {
 	chain chain.Blockchain
 
 	synced          bool
+	recentSynced    bool
 	withPeer        peer.ID
 	blockStallTimer *time.Timer
 
@@ -86,8 +87,9 @@ func (sp *synchronizer) askForBlocks(id peer.ID) {
 func (sp *synchronizer) waitForBlocksTimer() {
 	<-sp.blockStallTimer.C
 	sp.synced = true
+	sp.recentSynced = true
 	sp.withPeer = ""
-	sp.log.Info("sync finished")
+	sp.log.Info("Sync finished. Waiting for the next block...")
 	return
 }
 
@@ -248,6 +250,10 @@ func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
 		}
 		sp.log.Error(err)
 		return err
+	}
+
+	if sp.recentSynced {
+		sp.recentSynced = false
 	}
 
 	if !sp.synced {
