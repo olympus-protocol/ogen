@@ -14,13 +14,14 @@ func (n notify) Listen(_ network.Network, _ multiaddr.Multiaddr) {}
 
 func (n notify) ListenClose(_ network.Network, _ multiaddr.Multiaddr) {}
 
-func (n notify) Connected(network network.Network, conn network.Conn) {
-	
+func (n notify) Connected(net network.Network, conn network.Conn) {
+	if conn.Stat().Direction != network.DirOutbound {
+		return
+	}
+	n.h.HandleConnection(net, conn)
 }
 
-func (n notify) Disconnected(network network.Network, conn network.Conn) {
-
-}
+func (n notify) Disconnected(network network.Network, conn network.Conn) {}
 
 func (n notify) OpenedStream(network network.Network, stream network.Stream) {}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/olympus-protocol/ogen/pkg/params"
 	"sync"
 	"time"
 
@@ -41,6 +42,7 @@ type Host interface {
 
 	Disconnect(p peer.ID) error
 	Connect(p peer.AddrInfo) error
+	HandleConnection(net network.Network, conn network.Conn)
 
 	RegisterTopicHandler(messageName string, handler MessageHandler)
 	RegisterHandler(messageName string, handler MessageHandler)
@@ -70,6 +72,9 @@ type host struct {
 
 	messageHandler      map[string]MessageHandler
 	messageHandlersLock sync.Mutex
+
+	outgoingMessages     map[peer.ID]chan p2p.Message
+	outgoingMessagesLock sync.Mutex
 
 	stats     *stats
 	discovery *discovery
@@ -116,10 +121,10 @@ func (h *host) ConnectedPeers() int {
 
 func (h *host) GetPeersInfo() []*peerStats {
 	peers := h.host.Network().Peers()
-	s := make([]*peerStats, len(peers))
-	for i := range s {
-		if stat, ok := h.stats.GetPeerStats(peers[i]); ok {
-			s[i] = stat
+	var s []*peerStats
+	for _, p := range peers {
+		if stat, ok := h.stats.GetPeerStats(p); ok {
+			s = append(s, stat)
 		}
 	}
 	return s
@@ -154,6 +159,15 @@ func (h *host) Connect(pi peer.AddrInfo) error {
 		return h.host.Connect(ctx, pi)
 	}
 	return nil
+}
+
+func (h *host) HandleConnection(net network.Network, conn network.Conn) {
+	s, err := h.host.NewStream(h.ctx, conn.RemotePeer(), params.ProtocolID(config.GlobalParams.NetParams.Name))
+	if err != nil {
+		h.log.Errorf("could not open stream for connection: %s", err)
+	}
+
+	h.handleStream(s)
 }
 
 // RegisterTopicHandler registers a handler for a msg type on the pubsub channel.
@@ -194,6 +208,7 @@ func (h *host) Stop() {
 func (h *host) SetStreamHandler(pid protocol.ID, s network.StreamHandler) {
 	h.host.SetStreamHandler(pid, s)
 }
+
 func (h *host) listenTopics() {
 	for {
 		msg, err := h.topicSub.Next(h.ctx)
@@ -239,14 +254,15 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 	datapath := config.GlobalFlags.DataPath
 
 	node := &host{
-		ctx:            ctx,
-		log:            log,
-		netMagic:       netParams.NetMagic,
-		datapath:       datapath,
-		chain:          blockchain,
-		topicHandlers:  make(map[string]MessageHandler),
-		messageHandler: make(map[string]MessageHandler),
-		lastConnect:    make(map[peer.ID]time.Time),
+		ctx:              ctx,
+		log:              log,
+		netMagic:         netParams.NetMagic,
+		datapath:         datapath,
+		chain:            blockchain,
+		topicHandlers:    make(map[string]MessageHandler),
+		messageHandler:   make(map[string]MessageHandler),
+		lastConnect:      make(map[peer.ID]time.Time),
+		outgoingMessages: make(map[peer.ID]chan p2p.Message),
 	}
 
 	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)
@@ -316,6 +332,8 @@ func NewHostNode(blockchain chain.Blockchain) (Host, error) {
 	n := NewNotify(node, s)
 
 	node.Notify(n)
+
+	node.SetStreamHandler(params.ProtocolID(netParams.Name), node.handleStream)
 
 	return node, nil
 }
