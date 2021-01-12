@@ -15,7 +15,7 @@ func (n notify) Listen(_ network.Network, _ multiaddr.Multiaddr) {}
 func (n notify) ListenClose(_ network.Network, _ multiaddr.Multiaddr) {}
 
 func (n notify) Connected(network network.Network, conn network.Conn) {
-	panic("implement me")
+	
 }
 
 func (n notify) Disconnected(network network.Network, conn network.Conn) {
