@@ -3,7 +3,6 @@ package host
 import (
 	"context"
 	libhost "github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	discover "github.com/libp2p/go-libp2p-discovery"
 	"github.com/multiformats/go-multiaddr"
@@ -87,10 +86,6 @@ func (d *discovery) getRelayers() []peer.AddrInfo {
 	return r
 }
 
-func (d *discovery) handlerStream(s network.Stream) {
-
-}
-
 func NewDiscovery(ctx context.Context, h Host, lh libhost.Host) (*discovery, error) {
 	netParams := config.GlobalParams.NetParams
 	log := config.GlobalParams.Logger
@@ -102,9 +97,9 @@ func NewDiscovery(ctx context.Context, h Host, lh libhost.Host) (*discovery, err
 		h:         h,
 	}
 
-	//dhts := d.getRelayers()
+	dhts := d.getRelayers()
 
-	dh, err := dht.New(ctx, lh, dht.Mode(dht.ModeAutoServer))
+	dh, err := dht.New(ctx, lh, dht.Mode(dht.ModeAutoServer), dht.BootstrapPeers(dhts...))
 	if err != nil {
 		return nil, err
 	}
