@@ -162,11 +162,10 @@ func (h *host) Connect(pi peer.AddrInfo) error {
 }
 
 func (h *host) HandleConnection(net network.Network, conn network.Conn) {
-	s, err := net.NewStream(h.ctx, conn.RemotePeer())
+	s, err := h.host.NewStream(h.ctx, conn.RemotePeer(), params.ProtocolID(config.GlobalParams.NetParams.Name))
 	if err != nil {
 		h.log.Errorf("could not open stream for connection: %s", err)
 	}
-
 	h.handleStream(s)
 }
 
