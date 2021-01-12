@@ -39,18 +39,20 @@ type synchronizer struct {
 }
 
 func (sp *synchronizer) initialBlockDownload() {
-
+	fmt.Println("starting initial download")
 	for {
 		time.Sleep(time.Second * 1)
+		fmt.Println(sp.host.TrackedPeers())
 		if sp.host.TrackedPeers() < MinPeersForSyncStart {
 			continue
 		}
 		break
 	}
 
+
 	peerSelected, ok := sp.host.FindBestPeer()
 	if !ok {
-		sp.synced = false
+		sp.synced = true
 		return
 	}
 
@@ -270,10 +272,10 @@ func NewSynchronizer(host Host, chain chain.Blockchain) (*synchronizer, error) {
 
 	host.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersionMsg)
 	host.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocksMsg)
-	/*host.RegisterTopicHandler(p2p.MsgBlockCmd, sp.handleBlockMsg)
+	host.RegisterTopicHandler(p2p.MsgBlockCmd, sp.handleBlockMsg)
 	host.RegisterHandler(p2p.MsgBlockCmd, sp.handleBlockMsg)
 
-	go sp.initialBlockDownload()*/
+	go sp.initialBlockDownload()
 
 	return sp, nil
 }
