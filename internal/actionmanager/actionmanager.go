@@ -91,24 +91,26 @@ func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, 
 	return l, nil
 }
 
-func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (uint64, error) {
+func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) error {
 
 	if !l.host.Synced() {
-		return msg.PayloadLength(), nil
+		return nil
 	}
 
+	l.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
+
 	if id == l.host.ID() {
-		return 0, nil
+		return nil
 	}
 
 	data, ok := msg.(*p2p.MsgValidatorStart)
 	if !ok {
-		return msg.PayloadLength(), errors.New("wrong message on start validator topic")
+		return errors.New("wrong message on start validator topic")
 	}
 
 	sig, err := bls.SignatureFromBytes(data.Data.Signature[:])
 	if err != nil {
-		return msg.PayloadLength(), err
+		return err
 	}
 
 	validators := data.Data.Validators.BitIndices()
@@ -121,13 +123,13 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (u
 		for _, validatorIdx := range validators {
 			pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
 			if err != nil {
-				return msg.PayloadLength(), err
+				return err
 			}
 			pubs = append(pubs, pub)
 		}
 
 		if !sig.FastAggregateVerify(pubs, data.Data.SignatureMessage()) {
-			return msg.PayloadLength(), err
+			return err
 		}
 
 		for _, valPub := range pubs {
@@ -140,7 +142,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (u
 
 	}
 
-	return msg.PayloadLength(), nil
+	return nil
 }
 
 // StartValidators requests a validator to be started and returns whether it should be started.

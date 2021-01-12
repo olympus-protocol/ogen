@@ -223,25 +223,27 @@ func (s *stats) IncreasePeerSentBytes(p peer.ID, amount uint64) {
 	s.peersStats.Store(p, stats)
 }
 
-func (s *stats) handleFinalizationMsg(id peer.ID, msg p2p.Message) (uint64, error) {
+func (s *stats) handleFinalizationMsg(id peer.ID, msg p2p.Message) error {
 
 	fin, ok := msg.(*p2p.MsgFinalization)
 	if !ok {
-		return 0, errors.New("non block msg")
+		return errors.New("non block msg")
 	}
 
+	s.IncreasePeerReceivedBytes(id, msg.PayloadLength())
+
 	if s.h.ID() == id {
-		return 0, nil
+		return nil
 	}
 
 	ps, ok := s.peersStats.Load(id)
 	if !ok {
-		return msg.PayloadLength(), nil
+		return nil
 	}
 
 	peerStats, ok := ps.(peerStats)
 	if !ok {
-		return msg.PayloadLength(), nil
+		return nil
 	}
 
 	peerStats.ChainStats = &peerChainStats{
@@ -258,7 +260,7 @@ func (s *stats) handleFinalizationMsg(id peer.ID, msg p2p.Message) (uint64, erro
 
 	s.peersStats.Store(id, peerStats)
 
-	return msg.PayloadLength(), nil
+	return nil
 }
 
 func NewStatsService(h Host) (*stats, error) {

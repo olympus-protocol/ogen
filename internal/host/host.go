@@ -28,7 +28,7 @@ const connectionTimeout = 2000 * time.Millisecond
 const connectionWait = 60 * time.Second
 
 // MessageHandler is a handler for a specific message.
-type MessageHandler func(id peer.ID, msg p2p.Message) (uint64, error)
+type MessageHandler func(id peer.ID, msg p2p.Message) error
 
 type Host interface {
 	ID() peer.ID
@@ -52,6 +52,8 @@ type Host interface {
 	Stop()
 
 	SetStreamHandler(pid protocol.ID, s network.StreamHandler)
+
+	IncreasePeerReceivedBytes(p peer.ID, amount uint64)
 }
 
 type host struct {
@@ -241,12 +243,15 @@ func (h *host) listenTopics() {
 			continue
 		}
 		h.topicHandlersLock.Unlock()
-		size, err := handler(msg.GetFrom(), msgData)
+		err = handler(msg.GetFrom(), msgData)
 		if err != nil {
 			h.log.Error(err)
 		}
-		h.stats.IncreasePeerReceivedBytes(msg.GetFrom(), size)
 	}
+}
+
+func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
+	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
 func NewHostNode(blockchain chain.Blockchain) (Host, error) {

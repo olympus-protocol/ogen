@@ -10,31 +10,28 @@ import (
 	"strings"
 )
 
-func processMessages(ctx context.Context, net uint32, stream io.Reader, handler func(p2p.Message) (uint64, error)) (uint64, error) {
+func processMessages(ctx context.Context, net uint32, stream io.Reader, handler func(p2p.Message) error) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return 0, nil
+			return nil
 		default:
 			break
 		}
 
 		msg, err := p2p.ReadMessage(stream, net)
 		if err != nil {
-			return 0, err
+			return err
 		}
 
-		size, err := handler(msg)
-		if err != nil {
-			return 0, err
+		if err := handler(msg); err != nil {
+			return err
 		}
-
-		return size, nil
 	}
 }
 
 func (h *host) receiveMessages(id peer.ID, r io.Reader) {
-	size, err := processMessages(h.ctx, h.netMagic, r, func(message p2p.Message) (uint64, error) {
+	err := processMessages(h.ctx, h.netMagic, r, func(message p2p.Message) error {
 		cmd := message.Command()
 
 		h.log.Tracef("processing message %s from peer %s", cmd, id)
@@ -44,15 +41,15 @@ func (h *host) receiveMessages(id peer.ID, r io.Reader) {
 
 		handler, found := h.messageHandler[cmd]
 		if !found {
-			return 0, nil
+			return nil
 		}
 
-		size, err := handler(id, message)
+		err := handler(id, message)
 		if err != nil {
-			return 0, err
+			return err
 		}
 
-		return size, nil
+		return nil
 	})
 
 	if err != nil {
@@ -61,8 +58,6 @@ func (h *host) receiveMessages(id peer.ID, r io.Reader) {
 			h.log.Errorf("error receiving messages from peer %s: %s", id, err)
 		}
 	}
-
-	h.stats.IncreasePeerReceivedBytes(id, size)
 }
 
 func (h *host) sendMessages(id peer.ID, w io.Writer) {
