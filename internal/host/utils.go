@@ -1,6 +1,7 @@
-package hostnode
+package host
 
 import (
+	"crypto/rand"
 	"fmt"
 	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
@@ -8,13 +9,15 @@ import (
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
-	noise "github.com/libp2p/go-libp2p-noise"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
+	"path"
 	"sort"
 	"time"
 )
@@ -149,28 +152,74 @@ func multiAddressBuilderWithID(ipAddr, protocol string, port string, id peer.ID)
 	return ma.NewMultiaddr(fmt.Sprintf("/ip6/%s/%s/%s/p2p/%s", ipAddr, protocol, port, id.String()))
 }
 
-func buildOptions(ip net.IP, priKey crypto.PrivKey, ps peerstore.Peerstore) []libp2p.Option {
+func buildOptions(priKey crypto.PrivKey, ps peerstore.Peerstore) []libp2p.Option {
 	netParams := config.GlobalParams.NetParams
-	listen, err := multiAddressBuilder(ip.String(), netParams.DefaultP2PPort)
-	if err != nil {
-		log.Fatalf("Failed to p2p listen: %v", err)
+	var listen []ma.Multiaddr
+	var ips []string
+	ipv4, err := ExternalIPv4()
+	if err == nil {
+		ips = append(ips, ipv4)
 	}
+	ipv6, err := ExternalIPv6()
+	if err == nil {
+		ips = append(ips, ipv6)
+	}
+	if len(ips) == 0 {
+		panic("no ip available to listen")
+	}
+	for _, ip := range ips {
+		addr, err := multiAddressBuilder(ip, netParams.DefaultP2PPort)
+		if err != nil {
+			panic("no ip available to listen")
+		}
+		listen = append(listen, addr)
+	}
+
 	connman := connmgr.NewConnManager(2, 64, time.Second*60)
 
 	options := []libp2p.Option{
 		libp2p.Identity(priKey),
-		libp2p.ListenAddrs(listen),
-		libp2p.Security(noise.ID, noise.New),
+		libp2p.ListenAddrs(listen...),
+		libp2p.NATPortMap(),
 		libp2p.UserAgent(fmt.Sprintf("ogen/%s", params.Version)),
 		libp2p.ConnectionManager(connman),
 		libp2p.Peerstore(ps),
-		libp2p.AddrsFactory(func(addrs []ma.Multiaddr) []ma.Multiaddr {
-			addrs = append(addrs, listen)
-			return addrs
-		}),
-		libp2p.Ping(false),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
 	}
 
 	return options
+}
+
+func (h *host) loadPrivateKey() (crypto.PrivKey, error) {
+	keyBytes, err := ioutil.ReadFile(path.Join(h.datapath, "node_key.dat"))
+	if err != nil {
+		return h.createPrivateKey()
+	}
+
+	key, err := crypto.UnmarshalPrivateKey(keyBytes)
+	if err != nil {
+		return h.createPrivateKey()
+	}
+	return key, nil
+}
+
+func (h *host) createPrivateKey() (crypto.PrivKey, error) {
+	_ = os.RemoveAll(path.Join(h.datapath, "node_key.dat"))
+
+	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	keyBytes, err := crypto.MarshalPrivateKey(priv)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ioutil.WriteFile(path.Join(h.datapath, "node_key.dat"), keyBytes, 0700)
+	if err != nil {
+		return nil, err
+	}
+
+	return priv, nil
 }

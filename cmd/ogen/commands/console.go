@@ -24,7 +24,7 @@ var validatorsCmd = []prompt.Suggest{
 
 var netCmd = []prompt.Suggest{
 	{Text: "getnetworkinfo", Description: "Get current network information"},
-	{Text: "getpeersinfo", Description: "Get current connected hostnode"},
+	{Text: "getpeersinfo", Description: "Get current connected host"},
 	{Text: "addpeer", Description: "Add a new peer to the connections"},
 }
 

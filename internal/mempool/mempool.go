@@ -8,7 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/actionmanager"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -24,7 +24,7 @@ import (
 )
 
 type Pool interface {
-	Start() error
+	Start()
 	Close()
 
 	AddVote(d *primitives.MultiValidatorVote, s state.State) error
@@ -58,7 +58,7 @@ type pool struct {
 	ctx       context.Context
 
 	chain             chain.Blockchain
-	host              hostnode.HostNode
+	host              host.Host
 	lastActionManager actionmanager.LastActionManager
 
 	pool *fastcache.Cache
@@ -1091,48 +1091,31 @@ func (p *pool) Close() {
 }
 
 // Start initializes the pool listeners
-func (p *pool) Start() error {
+func (p *pool) Start() {
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleVote); err != nil {
-		return err
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleVote)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgDepositCmd, p.handleDeposit); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleDeposit)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgDepositsCmd, p.handleDeposits); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleDeposits)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgExitCmd, p.handleExit); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleExit)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgExitsCmd, p.handleExits); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleExits)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgPartialExitsCmd, p.handlePartialExits); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handlePartialExits)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgProofsCmd, p.handleProofs); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleProofs)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgTxCmd, p.handleTx); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleTx)
 
-	if err := p.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, p.handleGovernance); err != nil {
-		return nil
-	}
+	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleGovernance)
 
-	return nil
+	return
+
 }
 
-func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmanager.LastActionManager) Pool {
+func NewPool(ch chain.Blockchain, h host.Host, manager actionmanager.LastActionManager) Pool {
 	datapath := config.GlobalFlags.DataPath
 
 	var cache *fastcache.Cache
@@ -1146,7 +1129,7 @@ func NewPool(ch chain.Blockchain, hostnode hostnode.HostNode, manager actionmana
 		log:               config.GlobalParams.Logger,
 		ctx:               config.GlobalParams.Context,
 		chain:             ch,
-		host:              hostnode,
+		host:              h,
 		lastActionManager: manager,
 
 		pool: cache,

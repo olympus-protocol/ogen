@@ -7,7 +7,7 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/proposer"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 	"html/template"
@@ -17,7 +17,7 @@ import (
 type Dashboard struct {
 	ctx      context.Context
 	r        *gin.Engine
-	host     hostnode.HostNode
+	host     host.Host
 	chain    chain.Blockchain
 	proposer proposer.Proposer
 }
@@ -31,17 +31,13 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 	tip := d.chain.State().Tip()
 	justified, _ := d.chain.State().GetJustifiedHead()
 	finalized, _ := d.chain.State().GetFinalizedHead()
-	peers := d.host.GetPeerInfos()
+	peers := d.host.GetPeersInfo()
 	peersAhead := 0
 	peersBehind := 0
 	peersEqual := 0
 
 	var peersData []PeerData
-	for _, pid := range peers {
-		p, ok := d.host.StatsService().GetPeerStats(pid.ID)
-		if !ok {
-			continue
-		}
+	for _, p := range peers {
 		if p.ChainStats.TipSlot > justified.Slot {
 			peersAhead += 1
 		}
@@ -93,8 +89,8 @@ func (d *Dashboard) fetchData(c *gin.Context) {
 			FinalizedHash:   hex.EncodeToString(finalized.Hash[:]),
 		},
 		NetworkData: NetworkData{
-			ID:             d.host.GetHost().ID().String(),
-			PeersConnected: len(d.host.GetHost().Network().Peers()),
+			ID:             d.host.ID().String(),
+			PeersConnected: d.host.ConnectedPeers(),
 			PeersAhead:     peersAhead,
 			PeersBehind:    peersBehind,
 			PeersEqual:     peersEqual,
@@ -149,7 +145,7 @@ func (d *Dashboard) loadTemplate() error {
 	return nil
 }
 
-func NewDashboard(h hostnode.HostNode, ch chain.Blockchain, prop proposer.Proposer) (*Dashboard, error) {
+func NewDashboard(h host.Host, ch chain.Blockchain, prop proposer.Proposer) (*Dashboard, error) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())

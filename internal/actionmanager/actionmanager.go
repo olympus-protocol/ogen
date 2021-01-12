@@ -8,7 +8,7 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/state"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
@@ -44,7 +44,7 @@ var _ LastActionManager = &lastActionManager{}
 type lastActionManager struct {
 	log logger.Logger
 
-	host hostnode.HostNode
+	host host.Host
 	ch   chain.Blockchain
 	ctx  context.Context
 
@@ -69,13 +69,13 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 func (l *lastActionManager) ProposerSlashingConditionViolated(*primitives.ProposerSlashing) {}
 
 // NewLastActionManager creates a new last action manager.
-func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActionManager, error) {
+func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
 	netParams := config.GlobalParams.NetParams
 
 	l := &lastActionManager{
-		host:        node,
+		host:        h,
 		ch:          ch,
 		ctx:         ctx,
 		lastActions: fastcache.New(128 * 1024 * 1024),
@@ -84,33 +84,33 @@ func NewLastActionManager(node hostnode.HostNode, ch chain.Blockchain) (LastActi
 		netParams:   netParams,
 	}
 
-	if err := l.host.RegisterTopicHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart); err != nil {
-		return nil, err
-	}
+	l.host.RegisterTopicHandler(p2p.MsgValidatorStartCmd, l.handleValidatorStart)
 
 	ch.Notify(l)
 
 	return l, nil
 }
 
-func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (uint64, error) {
+func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) error {
 
-	if l.host.Syncing() {
-		return msg.PayloadLength(), nil
+	if !l.host.Synced() {
+		return nil
 	}
 
-	if id == l.host.GetHost().ID() {
-		return 0, nil
+	l.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
+
+	if id == l.host.ID() {
+		return nil
 	}
 
 	data, ok := msg.(*p2p.MsgValidatorStart)
 	if !ok {
-		return msg.PayloadLength(), errors.New("wrong message on start validator topic")
+		return errors.New("wrong message on start validator topic")
 	}
 
 	sig, err := bls.SignatureFromBytes(data.Data.Signature[:])
 	if err != nil {
-		return msg.PayloadLength(), err
+		return err
 	}
 
 	validators := data.Data.Validators.BitIndices()
@@ -123,13 +123,13 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (u
 		for _, validatorIdx := range validators {
 			pub, err := bls.PublicKeyFromBytes(l.ch.State().TipState().GetValidatorRegistry()[validatorIdx].PubKey[:])
 			if err != nil {
-				return msg.PayloadLength(), err
+				return err
 			}
 			pubs = append(pubs, pub)
 		}
 
 		if !sig.FastAggregateVerify(pubs, data.Data.SignatureMessage()) {
-			return msg.PayloadLength(), err
+			return err
 		}
 
 		for _, valPub := range pubs {
@@ -142,7 +142,7 @@ func (l *lastActionManager) handleValidatorStart(id peer.ID, msg p2p.Message) (u
 
 	}
 
-	return msg.PayloadLength(), nil
+	return nil
 }
 
 // StartValidators requests a validator to be started and returns whether it should be started.

@@ -15,7 +15,7 @@ import (
 
 	"github.com/olympus-protocol/ogen/internal/chain"
 	"github.com/olympus-protocol/ogen/internal/chainindex"
-	"github.com/olympus-protocol/ogen/internal/hostnode"
+	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -42,13 +42,13 @@ var _ Proposer = &proposer{}
 
 // proposer manages mining for the blockchain.
 type proposer struct {
-	log        logger.Logger
-	netParams  *params.ChainParams
-	chain      chain.Blockchain
-	keystore   keystore.Keystore
-	mineActive bool
-	context    context.Context
-	stop       context.CancelFunc
+	log       logger.Logger
+	netParams *params.ChainParams
+	chain     chain.Blockchain
+	keystore  keystore.Keystore
+
+	context context.Context
+	stop    context.CancelFunc
 
 	proposerLock sync.Mutex
 	voteLock     sync.Mutex
@@ -57,13 +57,13 @@ type proposer struct {
 	proposing bool
 
 	pool mempool.Pool
-	host hostnode.HostNode
+	host host.Host
 
 	lastActionManager actionmanager.LastActionManager
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keystore.Keystore, manager actionmanager.LastActionManager) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	prop := &proposer{
@@ -71,11 +71,10 @@ func NewProposer(chain chain.Blockchain, hostnode hostnode.HostNode, pool mempoo
 		netParams:         config.GlobalParams.NetParams,
 		keystore:          ks,
 		chain:             chain,
-		mineActive:        true,
 		context:           ctx,
 		stop:              cancel,
 		pool:              pool,
-		host:              hostnode,
+		host:              h,
 		lastActionManager: manager,
 		voting:            false,
 		proposing:         false,
@@ -153,7 +152,7 @@ func (p *proposer) ProposeBlocks() {
 		case <-blockTimer.C:
 			p.proposerLock.Lock()
 			// Check if we're an attester for this slot
-			if p.host.Syncing() {
+			if !p.host.Synced() {
 				p.proposing = false
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
@@ -301,7 +300,7 @@ func (p *proposer) VoteForBlocks() {
 		case <-voteTimer.C:
 			p.voteLock.Lock()
 			// Check if we're an attester for this slot
-			if p.host.Syncing() {
+			if !p.host.Synced() {
 				p.voting = false
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
