@@ -95,7 +95,16 @@ func NewDiscovery(ctx context.Context, h Host, lh libhost.Host) (*discovery, err
 	netParams := config.GlobalParams.NetParams
 	log := config.GlobalParams.Logger
 
-	dh, err := dht.New(ctx, lh, dht.Mode(dht.ModeAutoServer))
+	d := &discovery{
+		ctx:       ctx,
+		netParams: netParams,
+		log:       log,
+		h:         h,
+	}
+
+	dhts := d.getRelayers()
+
+	dh, err := dht.New(ctx, lh, dht.Mode(dht.ModeAutoServer), dht.ProtocolPrefix(params.ProtocolID(netParams.Name)), dht.BootstrapPeers(dhts...))
 	if err != nil {
 		return nil, err
 	}
@@ -107,24 +116,8 @@ func NewDiscovery(ctx context.Context, h Host, lh libhost.Host) (*discovery, err
 
 	r := discover.NewRoutingDiscovery(dh)
 
-	d := &discovery{
-		ctx:       ctx,
-		netParams: netParams,
-		log:       log,
-		h:         h,
-		dht:       dh,
-		discovery: r,
-	}
-
-	dhts := d.getRelayers()
-	for _, bp := range dhts {
-		err := d.h.Connect(bp)
-		if err != nil {
-			d.log.Errorf("unable to connect to relayer %s error: %s", bp.ID.String(), err.Error())
-		}
-	}
-
-	h.SetStreamHandler(params.ProtocolDiscoveryID(netParams.Name), d.handlerStream)
+	d.dht = dh
+	d.discovery = r
 
 	go d.advertise()
 	go d.findPeers()

@@ -9,7 +9,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
-	noise "github.com/libp2p/go-libp2p-noise"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/params"
@@ -181,14 +180,10 @@ func buildOptions(priKey crypto.PrivKey, ps peerstore.Peerstore) []libp2p.Option
 	options := []libp2p.Option{
 		libp2p.Identity(priKey),
 		libp2p.ListenAddrs(listen...),
-		libp2p.Security(noise.ID, noise.New),
+		libp2p.NATPortMap(),
 		libp2p.UserAgent(fmt.Sprintf("ogen/%s", params.Version)),
 		libp2p.ConnectionManager(connman),
 		libp2p.Peerstore(ps),
-		libp2p.AddrsFactory(func(addrs []ma.Multiaddr) []ma.Multiaddr {
-			return listen
-		}),
-		libp2p.Ping(false),
 		libp2p.EnableRelay(circuit.OptActive, circuit.OptHop),
 	}
 
