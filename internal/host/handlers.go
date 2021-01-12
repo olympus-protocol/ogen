@@ -88,12 +88,13 @@ func (h *host) sendMessage(id peer.ID, msg p2p.Message) error {
 
 func (h *host) handleStream(s network.Stream) {
 	if s != nil {
+		h.sendMessages(s.Conn().RemotePeer(), s)
 		h.log.Tracef("handling messages from peer %s for protocol %s", s.Conn().RemotePeer(), s.Protocol())
+
+		go h.receiveMessages(s.Conn().RemotePeer(), s)
 		err := h.sendMessage(s.Conn().RemotePeer(), h.Version())
 		if err != nil {
 			h.log.Error(err)
 		}
-		go h.receiveMessages(s.Conn().RemotePeer(), s)
-		h.sendMessages(s.Conn().RemotePeer(), s)
 	}
 }
