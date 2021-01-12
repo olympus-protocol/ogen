@@ -119,10 +119,12 @@ func NewLastActionManager(h host.Host, ch chain.Blockchain) (LastActionManager, 
 }
 
 func (l *lastActionManager) ShouldRun(val [48]byte) bool {
-	lastActionBytes, ok := l.lastActions.HasGet(nil, val[:])
+	ok := l.lastActions.Has(val[:])
 	if !ok {
 		return true
 	}
+
+	b := l.lastActions.Get(nil, val[:])
 
 	d := new(timeWithNonce)
 	d.Unmarshal(lastActionBytes)
