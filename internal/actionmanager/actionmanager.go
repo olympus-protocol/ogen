@@ -25,6 +25,7 @@ type LastActionManager interface {
 	NewTip(row *chainindex.BlockRow, block *primitives.Block, state state.State, receipts []*primitives.EpochReceipt)
 	ShouldRun(val [48]byte) (bool, error)
 	GetNonce() uint64
+	RegisterAction(b [48]byte, at time.Time, nonce uint64) error
 }
 
 var _ LastActionManager = &lastActionManager{}
@@ -54,7 +55,7 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 	proposerIndex := state.GetProposerQueue()[slotIndex]
 	proposer := state.GetValidatorRegistry()[proposerIndex]
 
-	err := l.registerAction(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
+	err := l.RegisterAction(proposer.PubKey, time.Unix(int64(block.Header.Timestamp), 0), block.Header.Nonce)
 	if err != nil {
 		l.log.Error(err)
 	}
@@ -62,12 +63,12 @@ func (l *lastActionManager) NewTip(_ *chainindex.BlockRow, block *primitives.Blo
 	validators := state.GetValidatorRegistry()
 
 	for _, v := range block.Votes {
-		idx := v.ParticipationBitfield.BitIndices()
-		for _, i := range idx {
-			val := validators[i]
-			err := l.registerAction(val.PubKey, time.Unix(int64(block.Header.Timestamp), 0), v.Data.Nonce)
-			if err != nil {
-				l.log.Error(err)
+		for idx, val := range validators {
+			if v.ParticipationBitfield.Get(uint(idx)) {
+				err := l.RegisterAction(val.PubKey, time.Unix(int64(block.Header.Timestamp), 0), v.Data.Nonce)
+				if err != nil {
+					l.log.Error(err)
+				}
 			}
 		}
 	}
@@ -117,8 +118,8 @@ func (l *lastActionManager) ShouldRun(val [48]byte) (bool, error) {
 	return false, nil
 }
 
-// RegisterActionAt registers an action by a validator at a certain time.
-func (l *lastActionManager) registerAction(by [48]byte, at time.Time, nonce uint64) error {
+// RegisterAction registers an action by a validator at a certain time.
+func (l *lastActionManager) RegisterAction(b [48]byte, at time.Time, nonce uint64) error {
 	if nonce == l.nonce {
 		return nil
 	}
@@ -127,7 +128,7 @@ func (l *lastActionManager) registerAction(by [48]byte, at time.Time, nonce uint
 		return err
 	}
 
-	l.lastActions.Set(by[:], timeBytes)
+	l.lastActions.Set(b[:], timeBytes)
 
 	return nil
 }
