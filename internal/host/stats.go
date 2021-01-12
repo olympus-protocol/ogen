@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
+	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"math/rand"
 	"sync"
@@ -40,6 +41,8 @@ type peerStats struct {
 }
 
 type stats struct {
+	log logger.Logger
+
 	banPeersCache *fastcache.Cache
 	peersStats    sync.Map
 	count         int
@@ -185,6 +188,7 @@ func (s *stats) IncreaseWrongMsgCount(p peer.ID) {
 	stats.BadMessages += 1
 	stats.BanScore += 10
 
+	s.log.Tracef("Adding %d banscore to peer %s", 10, p.String())
 	if stats.BanScore >= 500 {
 		s.SetPeerBan(p, banPeerTimePenalization)
 		_ = s.h.Disconnect(p)
@@ -265,10 +269,11 @@ func (s *stats) handleFinalizationMsg(id peer.ID, msg p2p.Message) error {
 
 func NewStatsService(h Host) (*stats, error) {
 	datapath := config.GlobalFlags.DataPath
-
+	log := config.GlobalParams.Logger
 	cache := fastcache.LoadFromFileOrNew(datapath+"/badpeers", 50*1024*1024)
 
 	ss := &stats{
+		log: log,
 		banPeersCache: cache,
 		count:         0,
 		h:             h,

@@ -168,6 +168,14 @@ func (h *host) Disconnect(p peer.ID) error {
 
 // Connect connects to a peer.
 func (h *host) Connect(pi peer.AddrInfo) error {
+	ok, err := h.stats.IsBanned(pi.ID)
+	if ok {
+		return nil
+	}
+	if err != nil {
+		h.log.Error(err)
+		return err
+	}
 	h.lastConnectLock.Lock()
 	defer h.lastConnectLock.Unlock()
 	lastConnect, found := h.lastConnect[pi.ID]

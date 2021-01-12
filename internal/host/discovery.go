@@ -55,15 +55,6 @@ func (d *discovery) handleNewPeer(pi peer.AddrInfo) {
 		return
 	}
 
-	/*ok, err := d.host.StatsService().IsBanned(pi.ID)
-	if ok {
-		return
-	}
-	if err != nil {
-		d.log.Error(err)
-		return
-	}
-	*/
 	err := d.h.Connect(pi)
 	if err != nil {
 		d.log.Infof("unable to connect to peer %s error: %s", pi.ID.String(), err.Error())

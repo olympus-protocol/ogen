@@ -39,16 +39,14 @@ type synchronizer struct {
 }
 
 func (sp *synchronizer) initialBlockDownload() {
-	fmt.Println("starting initial download")
+
 	for {
 		time.Sleep(time.Second * 1)
-		fmt.Println(sp.host.TrackedPeers())
 		if sp.host.TrackedPeers() < MinPeersForSyncStart {
 			continue
 		}
 		break
 	}
-
 
 	peerSelected, ok := sp.host.FindBestPeer()
 	if !ok {
