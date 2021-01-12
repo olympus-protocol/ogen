@@ -384,16 +384,6 @@ func (p *proposer) VoteForBlocks() {
 				}
 			}
 
-			if len(validatorsActionMap) > 0 {
-				err = p.lastActionManager.StartValidators(validatorsActionMap)
-				if err != nil {
-					p.log.Error(err)
-					voteTimer = time.NewTimer(time.Second * 2)
-					p.voteLock.Unlock()
-					continue
-				}
-			}
-
 			if len(signatures) > 0 {
 				sig := bls.AggregateSignatures(signatures)
 

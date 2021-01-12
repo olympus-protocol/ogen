@@ -97,19 +97,6 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		return err
 	}
 
-	committee, err := currentState.GetVoteCommittee(d.Data.Slot)
-	if err != nil {
-		p.log.Error(err)
-		return err
-	}
-
-	// Register voting action for validators included on the vote
-	for i, c := range committee {
-		if d.ParticipationBitfield.Get(uint(i)) {
-			p.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, d.Data.Nonce)
-		}
-	}
-
 	// Slashing check
 	// This check iterates over all the votes on the pool.
 	// Checks if the new vote data matches any pool vote data hash.
