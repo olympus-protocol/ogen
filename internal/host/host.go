@@ -122,6 +122,9 @@ func (h *host) Version() *p2p.MsgVersion {
 }
 
 func (h *host) Synced() bool {
+	if h.chain.State().TipState().GetSlot() < 2 {
+		return true
+	}
 	if h.synchronizer.synced && !h.synchronizer.recentSynced {
 		return true
 	}
