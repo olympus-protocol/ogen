@@ -57,9 +57,7 @@ func TestMsgTypeCreation(t *testing.T) {
 	createMsgTx(t)
 	createMsgTxMulti(t)
 	createMsgBlock(t)
-	createMsgDeposit(t)
 	createMsgDeposits(t)
-	createMsgExit(t)
 	createMsgExits(t)
 	createMsgVote(t)
 	createMsgValidatorStart(t)
@@ -109,20 +107,6 @@ func createMsgBlock(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func createMsgDeposit(t *testing.T) {
-	v := new(p2p.MsgDeposit)
-	buf := bytes.NewBuffer([]byte{})
-
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgDeposit)
-	assert.True(t, ok)
-}
-
 func createMsgDeposits(t *testing.T) {
 	v := new(p2p.MsgDeposits)
 	buf := bytes.NewBuffer([]byte{})
@@ -134,20 +118,6 @@ func createMsgDeposits(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, ok := msg.(*p2p.MsgDeposits)
-	assert.True(t, ok)
-}
-
-func createMsgExit(t *testing.T) {
-	v := new(p2p.MsgExit)
-	buf := bytes.NewBuffer([]byte{})
-
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgExit)
 	assert.True(t, ok)
 }
 

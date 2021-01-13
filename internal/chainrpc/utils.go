@@ -66,53 +66,7 @@ func (s *utilsServer) SubmitRawData(_ context.Context, data *proto.RawData) (*pr
 
 		return &proto.Success{Success: true, Data: tx.Hash().String()}, nil
 
-	case "deposit":
-
-		deposit := new(primitives.Deposit)
-
-		err := deposit.Unmarshal(dataBytes)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
-
-		err = s.pool.AddDeposit(deposit)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
-
-		msg := &p2p.MsgDeposit{Data: deposit}
-
-		err = s.host.Broadcast(msg)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
-
-		return &proto.Success{Success: true}, nil
-
-	case "exit":
-
-		exit := new(primitives.Exit)
-
-		err := exit.Unmarshal(dataBytes)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
-
-		err = s.pool.AddExit(exit)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
-
-		msg := &p2p.MsgExit{Data: exit}
-
-		err = s.host.Broadcast(msg)
-		if err != nil {
-			return &proto.Success{Success: false, Error: err.Error()}, nil
-		}
-
-		return &proto.Success{Success: true}, nil
-
-	case "deposits_bulk":
+	case "deposits":
 		deposits := new(p2p.MsgDeposits)
 
 		err := deposits.Unmarshal(dataBytes)
@@ -134,7 +88,7 @@ func (s *utilsServer) SubmitRawData(_ context.Context, data *proto.RawData) (*pr
 
 		return &proto.Success{Success: true}, nil
 
-	case "exits_bulk":
+	case "exits":
 		exits := new(p2p.MsgExits)
 
 		err := exits.Unmarshal(dataBytes)

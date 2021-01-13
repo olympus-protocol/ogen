@@ -1,7 +1,6 @@
 package host
 
 import (
-	"errors"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -165,6 +164,35 @@ func (s *stats) Add(p peer.ID, ver *p2p.MsgVersion, dir network.Direction) {
 	s.count += 1
 }
 
+func (s *stats) Update(p peer.ID, fin *p2p.MsgFinalization) error {
+
+	ps, ok := s.peersStats.Load(p)
+	if !ok {
+		return nil
+	}
+
+	peerStats, ok := ps.(peerStats)
+	if !ok {
+		return nil
+	}
+
+	peerStats.ChainStats = &peerChainStats{
+		TipSlot:         fin.TipSlot,
+		TipHeight:       fin.Tip,
+		TipHash:         fin.TipHash,
+		JustifiedSlot:   fin.JustifiedSlot,
+		JustifiedHeight: fin.JustifiedHeight,
+		JustifiedHash:   fin.JustifiedHash,
+		FinalizedSlot:   fin.FinalizedSlot,
+		FinalizedHeight: fin.FinalizedHeight,
+		FinalizedHash:   fin.FinalizedHash,
+	}
+
+	s.peersStats.Store(p, peerStats)
+
+	return nil
+}
+
 func (s *stats) Remove(p peer.ID) {
 	s.peersStats.Delete(p)
 	s.count -= 1
@@ -227,46 +255,6 @@ func (s *stats) IncreasePeerSentBytes(p peer.ID, amount uint64) {
 	s.peersStats.Store(p, stats)
 }
 
-func (s *stats) handleFinalizationMsg(id peer.ID, msg p2p.Message) error {
-
-	fin, ok := msg.(*p2p.MsgFinalization)
-	if !ok {
-		return errors.New("non block msg")
-	}
-
-	s.IncreasePeerReceivedBytes(id, msg.PayloadLength())
-
-	if s.h.ID() == id {
-		return nil
-	}
-
-	ps, ok := s.peersStats.Load(id)
-	if !ok {
-		return nil
-	}
-
-	peerStats, ok := ps.(peerStats)
-	if !ok {
-		return nil
-	}
-
-	peerStats.ChainStats = &peerChainStats{
-		TipSlot:         fin.TipSlot,
-		TipHeight:       fin.Tip,
-		TipHash:         fin.TipHash,
-		JustifiedSlot:   fin.JustifiedSlot,
-		JustifiedHeight: fin.JustifiedHeight,
-		JustifiedHash:   fin.JustifiedHash,
-		FinalizedSlot:   fin.FinalizedSlot,
-		FinalizedHeight: fin.FinalizedHeight,
-		FinalizedHash:   fin.FinalizedHash,
-	}
-
-	s.peersStats.Store(id, peerStats)
-
-	return nil
-}
-
 func NewStatsService(h Host) (*stats, error) {
 	datapath := config.GlobalFlags.DataPath
 	log := config.GlobalParams.Logger
@@ -278,8 +266,6 @@ func NewStatsService(h Host) (*stats, error) {
 		count:         0,
 		h:             h,
 	}
-
-	h.RegisterTopicHandler(p2p.MsgFinalizationCmd, ss.handleFinalizationMsg)
 
 	return ss, nil
 }

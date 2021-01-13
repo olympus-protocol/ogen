@@ -48,25 +48,6 @@ func (p *pool) handleVote(id peer.ID, msg p2p.Message) error {
 	return nil
 }
 
-func (p *pool) handleDeposit(id peer.ID, msg p2p.Message) error {
-	if id == p.host.ID() {
-		return nil
-	}
-
-	p.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
-
-	data, ok := msg.(*p2p.MsgDeposit)
-	if !ok {
-		return errors.New("wrong message on deposit topic")
-	}
-	err := p.AddDeposit(data.Data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (p *pool) handleDeposits(id peer.ID, msg p2p.Message) error {
 	if id == p.host.ID() {
 		return nil
@@ -84,27 +65,6 @@ func (p *pool) handleDeposits(id peer.ID, msg p2p.Message) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (p *pool) handleExit(id peer.ID, msg p2p.Message) error {
-
-	if id == p.host.ID() {
-		return nil
-	}
-
-	p.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
-
-	data, ok := msg.(*p2p.MsgExit)
-	if !ok {
-		return errors.New("wrong message on exit topic")
-	}
-
-	err := p.AddExit(data.Data)
-	if err != nil {
-		return err
 	}
 
 	return nil

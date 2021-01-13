@@ -47,8 +47,6 @@ type Host interface {
 	HandleConnection(net network.Network, conn network.Conn)
 
 	RegisterTopicHandler(messageName string, handler MessageHandler)
-	RegisterHandler(messageName string, handler MessageHandler)
-
 	Broadcast(msg p2p.Message) error
 
 	Stop()
@@ -78,9 +76,6 @@ type host struct {
 	topicSub          *pubsub.Subscription
 	topicHandlersLock sync.Mutex
 	topicHandlers     map[string]MessageHandler
-
-	messageHandler      map[string]MessageHandler
-	messageHandlersLock sync.Mutex
 
 	outgoingMessages     map[peer.ID]chan p2p.Message
 	outgoingMessagesLock sync.Mutex
@@ -220,20 +215,11 @@ func (h *host) RegisterTopicHandler(messageName string, handler MessageHandler) 
 	return
 }
 
-// RegisterHandler registers a handler for a msg type on the conn channel.
-func (h *host) RegisterHandler(messageName string, handler MessageHandler) {
-	h.messageHandlersLock.Lock()
-	defer h.messageHandlersLock.Unlock()
-	_, found := h.messageHandler[messageName]
-	if !found {
-		h.messageHandler[messageName] = handler
-	}
-	return
-}
-
 func (h *host) Broadcast(msg p2p.Message) error {
 	buf := bytes.NewBuffer([]byte{})
+
 	err := p2p.WriteMessage(buf, msg, h.netMagic)
+
 	if err != nil {
 		return err
 	}
@@ -272,42 +258,6 @@ func (h *host) IncreasePeerReceivedBytes(p peer.ID, amount uint64) {
 	h.stats.IncreasePeerReceivedBytes(p, amount)
 }
 
-func (h *host) listenTopics() {
-	for {
-		msg, err := h.topicSub.Next(h.ctx)
-		if err != nil {
-			continue
-		}
-
-		if msg.GetFrom() == h.host.ID() {
-			continue
-		}
-
-		buf := bytes.NewBuffer(msg.Data)
-
-		msgData, err := p2p.ReadMessage(buf, h.netMagic)
-		if err != nil {
-			h.log.Warnf("unable to decode message: %s", err)
-			continue
-		}
-
-		cmd := msgData.Command()
-
-		h.topicHandlersLock.Lock()
-		handler, found := h.topicHandlers[cmd]
-		h.topicHandlersLock.Unlock()
-		if !found {
-			continue
-		}
-
-		err = handler(msg.GetFrom(), msgData)
-		if err != nil {
-			h.log.Error(err)
-		}
-
-	}
-}
-
 func NewHostNode(ch chain.Blockchain) (Host, error) {
 	ctx := config.GlobalParams.Context
 	log := config.GlobalParams.Logger
@@ -320,10 +270,13 @@ func NewHostNode(ch chain.Blockchain) (Host, error) {
 		netMagic:         netParams.NetMagic,
 		datapath:         datapath,
 		chain:            ch,
-		topicHandlers:    make(map[string]MessageHandler),
-		messageHandler:   make(map[string]MessageHandler),
 		lastConnect:      make(map[peer.ID]time.Time),
 		outgoingMessages: make(map[peer.ID]chan p2p.Message),
+	}
+
+	node.topicHandlers = map[string]MessageHandler{
+		p2p.MsgFinalizationCmd: node.handleFinalizationMsg,
+		p2p.MsgBlockCmd:        node.handleBlockMsg,
 	}
 
 	ds, err := dsleveldb.NewDatastore(path.Join(node.datapath, "peerstore"), nil)

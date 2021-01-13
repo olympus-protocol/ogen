@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -372,6 +373,14 @@ func (p *pool) AddTx(d *primitives.Tx) error {
 
 	if d.Fee < 5000 {
 		return errors.New("transaction doesn't include enough fee")
+	}
+
+	if cs.Balances[fpkh] < d.Amount+d.Fee {
+		return fmt.Errorf("insufficient balance of %d for %d transaction", cs.Balances[fpkh], d.Amount+d.Fee)
+	}
+
+	if err := d.VerifySig(); err != nil {
+		return err
 	}
 
 	txKey := appendKeyWithNonce(fpkh, d.Nonce)
@@ -1097,21 +1106,17 @@ func (p *pool) Start() {
 
 	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleVote)
 
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleDeposit)
+	p.host.RegisterTopicHandler(p2p.MsgDepositsCmd, p.handleDeposits)
 
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleDeposits)
+	p.host.RegisterTopicHandler(p2p.MsgExitsCmd, p.handleExits)
 
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleExit)
+	p.host.RegisterTopicHandler(p2p.MsgPartialExitsCmd, p.handlePartialExits)
 
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleExits)
+	p.host.RegisterTopicHandler(p2p.MsgProofsCmd, p.handleProofs)
 
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handlePartialExits)
+	p.host.RegisterTopicHandler(p2p.MsgTxCmd, p.handleTx)
 
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleProofs)
-
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleTx)
-
-	p.host.RegisterTopicHandler(p2p.MsgVoteCmd, p.handleGovernance)
+	p.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, p.handleGovernance)
 
 	return
 

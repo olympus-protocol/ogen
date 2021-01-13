@@ -3,8 +3,6 @@ package host
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/chain"
@@ -93,73 +91,43 @@ func (sp *synchronizer) waitForBlocksTimer() {
 	return
 }
 
-func (sp *synchronizer) handleVersionMsg(id peer.ID, msg p2p.Message) error {
-	theirVersion, ok := msg.(*p2p.MsgVersion)
-	if !ok {
-		return fmt.Errorf("did not receive version message")
-	}
-
-	sp.log.Infof("received version message from %s", id)
-
-	// Send our version message if required
-	ourVersion := sp.host.Version()
-	direction := sp.host.GetPeerDirection(id)
-
-	sp.host.AddPeerStats(id, theirVersion, direction)
-
-	if direction == network.DirInbound {
-		if err := sp.host.SendMessage(id, ourVersion); err != nil {
-			return err
-		}
-
-	}
-
-	return nil
-}
-
-func (sp *synchronizer) handleGetBlocksMsg(id peer.ID, rawMsg p2p.Message) error {
-	msg, ok := rawMsg.(*p2p.MsgGetBlocks)
-	if !ok {
-		return errors.New("did not receive get blocks message")
-	}
-
-	sp.log.Debug("received getblocks")
-
-	// Get the announced last block to make sure we have a common point
-	firstCommon, ok := sp.chain.State().Index().Get(msg.LastBlockHash)
-	if !ok {
-		err := fmt.Sprintf("unable to find common point for peer %s", id)
-		sp.log.Error(err)
+func (sp *synchronizer) handleBlock(id peer.ID, block *primitives.Block) error {
+	if !sp.synced && sp.withPeer != id {
+		sp.log.Info("received block during sync, waiting to finish...")
 		return nil
 	}
-
-	blockRow, ok := sp.chain.State().Chain().Next(firstCommon)
-	if !ok {
-		err := fmt.Sprintf("unable to next block from common point for peer %s", id)
+	err := sp.processBlock(block)
+	if err != nil {
+		if err == ErrorBlockAlreadyKnown {
+			sp.log.Error(err)
+			return nil
+		}
+		if err == ErrorBlockParentUnknown {
+			if sp.synced {
+				sp.log.Error(err)
+				s, ok := sp.host.GetPeerStats(id)
+				if !ok {
+					return nil
+				}
+				just, _ := sp.chain.State().GetJustifiedHead()
+				if s.ChainStats.JustifiedSlot >= just.Slot {
+					go sp.initialBlockDownload()
+					return nil
+				}
+				return nil
+			}
+			return nil
+		}
 		sp.log.Error(err)
-		return nil
+		return err
 	}
 
-	for {
+	if sp.recentSynced {
+		sp.recentSynced = false
+	}
 
-		block, err := sp.chain.GetBlock(blockRow.Hash)
-		if err != nil {
-			return nil
-		}
-
-		err = sp.host.SendMessage(id, &p2p.MsgBlock{
-			Data: block,
-		})
-
-		if err != nil {
-			return nil
-		}
-
-		blockRow, ok = sp.chain.State().Chain().Next(blockRow)
-		if !ok {
-			break
-		}
-
+	if !sp.synced {
+		sp.blockStallTimer.Reset(time.Second * 3)
 	}
 
 	return nil
@@ -217,52 +185,6 @@ func (sp *synchronizer) processBlock(block *primitives.Block) error {
 	return nil
 }
 
-func (sp *synchronizer) handleBlockMsg(id peer.ID, msg p2p.Message) error {
-	block, ok := msg.(*p2p.MsgBlock)
-	if !ok {
-		return errors.New("non block msg")
-	}
-	if !sp.synced && sp.withPeer != id {
-		sp.log.Info("received block during sync, waiting to finish...")
-		return nil
-	}
-	err := sp.processBlock(block.Data)
-	if err != nil {
-		if err == ErrorBlockAlreadyKnown {
-			sp.log.Error(err)
-			return nil
-		}
-		if err == ErrorBlockParentUnknown {
-			if sp.synced {
-				sp.log.Error(err)
-				s, ok := sp.host.GetPeerStats(id)
-				if !ok {
-					return nil
-				}
-				just, _ := sp.chain.State().GetJustifiedHead()
-				if s.ChainStats.JustifiedSlot >= just.Slot {
-					go sp.initialBlockDownload()
-					return nil
-				}
-				return nil
-			}
-			return nil
-		}
-		sp.log.Error(err)
-		return err
-	}
-
-	if sp.recentSynced {
-		sp.recentSynced = false
-	}
-
-	if !sp.synced {
-		sp.blockStallTimer.Reset(time.Second * 3)
-	}
-
-	return nil
-}
-
 // NewSynchronizer constructs a new sync protocol with a given host and chain.
 func NewSynchronizer(host Host, chain chain.Blockchain) (*synchronizer, error) {
 
@@ -273,11 +195,6 @@ func NewSynchronizer(host Host, chain chain.Blockchain) (*synchronizer, error) {
 		chain:  chain,
 		synced: false,
 	}
-
-	host.RegisterHandler(p2p.MsgVersionCmd, sp.handleVersionMsg)
-	host.RegisterHandler(p2p.MsgGetBlocksCmd, sp.handleGetBlocksMsg)
-	host.RegisterTopicHandler(p2p.MsgBlockCmd, sp.handleBlockMsg)
-	host.RegisterHandler(p2p.MsgBlockCmd, sp.handleBlockMsg)
 
 	go sp.initialBlockDownload()
 

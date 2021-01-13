@@ -25,16 +25,12 @@ const (
 	MsgBlockCmd = "block"
 	// MsgTxCmd is a single tx element
 	MsgTxCmd = "tx"
-	// MsgDepositCmd is a single deposit element
-	MsgDepositCmd = "deposit"
 	// MsgDepositCmd is a deposit slice element
 	MsgDepositsCmd = "deposits"
 	// MsgVoteCmd is a single vote element
 	MsgVoteCmd = "vote"
 	// MsgValidatorStart is a validator hello element
 	MsgValidatorStartCmd = "validator_hello"
-	// MsgExitCmd is a exit element
-	MsgExitCmd = "exit"
 	// MsgExitsCmd is a exit slice element
 	MsgExitsCmd = "exits"
 	// MsgGovernanceCmd is a exit element
@@ -95,14 +91,10 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgTx{}
 	case MsgMultiSignatureTxCmd:
 		msg = &MsgMultiSignatureTx{}
-	case MsgDepositCmd:
-		msg = &MsgDeposit{}
 	case MsgDepositsCmd:
 		msg = &MsgDeposits{}
 	case MsgVoteCmd:
 		msg = &MsgVote{}
-	case MsgExitCmd:
-		msg = &MsgExit{}
 	case MsgExitsCmd:
 		msg = &MsgExits{}
 	case MsgValidatorStartCmd:

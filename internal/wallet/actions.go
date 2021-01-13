@@ -67,7 +67,7 @@ func (w *wallet) StartValidator(valPrivBytes common.SecretKey) (bool, error) {
 		return false, err
 	}
 
-	msg := &p2p.MsgDeposit{Data: deposit}
+	msg := &p2p.MsgDeposits{Data: []*primitives.Deposit{deposit}}
 
 	err = w.host.Broadcast(msg)
 	if err != nil {
@@ -173,7 +173,7 @@ func (w *wallet) ExitValidator(valPubKey common.PublicKey) (bool, error) {
 		return false, err
 	}
 
-	msg := &p2p.MsgExit{Data: exit}
+	msg := &p2p.MsgExits{Data: []*primitives.Exit{exit}}
 	err = w.host.Broadcast(msg)
 	if err != nil {
 		return false, nil
