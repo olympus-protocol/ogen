@@ -33,3 +33,22 @@ gpg --detach-sign ogen-"$OGEN_VERSION"-osx-amd64.tar.gz
 gpg --detach-sign ogen-"$OGEN_VERSION"-windows-amd64.zip
 
 go mod tidy
+
+shasum -a 256 ogen-"$OGEN_VERSION"-linux-amd64.tar.gz
+shasum -a 256 ogen-"$OGEN_VERSION"-linux-amd64.tar.gz.sig
+shasum -a 256 ogen-"$OGEN_VERSION"-linux-arm64.tar.gz
+shasum -a 256 ogen-"$OGEN_VERSION"-linux-arm64.tar.gz.sig
+shasum -a 256 ogen-"$OGEN_VERSION"-osx-amd64.tar.gz
+shasum -a 256 ogen-"$OGEN_VERSION"-osx-amd64.tar.gz.sig
+shasum -a 256 ogen-"$OGEN_VERSION"-windows-amd64.zip
+shasum -a 256 ogen-"$OGEN_VERSION"-windows-amd64.zip.sig
+
+gpg --verify ogen-"$OGEN_VERSION"-osx-amd64.tar.gz.sig ogen-"$OGEN_VERSION"-osx-amd64.tar.gz
+gpg --verify ogen-"$OGEN_VERSION"-linux-amd64.tar.gz.sig ogen-"$OGEN_VERSION"-linux-amd64.tar.gz
+gpg --verify ogen-"$OGEN_VERSION"-linux-arm64.tar.gz.sig ogen-"$OGEN_VERSION"-linux-arm64.tar.gz
+gpg --verify ogen-"$OGEN_VERSION"-windows-amd64.zip.sig ogen-"$OGEN_VERSION"-windows-amd64.zip
+
+echo gpg --verify ogen-"$OGEN_VERSION"-osx-amd64.tar.gz.sig ogen-"$OGEN_VERSION"-osx-amd64.tar.gz
+echo gpg --verify ogen-"$OGEN_VERSION"-windows-amd64.zip.sig ogen-"$OGEN_VERSION"-windows-amd64.zip
+echo gpg --verify ogen-"$OGEN_VERSION"-linux-amd64.tar.gz.sig ogen-"$OGEN_VERSION"-linux-amd64.tar.gz
+echo gpg --verify ogen-"$OGEN_VERSION"-linux-arm64.tar.gz.sig ogen-"$OGEN_VERSION"-linux-arm64.tar.gz
