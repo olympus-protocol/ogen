@@ -256,6 +256,7 @@ func (p *proposer) ProposeBlocks() {
 				block.Signature = s
 				block.RandaoSignature = rs
 				if err := p.chain.ProcessBlock(&block); err != nil {
+					slotToPropose++
 					p.log.Error(err)
 					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
@@ -387,6 +388,7 @@ func (p *proposer) VoteForBlocks() {
 
 				err = p.pool.AddVote(vote, voteState)
 				if err != nil {
+					slotToVote++
 					p.log.Error(err)
 					voteTimer = time.NewTimer(time.Second * 2)
 					p.voteLock.Unlock()

@@ -6,8 +6,7 @@ import (
 	"runtime"
 )
 
-type BLST struct {
-}
+type BLST struct {}
 
 var _ common.Implementation = &BLST{}
 
