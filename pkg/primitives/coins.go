@@ -92,6 +92,8 @@ func (u *CoinsState) Copy() CoinsState {
 func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
 	u.Balances = map[[20]byte]uint64{}
 	u.Nonces = map[[20]byte]uint64{}
+	u.ProofsVerified = map[[32]byte]struct{}{}
+
 	for _, b := range ser.Balances {
 		u.Balances[b.Account] = b.Info
 	}
@@ -101,6 +103,7 @@ func (u *CoinsState) FromSerializable(ser *CoinsStateSerializable) {
 	for _, n := range ser.Proofs {
 		u.ProofsVerified[n] = struct{}{}
 	}
+
 	return
 }
 
