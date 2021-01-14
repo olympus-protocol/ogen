@@ -28,6 +28,7 @@ func TestCoinsState_ToSerializable(t *testing.T) {
 
 	assert.Equal(t, len(scs.Nonces), 10)
 	assert.Equal(t, len(scs.Balances), 10)
+	assert.Equal(t, len(scs.Proofs), 10)
 
 	noncesSumMap := uint64(0)
 	balancesSumMap := uint64(0)

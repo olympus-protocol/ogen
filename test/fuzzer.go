@@ -152,12 +152,14 @@ func FuzzCoinState(n int) *primitives.CoinsState {
 	f := fuzz.New().NilChance(0).NumElements(n, n)
 	balances := map[[20]byte]uint64{}
 	nonces := map[[20]byte]uint64{}
+	proofs := map[[32]byte]struct{}{}
 	f.Fuzz(&balances)
 	f.Fuzz(&nonces)
-
+	f.Fuzz(&proofs)
 	v := &primitives.CoinsState{
 		Balances: balances,
 		Nonces:   nonces,
+		ProofsVerified: proofs,
 	}
 	return v
 }
