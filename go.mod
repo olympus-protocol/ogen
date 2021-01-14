@@ -39,7 +39,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/supranational/blst v0.3.2
+	github.com/supranational/blst v0.3.3-0.20210113201350-da8a917683e5
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/vektah/gqlparser/v2 v2.1.0
 	github.com/wealdtech/go-bytesutil v1.1.1
