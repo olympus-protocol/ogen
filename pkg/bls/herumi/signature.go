@@ -1,5 +1,5 @@
 package herumi
-
+/*
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -216,3 +216,4 @@ func (h *Herumi) VerifyCompressed(signature, pub, msg []byte) bool {
 	}
 	return sig.Verify(pk, msg)
 }
+*/

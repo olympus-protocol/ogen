@@ -1,5 +1,5 @@
 package herumi_test
-
+/*
 import (
 	"bytes"
 	"errors"
@@ -75,3 +75,4 @@ func TestPublicKey_Copy(t *testing.T) {
 		t.Fatal("Pubkey was mutated after copy")
 	}
 }
+*/

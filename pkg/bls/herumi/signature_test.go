@@ -1,5 +1,5 @@
 package herumi_test
-
+/*
 import (
 	"errors"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -211,3 +211,4 @@ func TestCopy(t *testing.T) {
 
 	assert.Equal(t, sig, sigB)
 }
+*/
