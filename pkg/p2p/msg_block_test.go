@@ -21,6 +21,6 @@ func TestMsgBlock(t *testing.T) {
 	assert.Equal(t, v, desc)
 
 	assert.Equal(t, p2p.MsgBlockCmd, v.Command())
-	assert.Equal(t, uint64(2277930), v.MaxPayloadLength())
+	assert.Equal(t, uint64(2278442), v.MaxPayloadLength())
 
 }

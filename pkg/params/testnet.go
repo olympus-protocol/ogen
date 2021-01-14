@@ -1,5 +1,15 @@
 package params
 
+/*func init() {
+	hashBytes, _ := hex.DecodeString("7fcc0f677b68a7e0ef11675fb0d9426de221a1b5f78ccaafaf21f198631c80ef") //  PolisBlockchain "height": 750711
+	copy(merkleRootHashTestNet[:], hashBytes)
+	fmt.Print(merkleRootHashTestNet)
+}*/
+
+
+var merkleRootHashTestNet = [32]byte{127, 204, 15, 103, 123, 104, 167, 224, 239, 17, 103, 95, 176, 217, 66, 109, 226, 33, 161, 181, 247, 140, 202, 175, 175, 33, 241, 152, 99, 28, 128, 239}
+
+
 // TestNet are chain parameters used for the testnet.
 var TestNet = ChainParams{
 	Name:           "testnet",

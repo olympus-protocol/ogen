@@ -83,5 +83,5 @@ message ParticipationInfo {
 
 message RedeemProof {
     string proof = 1;
-    string address = 2;
+        string address = 2;
 }

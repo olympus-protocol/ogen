@@ -178,6 +178,7 @@ func (s *utilsServer) DecodeRawBlock(_ context.Context, data *proto.RawData) (*p
 }
 
 func (s *utilsServer) SubmitRedeemProof(_ context.Context, data *proto.RedeemProof) (*proto.Success, error) {
+
 	proofBytes, err := hex.DecodeString(data.Proof)
 	if err != nil {
 		return nil, err
@@ -200,11 +201,12 @@ func (s *utilsServer) SubmitRedeemProof(_ context.Context, data *proto.RedeemPro
 		if err != nil {
 			return &proto.Success{Error: err.Error()}, nil
 		}
-		if buf.Len() < 0 {
+		if buf.Len() <= 0 {
 			break
 		}
 		proofs = append(proofs, proof)
 	}
+
 
 	if len(proofs) > 2048 {
 		return &proto.Success{Error: "too many proofs submited, max number is 2048"}, nil

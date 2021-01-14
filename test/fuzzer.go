@@ -458,6 +458,10 @@ func FuzzCoinProofs(n int) []*burnproof.CoinsProofSerializable {
 	for i := 0; i < n; i++ {
 		d := new(burnproof.CoinsProofSerializable)
 		f.Fuzz(d)
+		f.NumElements(64, 64)
+		var merkleBranch [][32]byte
+		f.Fuzz(&merkleBranch)
+		d.MerkleBranch = merkleBranch
 		v = append(v, d)
 	}
 	return v

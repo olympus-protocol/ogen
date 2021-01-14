@@ -63,6 +63,7 @@ func TestMsgTypeCreation(t *testing.T) {
 	createMsgValidatorStart(t)
 	createMsgGovernance(t)
 	createMsgFinalization(t)
+	createMsgProofs(t)
 }
 
 func createMsgVersion(t *testing.T) {
@@ -218,5 +219,21 @@ func createMsgFinalization(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, ok := msg.(*p2p.MsgFinalization)
+	assert.True(t, ok)
+}
+
+func createMsgProofs(t *testing.T) {
+	v := new(p2p.MsgProofs)
+	v.Proofs = testdata.FuzzCoinProofs(2048)
+
+	buf := bytes.NewBuffer([]byte{})
+
+	err := p2p.WriteMessage(buf, v, 1)
+	assert.NoError(t, err)
+
+	msg, err := p2p.ReadMessage(buf, 1)
+	assert.NoError(t, err)
+
+	_, ok := msg.(*p2p.MsgProofs)
 	assert.True(t, ok)
 }

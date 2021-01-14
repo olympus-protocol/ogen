@@ -1,7 +1,6 @@
 package params
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
@@ -21,13 +20,6 @@ var (
 
 func ProtocolID(net string) protocol.ID {
 	return protocol.ID("/ogen/" + net)
-}
-
-var merkleRootHashTestNet [32]byte
-
-func init() {
-	hashBytes, _ := hex.DecodeString("ef801c6398f121afafca8cf7b5a121e26d42d9b05f6711efe0a7687b670fcc7f") //  PolisBlockchain "height": 750711
-	copy(merkleRootHashTestNet[:], hashBytes)
 }
 
 // AccountPrefixes are prefixes used for account bech32 encoding.

@@ -23,7 +23,7 @@ const PartialExitsSize = (48 * 2) + 96 + 8 // 200 bytes
 
 // CoinProofs
 const MaxCoinProofsPerBlock = 64
-const MaxCoinProofSize = 8 + 25 + 192 + 44 + (32 * 64) // 2317 bytes
+const MaxCoinProofSize = 8 + 25 + 192 + 44 + (32 * 64) + 8 // 2317 bytes
 
 // Execution
 const MaxExecutionsPerBlock = 128
