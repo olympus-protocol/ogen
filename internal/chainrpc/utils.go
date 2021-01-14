@@ -207,7 +207,6 @@ func (s *utilsServer) SubmitRedeemProof(_ context.Context, data *proto.RedeemPro
 		proofs = append(proofs, proof)
 	}
 
-
 	if len(proofs) > 2048 {
 		return &proto.Success{Error: "too many proofs submited, max number is 2048"}, nil
 	}

@@ -37,5 +37,5 @@ var TestNet = NetworkInitialParams{
 	},
 	PremineAddress:  "tlpub1wa3kk77yd96tzr3j93fjn4ecudjpz0p6r9vqkp",
 	PremineMnemonic: "industry genius february annual leg autumn reveal unlock pluck rather sustain umbrella fever pattern steel bone dolphin strike water obtain equal bubble perfect claw",
-	GenesisTime:     1610581200,
+	GenesisTime:     1610587000,
 }

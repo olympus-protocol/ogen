@@ -27,7 +27,7 @@ func (m *MsgProofs) Command() string {
 
 // MaxPayloadLength returns the maximum size of the MsgVersion message.
 func (m *MsgProofs) MaxPayloadLength() uint64 {
-	return primitives.MaxCoinProofSize * 2048 + 4
+	return primitives.MaxCoinProofSize*2048 + 4
 }
 
 // PayloadLength returns the size of the MsgProofs message.
