@@ -735,7 +735,7 @@ func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, st
 		return true
 	})
 
-	var txs []*primitives.Tx
+	var tempTxs []*primitives.Tx
 	for i := range keys {
 
 		key := appendKey(keys[i][:], PoolTypeTx)
@@ -751,19 +751,24 @@ func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, st
 			continue
 		}
 
-		txs = append(txs, d)
+		tempTxs = append(tempTxs, d)
 	}
 
-	sort.Slice(txs, func(i, j int) bool {
-		return txs[i].Nonce < txs[j].Nonce
+	sort.Slice(tempTxs, func(i, j int) bool {
+		return tempTxs[i].Nonce < tempTxs[j].Nonce
 	})
 
-	if len(txs) > 0 {
-		err := s.ApplyMultiTransactionSingle(txs, feeReceiver)
+	var txs []*primitives.Tx
+	for _, tx := range tempTxs {
+		hash := tx.Hash()
+		key := appendKey(hash[:], PoolTypeTx)
+		err := s.ApplyTransactionSingle(tx, feeReceiver)
 		if err != nil {
-			p.log.Error(err)
-			return nil, s
+			p.pool.Del(key)
+			p.txKeys.Delete(key)
+			continue
 		}
+		txs = append(txs, tx)
 	}
 
 	return txs, s
