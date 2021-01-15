@@ -156,6 +156,7 @@ func (p *proposer) ProposeBlocks() {
 				blockTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to propose in 10 seconds")
 				p.proposerLock.Unlock()
+				slotToPropose++
 				continue
 			}
 			p.proposing = true
@@ -168,6 +169,7 @@ func (p *proposer) ProposeBlocks() {
 				p.log.Errorf("unable to get tip state at slot %d", slotToPropose)
 				blockTimer = time.NewTimer(time.Second * 2)
 				p.proposerLock.Unlock()
+				slotToPropose++
 				continue
 			}
 
@@ -245,6 +247,7 @@ func (p *proposer) ProposeBlocks() {
 				if !k.Enable {
 					blockTimer = time.NewTimer(time.Second * 2)
 					p.proposerLock.Unlock()
+					slotToPropose++
 					continue
 				}
 
@@ -306,6 +309,7 @@ func (p *proposer) VoteForBlocks() {
 				voteTimer = time.NewTimer(time.Second * 10)
 				p.log.Info("blockchain not synced... trying to vote in 10 seconds")
 				p.voteLock.Unlock()
+				slotToVote++
 				continue
 			}
 
@@ -317,6 +321,7 @@ func (p *proposer) VoteForBlocks() {
 				p.log.Errorf("unable to get tip at slot %d", slotToVote)
 				voteTimer = time.NewTimer(time.Second * 2)
 				p.voteLock.Unlock()
+				slotToVote++
 				continue
 			}
 
@@ -325,6 +330,7 @@ func (p *proposer) VoteForBlocks() {
 				p.log.Errorf("error getting vote committee: %s", err.Error())
 				voteTimer = time.NewTimer(time.Second * 2)
 				p.voteLock.Unlock()
+				slotToVote++
 				continue
 			}
 
@@ -335,6 +341,7 @@ func (p *proposer) VoteForBlocks() {
 				p.log.Errorf("unable to find block at slot %d", slotToVote-1)
 				voteTimer = time.NewTimer(time.Second * 2)
 				p.voteLock.Unlock()
+				slotToVote++
 				continue
 			}
 
