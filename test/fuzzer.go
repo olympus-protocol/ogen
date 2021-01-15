@@ -157,8 +157,8 @@ func FuzzCoinState(n int) *primitives.CoinsState {
 	f.Fuzz(&nonces)
 	f.Fuzz(&proofs)
 	v := &primitives.CoinsState{
-		Balances: balances,
-		Nonces:   nonces,
+		Balances:       balances,
+		Nonces:         nonces,
 		ProofsVerified: proofs,
 	}
 	return v

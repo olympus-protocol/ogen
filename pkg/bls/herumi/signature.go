@@ -1,9 +1,9 @@
 package herumi
+
 /*
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/wealdtech/go-bytesutil"
 
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/pkg/errors"
@@ -130,70 +130,6 @@ func (h *Herumi) Aggregate(sigs []common.Signature) common.Signature {
 	return h.AggregateSignatures(sigs)
 }
 
-// VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
-// This method provides a safe way to verify multiple signatures at once. We pick a number randomly from 1 to max
-// uint64 and then multiply the signature by it. We continue doing this for all signatures and its respective pubkeys.
-// S* = S_1 * r_1 + S_2 * r_2 + ... + S_n * r_n
-// P'_{i,j} = P_{i,j} * r_i
-// e(S*, G) = \prod_{i=1}^n \prod_{j=1}^{m_i} e(P'_{i,j}, M_{i,j})
-// Using this we can verify multiple signatures safely.
-func (h *Herumi) VerifyMultipleSignatures(rawSigs [][]byte, msgs [][32]byte, pubKeys []common.PublicKey) (bool, error) {
-	// Manually decompress each signature as herumi does not
-	// have a batch decompress method.
-	sigs := make([]common.Signature, len(rawSigs))
-	var err error
-	for i, s := range rawSigs {
-		sigs[i], err = h.SignatureFromBytes(s)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	if len(sigs) == 0 || len(pubKeys) == 0 {
-		return false, nil
-	}
-
-	length := len(sigs)
-	if length != len(pubKeys) || length != len(msgs) {
-		return false, errors.Errorf("provided signatures, pubkeys and messages have differing lengths. S: %d, P: %d,M %d",
-			length, len(pubKeys), len(msgs))
-	}
-	// Use a secure source of RNG.
-	newGen := common.NewGenerator()
-	randNums := make([]bls12.Fr, length)
-	signatures := make([]bls12.G2, length)
-	msgSlices := make([]byte, 0, 32*len(msgs))
-	for i := 0; i < len(sigs); i++ {
-		rNum := newGen.Uint64()
-		if err := randNums[i].SetLittleEndian(bytesutil.Bytes8(rNum)); err != nil {
-			return false, err
-		}
-		// Cast signature to a G2 value
-		signatures[i] = *bls12.CastFromSign(sigs[i].(*Signature).s)
-
-		// Flatten message to single byte slice to make it compatible with herumi.
-		msgSlices = append(msgSlices, msgs[i][:]...)
-	}
-	// Perform multi scalar multiplication on all the relevant G2 points
-	// with our generated random numbers.
-	finalSig := new(bls12.G2)
-	bls12.G2MulVec(finalSig, signatures, randNums)
-
-	multiKeys := make([]bls12.PublicKey, length)
-	for i := 0; i < len(pubKeys); i++ {
-		if pubKeys[i] == nil {
-			return false, errors.New("nil public key")
-		}
-		// Perform scalar multiplication for the corresponding g1 points.
-		g1 := new(bls12.G1)
-		bls12.G1Mul(g1, bls12.CastFromPublicKey(pubKeys[i].(*PublicKey).p), &randNums[i])
-		multiKeys[i] = *bls12.CastToPublicKey(g1)
-	}
-	aggSig := bls12.CastToSign(finalSig)
-
-	return aggSig.AggregateVerifyNoCheck(multiKeys, msgSlices), nil
-}
-
 // Marshal a signature into a LittleEndian byte slice.
 func (s *Signature) Marshal() []byte {
 	return s.s.Serialize()
@@ -203,17 +139,5 @@ func (s *Signature) Marshal() []byte {
 func (s *Signature) Copy() common.Signature {
 	sign := *s.s
 	return &Signature{s: &sign}
-}
-
-func (h *Herumi) VerifyCompressed(signature, pub, msg []byte) bool {
-	sig, err := h.SignatureFromBytes(signature)
-	if err != nil {
-		return false
-	}
-	pk, err := h.PublicKeyFromBytes(pub)
-	if err != nil {
-		return false
-	}
-	return sig.Verify(pk, msg)
 }
 */

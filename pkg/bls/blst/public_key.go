@@ -1,5 +1,6 @@
 package blst
 
+/*
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
@@ -107,3 +108,4 @@ func (p *PublicKey) ToAccount(prefix *params.AccountPrefixes) string {
 	hash, _ := p.Hash()
 	return bech32.Encode(prefix.Public, hash[:])
 }
+*/

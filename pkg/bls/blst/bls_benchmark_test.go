@@ -1,47 +1,28 @@
-package herumi_test
+package blst_test
 
 /*
 import (
+	"github.com/olympus-protocol/ogen/pkg/bls/blst"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/bls/herumi"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
-
-	"github.com/herumi/bls-eth-go-binary/bls"
 )
 
-var benchImpl = herumi.NewHerumiInterface()
+var benchImpl = blst.NewBLSTInterface()
 
-func BenchmarkPairing(b *testing.B) {
-	require.NoError(b, bls.Init(bls.BLS12_381))
-	if err := bls.SetETHmode(bls.EthModeDraft07); err != nil {
-		panic(err)
-	}
-	newGt := &bls.GT{}
-	newG1 := &bls.G1{}
-	newG2 := &bls.G2{}
-
-	newGt.SetInt64(10)
-	var hash [32]byte
-	require.NoError(b, newG1.HashAndMapTo(hash[:]))
-	require.NoError(b, newG2.HashAndMapTo(hash[:]))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		bls.Pairing(newGt, newG1, newG2)
-	}
-
-}
 func BenchmarkSignature_Verify(b *testing.B) {
 	sk, err := benchImpl.RandKey()
-	require.NoError(b, err)
+	assert.NoError(b, err)
 
 	msg := []byte("Some msg")
 	sig := sk.Sign(msg)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		require.Equal(b, true, sig.Verify(sk.PublicKey(), msg))
+		if !sig.Verify(sk.PublicKey(), msg) {
+			b.Fatal("could not verify sig")
+		}
 	}
 }
 
@@ -54,7 +35,7 @@ func BenchmarkSignature_AggregateVerify(b *testing.B) {
 	for i := 0; i < sigN; i++ {
 		msg := [32]byte{'s', 'i', 'g', 'n', 'e', 'd', byte(i)}
 		sk, err := benchImpl.RandKey()
-		require.NoError(b, err)
+		assert.NoError(b, err)
 		sig := sk.Sign(msg[:])
 		pks = append(pks, sk.PublicKey())
 		sigs = append(sigs, sig)
@@ -65,7 +46,9 @@ func BenchmarkSignature_AggregateVerify(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		require.Equal(b, true, aggregated.AggregateVerify(pks, msgs))
+		if !aggregated.AggregateVerify(pks, msgs) {
+			b.Fatal("could not verify aggregate sig")
+		}
 	}
 }
 

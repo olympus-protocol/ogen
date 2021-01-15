@@ -1,37 +1,14 @@
-package herumi_test
+package kilic_test
 
-/*
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/bls/herumi"
+	"github.com/olympus-protocol/ogen/pkg/bls/kilic"
 	"github.com/stretchr/testify/require"
 	"testing"
-
-	"github.com/herumi/bls-eth-go-binary/bls"
 )
 
-var benchImpl = herumi.NewHerumiInterface()
+var benchImpl = kilic.NewKilicInterface()
 
-func BenchmarkPairing(b *testing.B) {
-	require.NoError(b, bls.Init(bls.BLS12_381))
-	if err := bls.SetETHmode(bls.EthModeDraft07); err != nil {
-		panic(err)
-	}
-	newGt := &bls.GT{}
-	newG1 := &bls.G1{}
-	newG2 := &bls.G2{}
-
-	newGt.SetInt64(10)
-	var hash [32]byte
-	require.NoError(b, newG1.HashAndMapTo(hash[:]))
-	require.NoError(b, newG2.HashAndMapTo(hash[:]))
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		bls.Pairing(newGt, newG1, newG2)
-	}
-
-}
 func BenchmarkSignature_Verify(b *testing.B) {
 	sk, err := benchImpl.RandKey()
 	require.NoError(b, err)
@@ -80,4 +57,3 @@ func BenchmarkSecretKey_Marshal(b *testing.B) {
 		_ = err
 	}
 }
-*/

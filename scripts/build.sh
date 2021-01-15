@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go build cmd/ogen/ogen.go
+CGO_ENABLED=1 go build cmd/ogen/ogen.go

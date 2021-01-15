@@ -1,5 +1,6 @@
 package blst_test
 
+/*
 import (
 	"bytes"
 	"errors"
@@ -74,3 +75,4 @@ func TestPublicKey_Copy(t *testing.T) {
 
 	require.Equal(t, pubkeyA.Marshal(), pubkeyBytes, "Pubkey was mutated after copy")
 }
+*/

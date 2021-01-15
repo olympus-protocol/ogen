@@ -21,7 +21,6 @@ type PublicKey interface {
 	Marshal() []byte
 	Copy() PublicKey
 	Aggregate(p2 PublicKey) PublicKey
-	IsInfinite() bool
 	Hash() ([20]byte, error)
 	ToAccount(prefix *params.AccountPrefixes) string
 }
@@ -43,8 +42,6 @@ type Implementation interface {
 	AggregatePublicKeys(pubs [][]byte) (PublicKey, error)
 	Aggregate(sigs []Signature) Signature
 	AggregateSignatures(sigs []Signature) Signature
-	VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []PublicKey) (bool, error)
 	NewAggregateSignature() Signature
 	RandKey() (SecretKey, error)
-	VerifyCompressed(signature, pub, msg []byte) bool
 }

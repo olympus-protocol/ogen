@@ -4,15 +4,15 @@
 package bls
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls/blst"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
+	"github.com/olympus-protocol/ogen/pkg/bls/kilic"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/big"
 
 	"github.com/pkg/errors"
 )
 
-var currImplementation common.Implementation = blst.NewBLSTInterface()
+var currImplementation common.Implementation = kilic.NewKilicInterface()
 
 // KeyPair is an interface struct to serve keypairs
 type KeyPair struct {
@@ -27,10 +27,10 @@ func Initialize(c *params.ChainParams, impl string) {
 	switch impl {
 	//case "herumi":
 	//	currImplementation = herumi.NewHerumiInterface()
-	case "blst":
-		currImplementation = blst.NewBLSTInterface()
+	//case "blst":
+	//	currImplementation = blst.NewBLSTInterface()
 	default:
-		currImplementation = blst.NewBLSTInterface()
+		currImplementation = kilic.NewKilicInterface()
 	}
 }
 
@@ -75,11 +75,6 @@ func AggregateSignatures(sigs []common.Signature) common.Signature {
 	return currImplementation.AggregateSignatures(sigs)
 }
 
-// VerifyMultipleSignatures verifies multiple signatures for distinct messages securely.
-func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []common.PublicKey) (bool, error) {
-	return currImplementation.VerifyMultipleSignatures(sigs, msgs, pubKeys)
-}
-
 // NewAggregateSignature creates a blank aggregate signature.
 func NewAggregateSignature() common.Signature {
 	return currImplementation.NewAggregateSignature()
@@ -88,9 +83,4 @@ func NewAggregateSignature() common.Signature {
 // RandKey creates a new private key using a random input.
 func RandKey() (common.SecretKey, error) {
 	return currImplementation.RandKey()
-}
-
-// VerifyCompressed signature.
-func VerifyCompressed(signature, pub, msg []byte) bool {
-	return currImplementation.VerifyCompressed(signature, pub, msg)
 }

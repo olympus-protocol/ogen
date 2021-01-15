@@ -1,12 +1,13 @@
 package blst
 
+/*
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	blst "github.com/supranational/blst/bindings/go"
 	"runtime"
 )
 
-type BLST struct {}
+type BLST struct{}
 
 var _ common.Implementation = &BLST{}
 
@@ -22,3 +23,4 @@ func init() {
 func NewBLSTInterface() common.Implementation {
 	return &BLST{}
 }
+*/

@@ -1,5 +1,6 @@
 package blst
 
+/*
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -140,45 +141,6 @@ func (b *BLST) Aggregate(sigs []common.Signature) common.Signature {
 	return b.AggregateSignatures(sigs)
 }
 
-// VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
-// This method provides a safe way to verify multiple signatures at once. We pick a number randomly from 1 to max
-// uint64 and then multiply the signature by it. We continue doing this for all signatures and its respective pubkeys.
-// S* = S_1 * r_1 + S_2 * r_2 + ... + S_n * r_n
-// P'_{i,j} = P_{i,j} * r_i
-// e(S*, G) = \prod_{i=1}^n \prod_{j=1}^{m_i} e(P'_{i,j}, M_{i,j})
-// Using this we can verify multiple signatures safely.
-func (b *BLST) VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []common.PublicKey) (bool, error) {
-	if len(sigs) == 0 || len(pubKeys) == 0 {
-		return false, nil
-	}
-	rawSigs := new(blstSignature).BatchUncompress(sigs)
-
-	length := len(sigs)
-	if length != len(pubKeys) || length != len(msgs) {
-		return false, errors.Errorf("provided signatures, pubkeys and messages have differing lengths. S: %d, P: %d,M %d",
-			length, len(pubKeys), len(msgs))
-	}
-	mulP1Aff := make([]*blstPublicKey, length)
-	rawMsgs := make([]blst.Message, length)
-
-	for i := 0; i < length; i++ {
-		mulP1Aff[i] = pubKeys[i].(*PublicKey).p
-		rawMsgs[i] = msgs[i][:]
-	}
-	// Secure source of RNG
-	randGen := common.NewGenerator()
-
-	randFunc := func(scalar *blst.Scalar) {
-		var rbytes [scalarBytes]byte
-		randGen.Read(rbytes[:])
-		scalar.FromBEndian(rbytes[:])
-	}
-	dummySig := new(blstSignature)
-
-	// Validate signatures since we uncompress them here. Public keys should already be validated.
-	return dummySig.MultipleAggregateVerify(rawSigs, true, mulP1Aff, false, rawMsgs, dst, randFunc, randBitsEntropy), nil
-}
-
 // Marshal a signature into a LittleEndian byte slice.
 func (s *Signature) Marshal() []byte {
 	return s.s.Compress()
@@ -189,10 +151,4 @@ func (s *Signature) Copy() common.Signature {
 	sign := *s.s
 	return &Signature{s: &sign}
 }
-
-// VerifyCompressed verifies that the compressed signature and pubkey
-// are valid from the message provided.
-func (b *BLST) VerifyCompressed(signature []byte, pub []byte, msg []byte) bool {
-	// Validate signature and PKs since we will uncompress them here
-	return new(blstSignature).VerifyCompressed(signature, true, pub, true, msg, dst)
-}
+*/

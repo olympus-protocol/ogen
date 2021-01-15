@@ -1,5 +1,6 @@
 package blst
 
+/*
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
@@ -84,3 +85,4 @@ func (s *bls12SecretKey) Marshal() []byte {
 func (s *bls12SecretKey) ToWIF(p *params.AccountPrefixes) string {
 	return bech32.Encode(p.Private, s.Marshal())
 }
+*/
