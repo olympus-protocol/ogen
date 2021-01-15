@@ -1,6 +1,5 @@
 package herumi
 
-/*
 import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -140,4 +139,3 @@ func (s *Signature) Copy() common.Signature {
 	sign := *s.s
 	return &Signature{s: &sign}
 }
-*/

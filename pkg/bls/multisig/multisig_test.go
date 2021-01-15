@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	bls.Initialize(&testdata.TestParams, "blst")
+	bls.Initialize(&testdata.TestParams, "herumi")
 }
 
 func TestCorrectnessMultisig(t *testing.T) {

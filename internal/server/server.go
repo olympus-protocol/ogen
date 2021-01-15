@@ -104,7 +104,7 @@ func NewServer(db blockdb.Database) (Server, error) {
 
 	log.Tracef("Initializing bls module with params for %v", netParams.Name)
 
-	bls.Initialize(netParams, "kilic")
+	bls.Initialize(netParams, "herumi")
 
 	ch, err := chain.NewBlockchain(db)
 	if err != nil {

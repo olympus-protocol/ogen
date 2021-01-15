@@ -1,6 +1,5 @@
 package herumi
 
-/*
 import (
 	"github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -25,4 +24,3 @@ var _ common.Implementation = &Herumi{}
 func NewHerumiInterface() common.Implementation {
 	return &Herumi{}
 }
-*/

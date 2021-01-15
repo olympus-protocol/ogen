@@ -34,7 +34,7 @@ var genParamsCmd = &cobra.Command{
 			netParams = &params.MainNet
 		}
 
-		bls.Initialize(netParams, "kilic")
+		bls.Initialize(netParams, "herumi")
 
 		entropy, err := bip39.NewEntropy(256)
 		if err != nil {

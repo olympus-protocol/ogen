@@ -52,7 +52,7 @@ func (c *Client) GenKeyPair(args []string, raw bool) (string, error) {
 			return "", errors.New("Usage: genkeypair <network>")
 		}
 
-		bls.Initialize(netParams, "blst")
+		bls.Initialize(netParams, "herumi")
 	}
 
 	var res *bls.KeyPair

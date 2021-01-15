@@ -5,6 +5,7 @@ package bls
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
+	"github.com/olympus-protocol/ogen/pkg/bls/herumi"
 	"github.com/olympus-protocol/ogen/pkg/bls/kilic"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"math/big"
@@ -25,8 +26,8 @@ var Prefix = params.MainNet.AccountPrefixes
 func Initialize(c *params.ChainParams, impl string) {
 	Prefix = c.AccountPrefixes
 	switch impl {
-	//case "herumi":
-	//	currImplementation = herumi.NewHerumiInterface()
+	case "herumi":
+		currImplementation = herumi.NewHerumiInterface()
 	//case "blst":
 	//	currImplementation = blst.NewBLSTInterface()
 	default:
