@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OGEN_VERSION=0.2.0-beta.1
+export OGEN_VERSION=0.2.0-beta.2
 export FOLDER_NAME=ogen-$OGEN_VERSION
 
 go get github.com/karalabe/xgo
