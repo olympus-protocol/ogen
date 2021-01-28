@@ -100,7 +100,7 @@ func (r *queryResolver) AccountTxs(ctx context.Context, account string) ([]*mode
 	}
 
 	if len(receiveTxs) > 0 {
-		for _, tx := range sentTxs {
+		for _, tx := range receiveTxs {
 			txs = append(txs, tx.ToGQL())
 		}
 	}
