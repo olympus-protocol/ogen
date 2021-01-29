@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OGEN_VERSION=0.2.0-beta.2
+export OGEN_VERSION=0.2.0-beta.3
 export FOLDER_NAME=ogen-$OGEN_VERSION
 
 go build cmd/ogen/ogen.go
