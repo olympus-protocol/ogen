@@ -89,8 +89,10 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 
 	If the result is null, we return a null BlockRow and a new error to be processed later */
 	if tip == nil {
+		i.log.Infof("The tip calculated with the given primitives blocks PrevBlockHash: ", b.Header.PrevBlockHash,
+					" is null. Please review the blocks and chain hash info")
 		return nil, errors.New("the tip calculated with the given primitives blocks PrevBlockHash is null.\n"+
-					  "please review the blocks and chain hash info");
+					  "Please review the blocks and chain hash info");
 	}
 
 	v := chain.NewChainView(tip)

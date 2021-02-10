@@ -35,13 +35,13 @@ var indexerCmd = &cobra.Command{
 
 		var netParams *params.ChainParams
 		switch network {
-		case "testnet":
-			netParams = &params.TestNet
-		case "mainnet":
-			netParams = &params.MainNet
-		default:
-			fmt.Println("unknown network parameters")
-			os.Exit(0)
+			case "testnet":
+				netParams = &params.TestNet
+			case "mainnet":
+				netParams = &params.MainNet
+			default:
+				fmt.Println("unknown network parameters")
+				os.Exit(0)
 		}
 
 		if dbConnString == "" {
