@@ -31,6 +31,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"errors"
 )
 
 // Indexer is the module that allows operations across multiple services.
@@ -79,9 +80,25 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 	}
 
 	tip, _ := i.index.Get(b.Header.PrevBlockHash)
+
+	/* This double check it-s made since the Feb/21 indexer problem, when it crashed while 
+	trying to sync all the blocks. 
+
+	As the result from get function can be a null BlockRow object, we need to confirm we
+	have a valid tip variable obtained with the previous block hash.
+
+	If the result is null, we return a null BlockRow and a new error to be processed later */
+	if tip == nil {
+		i.log.Infof("The tip calculated with the given primitives blocks PrevBlockHash: ", b.Header.PrevBlockHash,
+					" is null. Please review the blocks and chain hash info")
+		return nil, errors.New("the tip calculated with the given primitives blocks PrevBlockHash is null.\n"+
+					  "Please review the blocks and chain hash info");
+	}
+
 	v := chain.NewChainView(tip)
 
 	_, err = i.state.ProcessSlots(b.Header.Slot, &v)
+
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +116,7 @@ func (i *Indexer) ProcessBlock(b *primitives.Block) (*chainindex.BlockRow, error
 		return nil, err
 	}
 
-	if b.Header.Slot/i.netParams.EpochLength > i.state.GetEpochIndex() {
+	if b.Header.Slot / i.netParams.EpochLength > i.state.GetEpochIndex() {
 		serState := i.state.ToSerializable()
 
 		// Mark justified and finalized
