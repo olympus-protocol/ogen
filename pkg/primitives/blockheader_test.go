@@ -42,5 +42,5 @@ func TestBlockHeader(t *testing.T) {
 		MultiSignatureTxsMerkleRoot: [32]byte{1, 2, 3},
 	}
 
-	assert.Equal(t, "6969a416b73c94c0525922c8b5581fdb209b56dc47a28dca4abe660405cc0d72", d.Hash().String())
+	assert.Equal(t, "43bde602976eec9ee187f5a1ad2fdb117e2052c87591592f9358602cdfdfdd86", d.Hash().String())
 }

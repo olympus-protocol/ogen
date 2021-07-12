@@ -27,7 +27,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./scripts/full-node/Dockerfile
+          file: ./scripts/node/Dockerfile
           push: true
           tags: |
             ghcr.io/olympus-protocol/ogen-full-node:latest

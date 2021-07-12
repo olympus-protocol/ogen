@@ -1,7 +1,7 @@
 package primitives
 
 // BlockHeader
-const BlockHeaderSize = 20 + (14 * 32) // 468 bytes
+const BlockHeaderSize = 12 + (14 * 32) // 468 bytes
 
 // Vote
 const MaxVotesPerBlock = 16
@@ -27,11 +27,11 @@ const TxSize = 20 + 48 + (8 * 3) + 96 // 188 bytes
 
 // ProposerSlashing
 const MaxProposerSlashingsPerBlock = 2
-const ProposerSlashingSize = (96 * 2) + 48 + (BlockHeaderSize * 2) // 1240 bytes
+const ProposerSlashingSize = (96 * 2) + 48 + (BlockHeaderSize * 2) // 1160 bytes
 
 // VoteSlashing
 const MaxVoteSlashingsPerBlock = 5
-const MaxVotesSlashingSize = MaxMultiValidatorVoteSize*2 + 8 // 12948 bytes
+const MaxVotesSlashingSize = MaxMultiValidatorVoteSize*2 + 8 // 12966 bytes
 
 // RANDAOSlashing
 const MaxRANDAOSlashingsPerBlock = 20

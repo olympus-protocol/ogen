@@ -50,18 +50,3 @@ docker run -p 80:8080 -p 81:8081 -d ghcr.io/olympus-protocol/ogen-full-node:late
 ```
 
 Now you will have a full-node instance running on the background with a dashboard exposed on port 80, and the REST API exposed on 81
-
-### Run a full node with indexer
-> This configuration is the best to deploy a full-node with an indexer and a GraphQL API
-
-#### Pull the image 
-```
-docker pull ghcr.io/olympus-protocol/ogen-indexer:latest
-```
-
-#### Run the container
-```
-docker run -p 80:8082 -p 81:8080 -d ghcr.io/olympus-protocol/ogen-indexer:latest
-```
-
-Now you will have a full-node instance with an indexer process, and a GraphQL API exposed on port 80 with a dashboard on port 81
