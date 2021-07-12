@@ -13,7 +13,6 @@ import (
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
@@ -35,19 +34,15 @@ type Pool interface {
 	AddVoteSlashing(d *primitives.VoteSlashing) error
 	AddProposerSlashing(d *primitives.ProposerSlashing) error
 	AddRANDAOSlashing(d *primitives.RANDAOSlashing) error
-	AddGovernanceVote(d *primitives.GovernanceVote) error
-	AddCoinProof(d *burnproof.CoinsProofSerializable) error
 
 	GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote
 	GetDeposits(s state.State) ([]*primitives.Deposit, state.State)
 	GetExits(s state.State) ([]*primitives.Exit, state.State)
 	GetPartialExits(s state.State) ([]*primitives.PartialExit, state.State)
-	GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable, state.State)
 	GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State)
 	GetVoteSlashings(s state.State) ([]*primitives.VoteSlashing, state.State)
 	GetProposerSlashings(s state.State) ([]*primitives.ProposerSlashing, state.State)
 	GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, state.State)
-	GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, state.State)
 
 	RemoveByBlock(b *primitives.Block, s state.State)
 }
@@ -471,52 +466,6 @@ func (p *pool) AddRANDAOSlashing(_ *primitives.RANDAOSlashing) error {
 	return nil
 }
 
-func (p *pool) AddGovernanceVote(d *primitives.GovernanceVote) error {
-	s := p.chain.State().TipState()
-
-	if err := s.IsGovernanceVoteValid(d); err != nil {
-		return err
-	}
-
-	hash := d.Hash()
-
-	raw, err := d.Marshal()
-	if err != nil {
-		return err
-	}
-
-	key := appendKey(hash[:], PoolTypeGovernanceVote)
-	ok := p.pool.Has(key)
-	if !ok {
-		p.pool.Set(key, raw)
-		p.governanceVotesKeys.Store(hash, struct{}{})
-	}
-
-	return nil
-}
-
-func (p *pool) AddCoinProof(d *burnproof.CoinsProofSerializable) error {
-	s := p.chain.State().TipState()
-
-	if err := s.IsCoinProofValid(d); err != nil {
-		return err
-	}
-
-	hash := d.Hash()
-	raw, err := d.Marshal()
-	if err != nil {
-		return err
-	}
-
-	key := appendKey(hash[:], PoolTypeCoinProof)
-	ok := p.pool.Has(key)
-	if !ok {
-		p.pool.Set(key, raw)
-		p.coinProofsKeys.Store(hash, struct{}{})
-	}
-	return nil
-}
-
 func (p *pool) GetVotes(slotToPropose uint64, s state.State, index uint64) []*primitives.MultiValidatorVote {
 
 	var keys []chainhash.Hash
@@ -682,47 +631,6 @@ func (p *pool) GetPartialExits(s state.State) ([]*primitives.PartialExit, state.
 	return pexits, s
 }
 
-func (p *pool) GetCoinProofs(s state.State) ([]*burnproof.CoinsProofSerializable, state.State) {
-
-	var keys []chainhash.Hash
-	p.coinProofsKeys.Range(func(key, value interface{}) bool {
-		pubKey := key.(chainhash.Hash)
-		keys = append(keys, pubKey)
-		if len(keys) >= primitives.MaxCoinProofsPerBlock {
-			return false
-		}
-		return true
-	})
-
-	var coinProofs []*burnproof.CoinsProofSerializable
-	for i := range keys {
-
-		key := appendKey(keys[i][:], PoolTypeCoinProof)
-
-		raw := p.pool.Get(nil, key)
-
-		d := new(burnproof.CoinsProofSerializable)
-
-		err := d.Unmarshal(raw)
-		if err != nil {
-			p.pool.Del(key)
-			p.coinProofsKeys.Delete(keys[i])
-			continue
-		}
-
-		if err := s.ApplyCoinProof(d); err != nil {
-			p.pool.Del(key)
-			p.coinProofsKeys.Delete(keys[i])
-			continue
-		}
-
-		coinProofs = append(coinProofs, d)
-	}
-
-	return coinProofs, s
-
-}
-
 func (p *pool) GetTxs(s state.State, feeReceiver [20]byte) ([]*primitives.Tx, state.State) {
 
 	var keys [][28]byte
@@ -840,46 +748,6 @@ func (p *pool) GetRANDAOSlashings(s state.State) ([]*primitives.RANDAOSlashing, 
 	return slashings, s
 }
 
-func (p *pool) GetGovernanceVotes(s state.State) ([]*primitives.GovernanceVote, state.State) {
-
-	var keys []chainhash.Hash
-	p.governanceVotesKeys.Range(func(key, value interface{}) bool {
-		pubKey := key.(chainhash.Hash)
-		keys = append(keys, pubKey)
-		if len(keys) >= primitives.MaxGovernanceVotesPerBlock {
-			return false
-		}
-		return true
-	})
-
-	var governanceVotes []*primitives.GovernanceVote
-	for i := range keys {
-
-		key := appendKey(keys[i][:], PoolTypeGovernanceVote)
-
-		raw := p.pool.Get(nil, key)
-
-		d := new(primitives.GovernanceVote)
-
-		err := d.Unmarshal(raw)
-		if err != nil {
-			p.pool.Del(key)
-			p.governanceVotesKeys.Delete(keys[i])
-			continue
-		}
-
-		if err := s.ProcessGovernanceVote(d); err != nil {
-			p.pool.Del(key)
-			p.governanceVotesKeys.Delete(keys[i])
-			continue
-		}
-
-		governanceVotes = append(governanceVotes, d)
-	}
-
-	return governanceVotes, s
-}
-
 func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 
 	// Check for votes on the block and remove them
@@ -984,26 +852,6 @@ func (p *pool) RemoveByBlock(b *primitives.Block, s state.State) {
 		if ok {
 			p.pool.Del(key)
 			p.partialExitKeys.Delete(pe.ValidatorPubkey)
-		}
-	}
-
-	for _, gv := range b.GovernanceVotes {
-		hash := gv.Hash()
-		key := appendKey(hash[:], PoolTypeGovernanceVote)
-		ok := p.pool.Has(key)
-		if ok {
-			p.pool.Del(key)
-			p.governanceVotesKeys.Delete(hash)
-		}
-	}
-
-	for _, c := range b.CoinProofs {
-		hash := c.Hash()
-		key := appendKey(hash[:], PoolTypeCoinProof)
-		ok := p.pool.Has(key)
-		if ok {
-			p.pool.Del(key)
-			p.coinProofsKeys.Delete(hash)
 		}
 	}
 
@@ -1117,11 +965,7 @@ func (p *pool) Start() {
 
 	p.host.RegisterTopicHandler(p2p.MsgPartialExitsCmd, p.handlePartialExits)
 
-	p.host.RegisterTopicHandler(p2p.MsgProofsCmd, p.handleProofs)
-
 	p.host.RegisterTopicHandler(p2p.MsgTxCmd, p.handleTx)
-
-	p.host.RegisterTopicHandler(p2p.MsgGovernanceCmd, p.handleGovernance)
 
 	return
 

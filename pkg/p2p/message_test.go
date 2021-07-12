@@ -55,15 +55,11 @@ func TestMsgTypeCreation(t *testing.T) {
 	createMsgVersion(t)
 	createMsgGetBlocks(t)
 	createMsgTx(t)
-	createMsgTxMulti(t)
 	createMsgBlock(t)
 	createMsgDeposits(t)
 	createMsgExits(t)
 	createMsgVote(t)
-	createMsgValidatorStart(t)
-	createMsgGovernance(t)
 	createMsgFinalization(t)
-	createMsgProofs(t)
 }
 
 func createMsgVersion(t *testing.T) {
@@ -165,49 +161,6 @@ func createMsgTx(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func createMsgTxMulti(t *testing.T) {
-	v := new(p2p.MsgMultiSignatureTx)
-	buf := bytes.NewBuffer([]byte{})
-	v.Data = testdata.FuzzMultiSignatureTx(1)[0]
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgMultiSignatureTx)
-	assert.True(t, ok)
-}
-
-func createMsgValidatorStart(t *testing.T) {
-	v := new(p2p.MsgValidatorStart)
-	v.Data = testdata.FuzzValidatorHello(1)[0]
-	buf := bytes.NewBuffer([]byte{})
-
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgValidatorStart)
-	assert.True(t, ok)
-}
-
-func createMsgGovernance(t *testing.T) {
-	v := new(p2p.MsgGovernance)
-	buf := bytes.NewBuffer([]byte{})
-	v.Data = testdata.FuzzGovernanceVote(1)[0]
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgGovernance)
-	assert.True(t, ok)
-}
-
 func createMsgFinalization(t *testing.T) {
 	v := new(p2p.MsgFinalization)
 	buf := bytes.NewBuffer([]byte{})
@@ -219,21 +172,5 @@ func createMsgFinalization(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, ok := msg.(*p2p.MsgFinalization)
-	assert.True(t, ok)
-}
-
-func createMsgProofs(t *testing.T) {
-	v := new(p2p.MsgProofs)
-	v.Proofs = testdata.FuzzCoinProofs(2048)
-
-	buf := bytes.NewBuffer([]byte{})
-
-	err := p2p.WriteMessage(buf, v, 1)
-	assert.NoError(t, err)
-
-	msg, err := p2p.ReadMessage(buf, 1)
-	assert.NoError(t, err)
-
-	_, ok := msg.(*p2p.MsgProofs)
 	assert.True(t, ok)
 }

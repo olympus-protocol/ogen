@@ -77,7 +77,6 @@ func (s *chainServer) GetBlock(_ context.Context, in *proto.Hash) (*proto.Block,
 		Hash: block.Hash().String(),
 		Header: &proto.BlockHeader{
 			Version:                     block.Header.Version,
-			Nonce:                       block.Header.Nonce,
 			Timestamp:                   block.Header.Timestamp,
 			Slot:                        block.Header.Slot,
 			PrevBlockHash:               hex.EncodeToString(block.Header.PrevBlockHash[:]),

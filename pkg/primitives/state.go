@@ -80,9 +80,6 @@ type SerializableState struct {
 	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
 	ManagerReplacement bitfield.Bitlist `ssz:"bitlist" ssz-max:"2048"`
 
-	// Governance represents current votes state
-	Governance *GovernanceSerializable
-
 	VoteEpoch          uint64
 	VoteEpochStartSlot uint64
 	VotingState        uint64

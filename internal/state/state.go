@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/pkg/bech32"
-	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -20,13 +19,6 @@ type ValidatorsInfo struct {
 	Exited      int64
 	Starting    int64
 }
-
-const (
-	// GovernanceStateActive is the enum to an active Governance voting state
-	GovernanceStateActive uint64 = iota
-	// GovernanceStateVoting is the enum to an voting Governance voting state
-	GovernanceStateVoting
-)
 
 // state is the state of consensus in the blockchain.
 type state struct {
@@ -93,27 +85,11 @@ type state struct {
 
 	// PreviousEpochVotes are votes where the FromEpoch matches PreviousJustifiedEpoch.
 	PreviousEpochVotes []*primitives.AcceptedVoteInfo
-
-	// CurrentManagers are current managers of the governance funds.
-	CurrentManagers [][20]byte
-
-	// ManagerReplacement is a bitfield where the bits of the managers to replace are 1.
-	ManagerReplacement bitfield.Bitlist
-
-	// Governance represents current votes state
-	Governance primitives.Governance
-
-	VoteEpoch          uint64
-	VoteEpochStartSlot uint64
-	VotingState        uint64
-
-	LastPaidSlot uint64
 }
 
 // ToSerializable converts the struct to a serializable struct
 func (s *state) ToSerializable() *primitives.SerializableState {
 	serCoin := s.CoinsState.ToSerializable()
-	serGov := s.Governance.ToSerializable()
 	ser := &primitives.SerializableState{
 		CoinsState:                    &serCoin,
 		ValidatorRegistry:             s.ValidatorRegistry,
@@ -135,13 +111,6 @@ func (s *state) ToSerializable() *primitives.SerializableState {
 		PreviousJustifiedEpoch:        s.PreviousJustifiedEpoch,
 		PreviousJustifiedEpochHash:    s.PreviousJustifiedEpochHash,
 		PreviousEpochVotes:            s.PreviousEpochVotes,
-		CurrentManagers:               s.CurrentManagers,
-		ManagerReplacement:            s.ManagerReplacement,
-		Governance:                    &serGov,
-		VoteEpoch:                     s.VoteEpoch,
-		VoteEpochStartSlot:            s.VoteEpochStartSlot,
-		VotingState:                   s.VotingState,
-		LastPaidSlot:                  s.LastPaidSlot,
 	}
 	return ser
 }
@@ -167,14 +136,7 @@ func (s *state) FromSerializable(ser *primitives.SerializableState) {
 	s.PreviousJustifiedEpoch = ser.PreviousJustifiedEpoch
 	s.PreviousJustifiedEpochHash = ser.PreviousJustifiedEpochHash
 	s.PreviousEpochVotes = ser.PreviousEpochVotes
-	s.CurrentManagers = ser.CurrentManagers
-	s.ManagerReplacement = ser.ManagerReplacement
-	s.VoteEpoch = ser.VoteEpoch
-	s.VoteEpochStartSlot = ser.VoteEpochStartSlot
-	s.VotingState = ser.VotingState
-	s.LastPaidSlot = ser.LastPaidSlot
 	s.CoinsState.FromSerializable(ser.CoinsState)
-	s.Governance.FromSerializable(ser.Governance)
 	return
 }
 
@@ -321,22 +283,12 @@ func (s *state) Copy() State {
 		s2.PreviousEpochVotes[i] = &cv
 	}
 
-	s2.CurrentManagers = make([][20]byte, len(s.CurrentManagers))
-	copy(s2.CurrentManagers, s.CurrentManagers)
-
-	s2.ManagerReplacement = bitfield.NewBitlist(s.ManagerReplacement.Len())
-	for i, b := range s.ManagerReplacement {
-		s2.ManagerReplacement[i] = b
-	}
-
-	s2.Governance = s.Governance.Copy()
 	return &s2
 }
 
-func NewState(cs primitives.CoinsState, gs primitives.Governance, validators []*primitives.Validator, genHash chainhash.Hash, p *params.ChainParams) State {
+func NewState(cs primitives.CoinsState, validators []*primitives.Validator, genHash chainhash.Hash, p *params.ChainParams) State {
 	s := &state{
 		CoinsState:                    cs,
-		Governance:                    gs,
 		ValidatorRegistry:             validators,
 		LatestValidatorRegistryChange: 0,
 		RANDAO:                        chainhash.Hash{},
@@ -352,18 +304,12 @@ func NewState(cs primitives.CoinsState, gs primitives.Governance, validators []*
 		PreviousJustifiedEpoch:        0,
 		PreviousJustifiedEpochHash:    genHash,
 		PreviousEpochVotes:            make([]*primitives.AcceptedVoteInfo, 0),
-		CurrentManagers:               p.InitialManagers,
-		VoteEpoch:                     0,
-		VoteEpochStartSlot:            0,
-		VotingState:                   GovernanceStateActive,
-		LastPaidSlot:                  0,
 	}
 	activeValidators := s.GetValidatorIndicesActiveAt(0)
 	s.ProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators)
 	s.NextProposerQueue = DetermineNextProposers(chainhash.Hash{}, activeValidators)
 	s.CurrentEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
 	s.PreviousEpochVoteAssignments = Shuffle(chainhash.Hash{}, activeValidators)
-	s.ManagerReplacement = bitfield.NewBitlist(uint64(len(s.CurrentManagers)) * 8)
 	return s
 }
 
@@ -418,12 +364,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 		Nonces: make(map[[20]byte]uint64),
 	}
 
-	gs := primitives.Governance{
-		ReplaceVotes:   make(map[[20]byte]chainhash.Hash),
-		CommunityVotes: make(map[chainhash.Hash]primitives.CommunityVoteData),
-	}
-
-	s := NewState(cs, gs, initialValidators, genesisHash, p)
+	s := NewState(cs, initialValidators, genesisHash, p)
 
 	return s, nil
 }

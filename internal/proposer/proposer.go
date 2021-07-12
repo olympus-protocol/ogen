@@ -196,8 +196,6 @@ func (p *proposer) ProposeBlocks() {
 
 				partialExits, blockState := p.pool.GetPartialExits(blockState)
 
-				coinProofs, blockState := p.pool.GetCoinProofs(blockState)
-
 				txs, blockState := p.pool.GetTxs(blockState, proposerValidator.PayeeAddress)
 
 				voteSlashings, blockState := p.pool.GetVoteSlashings(blockState)
@@ -206,12 +204,9 @@ func (p *proposer) ProposeBlocks() {
 
 				randaoSlashings, blockState := p.pool.GetRANDAOSlashings(blockState)
 
-				governanceVotes, blockState := p.pool.GetGovernanceVotes(blockState)
-
 				block := primitives.Block{
 					Header: &primitives.BlockHeader{
 						Version:       0,
-						Nonce:         0, /*p.lastActionManager.GetNonce(),*/
 						PrevBlockHash: tipHash,
 						Timestamp:     uint64(time.Now().Unix()),
 						Slot:          slotToPropose,
@@ -221,25 +216,20 @@ func (p *proposer) ProposeBlocks() {
 					Deposits:          deposits,
 					Exits:             exits,
 					PartialExit:       partialExits,
-					CoinProofs:        coinProofs,
 					Txs:               txs,
 					VoteSlashings:     voteSlashings,
 					ProposerSlashings: proposerSlashings,
 					RANDAOSlashings:   randaoSlashings,
-					GovernanceVotes:   governanceVotes,
 				}
 
 				block.Header.VoteMerkleRoot = block.VotesMerkleRoot()
 				block.Header.DepositMerkleRoot = block.DepositMerkleRoot()
 				block.Header.ExitMerkleRoot = block.ExitMerkleRoot()
 				block.Header.PartialExitMerkleRoot = block.PartialExitsMerkleRoot()
-				block.Header.CoinProofsMerkleRoot = block.CoinProofsMerkleRoot()
 				block.Header.TxsMerkleRoot = block.TxsMerkleRoot()
 				block.Header.VoteSlashingMerkleRoot = block.VoteSlashingRoot()
 				block.Header.ProposerSlashingMerkleRoot = block.ProposerSlashingsRoot()
 				block.Header.RANDAOSlashingMerkleRoot = block.RANDAOSlashingsRoot()
-				block.Header.GovernanceVotesMerkleRoot = block.GovernanceVoteMerkleRoot()
-				block.Header.MultiSignatureTxsMerkleRoot = block.MultiSignatureTxsMerkleRoot()
 
 				blockHash := block.Hash()
 				randaoHash := chainhash.HashH([]byte(fmt.Sprintf("%d", slotToPropose)))

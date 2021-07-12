@@ -24,7 +24,6 @@ func TestBlockHeader(t *testing.T) {
 
 	d := primitives.BlockHeader{
 		Version:                     2,
-		Nonce:                       10,
 		PrevBlockHash:               [32]byte{1, 2, 3},
 		Timestamp:                   500,
 		Slot:                        14,

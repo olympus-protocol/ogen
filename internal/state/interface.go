@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
@@ -14,14 +13,10 @@ type State interface {
 	ProcessSlots(requestedSlot uint64, view BlockView) ([]*primitives.EpochReceipt, error)
 	ProcessBlock(b *primitives.Block) error
 	ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error
-	ProcessGovernanceVote(vote *primitives.GovernanceVote) error
 	ProcessEpochTransition() ([]*primitives.EpochReceipt, error)
 
 	// Checkers
-	CheckForVoteTransitions()
 	CheckBlockSignature(b *primitives.Block) error
-	IsGovernanceVoteValid(vote *primitives.GovernanceVote) error
-	IsCoinProofValid(p *burnproof.CoinsProofSerializable) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
 	IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, error)
 	IsRANDAOSlashingValid(rs *primitives.RANDAOSlashing) (uint64, error)
@@ -42,14 +37,11 @@ type State interface {
 	// Appliers
 	ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
-	ApplyMultiSignatureTx(tx *primitives.MultiSignatureTx, blockWithdrawalAddress [20]byte) error
-	ApplyCoinProof(p *burnproof.CoinsProofSerializable) error
 	ApplyProposerSlashing(ps *primitives.ProposerSlashing) error
 	ApplyVoteSlashing(vs *primitives.VoteSlashing) error
 	ApplyExit(exit *primitives.Exit) error
 	ApplyDeposit(deposit *primitives.Deposit) error
 	ApplyPartialExit(p *primitives.PartialExit) error
-	NextVoteEpoch(newState uint64)
 	SetSlot(slot uint64)
 
 	// Appliers Multi

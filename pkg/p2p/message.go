@@ -25,30 +25,20 @@ const (
 	MsgBlockCmd = "block"
 	// MsgTxCmd is a single tx element
 	MsgTxCmd = "tx"
-	// MsgDepositCmd is a deposit slice element
+	// MsgDepositsCmd is a deposit slice element
 	MsgDepositsCmd = "deposits"
 	// MsgVoteCmd is a single vote element
 	MsgVoteCmd = "vote"
-	// MsgValidatorStart is a validator hello element
-	MsgValidatorStartCmd = "validator_hello"
 	// MsgExitsCmd is a exit slice element
 	MsgExitsCmd = "exits"
-	// MsgGovernanceCmd is a exit element
-	MsgGovernanceCmd = "governance_vote"
-	// MsgMultiSignatureTx is a exit element
-	MsgMultiSignatureTxCmd = "multi_sig_tx"
 	// MsgVersionCmd is for version handshake
 	MsgVersionCmd = "version"
 	// MsgGetBlocksCmd ask a node for blocks
 	MsgGetBlocksCmd = "getblocks"
 	// MsgFinalizationCmd announce a peer to reached state finalization
 	MsgFinalizationCmd = "finalized"
-	// MsgProofsCmd is coin redeem
-	MsgProofsCmd = "proofs"
 	// MsgPartialExitsCmd subtract coins from a contract
 	MsgPartialExitsCmd = "partialexit"
-	// MsgExecution executes a bytecode that modifies the state
-	MsgExecutionCmd = "execute"
 )
 
 // Message interface for all the messages
@@ -89,26 +79,16 @@ func makeEmptyMessage(command string) (Message, error) {
 		msg = &MsgBlock{}
 	case MsgTxCmd:
 		msg = &MsgTx{}
-	case MsgMultiSignatureTxCmd:
-		msg = &MsgMultiSignatureTx{}
 	case MsgDepositsCmd:
 		msg = &MsgDeposits{}
 	case MsgVoteCmd:
 		msg = &MsgVote{}
 	case MsgExitsCmd:
 		msg = &MsgExits{}
-	case MsgValidatorStartCmd:
-		msg = &MsgValidatorStart{}
-	case MsgGovernanceCmd:
-		msg = &MsgGovernance{}
 	case MsgFinalizationCmd:
 		msg = &MsgFinalization{}
-	case MsgProofsCmd:
-		msg = &MsgProofs{}
 	case MsgPartialExitsCmd:
 		msg = &MsgPartialExits{}
-	case MsgExecutionCmd:
-		msg = &MsgExecution{}
 
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)

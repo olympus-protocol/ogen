@@ -118,29 +118,6 @@ func (p *pool) handlePartialExits(id peer.ID, msg p2p.Message) error {
 	return nil
 }
 
-func (p *pool) handleProofs(id peer.ID, msg p2p.Message) error {
-
-	if id == p.host.ID() {
-		return nil
-	}
-
-	p.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
-
-	data, ok := msg.(*p2p.MsgProofs)
-	if !ok {
-		return errors.New("wrong message on proofs topic")
-	}
-
-	for _, d := range data.Proofs {
-		err := p.AddCoinProof(d)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (p *pool) handleTx(id peer.ID, msg p2p.Message) error {
 	if id == p.host.ID() {
 		return nil
@@ -155,27 +132,6 @@ func (p *pool) handleTx(id peer.ID, msg p2p.Message) error {
 
 	err := p.AddTx(data.Data)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *pool) handleGovernance(id peer.ID, msg p2p.Message) error {
-
-	if id == p.host.ID() {
-		return nil
-	}
-
-	p.host.IncreasePeerReceivedBytes(id, msg.PayloadLength())
-
-	data, ok := msg.(*p2p.MsgGovernance)
-	if !ok {
-		return errors.New("wrong message on governance topic")
-	}
-
-	err := p.AddGovernanceVote(data.Data)
 	if err != nil {
 		return err
 	}

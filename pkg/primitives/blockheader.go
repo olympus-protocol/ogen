@@ -7,7 +7,6 @@ import (
 // BlockHeader is the container of merkle roots for the blockchain
 type BlockHeader struct {
 	Version                     uint64
-	Nonce                       uint64
 	Timestamp                   uint64
 	Slot                        uint64
 	PrevBlockHash               [32]byte

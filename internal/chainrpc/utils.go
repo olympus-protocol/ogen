@@ -1,7 +1,6 @@
 package chainrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -10,7 +9,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/burnproof"
 	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/params"
 
@@ -153,7 +151,6 @@ func (s *utilsServer) DecodeRawBlock(_ context.Context, data *proto.RawData) (*p
 		Hash: block.Hash().String(),
 		Header: &proto.BlockHeader{
 			Version:                     block.Header.Version,
-			Nonce:                       block.Header.Nonce,
 			PrevBlockHash:               hex.EncodeToString(block.Header.PrevBlockHash[:]),
 			Timestamp:                   block.Header.Timestamp,
 			Slot:                        block.Header.Slot,
@@ -175,66 +172,4 @@ func (s *utilsServer) DecodeRawBlock(_ context.Context, data *proto.RawData) (*p
 		RandaoSignature: hex.EncodeToString(block.RandaoSignature[:]),
 	}
 	return blockParse, nil
-}
-
-func (s *utilsServer) SubmitRedeemProof(_ context.Context, data *proto.RedeemProof) (*proto.Success, error) {
-
-	proofBytes, err := hex.DecodeString(data.Proof)
-	if err != nil {
-		return nil, err
-	}
-
-	addrBytes := []byte(data.Address)
-
-	if len(addrBytes) != 44 {
-		return &proto.Success{Error: errors.New("invalid address size").Error()}, nil
-	}
-
-	var address [44]byte
-	copy(address[:], addrBytes)
-
-	proofs := make([]*burnproof.CoinsProof, 0)
-	buf := bytes.NewBuffer(proofBytes)
-	for {
-		proof := new(burnproof.CoinsProof)
-		err = proof.Unmarshal(buf)
-		if err != nil {
-			return &proto.Success{Error: err.Error()}, nil
-		}
-		if buf.Len() <= 0 {
-			break
-		}
-		proofs = append(proofs, proof)
-	}
-
-	if len(proofs) > 2048 {
-		return &proto.Success{Error: "too many proofs submited, max number is 2048"}, nil
-	}
-
-	serializableProofs := make([]*burnproof.CoinsProofSerializable, len(proofs))
-
-	for i, p := range proofs {
-		pser, err := p.ToSerializable(address)
-		if err != nil {
-			return &proto.Success{Error: err.Error()}, nil
-		}
-
-		serializableProofs[i] = pser
-
-		// Add to a mempool and broadcast
-		err = s.pool.AddCoinProof(pser)
-		if err != nil {
-			return &proto.Success{Error: err.Error()}, nil
-		}
-
-	}
-
-	msg := &p2p.MsgProofs{Proofs: serializableProofs}
-
-	err = s.host.Broadcast(msg)
-	if err != nil {
-		return &proto.Success{Success: false, Error: err.Error()}, nil
-	}
-
-	return &proto.Success{Success: true}, nil
 }

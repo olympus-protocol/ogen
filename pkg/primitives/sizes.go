@@ -21,14 +21,6 @@ const ExitSize = (48 * 2) + 96 // 192 bytes
 const MaxPartialExitsPerBlock = 32
 const PartialExitsSize = (48 * 2) + 96 + 8 // 200 bytes
 
-// CoinProofs
-const MaxCoinProofsPerBlock = 64
-const MaxCoinProofSize = 8 + 25 + 192 + 44 + (32 * 64) + 8 // 2317 bytes
-
-// Execution
-const MaxExecutionsPerBlock = 128
-const MaxExecutionSize = 48 + 20 + (7168 + 4) + 96 + 8 + 8 // 32952 bytes
-
 // Tx
 const MaxTxsPerBlock = 5000
 const TxSize = 20 + 48 + (8 * 3) + 96 // 188 bytes
@@ -44,21 +36,3 @@ const MaxVotesSlashingSize = MaxMultiValidatorVoteSize*2 + 8 // 12948 bytes
 // RANDAOSlashing
 const MaxRANDAOSlashingsPerBlock = 20
 const RANDAOSlashingSize = 96 + 48 + 8 // 152 bytes
-
-// GovernanceVote
-const MaxGovernanceVotesPerBlock = 128
-const MaxGovernanceVoteSize = 8 + 8 + 96 + 48 + 100 + 4 // 264 bytes
-
-// Multipub
-const MaxPublicKeysOnMultipub = 15
-const MaxMultipubSize = 8 + (48 * 15) + 4 // 732
-
-// Multisig
-const MaxMultisigSize = MaxMultipubSize + (96 * 15) + 15 // 2187 bytes
-
-// MultiSignatureTx
-const MaxMultiSignatureTxsOnBlock = 8
-const MaxMultiSignatureTxSize = MaxMultisigSize + 20 + (8 * 3) // 2231
-
-// ValidatorHelloMessage
-const MaxValidatorHelloMessageSize = 31250 + 16 + 96 + 5

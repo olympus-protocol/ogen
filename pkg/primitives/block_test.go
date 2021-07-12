@@ -61,14 +61,10 @@ func TestBlocksMerkle(t *testing.T) {
 	assert.Equal(t, "474907984b2e56312e9bab7a83498fd738cbe3dd97b2f77ce2c34e74338aa325", b.DepositMerkleRoot().String())
 	assert.Equal(t, "37535d965ae04d30c8dc54570c47e0bb75cebc49861f801cc57da8ad00872b85", b.ExitMerkleRoot().String())
 	assert.Equal(t, "091cc86a9aed31d1aa178e9238d322709c2d77331ef73359f1eda7f562ea81ae", b.PartialExitsMerkleRoot().String())
-	assert.Equal(t, "dc507d43d9514b038497ded9c52749b80cbe241d959747ef50ee456c4d223f7e", b.CoinProofsMerkleRoot().String())
-	assert.Equal(t, "bceef9d7e06fc2886365ef6f13c5071c5f9efeaa7de7673278501823f35b327e", b.ExecutionsMerkleRoot().String())
 	assert.Equal(t, "a3c82eb38caea78e01b9aea458b8b2ac9f89b0e192311008b277f2aaaaea2862", b.TxsMerkleRoot().String())
 	assert.Equal(t, "29a3472e7e17ea5e35b02088428409ee701a4dad6e944547921ebd7adf381706", b.VoteSlashingRoot().String())
 	assert.Equal(t, "206b990c325814aad948fd7a448316b3f5bd7985a4abeecf5f2970aecefbc42d", b.ProposerSlashingsRoot().String())
 	assert.Equal(t, "26b8a1afd93dc59b665525f84952085fb8f46f53522f1ae9e0a170c3e49c5e29", b.RANDAOSlashingsRoot().String())
-	assert.Equal(t, "057ccddf9956b5e2f77faab36c77c3af3762a1d28e4da64f1f668240980a2ec1", b.GovernanceVoteMerkleRoot().String())
-	assert.Equal(t, "7e9fea88777bfb94116f0e5d677bd708e7f43ee068b9439595c3ef1513e4c306", b.MultiSignatureTxsMerkleRoot().String())
 
 	expectedTx := []string{"05de1b95e6ed896aa0e4bb0123e7ef7c8864a8204d6fd3139174d49affd4ffaf", "fd621a384396161a5972f0fce7a33f9fc83229e58f81c192467760250d036a61"}
 	txs := b.GetTxs()

@@ -15,7 +15,6 @@ func TestGenesisBlock(t *testing.T) {
 	b := primitives.Block{
 		Header: &primitives.BlockHeader{
 			Version:                    0,
-			Nonce:                      0,
 			TxsMerkleRoot:              chainhash.Hash{},
 			VoteMerkleRoot:             chainhash.Hash{},
 			DepositMerkleRoot:          chainhash.Hash{},

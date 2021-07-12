@@ -4,11 +4,6 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/olympus-protocol/ogen/pkg/bitfield"
 	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/bls/multisig"
-	"github.com/olympus-protocol/ogen/pkg/burnproof"
-	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/p2p"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
 )
 
@@ -232,14 +227,10 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 			Deposits:          FuzzDeposit(10, true),
 			Exits:             FuzzExits(10),
 			PartialExit:       FuzzPartialExits(10),
-			CoinProofs:        FuzzCoinProofs(5),
-			Executions:        FuzzExecutions(5),
 			Txs:               FuzzTx(10),
 			ProposerSlashings: FuzzProposerSlashing(2, true),
 			VoteSlashings:     FuzzVoteSlashing(5),
 			RANDAOSlashings:   FuzzRANDAOSlashing(2),
-			GovernanceVotes:   FuzzGovernanceVote(5),
-			MultiSignatureTxs: FuzzMultiSignatureTx(2),
 		}
 
 		var sig [96]byte
@@ -255,24 +246,6 @@ func FuzzBlock(n int, correct bool, complete bool) []*primitives.Block {
 		}
 		v = append(v, b)
 	}
-	return v
-}
-
-// FuzzValidatorHello returns a slice of ValidatorHelloMessage
-func FuzzValidatorHello(n int) []*primitives.ValidatorHelloMessage {
-	var v []*primitives.ValidatorHelloMessage
-	for i := 0; i < n; i++ {
-		d := &primitives.ValidatorHelloMessage{
-			Timestamp:  100,
-			Nonce:      100,
-			Validators: bitfield.NewBitlist(1024),
-		}
-		sig := bls.NewAggregateSignature()
-		copy(d.Signature[:], sig.Marshal())
-
-		v = append(v, d)
-	}
-
 	return v
 }
 
@@ -317,93 +290,6 @@ func FuzzPartialExits(n int) []*primitives.PartialExit {
 	return v
 }
 
-// FuzzGovernanceVote returns a slice of GovernanceVotes
-// If valid is true object on slice have valid signatures.
-// If ms is true objects include multisignatures instead of combined signatures.
-func FuzzGovernanceVote(n int) []*primitives.GovernanceVote {
-	f := fuzz.New().NilChance(0)
-	var v []*primitives.GovernanceVote
-	for i := 0; i < n; i++ {
-
-		d := new(primitives.GovernanceVote)
-		f.Fuzz(d)
-
-		var data [100]byte
-		f.Fuzz(&data)
-
-		d.Data = data[:]
-
-		k, _ := bls.RandKey()
-		msg := d.SignatureHash()
-
-		sig := k.Sign(msg[:])
-		pub := k.PublicKey()
-
-		copy(d.Signature[:], sig.Marshal())
-		copy(d.PublicKey[:], pub.Marshal())
-
-		v = append(v, d)
-	}
-	return v
-}
-
-// FuzzGovernanceState returns a Governance state struct
-func FuzzGovernanceState() *primitives.Governance {
-	f := fuzz.New().NilChance(0).NumElements(5, 5)
-
-	replace := map[[20]byte]chainhash.Hash{}
-	community := map[chainhash.Hash]primitives.CommunityVoteData{}
-	f.Fuzz(&replace)
-	f.Fuzz(&community)
-
-	g := &primitives.Governance{
-		ReplaceVotes:   replace,
-		CommunityVotes: community,
-	}
-	return g
-}
-
-// FuzzGovernanceStateSerializable returns a GovernanceSerializable state struct
-func FuzzGovernanceStateSerializable() *primitives.GovernanceSerializable {
-	f := fuzz.New().NilChance(0).NumElements(5, 20)
-
-	var replace []*primitives.ReplacementVotes
-	var community []*primitives.CommunityVoteDataInfo
-
-	f.Fuzz(&replace)
-	f.Fuzz(&community)
-
-	sgs := &primitives.GovernanceSerializable{
-		ReplaceVotes:   replace,
-		CommunityVotes: community,
-	}
-	return sgs
-}
-
-// FuzzReplacementVote returns a slice of n ReplacementVotes
-func FuzzReplacementVote(n int) []*primitives.ReplacementVotes {
-	f := fuzz.New().NilChance(0)
-	var v []*primitives.ReplacementVotes
-	for i := 0; i < n; i++ {
-		d := new(primitives.ReplacementVotes)
-		f.Fuzz(d)
-		v = append(v, d)
-	}
-	return v
-}
-
-// FuzzCommunityVoteData returns a slice of n CommunityVoteData
-func FuzzCommunityVoteData(n int) []*primitives.CommunityVoteData {
-	f := fuzz.New().NilChance(0).NumElements(5, 5)
-	var v []*primitives.CommunityVoteData
-	for i := 0; i < n; i++ {
-		d := new(primitives.CommunityVoteData)
-		f.Fuzz(d)
-		v = append(v, d)
-	}
-	return v
-}
-
 // FuzzTx returns a slice of n Tx
 func FuzzTx(n int) []*primitives.Tx {
 	f := fuzz.New().NilChance(0)
@@ -417,107 +303,6 @@ func FuzzTx(n int) []*primitives.Tx {
 		msg := d.SignatureMessage()
 		sig := k.Sign(msg[:])
 		copy(d.Signature[:], sig.Marshal())
-		v = append(v, d)
-	}
-	return v
-}
-
-// FuzzMultiSignatureTx returns a slice of MultiSignatureTx
-func FuzzMultiSignatureTx(n int) []*primitives.MultiSignatureTx {
-	f := fuzz.New().NilChance(0)
-	var v []*primitives.MultiSignatureTx
-	for i := 0; i < n; i++ {
-		d := new(primitives.MultiSignatureTx)
-		f.Fuzz(d)
-
-		secretKeys := make([]common.SecretKey, 10)
-		publicKeys := make([]common.PublicKey, 10)
-
-		for i := range secretKeys {
-			secretKeys[i], _ = bls.RandKey()
-			publicKeys[i] = secretKeys[i].PublicKey()
-		}
-
-		mp := multisig.NewMultipub(publicKeys, 5)
-		ms := multisig.NewMultisig(mp)
-
-		for i := 0; i < 5; i++ {
-			msg := d.SignatureMessage()
-			err := ms.Sign(secretKeys[i], msg[:])
-			if err != nil {
-				panic(err)
-			}
-		}
-		d.Signature = ms
-		v = append(v, d)
-	}
-	return v
-}
-
-func FuzzCoinProofs(n int) []*burnproof.CoinsProofSerializable {
-	f := fuzz.New().NilChance(0)
-	var v []*burnproof.CoinsProofSerializable
-	for i := 0; i < n; i++ {
-		d := new(burnproof.CoinsProofSerializable)
-		f.Fuzz(d)
-		f.NumElements(64, 64)
-		var merkleBranch [][32]byte
-		f.Fuzz(&merkleBranch)
-		d.MerkleBranch = merkleBranch
-		v = append(v, d)
-	}
-	return v
-}
-
-// FuzzExecutions return an slice of Execution
-func FuzzExecutions(n int) []*primitives.Execution {
-	f := fuzz.New().NilChance(0)
-	var v []*primitives.Execution
-	for i := 0; i < n; i++ {
-		var input [7168]byte
-		f.Fuzz(&input)
-		var to [20]byte
-		f.Fuzz(&to)
-		var pub [48]byte
-		k, _ := bls.RandKey()
-		copy(pub[:], k.PublicKey().Marshal())
-		d := &primitives.Execution{
-			FromPubKey: pub,
-			Input:      input[:],
-			To:         to,
-		}
-		msg := d.SignatureMessage()
-		sig := k.Sign(msg[:])
-		var sigB [96]byte
-		copy(sigB[:], sig.Marshal())
-
-		d.Signature = sigB
-		v = append(v, d)
-	}
-	return v
-}
-
-// FuzzMsgExecutions return an slice of MsgExecution
-func FuzzMsgExecutions(n int) []*p2p.MsgExecution {
-	f := fuzz.New().NilChance(0)
-	var v []*p2p.MsgExecution
-	for i := 0; i < n; i++ {
-		f.MaxDepth(32768)
-		var input []byte
-		f.Fuzz(&input)
-		var to [20]byte
-		f.Fuzz(&to)
-		var pub [48]byte
-		var sig [96]byte
-		k, _ := bls.RandKey()
-		copy(sig[:], bls.NewAggregateSignature().Marshal())
-		copy(pub[:], k.PublicKey().Marshal())
-		d := &p2p.MsgExecution{
-			FromPubKey: pub,
-			Input:      input,
-			To:         to,
-			Signature:  sig,
-		}
 		v = append(v, d)
 	}
 	return v
