@@ -3,8 +3,8 @@ package state
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
-	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
 	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/olympus-protocol/ogen/pkg/primitives"
@@ -322,7 +322,7 @@ func GetGenesisStateWithInitializationParameters(genesisHash chainhash.Hash, ip 
 	initialValidators := make([]*primitives.Validator, len(ip.InitialValidators))
 
 	for i, v := range ip.InitialValidators {
-		_, pkh, err := bech32.Decode(v.PayeeAddress)
+		pkh, err := hexutil.Decode(v.PayeeAddress)
 		if err != nil {
 			return nil, err
 		}

@@ -26,22 +26,22 @@ var (
 	Dashboard     bool
 	DashboardPort string
 
-	HTTPHost         string
-	HTTPPort         int
-	HTTPPathPrefix   string
+	HTTPHost       string
+	HTTPPort       int
+	HTTPPathPrefix string
 
 	HTTPCors         []string
 	HTTPVirtualHosts []string
 	HTTPModules      []string
 	HTTPTimeouts     rpc.HTTPTimeouts
 
-	WSHost           string
-	WSPort           int
-	WSPathPrefix     string
+	WSHost       string
+	WSPort       int
+	WSPathPrefix string
 
-	WSOrigins        []string
-	WSModules        []string
-	WSExposeAll      bool
+	WSOrigins   []string
+	WSModules   []string
+	WSExposeAll bool
 )
 
 func init() {
@@ -121,19 +121,19 @@ func initConfig() {
 	}
 
 	config.GlobalFlags = &config.Flags{
-		DataPath:      DataPath,
-		NetworkName:   NetName,
-		Port:          Port,
-		Debug:         Debug,
-		LogFile:       LogFile,
-		DashboardPort: DashboardPort,
-		Dashboard:     Dashboard,
-		HTTPPort: HTTPPort,
-		HTTPHost: HTTPHost,
+		DataPath:       DataPath,
+		NetworkName:    NetName,
+		Port:           Port,
+		Debug:          Debug,
+		LogFile:        LogFile,
+		DashboardPort:  DashboardPort,
+		Dashboard:      Dashboard,
+		HTTPPort:       HTTPPort,
+		HTTPHost:       HTTPHost,
 		HTTPPathPrefix: HTTPPathPrefix,
-		WSPort: WSPort,
-		WSHost: WSHost,
-		WSPathPrefix: WSPathPrefix,
+		WSPort:         WSPort,
+		WSHost:         WSHost,
+		WSPathPrefix:   WSPathPrefix,
 	}
 
 	var log logger.Logger

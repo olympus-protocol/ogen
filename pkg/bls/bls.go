@@ -5,70 +5,24 @@ package bls
 
 import (
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/bls/herumi"
 	"github.com/olympus-protocol/ogen/pkg/bls/kilic"
-	"github.com/olympus-protocol/ogen/pkg/params"
-	"math/big"
-
-	"github.com/pkg/errors"
 )
 
-var currImplementation common.Implementation = kilic.NewKilicInterface()
-
-// KeyPair is an interface struct to serve keypairs
-type KeyPair struct {
-	Public  string `json:"public"`
-	Private string `json:"private"`
-}
-
-var Prefix = params.MainNet.AccountPrefixes
-
-func Initialize(c *params.ChainParams, impl string) {
-	Prefix = c.AccountPrefixes
-	switch impl {
-	case "herumi":
-		currImplementation = herumi.NewHerumiInterface()
-	//case "blst":
-	//	currImplementation = blst.NewBLSTInterface()
-	default:
-		currImplementation = kilic.NewKilicInterface()
-	}
-}
+var currImplementation = kilic.NewKilicInterface()
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
-func SecretKeyFromBytes(privKey []byte) (SecretKey, error) {
+func SecretKeyFromBytes(privKey []byte) (common.SecretKey, error) {
 	return currImplementation.SecretKeyFromBytes(privKey)
 }
 
-// SecretKeyFromBigNum takes in a big number string and creates a BLS private key.
-func SecretKeyFromBigNum(s string) (SecretKey, error) {
-	num := new(big.Int)
-	num, ok := num.SetString(s, 10)
-	if !ok {
-		return nil, errors.New("could not set big int from string")
-	}
-	bts := num.Bytes()
-	// Pad key at the start with zero bytes to make it into a 32 byte key.
-	if len(bts) < 32 {
-		emptyBytes := make([]byte, 32-len(bts))
-		bts = append(emptyBytes, bts...)
-	}
-	return SecretKeyFromBytes(bts)
-}
-
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
-func PublicKeyFromBytes(pubKey []byte) (PublicKey, error) {
+func PublicKeyFromBytes(pubKey []byte) (common.PublicKey, error) {
 	return currImplementation.PublicKeyFromBytes(pubKey)
 }
 
 // SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
-func SignatureFromBytes(sig []byte) (Signature, error) {
+func SignatureFromBytes(sig []byte) (common.Signature, error) {
 	return currImplementation.SignatureFromBytes(sig)
-}
-
-// AggregatePublicKeys aggregates the provided raw public keys into a single key.
-func AggregatePublicKeys(pubs [][]byte) (PublicKey, error) {
-	return currImplementation.AggregatePublicKeys(pubs)
 }
 
 // AggregateSignatures converts a list of signatures into a single, aggregated sig.

@@ -17,13 +17,13 @@ import (
 )
 
 type Flags struct {
-	DataPath         string
-	NetworkName      string
-	Port             string
-	Debug            bool
-	LogFile          bool
-	Dashboard        bool
-	DashboardPort    string
+	DataPath      string
+	NetworkName   string
+	Port          string
+	Debug         bool
+	LogFile       bool
+	Dashboard     bool
+	DashboardPort string
 
 	HTTPHost         string
 	HTTPPort         int
@@ -33,13 +33,12 @@ type Flags struct {
 	HTTPTimeouts     rpc.HTTPTimeouts
 	HTTPPathPrefix   string
 
-	WSHost           string
-	WSPort           int
-	WSPathPrefix     string
-	WSOrigins        []string
-	WSModules        []string
-	WSExposeAll      bool
-
+	WSHost       string
+	WSPort       int
+	WSPathPrefix string
+	WSOrigins    []string
+	WSModules    []string
+	WSExposeAll  bool
 }
 
 type Params struct {

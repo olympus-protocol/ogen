@@ -24,8 +24,8 @@ var (
 	r = _bigInt("52435875175126190479447740508185965837690552500527637822603658699938581184513")
 )
 
-// CreateHDWallet will create a single secret key from a seed and a path
-func CreateHDWallet(seed []byte, path string) (common.SecretKey, error) {
+// CreateBLSHDWallet will create a single secret key from a seed and a path
+func CreateBLSHDWallet(seed []byte, path string) (common.SecretKey, error) {
 	key, err := PrivateKeyFromSeedAndPath(seed, path)
 	if err != nil {
 		return nil, err

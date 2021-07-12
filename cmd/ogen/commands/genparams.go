@@ -6,9 +6,6 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/pkg/bip39"
-	"github.com/olympus-protocol/ogen/pkg/bls"
-	"github.com/olympus-protocol/ogen/pkg/hdwallet"
-	"github.com/olympus-protocol/ogen/pkg/params"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"path"
@@ -26,15 +23,13 @@ var genParamsCmd = &cobra.Command{
 	Long:  `Used to generate parameters for network initialization`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		var netParams *params.ChainParams
+		/*var netParams *params.ChainParams
 		switch network {
 		case "testnet":
 			netParams = &params.TestNet
 		default:
 			netParams = &params.MainNet
-		}
-
-		bls.Initialize(netParams, "herumi")
+		}*/
 
 		entropy, err := bip39.NewEntropy(256)
 		if err != nil {
@@ -46,12 +41,13 @@ var genParamsCmd = &cobra.Command{
 			panic(err)
 		}
 
-		seed := bip39.NewSeed(mnemonic, "no password")
+		//seed := bip39.NewSeed(mnemonic, "no password")
 
-		premine, err := hdwallet.CreateHDWallet(seed, "m/12381/1997/0/0")
-		if err != nil {
-			panic(err)
-		}
+		// TODO
+		//premine, err := hdwallet.CreateHDWallet(seed, "m/12381/1997/0/0")
+		//if err != nil {
+		//	panic(err)
+		//}
 
 		dirPath := "./cmd/ogen/initialization/"
 
@@ -78,9 +74,10 @@ var genParamsCmd = &cobra.Command{
 			validators[i] = v
 		}
 
+		// TODO
 		initParams := initialization.NetworkInitialParams{
 			Validators:     validators,
-			PremineAddress: premine.PublicKey().ToAccount(&netParams.AccountPrefixes),
+			PremineAddress: "",
 			GenesisTime:    genesistime,
 		}
 

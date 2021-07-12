@@ -10,8 +10,6 @@ import (
 	"github.com/olympus-protocol/ogen/internal/keystore"
 	"github.com/olympus-protocol/ogen/internal/mempool"
 	"github.com/olympus-protocol/ogen/internal/proposer"
-	"github.com/olympus-protocol/ogen/internal/wallet"
-	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/logger"
 	"sync"
 )
@@ -22,7 +20,6 @@ type Server interface {
 	Chain() chain.Blockchain
 	Start()
 	Stop() error
-	Wallet() wallet.Wallet
 }
 
 // Server is the main struct that contains ogen services
@@ -35,7 +32,6 @@ type server struct {
 	h         host.Host
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
-	wallet    wallet.Wallet
 	pool      mempool.Pool
 
 	rpcAPIs       []rpc.API
@@ -56,10 +52,6 @@ func (s *server) Proposer() proposer.Proposer {
 
 func (s *server) Chain() chain.Blockchain {
 	return s.ch
-}
-
-func (s *server) Wallet() wallet.Wallet {
-	return s.wallet
 }
 
 // Start starts running the multiple ogen services.
@@ -197,8 +189,6 @@ func NewServer(db blockdb.Database) (Server, error) {
 
 	log.Tracef("Initializing bls module with params for %v", netParams.Name)
 
-	bls.Initialize(netParams, "herumi")
-
 	ch, err := chain.NewBlockchain(db)
 	if err != nil {
 		return nil, err
@@ -211,11 +201,6 @@ func NewServer(db blockdb.Database) (Server, error) {
 
 	pool := mempool.NewPool(ch, h)
 
-	w, err := wallet.NewWallet(ch, h, pool)
-	if err != nil {
-		return nil, err
-	}
-
 	ks := keystore.NewKeystore()
 
 	prop, err := proposer.NewProposer(ch, h, pool, ks)
@@ -226,11 +211,10 @@ func NewServer(db blockdb.Database) (Server, error) {
 	s := &server{
 		log: log,
 
-		ch:     ch,
-		h:      h,
-		prop:   prop,
-		wallet: w,
-		pool:   pool,
+		ch:   ch,
+		h:    h,
+		prop: prop,
+		pool: pool,
 
 		inprocHandler: rpc.NewServer(),
 	}

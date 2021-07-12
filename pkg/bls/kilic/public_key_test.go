@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/kilic"
-	testdata "github.com/olympus-protocol/ogen/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -90,18 +89,5 @@ func TestPublicKey_Hash(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "dbfad2a6bfb0e7f1f0f45460944fbd8dfa7f37da", hex.EncodeToString(hash[:]))
-
-}
-
-func TestPublicKey_ToAccount(t *testing.T) {
-	pubBytes := []byte{0xa9, 0x9a, 0x76, 0xed, 0x77, 0x96, 0xf7, 0xbe, 0x22, 0xd5, 0xb7, 0xe8, 0x5d, 0xee, 0xb7, 0xc5, 0x67, 0x7e, 0x88, 0xe5, 0x11, 0xe0, 0xb3, 0x37, 0x61, 0x8f, 0x8c, 0x4e, 0xb6, 0x13, 0x49, 0xb4, 0xbf, 0x2d, 0x15, 0x3f, 0x64, 0x9f, 0x7b, 0x53, 0x35, 0x9f, 0xe8, 0xb9, 0x4a, 0x38, 0xe4, 0x4c}
-
-	pub, err := bls.PublicKeyFromBytes(pubBytes)
-	assert.NoError(t, err)
-
-	acc := pub.ToAccount(&testdata.TestParams.AccountPrefixes)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "itpub1m0ad9f4lkrnlru8523sfgnaa3ha87d76xgz8k0", acc)
 
 }

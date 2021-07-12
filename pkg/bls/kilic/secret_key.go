@@ -2,9 +2,7 @@ package kilic
 
 import (
 	"github.com/kilic/bls12-381"
-	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 // SecretKey used in the BLS signature scheme.
@@ -35,11 +33,6 @@ func (s *SecretKey) Sign(msg []byte) common.Signature {
 // Marshal a secret key into a LittleEndian byte slice.
 func (s *SecretKey) Marshal() []byte {
 	return s.p.ToBytes()
-}
-
-// ToWIF converts the private key to a Bech32 encoded string.
-func (s *SecretKey) ToWIF(p *params.AccountPrefixes) string {
-	return bech32.Encode(p.Private, s.Marshal())
 }
 
 func (s *SecretKey) IsZero() bool {

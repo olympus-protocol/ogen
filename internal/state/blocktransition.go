@@ -243,12 +243,12 @@ func (s *state) IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, erro
 
 // ApplyVoteSlashing applies a vote slashing to the state.
 func (s *state) ApplyVoteSlashing(vs *primitives.VoteSlashing) error {
-	common, err := s.IsVoteSlashingValid(vs)
+	commonVotes, err := s.IsVoteSlashingValid(vs)
 	if err != nil {
 		return err
 	}
 
-	for _, v := range common {
+	for _, v := range commonVotes {
 		if err := s.UpdateValidatorStatus(v, primitives.StatusExitedWithPenalty); err != nil {
 			return err
 		}
@@ -670,7 +670,7 @@ var (
 	ErrorVoteSlot = errors.New("slot out of range")
 	// ErrorFromEpoch returns when the vote From Epoch doesn't match a justified epoch
 	ErrorFromEpoch = errors.New("expected from epoch to match justified epoch")
-	// ErrorJustifiedHashWrong returns when the vote justified hash doesn't match state justified hash
+	// ErrorJustifiedHash returns when the vote justified hash doesn't match state justified hash
 	ErrorJustifiedHash = errors.New("justified block hash is wrong")
 	// ErrorFromEpochPreviousJustified returns when the from epoch slot doesn't match the previous justified epoch
 	ErrorFromEpochPreviousJustified = errors.New("expected from epoch to match previous justified epoch")

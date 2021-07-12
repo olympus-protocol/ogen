@@ -5,15 +5,12 @@
 // dependency.
 package common
 
-import "github.com/olympus-protocol/ogen/pkg/params"
-
 // SecretKey represents a BLS secret or private key.
 type SecretKey interface {
 	PublicKey() PublicKey
 	Sign(msg []byte) Signature
 	Marshal() []byte
 	IsZero() bool
-	ToWIF(p *params.AccountPrefixes) string
 }
 
 // PublicKey represents a BLS public key.
@@ -22,7 +19,6 @@ type PublicKey interface {
 	Copy() PublicKey
 	Aggregate(p2 PublicKey) PublicKey
 	Hash() ([20]byte, error)
-	ToAccount(prefix *params.AccountPrefixes) string
 }
 
 // Signature represents a BLS signature.

@@ -2,10 +2,8 @@ package kilic
 
 import (
 	bls12381 "github.com/kilic/bls12-381"
-	"github.com/olympus-protocol/ogen/pkg/bech32"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
 	"github.com/olympus-protocol/ogen/pkg/chainhash"
-	"github.com/olympus-protocol/ogen/pkg/params"
 )
 
 // PublicKey used in the BLS signature scheme.
@@ -36,10 +34,4 @@ func (p *PublicKey) Hash() ([20]byte, error) {
 	var hBytes [20]byte
 	copy(hBytes[:], h[:])
 	return hBytes, nil
-}
-
-// ToAccount converts the public key to a Bech32 address.
-func (p *PublicKey) ToAccount(prefix *params.AccountPrefixes) string {
-	hash, _ := p.Hash()
-	return bech32.Encode(prefix.Public, hash[:])
 }

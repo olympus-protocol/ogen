@@ -1,11 +1,8 @@
 package testdata
 
 import (
-	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/params"
 )
-
-var PremineAddr, _ = bls.RandKey()
 
 // TestParams network parameters for test chains.
 var TestParams = params.ChainParams{

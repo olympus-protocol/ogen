@@ -7,15 +7,12 @@ import (
 )
 
 type State interface {
-
-	// Processors
 	ProcessSlot(previousBlockRoot chainhash.Hash)
 	ProcessSlots(requestedSlot uint64, view BlockView) ([]*primitives.EpochReceipt, error)
 	ProcessBlock(b *primitives.Block) error
 	ProcessVote(v *primitives.MultiValidatorVote, proposerIndex uint64) error
 	ProcessEpochTransition() ([]*primitives.EpochReceipt, error)
 
-	// Checkers
 	CheckBlockSignature(b *primitives.Block) error
 	IsProposerSlashingValid(ps *primitives.ProposerSlashing) (uint64, error)
 	IsVoteSlashingValid(vs *primitives.VoteSlashing) ([]uint64, error)
@@ -25,16 +22,13 @@ type State interface {
 	IsVoteValid(v *primitives.MultiValidatorVote) error
 	IsPartialExitValid(p *primitives.PartialExit) error
 
-	// Checkers Multi
 	AreDepositsValid(deposits []*primitives.Deposit) error
 
-	// Validators
 	ActivateValidator(index uint64) error
 	InitiateValidatorExit(index uint64) error
 	ExitValidator(index uint64, status uint64) error
 	UpdateValidatorStatus(index uint64, status uint64) error
 
-	// Appliers
 	ApplyRANDAOSlashing(rs *primitives.RANDAOSlashing) error
 	ApplyTransactionSingle(tx *primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyProposerSlashing(ps *primitives.ProposerSlashing) error
@@ -44,18 +38,15 @@ type State interface {
 	ApplyPartialExit(p *primitives.PartialExit) error
 	SetSlot(slot uint64)
 
-	// Appliers Multi
 	ApplyMultiTransactionSingle(txs []*primitives.Tx, blockWithdrawalAddress [20]byte) error
 	ApplyMultiDeposit(deposits []*primitives.Deposit) error
 
-	// Utils
 	Copy() State
 	ToSerializable() *primitives.SerializableState
 	FromSerializable(ser *primitives.SerializableState)
 	Marshal() ([]byte, error)
 	Unmarshal(b []byte) error
 
-	// Getters
 	GetVoteCommittee(slot uint64) ([]uint64, error)
 	GetProposerPublicKey(b *primitives.Block) (common.PublicKey, error)
 	GetRecentBlockHash(slotToGet uint64) chainhash.Hash
