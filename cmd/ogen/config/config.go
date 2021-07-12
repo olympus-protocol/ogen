@@ -19,13 +19,6 @@ type Flags struct {
 	DataPath      string
 	NetworkName   string
 	Port          string
-	RPCProxy      bool
-	RPCProxyPort  string
-	RPCProxyAddr  string
-	RPCPort       string
-	RPCWallet     bool
-	RPCKeystore   bool
-	RPCAuthToken  string
 	Debug         bool
 	LogFile       bool
 	Dashboard     bool
@@ -87,17 +80,11 @@ func SetTestParams() {
 func SetTestFlags() {
 	_ = os.MkdirAll("./test_data", 0700)
 	GlobalFlags = &Flags{
-		DataPath:     "test_data",
-		NetworkName:  "test_network",
-		Port:         "",
-		RPCProxy:     false,
-		RPCProxyPort: "",
-		RPCProxyAddr: "",
-		RPCPort:      "",
-		RPCWallet:    false,
-		RPCAuthToken: "",
-		Debug:        false,
-		LogFile:      false,
+		DataPath:    "test_data",
+		NetworkName: "test_network",
+		Port:        "",
+		Debug:       false,
+		LogFile:     false,
 	}
 }
 

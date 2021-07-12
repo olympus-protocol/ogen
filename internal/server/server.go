@@ -4,7 +4,6 @@ import (
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
 	"github.com/olympus-protocol/ogen/internal/chain"
-	"github.com/olympus-protocol/ogen/internal/chainrpc"
 	"github.com/olympus-protocol/ogen/internal/dashboard"
 	"github.com/olympus-protocol/ogen/internal/host"
 	"github.com/olympus-protocol/ogen/internal/keystore"
@@ -30,7 +29,6 @@ type server struct {
 
 	ch        chain.Blockchain
 	h         host.Host
-	rpc       chainrpc.RPCServer
 	prop      proposer.Proposer
 	dashboard *dashboard.Dashboard
 	wallet    wallet.Wallet
@@ -57,12 +55,6 @@ func (s *server) Wallet() wallet.Wallet {
 
 // Start starts running the multiple ogen services.
 func (s *server) Start() {
-	go func() {
-		err := s.rpc.Start()
-		if err != nil {
-			s.log.Fatal("unable to start rpc server")
-		}
-	}()
 
 	s.pool.Start()
 
@@ -88,7 +80,6 @@ func (s *server) Start() {
 // Stop closes the ogen services.
 func (s *server) Stop() error {
 	s.ch.Stop()
-	s.rpc.Stop()
 	s.pool.Close()
 	s.h.Stop()
 	return nil
@@ -135,17 +126,11 @@ func NewServer(db blockdb.Database) (Server, error) {
 		return nil, err
 	}
 
-	rpc, err := chainrpc.NewRPCServer(ch, h, w, ks, pool)
-	if err != nil {
-		return nil, err
-	}
-
 	s := &server{
 		log: log,
 
 		ch:     ch,
 		h:      h,
-		rpc:    rpc,
 		prop:   prop,
 		wallet: w,
 		pool:   pool,
