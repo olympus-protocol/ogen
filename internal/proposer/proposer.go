@@ -57,12 +57,10 @@ type proposer struct {
 
 	pool mempool.Pool
 	host host.Host
-
-	//lastActionManager actionmanager.LastActionManager
 }
 
 // NewProposer creates a new proposer from the parameters.
-func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keystore.Keystore /*, manager actionmanager.LastActionManager*/) (Proposer, error) {
+func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keystore.Keystore) (Proposer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	prop := &proposer{
@@ -74,7 +72,6 @@ func NewProposer(chain chain.Blockchain, h host.Host, pool mempool.Pool, ks keys
 		stop:      cancel,
 		pool:      pool,
 		host:      h,
-		//lastActionManager: manager,
 		voting:    false,
 		proposing: false,
 	}
@@ -178,13 +175,6 @@ func (p *proposer) ProposeBlocks() {
 			proposerValidator := blockState.GetValidatorRegistry()[proposerIndex]
 
 			if k, found := p.keystore.GetValidatorKey(proposerValidator.PubKey); found {
-
-				/*ok := p.lastActionManager.ShouldRun(proposerValidator.PubKey)
-				if !ok {
-					blockTimer = time.NewTimer(time.Until(p.getNextBlockTime(slotToPropose)))
-					p.log.Info("proposing disable, another node is already proposing for this key")
-					continue
-				}*/
 
 				p.log.Infof("proposing for slot %d", slotToPropose)
 
@@ -344,7 +334,6 @@ func (p *proposer) VoteForBlocks() {
 				ToEpoch:         toEpoch,
 				ToHash:          voteState.GetRecentBlockHash(toEpoch*p.netParams.EpochLength - 1),
 				BeaconBlockHash: beaconBlock.Hash,
-				Nonce:           0, /*p.lastActionManager.GetNonce(),*/
 			}
 
 			dataHash := data.Hash()
@@ -362,11 +351,9 @@ func (p *proposer) VoteForBlocks() {
 				key, ok := p.keystore.GetValidatorKey(votingValidator.PubKey)
 				if ok {
 					if key.Enable {
-						//if p.lastActionManager.ShouldRun(votingValidator.PubKey) {
 						signatures = append(signatures, key.Secret.Sign(dataHash[:]))
 						bitlistVotes.Set(uint(i))
 						validatorsActionMap[key.Secret.PublicKey()] = key.Secret
-						//}
 					}
 				}
 			}

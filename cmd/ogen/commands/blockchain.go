@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/olympus-protocol/ogen/cmd/ogen/config"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/internal/blockdb"
@@ -22,14 +23,25 @@ var (
 	Debug    bool
 	LogFile  bool
 
-	RPCPort       string
-	RPCWallet     bool
-	RPCKeystore   bool
-	RPCProxy      bool
-	RPCProxyPort  string
-	RPCPRoxyAddr  string
 	Dashboard     bool
 	DashboardPort string
+
+	HTTPHost         string
+	HTTPPort         int
+	HTTPPathPrefix   string
+
+	HTTPCors         []string
+	HTTPVirtualHosts []string
+	HTTPModules      []string
+	HTTPTimeouts     rpc.HTTPTimeouts
+
+	WSHost           string
+	WSPort           int
+	WSPathPrefix     string
+
+	WSOrigins        []string
+	WSModules        []string
+	WSExposeAll      bool
 )
 
 func init() {
@@ -39,18 +51,19 @@ func init() {
 	rootCmd.Flags().StringVar(&NetName, "network", "testnet", "String of the network to connect.")
 	rootCmd.Flags().StringVar(&Port, "port", "24126", "Default port for p2p connections listener.")
 
-	rootCmd.Flags().BoolVar(&RPCProxy, "rpc_proxy", false, "Enable http proxy for RPC server.")
-	rootCmd.Flags().StringVar(&RPCProxyPort, "rpc_proxy_port", "8081", "Port for the http proxy.")
-	rootCmd.Flags().StringVar(&RPCPort, "rpc_port", "24127", "RPC server port.")
-	rootCmd.Flags().StringVar(&RPCPRoxyAddr, "rpc_proxy_addr", "localhost", "RPC proxy address to serve the http server.")
-	rootCmd.Flags().BoolVar(&RPCWallet, "rpc_wallet", false, "Enable wallet access through RPC.")
-	rootCmd.Flags().BoolVar(&RPCKeystore, "rpc_keystore", false, "Enable keystore access through RPC.")
-
 	rootCmd.Flags().StringVar(&DashboardPort, "dashboard_port", "8080", "Port to expose node dashboard.")
 	rootCmd.Flags().BoolVar(&Dashboard, "dashboard", false, "Expose node dashboard.")
 
 	rootCmd.PersistentFlags().BoolVar(&Debug, "debug", false, "Displays debug information.")
 	rootCmd.PersistentFlags().BoolVar(&LogFile, "logfile", false, "Display log information to file.")
+
+	rootCmd.Flags().StringVar(&HTTPHost, "http_host", "localhost", "")
+	rootCmd.Flags().IntVar(&HTTPPort, "http_port", 9090, "")
+	rootCmd.Flags().StringVar(&HTTPPathPrefix, "http_prefix", "", "")
+
+	rootCmd.Flags().StringVar(&WSHost, "ws_host", "localhost", "")
+	rootCmd.Flags().IntVar(&WSPort, "ws_port", 9091, "")
+	rootCmd.Flags().StringVar(&WSPathPrefix, "ws_prefix", "", "")
 
 	err := viper.BindPFlags(rootCmd.PersistentFlags())
 	if err != nil {
@@ -115,6 +128,12 @@ func initConfig() {
 		LogFile:       LogFile,
 		DashboardPort: DashboardPort,
 		Dashboard:     Dashboard,
+		HTTPPort: HTTPPort,
+		HTTPHost: HTTPHost,
+		HTTPPathPrefix: HTTPPathPrefix,
+		WSPort: WSPort,
+		WSHost: WSHost,
+		WSPathPrefix: WSPathPrefix,
 	}
 
 	var log logger.Logger

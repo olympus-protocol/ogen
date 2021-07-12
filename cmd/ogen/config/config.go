@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"encoding/hex"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/olympus-protocol/ogen/cmd/ogen/initialization"
 	"github.com/olympus-protocol/ogen/pkg/bls"
 	"github.com/olympus-protocol/ogen/pkg/bls/common"
@@ -16,13 +17,29 @@ import (
 )
 
 type Flags struct {
-	DataPath      string
-	NetworkName   string
-	Port          string
-	Debug         bool
-	LogFile       bool
-	Dashboard     bool
-	DashboardPort string
+	DataPath         string
+	NetworkName      string
+	Port             string
+	Debug            bool
+	LogFile          bool
+	Dashboard        bool
+	DashboardPort    string
+
+	HTTPHost         string
+	HTTPPort         int
+	HTTPCors         []string
+	HTTPVirtualHosts []string
+	HTTPModules      []string
+	HTTPTimeouts     rpc.HTTPTimeouts
+	HTTPPathPrefix   string
+
+	WSHost           string
+	WSPort           int
+	WSPathPrefix     string
+	WSOrigins        []string
+	WSModules        []string
+	WSExposeAll      bool
+
 }
 
 type Params struct {

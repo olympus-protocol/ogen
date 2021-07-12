@@ -5,7 +5,7 @@ const BlockHeaderSize = 12 + (14 * 32) // 468 bytes
 
 // Vote
 const MaxVotesPerBlock = 16
-const VoteDataSize = 32 * 4                                // 128 bytes
+const VoteDataSize = 30 * 4                                // 120 bytes
 const MaxMultiValidatorVoteSize = VoteDataSize + 96 + 6255 // 6479 bytes
 
 // Deposits

@@ -34,7 +34,6 @@ func TestVoteSlashing(t *testing.T) {
 				ToEpoch:         5,
 				ToHash:          [32]byte{1, 2, 3},
 				BeaconBlockHash: [32]byte{1, 2, 3},
-				Nonce:           5,
 			},
 			Sig:                   [96]byte{1, 2, 3},
 			ParticipationBitfield: bitfield.NewBitlist(6042),
@@ -47,14 +46,13 @@ func TestVoteSlashing(t *testing.T) {
 				ToEpoch:         5,
 				ToHash:          [32]byte{1, 2, 3},
 				BeaconBlockHash: [32]byte{1, 2, 3},
-				Nonce:           5,
 			},
 			Sig:                   [96]byte{1, 2, 3},
 			ParticipationBitfield: bitfield.NewBitlist(6042),
 		},
 	}
 
-	assert.Equal(t, "0299f30f1dab1026bfc3f1179631fa3af0eb9f0ee0b52ee423d344203c02522a", d.Hash().String())
+	assert.Equal(t, "a04397387eed6bfd9915abed431fd707981c50d04febe5bc8f107366a02fcfcc", d.Hash().String())
 
 }
 

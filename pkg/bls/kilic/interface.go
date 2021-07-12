@@ -40,11 +40,12 @@ type Kilic struct {
 }
 
 func (k Kilic) SecretKeyFromBytes(privKey []byte) (common.SecretKey, error) {
+
 	if len(privKey) != 32 {
 		return nil, ErrorSecSize
 	}
 
-	fr := bls12381.NewFr()
+	fr := bls12381.NewFr().FromBytes(privKey)
 
 	in := new(big.Int).SetBytes(privKey)
 	res := in.Cmp(qBig)

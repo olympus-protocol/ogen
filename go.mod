@@ -3,22 +3,18 @@ module github.com/olympus-protocol/ogen
 go 1.16
 
 require (
-	github.com/99designs/gqlgen v0.13.0
 	github.com/VictoriaMetrics/fastcache v1.6.0
-	github.com/btcsuite/btcd v0.22.0-beta
-	github.com/c-bata/go-prompt v0.2.6
+	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/dgraph-io/ristretto v0.1.0
-	github.com/fatih/color v1.12.0
+	github.com/ethereum/go-ethereum v1.10.4
 	github.com/ferranbt/fastssz v0.0.0-20210526181520-7df50c8568f8
+	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
 	github.com/gin-gonic/gin v1.7.2
-	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/gobuffalo/packr v1.30.1
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
 	github.com/golang/snappy v0.0.4
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.2.0
-	github.com/google/uuid v1.2.0
-	github.com/gorilla/websocket v1.4.2
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20210520070601-31246bfa8ac4
 	github.com/ipfs/go-ds-leveldb v0.4.2
 	github.com/kilic/bls12-381 v0.1.0
@@ -31,21 +27,20 @@ require (
 	github.com/libp2p/go-libp2p-peerstore v0.2.7
 	github.com/libp2p/go-libp2p-pubsub v0.4.1
 	github.com/magiconair/properties v1.8.5
+	github.com/mattn/go-colorable v0.1.1
+	github.com/mattn/go-isatty v0.0.12
 	github.com/multiformats/go-multiaddr v0.3.3
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.0
-	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
-	github.com/vektah/gqlparser/v2 v2.2.0
+	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/wealdtech/go-bytesutil v1.1.1
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
-	google.golang.org/genproto v0.0.0-20210708141623-e76da96a951f
-	google.golang.org/grpc v1.39.0
-	google.golang.org/protobuf v1.27.1
-	gorm.io/driver/postgres v1.1.0
-	gorm.io/gorm v1.21.11
+	golang.org/x/tools v0.1.4 // indirect
+	google.golang.org/grpc v1.39.0 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/urfave/cli.v1 v1.20.0
 )

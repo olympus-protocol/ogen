@@ -54,7 +54,6 @@ type pool struct {
 
 	chain chain.Blockchain
 	host  host.Host
-	//lastActionManager actionmanager.LastActionManager
 
 	pool *fastcache.Cache
 
@@ -91,19 +90,6 @@ func (p *pool) AddVote(d *primitives.MultiValidatorVote, s state.State) error {
 		p.log.Error(err)
 		return err
 	}
-
-	/*committee, err := currentState.GetVoteCommittee(d.Data.Slot)
-	if err != nil {
-		p.log.Error(err)
-		return err
-	}*/
-
-	// Register voting action for validators included on the vote
-	/*for i, c := range committee {
-		if d.ParticipationBitfield.Get(uint(i)) {
-			p.lastActionManager.RegisterAction(currentState.GetValidatorRegistry()[c].PubKey, time.Now(), d.Data.Nonce)
-		}
-	}*/
 
 	// Slashing check
 	// This check iterates over all the votes on the pool.
@@ -971,7 +957,7 @@ func (p *pool) Start() {
 
 }
 
-func NewPool(ch chain.Blockchain, h host.Host /*, manager actionmanager.LastActionManager*/) Pool {
+func NewPool(ch chain.Blockchain, h host.Host) Pool {
 	datapath := config.GlobalFlags.DataPath
 
 	var cache *fastcache.Cache
@@ -986,7 +972,6 @@ func NewPool(ch chain.Blockchain, h host.Host /*, manager actionmanager.LastActi
 		ctx:       config.GlobalParams.Context,
 		chain:     ch,
 		host:      h,
-		//lastActionManager: manager,
 
 		pool: cache,
 

@@ -79,9 +79,6 @@ type VoteData struct {
 
 	// BeaconBlockHash is for the fork choice.
 	BeaconBlockHash [32]byte
-
-	// Nonce identifies the client that proposed the block.
-	Nonce uint64
 }
 
 // Marshal encodes the data.
@@ -129,7 +126,7 @@ func (v *VoteData) IsSurroundVote(v2 *VoteData) bool {
 // Equals checks if vote data equals another vote data.
 func (v *VoteData) Equals(other *VoteData) bool {
 	if v.Slot != other.Slot || v.FromEpoch != other.FromEpoch || v.ToEpoch != other.ToEpoch ||
-		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || !bytes.Equal(v.ToHash[:], other.ToHash[:]) || !bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) || v.Nonce != other.Nonce {
+		!bytes.Equal(v.FromHash[:], other.FromHash[:]) || !bytes.Equal(v.ToHash[:], other.ToHash[:]) || !bytes.Equal(v.BeaconBlockHash[:], other.BeaconBlockHash[:]) {
 		return false
 	}
 
@@ -144,7 +141,6 @@ func (v *VoteData) Copy() VoteData {
 // Hash calculates the hash of the vote data.
 func (v *VoteData) Hash() chainhash.Hash {
 	cp := v.Copy()
-	cp.Nonce = 0
 	b, _ := cp.Marshal()
 	return chainhash.HashH(b)
 }
